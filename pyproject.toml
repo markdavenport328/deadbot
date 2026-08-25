@@ -23,6 +23,9 @@ dev = ["httpx>=0.28", "pytest>=8"]
 deadbot = "deadbot.cli:main"
 app = "deadbot.api:app"
 
+[tool.vercel]
+entrypoint = "deadbot.api:app"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
