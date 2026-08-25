@@ -135,6 +135,18 @@ class CanonicalStore:
                 continue
             person = people.get(assignment["person_id"])
             performers.append({**assignment, "person": person})
+        recording_summaries = []
+        for recording in self.rows("recordings"):
+            if recording["show_id"] != show_id:
+                continue
+            summary = {
+                key: recording[key]
+                for key in ("recording_id", "source_type")
+                if recording.get(key, "")
+            }
+            if "search-index" not in recording.get("notes", ""):
+                summary["archive_identifier"] = recording["archive_identifier"]
+            recording_summaries.append(summary)
         return {
             "show": show,
             "venue": venue,
@@ -142,7 +154,7 @@ class CanonicalStore:
             "performers": performers,
             "resources": self.resources_for("resource_shows", "show_id", show_id),
             "show_links": [row for row in self.rows("show_links") if row["show_id"] == show_id],
-            "recordings": [row for row in self.rows("recordings") if row["show_id"] == show_id],
+            "recordings": recording_summaries,
             "official_releases": self.official_release_summaries(release_ids),
         }
 

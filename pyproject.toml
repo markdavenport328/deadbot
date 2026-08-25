@@ -11,6 +11,7 @@ requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",
     "langchain-ollama>=0.3",
+    "langchain-openai>=0.3",
     "langgraph>=0.4",
     "uvicorn[standard]>=0.30",
 ]
@@ -20,6 +21,7 @@ dev = ["httpx>=0.28", "pytest>=8"]
 
 [project.scripts]
 deadbot = "deadbot.cli:main"
+app = "deadbot.api:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

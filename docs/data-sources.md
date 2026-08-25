@@ -83,14 +83,14 @@ For each candidate, assess data quality, terms, attribution requirements, access
 
 ## MusicBrainz
 
-- What it provides: TBD
-- Access method: TBD
-- Structured fields: TBD
-- Coverage: TBD
-- Authority / reliability: TBD
-- Licensing / usage considerations: TBD
-- Potential canonical entities populated: TBD
-- Known limitations: TBD
+- What it provides: Work-level title, composer, lyricist, and writer relationships, with stable work and artist identifiers.
+- Access method: Official JSON web service at `musicbrainz.org/ws/2/work`; the collection script spaces requests and preserves the query/result summary.
+- Structured fields: Work ID, title, score, ISWC values where supplied, and source-reported composer/lyricist/writer relationships.
+- Coverage: 80 title queries for the 1972 song set; 60 responses were available in the collected run, with 52 exact-title matches and 51 exact matches carrying credit relations.
+- Authority / reliability: Secondary structured catalog for composition-credit reconciliation. Exact-title results are not automatically authoritative for a Dead performance when a title is shared by unrelated works.
+- Licensing / usage considerations: Preserve identifiers, concise metadata, and source URLs; review MusicBrainz attribution/database terms before redistributing a larger derived dataset.
+- Potential canonical entities populated: Songs, people, and role-level song-writer relationships.
+- Known limitations: Title-only search can return unrelated works, traditional works may not map to a person, and a work's role model may differ from a source's display convention. Ambiguous matches remain in raw records and are not canonicalized.
 
 ## Official Grateful Dead releases / catalog
 
@@ -130,7 +130,7 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - What it provides: Official editorial articles, podcast episodes and transcripts, archival interview excerpts, song histories, show oral histories, and release context.
 - Access method: Public web pages; retain links and concise metadata rather than copying articles or transcripts.
 - Structured fields: Title, author or host, source URL, publication date where displayed, resource type, and song/show/performance relationship.
-- Coverage: The Veneta pilot now links two official oral-history episodes and selected song-context pieces for Sugaree, Deal, Bird Song, China Cat Sunflower, I Know You Rider, Playing in the Band, He’s Gone, Dark Star, and Sugar Magnolia.
+- Coverage: The 1972 song pass resolved 54 Dead.net song pages for the 80-title set; 51 expose lyric-page content and 52 expose credit fields. The canonical layer stores source links and concise metadata, not full lyrics.
 - Authority / reliability: First-party editorial context and a strong starting point for the retrieval layer. Statements from interview subjects, especially recollections of origins or events, stay attributed to that source.
 - Licensing / usage considerations: Store metadata, short editorial scope notes, and links only; do not copy or redistribute transcripts/audio absent a separately reviewed right.
 - Potential canonical entities populated: Generic resources and resource-to-song/show/performance relationships; occasionally a reviewed supporting source for a future canonical fact.

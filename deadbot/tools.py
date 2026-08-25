@@ -42,7 +42,10 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         for size in range(min(3, len(words)), 0, -1):
             for start in range(len(words) - size + 1):
                 phrase = " ".join(words[start : start + size])
-                if len(phrase) >= 3 and phrase not in stop_words and phrase not in phrases:
+                if (
+                    (size > 1 and len(phrase) >= 3)
+                    or (size == 1 and len(phrase) >= 4)
+                ) and phrase not in stop_words and phrase not in phrases:
                     phrases.append(phrase)
 
         matches = []

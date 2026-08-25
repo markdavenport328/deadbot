@@ -1,25 +1,79 @@
 resource_id,song_id,relationship_type,notes
-resource-rukind-sugaree-tab,song-sugaree,tab-for,
-resource-deadnet-tiger-rose-50,song-sugaree,interview-context,Includes an attributed Robert Hunter recollection.
-resource-deadnet-greatest-stories-deal,song-deal,song-analysis,
-resource-deadnet-listen-to-river-fox-1972,song-bird-song,song-history-and-analysis,
-resource-deadnet-europe-72-france,song-china-cat-sunflower,songwriting-and-segue-context,
-resource-deadnet-europe-72-france,song-i-know-you-rider,segue-context,
-resource-relix-robert-hunter-interview,song-china-cat-sunflower,interview-context,Archival interview account.
-resource-deadcast-veneta-part-2,song-playing-in-the-band,performance-context,Use linked performance relation for Veneta-specific discussion.
-resource-deadnet-greatest-stories-dark-star,song-dark-star,song-history-and-analysis,
-resource-deadcast-blues-for-allah-slipknot,song-hes-gone,song-origin,Source-attributed origin story.
-resource-deadcast-american-beauty-sugar-magnolia,song-sugar-magnolia,song-history-and-interview,
-resource-deadnet-ace-50,song-black-throated-wind,song-history-and-interview,Includes archival Weir and Barlow material.
-resource-deadnet-ace-50,song-mexicali-blues,song-history-and-interview,Includes songwriting and repertoire context.
-resource-deadnet-ace-50,song-greatest-story-ever-told,song-history-and-interview,Includes archival Weir and Hunter interview excerpts.
-resource-deadnet-promised-land-song-page,song-promised-land,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
-resource-deadnet-bear-drops-la-66,song-promised-land,early-performance-context,
-resource-deadnet-me-and-my-uncle-song-page,song-me-and-my-uncle,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
+resource-deadnet-song-around-and-around,song-around-and-around,lyrics-source,External lyric/credit page; text not stored.
 resource-deadnet-bertha-song-page,song-bertha,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
-resource-deadnet-jack-straw-song-page,song-jack-straw,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
-resource-deadnet-europe-72-lyceum,song-one-more-saturday-night,song-history-and-interview,
-resource-deadnet-blair-field-trips,song-el-paso,Veneta-listening-context,Editorial interpretation.
-resource-deadnet-blair-field-trips,song-sing-me-back-home,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-bertha-song-page,song-bertha,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-big-boss-man,song-big-boss-man,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-big-railroad-blues,song-big-railroad-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-big-river,song-big-river,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-listen-to-river-fox-1972,song-bird-song,song-history-and-analysis,
+resource-deadnet-song-bird-song,song-bird-song,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-black-peter,song-black-peter,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-ace-50,song-black-throated-wind,song-history-and-interview,Includes archival Weir and Barlow material.
+resource-deadnet-song-black-throated-wind,song-black-throated-wind,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-brokedown-palace,song-brokedown-palace,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-brown-eyed-women,song-brown-eyed-women,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-candyman,song-candyman,lyrics-source,External lyric/credit page; text not stored.
 resource-deadnet-blair-field-trips,song-casey-jones,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-song-casey-jones,song-casey-jones,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-europe-72-france,song-china-cat-sunflower,songwriting-and-segue-context,
+resource-deadnet-song-china-cat-sunflower,song-china-cat-sunflower,lyrics-source,External lyric/credit page; text not stored.
+resource-relix-robert-hunter-interview,song-china-cat-sunflower,interview-context,Archival interview account.
+resource-deadnet-song-chinatown-shuffle,song-chinatown-shuffle,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-cold-rain-and-snow,song-cold-rain-and-snow,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-cryptical-envelopment,song-cryptical-envelopment,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-cumberland-blues,song-cumberland-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-greatest-stories-dark-star,song-dark-star,song-history-and-analysis,
+resource-deadnet-song-dark-star,song-dark-star,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-greatest-stories-deal,song-deal,song-analysis,
+resource-deadnet-song-deal,song-deal,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-dire-wolf,song-dire-wolf,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-drums,song-drums,song-credit-source,External catalog page; text not stored.
+resource-deadnet-blair-field-trips,song-el-paso,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-song-el-paso,song-el-paso,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-frozen-logger,song-frozen-logger,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-good-lovin,song-good-lovin,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-ace-50,song-greatest-story-ever-told,song-history-and-interview,Includes archival Weir and Hunter interview excerpts.
+resource-deadnet-song-greatest-story-ever-told,song-greatest-story-ever-told,lyrics-source,External lyric/credit page; text not stored.
+resource-deadcast-blues-for-allah-slipknot,song-hes-gone,song-origin,Source-attributed origin story.
+resource-deadnet-song-hes-gone,song-hes-gone,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-hey-bo-diddley,song-hey-bo-diddley,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-europe-72-france,song-i-know-you-rider,segue-context,
+resource-deadnet-song-i-know-you-rider,song-i-know-you-rider,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-it-s-all-over-now-baby-blue,song-it-s-all-over-now-baby-blue,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-jack-straw-song-page,song-jack-straw,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
+resource-deadnet-jack-straw-song-page,song-jack-straw,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-jam,song-jam,song-credit-source,External catalog page; text not stored.
+resource-deadnet-song-johnny-b-goode,song-johnny-b-goode,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-loser,song-loser,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-me-and-bobby-mcgee,song-me-and-bobby-mcgee,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-me-and-my-uncle-song-page,song-me-and-my-uncle,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
+resource-deadnet-me-and-my-uncle-song-page,song-me-and-my-uncle,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-ace-50,song-mexicali-blues,song-history-and-interview,Includes songwriting and repertoire context.
+resource-deadnet-song-mexicali-blues,song-mexicali-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-mind-left-body-jam,song-mind-left-body-jam,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-morning-dew,song-morning-dew,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-next-time-you-see-me,song-next-time-you-see-me,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-not-fade-away,song-not-fade-away,lyrics-source,External lyric/credit page; text not stored.
 resource-deadnet-blair-field-trips,song-one-more-saturday-night,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-europe-72-lyceum,song-one-more-saturday-night,song-history-and-interview,
+resource-deadnet-song-one-more-saturday-night,song-one-more-saturday-night,lyrics-source,External lyric/credit page; text not stored.
+resource-deadcast-veneta-part-2,song-playing-in-the-band,performance-context,Use linked performance relation for Veneta-specific discussion.
+resource-deadnet-bear-drops-la-66,song-promised-land,early-performance-context,
+resource-deadnet-promised-land-song-page,song-promised-land,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
+resource-deadnet-promised-land-song-page,song-promised-land,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-blair-field-trips,song-sing-me-back-home,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-song-sing-me-back-home,song-sing-me-back-home,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-smokestack-lightning,song-smokestack-lightning,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-stella-blue,song-stella-blue,lyrics-source,External lyric/credit page; text not stored.
+resource-deadcast-american-beauty-sugar-magnolia,song-sugar-magnolia,song-history-and-interview,
+resource-deadnet-song-sugar-magnolia,song-sugar-magnolia,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-sugaree,song-sugaree,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-tiger-rose-50,song-sugaree,interview-context,Includes an attributed Robert Hunter recollection.
+resource-rukind-sugaree-tab,song-sugaree,tab-for,
+resource-deadnet-song-tennessee-jed,song-tennessee-jed,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-truckin,song-truckin,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-uncle-john-s-band,song-uncle-john-s-band,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-weather-report-suite-prelude,song-weather-report-suite-prelude,song-credit-source,External catalog page; text not stored.
+resource-deadnet-song-wharf-rat,song-wharf-rat,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-who-do-you-love,song-who-do-you-love,lyrics-source,External lyric/credit page; text not stored.
+resource-deadnet-song-you-win-again,song-you-win-again,lyrics-source,External lyric/credit page; text not stored.

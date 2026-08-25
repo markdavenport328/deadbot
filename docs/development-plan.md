@@ -20,7 +20,7 @@ The first vertical slice is the Grateful Dead's 1972-08-27 Veneta, Oregon perfor
 
 ### Veneta vertical slice
 
-The canonical CSV layer currently contains:
+The original Veneta vertical slice contains:
 
 | Entity or relationship | Current count |
 | --- | ---: |
@@ -33,6 +33,11 @@ The canonical CSV layer currently contains:
 | Official releases / release tracks | 1 / 21 |
 | Show / performance media links | 1 / 1 |
 | Source-specific chord arrangements / sections | 1 / 4 |
+
+The subsequent 1972 bulk pass expanded the canonical show/performance layer to
+86 shows, 51 venue instances, 80 songs, and 2,229 performances. It also added
+362 Internet Archive recording-index rows across all 86 shows. The year-level
+coverage and remaining gaps are tracked in `docs/collection-status-1972.md`.
 
 The current resource set gives every one of the 20 Veneta songs at least one contextual link. It includes official Dead.net/Deadcast material, independent reporting, a clearly labeled eyewitness memoir, an archival interview, tab/chord material, and playback/video links. See `docs/veneta-song-dossiers.md`.
 
@@ -185,7 +190,7 @@ Implement deterministic import, foreign-key validation, and a rebuild command. R
 
 ### 7. Expand the 1972 collection responsibly
 
-Use gdshowsdb as the bulk baseline, JerryBase for review, Internet Archive for recordings, and selected sources by fact type. Add data in reviewable batches; preserve raw records and source-specific identifiers.
+Use gdshowsdb as the bulk baseline, JerryBase for review, Internet Archive for recordings, and selected sources by fact type. Add data in reviewable batches; preserve raw records and source-specific identifiers. The first bulk pass is complete: 86 shows, 2,229 performances, and 362 recording rows are now canonical; one full Internet Archive metadata record is preserved for each show. The remaining work is track mappings, additional recording detail, lineups, credits, and cross-source review.
 
 **Done when:** a documented 1972 ingestion/reconciliation pass produces validated show/performance/recording coverage beyond the Veneta pilot.
 

@@ -11,7 +11,11 @@ def tool_by_name(store: CanonicalStore, name: str):
 def test_every_veneta_song_has_a_context_resource():
     store = CanonicalStore()
     linked_song_ids = {row["song_id"] for row in store.rows("resource_songs")}
-    song_ids = {row["song_id"] for row in store.rows("songs")}
+    song_ids = {
+        row["song_id"]
+        for row in store.rows("performances")
+        if row["show_id"] == "gd-1972-08-27"
+    }
     assert song_ids <= linked_song_ids
 
 
@@ -21,6 +25,19 @@ def test_song_tool_returns_sugaree_resources_and_arrangement():
     assert result["song"]["song_id"] == "song-sugaree"
     assert any(resource["resource_id"] == "resource-rukind-sugaree-tab" for resource in result["resources"])
     assert result["arrangements"][0]["arrangement_id"] == "arrangement-sugaree-rukind-key-b"
+
+
+def test_1972_song_catalog_has_external_lyric_links_without_lyric_text():
+    store = CanonicalStore()
+    songs = store.rows("songs")
+    assert len(songs) == 80
+    linked_song_ids = {
+        row["song_id"]
+        for row in store.rows("resource_songs")
+        if row["relationship_type"] == "lyrics-source"
+    }
+    assert len(linked_song_ids) == 51
+    assert all("lyrics" not in row for row in songs)
 
 
 def test_performance_tool_preserves_source_attribution():
