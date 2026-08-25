@@ -1,0 +1,45 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+env/
+*.egg-info/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node and build output
+node_modules/
+dist/
+build/
+.coverage
+htmlcov/
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local databases and PostgreSQL artifacts
+*.sqlite
+*.sqlite3
+*.db
+pgdata/
+postgres-data/
+
+# Logs and temporary exports
+*.log
+logs/
+tmp/
+temp/
+exports/
+eval-results/

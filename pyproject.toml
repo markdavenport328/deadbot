@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deadbot"
+version = "0.1.0"
+description = "A provenance-aware Grateful Dead knowledge agent"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "langchain-ollama>=0.3",
+    "langgraph>=0.4",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = ["httpx>=0.28", "pytest>=8"]
+
+[project.scripts]
+deadbot = "deadbot.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools.packages.find]
+include = ["deadbot*"]

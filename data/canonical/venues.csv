@@ -1,0 +1,52 @@
+venue_id,name,city,state_region,country,latitude,longitude,notes
+venue-academy-of-music-new-york,Academy of Music,New York,NY,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-alumni-lawn-vanderbilt-university-nashville,"Alumni Lawn, Vanderbilt University",Nashville,TN,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-austin-municipal-auditorium-austin,Austin Municipal Auditorium,Austin,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-baltimore-civic-center-baltimore,Baltimore Civic Center,Baltimore,MD,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-beat-club-bremen,Beat Club,Bremen,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-berkeley-community-theater-berkeley,Berkeley Community Theater,Berkeley,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-bickershaw-festival-wigan,Bickershaw Festival,Wigan,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-century-ii-convention-hall-wichita,Century II Convention Hall,Wichita,KS,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-city-hall-newcastle,City Hall,Newcastle,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-civic-center-music-hall-oklahoma-city,Civic Center Music Hall,Oklahoma City,OK,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-cleveland-public-hall-cleveland,Cleveland Public Hall,Cleveland,OH,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-concertgebouw-amsterdam,Concertgebouw,Amsterdam,,Netherlands,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-dallas-memorial-auditorium-dallas,Dallas Memorial Auditorium,Dallas,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-dillon-stadium-hartford,Dillon Stadium,Hartford,CT,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-empire-pool-london,Empire Pool,London,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-folsom-field-university-of-colorado-boulder-boulder,"Folsom Field, University of Colorado Boulder",Boulder,CO,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-ford-auditorium-detroit,Ford Auditorium,Detroit,MI,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-fox-theatre-st-louis,Fox Theatre,St. Louis,MO,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-grote-zaal-de-doelen-rotterdam,"Grote Zaal, De Doelen",Rotterdam,,Netherlands,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-hofheinz-pavilion-houston,Hofheinz Pavilion,Houston,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-hollywood-bowl-hollywood,Hollywood Bowl,Hollywood,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-hollywood-palladium-hollywood,Hollywood Palladium,Hollywood,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-jahrhunderthalle-frankfurt,Jahrhunderthalle,Frankfurt,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-kongresssaal-deutsches-museum-munich,"Kongresssaal, Deutsches Museum",Munich,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-lille-fairgrounds-lille,Lille Fairgrounds,Lille,,France,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-long-beach-arena-long-beach,Long Beach Arena,Long Beach,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-lyceum-london,Lyceum,London,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-music-hall-boston,Music Hall,Boston,MA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-music-hall-cincinnati,Music Hall,Cincinnati,OH,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-musikhalle-hamburg,Musikhalle,Hamburg,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-old-renaissance-faire-grounds-veneta,Old Renaissance Faire Grounds,Veneta,OR,,,,
+venue-olympia-paris,Olympia,Paris,,France,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-palace-theater-waterbury,Palace Theater,Waterbury,CT,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-paramount-northwest-theatre-seattle,Paramount Northwest Theatre,Seattle,WA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-paramount-theatre-portland,Paramount Theatre,Portland,OR,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-performing-arts-center-milwaukee,Performing Arts Center,Milwaukee,WI,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-radio-luxembourg-luxembourg,Radio Luxembourg,Luxembourg,,Luxembourg,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-rheinhalle-dusseldorf,Rheinhalle,Dusseldorf,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-roosevelt-stadium-jersey-city,Roosevelt Stadium,Jersey City,NJ,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-sacramento-memorial-auditorium-sacramento,Sacramento Memorial Auditorium,Sacramento,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-san-antonio-municipal-auditorium-san-antonio,San Antonio Municipal Auditorium,San Antonio,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-san-jose-civic-auditorium-san-jose,San Jose Civic Auditorium,San Jose,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-soccer-field-american-university-washington,"Soccer Field, American University",Washington,DC,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-soldiers-and-sailors-memorial-hall-kansas-city,Soldiers & Sailors Memorial Hall,Kansas City,KS,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-spectrum-philadelphia,Spectrum,Philadelphia,PA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-springfield-civic-center-arena-springfield,Springfield Civic Center Arena,Springfield,MA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-stakladen-cafeteria-aarhus-university-aarhus,Stakladen Cafeteria (Aarhus University),Aarhus,,Denmark,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-stanley-theatre-jersey-city,Stanley Theatre,Jersey City,NJ,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-tivoli-concert-hall-copenhagen,Tivoli Concert Hall,Copenhagen,,Denmark,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-veterans-memorial-auditorium-columbus,Veterans Memorial Auditorium,Columbus,OH,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-winterland-san-francisco,Winterland,San Francisco,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.

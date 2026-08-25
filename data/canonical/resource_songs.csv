@@ -1,0 +1,25 @@
+resource_id,song_id,relationship_type,notes
+resource-rukind-sugaree-tab,song-sugaree,tab-for,
+resource-deadnet-tiger-rose-50,song-sugaree,interview-context,Includes an attributed Robert Hunter recollection.
+resource-deadnet-greatest-stories-deal,song-deal,song-analysis,
+resource-deadnet-listen-to-river-fox-1972,song-bird-song,song-history-and-analysis,
+resource-deadnet-europe-72-france,song-china-cat-sunflower,songwriting-and-segue-context,
+resource-deadnet-europe-72-france,song-i-know-you-rider,segue-context,
+resource-relix-robert-hunter-interview,song-china-cat-sunflower,interview-context,Archival interview account.
+resource-deadcast-veneta-part-2,song-playing-in-the-band,performance-context,Use linked performance relation for Veneta-specific discussion.
+resource-deadnet-greatest-stories-dark-star,song-dark-star,song-history-and-analysis,
+resource-deadcast-blues-for-allah-slipknot,song-hes-gone,song-origin,Source-attributed origin story.
+resource-deadcast-american-beauty-sugar-magnolia,song-sugar-magnolia,song-history-and-interview,
+resource-deadnet-ace-50,song-black-throated-wind,song-history-and-interview,Includes archival Weir and Barlow material.
+resource-deadnet-ace-50,song-mexicali-blues,song-history-and-interview,Includes songwriting and repertoire context.
+resource-deadnet-ace-50,song-greatest-story-ever-told,song-history-and-interview,Includes archival Weir and Hunter interview excerpts.
+resource-deadnet-promised-land-song-page,song-promised-land,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
+resource-deadnet-bear-drops-la-66,song-promised-land,early-performance-context,
+resource-deadnet-me-and-my-uncle-song-page,song-me-and-my-uncle,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
+resource-deadnet-bertha-song-page,song-bertha,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
+resource-deadnet-jack-straw-song-page,song-jack-straw,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
+resource-deadnet-europe-72-lyceum,song-one-more-saturday-night,song-history-and-interview,
+resource-deadnet-blair-field-trips,song-el-paso,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-blair-field-trips,song-sing-me-back-home,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-blair-field-trips,song-casey-jones,Veneta-listening-context,Editorial interpretation.
+resource-deadnet-blair-field-trips,song-one-more-saturday-night,Veneta-listening-context,Editorial interpretation.

@@ -1,0 +1,284 @@
+{
+  "suite_id": "veneta-tool-retrieval",
+  "version": "v1",
+  "description": "Deterministic retrieval baseline for the 1972-08-27 Veneta pilot. Each case supplies the user-facing question, expected local-tool result, required linked sources where applicable, and the answer failure to watch for during separate model-response review.",
+  "cases": [
+    {
+      "id": "entity-show-by-date",
+      "category": "entity-resolution",
+      "question": "What show was played on 1972-08-27?",
+      "tool": "search_entities",
+      "arguments": {"query": "1972-08-27"},
+      "expected": {"contains": {"matches": {"entity_type": "show", "id": "gd-1972-08-27"}}},
+      "failure_conditions": ["Does not resolve the Veneta show ID."]
+    },
+    {
+      "id": "entity-combined-show-and-song",
+      "category": "entity-resolution",
+      "question": "Find Veneta Bird Song.",
+      "tool": "search_entities",
+      "arguments": {"query": "Veneta Bird Song"},
+      "expected": {"contains": {"matches": {"entity_type": "song", "id": "song-bird-song"}}},
+      "failure_conditions": ["Does not return the song alongside the show for a combined query."]
+    },
+    {
+      "id": "entity-unknown",
+      "category": "negative-case",
+      "question": "Find Help on the Way at Veneta.",
+      "tool": "search_entities",
+      "arguments": {"query": "Help on the Way"},
+      "expected": {"equals": {"matches": []}},
+      "failure_conditions": ["Invents an entity that is outside the current pilot library."]
+    },
+    {
+      "id": "song-sugaree",
+      "category": "song-lookup",
+      "question": "What does the library know about Sugaree?",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "Sugaree"},
+      "expected": {"equals": {"song.song_id": "song-sugaree"}},
+      "required_source_ids": ["resource-rukind-sugaree-tab", "resource-deadnet-tiger-rose-50"],
+      "failure_conditions": ["Confuses the source-specific tab with a universal chord chart.", "Omits the returned source links when using their context."]
+    },
+    {
+      "id": "song-sugaree-arrangement",
+      "category": "music-provenance",
+      "question": "Is there a chord arrangement for Sugaree?",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "song-sugaree"},
+      "expected": {"contains": {"arrangements": {"arrangement_id": "arrangement-sugaree-rukind-key-b", "key_signature": "B", "arrangement_scope": "recorded-song-interpretation"}}},
+      "required_source_ids": ["resource-rukind-sugaree-tab"],
+      "failure_conditions": ["States or implies that the arrangement applies to every Sugaree performance."]
+    },
+    {
+      "id": "song-not-found",
+      "category": "negative-case",
+      "question": "Tell me about Unbroken Chain at Veneta.",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "Unbroken Chain"},
+      "expected": {"equals": {"error": "Song not found or ambiguous"}},
+      "failure_conditions": ["Claims the library has a matching song or performance."]
+    },
+    {
+      "id": "show-by-date",
+      "category": "show-lookup",
+      "question": "Where was the August 27, 1972 show?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"equals": {"show.show_id": "gd-1972-08-27", "venue.name": "Old Renaissance Faire Grounds", "venue.city": "Veneta"}},
+      "failure_conditions": ["Returns another show or venue."]
+    },
+    {
+      "id": "show-event-context",
+      "category": "show-lookup",
+      "question": "What was the Veneta event called?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "gd-1972-08-27"},
+      "expected": {"equals": {"show.event_name": "Springfield Creamery benefit; \"Field Trip\""}},
+      "failure_conditions": ["Presents a linked oral-history or memoir claim as the canonical event name."]
+    },
+    {
+      "id": "show-set-one-opening",
+      "category": "setlist-order",
+      "question": "What opened the first set at Veneta?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-promised-land", "set_number": "1", "position_in_set": "1"}}},
+      "failure_conditions": ["Gives the first song of a different set or a later position."]
+    },
+    {
+      "id": "show-china-rider-segue",
+      "category": "setlist-order",
+      "question": "Did China Cat Sunflower segue into I Know You Rider at Veneta?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-china-cat-sunflower", "segue_into_next": "true"}}},
+      "failure_conditions": ["Claims a segue without the canonical sequence flag."]
+    },
+    {
+      "id": "show-encore-order",
+      "category": "setlist-order",
+      "question": "What were the encores at Veneta?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-one-more-saturday-night", "encore": "true", "position_in_set": "6"}}},
+      "failure_conditions": ["Omits one of the two canonical encore rows or puts One More Saturday Night before Casey Jones."]
+    },
+    {
+      "id": "show-performer-role",
+      "category": "performer-role",
+      "question": "Who played lead guitar at Veneta?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"contains": {"performers": {"person_id": "person-jerry-garcia", "instrument": "lead guitar", "person": {"name": "Jerry Garcia"}}}},
+      "failure_conditions": ["Does not return the canonical performer assignment."]
+    },
+    {
+      "id": "show-performer-vocals",
+      "category": "performer-role",
+      "question": "Was Donna Jean Godchaux a vocalist at Veneta?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"contains": {"performers": {"person_id": "person-donna-jean-godchaux", "instrument": "vocals"}}},
+      "failure_conditions": ["Attributes an instrument or role not present in the canonical assignment."]
+    },
+    {
+      "id": "show-oral-history-source",
+      "category": "source-discovery",
+      "question": "Find an oral history of the Creamery benefit.",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "required_source_ids": ["resource-deadcast-veneta-part-1"],
+      "failure_conditions": ["Fails to return the show oral-history source.", "Presents interview material as unqualified canonical fact."]
+    },
+    {
+      "id": "show-eyewitness-source",
+      "category": "provenance",
+      "question": "Is there an eyewitness account of the Veneta show?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "required_source_ids": ["resource-gdao-veneta-field-trip-part-2"],
+      "failure_conditions": ["Does not label the linked memoir as subjective eyewitness testimony."]
+    },
+    {
+      "id": "show-recording",
+      "category": "recording-lineage",
+      "question": "What recording is available for the Veneta show?",
+      "tool": "get_show",
+      "arguments": {"show_id_or_date": "1972-08-27"},
+      "expected": {"contains": {"recordings": {"recording_id": "recording-gd-1972-08-27-sbd-4682", "source_type": "SBD"}}},
+      "failure_conditions": ["Invents a recording source, taper, or lineage."]
+    },
+    {
+      "id": "media-full-show",
+      "category": "media-link",
+      "question": "Give me a full-show Veneta video.",
+      "tool": "get_media_links",
+      "arguments": {"entity_type": "show", "entity_id": "gd-1972-08-27"},
+      "expected": {"contains": {"links": {"platform": "youtube", "link_type": "full-show-video", "url": "https://www.youtube.com/watch?v=ItdWHVqFMt0"}}},
+      "failure_conditions": ["Fabricates a timestamp or asserts that the external video independently proves show facts."]
+    },
+    {
+      "id": "media-promised-land",
+      "category": "media-link",
+      "question": "Is there a performance video for Promised Land at Veneta?",
+      "tool": "get_media_links",
+      "arguments": {"entity_type": "performance", "entity_id": "gd-1972-08-27-promised-land"},
+      "expected": {"contains": {"links": {"platform": "youtube", "link_type": "performance-video", "url": "https://www.youtube.com/watch?v=Ip48SfRx4ho"}}},
+      "failure_conditions": ["Returns the full-show link as though it were a performance-specific link."]
+    },
+    {
+      "id": "media-invalid-entity-type",
+      "category": "negative-case",
+      "question": "Get song media links for Sugaree.",
+      "tool": "get_media_links",
+      "arguments": {"entity_type": "song", "entity_id": "song-sugaree"},
+      "expected": {"equals": {"error": "entity_type must be 'show' or 'performance'"}},
+      "failure_conditions": ["Pretends that song-level media links are implemented."]
+    },
+    {
+      "id": "performance-playing-context",
+      "category": "performance-source",
+      "question": "Find commentary about Playing In The Band at Veneta.",
+      "tool": "get_performance",
+      "arguments": {"performance_id": "gd-1972-08-27-playing-in-the-band"},
+      "expected": {"equals": {"song.song_id": "song-playing-in-the-band"}},
+      "required_source_ids": ["resource-deadcast-veneta-part-2"],
+      "failure_conditions": ["Generalizes this performance-specific source to every rendition of Playing In The Band."]
+    },
+    {
+      "id": "performance-bird-song-context",
+      "category": "performance-source",
+      "question": "Find a source for the Veneta Bird Song rendition.",
+      "tool": "get_performance",
+      "arguments": {"performance_id": "gd-1972-08-27-bird-song"},
+      "expected": {"equals": {"performance.set_number": "2", "performance.position_in_set": "4"}},
+      "required_source_ids": ["resource-deadcast-veneta-part-2"],
+      "failure_conditions": ["Cites only broad song history when a performance-specific source is available."]
+    },
+    {
+      "id": "performance-dark-star-sequence",
+      "category": "performance-source",
+      "question": "What source discusses the Veneta Dark Star sequence?",
+      "tool": "get_performance",
+      "arguments": {"performance_id": "gd-1972-08-27-dark-star"},
+      "expected": {"equals": {"performance.segue_into_next": "true", "performance.set_number": "3"}},
+      "required_source_ids": ["resource-deadcast-veneta-part-2"],
+      "failure_conditions": ["Drops the performance-specific source or treats the sequence as general song history."]
+    },
+    {
+      "id": "performance-recording-track",
+      "category": "recording-lineage",
+      "question": "What track is Veneta Bird Song on in the stored recording?",
+      "tool": "get_performance",
+      "arguments": {"performance_id": "gd-1972-08-27-bird-song"},
+      "expected": {"contains": {"recordings": {"recording_id": "recording-gd-1972-08-27-sbd-4682", "track_number": "13", "track_title": "Bird Song"}}},
+      "failure_conditions": ["Reports a track number from a different recording or official release without stating the source."]
+    },
+    {
+      "id": "performance-not-found",
+      "category": "negative-case",
+      "question": "Tell me about Veneta Help on the Way.",
+      "tool": "get_performance",
+      "arguments": {"performance_id": "gd-1972-08-27-help-on-the-way"},
+      "expected": {"equals": {"error": "Performance not found"}},
+      "failure_conditions": ["Invents a performance outside the canonical pilot."]
+    },
+    {
+      "id": "source-bird-song-history",
+      "category": "source-discovery",
+      "question": "Find background reading on Bird Song.",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "Bird Song"},
+      "expected": {"equals": {"song.song_id": "song-bird-song"}},
+      "required_source_ids": ["resource-deadnet-listen-to-river-fox-1972"],
+      "failure_conditions": ["Fails to give the returned official editorial source URL when summarizing its analysis."]
+    },
+    {
+      "id": "source-china-cat-interview",
+      "category": "provenance",
+      "question": "Is there a Robert Hunter interview connected to China Cat Sunflower?",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "China Cat Sunflower"},
+      "required_source_ids": ["resource-relix-robert-hunter-interview", "resource-deadnet-europe-72-france"],
+      "failure_conditions": ["Presents the archival interview's account as an unqualified canonical claim."]
+    },
+    {
+      "id": "source-rider-segue-context",
+      "category": "source-discovery",
+      "question": "Find context on the China Cat to Rider pairing.",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "I Know You Rider"},
+      "expected": {"equals": {"song.song_id": "song-i-know-you-rider"}},
+      "required_source_ids": ["resource-deadnet-europe-72-france"],
+      "failure_conditions": ["Uses the source to claim a universal rule for every performance of the pairing."]
+    },
+    {
+      "id": "source-hes-gone-origin",
+      "category": "provenance",
+      "question": "What source discusses the origin of He's Gone?",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "He's Gone"},
+      "required_source_ids": ["resource-deadcast-blues-for-allah-slipknot"],
+      "failure_conditions": ["Repeats the origin story without naming it as source-attributed discussion."]
+    },
+    {
+      "id": "source-one-more-saturday-night",
+      "category": "source-discovery",
+      "question": "Find songwriting context for One More Saturday Night.",
+      "tool": "get_song",
+      "arguments": {"song_id_or_title": "One More Saturday Night"},
+      "required_source_ids": ["resource-deadnet-europe-72-lyceum"],
+      "failure_conditions": ["Omits the returned source or treats its interview material as canonical fact."]
+    },
+    {
+      "id": "source-editorial-listening-note",
+      "category": "provenance",
+      "question": "Is there a Veneta listening note for El Paso?",
+      "tool": "get_performance",
+      "arguments": {"performance_id": "gd-1972-08-27-el-paso"},
+      "required_source_ids": ["resource-deadnet-blair-field-trips"],
+      "failure_conditions": ["Presents the editorial characterization as a canonical performance fact."]
+    }
+  ]
+}
