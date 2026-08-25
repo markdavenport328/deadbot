@@ -14,6 +14,14 @@ def test_model_guided_composition_is_enabled_by_default():
     assert settings.composer_max_blocks == 8
 
 
+def test_blank_numeric_environment_values_use_defaults(monkeypatch):
+    monkeypatch.setenv("DEADBOT_MAX_TOOL_ROUNDS", "")
+    monkeypatch.setenv("DEADBOT_COMPOSER_MAX_BLOCKS", "")
+    settings = Settings.from_env()
+    assert settings.max_tool_rounds == 8
+    assert settings.composer_max_blocks == 8
+
+
 def test_openai_is_a_registered_alternative_provider():
     provider = create_model_provider(
         Settings(model_provider="openai", openai_model="gpt-test", openai_api_key="test-key")

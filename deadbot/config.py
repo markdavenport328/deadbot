@@ -16,6 +16,14 @@ def _as_bool(value: str | None, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _as_int(value: str | None, default: int) -> int:
+    """Parse an integer environment value, treating blank values as unset."""
+
+    if value is None or not value.strip():
+        return default
+    return int(value)
+
+
 @dataclass(frozen=True)
 class Settings:
     """Configuration shared by the graph and model-provider layer."""
@@ -41,7 +49,7 @@ class Settings:
             openai_model=getenv("DEADBOT_OPENAI_MODEL", "gpt-4o-mini"),
             openai_base_url=getenv("DEADBOT_OPENAI_BASE_URL") or None,
             openai_api_key=getenv("OPENAI_API_KEY"),
-            max_tool_rounds=int(getenv("DEADBOT_MAX_TOOL_ROUNDS", "8")),
+            max_tool_rounds=_as_int(getenv("DEADBOT_MAX_TOOL_ROUNDS"), 8),
             composer_enabled=_as_bool(getenv("DEADBOT_COMPOSER_ENABLED"), True),
-            composer_max_blocks=int(getenv("DEADBOT_COMPOSER_MAX_BLOCKS", "8")),
+            composer_max_blocks=_as_int(getenv("DEADBOT_COMPOSER_MAX_BLOCKS"), 8),
         )
