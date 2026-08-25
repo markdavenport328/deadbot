@@ -3,10 +3,7 @@
   "buildCommand": "npm --prefix web ci && npm --prefix web run build",
   "functions": {
     "app.py": {
-      "includeFiles": [
-        "data/canonical/**/*.csv",
-        "web/dist/**"
-      ],
+      "includeFiles": "{data/canonical/**/*.csv,web/dist/**}",
       "maxDuration": 60
     }
   }
