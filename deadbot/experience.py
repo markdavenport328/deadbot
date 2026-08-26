@@ -301,9 +301,14 @@ def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
     )
 
 
-def _entity_card_from_song(song: dict[str, Any]) -> EntityCardBlock:
+def _entity_card_from_song(song: dict[str, Any]) -> EntityCardBlock | None:
     source_id = f"canonical:{song['song_id']}"
     details = [f"Original artist: {song['original_artist']}"] if song.get("original_artist") else []
+    # The page already carries the song title. A title-only card adds no useful
+    # information, so keep it out of the composed page while retaining the
+    # canonical entity in the retrieval result.
+    if not details:
+        return None
     return EntityCardBlock(
         type="entity_card",
         entity_type="song",
@@ -370,7 +375,7 @@ def _performance_list(song: dict[str, Any], performances: list[dict[str, Any]], 
         return None
     return PerformanceListBlock(
         type="performance_list",
-        title="Known performances in the current library",
+        title="Known performances",
         song_id=song["song_id"],
         known_count=len(items),
         items=items[:20],
@@ -491,7 +496,11 @@ def compose_experience_response(
 
     for payload in _tool_payloads(latest_turn_messages):
         if "song" in payload and isinstance(payload["song"], dict):
-            add_entity(_entity_card_from_song(payload["song"]))
+            if title == "Deadbot":
+                title = payload["song"].get("title") or title
+            song_card = _entity_card_from_song(payload["song"])
+            if song_card:
+                add_entity(song_card)
             add_credits(payload)
             performances = payload.get("performances")
             if isinstance(performances, list):
@@ -568,15 +577,6 @@ def compose_experience_response(
     if chord_items:
         blocks.append(ResourceListBlock(type="resource_list", title="Chord charts and arrangements", items=chord_items[:8]))
     blocks.extend(arrangements[:3])
-    contextual_source_ids = [source.source_id for source in sources if source.kind == "contextual_resource"]
-    if contextual_source_ids:
-        blocks.append(
-            ProvenanceNoteBlock(
-                type="provenance_note",
-                text="External resources are source-attributed context. They are not canonical proof beyond their recorded metadata.",
-                source_ids=contextual_source_ids[:8],
-            )
-        )
     if not blocks:
         blocks.append(
             GapStateBlock(
@@ -585,6 +585,15 @@ def compose_experience_response(
             )
         )
     blocks.append(_coverage_block(store))
+
+    # This is the conservative fallback used when model composition is
+    # disabled or unavailable. Coverage is still a validated candidate for a
+    # question that asks about scope, but it should not fill ordinary pages.
+    visible_indexes = [
+        index
+        for index, block in enumerate(blocks)
+        if block.type not in {"coverage", "provenance_note"}
+    ]
 
     return ExperienceResponse(
         thread_id=thread_id,
@@ -595,9 +604,9 @@ def compose_experience_response(
         layout=[
             LayoutSection(
                 region="primary" if start == 0 else "supporting",
-                block_indexes=list(range(start, min(start + 8, len(blocks)))),
+                block_indexes=visible_indexes[start : start + 8],
             )
-            for start in range(0, len(blocks), 8)
+            for start in range(0, len(visible_indexes), 8)
         ],
         sources=sources,
     )

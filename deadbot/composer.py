@@ -48,6 +48,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "scope": block.entity_type,
             "title": block.title,
             "details": block.details,
+            "redundant_when_title_only": not block.subtitle and not block.details,
             "helps_with": "identity and canonical facts about this entity",
             "provenance": "canonical",
         }
@@ -137,9 +138,9 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
     """Resolve model choices to server-owned blocks and a browser-safe layout.
 
     The deterministic work here is intentionally narrow: discard invalid
-    references, prevent duplicated blocks, and retain a provenance note when a
-    selected external contextual block needs one. The model decides relevance,
-    omission, and the arrangement of valid blocks.
+    references and prevent duplicated blocks. The model decides relevance,
+    omission, and the arrangement of valid blocks; source metadata remains in
+    the response contract without forcing a visible explanation onto the page.
     """
 
     selected_indexes: list[int] = []
@@ -154,15 +155,6 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
             resolved_sections.append((section.region, section_indexes))
     if not selected_indexes:
         return response
-
-    selected_types = {response.blocks[index].type for index in selected_indexes}
-    requires_provenance = bool(selected_types & {"resource_list", "arrangement"})
-    if requires_provenance:
-        for index, block in enumerate(response.blocks):
-            if block.type == "provenance_note" and index not in selected_indexes:
-                selected_indexes.append(index)
-                resolved_sections.append(("context", [index]))
-                break
 
     selected_blocks = [response.blocks[index] for index in selected_indexes]
     original_to_selected = {original: selected for selected, original in enumerate(selected_indexes)}
@@ -203,6 +195,9 @@ class ModelGuidedComposer:
             "Reason from the question, answer, coverage, candidate scope, and provenance. "
             "Select the smallest useful set of candidates and arrange them in primary, supporting, context, or media regions. "
             "Omission is the default: including an irrelevant candidate is worse than omitting optional material. Most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
+            "The page title already identifies the main song, show, or performance. Omit an entity card when it only repeats that title and has no additional details. "
+            "Do not select a provenance note merely because a resource is present; provenance is retained in the response metadata and should not become a visible page section unless the user explicitly asks about sources or attribution. "
+            "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
             "Do not choose learning, media, or reading material unless it genuinely helps the question. "
             "For a direct factual, count, date, setlist, or coverage question, select only the factual entity/performance/coverage evidence needed to answer it; omit chord arrangements, contextual resource lists, and media unless the user explicitly asks for them. "
             "For a count or scope-wide question, do not present partial library evidence as a historical total; use the coverage candidate when it explains that limit. "

@@ -107,6 +107,21 @@ def test_composer_returns_a_safe_gap_when_no_tools_return_data():
     assert response.sources == []
 
 
+def test_title_only_song_cards_do_not_repeat_the_page_title():
+    store = CanonicalStore()
+    song = store.resolve_song("Ripple")
+    assert song
+    response = compose_experience_response(
+        question="When was Ripple first performed?",
+        thread_id="web-test",
+        messages=[tool_message(store.song_context(song)), AIMessage(content="Ripple was first performed on August 18, 1970.")],
+        store=store,
+    )
+    assert response.title == "Ripple"
+    assert not any(block.type == "entity_card" for block in response.blocks)
+    assert all(block.type != "coverage" for section in response.layout for index in section.block_indexes for block in [response.blocks[index]])
+
+
 def test_coverage_block_describes_the_full_current_library_range():
     store = CanonicalStore()
     response = compose_experience_response(
@@ -157,7 +172,7 @@ def test_only_recognized_provider_urls_receive_embed_identifiers():
     assert _embed_details("youtube", "https://example.com/watch?v=Ip48SfRx4ho") == (None, None)
 
 
-def test_composition_plan_can_only_reorder_existing_blocks_and_keeps_provenance():
+def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_provenance():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
     assert song
@@ -167,15 +182,14 @@ def test_composition_plan_can_only_reorder_existing_blocks_and_keeps_provenance(
         messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree is in the library.")],
         store=store,
     )
-    provenance_index = next(index for index, block in enumerate(response.blocks) if block.type == "provenance_note")
     resource_index = next(index for index, block in enumerate(response.blocks) if block.type == "resource_list")
     composed = apply_composition_plan(
         response,
         CompositionPlan(sections=[CompositionSection(region="primary", candidate_indexes=[999, resource_index, 0, 0])]),
     )
-    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type, "provenance_note"]
-    assert composed.blocks[-1] == response.blocks[provenance_index]
-    assert [section.region for section in composed.layout] == ["primary", "context"]
+    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
+    assert all(block.type != "provenance_note" for block in composed.blocks)
+    assert [section.region for section in composed.layout] == ["primary"]
 
 
 def test_an_invalid_composition_plan_uses_the_deterministic_candidate_order():
@@ -208,7 +222,7 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     )
     composer = ModelGuidedComposer(selector=stub)
     composed = composer.compose("Tell me about Sugaree.", response)
-    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type, "provenance_note"]
+    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
     assert len(stub.inputs) == 1
 
 

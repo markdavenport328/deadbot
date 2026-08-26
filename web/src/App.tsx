@@ -58,7 +58,6 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
 function Block({ block, sources }: { block: ExperienceBlock; sources: SourceReference[] }) {
   switch (block.type) {
     case "entity_card": {
-      const source = sourceFor(sources, block.source_id);
       return (
         <article className="card entity-card">
           <p className="eyebrow">{block.entity_type}</p>
@@ -69,7 +68,6 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
               {block.details.map((detail) => <li key={detail}>{detail}</li>)}
             </ul>
           )}
-          {source && <p className="source-label">{source.label}</p>}
         </article>
       );
     }
@@ -198,17 +196,12 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      <header className="masthead">
-        <a className="wordmark" href="/">Deadbot</a>
-        <p>Grateful Dead knowledge, listening, and context.</p>
-      </header>
-
       <div className="workspace">
         <aside className="conversation-pane" aria-label="Conversation">
-          <div className="conversation-intro">
-            <h1>Follow the thread.</h1>
-            <p>Ask a question, then refine it. Deadbot retains this conversation as context.</p>
-          </div>
+          <header className="masthead">
+            <a className="wordmark" href="/">Deadbot</a>
+            <p>Grateful Dead knowledge, listening, and context</p>
+          </header>
 
           <section className="thread" aria-label="Deadbot conversation" aria-live="polite">
             {!response && (
@@ -251,13 +244,10 @@ export default function App() {
           {response ? (
             <>
               <div className="content-heading">
-                <p className="eyebrow">Composed from the latest turn</p>
                 <h1>{response.title}</h1>
-                <p>Explore the grounded details, media, and sources connected to this answer.</p>
               </div>
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
-                  <p className="region-label">{section.region}</p>
                   <div className="block-grid">
                     {section.block_indexes.map((index) => {
                       const block = response.blocks[index];
@@ -271,7 +261,7 @@ export default function App() {
             <div className="content-empty">
               <p className="eyebrow">Composed results</p>
               <h1>Start with a question.</h1>
-              <p>Your short answer will appear in the conversation. The related songs, shows, recordings, media, and source links will appear here.</p>
+              <p>Your short answer will appear in the conversation. Related songs, shows, recordings, and media will appear here.</p>
             </div>
           )}
         </section>
