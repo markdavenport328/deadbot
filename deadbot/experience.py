@@ -39,6 +39,7 @@ class EntityCardBlock(ExperienceModel):
     subtitle: str | None = None
     details: list[str] = Field(default_factory=list, max_length=6)
     source_id: str
+    follow_up: str | None = None
 
 
 class ResourceItem(ExperienceModel):
@@ -60,6 +61,7 @@ class CreditItem(ExperienceModel):
     person_id: str
     name: str
     role: str
+    follow_up: str | None = None
 
 
 class CreditListBlock(ExperienceModel):
@@ -67,6 +69,16 @@ class CreditListBlock(ExperienceModel):
     title: str
     items: list[CreditItem] = Field(min_length=1, max_length=12)
     source_ids: list[str] = Field(min_length=1, max_length=8)
+
+
+class SongOverviewBlock(ExperienceModel):
+    type: Literal["song_overview"]
+    song_id: str
+    title: str
+    original_artist: str | None = None
+    known_performance_count: int
+    credits: list[CreditItem] = Field(default_factory=list, max_length=12)
+    source_ids: list[str] = Field(default_factory=list, max_length=8)
 
 
 class MediaLinkBlock(ExperienceModel):
@@ -82,9 +94,20 @@ class MediaLinkBlock(ExperienceModel):
 
 class PerformanceListItem(ExperienceModel):
     performance_id: str
+    show_id: str
     show_date: str | None = None
+    show_label: str
     set_label: str | None = None
     position_in_set: str | None = None
+    follow_up: str
+
+
+class PerformanceExtremesBlock(ExperienceModel):
+    type: Literal["performance_extremes"]
+    song_id: str
+    title: str
+    first: PerformanceListItem
+    last: PerformanceListItem
 
 
 class PerformanceListBlock(ExperienceModel):
@@ -125,8 +148,10 @@ ExperienceBlock = Annotated[
     EntityCardBlock
     | ResourceListBlock
     | CreditListBlock
+    | SongOverviewBlock
     | MediaLinkBlock
     | PerformanceListBlock
+    | PerformanceExtremesBlock
     | CoverageBlock
     | ArrangementBlock
     | ProvenanceNoteBlock
@@ -316,6 +341,7 @@ def _entity_card_from_song(song: dict[str, Any]) -> EntityCardBlock | None:
         title=song.get("title") or "Untitled song",
         details=details,
         source_id=source_id,
+        follow_up=f"Tell me about {song.get('title') or 'this song'}." if song.get("title") else None,
     )
 
 
@@ -335,6 +361,7 @@ def _entity_card_from_show(payload: dict[str, Any]) -> EntityCardBlock:
         subtitle=venue.get("name") or None,
         details=details,
         source_id=source_id,
+        follow_up=f"Tell me about the show on {show.get('show_date')}." if show.get("show_date") else None,
     )
 
 
@@ -356,21 +383,47 @@ def _entity_card_from_performance(payload: dict[str, Any]) -> EntityCardBlock:
         subtitle="Performance",
         details=details,
         source_id=source_id,
+        follow_up=(
+            f"Tell me about the performance of {song.get('title')} on {show.get('show_date')}."
+            if song.get("title") and show.get("show_date")
+            else None
+        ),
     )
 
 
-def _performance_list(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> PerformanceListBlock | None:
-    items = []
-    for performance in performances:
+def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore) -> list[PerformanceListItem]:
+    def sort_key(performance: dict[str, Any]) -> tuple[str, int]:
         show = store.one("shows", performance.get("show_id", "")) or {}
+        try:
+            position = int(performance.get("position_in_set") or 0)
+        except (TypeError, ValueError):
+            position = 0
+        return (show.get("show_date") or "9999-99-99", position)
+
+    items = []
+    for performance in sorted(performances, key=sort_key):
+        show = store.one("shows", performance.get("show_id", "")) or {}
+        venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
+        show_date = show.get("show_date") or None
+        venue_name = venue.get("name") if venue else None
+        show_label = " — ".join(part for part in [show_date, venue_name] if part) or show.get("show_id") or "Unknown show"
+        follow_up = f"Tell me about the show on {show_date}." if show_date else f"Tell me about the show {show_label}."
         items.append(
             PerformanceListItem(
                 performance_id=performance["performance_id"],
-                show_date=show.get("show_date") or None,
+                show_id=performance.get("show_id", ""),
+                show_date=show_date,
+                show_label=show_label,
                 set_label=performance.get("set_label") or None,
                 position_in_set=performance.get("position_in_set") or None,
+                follow_up=follow_up,
             )
         )
+    return items
+
+
+def _performance_list(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> PerformanceListBlock | None:
+    items = _performance_items(performances, store)
     if not items:
         return None
     return PerformanceListBlock(
@@ -379,6 +432,19 @@ def _performance_list(song: dict[str, Any], performances: list[dict[str, Any]], 
         song_id=song["song_id"],
         known_count=len(items),
         items=items[:20],
+    )
+
+
+def _performance_extremes(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> PerformanceExtremesBlock | None:
+    items = _performance_items(performances, store)
+    if not items:
+        return None
+    return PerformanceExtremesBlock(
+        type="performance_extremes",
+        song_id=song["song_id"],
+        title="First and last performances",
+        first=items[0],
+        last=items[-1],
     )
 
 
@@ -427,6 +493,8 @@ def compose_experience_response(
     credit_items: list[CreditItem] = []
     credit_source_ids: list[str] = []
     arrangements: list[ArrangementBlock] = []
+    song_summary: dict[str, Any] | None = None
+    song_performance_count = 0
     title = "Deadbot"
 
     def add_source(source: SourceReference | None) -> None:
@@ -480,7 +548,14 @@ def compose_experience_response(
             role = writer.get("writer_role", "")
             if not person or not role:
                 continue
-            credit = CreditItem(person_id=person_id, name=person.get("name") or person_id, role=role)
+            credit_name = person.get("name") or person_id
+            song_title = song.get("title") or "this song"
+            credit = CreditItem(
+                person_id=person_id,
+                name=credit_name,
+                role=role,
+                follow_up=f"Tell me more about {credit_name}'s {role} role on {song_title}.",
+            )
             if (credit.person_id, credit.role) not in {(item.person_id, item.role) for item in credit_items}:
                 credit_items.append(credit)
             if not credit_source_ids:
@@ -496,6 +571,8 @@ def compose_experience_response(
 
     for payload in _tool_payloads(latest_turn_messages):
         if "song" in payload and isinstance(payload["song"], dict):
+            if song_summary is None:
+                song_summary = payload["song"]
             if title == "Deadbot":
                 title = payload["song"].get("title") or title
             song_card = _entity_card_from_song(payload["song"])
@@ -504,9 +581,18 @@ def compose_experience_response(
             add_credits(payload)
             performances = payload.get("performances")
             if isinstance(performances, list):
+                song_performance_count = len([item for item in performances if isinstance(item, dict)])
+                performance_items = [item for item in performances if isinstance(item, dict)]
+                performance_extremes = _performance_extremes(
+                    payload["song"],
+                    performance_items,
+                    store,
+                )
+                if performance_extremes:
+                    blocks.append(performance_extremes)
                 performance_list = _performance_list(
                     payload["song"],
-                    [item for item in performances if isinstance(item, dict)],
+                    performance_items,
                     store,
                 )
                 if performance_list:
@@ -563,14 +649,21 @@ def compose_experience_response(
             )
             add_source(source)
 
-    if credit_items:
-        blocks.append(
-            CreditListBlock(
-                type="credit_list",
-                title="Known composition credits",
-                items=credit_items[:12],
-                source_ids=credit_source_ids[:8] or ["canonical:unknown"],
-            )
+    if song_summary is not None:
+        blocks.insert(
+            0,
+            SongOverviewBlock(
+                type="song_overview",
+                song_id=song_summary["song_id"],
+                title=song_summary.get("title") or "Untitled song",
+                original_artist=song_summary.get("original_artist") or None,
+                known_performance_count=song_performance_count,
+                credits=credit_items[:12],
+                source_ids=(
+                    [f"canonical:{song_summary['song_id']}"]
+                    + [source_id for source_id in credit_source_ids if source_id != f"canonical:{song_summary['song_id']}"]
+                )[:8],
+            ),
         )
     if resource_items:
         blocks.append(ResourceListBlock(type="resource_list", title="Further reading and listening", items=resource_items[:8]))

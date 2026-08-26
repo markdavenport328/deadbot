@@ -63,6 +63,29 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "helps_with": "known performance count and performance evidence",
             "provenance": "canonical",
         }
+    if block.type == "performance_extremes":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "first and last known performances of a song",
+            "title": block.title,
+            "first_show": block.first.show_label,
+            "last_show": block.last.show_label,
+            "helps_with": "answering first/last performance questions in one compact component",
+            "provenance": "canonical",
+        }
+    if block.type == "song_overview":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "standard song facts",
+            "title": block.title,
+            "original_artist": block.original_artist,
+            "known_performance_count": block.known_performance_count,
+            "credits": [{"name": credit.name, "role": credit.role} for credit in block.credits],
+            "helps_with": "a compact overview of the song's identity, credits, and known performance count",
+            "provenance": "canonical",
+        }
     if block.type == "coverage":
         return {
             "index": index,
@@ -196,6 +219,7 @@ class ModelGuidedComposer:
             "Select the smallest useful set of candidates and arrange them in primary, supporting, context, or media regions. "
             "Omission is the default: including an irrelevant candidate is worse than omitting optional material. Most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "The page title already identifies the main song, show, or performance. Omit an entity card when it only repeats that title and has no additional details. "
+            "For a song question, prefer the song_overview block as the standard facts panel. For a first/last performance question, prefer the performance_extremes block, which already combines both endpoints; omit the generic performance_list unless the user asks for the full known list. "
             "Do not select a provenance note merely because a resource is present; provenance is retained in the response metadata and should not become a visible page section unless the user explicitly asks about sources or attribution. "
             "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
             "Do not choose learning, media, or reading material unless it genuinely helps the question. "

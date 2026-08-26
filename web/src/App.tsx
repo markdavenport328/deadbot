@@ -28,6 +28,24 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
   );
 }
 
+function FollowUpButton({
+  prompt,
+  onFollowUp,
+  children,
+  className = "follow-up-button"
+}: {
+  prompt: string;
+  onFollowUp: (prompt: string) => void;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <button type="button" className={className} onClick={() => onFollowUp(prompt)} title={`Ask Deadbot: ${prompt}`}>
+      {children} <span aria-hidden="true">↗</span>
+    </button>
+  );
+}
+
 function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_link" }> }) {
   if (block.embed_kind === "youtube" && block.embed_id) {
     return (
@@ -55,13 +73,25 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
   return null;
 }
 
-function Block({ block, sources }: { block: ExperienceBlock; sources: SourceReference[] }) {
+function Block({
+  block,
+  sources,
+  onFollowUp
+}: {
+  block: ExperienceBlock;
+  sources: SourceReference[];
+  onFollowUp: (prompt: string) => void;
+}) {
   switch (block.type) {
     case "entity_card": {
       return (
         <article className="card entity-card">
           <p className="eyebrow">{block.entity_type}</p>
-          <h2>{block.title}</h2>
+          {block.follow_up ? (
+            <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp} className="card-title-link">
+              <span>{block.title}</span>
+            </FollowUpButton>
+          ) : <h2>{block.title}</h2>}
           {block.subtitle && <p className="subtitle">{block.subtitle}</p>}
           {block.details.length > 0 && (
             <ul className="details">
@@ -71,6 +101,42 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
         </article>
       );
     }
+    case "song_overview":
+      return (
+        <section className="card song-overview">
+          <p className="eyebrow">Song facts</p>
+          <h2>{block.title}</h2>
+          <dl className="song-facts">
+            {block.original_artist && (
+              <div>
+                <dt>Original artist</dt>
+                <dd>{block.original_artist}</dd>
+              </div>
+            )}
+            <div>
+              <dt>Known performances</dt>
+              <dd>{block.known_performance_count}</dd>
+            </div>
+          </dl>
+          {block.credits.length > 0 && (
+            <div className="song-credits">
+              <p className="fact-label">Credits</p>
+              <ul>
+                {block.credits.map((credit) => (
+                  <li key={`${credit.person_id}-${credit.role}`}>
+                    {credit.follow_up ? (
+                      <FollowUpButton prompt={credit.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
+                        <strong>{credit.name}</strong>
+                      </FollowUpButton>
+                    ) : <strong>{credit.name}</strong>}
+                    <span>{credit.role}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      );
     case "resource_list":
       return (
         <section className="card resource-list">
@@ -94,7 +160,11 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
           <ul>
             {block.items.map((item) => (
               <li key={`${item.person_id}-${item.role}`}>
-                <strong>{item.name}</strong>
+                {item.follow_up ? (
+                  <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
+                    <strong>{item.name}</strong>
+                  </FollowUpButton>
+                ) : <strong>{item.name}</strong>}
                 <span>{item.role}</span>
               </li>
             ))}
@@ -119,13 +189,38 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
           <ul>
             {block.items.map((item) => (
               <li key={item.performance_id}>
-                <strong>{item.show_date ?? "Unknown date"}</strong>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <strong>{item.show_label}</strong>
+                </FollowUpButton>
                 {(item.set_label || item.position_in_set) && <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>}
               </li>
             ))}
           </ul>
         </section>
       );
+    case "performance_extremes": {
+      const endpoint = (label: string, item: typeof block.first) => (
+        <div className="performance-endpoint" key={label}>
+          <p className="fact-label">{label}</p>
+          <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+            <strong>{item.show_label}</strong>
+          </FollowUpButton>
+          {(item.set_label || item.position_in_set) && (
+            <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>
+          )}
+        </div>
+      );
+      return (
+        <section className="card performance-extremes">
+          <p className="eyebrow">Performance history</p>
+          <h2>{block.title}</h2>
+          <div className="performance-endpoints">
+            {endpoint("First", block.first)}
+            {endpoint("Last", block.last)}
+          </div>
+        </section>
+      );
+    }
     case "coverage":
       return (
         <aside className="coverage-card">
@@ -147,6 +242,9 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
             </ul>
           )}
           {source?.url && <ExternalLink href={source.url}>Open the source</ExternalLink>}
+          <FollowUpButton prompt={`Tell me more about ${block.title}.`} onFollowUp={onFollowUp}>
+            Ask about this arrangement
+          </FollowUpButton>
         </section>
       );
     }
@@ -164,6 +262,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const activeThreadId = useMemo(threadId, []);
   const threadEnd = useRef<HTMLDivElement>(null);
+  const questionInput = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: "end", behavior: "smooth" });
@@ -192,6 +291,11 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function chooseFollowUp(prompt: string) {
+    setQuestion(prompt);
+    questionInput.current?.focus();
   }
 
   return (
@@ -229,6 +333,7 @@ export default function App() {
               <textarea
                 id="question"
                 aria-label="Question"
+                ref={questionInput}
                 rows={3}
                 placeholder="Ask about a song, show, source, or recording"
                 value={question}
@@ -251,7 +356,14 @@ export default function App() {
                   <div className="block-grid">
                     {section.block_indexes.map((index) => {
                       const block = response.blocks[index];
-                      return block ? <Block key={`${block.type}-${index}`} block={block} sources={response.sources} /> : null;
+                      return block ? (
+                        <Block
+                          key={`${block.type}-${index}`}
+                          block={block}
+                          sources={response.sources}
+                          onFollowUp={chooseFollowUp}
+                        />
+                      ) : null;
                     })}
                   </div>
                 </section>

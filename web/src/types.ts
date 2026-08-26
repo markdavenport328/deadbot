@@ -13,6 +13,7 @@ export type EntityCardBlock = {
   subtitle?: string | null;
   details: string[];
   source_id: string;
+  follow_up?: string | null;
 };
 
 export type ResourceListBlock = {
@@ -35,7 +36,25 @@ export type CreditListBlock = {
     person_id: string;
     name: string;
     role: string;
+    follow_up?: string | null;
   }>;
+  source_ids: string[];
+};
+
+export type SongCredit = {
+  person_id: string;
+  name: string;
+  role: string;
+  follow_up?: string | null;
+};
+
+export type SongOverviewBlock = {
+  type: "song_overview";
+  song_id: string;
+  title: string;
+  original_artist?: string | null;
+  known_performance_count: number;
+  credits: SongCredit[];
   source_ids: string[];
 };
 
@@ -57,10 +76,21 @@ export type PerformanceListBlock = {
   known_count: number;
   items: Array<{
     performance_id: string;
+    show_id: string;
     show_date?: string | null;
+    show_label: string;
     set_label?: string | null;
     position_in_set?: string | null;
+    follow_up: string;
   }>;
+};
+
+export type PerformanceExtremesBlock = {
+  type: "performance_extremes";
+  song_id: string;
+  title: string;
+  first: PerformanceListBlock["items"][number];
+  last: PerformanceListBlock["items"][number];
 };
 
 export type CoverageBlock = {
@@ -93,8 +123,10 @@ export type ExperienceBlock =
   | EntityCardBlock
   | ResourceListBlock
   | CreditListBlock
+  | SongOverviewBlock
   | MediaLinkBlock
   | PerformanceListBlock
+  | PerformanceExtremesBlock
   | CoverageBlock
   | ArrangementBlock
   | ProvenanceNoteBlock

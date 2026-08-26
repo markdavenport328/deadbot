@@ -67,9 +67,10 @@ def test_composer_creates_grounded_cards_resources_and_media():
         store=store,
     )
     assert response.thread_id == "web-test"
-    assert {block.type for block in response.blocks} >= {"entity_card", "resource_list", "credit_list", "arrangement", "media_link"}
-    credit_block = next(block for block in response.blocks if block.type == "credit_list")
-    assert any(item.name == "Robert Hunter" and item.role == "lyrics" for item in credit_block.items)
+    assert {block.type for block in response.blocks} >= {"entity_card", "resource_list", "song_overview", "arrangement", "media_link", "performance_extremes"}
+    overview = next(block for block in response.blocks if block.type == "song_overview")
+    assert any(item.name == "Robert Hunter" and item.role == "lyrics" for item in overview.credits)
+    assert overview.known_performance_count == len(store.song_context(song)["performances"])
     assert any(source.kind == "contextual_resource" for source in response.sources)
     assert any(
         block.type == "media_link" and block.embed_kind == "youtube"
@@ -91,9 +92,26 @@ def test_song_credits_are_usable_in_the_experience_response():
         messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree credits are in the library.")],
         store=store,
     )
-    credit_block = next(block for block in response.blocks if block.type == "credit_list")
-    assert {item.name for item in credit_block.items} == {"Jerry Garcia", "Robert Hunter"}
-    assert "resource:resource-musicbrainz-work-search-sugaree" in credit_block.source_ids
+    overview = next(block for block in response.blocks if block.type == "song_overview")
+    assert {item.name for item in overview.credits} == {"Jerry Garcia", "Robert Hunter"}
+    assert "resource:resource-musicbrainz-work-search-sugaree" in overview.source_ids
+
+
+def test_song_response_has_labeled_first_and_last_performances_with_follow_ups():
+    store = CanonicalStore()
+    song = store.resolve_song("Ripple")
+    assert song
+    response = compose_experience_response(
+        question="When was Ripple first played? When last played?",
+        thread_id="web-test",
+        messages=[tool_message(store.song_context(song)), AIMessage(content="Ripple was first and last played on the dates below.")],
+        store=store,
+    )
+    extremes = next(block for block in response.blocks if block.type == "performance_extremes")
+    assert extremes.first.show_date == "1970-08-18"
+    assert extremes.last.show_date == "1988-09-03"
+    assert "show on 1970-08-18" in extremes.first.follow_up
+    assert "—" in extremes.first.show_label
 
 
 def test_composer_returns_a_safe_gap_when_no_tools_return_data():
