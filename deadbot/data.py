@@ -136,7 +136,35 @@ class CanonicalStore:
             if assignment["show_id"] != show_id:
                 continue
             person = people.get(assignment["person_id"])
-            performers.append({**assignment, "person": person})
+            # Keep the retrieval packet compact: source provenance lives in the
+            # canonical CSV notes and raw snapshot, while the model needs the
+            # grounded person, role, and instrument values for show questions.
+            performers.append(
+                {
+                    "person_id": assignment["person_id"],
+                    "role": assignment["role"],
+                    "instrument": assignment["instrument"],
+                    "person": person,
+                }
+            )
+        equipment_by_id = {row["equipment_id"]: row for row in self.rows("equipment")}
+        equipment = []
+        for assignment in self.rows("show_equipment"):
+            if assignment.get("show_id") != show_id:
+                continue
+            item = equipment_by_id.get(assignment.get("equipment_id", ""))
+            if not item:
+                continue
+            equipment.append(
+                {
+                    "equipment_id": item["equipment_id"],
+                    "name": item["name"],
+                    "usage_context": assignment.get("usage_context", ""),
+                    "claim_type": assignment.get("claim_type", ""),
+                    "source_id": assignment.get("source_id", ""),
+                    "source_url": assignment.get("source_url", ""),
+                }
+            )
         recording_summaries = []
         for recording in self.rows("recordings"):
             if recording["show_id"] != show_id:
@@ -154,6 +182,7 @@ class CanonicalStore:
             "venue": venue,
             "performances": performances,
             "performers": performers,
+            "equipment": equipment,
             "resources": self.resources_for("resource_shows", "show_id", show_id),
             "show_links": [row for row in self.rows("show_links") if row["show_id"] == show_id],
             "recordings": recording_summaries,

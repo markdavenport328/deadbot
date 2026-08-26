@@ -23,6 +23,7 @@ canonical show/performance layer:
 | Recording index rows | 362 | Internet Archive | Metadata-only item index; all 86 canonical shows have at least one indexed item |
 | Full recording metadata | 86 | Internet Archive | One representative item per canonical show; raw metadata is preserved |
 | Performance-recording links | 875 | Internet Archive + curated Veneta mapping | Source track title/order aligned to the canonical setlist; durations are metadata-only |
+| Source-reviewed performer assignments | 938 | JerryBase | 86 / 86 canonical shows; 927 performers and 11 guest role/instrument rows |
 
 The bulk normalization is reproducible with
 `scripts/normalize_gdshowsdb_1972.py`. The complete Internet Archive search
@@ -47,7 +48,7 @@ These are real coverage gaps, not inferred missing facts:
 
 1. **Recording detail:** 276 of 362 canonical recording rows remain search-index records. One representative item per show has full item metadata; the remaining indexed items still need selective enrichment.
 2. **Performance-recording links:** 875 links now connect source tracks to canonical performances. The remaining performances have no accepted track mapping, and the links do not claim playback start timestamps.
-3. **Lineups:** performer assignments exist only for Veneta. The 85 other shows need source-reviewed band and guest rows; gdshowsdb does not provide them.
+3. **Lineups:** the 1972 performer pass covers all 86 canonical shows from JerryBase, including five shows with named guests. The same collector now covers 2,268 of 2,358 canonical shows across 1965–1995; 90 held dates remain listed in coverage reports. The source supplies musical roles and instrument strings, but not a complete per-show guitar-model history; named instruments are retained when a source explicitly supplies them.
 4. **Song-source gaps:** 26 songs still lack a resolved Dead.net song page in this pass; 18 songs have no canonical credit rows, and ambiguous title/source matches remain explicitly held for review.
 5. **Lyric-source scope:** 51 songs have external lyric-page links. The remaining songs are instrumentals, jams, unresolved pages, or otherwise need a better source match; no full lyrics are copied into the knowledge base.
 6. **Show review:** JerryBase review data exists only for 1972-08-27. The remaining 85 shows need low-volume review or conflict checks before treating venue/setlist values as cross-source reconciled.

@@ -114,6 +114,70 @@ def test_song_response_has_labeled_first_and_last_performances_with_follow_ups()
     assert "—" in extremes.first.show_label
 
 
+def test_show_response_uses_location_title_and_moves_setlist_and_recordings_to_body():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    assert show
+    response = compose_experience_response(
+        question="Tell me about the 1972-08-27 show.",
+        thread_id="web-test",
+        messages=[
+            tool_message(store.show_context(show)),
+            AIMessage(content="The show was held at the Old Renaissance Faire Grounds.\n\n### Set 1:\n1. Truckin'"),
+        ],
+        store=store,
+    )
+    entity = next(block for block in response.blocks if block.type == "entity_card")
+    setlist = next(block for block in response.blocks if block.type == "show_setlist")
+    recordings = next(block for block in response.blocks if block.type == "recording_list")
+    assert entity.title == "Old Renaissance Faire Grounds"
+    assert entity.subtitle == "1972-08-27"
+    assert len(setlist.sets) == 3
+    assert len(recordings.items) == 7
+    assert response.answer == "The show was held at the Old Renaissance Faire Grounds."
+    assert "Set 1" not in response.conversation[-1].text
+
+
+def test_show_response_exposes_source_reviewed_performers_and_instruments():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-07-16")
+    assert show
+    response = compose_experience_response(
+        question="Who played at the 1972-07-16 show?",
+        thread_id="web-test",
+        messages=[
+            tool_message(store.show_context(show)),
+            AIMessage(content="The show included the Grateful Dead and guest musicians."),
+        ],
+        store=store,
+    )
+    performers = next(block for block in response.blocks if block.type == "performer_list")
+    berry = next(item for item in performers.items if item.name == "Berry Oakley")
+    gregg = next(item for item in performers.items if item.name == "Gregg Allman")
+    assert berry.role == "guest"
+    assert berry.instruments == ["bass", "vocals"]
+    assert gregg.instruments == ["Hammond B3"]
+
+
+def test_show_response_exposes_named_guitars_with_evidence_scope():
+    store = CanonicalStore()
+    show = store.resolve_show("1995-07-09")
+    assert show
+    response = compose_experience_response(
+        question="Which guitars did Jerry play at the final show?",
+        thread_id="web-test",
+        messages=[
+            tool_message(store.show_context(show)),
+            AIMessage(content="Jerry's documented guitars are shown below."),
+        ],
+        store=store,
+    )
+    equipment = next(block for block in response.blocks if block.type == "equipment_list")
+    assert {item.name for item in equipment.items} >= {"Rosebud", "Tiger"}
+    assert {item.claim_type for item in equipment.items} == {"show"}
+    assert any(source.source_id == "source:jerry-garcia-instrument-history" for source in response.sources)
+
+
 def test_composer_returns_a_safe_gap_when_no_tools_return_data():
     response = compose_experience_response(
         question="Tell me about an unknown song.",

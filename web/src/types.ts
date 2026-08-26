@@ -16,6 +16,68 @@ export type EntityCardBlock = {
   follow_up?: string | null;
 };
 
+export type SetlistSong = {
+  performance_id: string;
+  song_id: string;
+  title: string;
+  position_in_set?: string | null;
+  follow_up: string;
+};
+
+export type ShowSetlistBlock = {
+  type: "show_setlist";
+  show_id: string;
+  title: string;
+  sets: Array<{
+    label: string;
+    songs: SetlistSong[];
+  }>;
+};
+
+export type RecordingListBlock = {
+  type: "recording_list";
+  title: string;
+  items: Array<{
+    recording_id: string;
+    title: string;
+    source_type: string;
+    archive_identifier?: string | null;
+    url: string;
+    source_id: string;
+  }>;
+};
+
+export type PerformerListBlock = {
+  type: "performer_list";
+  show_id: string;
+  title: string;
+  items: Array<{
+    person_id: string;
+    name: string;
+    role: "performer" | "guest";
+    instruments: string[];
+    follow_up: string;
+  }>;
+};
+
+export type EquipmentListBlock = {
+  type: "equipment_list";
+  show_id: string;
+  title: string;
+  items: Array<{
+    equipment_id: string;
+    name: string;
+    manufacturer: string;
+    model: string;
+    usage_context: string;
+    claim_type: "show" | "date_range";
+    evidence: string;
+    source_id: string;
+    source_url: string;
+    follow_up: string;
+  }>;
+};
+
 export type ResourceListBlock = {
   type: "resource_list";
   title: string;
@@ -121,6 +183,10 @@ export type GapStateBlock = {
 
 export type ExperienceBlock =
   | EntityCardBlock
+  | ShowSetlistBlock
+  | RecordingListBlock
+  | PerformerListBlock
+  | EquipmentListBlock
   | ResourceListBlock
   | CreditListBlock
   | SongOverviewBlock

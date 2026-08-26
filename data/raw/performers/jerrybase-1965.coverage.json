@@ -1,0 +1,14 @@
+{
+  "source": "jerrybase",
+  "year": 1965,
+  "target_show_count": 12,
+  "collected_show_count": 10,
+  "missing_index_dates": [
+    "1965-10-12",
+    "1965-11-29"
+  ],
+  "held": [
+    "gd-1965-10-12: JerryBase index did not expose 1965-10-12",
+    "gd-1965-11-29: JerryBase index did not expose 1965-11-29"
+  ]
+}

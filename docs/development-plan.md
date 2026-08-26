@@ -196,7 +196,7 @@ Implement deterministic import, foreign-key validation, and a rebuild command. R
 
 ### 7. Expand the 1972 collection responsibly
 
-Use gdshowsdb as the bulk baseline, JerryBase for review, Internet Archive for recordings, and selected sources by fact type. Add data in reviewable batches; preserve raw records and source-specific identifiers. The first bulk pass is complete: 86 shows, 2,229 performances, and 362 recording rows are now canonical; one full Internet Archive metadata record is preserved for each show. The remaining work is track mappings, additional recording detail, lineups, unresolved song credits, and cross-source review.
+Use gdshowsdb as the bulk baseline, JerryBase for review, Internet Archive for recordings, and selected sources by fact type. Add data in reviewable batches; preserve raw records and source-specific identifiers. The first bulk pass is complete: 86 shows, 2,229 performances, and 362 recording rows are now canonical; one full Internet Archive metadata record is preserved for each show. The JerryBase performer pass now adds source-reviewed musicians, guests, and instrument strings for 2,268 of 2,358 canonical shows across 1965–1995. The remaining work is track mappings, additional recording detail, named guitar/equipment history, unresolved song credits, held-date review, and cross-source review.
 
 The year-level pass also established the collection playbook in
 `docs/collection-methodology.md`: enumerate the bounded universe first, run

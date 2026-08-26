@@ -9,6 +9,7 @@ raw HTML, or arbitrary embeds to the client.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterable
 from typing import Annotated, Any, Literal
 from urllib.parse import parse_qs, urlparse
@@ -40,6 +41,76 @@ class EntityCardBlock(ExperienceModel):
     details: list[str] = Field(default_factory=list, max_length=6)
     source_id: str
     follow_up: str | None = None
+
+
+class SetlistSong(ExperienceModel):
+    performance_id: str
+    song_id: str
+    title: str
+    position_in_set: str | None = None
+    follow_up: str
+
+
+class SetlistSection(ExperienceModel):
+    label: str
+    songs: list[SetlistSong] = Field(min_length=1, max_length=40)
+
+
+class ShowSetlistBlock(ExperienceModel):
+    type: Literal["show_setlist"]
+    show_id: str
+    title: str
+    sets: list[SetlistSection] = Field(min_length=1, max_length=4)
+
+
+class RecordingItem(ExperienceModel):
+    recording_id: str
+    title: str
+    source_type: str
+    archive_identifier: str | None = None
+    url: str
+    source_id: str
+
+
+class RecordingListBlock(ExperienceModel):
+    type: Literal["recording_list"]
+    title: str
+    items: list[RecordingItem] = Field(min_length=1, max_length=8)
+
+
+class PerformerItem(ExperienceModel):
+    person_id: str
+    name: str
+    role: Literal["performer", "guest"]
+    instruments: list[str] = Field(min_length=1, max_length=8)
+    follow_up: str
+
+
+class PerformerListBlock(ExperienceModel):
+    type: Literal["performer_list"]
+    show_id: str
+    title: str
+    items: list[PerformerItem] = Field(min_length=1, max_length=24)
+
+
+class EquipmentItem(ExperienceModel):
+    equipment_id: str
+    name: str
+    manufacturer: str
+    model: str
+    usage_context: str
+    claim_type: Literal["show", "date_range"]
+    evidence: str
+    source_id: str
+    source_url: str
+    follow_up: str
+
+
+class EquipmentListBlock(ExperienceModel):
+    type: Literal["equipment_list"]
+    show_id: str
+    title: str
+    items: list[EquipmentItem] = Field(min_length=1, max_length=16)
 
 
 class ResourceItem(ExperienceModel):
@@ -146,6 +217,10 @@ class GapStateBlock(ExperienceModel):
 
 ExperienceBlock = Annotated[
     EntityCardBlock
+    | ShowSetlistBlock
+    | RecordingListBlock
+    | PerformerListBlock
+    | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock
     | SongOverviewBlock
@@ -214,10 +289,23 @@ def _tool_payloads(messages: Iterable[Any]) -> list[dict[str, Any]]:
     return payloads
 
 
-def _final_answer(messages: Iterable[Any]) -> str:
+def _without_setlist(text: str) -> str:
+    """Keep show answers concise when the structured setlist is rendered below."""
+
+    match = re.search(
+        r"^\s*(?:#{1,6}\s*)?set\s+\d+\s*:?.*$",
+        text,
+        flags=re.IGNORECASE | re.MULTILINE,
+    )
+    return text[: match.start()].rstrip() if match else text
+
+
+def _final_answer(messages: Iterable[Any], compact_setlist: bool = False) -> str:
     for message in reversed(list(messages)):
         if getattr(message, "type", None) == "ai":
             answer = _content_text(getattr(message, "content", "")).strip()
+            if compact_setlist:
+                answer = _without_setlist(answer)
             if answer:
                 return answer
     return "I could not produce a grounded answer from the current library."
@@ -237,7 +325,7 @@ def _latest_turn(messages: list[Any]) -> list[Any]:
     return messages
 
 
-def _conversation_turns(messages: Iterable[Any]) -> list[ConversationTurn]:
+def _conversation_turns(messages: Iterable[Any], compact_setlists: bool = False) -> list[ConversationTurn]:
     turns: list[ConversationTurn] = []
     for message in messages:
         message_type = getattr(message, "type", None)
@@ -245,6 +333,8 @@ def _conversation_turns(messages: Iterable[Any]) -> list[ConversationTurn]:
         if not role:
             continue
         text = _content_text(getattr(message, "content", "")).strip()
+        if compact_setlists and role == "assistant":
+            text = _without_setlist(text)
         # Tool-call AI messages normally have no visible content. The browser
         # should never show the tool request itself in the conversation thread.
         if text:
@@ -349,16 +439,17 @@ def _entity_card_from_show(payload: dict[str, Any]) -> EntityCardBlock:
     show = payload["show"]
     venue = payload.get("venue") or {}
     source_id = f"canonical:{show['show_id']}"
-    venue_label = ", ".join(part for part in [venue.get("name"), venue.get("city"), venue.get("state_region")] if part)
-    details = [venue_label] if venue_label else []
+    location = ", ".join(part for part in [venue.get("city"), venue.get("state_region")] if part)
+    details = [location] if location else []
     if show.get("event_name"):
         details.append(show["event_name"])
+    venue_name = venue.get("name") or show.get("show_date") or "Undated show"
     return EntityCardBlock(
         type="entity_card",
         entity_type="show",
         entity_id=show["show_id"],
-        title=show.get("show_date") or "Undated show",
-        subtitle=venue.get("name") or None,
+        title=venue_name,
+        subtitle=show.get("show_date") or None,
         details=details,
         source_id=source_id,
         follow_up=f"Tell me about the show on {show.get('show_date')}." if show.get("show_date") else None,
@@ -448,6 +539,195 @@ def _performance_extremes(song: dict[str, Any], performances: list[dict[str, Any
     )
 
 
+def _show_setlist(payload: dict[str, Any], store: CanonicalStore) -> ShowSetlistBlock | None:
+    show = payload.get("show")
+    performances = payload.get("performances")
+    if not isinstance(show, dict) or not isinstance(performances, list):
+        return None
+
+    grouped: dict[str, list[SetlistSong]] = {}
+    for performance in performances:
+        if not isinstance(performance, dict):
+            continue
+        song = store.one("songs", performance.get("song_id", "")) or {}
+        title = song.get("title")
+        if not title or not performance.get("performance_id"):
+            continue
+        label = performance.get("set_label") or "Set"
+        show_date = show.get("show_date") or ""
+        grouped.setdefault(label, []).append(
+            SetlistSong(
+                performance_id=performance["performance_id"],
+                song_id=performance.get("song_id", ""),
+                title=title,
+                position_in_set=performance.get("position_in_set") or None,
+                follow_up=(
+                    f"Tell me about the performance of {title} on {show_date}."
+                    if show_date
+                    else f"Tell me about the performance of {title}."
+                ),
+            )
+        )
+
+    if not grouped:
+        return None
+    return ShowSetlistBlock(
+        type="show_setlist",
+        show_id=show["show_id"],
+        title="Setlist",
+        sets=[SetlistSection(label=label, songs=songs) for label, songs in grouped.items()],
+    )
+
+
+def _show_performers(payload: dict[str, Any], store: CanonicalStore) -> PerformerListBlock | None:
+    show = payload.get("show")
+    assignments = payload.get("performers")
+    if not isinstance(show, dict) or not isinstance(assignments, list):
+        return None
+
+    grouped: dict[tuple[str, str], PerformerItem] = {}
+    for assignment in assignments:
+        if not isinstance(assignment, dict):
+            continue
+        person_id = assignment.get("person_id")
+        role = assignment.get("role")
+        person = store.one("people", person_id or "")
+        instrument = assignment.get("instrument")
+        if not person_id or role not in {"performer", "guest"} or not person or not instrument:
+            continue
+        key = (person_id, role)
+        item = grouped.get(key)
+        if item is None:
+            name = person.get("name") or person_id
+            show_date = show.get("show_date") or ""
+            item = PerformerItem(
+                person_id=person_id,
+                name=name,
+                role=role,
+                instruments=[instrument],
+                follow_up=(
+                    f"Tell me more about {name} and their role at the {show_date} show."
+                    if show_date
+                    else f"Tell me more about {name} and their role at this show."
+                ),
+            )
+            grouped[key] = item
+        elif instrument not in item.instruments:
+            item.instruments.append(instrument)
+
+    if not grouped:
+        return None
+    return PerformerListBlock(
+        type="performer_list",
+        show_id=show["show_id"],
+        title="Performers",
+        items=list(grouped.values())[:24],
+    )
+
+
+def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
+    show = payload.get("show")
+    equipment = payload.get("equipment")
+    if not isinstance(show, dict) or not isinstance(equipment, list):
+        return None
+
+    items: list[EquipmentItem] = []
+    seen: set[tuple[str, str, str]] = set()
+    show_date = show.get("show_date") or ""
+    for assignment in equipment:
+        if not isinstance(assignment, dict):
+            continue
+        equipment_id = assignment.get("equipment_id")
+        name = assignment.get("name")
+        source_id = assignment.get("source_id")
+        source_url = assignment.get("source_url")
+        usage_context = assignment.get("usage_context") or "stage guitar"
+        claim_type = assignment.get("claim_type")
+        if (
+            not equipment_id
+            or not name
+            or not source_id
+            or not isinstance(source_url, str)
+            or not source_url
+            or claim_type not in {"show", "date_range"}
+        ):
+            continue
+        key = (equipment_id, usage_context, claim_type)
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(
+            EquipmentItem(
+                equipment_id=equipment_id,
+                name=name,
+                manufacturer=assignment.get("manufacturer") or "",
+                model=assignment.get("model") or "",
+                usage_context=usage_context,
+                claim_type=claim_type,
+                evidence=(
+                    "Specific-show evidence from the cited instrument history."
+                    if claim_type == "show"
+                    else "Dated-range evidence from the cited instrument history."
+                ),
+                source_id=source_id,
+                source_url=source_url,
+                follow_up=(
+                    f"Tell me more about {name} at the {show_date} show."
+                    if show_date
+                    else f"Tell me more about {name}."
+                ),
+            )
+        )
+    if not items:
+        return None
+    return EquipmentListBlock(
+        type="equipment_list",
+        show_id=show["show_id"],
+        title="Jerry's guitars",
+        items=items[:16],
+    )
+
+
+def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> RecordingListBlock | None:
+    show = payload.get("show")
+    recordings = (
+        [recording for recording in store.rows("recordings") if recording.get("show_id") == show.get("show_id")]
+        if isinstance(show, dict) and show.get("show_id")
+        else payload.get("recordings")
+    )
+    if not isinstance(recordings, list):
+        return None
+
+    items: list[RecordingItem] = []
+    seen_ids: set[str] = set()
+    for recording in recordings:
+        if not isinstance(recording, dict):
+            continue
+        recording_id = recording.get("recording_id")
+        url = recording.get("source_url")
+        if not recording_id or recording_id in seen_ids or not isinstance(url, str):
+            continue
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            continue
+        seen_ids.add(recording_id)
+        archive_identifier = recording.get("archive_identifier") or None
+        title = recording.get("source_description") or f"{recording.get('source_type', 'Audio')} recording"
+        items.append(
+            RecordingItem(
+                recording_id=recording_id,
+                title=title,
+                source_type=recording.get("source_type") or "Recording",
+                archive_identifier=archive_identifier,
+                url=url,
+                source_id=f"recording:{recording_id}",
+            )
+        )
+    if not items:
+        return None
+    return RecordingListBlock(type="recording_list", title="Recordings", items=items[:8])
+
+
 def _coverage_block(store: CanonicalStore) -> CoverageBlock:
     dated_shows = [show for show in store.rows("shows") if show.get("show_date", "")]
     years = sorted({show["show_date"][:4] for show in dated_shows})
@@ -495,6 +775,7 @@ def compose_experience_response(
     arrangements: list[ArrangementBlock] = []
     song_summary: dict[str, Any] | None = None
     song_performance_count = 0
+    has_show_setlist = False
     title = "Deadbot"
 
     def add_source(source: SourceReference | None) -> None:
@@ -599,6 +880,37 @@ def compose_experience_response(
                     blocks.append(performance_list)
         if "show" in payload and isinstance(payload["show"], dict):
             add_entity(_entity_card_from_show(payload))
+            performer_list = _show_performers(payload, store)
+            if performer_list:
+                blocks.append(performer_list)
+            equipment_list = _show_equipment(payload)
+            if equipment_list:
+                blocks.append(equipment_list)
+                for item in equipment_list.items:
+                    add_source(
+                        SourceReference(
+                            source_id=item.source_id,
+                            kind="contextual_resource",
+                            label="Jerry Garcia Instrument History",
+                            url=item.source_url,
+                        )
+                    )
+            show_setlist = _show_setlist(payload, store)
+            if show_setlist:
+                has_show_setlist = True
+                blocks.append(show_setlist)
+            recording_list = _recording_list(payload, store)
+            if recording_list:
+                for item in recording_list.items:
+                    add_source(
+                        SourceReference(
+                            source_id=item.source_id,
+                            kind="contextual_resource",
+                            label=item.source_type,
+                            url=item.url,
+                        )
+                    )
+                blocks.append(recording_list)
         if "performance" in payload and isinstance(payload["performance"], dict):
             add_entity(_entity_card_from_performance(payload))
         resources = payload.get("resources")
@@ -691,8 +1003,8 @@ def compose_experience_response(
     return ExperienceResponse(
         thread_id=thread_id,
         title=title,
-        answer=_final_answer(latest_turn_messages),
-        conversation=_conversation_turns(message_list),
+        answer=_final_answer(latest_turn_messages, compact_setlist=has_show_setlist),
+        conversation=_conversation_turns(message_list, compact_setlists=has_show_setlist),
         blocks=blocks,
         layout=[
             LayoutSection(

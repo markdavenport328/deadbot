@@ -29,6 +29,28 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Potential canonical entities populated: Shows, venues, songs, performances, and segues.
 - Known limitations: The source must still be reconciled against the canonical model and independently reviewed where it conflicts with other evidence.
 
+## JerryBase performer enrichment
+
+- What it provides: Event-level musicians, guest musicians, source instrument strings, and event identifiers for Grateful Dead shows.
+- Access method: Public event index and event pages; the collector stores compact JSONL evidence and does not copy full page contents.
+- Structured fields: Event date, venue, billed act, musician/guest display name, and instrument description.
+- Coverage: Snapshots now cover 2,268 of 2,358 canonical shows across 1965–1995. The 90 held shows are recorded in year-specific coverage reports; the collector accepts the full range through its `--all` option.
+- Authority / reliability: Source-reviewed enrichment for who and what instrument the event page lists; it is not used to infer a standing band roster or a named guitar when the page does not say one.
+- Licensing / usage considerations: Preserve concise metadata and source URLs only; review site terms before broader redistribution.
+- Potential canonical entities populated: People and show-performer role/instrument assignments; future source-specific instrument details when explicitly tied to an event.
+- Known limitations: Same-date event selection requires venue reconciliation; unidentified and question-marked source names stay raw and are not promoted. JerryBase's standard musician field generally gives musical roles rather than named guitar models, so show-specific Wolf/Tiger/Rosebud assignments require a separate equipment-history source.
+
+## Jerry Garcia guitar-history enrichment
+
+- What it provides: Named guitar identities and dated range or specific-show claims for instruments Jerry Garcia played.
+- Access method: Public instrument-history article, preserved as compact claim metadata with a content hash rather than copied full page text.
+- Structured fields: Equipment entity, manufacturer/model, show link, usage context, evidence scope, source note, and source URL.
+- Coverage: 2,249 links across the canonical 1965–1995 show set from 31 explicit source claims.
+- Authority / reliability: Secondary research source that states its claims are confirmed through photographic and video evidence; it is distinct from JerryBase's event-level lineup data.
+- Licensing / usage considerations: Store concise attributed metadata and source URLs only; do not reproduce the source article or images.
+- Potential canonical entities populated: Named equipment entities and show-equipment relationships.
+- Known limitations: Date ranges do not imply exclusivity, and the source is not a complete song-by-song or set-by-set equipment log. Ambiguous or non-Grateful Dead side-project claims remain out of the canonical show links.
+
 ## Internet Archive Grateful Dead collection
 
 - What it provides: Recording-item metadata, identifiers, source descriptions, lineage, taper/transfer information, collection status, and file/track metadata.

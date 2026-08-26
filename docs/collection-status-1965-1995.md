@@ -1,6 +1,6 @@
 # Full show and setlist baseline status
 
-Updated 2026-08-25.
+Updated 2026-08-26.
 
 The complete `gdshowsdb` year range represented by this project is now
 preserved under `data/raw/shows/gdshowsdb-<year>.jsonl` and normalized into the
@@ -58,7 +58,19 @@ an explanatory note and no fabricated performances.
 The resulting graph has unique IDs and complete performance → show,
 performance → song, and show → venue relationships. Lineups, performance
 timestamps, and source-reviewed corrections remain separate enrichment work;
-recording metadata enrichment is summarized below.
+performer enrichment is summarized below.
+
+## Performer enrichment
+
+JerryBase performer snapshots now cover all 31 canonical years. They contain
+2,268 of 2,358 canonical shows, yielding 26,265 normalized show-performer
+assignments across 277 people: 25,725 performer rows and 540 guest rows. Exact
+source instrument strings are retained in raw JSONL and assignment notes.
+
+The remaining 90 shows are held in year-specific `.coverage.json` reports,
+mostly because JerryBase omits an event date, uses an approximate date, or
+does not expose a unique event page. They are not represented as covered
+lineups.
 
 ## Recording metadata enrichment
 

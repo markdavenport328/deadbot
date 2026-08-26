@@ -90,6 +90,29 @@ def test_show_tool_returns_performer_role_assignments():
     )
 
 
+def test_show_tool_returns_named_guitar_claims():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1995-07-09"}))
+    assert {item["name"] for item in result["equipment"]} >= {"Rosebud", "Tiger"}
+    assert all(item["source_id"] == "source:jerry-garcia-instrument-history" for item in result["equipment"])
+
+
+def test_1972_canonical_shows_have_source_reviewed_performer_assignments():
+    store = CanonicalStore()
+    show_ids = {
+        row["show_id"]
+        for row in store.rows("shows")
+        if row["show_date"].startswith("1972-")
+    }
+    assigned_show_ids = {
+        row["show_id"]
+        for row in store.rows("show_performers")
+        if row["show_id"] in show_ids
+    }
+    assert assigned_show_ids == show_ids
+    assert any(row["role"] == "guest" for row in store.rows("show_performers"))
+
+
 def test_show_tool_returns_linkable_official_release_context():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"}))

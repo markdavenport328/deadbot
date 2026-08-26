@@ -1,0 +1,14 @@
+{
+  "source": "jerrybase",
+  "year": 1966,
+  "target_show_count": 113,
+  "collected_show_count": 110,
+  "missing_index_dates": [
+    "1966-01-01"
+  ],
+  "held": [
+    "gd-1966-01-01: JerryBase index did not expose 1966-01-01",
+    "gd-1966-03-03-0: 2 JerryBase candidates after venue match",
+    "gd-1966-03-03-1: 2 JerryBase candidates after venue match"
+  ]
+}

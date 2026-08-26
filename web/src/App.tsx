@@ -40,7 +40,7 @@ function FollowUpButton({
   className?: string;
 }) {
   return (
-    <button type="button" className={className} onClick={() => onFollowUp(prompt)} title={`Ask Deadbot: ${prompt}`}>
+    <button type="button" className={`follow-up-button ${className}`} onClick={() => onFollowUp(prompt)} title={`Ask Deadbot: ${prompt}`}>
       {children} <span aria-hidden="true">↗</span>
     </button>
   );
@@ -101,6 +101,81 @@ function Block({
         </article>
       );
     }
+    case "show_setlist":
+      return (
+        <section className="card show-setlist">
+          <p className="eyebrow">Setlist</p>
+          <h2>{block.title}</h2>
+          <div className="setlist-sections">
+            {block.sets.map((set) => (
+              <div className="setlist-section" key={set.label}>
+                <p className="fact-label">{set.label}</p>
+                <ol>
+                  {set.songs.map((song) => (
+                    <li key={song.performance_id}>
+                      <FollowUpButton prompt={song.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                        <span>{song.title}</span>
+                      </FollowUpButton>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    case "recording_list":
+      return (
+        <section className="card recording-list">
+          <p className="eyebrow">Listening</p>
+          <h2>{block.title}</h2>
+          <ul>
+            {block.items.map((item) => (
+              <li key={item.recording_id}>
+                <ExternalLink href={item.url}>{item.title}</ExternalLink>
+                <span>{item.source_type}{item.archive_identifier ? ` · ${item.archive_identifier}` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
+    case "performer_list":
+      return (
+        <section className="card performer-list">
+          <p className="eyebrow">Lineup</p>
+          <h2>{block.title}</h2>
+          <ul>
+            {block.items.map((item) => (
+              <li key={`${item.person_id}-${item.role}`}>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
+                  <strong>{item.name}</strong>
+                </FollowUpButton>
+                <span className="performer-role">{item.role === "guest" ? "Guest" : "Performer"}</span>
+                <span>{item.instruments.join(", ")}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
+    case "equipment_list":
+      return (
+        <section className="card equipment-list">
+          <p className="eyebrow">Equipment</p>
+          <h2>{block.title}</h2>
+          <ul>
+            {block.items.map((item) => (
+              <li key={`${item.equipment_id}-${item.usage_context}-${item.evidence}`}>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
+                  <strong>{item.name}</strong>
+                </FollowUpButton>
+                <span>{[item.manufacturer, item.model].filter(Boolean).join(" · ")}</span>
+                <span>{item.usage_context}{item.claim_type === "show" ? " · specific show evidence" : " · dated range evidence"}</span>
+                <ExternalLink href={item.source_url}>Source note</ExternalLink>
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
     case "song_overview":
       return (
         <section className="card song-overview">

@@ -8,6 +8,7 @@ Deadbot should keep the **identity, relationship, ordering, provenance, and acce
 | --- | --- |
 | Songs, people, writers, venues, shows, performances, sets, and segues | These are the stable entities and relationships that support deterministic questions and exploration. |
 | Actual performer/instrument assignments | A show-level relationship answers lineup and guest questions without assuming a fixed band roster. |
+| Named equipment claims | A show-level relationship supports questions about documented Jerry Garcia guitars while retaining date-range versus specific-show evidence. |
 | Recording-source metadata, SHNIDs, Archive identifiers, lineage, and track mappings | Identifies a specific tape/source and connects it to a canonical performance without storing media. |
 | Official releases and release-track-to-performance mappings | Makes questions such as “what official releases contain this performance?” answerable. |
 | External link and resource metadata | Platform, URL, scope, source, relationship type, official status, title, and verified timestamp make media and reference links retrievable. |

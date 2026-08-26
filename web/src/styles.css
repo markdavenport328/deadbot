@@ -52,7 +52,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .card, .provenance, .gap-state { grid-column: span 6; border: 1px solid #465b4b; border-radius: 0.75rem; background: rgba(17, 32, 24, 0.76); padding: 1.35rem; }
 .entity-card { background: #1d3024; }
 .subtitle { color: #bdc9bb; }
-.follow-up-button { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; text-align: left; }
+.follow-up-button { appearance: none; border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0; text-align: left; }
 .follow-up-button:hover, .follow-up-button:focus-visible { text-decoration: underline; text-underline-offset: 0.16em; }
 .card-title-link { display: inline-flex; align-items: baseline; color: #f5efdd; font-family: Georgia, "Times New Roman", serif; font-size: 1.45rem; font-weight: 700; line-height: 1.08; }
 .details { margin: 1rem 0 0; padding: 0; color: #d6ddcf; list-style: none; }
@@ -67,9 +67,13 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .song-credits li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .song-credits li span, .inline-follow-up + span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
 .inline-follow-up { color: #f1efdf; font-weight: 700; }
-.resource-list ul, .chords { margin: 1rem 0 0; padding: 0; list-style: none; }
-.resource-list li + li, .chords li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
-.resource-list li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; }
+.resource-list ul, .recording-list ul, .performer-list ul, .equipment-list ul, .chords { margin: 1rem 0 0; padding: 0; list-style: none; }
+.resource-list li + li, .recording-list li + li, .performer-list li + li, .equipment-list li + li, .chords li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
+.resource-list li span, .recording-list li span, .performer-list li span, .equipment-list li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; }
+.performer-list { background: #233028; }
+.performer-list .performer-role { color: #d0b77a; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
+.equipment-list { background: #2d2b22; }
+.equipment-list li a { display: inline-block; margin-top: 0.45rem; color: #d0b77a; font-size: 0.86rem; }
 .credit-list ul { margin: 1rem 0 0; padding: 0; list-style: none; }
 .credit-list li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
 .credit-list li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
@@ -82,6 +86,14 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .performance-endpoint { border-top: 1px solid #3e5544; padding-top: 0.65rem; }
 .performance-endpoint .fact-label { margin: 0 0 0.55rem; }
 .performance-endpoint > span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
+.show-setlist { grid-column: span 12; }
+.setlist-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; margin-top: 1.2rem; }
+.setlist-section { border-top: 1px solid #3e5544; padding-top: 0.65rem; }
+.setlist-section .fact-label { margin: 0 0 0.55rem; }
+.setlist-section ol { margin: 0; padding-left: 1.45rem; color: #aebbac; }
+.setlist-section li { padding: 0.2rem 0 0.2rem 0.2rem; }
+.setlist-section li::marker { color: #7f9582; }
+.setlist-section li .list-item-follow-up { color: #f1efdf; font-size: 0.95rem; font-weight: 500; }
 .media-card { grid-column: span 12; }
 .media-frame { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 0.45rem; margin: 1rem 0; }
 .spotify-frame { display: block; width: min(100%, 720px); height: 152px; border: 0; border-radius: 0.45rem; margin: 1rem 0; }
@@ -106,4 +118,5 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   button[type="submit"] { width: 100%; }
   .card, .provenance, .gap-state { grid-column: span 12; }
   .song-facts, .performance-endpoints { grid-template-columns: 1fr; }
+  .setlist-sections { grid-template-columns: 1fr; }
 }

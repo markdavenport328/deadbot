@@ -1,0 +1,33 @@
+{
+  "source": "jerrybase",
+  "year": 1968,
+  "target_show_count": 126,
+  "collected_show_count": 104,
+  "missing_index_dates": [
+    "1968-05-30"
+  ],
+  "held": [
+    "gd-1968-03-08-0: 2 JerryBase candidates after venue match",
+    "gd-1968-03-08-1: 2 JerryBase candidates after venue match",
+    "gd-1968-03-09-0: 2 JerryBase candidates after venue match",
+    "gd-1968-03-09-1: 2 JerryBase candidates after venue match",
+    "gd-1968-05-07-0: 2 JerryBase candidates after venue match",
+    "gd-1968-05-07-1: 2 JerryBase candidates after venue match",
+    "gd-1968-05-08-0: 2 JerryBase candidates after venue match",
+    "gd-1968-05-08-1: 2 JerryBase candidates after venue match",
+    "gd-1968-05-09-0: 2 JerryBase candidates after venue match",
+    "gd-1968-05-09-1: 2 JerryBase candidates after venue match",
+    "gd-1968-05-12-0: 2 JerryBase candidates after venue match",
+    "gd-1968-05-12-1: 2 JerryBase candidates after venue match",
+    "gd-1968-05-30: JerryBase index did not expose 1968-05-30",
+    "gd-1968-06-14-0: 3 JerryBase candidates after venue match",
+    "gd-1968-06-14-1: 3 JerryBase candidates after venue match",
+    "gd-1968-06-15-0: 2 JerryBase candidates after venue match",
+    "gd-1968-06-15-1: 2 JerryBase candidates after venue match",
+    "gd-1968-09-01-0: 2 JerryBase candidates after venue match",
+    "gd-1968-11-17-0: 2 JerryBase candidates after venue match",
+    "gd-1968-11-17-1: 2 JerryBase candidates after venue match",
+    "gd-1968-11-30-0: 2 JerryBase candidates after venue match",
+    "gd-1968-11-30-1: 2 JerryBase candidates after venue match"
+  ]
+}

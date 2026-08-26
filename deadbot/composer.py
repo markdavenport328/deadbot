@@ -86,6 +86,48 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "helps_with": "a compact overview of the song's identity, credits, and known performance count",
             "provenance": "canonical",
         }
+    if block.type == "show_setlist":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "ordered songs played at one show",
+            "title": block.title,
+            "set_labels": [section.label for section in block.sets],
+            "song_count": sum(len(section.songs) for section in block.sets),
+            "helps_with": "show setlist questions; each song is a grounded follow-up target",
+            "provenance": "canonical",
+        }
+    if block.type == "recording_list":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "approved recordings for one show",
+            "title": block.title,
+            "recording_count": len(block.items),
+            "helps_with": "listening to recordings of the show",
+            "provenance": "stored recording metadata",
+        }
+    if block.type == "performer_list":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "source-reviewed musicians and guests at one show",
+            "title": block.title,
+            "performer_count": len(block.items),
+            "guest_names": [item.name for item in block.items if item.role == "guest"],
+            "helps_with": "show lineup, guest, role, and instrument questions",
+            "provenance": "source-reviewed canonical assignment",
+        }
+    if block.type == "equipment_list":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "source-dated guitar claims for one show",
+            "title": block.title,
+            "equipment_names": [item.name for item in block.items],
+            "helps_with": "named Jerry Garcia guitar and equipment questions",
+            "provenance": "dated photographic/video-evidence guide",
+        }
     if block.type == "coverage":
         return {
             "index": index,
@@ -220,6 +262,10 @@ class ModelGuidedComposer:
             "Omission is the default: including an irrelevant candidate is worse than omitting optional material. Most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "The page title already identifies the main song, show, or performance. Omit an entity card when it only repeats that title and has no additional details. "
             "For a song question, prefer the song_overview block as the standard facts panel. For a first/last performance question, prefer the performance_extremes block, which already combines both endpoints; omit the generic performance_list unless the user asks for the full known list. "
+            "For a show question, prefer the show_setlist block in the main panel; do not select only the show card when an ordered setlist is available. "
+            "When approved recordings are available for a show, include the recording_list for show overview or listening questions so the main panel exposes the recording links. "
+            "When source-reviewed performers are available for a show, include the performer_list for lineup, guest, musician, or instrument questions; it groups each person with their recorded instruments. "
+            "When named guitar claims are available for a show, include the equipment_list for Jerry Garcia guitar or equipment questions; distinguish date-range evidence from specific-show evidence and do not treat a date-range claim as a complete equipment log. "
             "Do not select a provenance note merely because a resource is present; provenance is retained in the response metadata and should not become a visible page section unless the user explicitly asks about sources or attribution. "
             "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
             "Do not choose learning, media, or reading material unless it genuinely helps the question. "
