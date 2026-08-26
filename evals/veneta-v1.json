@@ -24,9 +24,9 @@
     {
       "id": "entity-unknown",
       "category": "negative-case",
-      "question": "Find Help on the Way at Veneta.",
+      "question": "Find Qzxvplm at Veneta.",
       "tool": "search_entities",
-      "arguments": {"query": "Help on the Way"},
+      "arguments": {"query": "Qzxvplm"},
       "expected": {"equals": {"matches": []}},
       "failure_conditions": ["Invents an entity that is outside the current pilot library."]
     },
@@ -53,9 +53,9 @@
     {
       "id": "song-not-found",
       "category": "negative-case",
-      "question": "Tell me about Unbroken Chain at Veneta.",
+      "question": "Tell me about Qzxvplm at Veneta.",
       "tool": "get_song",
-      "arguments": {"song_id_or_title": "Unbroken Chain"},
+      "arguments": {"song_id_or_title": "Qzxvplm"},
       "expected": {"equals": {"error": "Song not found or ambiguous"}},
       "failure_conditions": ["Claims the library has a matching song or performance."]
     },

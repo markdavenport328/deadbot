@@ -27,6 +27,6 @@ Deadbot should keep the **identity, relationship, ordering, provenance, and acce
 
 - **SQL / graph-like traversal:** factual questions about shows, songs, performances, recordings, releases, musicians, and links.
 - **Document retrieval:** indexed excerpts and metadata for licensed or permitted prose such as interviews, liner notes, reviews, and analysis.
-- **Live tools:** playback providers, weather, maps, astronomy, and current web research.
+- **Live tools:** playback providers, weather, maps, astronomy, and current web research. The current show-context tools cover historical weather, astronomical Sun/Moon data, and clearly labeled date-based astrology.
 
 The rule of thumb: retain enough structured metadata to discover, explain, and link to something; retain the content itself only when its rights, licensing, and product value clearly justify it.

@@ -56,6 +56,19 @@ class ResourceListBlock(ExperienceModel):
     items: list[ResourceItem] = Field(min_length=1, max_length=8)
 
 
+class CreditItem(ExperienceModel):
+    person_id: str
+    name: str
+    role: str
+
+
+class CreditListBlock(ExperienceModel):
+    type: Literal["credit_list"]
+    title: str
+    items: list[CreditItem] = Field(min_length=1, max_length=12)
+    source_ids: list[str] = Field(min_length=1, max_length=8)
+
+
 class MediaLinkBlock(ExperienceModel):
     type: Literal["media_link"]
     title: str
@@ -65,6 +78,27 @@ class MediaLinkBlock(ExperienceModel):
     is_official: bool
     embed_kind: Literal["spotify", "youtube"] | None = None
     embed_id: str | None = None
+
+
+class PerformanceListItem(ExperienceModel):
+    performance_id: str
+    show_date: str | None = None
+    set_label: str | None = None
+    position_in_set: str | None = None
+
+
+class PerformanceListBlock(ExperienceModel):
+    type: Literal["performance_list"]
+    title: str
+    song_id: str
+    known_count: int
+    items: list[PerformanceListItem] = Field(min_length=1, max_length=20)
+
+
+class CoverageBlock(ExperienceModel):
+    type: Literal["coverage"]
+    title: str
+    message: str
 
 
 class ArrangementBlock(ExperienceModel):
@@ -90,7 +124,10 @@ class GapStateBlock(ExperienceModel):
 ExperienceBlock = Annotated[
     EntityCardBlock
     | ResourceListBlock
+    | CreditListBlock
     | MediaLinkBlock
+    | PerformanceListBlock
+    | CoverageBlock
     | ArrangementBlock
     | ProvenanceNoteBlock
     | GapStateBlock,
@@ -110,6 +147,13 @@ class ConversationTurn(ExperienceModel):
     text: str = Field(min_length=1, max_length=8_000)
 
 
+class LayoutSection(ExperienceModel):
+    """A server-validated region in the composed main column."""
+
+    region: Literal["primary", "supporting", "context", "media"]
+    block_indexes: list[int] = Field(min_length=1, max_length=8)
+
+
 class ExperienceResponse(ExperienceModel):
     schema_version: Literal["1"] = "1"
     thread_id: str
@@ -117,6 +161,7 @@ class ExperienceResponse(ExperienceModel):
     answer: str
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
     blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=16)
+    layout: list[LayoutSection] = Field(default_factory=list, max_length=4)
     sources: list[SourceReference] = Field(default_factory=list, max_length=32)
 
 
@@ -309,6 +354,54 @@ def _entity_card_from_performance(payload: dict[str, Any]) -> EntityCardBlock:
     )
 
 
+def _performance_list(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> PerformanceListBlock | None:
+    items = []
+    for performance in performances:
+        show = store.one("shows", performance.get("show_id", "")) or {}
+        items.append(
+            PerformanceListItem(
+                performance_id=performance["performance_id"],
+                show_date=show.get("show_date") or None,
+                set_label=performance.get("set_label") or None,
+                position_in_set=performance.get("position_in_set") or None,
+            )
+        )
+    if not items:
+        return None
+    return PerformanceListBlock(
+        type="performance_list",
+        title="Known performances in the current library",
+        song_id=song["song_id"],
+        known_count=len(items),
+        items=items[:20],
+    )
+
+
+def _coverage_block(store: CanonicalStore) -> CoverageBlock:
+    dated_shows = [show for show in store.rows("shows") if show.get("show_date", "")]
+    years = sorted({show["show_date"][:4] for show in dated_shows})
+    performance_song_ids = {
+        performance.get("song_id")
+        for performance in store.rows("performances")
+        if performance.get("song_id")
+    }
+    if years:
+        year_range = f"{years[0]}–{years[-1]}"
+    else:
+        year_range = "no dated years"
+    return CoverageBlock(
+        type="coverage",
+        title="Current library coverage",
+        message=(
+            f"The current canonical library contains {len(dated_shows)} dated shows, "
+            f"{len(store.rows('performances'))} ordered performances, and "
+            f"{len(performance_song_ids)} song labels spanning {year_range}. "
+            "This is a source-derived baseline with uneven enrichment; it is not a complete record "
+            "of every historical performance or song-related fact."
+        ),
+    )
+
+
 def compose_experience_response(
     question: str,
     thread_id: str,
@@ -326,6 +419,8 @@ def compose_experience_response(
     seen_media: set[str] = set()
     resource_items: list[ResourceItem] = []
     chord_items: list[ResourceItem] = []
+    credit_items: list[CreditItem] = []
+    credit_source_ids: list[str] = []
     arrangements: list[ArrangementBlock] = []
     title = "Deadbot"
 
@@ -367,9 +462,46 @@ def compose_experience_response(
                 seen_media.add(url)
                 blocks.append(block)
 
+    def add_credits(payload: dict[str, Any]) -> None:
+        writers = payload.get("writers")
+        song = payload.get("song") or {}
+        if not isinstance(writers, list) or not isinstance(song, dict):
+            return
+        for writer in writers:
+            if not isinstance(writer, dict):
+                continue
+            person_id = writer.get("person_id", "")
+            person = store.one("people", person_id)
+            role = writer.get("writer_role", "")
+            if not person or not role:
+                continue
+            credit = CreditItem(person_id=person_id, name=person.get("name") or person_id, role=role)
+            if (credit.person_id, credit.role) not in {(item.person_id, item.role) for item in credit_items}:
+                credit_items.append(credit)
+            if not credit_source_ids:
+                credit_source_ids.append(f"canonical:{song.get('song_id', '')}")
+        for resource in payload.get("resources", []) if isinstance(payload.get("resources"), list) else []:
+            if not isinstance(resource, dict):
+                continue
+            if resource.get("resource_type") not in {"catalog-work-search", "lyrics-and-credits", "catalog-song-page"}:
+                continue
+            source = _resource_source(resource)
+            if source and source.source_id not in credit_source_ids:
+                credit_source_ids.append(source.source_id)
+
     for payload in _tool_payloads(latest_turn_messages):
         if "song" in payload and isinstance(payload["song"], dict):
             add_entity(_entity_card_from_song(payload["song"]))
+            add_credits(payload)
+            performances = payload.get("performances")
+            if isinstance(performances, list):
+                performance_list = _performance_list(
+                    payload["song"],
+                    [item for item in performances if isinstance(item, dict)],
+                    store,
+                )
+                if performance_list:
+                    blocks.append(performance_list)
         if "show" in payload and isinstance(payload["show"], dict):
             add_entity(_entity_card_from_show(payload))
         if "performance" in payload and isinstance(payload["performance"], dict):
@@ -422,6 +554,15 @@ def compose_experience_response(
             )
             add_source(source)
 
+    if credit_items:
+        blocks.append(
+            CreditListBlock(
+                type="credit_list",
+                title="Known composition credits",
+                items=credit_items[:12],
+                source_ids=credit_source_ids[:8] or ["canonical:unknown"],
+            )
+        )
     if resource_items:
         blocks.append(ResourceListBlock(type="resource_list", title="Further reading and listening", items=resource_items[:8]))
     if chord_items:
@@ -440,9 +581,10 @@ def compose_experience_response(
         blocks.append(
             GapStateBlock(
                 type="gap_state",
-                message="The current experience did not receive a matching grounded result. Deadbot currently covers the Veneta 1972 pilot most completely.",
+                message="The current experience did not receive a matching grounded result. Try a song, show, or performance that appears in the current library.",
             )
         )
+    blocks.append(_coverage_block(store))
 
     return ExperienceResponse(
         thread_id=thread_id,
@@ -450,5 +592,12 @@ def compose_experience_response(
         answer=_final_answer(latest_turn_messages),
         conversation=_conversation_turns(message_list),
         blocks=blocks,
+        layout=[
+            LayoutSection(
+                region="primary" if start == 0 else "supporting",
+                block_indexes=list(range(start, min(start + 8, len(blocks)))),
+            )
+            for start in range(0, len(blocks), 8)
+        ],
         sources=sources,
     )

@@ -26,6 +26,8 @@ or performance is not returned by entity search or lookup, do not substitute a
 different partial match (such as its show or venue), summarize that match, or attach
 unrelated links. Say the named entity is not in the current library and, only if
 useful, state the narrowest relevant library boundary.
+
+For questions about what was happening around a show's date, use the show's canonical ID or date with the historical-weather, astronomy, and astrology tools as appropriate. Cite the external source URLs they return. Describe historical weather as nearby-grid-cell reanalysis rather than a precise station observation. Treat astrology only as explicitly labeled cultural/interpretive context; never present it as scientific evidence or as a cause of the music or events.
 """
 
 

@@ -2,9 +2,9 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } 
 import type { ExperienceBlock, ExperienceResponse, SourceReference } from "./types";
 
 const suggestions = [
-  "What did they play after Dark Star at Veneta?",
-  "Show me the Veneta Sugaree and its chord source.",
-  "Where can I watch the full Veneta show?"
+  "What did they play after Dark Star on 1972-08-27?",
+  "Show me the Sugaree performance on 1972-08-27 and its chord source.",
+  "Where can I watch the full 1972-08-27 show?"
 ];
 
 function threadId(): string {
@@ -88,6 +88,21 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
           </ul>
         </section>
       );
+    case "credit_list":
+      return (
+        <section className="card credit-list">
+          <p className="eyebrow">Composition</p>
+          <h2>{block.title}</h2>
+          <ul>
+            {block.items.map((item) => (
+              <li key={`${item.person_id}-${item.role}`}>
+                <strong>{item.name}</strong>
+                <span>{item.role}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
     case "media_link":
       return (
         <section className="card media-card">
@@ -96,6 +111,30 @@ function Block({ block, sources }: { block: ExperienceBlock; sources: SourceRefe
           <MediaEmbed block={block} />
           <ExternalLink href={block.url}>Open on {block.provider}</ExternalLink>
         </section>
+      );
+    case "performance_list":
+      return (
+        <section className="card performance-list">
+          <p className="eyebrow">Canonical performance evidence</p>
+          <h2>{block.title}</h2>
+          <p className="subtitle">{block.known_count} known performance{block.known_count === 1 ? "" : "s"}</p>
+          <ul>
+            {block.items.map((item) => (
+              <li key={item.performance_id}>
+                <strong>{item.show_date ?? "Unknown date"}</strong>
+                {(item.set_label || item.position_in_set) && <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
+    case "coverage":
+      return (
+        <aside className="coverage-card">
+          <p className="eyebrow">Library coverage</p>
+          <h2>{block.title}</h2>
+          <p>{block.message}</p>
+        </aside>
       );
     case "arrangement": {
       const source = sourceFor(sources, block.source_id);
@@ -167,7 +206,6 @@ export default function App() {
       <div className="workspace">
         <aside className="conversation-pane" aria-label="Conversation">
           <div className="conversation-intro">
-            <p className="eyebrow">Veneta 1972 pilot</p>
             <h1>Follow the thread.</h1>
             <p>Ask a question, then refine it. Deadbot retains this conversation as context.</p>
           </div>
@@ -194,10 +232,11 @@ export default function App() {
           {error && <p className="error" role="alert">{error}</p>}
 
           <form className="composer" onSubmit={submit}>
-            <label htmlFor="question">Ask a follow-up</label>
             <div className="question-row">
-              <input
+              <textarea
                 id="question"
+                aria-label="Question"
+                rows={3}
                 placeholder="Ask about a song, show, source, or recording"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
@@ -216,9 +255,17 @@ export default function App() {
                 <h1>{response.title}</h1>
                 <p>Explore the grounded details, media, and sources connected to this answer.</p>
               </div>
-              <div className="block-grid">
-                {response.blocks.map((block, index) => <Block key={`${block.type}-${index}`} block={block} sources={response.sources} />)}
-              </div>
+              {response.layout.map((section, sectionIndex) => (
+                <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
+                  <p className="region-label">{section.region}</p>
+                  <div className="block-grid">
+                    {section.block_indexes.map((index) => {
+                      const block = response.blocks[index];
+                      return block ? <Block key={`${block.type}-${index}`} block={block} sources={response.sources} /> : null;
+                    })}
+                  </div>
+                </section>
+              ))}
             </>
           ) : (
             <div className="content-empty">

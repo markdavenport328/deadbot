@@ -5,7 +5,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from pydantic import ValidationError
 
 from deadbot.api import create_app
-from deadbot.composer import CompositionPlan, ModelGuidedComposer, apply_composition_plan
+from deadbot.composer import CompositionPlan, CompositionSection, ModelGuidedComposer, apply_composition_plan
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse, _embed_details, compose_experience_response
@@ -67,7 +67,9 @@ def test_composer_creates_grounded_cards_resources_and_media():
         store=store,
     )
     assert response.thread_id == "web-test"
-    assert {block.type for block in response.blocks} >= {"entity_card", "resource_list", "arrangement", "media_link"}
+    assert {block.type for block in response.blocks} >= {"entity_card", "resource_list", "credit_list", "arrangement", "media_link"}
+    credit_block = next(block for block in response.blocks if block.type == "credit_list")
+    assert any(item.name == "Robert Hunter" and item.role == "lyrics" for item in credit_block.items)
     assert any(source.kind == "contextual_resource" for source in response.sources)
     assert any(
         block.type == "media_link" and block.embed_kind == "youtube"
@@ -79,6 +81,21 @@ def test_composer_creates_grounded_cards_resources_and_media():
     )
 
 
+def test_song_credits_are_usable_in_the_experience_response():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    assert song
+    response = compose_experience_response(
+        question="Who wrote Sugaree?",
+        thread_id="web-test",
+        messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree credits are in the library.")],
+        store=store,
+    )
+    credit_block = next(block for block in response.blocks if block.type == "credit_list")
+    assert {item.name for item in credit_block.items} == {"Jerry Garcia", "Robert Hunter"}
+    assert "resource:resource-musicbrainz-work-search-sugaree" in credit_block.source_ids
+
+
 def test_composer_returns_a_safe_gap_when_no_tools_return_data():
     response = compose_experience_response(
         question="Tell me about an unknown song.",
@@ -88,6 +105,26 @@ def test_composer_returns_a_safe_gap_when_no_tools_return_data():
     )
     assert response.blocks[0].type == "gap_state"
     assert response.sources == []
+
+
+def test_coverage_block_describes_the_full_current_library_range():
+    store = CanonicalStore()
+    response = compose_experience_response(
+        question="What does the library cover?",
+        thread_id="web-test",
+        messages=[AIMessage(content="The library covers the available canonical data.")],
+        store=store,
+    )
+    coverage = next(block for block in response.blocks if block.type == "coverage")
+    dated_shows = [show for show in store.rows("shows") if show.get("show_date")]
+    years = sorted({show["show_date"][:4] for show in dated_shows})
+    song_ids = {performance["song_id"] for performance in store.rows("performances")}
+
+    assert coverage.title == "Current library coverage"
+    assert f"{len(dated_shows)} dated shows" in coverage.message
+    assert f"{len(store.rows('performances'))} ordered performances" in coverage.message
+    assert f"{len(song_ids)} song labels spanning {years[0]}–{years[-1]}" in coverage.message
+    assert "1972 library" not in coverage.message
 
 
 def test_composer_preserves_conversation_but_refreshes_blocks_for_the_latest_turn():
@@ -131,12 +168,17 @@ def test_composition_plan_can_only_reorder_existing_blocks_and_keeps_provenance(
         store=store,
     )
     provenance_index = next(index for index, block in enumerate(response.blocks) if block.type == "provenance_note")
-    composed = apply_composition_plan(response, CompositionPlan(selected_block_indexes=[999, 0, 0]))
-    assert [block.type for block in composed.blocks] == [response.blocks[0].type, "provenance_note"]
+    resource_index = next(index for index, block in enumerate(response.blocks) if block.type == "resource_list")
+    composed = apply_composition_plan(
+        response,
+        CompositionPlan(sections=[CompositionSection(region="primary", candidate_indexes=[999, resource_index, 0, 0])]),
+    )
+    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type, "provenance_note"]
     assert composed.blocks[-1] == response.blocks[provenance_index]
+    assert [section.region for section in composed.layout] == ["primary", "context"]
 
 
-def test_an_empty_composition_plan_uses_the_deterministic_candidate_order():
+def test_an_invalid_composition_plan_uses_the_deterministic_candidate_order():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
     assert song
@@ -146,7 +188,8 @@ def test_an_empty_composition_plan_uses_the_deterministic_candidate_order():
         messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree is in the library.")],
         store=store,
     )
-    assert apply_composition_plan(response, CompositionPlan()) == response
+    invalid = CompositionPlan(sections=[CompositionSection(region="primary", candidate_indexes=[999])])
+    assert apply_composition_plan(response, invalid) == response
 
 
 def test_model_guided_composer_uses_a_structured_selection_without_creating_blocks():
@@ -159,10 +202,13 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
         messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree is in the library.")],
         store=store,
     )
-    stub = SelectionStub(CompositionPlan(selected_block_indexes=[1, 0, 999]))
+    resource_index = next(index for index, block in enumerate(response.blocks) if block.type == "resource_list")
+    stub = SelectionStub(
+        CompositionPlan(sections=[CompositionSection(region="supporting", candidate_indexes=[resource_index, 0, 999])])
+    )
     composer = ModelGuidedComposer(selector=stub)
     composed = composer.compose("Tell me about Sugaree.", response)
-    assert [block.type for block in composed.blocks] == [response.blocks[1].type, response.blocks[0].type, "provenance_note"]
+    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type, "provenance_note"]
     assert len(stub.inputs) == 1
 
 

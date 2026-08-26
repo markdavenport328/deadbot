@@ -1,52 +1,596 @@
 venue_id,name,city,state_region,country,latitude,longitude,notes
+venue-46th-street-rock-palace-brooklyn,46th Street Rock Palace,Brooklyn,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-academy-of-music-new-york,Academy of Music,New York,NY,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-action-house-island-park,Action House,Island Park,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-activity-center-arizona-state-university-tempe,"Activity Center, Arizona State University",Tempe,AZ,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-activity-center-university-of-colorado-boulder,"Activity Center, University of Colorado",Boulder,CO,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-adams-field-house-university-of-montana-missoula,"Adams Field House, University of Montana",Missoula,MT,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-afterthought-pender-auditorium-vancouver,"Afterthought, Pender Auditorium",Vancouver,,Canada,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-aladdin-theater-las-vegas,Aladdin Theater,Las Vegas,NV,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-albuquerque-civic-auditorium-albuquerque,Albuquerque Civic Auditorium,Albuquerque,NM,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-alexandra-palace-london,Alexandra Palace,London,,England,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-alfond-arena-university-of-maine-orono,"Alfond Arena, University of Maine",Orono,ME,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-allen-theatre-cleveland,Allen Theatre,Cleveland,OH,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-alpine-valley-music-theatre-east-troy,Alpine Valley Music Theatre,East Troy,WI,US,,,Normalized from gdshowsdb 1980 bulk baseline.
 venue-alumni-lawn-vanderbilt-university-nashville,"Alumni Lawn, Vanderbilt University",Nashville,TN,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-alumni-stadium-university-of-massachusetts-amherst,"Alumni Stadium, University of Massachusetts",Amherst,MA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-american-institute-of-aeronautics-and-astronautics-hall-los-angeles,American Institute of Aeronautics and Astronautics Hall,Los Angeles,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-american-legion-hall-post-795-south-lake-tahoe,American Legion Hall Post 795,South Lake Tahoe,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-anaheim-stadium-anaheim,Anaheim Stadium,Anaheim,CA,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-anderson-theatre-new-york,Anderson Theatre,New York,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-aquarius-theater-hollywood,Aquarius Theater,Hollywood,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-arlington-theatre-santa-barbara,Arlington Theatre,Santa Barbara,CA,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-armory-field-house-university-of-cincinnati-cincinnati,"Armory Field House, University of Cincinnati",Cincinnati,OH,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-arrowhead-stadium-kansas-city,Arrowhead Stadium,Kansas City,MO,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-assembly-center-louisiana-state-university-baton-rouge,"Assembly Center, Louisiana State University",Baton Rouge,LA,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-assembly-hall-indiana-university-bloomington,"Assembly Hall, Indiana University",Bloomington,IN,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-assembly-hall-uiuc-champaign,"Assembly Hall, UIUC",Champaign,IL,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-athletic-center-rutgers-university-piscataway,"Athletic Center, Rutgers University",Piscataway,NJ,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-atlanta-municipal-auditorium-atlanta,Atlanta Municipal Auditorium,Atlanta,GA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-atlanta-sports-arena-atlanta,Atlanta Sports Arena,Atlanta,GA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-atwood-hall-clark-university-worcester,"Atwood Hall, Clark University",Worcester,MA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-auditorium-theatre-chicago,Auditorium Theatre,Chicago,IL,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-augusta-civic-center-augusta,Augusta Civic Center,Augusta,ME,US,,,Normalized from gdshowsdb 1979 bulk baseline.
 venue-austin-municipal-auditorium-austin,Austin Municipal Auditorium,Austin,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-autzen-stadium-university-of-oregon-eugene,"Autzen Stadium, University of Oregon",Eugene,OR,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-avalon-ballroom-san-francisco,Avalon Ballroom,San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-awalt-pavilion-chester-f-awalt-high-school-mountain-view,"Awalt Pavilion, Chester F. Awalt High School",Mountain View,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-aztec-bowl-san-diego-state-university-san-diego,"Aztec Bowl, San Diego State University",San Diego,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-bakersfield-civic-auditorium-bakersfield,Bakersfield Civic Auditorium,Bakersfield,CA,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-ballroom-university-of-colorado-boulder,"Ballroom, University of Colorado",Boulder,CO,US,,,Normalized from gdshowsdb 1969 bulk baseline.
 venue-baltimore-civic-center-baltimore,Baltimore Civic Center,Baltimore,MD,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-bangor-auditorium-bangor,Bangor Auditorium,Bangor,ME,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-barton-hall-cornell-university-ithaca,"Barton Hall, Cornell University",Ithaca,NY,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-baton-rouge-international-speedway-baton-rouge,Baton Rouge International Speedway,Baton Rouge,LA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-bayfront-center-arena-st-petersburg,Bayfront Center Arena,St. Petersburg,FL,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-beacon-theatre-new-york,Beacon Theatre,New York,NY,US,,,Normalized from gdshowsdb 1976 bulk baseline.
 venue-beat-club-bremen,Beat Club,Bremen,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-beaver-hall-portland,Beaver Hall,Portland,OR,US,,,Normalized from gdshowsdb 1966 bulk baseline.
 venue-berkeley-community-theater-berkeley,Berkeley Community Theater,Berkeley,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-betty-nelson-s-organic-raspberry-farm-sultan,Betty Nelson's Organic Raspberry Farm,Sultan,WA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
 venue-bickershaw-festival-wigan,Bickershaw Festival,Wigan,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-big-nig-s-house-san-jose,Big Nig's House,San Jose,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
+venue-billerica-forum-north-billerica,Billerica Forum,North Billerica,MA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-birmingham-jefferson-convention-complex-coliseum-birmingham,Birmingham Jefferson Convention Complex Coliseum,Birmingham,AL,US,,,Normalized from gdshowsdb 1995 bulk baseline.
+venue-blockbuster-desert-sky-pavilion-phoenix,Blockbuster Desert Sky Pavilion,Phoenix,AZ,US,,,Normalized from gdshowsdb 1994 bulk baseline.
+venue-blossom-music-center-cuyahoga-falls,Blossom Music Center,Cuyahoga Falls,OH,US,,,Normalized from gdshowsdb 1984 bulk baseline.
+venue-bob-marley-performing-arts-center-kingston,Bob Marley Performing Arts Center,Kingston,,Jamaica,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-boise-state-university-pavilion-boise,Boise State University Pavilion,Boise,ID,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-boreal-ridge-ski-resort-donner-summit,Boreal Ridge Ski Resort,Donner Summit,CA,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-boston-garden-boston,Boston Garden,Boston,MA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-boston-tea-party-boston,Boston Tea Party,Boston,MA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-boutwell-auditorium-birmingham,Boutwell Auditorium,Birmingham,AL,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-britt-ballroom-south-oregon-college-gym-ashland,"Britt Ballroom, South Oregon College Gym",Ashland,OR,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-broome-county-arena-binghamton,Broome County Arena,Binghamton,NY,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-buckeye-lake-music-center-thornville,Buckeye Lake Music Center,Thornville,OH,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-buffalo-memorial-auditorium-buffalo,Buffalo Memorial Auditorium,Buffalo,NY,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-caf-au-go-go-new-york,Caf� au Go-Go,New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-cal-expo-amphitheatre-sacramento,Cal Expo Amphitheatre,Sacramento,CA,US,,,Normalized from gdshowsdb 1984 bulk baseline.
+venue-cal-expo-building-a-sacramento,"Cal Expo, Building A",Sacramento,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-calaveras-county-fairgrounds-angels-camp,Calaveras County Fairgrounds,Angels Camp,CA,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-california-hall-san-francisco,California Hall,San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-california-state-u-dominguez-hills-carson,California State U. Dominguez Hills,Carson,CA,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-cameron-indoor-stadium-duke-university-durham,"Cameron Indoor Stadium, Duke University",Durham,NC,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-camp-randall-field-house-university-of-wisconsin-madison,"Camp Randall Field House, University of Wisconsin",Madison,WI,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-campolindo-high-school-moraga,Campolindo High School,Moraga,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-canadian-national-exhibition-stadium-toronto,Canadian National Exhibition Stadium,Toronto,,Canada,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-cape-cod-coliseum-south-yarmouth,Cape Cod Coliseum,South Yarmouth,MA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-capital-centre-landover,Capital Centre,Landover,MD,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-capitol-theatre-passaic,Capitol Theatre,Passaic,NJ,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-capitol-theatre-port-chester,Capitol Theatre,Port Chester,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-cardinal-stadium-louisville,Cardinal Stadium,Louisville,KY,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-carolina-coliseum-arena-univ-of-s-carolina-columbia,"Carolina Coliseum Arena, Univ. of S. Carolina",Columbia,SC,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-carousel-ballroom-san-francisco,Carousel Ballroom,San Francisco,CA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-carrier-dome-syracuse-university-syracuse,"Carrier Dome, Syracuse University",Syracuse,NY,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-carter-finley-stadium-north-carolina-state-university-raleigh,"Carter-Finley Stadium, North Carolina State University",Raleigh,NC,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-carthay-studios-los-angeles,Carthay Studios,Los Angeles,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-cassell-coliseum-virginia-tech-blacksburg,"Cassell Coliseum, Virginia Tech",Blacksburg,VA,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-catacombs-houston,Catacombs,Houston,TX,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-catholic-youth-center-scranton,Catholic Youth Center,Scranton,PA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-centennial-coliseum-reno,Centennial Coliseum,Reno,NV,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-central-park-new-york,Central Park,New York,NY,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-centrum-worcester,Centrum,Worcester,MA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
 venue-century-ii-convention-hall-wichita,Century II Convention Hall,Wichita,KS,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-chalet-inn-room-belmont,Chalet Inn Room,Belmont,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
+venue-chardonnay-hall-napa-county-fairgrounds-napa,"Chardonnay Hall, Napa County Fairgrounds",Napa,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-charlotte-coliseum-charlotte,Charlotte Coliseum,Charlotte,NC,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-chateau-d-herouville-herouville,Chateau d'Herouville,Herouville,,France,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-cheetah-new-york,Cheetah,New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-chelsea-hotel-roof-new-york,Chelsea Hotel Roof,New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-cincinnati-gardens-cincinnati,Cincinnati Gardens,Cincinnati,OH,US,,,Normalized from gdshowsdb 1973 bulk baseline.
 venue-city-hall-newcastle,City Hall,Newcastle,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-city-island-harrisburg,City Island,Harrisburg,PA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-city-park-denver,City Park,Denver,CO,US,,,Normalized from gdshowsdb 1967 bulk baseline.
 venue-civic-center-music-hall-oklahoma-city,Civic Center Music Hall,Oklahoma City,OK,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-civic-convention-hall-auditorium-philadelphia,Civic Convention Hall Auditorium,Philadelphia,PA,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-cleveland-convention-center-cleveland,Cleveland Convention Center,Cleveland,OH,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-cleveland-music-hall-cleveland,Cleveland Music Hall,Cleveland,OH,US,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-cleveland-public-hall-cleveland,Cleveland Public Hall,Cleveland,OH,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-clifford-s-catering-walnut-creek,Clifford's Catering,Walnut Creek,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-club-agora-columbus,Club Agora,Columbus,OH,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-cobo-arena-detroit,Cobo Arena,Detroit,MI,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-colden-auditorium-queens-college-queens,"Colden Auditorium, Queens College",Queens,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-cole-field-house-university-of-maryland-college-park,"Cole Field House, University of Maryland",College Park,MD,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-coliseum-west-virginia-university-morgantown,"Coliseum, West Virginia University",Morgantown,WV,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-college-center-ballroom-portland-state-college-portland,"College Center Ballroom, Portland State College",Portland,OR,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-colt-park-hartford,Colt Park,Hartford,CT,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-commons-san-francisco-state-university-san-francisco,"Commons, San Francisco State University",San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-community-concourse-golden-hall-san-diego,Community Concourse Golden Hall,San Diego,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-compton-terrace-amphitheatre-chandler,Compton Terrace Amphitheatre,Chandler,AZ,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-compton-terrace-tempe,Compton Terrace,Tempe,AZ,US,,,Normalized from gdshowsdb 1980 bulk baseline.
 venue-concertgebouw-amsterdam,Concertgebouw,Amsterdam,,Netherlands,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-continental-ballroom-santa-clara,Continental Ballroom,Santa Clara,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-copps-coliseum-hamilton,Copps Coliseum,Hamilton,,Canada,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-coronation-park-toronto,Coronation Park,Toronto,,Canada,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-cotterell-gym-colgate-university-hamilton,"Cotterell Gym, Colgate University",Hamilton,NY,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-cow-palace-daly-city,Cow Palace,Daly City,CA,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-crisler-arena-university-of-michigan-ann-arbor,"Crisler Arena, University of Michigan",Ann Arbor,MI,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-crystal-ballroom-portland,Crystal Ballroom,Portland,OR,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-cumberland-county-civic-center-portland,Cumberland County Civic Center,Portland,ME,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-curtis-hixon-convention-hall-tampa,Curtis Hixon Convention Hall,Tampa,FL,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-dallas-convention-center-arena-dallas,Dallas Convention Center Arena,Dallas,TX,US,,,Normalized from gdshowsdb 1978 bulk baseline.
 venue-dallas-memorial-auditorium-dallas,Dallas Memorial Auditorium,Dallas,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-dance-hall-rio-nido,Dance Hall,Rio Nido,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-dane-county-coliseum-madison,Dane County Coliseum,Madison,WI,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-daniel-meyer-coliseum-texas-christian-university-fort-worth,"Daniel�Meyer Coliseum, Texas Christian University",Fort Worth,TX,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-danish-center-los-angeles,Danish Center,Los Angeles,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-dante-s-inferno-vancouver,Dante's Inferno,Vancouver,,Canada,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-david-mead-field-house-allegheny-college-meadville,"David Mead Field House, Allegheny College",Meadville,PA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-davis-gym-bucknell-university-lewisburg,"Davis Gym, Bucknell University",Lewisburg,PA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-dean-e-smith-center-unversity-of-north-carolina-chapel-hill,"Dean E. Smith Center, Unversity of North Carolina",Chapel Hill,NC,US,,,Normalized from gdshowsdb 1993 bulk baseline.
+venue-deer-creek-music-center-noblesville,Deer Creek Music Center,Noblesville,IN,US,,,Normalized from gdshowsdb 1989 bulk baseline.
+venue-del-mar-fairgrounds-del-mar,Del Mar Fairgrounds,Del Mar,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-delta-center-salt-lake-city,Delta Center,Salt Lake City,UT,US,,,Normalized from gdshowsdb 1995 bulk baseline.
+venue-denver-coliseum-denver,Denver Coliseum,Denver,CO,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-des-moines-civic-center-des-moines,Des Moines Civic Center,Des Moines,IA,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-devore-field-southwestern-college-chula-vista,"Devore Field, Southwestern College",Chula Vista,CA,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-diamond-gym-college-of-marin-kentfield,"Diamond Gym, College of Marin",Kentfield,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-dillon-gym-princeton-university-princeton,"Dillon Gym, Princeton University",Princeton,NJ,US,,,Normalized from gdshowsdb 1971 bulk baseline.
 venue-dillon-stadium-hartford,Dillon Stadium,Hartford,CT,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-downs-of-santa-fe-santa-fe,Downs of Santa Fe,Santa Fe,NM,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-dream-bowl-vallejo,Dream Bowl,Vallejo,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-dupont-gym-mit-cambridge,"DuPont Gym, MIT",Cambridge,MA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-eagles-auditorium-seattle,Eagles Auditorium,Seattle,WA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-earl-warren-showgrounds-santa-barbara,Earl Warren Showgrounds,Santa Barbara,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-eastown-theatre-detroit,Eastown Theatre,Detroit,MI,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-el-camino-park-palo-alto,El Camino Park,Palo Alto,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-el-paso-county-coliseum-el-paso,El Paso County Coliseum,El Paso,TX,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-el-roach-tavern-seattle,El Roach Tavern,Seattle,WA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-electric-circus-new-york,Electric Circus,New York,NY,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-electric-factory-philadelphia,Electric Factory,Philadelphia,PA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-elysian-park-los-angeles,Elysian Park,Los Angeles,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-embassy-ballroom-a-k-a-banana-grove-ambassador-hotel-los-angeles,"Embassy Ballroom (a.k.a. ""Banana Grove""), Ambassador Hotel",Los Angeles,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
 venue-empire-pool-london,Empire Pool,London,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-empire-studios-los-angeles,Empire Studios,Los Angeles,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-emu-ballroom-university-of-oregon-eugene,"EMU Ballroom, University of Oregon",Eugene,OR,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-euphoria-san-rafael,Euphoria,San Rafael,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-eureka-municipal-auditorium-eureka,Eureka Municipal Auditorium,Eureka,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-evans-field-house-northern-illinois-university-dekalb,"Evans Field House, Northern Illinois University",Dekalb,IL,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-expo-milwaukee-convention-center-milwaukee,Expo Milwaukee Convention Center,Milwaukee,WI,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-family-dog-denver,Family Dog,Denver,CO,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-family-dog-on-the-great-highway-san-francisco,Family Dog On The Great Highway,San Francisco,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-farrell-hall-suny-delhi,"Farrell Hall, SUNY",Delhi,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-felt-forum-madison-square-garden-new-york,"Felt Forum, Madison Square Garden",New York,NY,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-ferris-booth-hall-terrace-columbia-university-new-york,"Ferris Booth Hall terrace, Columbia University",New York,NY,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-festhalle-frankfurt,Festhalle,Frankfurt,,Germany,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-feyline-field-tempe,Feyline Field,Tempe,AZ,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-field-house-seneca-college-toronto,"Field House, Seneca College",Toronto,,Canada,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-fieldhouse-university-of-iowa-iowa-city,"Fieldhouse, University of Iowa",Iowa City,IA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-fiesta-hall-san-mateo-county-fairgrounds-san-mateo,"Fiesta Hall, San Mateo County Fairgrounds",San Mateo,CA,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-fillmore-auditorium-san-francisco,Fillmore Auditorium,San Francisco,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
+venue-fillmore-east-new-york,Fillmore East,New York,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-fillmore-west-san-francisco,Fillmore West,San Francisco,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-five-seasons-center-cedar-rapids,Five Seasons Center,Cedar Rapids,IA,US,,,Normalized from gdshowsdb 1984 bulk baseline.
+venue-florida-gymnasium-university-of-florida-gainesville,"Florida Gymnasium, University of Florida",Gainesville,FL,US,,,Normalized from gdshowsdb 1980 bulk baseline.
 venue-folsom-field-university-of-colorado-boulder-boulder,"Folsom Field, University of Colorado Boulder",Boulder,CO,US,,,Normalized from gdshowsdb 1972 bulk baseline.
 venue-ford-auditorium-detroit,Ford Auditorium,Detroit,MI,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-forum-theatre-copenhagen,Forum Theatre,Copenhagen,,Denmark,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-foss-hill-wesleyan-university-middletown,"Foss Hill, Wesleyan University",Middletown,CT,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-fox-theatre-atlanta,Fox Theatre,Atlanta,GA,US,,,Normalized from gdshowsdb 1977 bulk baseline.
 venue-fox-theatre-st-louis,Fox Theatre,St. Louis,MO,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-franklin-county-field-highgate,Franklin County Field,Highgate,VT,US,,,Normalized from gdshowsdb 1994 bulk baseline.
+venue-freeborn-hall-uc-davis-davis,"Freeborn Hall, UC Davis",Davis,CA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-freedom-hall-louisville,Freedom Hall,Louisville,KY,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-frenchy-s-hayward,Frenchy's,Hayward,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
+venue-frost-amphitheatre-stanford-university-palo-alto,"Frost Amphitheatre, Stanford University",Palo Alto,CA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-fugazi-hall-san-francisco,Fugazi Hall,San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-gaelic-park-bronx,Gaelic Park,Bronx,NY,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-gallaher-estate-norwalk,Gallaher Estate,Norwalk,CT,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-giants-stadium-east-rutherford,Giants Stadium,East Rutherford,NJ,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-gill-coliseum-oregon-state-university-corvallis,"Gill Coliseum, Oregon State University",Corvallis,OR,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-gizah-sound-and-light-theater-cairo,Gizah Sound and Light Theater,Cairo,,Egypt,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-glen-helen-regional-park-devore,Glen Helen Regional Park,Devore,CA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-glens-falls-civic-center-glen-falls,Glens Falls Civic Center,Glen Falls,NY,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-golden-gardens-park-seattle,Golden Gardens Park,Seattle,WA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-governor-s-hall-state-fairgrounds-sacramento,"Governor's Hall, State Fairgrounds",Sacramento,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-grand-center-grand-rapids,Grand Center,Grand Rapids,MI,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-grand-prix-racecourse-watkins-glen,Grand Prix Racecourse,Watkins Glen,NY,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-grande-ballroom-detroit,Grande Ballroom,Detroit,MI,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-great-american-music-hall-san-francisco,Great American Music Hall,San Francisco,CA,US,,,Normalized from gdshowsdb 1975 bulk baseline.
+venue-great-western-forum-inglewood,Great Western Forum,Inglewood,CA,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-green-lake-aqua-theatre-seattle,Green Lake Aqua Theatre,Seattle,WA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-greensboro-coliseum-greensboro,Greensboro Coliseum,Greensboro,NC,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-greynolds-park-north-miami-beach,Greynolds Park,North Miami Beach,FL,US,,,Normalized from gdshowsdb 1968 bulk baseline.
 venue-grote-zaal-de-doelen-rotterdam,"Grote Zaal, De Doelen",Rotterdam,,Netherlands,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-grugahalle-essen,Grugahalle,Essen,,Germany,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-gulfstream-park-racetrack-hallandale,Gulfstream Park Racetrack,Hallandale,FL,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-gymnasium-lane-community-college-eugene,"Gymnasium, Lane Community College",Eugene,OR,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-gymnasium-las-lomas-high-school-walnut-creek,"Gymnasium, Las Lomas High School",Walnut Creek,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-haight-street-san-francisco,Haight Street,San Francisco,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-hall-of-flowers-san-mateo-county-fairgrounds-san-mateo,"Hall Of Flowers, San Mateo County Fairgrounds",San Mateo,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-hampton-coliseum-hampton,Hampton Coliseum,Hampton,VA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-hara-arena-dayton,Hara Arena,Dayton,OH,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-harder-stadium-uc-santa-barbara-goleta,"Harder Stadium, UC Santa Barbara",Goleta,CA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-harding-theater-san-francisco,Harding Theater,San Francisco,CA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-harmon-gym-uc-berkeley-berkeley,"Harmon Gym, UC Berkeley",Berkeley,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-harrington-auditorium-worcester-polytechnic-institute-worcester,"Harrington Auditorium, Worcester Polytechnic Institute",Worcester,MA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-hartford-civic-center-hartford,Hartford Civic Center,Hartford,CT,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-haywood-bandstand-vancouver,Haywood Bandstand,Vancouver,,Canada,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-hec-s-edmundson-pavilion-university-of-washington-seattle,"Hec S. Edmundson Pavilion, University of Washington",Seattle,WA,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-hemisfair-arena-san-antonio,Hemisfair Arena,San Antonio,TX,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-henry-j-kaiser-convention-center-oakland,Henry J. Kaiser Convention Center,Oakland,CA,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-hershey-park-stadium-hershey,Hershey Park Stadium,Hershey,PA,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-hill-auditorium-ann-arbor,Hill Auditorium,Ann Arbor,MI,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-hilton-hotel-san-francisco,Hilton Hotel,San Francisco,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-hippodrome-de-pantin-paris,Hippodrome de Pantin,Paris,,France,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-hippy-hill-golden-gate-park-san-francisco,"Hippy Hill, Golden Gate Park",San Francisco,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
 venue-hofheinz-pavilion-houston,Hofheinz Pavilion,Houston,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-holleder-memorial-stadium-rochester,Holleder Memorial Stadium,Rochester,NY,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-holly-wood-newcastle-under-lyme-leycett,Holly Wood (Newcastle-Under-Lyme),Leycett,,England,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-hollywood-bowl-hollywood,Hollywood Bowl,Hollywood,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
 venue-hollywood-palladium-hollywood,Hollywood Palladium,Hollywood,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-honolulu-civic-auditorium-honolulu,Honolulu Civic Auditorium,Honolulu,HI,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-horton-field-house-illinois-state-university-normal,"Horton Field House, Illinois State University",Normal,IL,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-hubert-h-humphrey-metrodome-minneapolis,Hubert H. Humphrey Metrodome,Minneapolis,MN,US,,,Normalized from gdshowsdb 1986 bulk baseline.
+venue-huntington-civic-center-huntington,Huntington Civic Center,Huntington,WV,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-hyde-park-teen-center-cincinnati,Hyde Park Teen Center,Cincinnati,OH,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-i-d-e-s-hall-pescadero,I.D.E.S. Hall,Pescadero,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-ice-palace-las-vegas,Ice Palace,Las Vegas,NV,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-indiana-convention-center-indianapolis,Indiana Convention Center,Indianapolis,IN,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-indianapolis-sports-center-indianapolis,Indianapolis Sports Center,Indianapolis,IN,US,,,Normalized from gdshowsdb 1984 bulk baseline.
+venue-international-amphitheatre-chicago,International Amphitheatre,Chicago,IL,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-international-room-san-francisco-state-university-san-francisco,"International Room, San Francisco State University",San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-internationales-congress-centrum-berlin,Internationales Congress Centrum,Berlin,,Germany,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-irvine-auditorium-university-of-pennsylvania-philadelphia,"Irvine Auditorium, University of Pennsylvania",Philadelphia,PA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-irvine-meadows-amphitheatre-irvine,Irvine Meadows Amphitheatre,Irvine,CA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
 venue-jahrhunderthalle-frankfurt,Jahrhunderthalle,Frankfurt,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-jai-alai-fronton-miami,Jai-Alai Fronton,Miami,FL,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-jenison-field-house-michigan-state-university-east-lansing,"Jenison Field House, Michigan State University",East Lansing,MI,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-joe-louis-arena-detroit,Joe Louis Arena,Detroit,MI,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-johanneshov-isstadion-stockholm,Johanneshov Isstadion,Stockholm,,Sweden,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-john-f-kennedy-stadium-philadelphia,John F. Kennedy Stadium,Philadelphia,PA,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-kezar-stadium-san-francisco,Kezar Stadium,San Francisco,CA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-kiefer-lakefront-arena-university-of-new-orleans-new-orleans,"Kiefer Lakefront Arena, University of New Orleans",New Orleans,LA,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-kiel-auditorium-st-louis,Kiel Auditorium,St. Louis,MO,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-kiel-opera-house-st-louis,Kiel Opera House,St. Louis,MO,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-kinetic-playground-chicago,Kinetic Playground,Chicago,IL,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-kings-beach-bowl-lake-tahoe,Kings Beach Bowl,Lake Tahoe,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-kingswood-music-theatre-maple,Kingswood Music Theatre,Maple,,Canada,,,Normalized from gdshowsdb 1984 bulk baseline.
+venue-kirby-fieldhouse-lafayette-college-easton,"Kirby Fieldhouse, Lafayette College",Easton,PA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-kleinhans-music-hall-buffalo,Kleinhans Music Hall,Buffalo,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-knickerbocker-arena-albany,Knickerbocker Arena,Albany,NY,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-knight-s-hall-bellarmine-college-louisville,"Knight's Hall, Bellarmine College",Louisville,KY,US,,,Normalized from gdshowsdb 1968 bulk baseline.
 venue-kongresssaal-deutsches-museum-munich,"Kongresssaal, Deutsches Museum",Munich,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-kpix-tv-studios-san-francisco,KPIX-TV Studios,San Francisco,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-kresge-plaza-massachusetts-institute-of-technology-cambridge,"Kresge Plaza, Massachusetts Institute of Technology",Cambridge,MA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-la-dolphine-hillsborough,La Dolphine,Hillsborough,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-labor-temple-minneapolis,Labor Temple,Minneapolis,MN,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-ladera-school-ladera,Ladera School,Ladera,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-laguna-seca-raceway-salinas,Laguna Seca Raceway,Salinas,CA,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-lakeland-civic-center-arena-lakeland,Lakeland Civic Center Arena,Lakeland,FL,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-lanai-theater-crockett,Lanai Theater,Crockett,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-las-vegas-convention-center-las-vegas,Las Vegas Convention Center,Las Vegas,NV,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-legion-stadium-el-monte,Legion Stadium,El Monte,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-lille-fairgrounds-lille,Lille Fairgrounds,Lille,,France,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-lindley-meadow-golden-gate-park-san-francisco,"Lindley Meadow, Golden Gate Park",San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-lion-s-share-san-anselmo,Lion's Share,San Anselmo,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-lloyd-noble-center-university-of-oklahoma-norman,"Lloyd Noble Center, University of Oklahoma",Norman,OK,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-loma-prieta-room-student-union-san-jose-state-university-san-jose,"Loma Prieta Room, Student Union, San Jose State University",San Jose,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
 venue-long-beach-arena-long-beach,Long Beach Arena,Long Beach,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-longshoreman-s-hall-san-francisco,Longshoreman's Hall,San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-los-angeles-memorial-coliseum-los-angeles,Los Angeles Memorial Coliseum,Los Angeles,CA,US,,,Normalized from gdshowsdb 1991 bulk baseline.
+venue-los-angeles-memorial-sports-arena-los-angeles,Los Angeles Memorial Sports Arena,Los Angeles,CA,US,,,Normalized from gdshowsdb 1993 bulk baseline.
+venue-lusk-field-house-suny-cortland,"Lusk Field House, SUNY",Cortland,NY,US,,,Normalized from gdshowsdb 1971 bulk baseline.
 venue-lyceum-london,Lyceum,London,,England,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-lyric-theater-baltimore,Lyric Theater,Baltimore,MD,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-macarthur-court-university-of-oregon-eugene,"MacArthur Court, University of Oregon",Eugene,OR,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-mackay-stadium-university-of-nevada-reno,"Mackay Stadium, University of Nevada",Reno,NV,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-madison-square-garden-new-york,Madison Square Garden,New York,NY,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-magoo-s-pizza-parlor-menlo-park,Magoo's Pizza Parlor,Menlo Park,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
+venue-maine-state-fairgrounds-lewiston,Maine State Fairgrounds,Lewiston,ME,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-mammoth-gardens-denver,Mammoth Gardens,Denver,CO,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-manhattan-center-new-york,Manhattan Center,New York,NY,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-manor-downs-austin,Manor Downs,Austin,TX,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-marigold-ballroom-fresno,Marigold Ballroom,Fresno,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-marin-veterans-memorial-auditorium-san-rafael,Marin Veterans Memorial Auditorium,San Rafael,CA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-marion-shea-auditorium-paterson-state-college-wayne,"Marion Shea Auditorium, Paterson State College",Wayne,NJ,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-market-square-arena-indianapolis,Market Square Arena,Indianapolis,IN,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-masonic-temple-detroit,Masonic Temple,Detroit,MI,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-masonic-temple-portland,Masonic Temple,Portland,OR,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-matrix-san-francisco,Matrix,San Francisco,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-max-yasgur-s-farm-bethel,Max Yasgur's Farm,Bethel,NY,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-mayser-center-franklin-and-marshall-college-lancaster,"Mayser Center, Franklin & Marshall College",Lancaster,PA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-mcdonough-arena-georgetown-university-washington,"McDonough Arena, Georgetown University",Washington,DC,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-mcfarlin-auditorium-southern-methodist-university-smu-dallas,"McFarlin Auditorium, Southern Methodist University (SMU)",Dallas,TX,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-mcgaw-hall-northwestern-university-evanston,"McGaw Hall, Northwestern University",Evanston,IL,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-mcmahon-stadium-calgary,McMahon Stadium,Calgary,,Canada,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-mcnichols-sports-arena-denver,McNichols Sports Arena,Denver,CO,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-meadowlands-arena-east-rutherford,Meadowlands Arena,East Rutherford,NJ,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-mecca-milwaukee,Mecca,Milwaukee,WI,US,,,Normalized from gdshowsdb 1989 bulk baseline.
+venue-melk-weg-amsterdam,Melk Weg,Amsterdam,,Netherlands,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-melodyland-theatre-anaheim,Melodyland Theatre,Anaheim,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-memorial-auditorium-ohio-university-athens,"Memorial Auditorium, Ohio University",Athens,OH,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-memorial-union-ballroom-purdue-university-lafayette,"Memorial Union Ballroom, Purdue University",Lafayette,IN,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-meramec-community-college-st-louis,Meramec Community College,St. Louis,MO,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-merriweather-post-pavilion-columbia,Merriweather Post Pavilion,Columbia,MD,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-mershon-auditorium-ohio-state-university-columbus,"Mershon Auditorium, Ohio State University",Columbus,OH,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-metropolitan-sports-center-bloomington,Metropolitan Sports Center,Bloomington,MN,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-miami-arena-miami,Miami Arena,Miami,FL,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-miami-hollywood-speedway-park-pembroke-pines,Miami-Hollywood Speedway Park,Pembroke Pines,FL,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-mid-south-coliseum-memphis,Mid-South Coliseum,Memphis,TN,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-middlesex-county-community-college-edison,Middlesex County Community College,Edison,NJ,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-mile-high-stadium-denver,Mile High Stadium,Denver,CO,US,,,Normalized from gdshowsdb 1991 bulk baseline.
+venue-milwaukee-auditorium-milwaukee,Milwaukee Auditorium,Milwaukee,WI,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-mississippi-coliseum-jackson,Mississippi Coliseum,Jackson,MS,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-monterey-county-fairgrounds-monterey,Monterey County Fairgrounds,Monterey,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-monterey-peninsula-college-monterey,Monterey Peninsula College,Monterey,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-moody-coliseum-southern-methodist-university-smu-dallas,"Moody Coliseum, Southern Methodist University (SMU)",Dallas,TX,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-moscone-convention-center-san-francisco,Moscone Convention Center,San Francisco,CA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-mosque-richmond,Mosque,Richmond,VA,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-mount-tamalpais-cushing-memorial-amphitheatre-marin-county,"Mount Tamalpais, Cushing Memorial Amphitheatre",Marin County,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-muir-beach-lodge-muir-beach,Muir Beach Lodge,Muir Beach,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
 venue-music-hall-boston,Music Hall,Boston,MA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
 venue-music-hall-cincinnati,Music Hall,Cincinnati,OH,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-music-hall-municipal-auditorium-kansas-city,Music Hall (Municipal Auditorium),Kansas City,MO,US,,,Normalized from gdshowsdb 1980 bulk baseline.
 venue-musikhalle-hamburg,Musikhalle,Hamburg,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-nashville-municipal-auditorium-nashville,Nashville Municipal Auditorium,Nashville,TN,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-nassau-veterans-memorial-coliseum-uniondale,Nassau Veterans Memorial Coliseum,Uniondale,NY,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-national-guard-armory-st-louis,National Guard Armory,St. Louis,MO,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-naumburg-bandshell-central-park-new-york,"Naumburg Bandshell, Central Park",New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-nbc-studios-new-york,NBC Studios,New York,NY,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-nevada-county-fairgrounds-grass-valley,Nevada County Fairgrounds,Grass Valley,CA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-new-haven-coliseum-veterans-memorial-coliseum-new-haven,New Haven Coliseum Veterans Memorial Coliseum,New Haven,CT,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-niagra-falls-convention-center-niagra-falls,Niagra Falls Convention Center,Niagra Falls,NY,US,,,Normalized from gdshowsdb 1984 bulk baseline.
+venue-northrop-auditorium-university-of-minnesota-minneapolis,"Northrop Auditorium, University of Minnesota",Minneapolis,MN,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-ny-state-pavilion-flushing-meadows-park-new-york,"NY State Pavilion, Flushing Meadows Park",New York,NY,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-o-keefe-centre-toronto,O'Keefe Centre,Toronto,,Canada,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-oakland-alameda-county-coliseum-arena-oakland,Oakland-Alameda County Coliseum Arena,Oakland,CA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-oakland-alameda-county-coliseum-stadium-oakand,Oakland-Alameda County Coliseum Stadium,Oakand,CA,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-oakland-auditorium-oakland,Oakland Auditorium,Oakland,CA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-ohio-theatre-columbus,Ohio Theatre,Columbus,OH,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-oklahoma-city-fairgrounds-arena-oklahoma-city,Oklahoma City Fairgrounds Arena,Oklahoma City,OK,US,,,Normalized from gdshowsdb 1973 bulk baseline.
 venue-old-renaissance-faire-grounds-veneta,Old Renaissance Faire Grounds,Veneta,OR,,,,
 venue-olympia-paris,Olympia,Paris,,France,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-olympiahalle-munich,Olympiahalle,Munich,,Germany,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-olympic-center-lake-placid,Olympic Center,Lake Placid,NY,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-omaha-civic-auditorium-omaha,Omaha Civic Auditorium,Omaha,NE,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-onondaga-county-war-memorial-syracuse,Onondaga County War Memorial,Syracuse,NY,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-orange-county-fairgrounds-costa-mesa,Orange County Fairgrounds,Costa Mesa,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-oregon-country-fairgrounds-veneta,Oregon Country Fairgrounds,Veneta,OR,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-orlando-arena-orlando,Orlando Arena,Orlando,FL,US,,,Normalized from gdshowsdb 1991 bulk baseline.
+venue-orpheum-theatre-san-francisco,Orpheum Theatre,San Francisco,CA,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-orvis-student-activities-center-gymnasium-state-university-of-new-york-college-of-technology-at-alfred-alfred,"Orvis Student Activities Center Gymnasium, State University of New York College of Technology at Alfred",Alfred,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-oxford-plains-speedway-oxford,Oxford Plains Speedway,Oxford,ME,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-p-n-e-agradome-vancouver,P.N.E. Agradome,Vancouver,,Canada,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-p-n-e-coliseum-vancouver,P.N.E. Coliseum,Vancouver,,Canada,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-p-n-e-garden-auditorium-vancouver,P.N.E. Garden Auditorium,Vancouver,,Canada,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-palace-of-fine-arts-theatre-san-francisco,Palace of Fine Arts Theatre,San Francisco,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
 venue-palace-theater-waterbury,Palace Theater,Waterbury,CT,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-palais-des-sports-paris,Palais des Sports,Paris,,France,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-palau-dels-esports-de-barcelona-barcelona,Palau dels Esports de Barcelona,Barcelona,,Spain,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-palm-gardens-new-york,Palm Gardens,New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-panhandle-golden-gate-park-san-francisco,"Panhandle, Golden Gate Park",San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-panther-hall-fort-worth,Panther Hall,Fort Worth,TX,US,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-paramount-northwest-theatre-seattle,Paramount Northwest Theatre,Seattle,WA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
 venue-paramount-theatre-portland,Paramount Theatre,Portland,OR,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-parc-des-expositions-dijon,Parc des Expositions,Dijon,,France,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-parkwest-ski-resort-park-city,ParkWest Ski Resort,Park City,UT,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-pasadena-civic-auditorium-pasadena,Pasadena Civic Auditorium,Pasadena,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-patrick-gymnasium-university-of-vermont-burlington,"Patrick Gymnasium, University of Vermont",Burlington,VT,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-pauley-ballroom-uc-berkeley-berkeley,"Pauley Ballroom, UC Berkeley",Berkeley,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-pauley-pavilion-ucla-los-angeles,"Pauley Pavilion, UCLA",Los Angeles,CA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-pelletier-farm-st-helens,Pelletier Farm,St. Helens,OR,US,,,Normalized from gdshowsdb 1969 bulk baseline.
 venue-performing-arts-center-milwaukee,Performing Arts Center,Milwaukee,WI,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-pershing-auditorium-lincoln,Pershing Auditorium,Lincoln,NE,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-phoenix-star-theatre-phoenix,Phoenix Star Theatre,Phoenix,AZ,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-piedmont-park-atlanta,Piedmont Park,Atlanta,GA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-pine-knob-music-theatre-clarkston,Pine Knob Music Theatre,Clarkston,MI,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-pioneer-ballroom-suisun-city,Pioneer Ballroom,Suisun City,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-pirates-world-dania,Pirates World,Dania,FL,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-pittsburgh-civic-arena-pittsburgh,Pittsburgh Civic Arena,Pittsburgh,PA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-place-ville-marie-montreal,Place Ville Marie,Montreal,,Canada,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-playboy-club-los-angeles,Playboy Club,Los Angeles,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-playhouse-theatre-edinburgh,Playhouse Theatre,Edinburgh,,Scotland,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-polo-field-golden-gate-park-san-francisco,"Polo Field, Golden Gate Park",San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-poplar-creek-music-theatre-hoffman-estates,Poplar Creek Music Theatre,Hoffman Estates,IL,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-portland-international-raceway-portland,Portland International Raceway,Portland,OR,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-portland-meadows-portland,Portland Meadows,Portland,OR,US,,,Normalized from gdshowsdb 1995 bulk baseline.
+venue-portland-memorial-coliseum-portland,Portland Memorial Coliseum,Portland,OR,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-pritchard-gym-s-u-n-y-stony-brook,"Pritchard Gym, S.U.N.Y.",Stony Brook,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-providence-civic-center-providence,Providence Civic Center,Providence,RI,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-psychedelic-supermarket-boston,Psychedelic Supermarket,Boston,MA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-quadrangle-washington-university-st-louis,"Quadrangle, Washington University",St. Louis,MO,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-raceway-park-englishtown,Raceway Park,Englishtown,NJ,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-radio-city-music-hall-new-york,Radio City Music Hall,New York,NY,US,,,Normalized from gdshowsdb 1980 bulk baseline.
 venue-radio-luxembourg-luxembourg,Radio Luxembourg,Luxembourg,,Luxembourg,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-rainbow-theatre-london,Rainbow Theatre,London,,England,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-rancho-olompali-novato,Rancho Olompali,Novato,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-recreation-center-mill-valley,Recreation Center,Mill Valley,CA,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-recreation-hall-pennsylvania-state-university-university-park,"Recreation Hall, Pennsylvania State University",University Park,PA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-recreation-hall-uc-davis-davis,"Recreation Hall, UC Davis",Davis,CA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-red-rocks-amphitheatre-morrison,Red Rocks Amphitheatre,Morrison,CO,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-reed-hollow-ranch-franktown,Reed Hollow Ranch,Franktown,CO,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-reunion-arena-dallas,Reunion Arena,Dallas,TX,US,,,Normalized from gdshowsdb 1988 bulk baseline.
 venue-rheinhalle-dusseldorf,Rheinhalle,Dusseldorf,,Germany,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-rhode-island-auditorium-providence,Rhode Island Auditorium,Providence,RI,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-rich-stadium-buffalo,Rich Stadium,Buffalo,NY,US,,,Normalized from gdshowsdb 1986 bulk baseline.
+venue-richfield-coliseum-richfield,Richfield Coliseum,Richfield,OH,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-richmond-coliseum-richmond,Richmond Coliseum,Richmond,VA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-riverbend-music-center-cincinnati,Riverbend Music Center,Cincinnati,OH,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-riverfront-arena-cincinnati,Riverfront Arena,Cincinnati,OH,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-riverport-amphitheatre-maryland-heights,Riverport Amphitheatre,Maryland Heights,MO,US,,,Normalized from gdshowsdb 1994 bulk baseline.
+venue-roanoke-civic-center-roanoke,Roanoke Civic Center,Roanoke,VA,US,,,Normalized from gdshowsdb 1974 bulk baseline.
+venue-robert-f-kennedy-stadium-washington,Robert F. Kennedy Stadium,Washington,DC,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-robertson-gym-uc-santa-barbara-goleta,"Robertson Gym, UC Santa Barbara",Goleta,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-rochester-community-war-memorial-rochester,Rochester Community War Memorial,Rochester,NY,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-rock-pile-toronto,Rock Pile,Toronto,,Canada,,,Normalized from gdshowsdb 1969 bulk baseline.
 venue-roosevelt-stadium-jersey-city,Roosevelt Stadium,Jersey City,NJ,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-roscoe-maples-pavilion-stanford-university-palo-alto,"Roscoe Maples Pavilion, Stanford University",Palo Alto,CA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-rose-palace-pasadena,Rose Palace,Pasadena,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-rosemont-horizon-rosemont,Rosemont Horizon,Rosemont,IL,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-rpi-fieldhouse-rensselaer-polytechnic-institute-troy,"RPI Fieldhouse, Rensselaer Polytechnic Institute",Troy,NY,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-rubber-bowl-university-of-akron-akron,"Rubber Bowl, University of Akron",Akron,OH,US,,,Normalized from gdshowsdb 1986 bulk baseline.
+venue-rupp-arena-university-of-kentucky-lexington,"Rupp Arena, University of Kentucky",Lexington,KY,US,,,Normalized from gdshowsdb 1978 bulk baseline.
 venue-sacramento-memorial-auditorium-sacramento,Sacramento Memorial Auditorium,Sacramento,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-saenger-performing-arts-center-new-orleans,Saenger Performing Arts Center,New Orleans,LA,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-salt-palace-salt-lake-city,Salt Palace,Salt Lake City,UT,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-sam-boyd-silver-bowl-las-vegas,Sam Boyd Silver Bowl,Las Vegas,NV,US,,,Normalized from gdshowsdb 1991 bulk baseline.
+venue-sam-houston-coliseum-houston,Sam Houston Coliseum,Houston,TX,US,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-san-antonio-municipal-auditorium-san-antonio,San Antonio Municipal Auditorium,San Antonio,TX,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-san-diego-sports-arena-san-diego,San Diego Sports Arena,San Diego,CA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-san-francisco-civic-auditorium-san-francisco,San Francisco Civic Auditorium,San Francisco,CA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
 venue-san-jose-civic-auditorium-san-jose,San Jose Civic Auditorium,San Jose,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-san-quentin-state-prison-san-quentin,San Quentin State Prison,San Quentin,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-sandstone-amphitheater-bonner-springs,Sandstone Amphitheater,Bonner Springs,KS,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-santa-clara-county-fairgrounds-san-jose,Santa Clara County Fairgrounds,San Jose,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-santa-cruz-county-fairgrounds-watsonville,Santa Cruz County Fairgrounds,Watsonville,CA,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-santa-monica-civic-auditorium-santa-monica,Santa Monica Civic Auditorium,Santa Monica,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-santa-rosa-fairgrounds-santa-rosa,Santa Rosa Fairgrounds,Santa Rosa,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-santa-venetia-armory-san-rafael,Santa Venetia Armory,San Rafael,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-saratoga-performing-arts-center-saratoga-springs,Saratoga Performing Arts Center,Saratoga Springs,NY,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-sargent-gym-boston-university-boston,"Sargent Gym, Boston University",Boston,MA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-scope-norfolk,Scope,Norfolk,VA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-seattle-center-arena-seattle,Seattle Center Arena,Seattle,WA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-seattle-center-memorial-coliseum-seattle,Seattle Center Memorial Coliseum,Seattle,WA,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-seattle-center-memorial-stadium-seattle,Seattle Center Memorial Stadium,Seattle,WA,US,,,Normalized from gdshowsdb 1994 bulk baseline.
+venue-selland-arena-fresno,Selland Arena,Fresno,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-seminole-indian-village-west-hollywood,Seminole Indian Village,West Hollywood,FL,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-shea-s-buffalo-theater-buffalo,Shea's Buffalo Theater,Buffalo,NY,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-shoreline-amphitheatre-mountain-view,Shoreline Amphitheatre,Mountain View,CA,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-shrine-auditorium-los-angeles,Shrine Auditorium,Los Angeles,CA,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-shrine-exhibition-hall-los-angeles,Shrine Exhibition Hall,Los Angeles,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-sierra-college-rocklin,Sierra College,Rocklin,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-silva-concert-hall-hult-center-for-the-performing-arts-eugene,"Silva Concert Hall, Hult Center For The Performing Arts",Eugene,OR,US,,,Normalized from gdshowsdb 1983 bulk baseline.
+venue-silver-dollar-fairgrounds-chico,Silver Dollar Fairgrounds,Chico,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-silver-stadium-rochester,Silver Stadium,Rochester,NY,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-siu-arena-southern-illinois-university-carbondale,"SIU Arena, Southern Illinois University",Carbondale,IL,US,,,Normalized from gdshowsdb 1979 bulk baseline.
 venue-soccer-field-american-university-washington,"Soccer Field, American University",Washington,DC,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-sokol-hall-san-francisco,Sokol Hall,San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-soldier-field-chicago,Soldier Field,Chicago,IL,US,,,Normalized from gdshowsdb 1991 bulk baseline.
 venue-soldiers-and-sailors-memorial-hall-kansas-city,Soldiers & Sailors Memorial Hall,Kansas City,KS,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-southern-illinois-university-mississippi-river-festival-edwardsville,"Southern Illinois University, Mississippi River Festival",Edwardsville,IL,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-southern-star-amphitheater-houston,Southern Star Amphitheater,Houston,TX,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-spartan-stadium-san-jose-state-university-san-jose,"Spartan Stadium, San Jose State University",San Jose,CA,US,,,Normalized from gdshowsdb 1979 bulk baseline.
 venue-spectrum-philadelphia,Spectrum,Philadelphia,PA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-speedway-meadows-golden-gate-park-san-francisco,"Speedway Meadows, Golden Gate Park",San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-spokane-coliseum-spokane,Spokane Coliseum,Spokane,WA,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-sportatorium-pembroke-pines,Sportatorium,Pembroke Pines,FL,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-sporthalle-hamburg,Sporthalle,Hamburg,,Germany,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-spreckles-temple-of-music-bandshell-golden-gate-park-san-francisco,"Spreckles Temple of Music Bandshell, Golden Gate Park",San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-springer-s-inn-gresham,Springer's Inn,Gresham,OR,US,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-springfield-civic-center-arena-springfield,Springfield Civic Center Arena,Springfield,MA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-st-louis-arena-st-louis,St. Louis Arena,St. Louis,MO,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-st-paul-civic-center-arena-st-paul,St. Paul Civic Center Arena,St. Paul,MN,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-stabler-arena-lehigh-university-bethlehem,"Stabler Arena, Lehigh University",Bethlehem,PA,US,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-stadthalle-iv-bremen,Stadthalle IV,Bremen,,Germany,,,Normalized from gdshowsdb 1981 bulk baseline.
 venue-stakladen-cafeteria-aarhus-university-aarhus,Stakladen Cafeteria (Aarhus University),Aarhus,,Denmark,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-stanislaus-county-fairgrounds-turlock,Stanislaus County Fairgrounds,Turlock,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
 venue-stanley-theatre-jersey-city,Stanley Theatre,Jersey City,NJ,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-stanley-theatre-pittsburgh,Stanley Theatre,Pittsburgh,PA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-star-lake-amphitheater-burgettstown,Star Lake Amphitheater,Burgettstown,PA,US,,,Normalized from gdshowsdb 1992 bulk baseline.
+venue-starlight-theatre-kansas-city,Starlight Theatre,Kansas City,MO,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-state-fair-coliseum-detroit,State Fair Coliseum,Detroit,MI,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-state-fair-coliseum-indianapolis,State Fair Coliseum,Indianapolis,IN,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-state-fairgrounds-des-moines,State Fairgrounds,Des Moines,IA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-stockton-ballroom-stockton,Stockton Ballroom,Stockton,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-stockton-civic-auditorium-stockton,Stockton Civic Auditorium,Stockton,CA,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-straight-theater-san-francisco,Straight Theater,San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-strawberry-canyon-berkeley,Strawberry Canyon,Berkeley,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-student-center-modesto-jr-college-modesto,"Student Center, Modesto Jr. College",Modesto,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-student-union-ballroom-university-of-utah-salt-lake-city,"Student Union Ballroom, University of Utah",Salt Lake City,UT,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-sullivan-stadium-foxboro,Sullivan Stadium,Foxboro,MA,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-sun-dome-university-of-south-florida-tampa,"Sun Dome, University of South Florida",Tampa,FL,US,,,Normalized from gdshowsdb 1985 bulk baseline.
+venue-swing-auditorium-san-bernardino,Swing Auditorium,San Bernardino,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-tacoma-dome-tacoma,Tacoma Dome,Tacoma,WA,US,,,Normalized from gdshowsdb 1988 bulk baseline.
+venue-taft-auditorium-cincinnati,Taft Auditorium,Cincinnati,OH,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-tampa-stadium-tampa,Tampa Stadium,Tampa,FL,US,,,Normalized from gdshowsdb 1995 bulk baseline.
+venue-temple-stadium-temple-university-philadelphia,"Temple Stadium, Temple University",Philadelphia,PA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-terminal-island-correctional-facility-san-pedro,Terminal Island Correctional Facility,San Pedro,CA,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-terrace-ballroom-salt-lake-city,Terrace Ballroom,Salt Lake City,UT,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-the-ark-boston,The Ark,Boston,MA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-the-bank-torrance,The Bank,Torrance,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-the-big-beat-club-palo-alto,The Big Beat Club,Palo Alto,CA,US,,,Normalized from gdshowsdb 1965 bulk baseline.
+venue-the-cheetah-venice,The Cheetah,Venice,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-the-heliport-sausalito,The Heliport,Sausalito,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-the-hippodrome-san-diego,The Hippodrome,San Diego,CA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-the-hullabaloo-hollywood,The Hullabaloo,Hollywood,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-the-music-box-omaha,The Music Box,Omaha,NE,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-the-north-face-ski-shop-san-francisco,The North Face Ski Shop,San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-the-old-cheese-factory-san-francisco,The Old Cheese Factory,San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-the-omni-atlanta,The Omni,Atlanta,GA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-the-palace-auburn-hills,The Palace,Auburn Hills,MI,US,,,Normalized from gdshowsdb 1992 bulk baseline.
+venue-the-palestra-university-of-rochester-rochester,"The Palestra, University of Rochester",Rochester,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-the-palladium-new-york,The Palladium,New York,NY,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-the-pyramid-memphis,The Pyramid,Memphis,TN,US,,,Normalized from gdshowsdb 1995 bulk baseline.
+venue-the-rock-garden-san-francisco,The Rock Garden,San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-the-summit-houston,The Summit,Houston,TX,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-the-syndrome-chicago,The Syndrome,Chicago,IL,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-the-warehouse-new-orleans,The Warehouse,New Orleans,LA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-thee-club-los-angeles,Thee Club,Los Angeles,CA,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-thee-experience-west-hollywood,Thee Experience,West Hollywood,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-thee-image-sunny-isles-beach,Thee Image,Sunny Isles Beach,FL,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-thelma-los-angeles,Thelma,Los Angeles,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-thompson-arena-dartmouth-college-hanover,"Thompson Arena, Dartmouth College",Hanover,NH,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-three-rivers-stadium-pittsburgh,Three Rivers Stadium,Pittsburgh,PA,US,,,Normalized from gdshowsdb 1990 bulk baseline.
 venue-tivoli-concert-hall-copenhagen,Tivoli Concert Hall,Copenhagen,,Denmark,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-tompkins-square-park-new-york,Tompkins Square Park,New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-tower-theater-upper-darby,Tower Theater,Upper Darby,PA,US,,,Normalized from gdshowsdb 1976 bulk baseline.
+venue-town-park-telluride,Town Park,Telluride,CO,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-tressider-memorial-union-tmu-deck-stanford-university-palo-alto,"Tressider Memorial Union (TMU) Deck, Stanford University",Palo Alto,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-trouper-s-hall-los-angeles,Trouper's Hall,Los Angeles,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-tulsa-fairgrounds-pavilion-tulsa,Tulsa Fairgrounds Pavilion,Tulsa,OK,US,,,Normalized from gdshowsdb 1979 bulk baseline.
+venue-tyrone-guthrie-theater-minneapolis,Tyrone Guthrie Theater,Minneapolis,MN,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-uic-pavilion-university-of-illinois-chicago-chicago,"UIC Pavilion, University of Illinois, Chicago",Chicago,IL,US,,,Normalized from gdshowsdb 1987 bulk baseline.
+venue-ungano-s-night-club-new-york,Ungano's Night Club,New York,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-uni-dome-university-of-northern-iowa-cedar-falls,"Uni-Dome, University of Northern Iowa",Cedar Falls,IA,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-unicorn-theater-la-jolla,Unicorn Theater,La Jolla,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-universal-amphitheatre-universal-city,Universal Amphitheatre,Universal City,CA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-university-arena-university-of-new-mexico-albuquerque,"University Arena, University of New Mexico",Albuquerque,NM,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-university-auditorium-university-of-arizona-tucson,"University Auditorium, University of Arizona",Tucson,AZ,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-university-hall-university-of-virginia-charlottesville,"University Hall, University of Virginia",Charlottesville,VA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-university-of-alabama-memorial-coliseum-tuscaloosa,"University of Alabama, Memorial Coliseum",Tuscaloosa,AL,US,,,Normalized from gdshowsdb 1977 bulk baseline.
+venue-unknown-,Unknown,,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-unknown-lincoln,Unknown,Lincoln,NE,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-uptown-theatre-chicago,Uptown Theatre,Chicago,IL,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-usair-arena-landover,USAir Arena,Landover,MD,US,,,Normalized from gdshowsdb 1994 bulk baseline.
+venue-utica-memorial-auditorium-utica,Utica Memorial Auditorium,Utica,NY,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-valley-unitarian-universalist-church-north-hills,Valley Unitarian Universalist Church,North Hills,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-ventura-county-fairgrounds-ventura,Ventura County Fairgrounds,Ventura,CA,US,,,Normalized from gdshowsdb 1982 bulk baseline.
 venue-veterans-memorial-auditorium-columbus,Veterans Memorial Auditorium,Columbus,OH,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-veterans-memorial-auditorium-santa-rosa,Veterans Memorial Auditorium,Santa Rosa,CA,US,,,Normalized from gdshowsdb 1969 bulk baseline.
+venue-veterans-memorial-coliseum-jacksonville,Veterans Memorial Coliseum,Jacksonville,FL,US,,,Normalized from gdshowsdb 1978 bulk baseline.
+venue-veterans-memorial-hall-berkeley,Veterans Memorial Hall,Berkeley,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-village-theater-new-york,Village Theater,New York,NY,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-virginia-beach-civic-center-virginia-beach,Virginia Beach Civic Center,Virginia Beach,VA,US,,,Normalized from gdshowsdb 1968 bulk baseline.
+venue-volunteer-park-seattle,Volunteer Park,Seattle,WA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-wallace-wade-stadium-duke-university-durham,"Wallace Wade Stadium, Duke University",Durham,NC,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-walter-k-bel-halle-r-sselsheim,Walter K�bel Halle,R�sselsheim,,Germany,,,Normalized from gdshowsdb 1981 bulk baseline.
+venue-warfield-theatre-san-francisco,Warfield Theatre,San Francisco,CA,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-wembley-arena-london,Wembley Arena,London,,England,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-west-gym-harpur-college-binghamton,"West Gym, Harpur College",Binghamton,NY,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-west-high-auditorium-anchorage,West High Auditorium,Anchorage,AK,US,,,Normalized from gdshowsdb 1980 bulk baseline.
+venue-west-palm-beach-auditorium-west-palm-beach,West Palm Beach Auditorium,West Palm Beach,FL,US,,,Normalized from gdshowsdb 1982 bulk baseline.
+venue-west-park-ann-arbor,West Park,Ann Arbor,MI,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-whisky-a-go-go-san-francisco,Whisky-A-Go-Go,San Francisco,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-william-and-mary-hall-college-of-william-and-mary-williamsburg,"William and Mary Hall, College Of William and Mary",Williamsburg,VA,US,,,Normalized from gdshowsdb 1973 bulk baseline.
+venue-william-randolph-hearst-greek-theatre-uc-berkeley-berkeley,"William Randolph Hearst Greek Theatre, UC Berkeley",Berkeley,CA,US,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-winnipeg-fairgrounds-winnipeg,Winnipeg Fairgrounds,Winnipeg,,Canada,,,Normalized from gdshowsdb 1970 bulk baseline.
 venue-winterland-san-francisco,Winterland,San Francisco,CA,US,,,Normalized from gdshowsdb 1972 bulk baseline.
+venue-women-s-gym-san-francisco-state-university-san-francisco,"Women's Gym, San Francisco State University",San Francisco,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-world-music-theatre-tinley-park,World Music Theatre,Tinley Park,IL,US,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-yale-bowl-new-haven,Yale Bowl,New Haven,CT,US,,,Normalized from gdshowsdb 1971 bulk baseline.
+venue-york-farm-poynette,York Farm,Poynette,WI,US,,,Normalized from gdshowsdb 1970 bulk baseline.
+venue-youth-opportunities-center-compton,Youth Opportunities Center,Compton,CA,US,,,Normalized from gdshowsdb 1966 bulk baseline.
+venue-youth-pavilion-expo-67-montreal,"Youth Pavilion, Expo '67",Montreal,,Canada,,,Normalized from gdshowsdb 1967 bulk baseline.
+venue-z-nith-paris-paris,Z�nith Paris,Paris,,France,,,Normalized from gdshowsdb 1990 bulk baseline.
+venue-zoo-amphitheatre-oklahoma-city,Zoo Amphitheatre,Oklahoma City,OK,US,,,Normalized from gdshowsdb 1981 bulk baseline.

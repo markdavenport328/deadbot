@@ -3,11 +3,177 @@
 from __future__ import annotations
 
 import json
+from datetime import date, datetime, time, timezone
+from functools import lru_cache
+from http.client import HTTPException as HTTPClientException
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+from zoneinfo import ZoneInfo
 
 from langchain_core.tools import BaseTool, tool
 
 from deadbot.data import CanonicalStore
+
+
+OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+USNO_RISE_SET_URL = "https://aa.usno.navy.mil/api/rstt/oneday"
+
+
+class ExternalServiceError(RuntimeError):
+    """A safe, user-facing failure from a read-only external data source."""
+
+
+def _fetch_json(url: str) -> dict[str, Any]:
+    """Fetch one JSON object without adding a third-party HTTP dependency."""
+
+    request = Request(url, headers={"User-Agent": "Deadbot/0.1 (historical-show-context)"})
+    try:
+        with urlopen(request, timeout=8) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, HTTPClientException) as error:
+        raise ExternalServiceError("The external historical-data service was unavailable.") from error
+    if not isinstance(payload, dict):
+        raise ExternalServiceError("The external historical-data service returned an unexpected response.")
+    if payload.get("error") is True:
+        raise ExternalServiceError(str(payload.get("reason") or "The external service returned an error."))
+    return payload
+
+
+def _iso_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _show_date(show: dict[str, str]) -> date:
+    return date.fromisoformat(show["show_date"])
+
+
+@lru_cache(maxsize=128)
+def _geocode(query: str) -> dict[str, Any]:
+    url = f"{OPEN_METEO_GEOCODING_URL}?{urlencode({'name': query, 'count': 1, 'language': 'en', 'format': 'json'})}"
+    payload = _fetch_json(url)
+    results = payload.get("results")
+    if not isinstance(results, list) or not results or not isinstance(results[0], dict):
+        raise ExternalServiceError(f"No coordinates were found for {query}.")
+    result = results[0]
+    if not isinstance(result.get("latitude"), (int, float)) or not isinstance(result.get("longitude"), (int, float)):
+        raise ExternalServiceError(f"The geocoder returned no usable coordinates for {query}.")
+    return result
+
+
+def _show_location(store: CanonicalStore, identifier: str) -> tuple[dict[str, str], dict[str, Any]] | None:
+    """Resolve a show and its venue to coordinates, including a geocoder fallback."""
+
+    show = store.resolve_show(identifier)
+    if not show:
+        return None
+    venue = store.one("venues", show["venue_id"]) or {}
+    latitude = venue.get("latitude", "").strip()
+    longitude = venue.get("longitude", "").strip()
+    if latitude and longitude:
+        location = {
+            "name": ", ".join(part for part in (venue.get("city"), venue.get("state_region"), venue.get("country")) if part),
+            "latitude": float(latitude),
+            "longitude": float(longitude),
+            "timezone": "",
+            "source": "canonical venue coordinates",
+        }
+    else:
+        query = ", ".join(
+            part for part in (venue.get("city"), venue.get("state_region"), venue.get("country")) if part
+        )
+        if not query:
+            raise ExternalServiceError("The show's venue has no location details to geocode.")
+        geocoded = _geocode(query)
+        location = {
+            "name": geocoded.get("name") or query,
+            "latitude": geocoded["latitude"],
+            "longitude": geocoded["longitude"],
+            "timezone": geocoded.get("timezone", ""),
+            "country": geocoded.get("country", ""),
+            "source": "Open-Meteo Geocoding API",
+        }
+    return show, location
+
+
+def _location_payload(location: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: location[key]
+        for key in ("name", "latitude", "longitude", "timezone", "country", "source")
+        if location.get(key) not in (None, "")
+    }
+
+
+def _timezone_offset(location: dict[str, Any], requested_date: date) -> float:
+    timezone_name = location.get("timezone")
+    if not timezone_name:
+        return 0
+    try:
+        offset = datetime.combine(requested_date, time(12), tzinfo=ZoneInfo(timezone_name)).utcoffset()
+    except (KeyError, ValueError):
+        return 0
+    hours = (offset or timezone.utc.utcoffset(None)).total_seconds() / 3600
+    return int(hours) if hours.is_integer() else hours
+
+
+def _weather_description(code: Any) -> str | None:
+    descriptions = {
+        0: "clear sky",
+        1: "mainly clear",
+        2: "partly cloudy",
+        3: "overcast",
+        45: "fog",
+        48: "depositing rime fog",
+        51: "light drizzle",
+        53: "moderate drizzle",
+        55: "dense drizzle",
+        61: "slight rain",
+        63: "moderate rain",
+        65: "heavy rain",
+        71: "slight snow",
+        73: "moderate snow",
+        75: "heavy snow",
+        80: "slight rain showers",
+        81: "moderate rain showers",
+        82: "violent rain showers",
+        95: "thunderstorm",
+        96: "thunderstorm with slight hail",
+        99: "thunderstorm with heavy hail",
+    }
+    try:
+        return descriptions.get(int(code))
+    except (TypeError, ValueError):
+        return None
+
+
+def _daily_value(daily: dict[str, Any], key: str) -> Any:
+    values = daily.get(key)
+    return values[0] if isinstance(values, list) and values else None
+
+
+def _astrology_sign(requested_date: date) -> dict[str, str]:
+    month_day = (requested_date.month, requested_date.day)
+    signs = [
+        ((3, 21), (4, 19), "Aries", "fire", "cardinal", "Mars"),
+        ((4, 20), (5, 20), "Taurus", "earth", "fixed", "Venus"),
+        ((5, 21), (6, 20), "Gemini", "air", "mutable", "Mercury"),
+        ((6, 21), (7, 22), "Cancer", "water", "cardinal", "Moon"),
+        ((7, 23), (8, 22), "Leo", "fire", "fixed", "Sun"),
+        ((8, 23), (9, 22), "Virgo", "earth", "mutable", "Mercury"),
+        ((9, 23), (10, 22), "Libra", "air", "cardinal", "Venus"),
+        ((10, 23), (11, 21), "Scorpio", "water", "fixed", "Mars/Pluto"),
+        ((11, 22), (12, 21), "Sagittarius", "fire", "mutable", "Jupiter"),
+        ((12, 22), (12, 31), "Capricorn", "earth", "cardinal", "Saturn"),
+        ((1, 1), (1, 19), "Capricorn", "earth", "cardinal", "Saturn"),
+        ((1, 20), (2, 18), "Aquarius", "air", "fixed", "Saturn/Uranus"),
+        ((2, 19), (3, 20), "Pisces", "water", "mutable", "Jupiter/Neptune"),
+    ]
+    for start, end, name, element, modality, ruler in signs:
+        if start <= month_day <= end:
+            return {"sign": name, "element": element, "modality": modality, "traditional_ruler": ruler}
+    raise ValueError(f"Could not determine a zodiac sign for {requested_date.isoformat()}.")
 
 
 def _json(value: Any) -> str:
@@ -131,4 +297,157 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
             return _json({"performance_id": entity_id, "links": [row for row in store.rows("performance_links") if row["performance_id"] == entity_id]})
         return _json({"error": "entity_type must be 'show' or 'performance'"})
 
-    return [search_entities, get_song, get_show, get_performance, get_media_links]
+    @tool
+    def get_historical_weather(show_id_or_date: str) -> str:
+        """Get historical weather for the venue and date of a canonical show.
+
+        Use a show ID or an unambiguous show date such as 1972-08-27. The result
+        comes from Open-Meteo's historical reanalysis, so it is an estimate for
+        the venue area rather than a claim about a particular weather station.
+        """
+        try:
+            resolved = _show_location(store, show_id_or_date)
+            if not resolved:
+                return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+            show, location = resolved
+            requested_date = _show_date(show)
+            params = {
+                "latitude": location["latitude"],
+                "longitude": location["longitude"],
+                "start_date": requested_date.isoformat(),
+                "end_date": requested_date.isoformat(),
+                "daily": ",".join([
+                    "weather_code", "temperature_2m_max", "temperature_2m_min",
+                    "precipitation_sum", "rain_sum", "snowfall_sum",
+                    "precipitation_hours", "wind_speed_10m_max",
+                ]),
+                "temperature_unit": "fahrenheit",
+                "wind_speed_unit": "mph",
+                "precipitation_unit": "inch",
+                "timezone": "auto",
+            }
+            url = f"{OPEN_METEO_ARCHIVE_URL}?{urlencode(params)}"
+            payload = _fetch_json(url)
+            daily = payload.get("daily")
+            if not isinstance(daily, dict):
+                raise ExternalServiceError("The weather service returned no daily data.")
+            weather_code = _daily_value(daily, "weather_code")
+            return _json({
+                "show": {"show_id": show["show_id"], "show_date": show["show_date"], "venue_id": show["venue_id"]},
+                "location": _location_payload(location),
+                "weather": {
+                    "date": requested_date.isoformat(),
+                    "temperature_max_f": _daily_value(daily, "temperature_2m_max"),
+                    "temperature_min_f": _daily_value(daily, "temperature_2m_min"),
+                    "precipitation_in": _daily_value(daily, "precipitation_sum"),
+                    "rain_in": _daily_value(daily, "rain_sum"),
+                    "snowfall_in": _daily_value(daily, "snowfall_sum"),
+                    "precipitation_hours": _daily_value(daily, "precipitation_hours"),
+                    "wind_speed_max_mph": _daily_value(daily, "wind_speed_10m_max"),
+                    "weather_code": weather_code,
+                    "weather_description": _weather_description(weather_code),
+                },
+                "source": {
+                    "name": "Open-Meteo Historical Weather API",
+                    "url": url,
+                    "retrieved_at": _iso_now(),
+                    "note": "Historical weather is modelled reanalysis for the nearby grid cell, not a station observation.",
+                },
+            })
+        except (ExternalServiceError, ValueError) as error:
+            return _json({"error": str(error), "query": show_id_or_date})
+
+    @tool
+    def get_astronomy(show_id_or_date: str) -> str:
+        """Get Sun and Moon events for the venue and date of a canonical show.
+
+        Use a show ID or an unambiguous show date such as 1972-08-27. Returns
+        local rise, set, transit, twilight, lunar phase, and illumination data
+        from the U.S. Naval Observatory's astronomical calculations.
+        """
+        try:
+            resolved = _show_location(store, show_id_or_date)
+            if not resolved:
+                return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+            show, location = resolved
+            requested_date = _show_date(show)
+            offset = _timezone_offset(location, requested_date)
+            params = {
+                "date": requested_date.isoformat(),
+                "coords": f"{location['latitude']},{location['longitude']}",
+                "tz": offset,
+            }
+            url = f"{USNO_RISE_SET_URL}?{urlencode(params)}"
+            payload = _fetch_json(url)
+            properties = payload.get("properties", {})
+            data = properties.get("data", {}) if isinstance(properties, dict) else {}
+            if not isinstance(data, dict):
+                raise ExternalServiceError("The astronomy service returned no daily data.")
+
+            def phenomena(key: str) -> list[dict[str, Any]]:
+                values = data.get(key, [])
+                if not isinstance(values, list):
+                    return []
+                return [{"event": item.get("phen"), "time": item.get("time")} for item in values if isinstance(item, dict)]
+
+            return _json({
+                "show": {"show_id": show["show_id"], "show_date": show["show_date"], "venue_id": show["venue_id"]},
+                "location": _location_payload(location),
+                "astronomy": {
+                    "date": requested_date.isoformat(),
+                    "timezone_offset_hours": offset,
+                    "sun": phenomena("sundata"),
+                    "moon": phenomena("moondata"),
+                    "moon_phase": data.get("curphase"),
+                    "moon_illumination_fraction": data.get("fracillum"),
+                    "nearest_primary_phase": data.get("closestphase"),
+                },
+                "source": {
+                    "name": "U.S. Naval Observatory Astronomical Applications API",
+                    "url": url,
+                    "retrieved_at": _iso_now(),
+                },
+            })
+        except (ExternalServiceError, ValueError) as error:
+            return _json({"error": str(error), "query": show_id_or_date})
+
+    @tool
+    def get_astrology(show_id_or_date: str) -> str:
+        """Get date-based Western zodiac context for a canonical show.
+
+        Use a show ID or an unambiguous show date such as 1972-08-27. This is
+        cultural/interpretive context based on the Sun's zodiac sign; astrology
+        is not scientific evidence and the result does not infer a person's
+        character, fate, or a show's cause.
+        """
+        try:
+            show = store.resolve_show(show_id_or_date)
+            if not show:
+                return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+            requested_date = _show_date(show)
+            sign = _astrology_sign(requested_date)
+            return _json({
+                "show": {"show_id": show["show_id"], "show_date": show["show_date"], "venue_id": show["venue_id"]},
+                "astrology": {
+                    "system": "Western tropical zodiac",
+                    "sun_sign": sign["sign"],
+                    "element": sign["element"],
+                    "modality": sign["modality"],
+                    "traditional_ruler": sign["traditional_ruler"],
+                    "interpretation": f"The show date falls in {sign['sign']} season in this astrological system.",
+                },
+                "disclaimer": "Astrology is cultural/interpretive context, not scientific evidence; this does not infer personality, fate, or causation.",
+            })
+        except (ExternalServiceError, ValueError) as error:
+            return _json({"error": str(error), "query": show_id_or_date})
+
+    return [
+        search_entities,
+        get_song,
+        get_show,
+        get_performance,
+        get_media_links,
+        get_historical_weather,
+        get_astronomy,
+        get_astrology,
+    ]

@@ -88,6 +88,7 @@ The first release should implement a deliberately small catalog. New block types
 | Entity header | Identify a song, show, performance, person, or venue. | Uses a canonical entity reference. |
 | Song, show, or performance card | Present core identity, ordering, personnel, recording, or release context. | Uses canonical data; show performance-specific facts only for the referenced rendition. |
 | Resource list | Group relevant interviews, articles, lessons, chord charts, or videos. | Links use stored resource metadata and retain source labels. |
+| Composition credit list | Show known lyric, music, and writer roles for a song. | Uses canonical person/role rows and source-resource IDs; never presents unresolved candidates as confirmed credits. |
 | Media player | Offer approved playback or video. | Uses a server-validated provider link; never model-authored iframe markup. |
 | Media link | Offer an external listening/viewing path where an embed is unavailable or unsuitable. | Uses stored link metadata and provider labels. |
 | Arrangement/chord resource | Point to a source-specific chord chart or show a concise structured progression where permitted. | Never presents a chart as universal for the song; does not reproduce full tabs, notation, or lyrics. |
@@ -101,7 +102,7 @@ Cards and lists are presentation patterns, not new domain entities. The canonica
 
 Composition is model-guided but bounded. A composer may decide that a question would be clearer with a show card followed by an official listening link, for example. It may not create a new card shape, turn an unverified statement into a fact, or use an unreturned resource because its name seems plausible.
 
-The implemented first composer receives a compact candidate packet rather than the entire conversation or raw files. Each candidate has a server-owned index, type, and label; the model's structured response can only choose and order those indices. The server resolves the selected indices back to the original validated blocks. Its system instructions and validation require it to:
+The implemented first composer receives an enriched decision brief rather than raw files. It includes the latest question, recent conversation, grounded agent answer, and a rich inventory of candidates: their scope, purpose, canonical or contextual provenance, coverage metadata, and relevant facts. The model returns a structured set of layout regions containing only server-owned candidate indexes. The server resolves those indexes back to the original validated blocks. Its system instructions and validation require it to:
 
 - make the direct answer useful even when no optional block is appropriate;
 - choose the smallest helpful set of blocks, rather than filling a page by default;
@@ -109,6 +110,12 @@ The implemented first composer receives a compact candidate packet rather than t
 - preserve the canonical-versus-contextual distinction in both text and block selection;
 - use a gap state for unavailable information; and
 - remain within response-size and block-count limits.
+
+Deadbot follows a model-first design principle: improve the model's context,
+retrieval brief, instructions, and evaluations before adding deterministic
+intent-to-template rules. Deterministic code enforces safety and validation
+boundaries; it does not replace ordinary relevance and presentation judgment.
+See `AGENTS.md` for the working principle that applies to future changes.
 
 The backend validates the composer output against the response model and resolves each reference against the retrieval packet. Invalid, missing, unsupported, empty, or unavailable-model results fall back to the deterministic candidate order. Provenance and coverage-gap blocks remain present when they were included in the candidate response; nothing is passed through as arbitrary JSON.
 

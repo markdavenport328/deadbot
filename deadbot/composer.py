@@ -1,97 +1,190 @@
-"""Bounded model-guided selection of already validated experience blocks."""
+"""Model-first composition of grounded, server-validated experience blocks."""
 
 from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ConfigDict, Field
 
 from deadbot.config import Settings
-from deadbot.experience import ExperienceBlock, ExperienceResponse
+from deadbot.experience import ExperienceBlock, ExperienceResponse, LayoutSection
 from deadbot.models import ModelProvider, create_model_provider
 
 
 logger = logging.getLogger(__name__)
 
 
-class CompositionPlan(BaseModel):
-    """The model may only select indices from the supplied candidate list."""
+class CompositionSection(BaseModel):
+    """A model-selected region containing only candidate indexes it received."""
 
     model_config = ConfigDict(extra="forbid")
-    selected_block_indexes: list[int] = Field(default_factory=list, max_length=8)
+    region: Literal["primary", "supporting", "context", "media"]
+    candidate_indexes: list[int] = Field(min_length=1, max_length=8)
+
+
+class CompositionPlan(BaseModel):
+    """The model's layout decision; it cannot create or mutate content blocks."""
+
+    model_config = ConfigDict(extra="forbid")
+    sections: list[CompositionSection] = Field(min_length=1, max_length=4)
+    omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=16)
 
 
 class ExperienceComposer(Protocol):
     def compose(self, question: str, response: ExperienceResponse) -> ExperienceResponse:
-        """Return a response containing only an approved ordering of its blocks."""
+        """Return a response with an approved model-selected layout."""
 
 
-def _block_label(block: ExperienceBlock) -> str:
-    """Return compact, non-URL metadata for a model's selection prompt."""
+def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
+    """Give the model useful decision context without sending raw links or code."""
 
     if block.type == "entity_card":
-        return f"{block.entity_type}: {block.title}"
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": block.entity_type,
+            "title": block.title,
+            "details": block.details,
+            "helps_with": "identity and canonical facts about this entity",
+            "provenance": "canonical",
+        }
+    if block.type == "performance_list":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "known performances in the current library",
+            "title": block.title,
+            "performance_count": block.known_count,
+            "dates": [item.show_date for item in block.items if item.show_date],
+            "helps_with": "known performance count and performance evidence",
+            "provenance": "canonical",
+        }
+    if block.type == "coverage":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "library coverage, not a historical total",
+            "title": block.title,
+            "message": block.message,
+            "helps_with": "whether the current library can answer a scope-wide question completely",
+            "provenance": "canonical coverage metadata",
+        }
     if block.type == "resource_list":
-        return f"resource list: {block.title}"
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "external contextual resources",
+            "title": block.title,
+            "resource_types": [item.resource_type for item in block.items],
+            "item_titles": [item.title for item in block.items],
+            "helps_with": "reading, learning, or source research; not canonical proof",
+            "provenance": "contextual resources",
+        }
     if block.type == "media_link":
-        return f"{block.provider} media: {block.title}"
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "external media",
+            "title": block.title,
+            "provider": block.provider,
+            "official": block.is_official,
+            "helps_with": "listening or watching",
+            "provenance": "external media link",
+        }
     if block.type == "arrangement":
-        return block.title
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "source-specific chord arrangement",
+            "title": block.title,
+            "key": block.key_signature,
+            "helps_with": "learning or playing this song; it is not a universal chart",
+            "provenance": "contextual resource",
+        }
     if block.type == "provenance_note":
-        return "provenance note"
-    return "coverage gap"
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "provenance explanation",
+            "helps_with": "distinguishing contextual material from canonical facts",
+            "provenance": "system safeguard",
+        }
+    return {
+        "index": index,
+        "type": block.type,
+        "scope": "coverage gap",
+        "helps_with": "honest limitation when no grounded result is available",
+        "provenance": "system safeguard",
+    }
 
 
-def _candidate_packet(blocks: list[ExperienceBlock]) -> str:
-    """Serialize only the selection metadata a composer needs."""
+def _composer_brief(question: str, response: ExperienceResponse) -> str:
+    """Build the structured reasoning context for the model-first composer."""
 
-    return json.dumps(
-        [{"index": index, "type": block.type, "label": _block_label(block)} for index, block in enumerate(blocks)],
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
+    brief = {
+        "latest_question": question,
+        "grounded_agent_answer": response.answer,
+        "recent_conversation": [turn.model_dump() for turn in response.conversation[-8:]],
+        "candidate_blocks": [_block_brief(index, block) for index, block in enumerate(response.blocks)],
+    }
+    return json.dumps(brief, ensure_ascii=False, separators=(",", ":"))
 
 
 def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) -> ExperienceResponse:
-    """Validate a plan by resolving it against server-owned candidate blocks.
+    """Resolve model choices to server-owned blocks and a browser-safe layout.
 
-    Provenance and coverage-gap blocks are mandatory once present. A malformed,
-    empty, or model-invented plan falls back to the deterministic candidate
-    sequence rather than changing user-visible content.
+    The deterministic work here is intentionally narrow: discard invalid
+    references, prevent duplicated blocks, and retain a provenance note when a
+    selected external contextual block needs one. The model decides relevance,
+    omission, and the arrangement of valid blocks.
     """
 
-    valid_indexes: list[int] = []
-    for index in plan.selected_block_indexes:
-        if 0 <= index < len(response.blocks) and index not in valid_indexes:
-            valid_indexes.append(index)
-    if not valid_indexes:
+    selected_indexes: list[int] = []
+    resolved_sections: list[tuple[str, list[int]]] = []
+    for section in plan.sections:
+        section_indexes = []
+        for index in section.candidate_indexes:
+            if 0 <= index < len(response.blocks) and index not in selected_indexes:
+                selected_indexes.append(index)
+                section_indexes.append(index)
+        if section_indexes:
+            resolved_sections.append((section.region, section_indexes))
+    if not selected_indexes:
         return response
 
-    required_indexes = [
-        index
-        for index, block in enumerate(response.blocks)
-        if block.type in {"provenance_note", "gap_state"}
-    ]
-    for index in required_indexes:
-        if index not in valid_indexes:
-            valid_indexes.append(index)
+    selected_types = {response.blocks[index].type for index in selected_indexes}
+    requires_provenance = bool(selected_types & {"resource_list", "arrangement"})
+    if requires_provenance:
+        for index, block in enumerate(response.blocks):
+            if block.type == "provenance_note" and index not in selected_indexes:
+                selected_indexes.append(index)
+                resolved_sections.append(("context", [index]))
+                break
 
-    selected_blocks = [response.blocks[index] for index in valid_indexes]
-    return response.model_copy(update={"blocks": selected_blocks})
+    selected_blocks = [response.blocks[index] for index in selected_indexes]
+    original_to_selected = {original: selected for selected, original in enumerate(selected_indexes)}
+    layout = [
+        LayoutSection(
+            region=region,
+            block_indexes=[original_to_selected[index] for index in indexes],
+        )
+        for region, indexes in resolved_sections
+    ]
+    return response.model_copy(update={"blocks": selected_blocks, "layout": layout})
 
 
 class DeterministicComposer:
-    """Keep the adapter's candidate ordering unchanged."""
+    """Keep the adapter's complete candidate layout when a model is disabled."""
 
     def compose(self, question: str, response: ExperienceResponse) -> ExperienceResponse:
         return response
 
 
 class ModelGuidedComposer:
-    """Use a structured model response to choose existing content blocks only."""
+    """Let the model reason over an enriched brief and select a safe layout."""
 
     def __init__(self, provider: ModelProvider | None = None, max_blocks: int = 8, selector: Any | None = None):
         if selector is None:
@@ -105,37 +198,34 @@ class ModelGuidedComposer:
     def compose(self, question: str, response: ExperienceResponse) -> ExperienceResponse:
         if len(response.blocks) <= 1:
             return response
-        candidate_packet = _candidate_packet(response.blocks)
         prompt = (
-            "Select the smallest useful sequence of candidate UI blocks for the user's latest question. "
-            "You may only return candidate indexes. Do not create content, facts, sources, URLs, or block types. "
-            "Prefer directly relevant entity, media, and source blocks; preserve context only when useful. "
-            "The server will retain any required provenance or coverage-gap block.\n\n"
-            f"Question: {question}\n"
-            f"Candidates: {candidate_packet}"
+            "Choose the most coherent main-column layout for the latest question using the grounded brief below. "
+            "Reason from the question, answer, coverage, candidate scope, and provenance. "
+            "Select the smallest useful set of candidates and arrange them in primary, supporting, context, or media regions. "
+            "Omission is the default: including an irrelevant candidate is worse than omitting optional material. Most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
+            "Do not choose learning, media, or reading material unless it genuinely helps the question. "
+            "For a direct factual, count, date, setlist, or coverage question, select only the factual entity/performance/coverage evidence needed to answer it; omit chord arrangements, contextual resource lists, and media unless the user explicitly asks for them. "
+            "For a count or scope-wide question, do not present partial library evidence as a historical total; use the coverage candidate when it explains that limit. "
+            "For example, a question asking for a yearly count with incomplete coverage should normally have a primary coverage block and a supporting known-performance block, with no context or media section. "
+            "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"
+            f"Grounded composition brief: {_composer_brief(question, response)}"
         )
         try:
             result = self.selector.invoke(
                 [
-                    SystemMessage(content="You are Deadbot's bounded interface composer. Return only the requested structured selection."),
+                    SystemMessage(content="You are Deadbot's model-first, provenance-aware interface composer. Return only the requested structured layout plan."),
                     HumanMessage(content=prompt),
                 ]
             )
             plan = result if isinstance(result, CompositionPlan) else CompositionPlan.model_validate(result)
-            if len(plan.selected_block_indexes) > self.max_blocks:
-                plan = plan.model_copy(update={"selected_block_indexes": plan.selected_block_indexes[:self.max_blocks]})
+            selected_count = sum(len(section.candidate_indexes) for section in plan.sections)
+            if selected_count > self.max_blocks:
+                return response
             composed = apply_composition_plan(response, plan)
-            logger.info(
-                "Applied model composition plan: candidates=%s selected=%s",
-                len(response.blocks),
-                plan.selected_block_indexes,
-            )
+            logger.info("Applied model composition plan: candidates=%s sections=%s", len(response.blocks), len(plan.sections))
             return composed
         except Exception as error:
-            logger.warning(
-                "Model composer failed (%s); using deterministic candidate order.",
-                type(error).__name__,
-            )
+            logger.warning("Model composer failed (%s); using deterministic candidate order.", type(error).__name__)
             return response
 
 

@@ -37,7 +37,7 @@ class CanonicalStore:
     def by_id(self) -> dict[str, dict[str, dict[str, str]]]:
         result: dict[str, dict[str, dict[str, str]]] = {}
         for table, rows in self.tables.items():
-            singular = table[:-1] if table.endswith("s") else table
+            singular = {"people": "person"}.get(table, table[:-1] if table.endswith("s") else table)
             id_column = f"{singular}_id"
             if rows and id_column in rows[0]:
                 result[table] = {row[id_column]: row for row in rows}
@@ -79,7 +79,9 @@ class CanonicalStore:
         return matches[0] if len(matches) == 1 else None
 
     def resources_for(self, relation_table: str, target_key: str, target_id: str) -> list[dict[str, str]]:
-        resource_ids = [row["resource_id"] for row in self.rows(relation_table) if row[target_key] == target_id]
+        resource_ids = list(dict.fromkeys(
+            row["resource_id"] for row in self.rows(relation_table) if row[target_key] == target_id
+        ))
         resources = self.by_id.get("resources", {})
         relationships = [row for row in self.rows(relation_table) if row[target_key] == target_id]
         relationship_by_resource = defaultdict(list)

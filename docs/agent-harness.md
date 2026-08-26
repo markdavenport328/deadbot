@@ -17,8 +17,11 @@ The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the re
 - `get_show` — show, venue, ordered performances, recording metadata, and show links.
 - `get_performance` — one rendition plus performance-specific context and media links.
 - `get_media_links` — stored YouTube, Spotify, Archive, or other link-out metadata.
+- `get_historical_weather` — show-date weather for the venue area from Open-Meteo historical reanalysis, with the limitation clearly labeled.
+- `get_astronomy` — local Sun and Moon rise/set, twilight, transit, and lunar-phase context from the U.S. Naval Observatory.
+- `get_astrology` — date-based Western zodiac context, explicitly labeled as cultural/interpretive rather than scientific.
 
-All tools are local and read only. The first release does **not** fetch arbitrary web pages. It can offer the curated source URL for a user to open, while a later, sandboxed source-reader tool can retrieve only resources that are already present in `resources.csv`.
+All tools are read only. The canonical-data tools do not fetch arbitrary web pages; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. They return the source URL and retrieval metadata, while a later, sandboxed source-reader tool can retrieve only resources that are already present in `resources.csv`.
 
 ## Provider contract
 

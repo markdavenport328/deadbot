@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Normalize the pinned gdshowsdb 1972 raw record into canonical CSV files.
+"""Normalize a pinned gdshowsdb year raw record into canonical CSV files.
 
 This pass is intentionally limited to the facts supplied by gdshowsdb:
 shows, venues, songs, ordered performances, and segue flags. Existing rows
@@ -29,6 +29,22 @@ def slugify(value: str) -> str:
     return value
 
 
+def parse_source_date(source_date: str) -> tuple[str, str]:
+    """Return an ISO date and optional same-day source sequence."""
+    parts = source_date.split("/")
+    if len(parts) not in {3, 4} or not all(part.isdigit() for part in parts):
+        raise ValueError(f"unsupported gdshowsdb show key: {source_date!r}")
+    date = "-".join(parts[:3])
+    sequence = parts[3] if len(parts) == 4 else ""
+    return date, sequence
+
+
+def append_note(value: str, addition: str) -> str:
+    if addition in value:
+        return value
+    return f"{value}; {addition}" if value else addition
+
+
 def read_csv(name: str) -> tuple[list[str], list[dict[str, str]]]:
     path = CANONICAL / name
     with path.open(newline="", encoding="utf-8") as handle:
@@ -54,13 +70,23 @@ def load_source(path: Path) -> tuple[dict, dict]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "year",
+        type=int,
+        nargs="?",
+        default=1972,
+        help="four-digit year represented by the raw snapshot (default: 1972)",
+    )
+    parser.add_argument(
         "--input",
         type=Path,
-        default=ROOT / "data" / "raw" / "shows" / "gdshowsdb-1972.jsonl",
+        help="raw JSONL snapshot (defaults to data/raw/shows/gdshowsdb-<year>.jsonl)",
     )
     args = parser.parse_args()
+    if args.year < 1965 or args.year > 1995:
+        parser.error("year must be between 1965 and 1995")
+    input_path = args.input or ROOT / "data" / "raw" / "shows" / f"gdshowsdb-{args.year}.jsonl"
 
-    source_record, source_shows = load_source(args.input)
+    source_record, source_shows = load_source(input_path)
     source_id = source_record["source_record_id"]
 
     venue_fields, existing_venues = read_csv("venues.csv")
@@ -82,14 +108,14 @@ def main() -> None:
     }
     songs: dict[str, dict[str, str]] = {row["song_id"]: row for row in existing_songs}
     shows: dict[str, dict[str, str]] = {row["show_id"]: row for row in existing_shows}
-    performances: dict[str, dict[str, str]] = {}
+    performances: dict[str, dict[str, str]] = dict(existing_performance_by_id)
 
     for source_date, show in source_shows.items():
-        date = source_date.replace("/", "-")
-        city = show.get(":city", "")
-        state = show.get(":state", "")
-        country = show.get(":country", "")
-        venue_name = show.get(":venue", "")
+        date, sequence = parse_source_date(source_date)
+        city = show.get(":city") or ""
+        state = show.get(":state") or ""
+        country = show.get(":country") or ""
+        venue_name = show.get(":venue") or ""
         venue_key = (venue_name.casefold(), city.casefold())
         existing_venue = existing_venue_by_key.get(venue_key)
         venue_id = existing_venue["venue_id"] if existing_venue else f"venue-{slugify(venue_name)}-{slugify(city)}"
@@ -103,20 +129,31 @@ def main() -> None:
                 "country": country,
                 "latitude": "",
                 "longitude": "",
-                "notes": "Normalized from gdshowsdb 1972 bulk baseline.",
+                "notes": f"Normalized from gdshowsdb {args.year} bulk baseline.",
             },
         )
 
-        show_id = f"gd-{date}"
+        show_id = f"gd-{date}{f'-{sequence}' if sequence else ''}"
         existing_show = existing_show_by_id.get(show_id)
-        shows[show_id] = existing_show or {
-            "show_id": show_id,
-            "show_date": date,
-            "venue_id": venue_id,
-            "tour_name": "",
-            "event_name": "",
-            "notes": f"Normalized from gdshowsdb show UUID {show[':uuid']} in {source_id}.",
-        }
+        if existing_show:
+            existing_show["show_date"] = date
+            existing_show["venue_id"] = venue_id
+            shows[show_id] = existing_show
+        else:
+            shows[show_id] = {
+                "show_id": show_id,
+                "show_date": date,
+                "venue_id": venue_id,
+                "tour_name": "",
+                "event_name": "",
+                "notes": f"Normalized from gdshowsdb show UUID {show[':uuid']} in {source_id}.",
+            }
+
+        if not show.get(":sets") or not any(source_set.get(":songs") for source_set in show.get(":sets", [])):
+            shows[show_id]["notes"] = append_note(
+                shows[show_id]["notes"],
+                "Source record contains no setlist entries.",
+            )
 
         for set_number, source_set in enumerate(show.get(":sets", []), start=1):
             for position, source_song in enumerate(source_set.get(":songs", []), start=1):
@@ -132,7 +169,7 @@ def main() -> None:
                         "original_artist": "",
                         "first_known_dead_performance": "",
                         "last_known_dead_performance": "",
-                        "notes": "Source label normalized from gdshowsdb 1972 bulk baseline.",
+                        "notes": f"Source label normalized from gdshowsdb {args.year} bulk baseline.",
                     },
                 )
                 performance_slug = existing_song["slug"] if existing_song else slugify(title)

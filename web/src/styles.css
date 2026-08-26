@@ -7,17 +7,17 @@
 
 * { box-sizing: border-box; }
 body { min-width: 320px; margin: 0; background: radial-gradient(circle at 90% 0%, #31513c 0, transparent 38rem), #14221b; }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: #f1c96a; text-underline-offset: 0.18em; }
 
 .app-shell { width: min(1440px, calc(100% - 2rem)); min-height: 100vh; margin: 0 auto; }
-.masthead { display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 4.5rem; border-bottom: 1px solid #405345; color: #b8c4b8; font-size: 0.9rem; }
+.masthead { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 1rem; height: 4.5rem; border-bottom: 1px solid #405345; background: #14221b; color: #b8c4b8; font-size: 0.9rem; }
 .masthead p { margin: 0; }
 .wordmark { color: #f5efdd; font-family: Georgia, serif; font-size: 1.45rem; font-weight: 700; text-decoration: none; }
-.workspace { display: grid; grid-template-columns: minmax(310px, 0.82fr) minmax(0, 1.85fr); min-height: calc(100vh - 4.5rem); }
+.workspace { display: grid; grid-template-columns: minmax(310px, 0.82fr) minmax(0, 1.85fr); align-items: start; min-height: calc(100vh - 4.5rem); }
 
-.conversation-pane { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid #405345; background: rgba(16, 31, 22, 0.48); padding: 2rem 1.25rem 1.25rem 0; }
+.conversation-pane { position: sticky; top: 4.5rem; display: flex; flex-direction: column; align-self: start; height: calc(100vh - 4.5rem); min-height: 0; border-right: 1px solid #405345; background: rgba(16, 31, 22, 0.48); padding: 2rem 1.25rem 1.25rem 0; }
 .conversation-intro { padding: 0 0.7rem 1.35rem; }
 .eyebrow { margin: 0 0 0.6rem; color: #e7b94e; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
 h1, h2 { font-family: Georgia, "Times New Roman", serif; line-height: 1.08; }
@@ -39,11 +39,10 @@ h2 { margin: 0; font-size: 1.45rem; }
 .message.pending { color: #adbbac; font-style: italic; }
 
 .composer { border-top: 1px solid #405345; padding: 1rem 0.7rem 0; }
-label { display: block; margin-bottom: 0.5rem; color: #d4dccd; font-size: 0.84rem; font-weight: 650; }
 .question-row { display: flex; gap: 0.6rem; }
-input { min-width: 0; flex: 1; border: 1px solid #59705e; border-radius: 0.45rem; background: #eff1e7; color: #14221b; padding: 0.78rem 0.85rem; }
+textarea { min-width: 0; flex: 1; resize: vertical; border: 1px solid #59705e; border-radius: 0.45rem; background: #eff1e7; color: #14221b; line-height: 1.4; padding: 0.78rem 0.85rem; }
 button[type="submit"] { border: 0; border-radius: 0.45rem; background: #e7b94e; color: #1c271d; font-weight: 750; padding: 0.78rem 0.95rem; }
-button:disabled, input:disabled { cursor: wait; opacity: 0.68; }
+button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68; }
 .error { margin: 0 0.7rem 0.8rem; border-left: 4px solid #e17e64; background: #3d2923; color: #f0d6ca; padding: 0.8rem; font-size: 0.86rem; }
 
 .content-pane { min-width: 0; padding: 3rem clamp(1.4rem, 4vw, 4.5rem) 4rem; }
@@ -51,6 +50,8 @@ button:disabled, input:disabled { cursor: wait; opacity: 0.68; }
 .content-heading h1, .content-empty h1 { max-width: 12ch; }
 .content-heading > p:last-child, .content-empty > p:last-child { max-width: 46rem; margin: 1rem 0 0; color: #c3cec3; line-height: 1.6; }
 .content-empty { max-width: 760px; padding: clamp(3rem, 12vh, 10rem) 0; }
+.layout-section + .layout-section { margin-top: 2rem; }
+.region-label { margin: 0 0 0.75rem; color: #9fb29f; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
 .block-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
 .card, .provenance, .gap-state { grid-column: span 6; border: 1px solid #465b4b; border-radius: 0.75rem; background: rgba(17, 32, 24, 0.76); padding: 1.35rem; }
 .entity-card { background: #1d3024; }
@@ -61,12 +62,20 @@ button:disabled, input:disabled { cursor: wait; opacity: 0.68; }
 .resource-list ul, .chords { margin: 1rem 0 0; padding: 0; list-style: none; }
 .resource-list li + li, .chords li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
 .resource-list li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; }
+.credit-list ul { margin: 1rem 0 0; padding: 0; list-style: none; }
+.credit-list li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
+.credit-list li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
+.performance-list ul { margin: 1rem 0 0; padding: 0; list-style: none; }
+.performance-list li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
+.performance-list li span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
 .media-card { grid-column: span 12; }
 .media-frame { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 0.45rem; margin: 1rem 0; }
 .spotify-frame { display: block; width: min(100%, 720px); height: 152px; border: 0; border-radius: 0.45rem; margin: 1rem 0; }
 .arrangement-card { background: #233028; }
 .chords { color: #f1d684; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .provenance, .gap-state { grid-column: span 12; color: #bfccb9; font-size: 0.92rem; line-height: 1.55; }
+.coverage-card { grid-column: span 12; border: 1px solid #c49e48; border-left: 4px solid #e7b94e; border-radius: 0.75rem; background: rgba(55, 48, 24, 0.5); color: #eadfbd; padding: 1.35rem; line-height: 1.55; }
+.coverage-card p:last-child { margin-bottom: 0; }
 .provenance { border-left: 4px solid #e7b94e; }
 .gap-state { border-left: 4px solid #a7b5a6; }
 
@@ -74,7 +83,8 @@ button:disabled, input:disabled { cursor: wait; opacity: 0.68; }
   .app-shell { width: min(100% - 1.25rem, 1440px); }
   .masthead { height: auto; min-height: 4.5rem; padding: 1rem 0; align-items: flex-start; flex-direction: column; }
   .workspace { display: block; min-height: 0; }
-  .conversation-pane { min-height: 36rem; border-right: 0; border-bottom: 1px solid #405345; padding: 2rem 0 1.25rem; }
+  .masthead { position: static; }
+  .conversation-pane { position: static; height: auto; min-height: 36rem; border-right: 0; border-bottom: 1px solid #405345; padding: 2rem 0 1.25rem; }
   .thread { max-height: 25rem; }
   .content-pane { padding: 2.5rem 0 4rem; }
 }

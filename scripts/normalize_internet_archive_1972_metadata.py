@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "data" / "canonical"
-RAW = ROOT / "data" / "raw" / "recordings" / "internet-archive-1972-representatives.jsonl"
+RAW_DIR = ROOT / "data" / "raw" / "recordings"
 
 
 def source_type(value: str) -> str:
@@ -29,10 +29,13 @@ def main() -> None:
         fields = reader.fieldnames or []
         rows = list(reader)
     metadata_by_identifier = {}
-    for line in RAW.read_text(encoding="utf-8").splitlines():
-        record = json.loads(line)
-        metadata = record["raw_payload"].get("metadata", {})
-        metadata_by_identifier[record["source_record_id"]] = metadata
+    source_years = set()
+    for raw_path in sorted(RAW_DIR.glob("internet-archive-*-representatives.jsonl")):
+        source_years.add(raw_path.name.split("-")[2])
+        for line in raw_path.read_text(encoding="utf-8").splitlines():
+            record = json.loads(line)
+            metadata = record["raw_payload"].get("metadata", {})
+            metadata_by_identifier[record["source_record_id"]] = metadata
 
     enriched = 0
     for row in rows:
@@ -54,9 +57,8 @@ def main() -> None:
             if metadata.get(field):
                 row[field] = metadata[field]
         row["notes"] = (
-            "Full Internet Archive item metadata preserved in "
-            "data/raw/recordings/internet-archive-1972-representatives.jsonl; "
-            "track descriptions remain source-attributed."
+            "Full Internet Archive item metadata preserved in year-specific "
+            "representative raw records; track descriptions remain source-attributed."
         )
         enriched += 1
 
@@ -64,7 +66,7 @@ def main() -> None:
         writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(rows)
-    print(f"Enriched {enriched} canonical recording rows from full item metadata.")
+    print(f"Enriched {enriched} canonical recording rows from representatives for years {', '.join(sorted(source_years))}.")
 
 
 if __name__ == "__main__":

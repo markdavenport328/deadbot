@@ -1,79 +1,300 @@
 resource_id,song_id,relationship_type,notes
+resource-musicbrainz-work-search-a-voice-from-on-high,song-a-voice-from-on-high,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-alligator,song-alligator,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-alligator,song-alligator,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-and-we-bid-you-good-night,song-and-we-bid-you-good-night,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-are-you-lonely-for-me,song-are-you-lonely-for-me,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-around-and-around,song-around-and-around,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-around-and-around,song-around-and-around,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-attics-of-my-life,song-attics-of-my-life,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-ballad-of-casey-jones,song-ballad-of-casey-jones,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-beat-it-on-down-the-line,song-beat-it-on-down-the-line,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-beautiful-jam,song-beautiful-jam,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-bertha-song-page,song-bertha,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
 resource-deadnet-bertha-song-page,song-bertha,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-bertha,song-bertha,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-big-boss-man,song-big-boss-man,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-big-boss-man,song-big-boss-man,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-big-boy-pete,song-big-boy-pete,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-big-boy-pete,song-big-boy-pete,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-big-breasa,song-big-breasa,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-big-breasa,song-big-breasa,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-big-railroad-blues,song-big-railroad-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-big-railroad-blues,song-big-railroad-blues,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-big-river,song-big-river,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-big-river,song-big-river,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-listen-to-river-fox-1972,song-bird-song,song-history-and-analysis,
 resource-deadnet-song-bird-song,song-bird-song,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-bird-song,song-bird-song,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-black-peter,song-black-peter,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-black-peter,song-black-peter,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-ace-50,song-black-throated-wind,song-history-and-interview,Includes archival Weir and Barlow material.
 resource-deadnet-song-black-throated-wind,song-black-throated-wind,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-black-throated-wind,song-black-throated-wind,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-blues-jam,song-blues-jam,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-box-of-rain,song-box-of-rain,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-bring-me-my-shotgun,song-bring-me-my-shotgun,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-bring-me-my-shotgun,song-bring-me-my-shotgun,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-brokedown-palace,song-brokedown-palace,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-brokedown-palace,song-brokedown-palace,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-brown-eyed-women,song-brown-eyed-women,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-brown-eyed-women,song-brown-eyed-women,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-candyman,song-candyman,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-candyman,song-candyman,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-blair-field-trips,song-casey-jones,Veneta-listening-context,Editorial interpretation.
 resource-deadnet-song-casey-jones,song-casey-jones,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-casey-jones,song-casey-jones,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-cathy-s-clown,song-cathy-s-clown,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-caution,song-caution,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-europe-72-france,song-china-cat-sunflower,songwriting-and-segue-context,
 resource-deadnet-song-china-cat-sunflower,song-china-cat-sunflower,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-china-cat-sunflower,song-china-cat-sunflower,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-relix-robert-hunter-interview,song-china-cat-sunflower,interview-context,Archival interview account.
 resource-deadnet-song-chinatown-shuffle,song-chinatown-shuffle,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-chinatown-shuffle,song-chinatown-shuffle,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-cold-jordan,song-cold-jordan,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-cold-jordan,song-cold-jordan,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-cold-rain-and-snow,song-cold-rain-and-snow,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-cold-rain-and-snow,song-cold-rain-and-snow,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-come-back-baby,song-come-back-baby,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-come-back-baby,song-come-back-baby,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-comes-a-time,song-comes-a-time,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-cosmic-charlie,song-cosmic-charlie,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-cowboy-song,song-cowboy-song,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-cowboy-song,song-cowboy-song,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-cryptical-envelopment,song-cryptical-envelopment,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-cryptical-envelopment,song-cryptical-envelopment,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-cumberland-blues,song-cumberland-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-cumberland-blues,song-cumberland-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-dancin-in-the-streets,song-dancin-in-the-streets,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-dark-hollow,song-dark-hollow,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-dark-hollow,song-dark-hollow,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-greatest-stories-dark-star,song-dark-star,song-history-and-analysis,
 resource-deadnet-song-dark-star,song-dark-star,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-dark-star,song-dark-star,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-darkness-darkness-jam,song-darkness-darkness-jam,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-darlin-corey,song-darlin-corey,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-greatest-stories-deal,song-deal,song-analysis,
 resource-deadnet-song-deal,song-deal,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-deal,song-deal,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-death-don-t-have-no-mercy,song-death-don-t-have-no-mercy,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-death-don-t-have-no-mercy,song-death-don-t-have-no-mercy,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-deep-elem-blues,song-deep-elem-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-deep-elem-blues,song-deep-elem-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-dire-wolf,song-dire-wolf,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-dire-wolf,song-dire-wolf,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-don-t-ease-me-in,song-don-t-ease-me-in,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-drums,song-drums,song-credit-source,External catalog page; text not stored.
+resource-musicbrainz-work-search-drums,song-drums,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-easy-wind,song-easy-wind,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-easy-wind,song-easy-wind,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-blair-field-trips,song-el-paso,Veneta-listening-context,Editorial interpretation.
 resource-deadnet-song-el-paso,song-el-paso,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-el-paso,song-el-paso,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-electricity-blues,song-electricity-blues,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-empty-pages,song-empty-pages,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-empty-pages,song-empty-pages,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-feedback,song-feedback,song-credit-source,External catalog page; text not stored.
+resource-musicbrainz-work-search-feedback,song-feedback,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-friend-of-the-devil,song-friend-of-the-devil,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-frozen-logger,song-frozen-logger,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-frozen-logger,song-frozen-logger,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-get-back,song-get-back,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-get-back,song-get-back,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-goin-down-the-road-feelin-bad,song-goin-down-the-road-feelin-bad,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-good-lovin,song-good-lovin,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-good-lovin,song-good-lovin,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-good-morning-little-schoolgirl,song-good-morning-little-schoolgirl,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-good-morning-little-schoolgirl,song-good-morning-little-schoolgirl,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-ace-50,song-greatest-story-ever-told,song-history-and-interview,Includes archival Weir and Hunter interview excerpts.
 resource-deadnet-song-greatest-story-ever-told,song-greatest-story-ever-told,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-greatest-story-ever-told,song-greatest-story-ever-told,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-green-green-grass-of-home,song-green-green-grass-of-home,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-hard-to-handle,song-hard-to-handle,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-he-was-a-friend-of-mine,song-he-was-a-friend-of-mine,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-help-me-rhonda,song-help-me-rhonda,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-help-me-rhonda,song-help-me-rhonda,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadcast-blues-for-allah-slipknot,song-hes-gone,song-origin,Source-attributed origin story.
 resource-deadnet-song-hes-gone,song-hes-gone,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-hes-gone,song-hes-gone,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-hey-bo-diddley,song-hey-bo-diddley,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-hey-bo-diddley,song-hey-bo-diddley,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-hideaway,song-hideaway,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-high-time,song-high-time,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-high-time,song-high-time,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-hog-for-you-baby,song-hog-for-you-baby,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-how-long-blues,song-how-long-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-how-long-blues,song-how-long-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-how-sweet-it-is-to-be-loved-by-you,song-how-sweet-it-is-to-be-loved-by-you,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-hurts-me-too,song-hurts-me-too,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-i-know-it-s-a-sin,song-i-know-it-s-a-sin,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-europe-72-france,song-i-know-you-rider,segue-context,
 resource-deadnet-song-i-know-you-rider,song-i-know-you-rider,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-i-know-you-rider,song-i-know-you-rider,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-i-m-a-king-bee,song-i-m-a-king-bee,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-i-second-that-emotion,song-i-second-that-emotion,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-i-ve-been-all-around-this-world,song-i-ve-been-all-around-this-world,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-it-s-a-man-s-world,song-it-s-a-man-s-world,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-it-s-all-over-now,song-it-s-all-over-now,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-it-s-all-over-now,song-it-s-all-over-now,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-it-s-all-over-now-baby-blue,song-it-s-all-over-now-baby-blue,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-it-s-all-over-now-baby-blue,song-it-s-all-over-now-baby-blue,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-jack-straw-song-page,song-jack-straw,catalog-and-credit-reference,Community-submitted page hosted by Dead.net.
 resource-deadnet-jack-straw-song-page,song-jack-straw,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-jack-straw,song-jack-straw,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-jam,song-jam,song-credit-source,External catalog page; text not stored.
+resource-musicbrainz-work-search-jam,song-jam,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-john-s-other,song-john-s-other,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-johnny-b-goode,song-johnny-b-goode,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-johnny-b-goode,song-johnny-b-goode,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-katie-mae,song-katie-mae,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-katie-mae,song-katie-mae,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-la-bamba,song-la-bamba,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-la-bamba,song-la-bamba,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-let-me-in,song-let-me-in,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-little-sadie,song-little-sadie,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-little-sadie,song-little-sadie,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-long-black-limousine,song-long-black-limousine,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-long-black-limousine,song-long-black-limousine,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-looks-like-rain,song-looks-like-rain,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-loser,song-loser,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-loser,song-loser,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-louie-louie,song-louie-louie,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-louie-louie,song-louie-louie,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-mama-tried,song-mama-tried,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-mama-tried,song-mama-tried,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-mannish-boy-i-m-a-man,song-mannish-boy-i-m-a-man,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-mason-s-children,song-mason-s-children,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-me-and-bobby-mcgee,song-me-and-bobby-mcgee,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-me-and-bobby-mcgee,song-me-and-bobby-mcgee,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-me-and-my-uncle-song-page,song-me-and-my-uncle,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
 resource-deadnet-me-and-my-uncle-song-page,song-me-and-my-uncle,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-me-and-my-uncle,song-me-and-my-uncle,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-ace-50,song-mexicali-blues,song-history-and-interview,Includes songwriting and repertoire context.
 resource-deadnet-song-mexicali-blues,song-mexicali-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-mexicali-blues,song-mexicali-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-midnight-hour,song-midnight-hour,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-midnight-hour,song-midnight-hour,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-mind-left-body-jam,song-mind-left-body-jam,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-mind-left-body-jam,song-mind-left-body-jam,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-minglewood-blues,song-minglewood-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-mississippi-half-step,song-mississippi-half-step,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-mona,song-mona,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-mona,song-mona,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-monkey-and-the-engineer,song-monkey-and-the-engineer,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-morning-dew,song-morning-dew,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-morning-dew,song-morning-dew,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-mountain-jam,song-mountain-jam,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-mountain-jam,song-mountain-jam,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-mr-charlie,song-mr-charlie,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-muddy-water,song-muddy-water,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-my-babe,song-my-babe,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-my-babe,song-my-babe,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-mystery-train,song-mystery-train,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-mystery-train,song-mystery-train,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-new-orleans,song-new-orleans,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-new-orleans,song-new-orleans,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-new-speedway-boogie,song-new-speedway-boogie,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-new-speedway-boogie,song-new-speedway-boogie,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-next-time-you-see-me,song-next-time-you-see-me,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-next-time-you-see-me,song-next-time-you-see-me,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-nobody-s-fault-but-mine,song-nobody-s-fault-but-mine,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-non-improvisation,song-non-improvisation,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-not-fade-away,song-not-fade-away,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-not-fade-away,song-not-fade-away,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-ode-for-billie-dean,song-ode-for-billie-dean,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-oh-boy,song-oh-boy,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-oh-boy,song-oh-boy,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-okie-from-muskogee,song-okie-from-muskogee,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-old-old-house,song-old-old-house,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-old-old-house,song-old-old-house,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-blair-field-trips,song-one-more-saturday-night,Veneta-listening-context,Editorial interpretation.
 resource-deadnet-europe-72-lyceum,song-one-more-saturday-night,song-history-and-interview,
 resource-deadnet-song-one-more-saturday-night,song-one-more-saturday-night,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-one-more-saturday-night,song-one-more-saturday-night,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-operator,song-operator,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-operator,song-operator,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadcast-veneta-part-2,song-playing-in-the-band,performance-context,Use linked performance relation for Veneta-specific discussion.
+resource-musicbrainz-work-search-playing-in-the-band,song-playing-in-the-band,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-bear-drops-la-66,song-promised-land,early-performance-context,
 resource-deadnet-promised-land-song-page,song-promised-land,catalog-and-song-notes,Community-submitted page hosted by Dead.net.
 resource-deadnet-promised-land-song-page,song-promised-land,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-promised-land,song-promised-land,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-ramble-on-rose,song-ramble-on-rose,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-riot-in-cell-block-9,song-riot-in-cell-block-9,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-ripple,song-ripple,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-ripple,song-ripple,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-roberta,song-roberta,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-roberta,song-roberta,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-rockin-pneumonia,song-rockin-pneumonia,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-rosa-lee-mcfall,song-rosa-lee-mcfall,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-rosa-lee-mcfall,song-rosa-lee-mcfall,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-run-rudolph-run,song-run-rudolph-run,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-run-rudolph-run,song-run-rudolph-run,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-saint-stephen,song-saint-stephen,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-saint-stephen,song-saint-stephen,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-sawmill,song-sawmill,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-sawmill,song-sawmill,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-deadnet-song-searchin,song-searchin,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-searchin,song-searchin,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-seasons-of-my-heart,song-seasons-of-my-heart,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-she-s-mine,song-she-s-mine,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-she-s-mine,song-she-s-mine,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-sidewalks-of-new-york,song-sidewalks-of-new-york,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-silver-threads-and-golden-needles,song-silver-threads-and-golden-needles,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-silver-threads-and-golden-needles,song-silver-threads-and-golden-needles,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-blair-field-trips,song-sing-me-back-home,Veneta-listening-context,Editorial interpretation.
 resource-deadnet-song-sing-me-back-home,song-sing-me-back-home,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-sing-me-back-home,song-sing-me-back-home,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-sitting-on-top-of-the-world,song-sitting-on-top-of-the-world,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-smokestack-lightning,song-smokestack-lightning,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-smokestack-lightning,song-smokestack-lightning,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-so-sad-to-see-good-love-go-bad,song-so-sad-to-see-good-love-go-bad,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-space,song-space,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-spanish-jam,song-spanish-jam,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-spanish-jam,song-spanish-jam,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-stella-blue,song-stella-blue,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-stella-blue,song-stella-blue,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadcast-american-beauty-sugar-magnolia,song-sugar-magnolia,song-history-and-interview,
 resource-deadnet-song-sugar-magnolia,song-sugar-magnolia,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-sugar-magnolia,song-sugar-magnolia,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-sugaree,song-sugaree,lyrics-source,External lyric/credit page; text not stored.
 resource-deadnet-tiger-rose-50,song-sugaree,interview-context,Includes an attributed Robert Hunter recollection.
+resource-musicbrainz-work-search-sugaree,song-sugaree,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-rukind-sugaree-tab,song-sugaree,tab-for,
+resource-deadnet-song-swing-low-sweet-chariot,song-swing-low-sweet-chariot,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-swing-low-sweet-chariot,song-swing-low-sweet-chariot,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-tell-it-to-me,song-tell-it-to-me,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-tennessee-jed,song-tennessee-jed,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-tennessee-jed,song-tennessee-jed,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-the-eleven,song-the-eleven,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-the-main-ten,song-the-main-ten,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-the-other-one,song-the-other-one,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-the-race-is-on,song-the-race-is-on,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-the-rub,song-the-rub,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-the-same-thing,song-the-same-thing,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-the-seven,song-the-seven,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-till-the-morning-comes,song-till-the-morning-comes,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-to-lay-me-down,song-to-lay-me-down,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-tomorrow-is-forever,song-tomorrow-is-forever,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-truckin,song-truckin,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-truckin,song-truckin,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-turn-on-your-lovelight,song-turn-on-your-lovelight,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-musicbrainz-work-search-two-souls-in-communion,song-two-souls-in-communion,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-uncle-john-s-band,song-uncle-john-s-band,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-uncle-john-s-band,song-uncle-john-s-band,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-uncle-sam-blues,song-uncle-sam-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-unidentified-19701120-01,song-unidentified-19701120-01,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
+resource-deadnet-song-viola-lee-blues,song-viola-lee-blues,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-viola-lee-blues,song-viola-lee-blues,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-wake-up-little-susie,song-wake-up-little-susie,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-walking-the-dog,song-walking-the-dog,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-weather-report-suite-prelude,song-weather-report-suite-prelude,song-credit-source,External catalog page; text not stored.
+resource-musicbrainz-work-search-weather-report-suite-prelude,song-weather-report-suite-prelude,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-deadnet-song-wharf-rat,song-wharf-rat,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-wharf-rat,song-wharf-rat,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-who-do-you-love,song-who-do-you-love,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-who-do-you-love,song-who-do-you-love,composition-credit-source,Accepted credit evidence; see canonical role rows.
+resource-musicbrainz-work-search-will-the-circle-be-unbroken,song-will-the-circle-be-unbroken,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-deadnet-song-you-win-again,song-you-win-again,lyrics-source,External lyric/credit page; text not stored.
+resource-musicbrainz-work-search-you-win-again,song-you-win-again,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.

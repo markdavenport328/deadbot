@@ -6,6 +6,7 @@ from __future__ import annotations
 import csv
 import json
 import re
+import argparse
 from pathlib import Path
 
 
@@ -121,22 +122,50 @@ def normalize_credit_name(name: str) -> str | None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "years",
+        type=int,
+        nargs="*",
+        default=[1972],
+        help="years whose raw song-source records should be merged (default: 1972)",
+    )
+    args = parser.parse_args()
     songs = read_csv(CANONICAL / "songs.csv")
     people = read_csv(CANONICAL / "people.csv")
     existing_writers = read_csv(CANONICAL / "song_writers.csv")
     resources = read_csv(CANONICAL / "resources.csv")
     resource_songs = read_csv(CANONICAL / "resource_songs.csv")
-    deadnet = {
-        row["raw_payload"]["song_id"]: row for row in read_jsonl(RAW / "deadnet-song-credits-1972.jsonl")
-    }
-    musicbrainz = {
-        row["raw_payload"]["song_id"]: row
-        for row in read_jsonl(RAW / "musicbrainz-song-works-1972.jsonl")
-    }
+    def best_record(records: list[dict]) -> dict:
+        return max(
+            records,
+            key=lambda row: (
+                row["raw_payload"].get("http_status", 0) == 200
+                or row["raw_payload"].get("attempts", [{}])[-1].get("status", 0) == 200,
+                bool(row["raw_payload"].get("has_credits")),
+                bool(row["raw_payload"].get("has_lyrics")),
+                row.get("retrieved_at", ""),
+            ),
+        )
+
+    def merged_records(prefix: str) -> dict[str, dict]:
+        by_song: dict[str, list[dict]] = {}
+        for year in args.years:
+            path = RAW / f"{prefix}-{year}.jsonl"
+            if not path.exists():
+                continue
+            for row in read_jsonl(path):
+                by_song.setdefault(row["raw_payload"]["song_id"], []).append(row)
+        return {song_id: best_record(records) for song_id, records in by_song.items()}
+
+    deadnet = merged_records("deadnet-song-credits")
+    musicbrainz = merged_records("musicbrainz-song-works")
 
     people_by_name = {key(row["name"]): row["person_id"] for row in people}
     writer_rows = {
-        (row["song_id"], row["person_id"], row["writer_role"]): row for row in existing_writers
+        (row["song_id"], row["person_id"], row["writer_role"]): row
+        for row in existing_writers
+        if row["notes"] != "Source displays Garcia/Hunter without role-level attribution."
     }
     resource_by_url = {row["source_url"]: row["resource_id"] for row in resources}
     relation_keys = {
@@ -156,8 +185,10 @@ def main() -> None:
             "Credit evidence retained in raw source records but not canonicalized pending title/source review",
         ):
             song["notes"] = remove_note(song["notes"], generated)
-        dead = deadnet[song["song_id"]]["raw_payload"]
-        mb_credits = selected_musicbrainz(song, musicbrainz[song["song_id"]])
+        dead_record = deadnet.get(song["song_id"])
+        mb_record = musicbrainz.get(song["song_id"])
+        dead = dead_record["raw_payload"] if dead_record else {"attempts": [{"status": 0}]}
+        mb_credits = selected_musicbrainz(song, mb_record) if mb_record else []
         credits: list[tuple[str, str, str]] = []
         for credit in mb_credits:
             role = {"composer": "music", "lyricist": "lyrics", "writer": "writer"}.get(credit["role"])
@@ -227,6 +258,41 @@ def main() -> None:
                 },
             )
 
+        mb_url = mb_record["source_url"] if mb_record else ""
+        if mb_url:
+            resource_id = resource_by_url.get(mb_url)
+            if resource_id is None:
+                resource_id = f"resource-musicbrainz-work-search-{song['slug']}"
+                used_ids = {row["resource_id"] for row in resources}
+                if resource_id in used_ids:
+                    resource_id += "-query"
+                resources.append(
+                    {
+                        "resource_id": resource_id,
+                        "resource_type": "catalog-work-search",
+                        "title": f"{title} — MusicBrainz work search",
+                        "creator": "",
+                        "source_name": "MusicBrainz",
+                        "source_url": mb_url,
+                        "published_date": "",
+                        "notes": "Work-search evidence retained for composition-credit review; exact-title candidates may be ambiguous and are not automatically canonical.",
+                    }
+                )
+                resource_by_url[mb_url] = resource_id
+            relation_keys.setdefault(
+                (resource_id, song["song_id"], "composition-credit-source"),
+                {
+                    "resource_id": resource_id,
+                    "song_id": song["song_id"],
+                    "relationship_type": "composition-credit-source",
+                    "notes": (
+                        "Accepted credit evidence; see canonical role rows."
+                        if mb_credits
+                        else "Candidate work search retained for review; no canonical credit promoted."
+                    ),
+                },
+            )
+
         if has_lyrics:
             song["notes"] = append_note(song["notes"], "External Dead.net lyric page linked; full lyrics not stored")
         elif not resolved:
@@ -258,7 +324,8 @@ def main() -> None:
         ["song_id", "title", "slug", "original_artist", "first_known_dead_performance", "last_known_dead_performance", "notes"],
     )
     print(
-        f"Normalized {len(songs)} songs; {len(source_credit_titles)} have canonical credits, "
+        f"Normalized {len(songs)} songs from years {', '.join(map(str, args.years))}; "
+        f"{len(source_credit_titles)} have canonical credits, "
         f"{sum(1 for row in deadnet.values() if row['raw_payload']['attempts'][-1]['status'] == 200)} have Dead.net pages, "
         f"and {sum(1 for row in deadnet.values() if row['raw_payload'].get('has_lyrics'))} have linked lyric pages."
     )

@@ -1,81 +1,437 @@
 song_id,title,slug,original_artist,first_known_dead_performance,last_known_dead_performance,notes
+song-a-day-in-the-life,A Day In the Life,a-day-in-the-life,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-a-mind-to-give-up-livin,A Mind To Give Up Livin',a-mind-to-give-up-livin,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
+song-a-voice-from-on-high,A Voice From On High,a-voice-from-on-high,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-ain-t-that-peculiar,Ain't That Peculiar,ain-t-that-peculiar,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-alabama-bound,Alabama Bound,alabama-bound,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-alabama-getaway,Alabama Getaway,alabama-getaway,,,,Source label normalized from gdshowsdb 1979 bulk baseline.
+song-alhambra,Alhambra,alhambra,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-alice-d-millionaire,Alice D. Millionaire,alice-d-millionaire,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-all-along-the-watchtower,All Along The Watchtower,all-along-the-watchtower,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-all-of-my-love,All Of My Love,all-of-my-love,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-alligator,Alligator,alligator,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-althea,Althea,althea,,,,Source label normalized from gdshowsdb 1979 bulk baseline.
+song-and-we-bid-you-good-night,And We Bid You Good Night,and-we-bid-you-good-night,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
 song-are-you-lonely-for-me,Are You Lonely For Me,are-you-lonely-for-me,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
 song-around-and-around,Around And Around,around-and-around,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-attics-of-my-life,Attics Of My Life,attics-of-my-life,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-baba-o-riley,Baba O'Riley,baba-o-riley,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-baby-what-you-want-me-to-do,Baby What You Want Me To Do?,baby-what-you-want-me-to-do,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
+song-bad-moon-rising,Bad Moon Rising,bad-moon-rising,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
+song-ballad-of-a-thin-man,Ballad Of A Thin Man,ballad-of-a-thin-man,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-ballad-of-casey-jones,Ballad Of Casey Jones,ballad-of-casey-jones,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
 song-beat-it-on-down-the-line,Beat It On Down The Line,beat-it-on-down-the-line,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-beautiful-jam,Beautiful Jam,beautiful-jam,,,,Source label normalized from gdshowsdb 1971 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-believe-it-or-not,Believe It Or Not,believe-it-or-not,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
 song-bertha,Bertha,bertha,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-betty-and-dupree,Betty And Dupree,betty-and-dupree,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-big-boss-man,Big Boss Man,big-boss-man,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-big-boy-pete,Big Boy Pete,big-boy-pete,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-big-breasa,Big Breasa,big-breasa,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
 song-big-railroad-blues,Big Railroad Blues,big-railroad-blues,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-big-river,Big River,big-river,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-bird-song,Bird Song,bird-song,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-black-muddy-river,Black Muddy River,black-muddy-river,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
 song-black-peter,Black Peter,black-peter,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-black-queen,Black Queen,black-queen,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
 song-black-throated-wind,Black Throated Wind,black-throated-wind,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-blackbird,Blackbird,blackbird,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-blow-away,Blow Away,blow-away,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-blue-suede-shoes,Blue Suede Shoes,blue-suede-shoes,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-blues-for-allah,Blues For Allah,blues-for-allah,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
+song-blues-jam,Blues Jam,blues-jam,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-born-cross-eyed,Born Cross-Eyed,born-cross-eyed,,,,Source label normalized from gdshowsdb 1968 bulk baseline.
+song-born-on-the-bayou,Born On The Bayou,born-on-the-bayou,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
 song-box-of-rain,Box Of Rain,box-of-rain,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-bridging-the-gap,Bridging The Gap,bridging-the-gap,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-bring-me-my-shotgun,Bring Me My Shotgun,bring-me-my-shotgun,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-brokedown-palace,Brokedown Palace,brokedown-palace,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-broken-arrow,Broken Arrow,broken-arrow,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
 song-brown-eyed-women,Brown Eyed Women,brown-eyed-women,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-built-to-last,Built To Last,built-to-last,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-c-c-rider,C.C. Rider,c-c-rider,,,,Source label normalized from gdshowsdb 1979 bulk baseline.
+song-california-earthquake,California Earthquake,california-earthquake,,,,Source label normalized from gdshowsdb 1989 bulk baseline.
+song-can-t-come-down,Can't Come Down,can-t-come-down,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-candyman,Candyman,candyman,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-cardboard-cowboy,Cardboard Cowboy,cardboard-cowboy,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-casey-jones,Casey Jones,casey-jones,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-cassidy,Cassidy,cassidy,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-cathy-s-clown,Cathy's Clown,cathy-s-clown,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-caution,Caution,caution,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Credit evidence retained in raw source records but not canonicalized pending title/source review
+song-childhood-s-end,Childhood's End,childhood-s-end,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
 song-china-cat-sunflower,China Cat Sunflower,china-cat-sunflower,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-china-doll,China Doll,china-doll,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
 song-chinatown-shuffle,Chinatown Shuffle,chinatown-shuffle,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
-song-cold-rain-and-snow,Cold Rain And Snow,cold-rain-and-snow,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
+song-chinese-bones,Chinese Bones,chinese-bones,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-clementine,Clementine,clementine,,,,Source label normalized from gdshowsdb 1968 bulk baseline.
+song-cold-jordan,Cold Jordan,cold-jordan,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
+song-cold-rain-and-snow,Cold Rain And Snow,cold-rain-and-snow,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-come-back-baby,Come Back Baby,come-back-baby,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-comes-a-time,Comes A Time,comes-a-time,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-corrina,Corrina,corrina,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-cosmic-charlie,Cosmic Charlie,cosmic-charlie,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-cowboy-song,Cowboy Song,cowboy-song,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-crazy-fingers,Crazy Fingers,crazy-fingers,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
+song-cream-puff-war,Cream Puff War,cream-puff-war,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
 song-cryptical-envelopment,Cryptical Envelopment,cryptical-envelopment,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-cumberland-blues,Cumberland Blues,cumberland-blues,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-dancin-in-the-streets,Dancin' In The Streets,dancin-in-the-streets,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-dark-hollow,Dark Hollow,dark-hollow,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
 song-dark-star,Dark Star,dark-star,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-darkness-darkness-jam,"Darkness, Darkness Jam",darkness-darkness-jam,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-darlin-corey,Darlin' Corey,darlin-corey,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-day-job,Day Job,day-job,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
+song-day-o,Day-O,day-o,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-day-tripper,Day Tripper,day-tripper,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
 song-deal,Deal,deal,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-dear-mr-fantasy,Dear Mr. Fantasy,dear-mr-fantasy,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-death-don-t-have-no-mercy,Death Don't Have No Mercy,death-don-t-have-no-mercy,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-deep-elem-blues,Deep Elem Blues,deep-elem-blues,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-desolation-row,Desolation Row,desolation-row,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-devil-with-the-blue-dress,Devil With The Blue Dress,devil-with-the-blue-dress,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
 song-dire-wolf,Dire Wolf,dire-wolf,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-do-you-wanna-dance,Do You Wanna Dance?,do-you-wanna-dance,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-doin-that-rag,Doin' That Rag,doin-that-rag,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
 song-don-t-ease-me-in,Don't Ease Me In,don-t-ease-me-in,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
-song-drums,Drums,drums,,,,Source label normalized from gdshowsdb 1972 bulk baseline.
+song-don-t-mess-up-a-good-thing,Don't Mess Up A Good Thing,don-t-mess-up-a-good-thing,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-don-t-need-love,Don't Need Love,don-t-need-love,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-don-t-think-twice-it-s-alright,Don't Think Twice It's Alright,don-t-think-twice-it-s-alright,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-down-in-the-bottom,Down In The Bottom,down-in-the-bottom,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-down-so-long,Down So Long,down-so-long,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-drums,Drums,drums,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-dupree-s-diamond-blues,Dupree's Diamond Blues,dupree-s-diamond-blues,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-early-morning-rain,Early Morning Rain,early-morning-rain,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-easy-answers,Easy Answers,easy-answers,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-easy-to-love-you,Easy To Love You,easy-to-love-you,,,,Source label normalized from gdshowsdb 1979 bulk baseline.
+song-easy-wind,Easy Wind,easy-wind,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-el-paso,El Paso,el-paso,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-electricity-blues,Electricity Blues,electricity-blues,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-empty-pages,Empty Pages,empty-pages,,,,Source label normalized from gdshowsdb 1971 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-estimated-prophet,Estimated Prophet,estimated-prophet,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-eternity,Eternity,eternity,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-every-time-you-go-away,Every Time You Go Away,every-time-you-go-away,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-eyes-of-the-world,Eyes Of The World,eyes-of-the-world,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-far-from-me,Far From Me,far-from-me,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-feedback,Feedback,feedback,,,,Source label normalized from gdshowsdb 1970 bulk baseline.
+song-feel-like-a-stranger,Feel Like A Stranger,feel-like-a-stranger,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-fever,Fever,fever,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-fire-on-the-mountain,Fire On The Mountain,fire-on-the-mountain,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-foolish-heart,Foolish Heart,foolish-heart,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-forever-young,Forever Young,forever-young,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
+song-foxy-lady-jam,Foxy Lady Jam,foxy-lady-jam,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-franklin-s-tower,Franklin's Tower,franklin-s-tower,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
 song-friend-of-the-devil,Friend Of The Devil,friend-of-the-devil,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-from-the-heart-of-me,From The Heart Of Me,from-the-heart-of-me,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
 song-frozen-logger,Frozen Logger,frozen-logger,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-gangster-of-love,Gangster Of Love,gangster-of-love,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-gathering-flowers-for-the-master-s-bouquet,Gathering Flowers For The Master's Bouquet,gathering-flowers-for-the-master-s-bouquet,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-gentlemen-start-your-engines,Gentlemen Start Your Engines,gentlemen-start-your-engines,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-get-back,Get Back,get-back,,,,Source label normalized from gdshowsdb 1971 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-gimme-some-lovin,Gimme Some Lovin',gimme-some-lovin,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-gloria,Gloria,gloria,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
 song-goin-down-the-road-feelin-bad,Goin' Down The Road Feelin' Bad,goin-down-the-road-feelin-bad,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-golden-road-to-unlimited-devotion,Golden Road To Unlimited Devotion,golden-road-to-unlimited-devotion,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
+song-good-golly-miss-molly,Good Golly Miss Molly,good-golly-miss-molly,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
 song-good-lovin,Good Lovin',good-lovin,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-good-morning-little-schoolgirl,Good Morning Little Schoolgirl,good-morning-little-schoolgirl,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
+song-good-time-blues,Good Time Blues,good-time-blues,,,,Source label normalized from gdshowsdb 1981 bulk baseline.
+song-goodnight-irene,Goodnight Irene,goodnight-irene,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
 song-greatest-story-ever-told,Greatest Story Ever Told,greatest-story-ever-told,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-green-green-grass-of-home,Green Green Grass Of Home,green-green-grass-of-home,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-green-onions,Green Onions,green-onions,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-green-river,Green River,green-river,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
+song-handsome-cabin-boy-jam,Handsome Cabin Boy Jam,handsome-cabin-boy-jam,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-happiness-is-drumming,Happiness Is Drumming,happiness-is-drumming,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
+song-hard-to-handle,Hard To Handle,hard-to-handle,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-he-was-a-friend-of-mine,He Was A Friend Of Mine,he-was-a-friend-of-mine,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-heads-up,Heads Up,heads-up,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-heaven-help-the-fool,Heaven Help The Fool,heaven-help-the-fool,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-hell-in-a-bucket,Hell In A Bucket,hell-in-a-bucket,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
+song-help-me-rhonda,Help Me Rhonda,help-me-rhonda,,,,Source label normalized from gdshowsdb 1971 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-help-on-the-way,Help On The Way,help-on-the-way,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
+song-here-comes-sunshine,Here Comes Sunshine,here-comes-sunshine,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
 song-hes-gone,He's Gone,hes-gone,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-hey-bo-diddley,Hey Bo Diddley,hey-bo-diddley,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-hey-jude,Hey Jude,hey-jude,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-hey-jude-reprise,Hey Jude Reprise,hey-jude-reprise,,,,Source label normalized from gdshowsdb 1985 bulk baseline.
+song-hey-little-one,Hey Little One,hey-little-one,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-hey-pocky-way,Hey Pocky Way,hey-pocky-way,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-hi-heel-sneakers,Hi-Heel Sneakers,hi-heel-sneakers,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-hideaway,Hideaway,hideaway,,,,Source label normalized from gdshowsdb 1971 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-high-time,High Time,high-time,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-hog-for-you-baby,Hog For You Baby,hog-for-you-baby,,,,Source label normalized from gdshowsdb 1971 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-hoochie-coochie-man,Hoochie Coochie Man,hoochie-coochie-man,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
+song-how-long-blues,How Long Blues,how-long-blues,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-how-sweet-it-is-to-be-loved-by-you,How Sweet It Is (To Be Loved By You),how-sweet-it-is-to-be-loved-by-you,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-hully-gully,Hully Gully,hully-gully,,,,Source label normalized from gdshowsdb 1981 bulk baseline.
 song-hurts-me-too,Hurts Me Too,hurts-me-too,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-i-ain-t-superstitious,I Ain't Superstitious,i-ain-t-superstitious,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-i-fought-the-law,I Fought The Law,i-fought-the-law,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-i-got-my-mojo-workin,I Got My Mojo Workin',i-got-my-mojo-workin,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-i-heard-it-through-the-grapevine,I Heard It Through The Grapevine,i-heard-it-through-the-grapevine,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-i-just-want-to-make-love-to-you,I Just Want To Make Love To You,i-just-want-to-make-love-to-you,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-i-know-it-s-a-sin,I Know It's A Sin,i-know-it-s-a-sin,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
 song-i-know-you-rider,I Know You Rider,i-know-you-rider,,,,External Dead.net lyric page linked; full lyrics not stored
+song-i-ll-go-crazy,I'll Go Crazy,i-ll-go-crazy,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-i-m-a-king-bee,I'm A King Bee,i-m-a-king-bee,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-i-m-a-man,I'm A Man,i-m-a-man,,,,Source label normalized from gdshowsdb 1989 bulk baseline.
+song-i-m-a-road-runner,(I'm A) Road Runner,i-m-a-road-runner,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-i-need-a-miracle,I Need A Miracle,i-need-a-miracle,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-i-second-that-emotion,I Second That Emotion,i-second-that-emotion,,,,Source label normalized from gdshowsdb 1971 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-i-ve-been-all-around-this-world,I've Been All Around This World,i-ve-been-all-around-this-world,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-i-want-to-tell-you,I Want To Tell You,i-want-to-tell-you,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-i-will-take-you-home,I Will Take You Home,i-will-take-you-home,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-if-i-had-the-world-to-give,If I Had The World To Give,if-i-had-the-world-to-give,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-if-the-shoe-fits,If The Shoe Fits,if-the-shoe-fits,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-iko-iko,Iko Iko,iko-iko,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-in-the-pines,In The Pines,in-the-pines,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-into-the-mystic,Into The Mystic,into-the-mystic,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
+song-it-must-have-been-the-roses,It Must Have Been The Roses,it-must-have-been-the-roses,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-it-s-a-man-s-world,It's A Man's World,it-s-a-man-s-world,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-it-s-all-over-now,It's All Over Now,it-s-all-over-now,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-it-s-all-over-now-baby-blue,It's All Over Now Baby Blue,it-s-all-over-now-baby-blue,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-it-s-all-too-much,It's All Too Much,it-s-all-too-much,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
+song-it-takes-a-lot-to-laugh-it-takes-a-train-to-cry,"It Takes A Lot To Laugh, It Takes A Train To Cry",it-takes-a-lot-to-laugh-it-takes-a-train-to-cry,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-jack-a-roe,Jack-A-Roe,jack-a-roe,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
 song-jack-straw,Jack Straw,jack-straw,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-jam,Jam,jam,,,,Source label normalized from gdshowsdb 1972 bulk baseline.
+song-john-s-other,John's Other,john-s-other,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-johnny-b-goode,Johnny B. Goode,johnny-b-goode,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-just-a-little-light,Just A Little Light,just-a-little-light,,,,Source label normalized from gdshowsdb 1989 bulk baseline.
+song-just-like-tom-thumb-s-blues,Just Like Tom Thumb's Blues,just-like-tom-thumb-s-blues,,,,Source label normalized from gdshowsdb 1985 bulk baseline.
+song-kansas-city,Kansas City,kansas-city,,,,Source label normalized from gdshowsdb 1985 bulk baseline.
+song-katie-mae,Katie Mae,katie-mae,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-keep-on-growing,Keep On Growing,keep-on-growing,,,,Source label normalized from gdshowsdb 1985 bulk baseline.
+song-keep-rolling-by,Keep Rolling By,keep-rolling-by,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-knockin-on-heaven-s-door,Knockin' On Heaven's Door,knockin-on-heaven-s-door,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-la-bamba,La Bamba,la-bamba,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-lazy-lightning,Lazy Lightning,lazy-lightning,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
+song-lazy-river-road,Lazy River Road,lazy-river-road,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-let-it-grow,Let It Grow,let-it-grow,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-let-it-rock,Let It Rock,let-it-rock,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-let-me-in,Let Me In,let-me-in,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-let-me-sing-your-blues-away,Let Me Sing Your Blues Away,let-me-sing-your-blues-away,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-let-the-good-times-roll,Let The Good Times Roll,let-the-good-times-roll,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-liberty,Liberty,liberty,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-like-a-rolling-stone,Like A Rolling Stone,like-a-rolling-stone,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-lindy,Lindy,lindy,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
+song-little-red-rooster,Little Red Rooster,little-red-rooster,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-little-sadie,Little Sadie,little-sadie,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
+song-little-star,Little Star,little-star,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
+song-long-black-limousine,Long Black Limousine,long-black-limousine,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-look-on-yonder-s-wall,Look On Yonder's Wall,look-on-yonder-s-wall,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-looks-like-rain,Looks Like Rain,looks-like-rain,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-loose-lucy,Loose Lucy,loose-lucy,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
 song-loser,Loser,loser,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-lost-sailor,Lost Sailor,lost-sailor,,,,Source label normalized from gdshowsdb 1979 bulk baseline.
+song-louie-louie,Louie Louie,louie-louie,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-love-the-one-you-re-with,Love The One You're With,love-the-one-you-re-with,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
+song-lucy-in-the-sky-with-diamonds,Lucy In The Sky With Diamonds,lucy-in-the-sky-with-diamonds,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-mack-the-knife-tease,Mack The Knife Tease,mack-the-knife-tease,,,,Source label normalized from gdshowsdb 1981 bulk baseline.
+song-maggie-s-farm,Maggie's Farm,maggie-s-farm,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-mama-tried,Mama Tried,mama-tried,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-man-smart-woman-smarter,Man Smart (Woman Smarter),man-smart-woman-smarter,,,,Source label normalized from gdshowsdb 1981 bulk baseline.
+song-mannish-boy-i-m-a-man,Mannish Boy (I'm A Man),mannish-boy-i-m-a-man,,,,Source label normalized from gdshowsdb 1971 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-mason-s-children,Mason's Children,mason-s-children,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-matilda,Matilda,matilda,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-maybe-you-know,Maybe You Know,maybe-you-know,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
 song-me-and-bobby-mcgee,Me And Bobby McGee,me-and-bobby-mcgee,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-me-and-my-uncle,Me And My Uncle,me-and-my-uncle,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-mean-woman-blues,Mean Woman Blues,mean-woman-blues,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
 song-mexicali-blues,Mexicali Blues,mexicali-blues,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-midnight-hour,Midnight Hour,midnight-hour,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-might-as-well,Might As Well,might-as-well,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
 song-mind-left-body-jam,Mind Left Body Jam,mind-left-body-jam,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Credit evidence retained in raw source records but not canonicalized pending title/source review
+song-mindbender,Mindbender,mindbender,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-minglewood-blues,Minglewood Blues,minglewood-blues,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-mission-in-the-rain,Mission In The Rain,mission-in-the-rain,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
 song-mississippi-half-step,Mississippi Half Step,mississippi-half-step,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-mona,Mona,mona,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-money-money,Money Money,money-money,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-monkey-and-the-engineer,Monkey And The Engineer,monkey-and-the-engineer,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
 song-morning-dew,Morning Dew,morning-dew,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-mountain-jam,Mountain Jam,mountain-jam,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-mountains-of-the-moon,Mountains Of The Moon,mountains-of-the-moon,,,,Source label normalized from gdshowsdb 1968 bulk baseline.
 song-mr-charlie,Mr. Charlie,mr-charlie,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-muddy-water,Muddy Water,muddy-water,,,,Source label normalized from gdshowsdb 1971 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-my-babe,My Babe,my-babe,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-my-baby-left-me,My Baby Left Me,my-baby-left-me,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-my-brother-esau,My Brother Esau,my-brother-esau,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
+song-my-own-fault,My Own Fault,my-own-fault,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-mystery-train,Mystery Train,mystery-train,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-neighborhood-girls,Neighborhood Girls,neighborhood-girls,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-new-orleans,New Orleans,new-orleans,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-new-potato-caboose,New Potato Caboose,new-potato-caboose,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
+song-new-speedway-boogie,New Speedway Boogie,new-speedway-boogie,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-next-time-you-see-me,Next Time You See Me,next-time-you-see-me,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-nobody-s-fault-but-mine,Nobody's Fault But Mine,nobody-s-fault-but-mine,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Credit evidence retained in raw source records but not canonicalized pending title/source review
+song-non-improvisation,Non-Improvisation,non-improvisation,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
 song-not-fade-away,Not Fade Away,not-fade-away,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-ode-for-billie-dean,Ode For Billie Dean,ode-for-billie-dean,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-oh-babe-it-ain-t-no-lie,"Oh Babe, It Ain't No Lie",oh-babe-it-ain-t-no-lie,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-oh-boy,Oh Boy,oh-boy,,,,Source label normalized from gdshowsdb 1971 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-okie-from-muskogee,Okie From Muskogee,okie-from-muskogee,,,,Source label normalized from gdshowsdb 1971 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-old-old-house,Old Old House,old-old-house,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-ollin-arageed,Ollin Arageed,ollin-arageed,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-on-the-road-again,On The Road Again,on-the-road-again,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-one-kind-favor,One Kind Favor,one-kind-favor,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-one-more-saturday-night,One More Saturday Night,one-more-saturday-night,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-only-a-fool,Only A Fool,only-a-fool,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-operator,Operator,operator,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-pain-in-my-heart,Pain In My Heart,pain-in-my-heart,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-parchman-farm,Parchman Farm,parchman-farm,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-passenger,Passenger,passenger,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-peggy-o,Peggy-O,peggy-o,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-picasso-moon,Picasso Moon,picasso-moon,,,,Source label normalized from gdshowsdb 1989 bulk baseline.
 song-playing-in-the-band,Playing In The Band,playing-in-the-band,,,,Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-playing-in-the-band-reprise,Playing In The Band Reprise,playing-in-the-band-reprise,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
 song-promised-land,Promised Land,promised-land,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-proud-mary,Proud Mary,proud-mary,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
+song-queen-jane-approximately,Queen Jane Approximately,queen-jane-approximately,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-quinn-the-eskimo,Quinn The Eskimo,quinn-the-eskimo,,,,Source label normalized from gdshowsdb 1985 bulk baseline.
+song-rain,Rain,rain,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-rainy-day-women-12-and-35,Rainy Day Women #12 and 35,rainy-day-women-12-and-35,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
 song-ramble-on-rose,Ramble On Rose,ramble-on-rose,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-reuben-and-cherise,Reuben And Cherise,reuben-and-cherise,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
+song-revolution,Revolution,revolution,,,,Source label normalized from gdshowsdb 1983 bulk baseline.
+song-revolutionary-hamstrung-blues,Revolutionary Hamstrung Blues,revolutionary-hamstrung-blues,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-riot-in-cell-block-9,Riot In Cell Block #9,riot-in-cell-block-9,,,,Source label normalized from gdshowsdb 1971 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-rip-it-up,Rip It Up,rip-it-up,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-ripple,Ripple,ripple,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-river-deep-mountain-high,"River Deep, Mountain High",river-deep-mountain-high,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
+song-roberta,Roberta,roberta,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
 song-rockin-pneumonia,Rockin' Pneumonia,rockin-pneumonia,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-rollin-and-tumblin,Rollin' And Tumblin',rollin-and-tumblin,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
+song-rosa-lee-mcfall,Rosa Lee McFall,rosa-lee-mcfall,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-rosemary,Rosemary,rosemary,,,,Source label normalized from gdshowsdb 1968 bulk baseline.
+song-row-jimmy,Row Jimmy,row-jimmy,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-run-rudolph-run,Run Rudolph Run,run-rudolph-run,,,,Source label normalized from gdshowsdb 1971 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-sage-and-spirit,Sage And Spirit,sage-and-spirit,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
+song-saint-of-circumstance,Saint Of Circumstance,saint-of-circumstance,,,,Source label normalized from gdshowsdb 1979 bulk baseline.
+song-saint-stephen,Saint Stephen,saint-stephen,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored
+song-salt-lake-city,Salt Lake City,salt-lake-city,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-samba-in-the-rain,Samba In The Rain,samba-in-the-rain,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-samson-and-delilah,Samson And Delilah,samson-and-delilah,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
+song-satisfaction,Satisfaction,satisfaction,,,,Source label normalized from gdshowsdb 1980 bulk baseline.
+song-sawmill,Sawmill,sawmill,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-scarlet-begonias,Scarlet Begonias,scarlet-begonias,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-searchin,Searchin',searchin,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-seasons-of-my-heart,Seasons Of My Heart,seasons-of-my-heart,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-seastones,Seastones,seastones,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-shakedown-street,Shakedown Street,shakedown-street,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-she-belongs-to-me,She Belongs To Me,she-belongs-to-me,,,,Source label normalized from gdshowsdb 1985 bulk baseline.
+song-she-s-mine,She's Mine,she-s-mine,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-ship-of-fools,Ship Of Fools,ship-of-fools,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-sick-and-tired,Sick And Tired,sick-and-tired,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-sidewalks-of-new-york,Sidewalks Of New York,sidewalks-of-new-york,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-silver-threads-and-golden-needles,Silver Threads And Golden Needles,silver-threads-and-golden-needles,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-sing-me-back-home,Sing Me Back Home,sing-me-back-home,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-sitting-on-top-of-the-world,Sitting On Top Of The World,sitting-on-top-of-the-world,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-sleigh-ride,Sleigh Ride,sleigh-ride,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-slewfoot,Slewfoot,slewfoot,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-slipknot,Slipknot!,slipknot,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
 song-smokestack-lightning,Smokestack Lightning,smokestack-lightning,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-so-many-roads,So Many Roads,so-many-roads,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-so-sad-to-see-good-love-go-bad,So Sad (To See Good Love Go Bad),so-sad-to-see-good-love-go-bad,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-so-what,So What?,so-what,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
 song-space,Space,space,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Credit evidence retained in raw source records but not canonicalized pending title/source review
+song-spanish-jam,Spanish Jam,spanish-jam,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-spoonful,Spoonful,spoonful,,,,Source label normalized from gdshowsdb 1981 bulk baseline.
+song-stagger-lee,Stagger Lee,stagger-lee,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-stander-on-the-mountain,Stander On The Mountain,stander-on-the-mountain,,,,Source label normalized from gdshowsdb 1990 bulk baseline.
+song-standing-on-the-corner,Standing On The Corner,standing-on-the-corner,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-standing-on-the-moon,Standing On The Moon,standing-on-the-moon,,,,Source label normalized from gdshowsdb 1989 bulk baseline.
+song-star-spangled-banner,Star Spangled Banner,star-spangled-banner,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-start-me-up,Start Me Up,start-me-up,,,,Source label normalized from gdshowsdb 1994 bulk baseline.
+song-stayin-alive-jam,Stayin' Alive Jam,stayin-alive-jam,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-stealin,Stealin',stealin,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-stella-blue,Stella Blue,stella-blue,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-stir-it-up,Stir It Up,stir-it-up,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-stronger-than-dirt,Stronger Than Dirt,stronger-than-dirt,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
+song-stuck-inside-of-mobile-with-the-memphis-blues-again,Stuck Inside Of Mobile With The Memphis Blues Again,stuck-inside-of-mobile-with-the-memphis-blues-again,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
 song-sugar-magnolia,Sugar Magnolia,sugar-magnolia,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-sugaree,Sugaree,sugaree,,,,External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-sunrise,Sunrise,sunrise,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-sunshine-daydream,Sunshine Daydream,sunshine-daydream,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-supplication,Supplication,supplication,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
+song-swing-low-sweet-chariot,"Swing Low, Sweet Chariot",swing-low-sweet-chariot,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-take-me-to-the-river,Take Me To The River,take-me-to-the-river,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
+song-tastebud,Tastebud,tastebud,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-tell-it-to-me,Tell It To Me,tell-it-to-me,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-tell-mama,Tell Mama,tell-mama,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
 song-tennessee-jed,Tennessee Jed,tennessee-jed,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
-song-the-other-one,The Other One,the-other-one,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-terrapin-station,Terrapin Station,terrapin-station,,,,Source label normalized from gdshowsdb 1977 bulk baseline.
+song-that-s-alright-mama,That's Alright Mama,that-s-alright-mama,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-that-would-be-something,That Would Be Something,that-would-be-something,,,,Source label normalized from gdshowsdb 1991 bulk baseline.
+song-the-days-between,The Days Between,the-days-between,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
+song-the-eleven,The Eleven,the-eleven,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-the-last-time,The Last Time,the-last-time,,,,Source label normalized from gdshowsdb 1990 bulk baseline.
+song-the-main-ten,The Main Ten,the-main-ten,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-the-music-never-stopped,The Music Never Stopped,the-music-never-stopped,,,,Source label normalized from gdshowsdb 1975 bulk baseline.
+song-the-only-time-is-now,The Only Time Is Now,the-only-time-is-now,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-the-other-one,The Other One,the-other-one,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-the-race-is-on,The Race Is On,the-race-is-on,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-the-rub,The Rub,the-rub,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-the-same-thing,The Same Thing,the-same-thing,,,,Source label normalized from gdshowsdb 1971 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-the-seven,The Seven,the-seven,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-the-weight,The Weight,the-weight,,,,Source label normalized from gdshowsdb 1990 bulk baseline.
+song-the-wheel,The Wheel,the-wheel,,,,Source label normalized from gdshowsdb 1976 bulk baseline.
+song-there-s-something-on-your-mind,There's Something On Your Mind,there-s-something-on-your-mind,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-they-love-each-other,They Love Each Other,they-love-each-other,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-thirty-days-to-come-back-home,Thirty Days (To Come Back Home),thirty-days-to-come-back-home,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-throwing-stones,Throwing Stones,throwing-stones,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
+song-till-the-morning-comes,Till The Morning Comes,till-the-morning-comes,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-to-lay-me-down,To Lay Me Down,to-lay-me-down,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-tomorrow-is-forever,Tomorrow Is Forever,tomorrow-is-forever,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-tomorrow-never-knows,Tomorrow Never Knows,tomorrow-never-knows,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-tons-of-steel,Tons Of Steel,tons-of-steel,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-touch-of-grey,Touch Of Grey,touch-of-grey,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
+song-tough-mama,Tough Mama,tough-mama,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
 song-truckin,Truckin',truckin,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
 song-turn-on-your-lovelight,Turn On Your Lovelight,turn-on-your-lovelight,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-twist-and-shout,Twist And Shout,twist-and-shout,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-two-souls-in-communion,Two Souls In Communion,two-souls-in-communion,,,,Source label normalized from gdshowsdb 1972 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-u-s-blues,U.S. Blues,u-s-blues,,,,Source label normalized from gdshowsdb 1974 bulk baseline.
+song-unbroken-chain,Unbroken Chain,unbroken-chain,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
 song-uncle-john-s-band,Uncle John's Band,uncle-john-s-band,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-uncle-sam-blues,Uncle Sam Blues,uncle-sam-blues,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-unidentified-19660312-02-blues-instrumental,unidentified-19660312-02 (blues instrumental),unidentified-19660312-02-blues-instrumental,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-unidentified-19660325-01,unidentified-19660325-01,unidentified-19660325-01,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-unidentified-19670409-01-blues,unidentified-19670409-01 (blues),unidentified-19670409-01-blues,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
+song-unidentified-19690507-01,unidentified-19690507-01,unidentified-19690507-01,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-unidentified-19701120-01,unidentified-19701120-01,unidentified-19701120-01,,,,Source label normalized from gdshowsdb 1970 bulk baseline.; Dead.net lyric/credit page unresolved in this collection pass
+song-valley-road,Valley Road,valley-road,,,,Source label normalized from gdshowsdb 1990 bulk baseline.
+song-victim-or-the-crime,Victim Or The Crime,victim-or-the-crime,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-viola-lee-blues,Viola Lee Blues,viola-lee-blues,,,,Source label normalized from gdshowsdb 1970 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-visions-of-johanna,Visions Of Johanna,visions-of-johanna,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-wake-up-little-susie,Wake Up Little Susie,wake-up-little-susie,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-walkin-blues,Walkin' Blues,walkin-blues,,,,Source label normalized from gdshowsdb 1967 bulk baseline.
+song-walking-the-dog,Walking The Dog,walking-the-dog,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-wang-dang-doodle,Wang Dang Doodle,wang-dang-doodle,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-watchin-the-wheels,Watchin' The Wheels,watchin-the-wheels,,,,Source label normalized from gdshowsdb 1995 bulk baseline.
+song-wave-that-flag,Wave That Flag,wave-that-flag,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-wave-to-the-wind,Wave To The Wind,wave-to-the-wind,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-way-to-go-home,Way To Go Home,way-to-go-home,,,,Source label normalized from gdshowsdb 1992 bulk baseline.
+song-we-can-run,We Can Run,we-can-run,,,,Source label normalized from gdshowsdb 1989 bulk baseline.
+song-weather-report-suite-part-1,Weather Report Suite Part 1,weather-report-suite-part-1,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
 song-weather-report-suite-prelude,Weather Report Suite Prelude,weather-report-suite-prelude,,,,Source label normalized from gdshowsdb 1972 bulk baseline; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-werewolves-of-london,Werewolves Of London,werewolves-of-london,,,,Source label normalized from gdshowsdb 1978 bulk baseline.
+song-west-l-a-fadeaway,West L.A. Fadeaway,west-l-a-fadeaway,,,,Source label normalized from gdshowsdb 1982 bulk baseline.
 song-wharf-rat,Wharf Rat,wharf-rat,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-what-s-become-of-the-baby,What's Become Of The Baby,what-s-become-of-the-baby,,,,Source label normalized from gdshowsdb 1969 bulk baseline.
+song-what-s-going-on,What's Going On,what-s-going-on,,,,Source label normalized from gdshowsdb 1988 bulk baseline.
+song-when-i-paint-my-masterpiece,When I Paint My Masterpiece,when-i-paint-my-masterpiece,,,,Source label normalized from gdshowsdb 1987 bulk baseline.
+song-when-push-comes-to-shove,When Push Comes To Shove,when-push-comes-to-shove,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-whiskey-in-the-jar,Whiskey In The Jar,whiskey-in-the-jar,,,,Source label normalized from gdshowsdb 1993 bulk baseline.
 song-who-do-you-love,Who Do You Love,who-do-you-love,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-why-don-t-we-do-it-in-the-road,Why Don't We Do It In The Road,why-don-t-we-do-it-in-the-road,,,,Source label normalized from gdshowsdb 1984 bulk baseline.
+song-will-the-circle-be-unbroken,Will The Circle Be Unbroken,will-the-circle-be-unbroken,,,,Source label normalized from gdshowsdb 1970 bulk baseline; Dead.net lyric/credit page unresolved in this collection pass; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-willie-and-the-hand-jive,Willie And The Hand Jive,willie-and-the-hand-jive,,,,Source label normalized from gdshowsdb 1986 bulk baseline.
+song-workin-man-blues,Workin' Man Blues,workin-man-blues,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-yellow-moon,Yellow Moon,yellow-moon,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-you-ain-t-woman-enough,You Ain't Woman Enough,you-ain-t-woman-enough,,,,Source label normalized from gdshowsdb 1973 bulk baseline.
+song-you-don-t-have-to-ask,You Don't Have To Ask,you-don-t-have-to-ask,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-you-don-t-love-me,You Don't Love Me,you-don-t-love-me,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
+song-you-see-a-broken-heart,You See A Broken Heart,you-see-a-broken-heart,,,,Source label normalized from gdshowsdb 1966 bulk baseline.
 song-you-win-again,You Win Again,you-win-again,,,,Source label normalized from gdshowsdb 1972 bulk baseline; External Dead.net lyric page linked; full lyrics not stored; Song credits normalized from MusicBrainz and/or Dead.net source metadata
+song-young-blood,Young Blood,young-blood,,,,Source label normalized from gdshowsdb 1980 bulk baseline.

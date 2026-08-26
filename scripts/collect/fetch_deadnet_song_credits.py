@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import argparse
 import csv
 import html
 import json
@@ -15,7 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SONGS = ROOT / "data" / "canonical" / "songs.csv"
-OUTPUT = ROOT / "data" / "raw" / "songs" / "deadnet-song-credits-1972.jsonl"
+PERFORMANCES = ROOT / "data" / "canonical" / "performances.csv"
+SHOWS = ROOT / "data" / "canonical" / "shows.csv"
 
 
 def candidates(slug: str) -> list[str]:
@@ -113,18 +115,33 @@ def fetch_song(song: dict[str, str]) -> dict:
     }
 
 
-def main() -> None:
+def songs_for_year(year: int) -> list[dict[str, str]]:
     with SONGS.open(newline="", encoding="utf-8") as handle:
-        songs = list(csv.DictReader(handle))
+        songs = {row["song_id"]: row for row in csv.DictReader(handle)}
+    with SHOWS.open(newline="", encoding="utf-8") as handle:
+        show_ids = {
+            row["show_id"] for row in csv.DictReader(handle) if row["show_date"].startswith(f"{year}-")
+        }
+    with PERFORMANCES.open(newline="", encoding="utf-8") as handle:
+        song_ids = {row["song_id"] for row in csv.DictReader(handle) if row["show_id"] in show_ids}
+    return [songs[song_id] for song_id in sorted(song_ids)]
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("year", type=int, help="show year whose song labels should be enriched")
+    args = parser.parse_args()
+    songs = songs_for_year(args.year)
+    output = ROOT / "data" / "raw" / "songs" / f"deadnet-song-credits-{args.year}.jsonl"
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         records = list(pool.map(fetch_song, songs))
     records.sort(key=lambda record: record["raw_payload"]["song_id"])
-    with OUTPUT.open("w", encoding="utf-8") as handle:
+    with output.open("w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
     successful = sum(record["raw_payload"]["attempts"][-1]["status"] == 200 for record in records)
     credited = sum(record["raw_payload"]["has_credits"] for record in records)
-    print(f"Preserved {len(records)} song records; {successful} pages resolved and {credited} contain credits.")
+    print(f"Preserved {len(records)} {args.year} song records at {output}; {successful} pages resolved and {credited} contain credits.")
 
 
 if __name__ == "__main__":

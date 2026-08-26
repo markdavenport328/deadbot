@@ -79,10 +79,12 @@ The current resource set gives every one of the 20 Veneta songs at least one con
 - The browser reuses one opaque thread ID, which maps to LangGraph's in-memory
   checkpoint. Conversation context lasts for the current server process only;
   durable user history remains a separate future decision.
-- Added a model-guided composer that receives compact candidate metadata and
-  returns only an ordered list of candidate block indexes. The server resolves
-  those indexes to its own validated blocks, preserves provenance/gap blocks,
-  and falls back to deterministic order if the model is unavailable or invalid.
+- Added a model-guided composer that receives an enriched decision brief:
+  grounded answer, recent conversation, candidate scope/purpose/provenance,
+  known performance evidence, and current library coverage. It returns
+  model-selected primary, supporting, context, and media regions using only
+  server-owned candidate indexes; invalid or unavailable-model results fall
+  back to the deterministic candidate order.
 
 ## Current boundaries
 
@@ -96,6 +98,9 @@ These boundaries are intentional and should not be bypassed casually:
 - The model-guided composer is selection-only: it cannot write visible facts,
   URLs, iframe markup, HTML, or new block types. It requires an available local
   model to improve layout; model failure returns the deterministic layout.
+- `AGENTS.md` records the project-wide model-first principle: favor richer
+  grounded context and instructions for ordinary product judgment; reserve
+  deterministic code for validation and narrow safety guardrails.
 - A model may not generate browser code, iframe markup, arbitrary embeds, or arbitrary external URLs. The future client must render only server-validated, allowlisted blocks.
 
 ## Next work
@@ -161,11 +166,12 @@ tests.
 
 ### 4. Evaluate and tune the bounded model-guided composer
 
-The first composer now selects and orders only existing server-validated block
-indexes. Run it against the configured local model with representative Veneta
-questions and compare its selections to the deterministic candidate order.
-Tune the selection prompt and compact candidate labels, not the source data or
-the browser renderer, when the selection is poor.
+The first composer now reasons over an enriched decision brief and selects
+server-validated blocks into primary, supporting, context, and media regions.
+Run it against the configured local model with representative Veneta questions
+and compare its selections to the deterministic candidate order. Tune the
+model's grounded brief, instructions, and candidate metadata before adding
+deterministic intent routing.
 
 Add example-based evaluations for questions that should emphasize a song card,
 show/performance card, media option, chord-resource list, provenance note, or
@@ -190,7 +196,14 @@ Implement deterministic import, foreign-key validation, and a rebuild command. R
 
 ### 7. Expand the 1972 collection responsibly
 
-Use gdshowsdb as the bulk baseline, JerryBase for review, Internet Archive for recordings, and selected sources by fact type. Add data in reviewable batches; preserve raw records and source-specific identifiers. The first bulk pass is complete: 86 shows, 2,229 performances, and 362 recording rows are now canonical; one full Internet Archive metadata record is preserved for each show. The remaining work is track mappings, additional recording detail, lineups, credits, and cross-source review.
+Use gdshowsdb as the bulk baseline, JerryBase for review, Internet Archive for recordings, and selected sources by fact type. Add data in reviewable batches; preserve raw records and source-specific identifiers. The first bulk pass is complete: 86 shows, 2,229 performances, and 362 recording rows are now canonical; one full Internet Archive metadata record is preserved for each show. The remaining work is track mappings, additional recording detail, lineups, unresolved song credits, and cross-source review.
+
+The year-level pass also established the collection playbook in
+`docs/collection-methodology.md`: enumerate the bounded universe first, run
+typed enrichment passes, keep compact raw evidence separate from canonical
+conclusions, fail closed on transport errors, resolve title aliases in stages,
+and hold ambiguous matches rather than guessing. These rules should be used
+for every subsequent year and enrichment batch.
 
 **Done when:** a documented 1972 ingestion/reconciliation pass produces validated show/performance/recording coverage beyond the Veneta pilot.
 

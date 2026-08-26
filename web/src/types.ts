@@ -28,6 +28,17 @@ export type ResourceListBlock = {
   }>;
 };
 
+export type CreditListBlock = {
+  type: "credit_list";
+  title: string;
+  items: Array<{
+    person_id: string;
+    name: string;
+    role: string;
+  }>;
+  source_ids: string[];
+};
+
 export type MediaLinkBlock = {
   type: "media_link";
   title: string;
@@ -37,6 +48,25 @@ export type MediaLinkBlock = {
   is_official: boolean;
   embed_kind?: "spotify" | "youtube" | null;
   embed_id?: string | null;
+};
+
+export type PerformanceListBlock = {
+  type: "performance_list";
+  title: string;
+  song_id: string;
+  known_count: number;
+  items: Array<{
+    performance_id: string;
+    show_date?: string | null;
+    set_label?: string | null;
+    position_in_set?: string | null;
+  }>;
+};
+
+export type CoverageBlock = {
+  type: "coverage";
+  title: string;
+  message: string;
 };
 
 export type ArrangementBlock = {
@@ -62,7 +92,10 @@ export type GapStateBlock = {
 export type ExperienceBlock =
   | EntityCardBlock
   | ResourceListBlock
+  | CreditListBlock
   | MediaLinkBlock
+  | PerformanceListBlock
+  | CoverageBlock
   | ArrangementBlock
   | ProvenanceNoteBlock
   | GapStateBlock;
@@ -77,5 +110,9 @@ export type ExperienceResponse = {
     text: string;
   }>;
   blocks: ExperienceBlock[];
+  layout: Array<{
+    region: "primary" | "supporting" | "context" | "media";
+    block_indexes: number[];
+  }>;
   sources: SourceReference[];
 };

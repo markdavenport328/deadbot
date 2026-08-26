@@ -43,6 +43,8 @@ See `docs/graph-scope.md` for the boundary between structured graph data and ext
 - `docs/product-vision.md` — the intended user experience, system shape, and information boundaries.
 - `docs/experience-architecture.md` — the FastAPI/React experience layer, composition contract, block catalog, and media/provenance safeguards.
 - `docs/development-plan.md` — current accomplishments, staged plan, and acceptance criteria.
+- `docs/collection-methodology.md` — practical collection workflow, retry safety, title matching, rights boundaries, and validation checklist.
+- `docs/collection-status-1965-1995.md` — full show/setlist baseline coverage and early-year gaps.
 - `docs/agent-handoff.md` — concise onboarding guide for a collaborating agent.
 - `docs/agent-harness.md` — LangGraph loop, tool surface, and local-model configuration.
 - `docs/decisions.md` — architectural decisions that should not be casually revisited.

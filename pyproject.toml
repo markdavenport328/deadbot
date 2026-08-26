@@ -14,6 +14,7 @@ dependencies = [
     "langchain-openai>=0.3",
     "langgraph>=0.4",
     "uvicorn[standard]>=0.30",
+    "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]

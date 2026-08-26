@@ -75,3 +75,23 @@
 The model may select and order approved blocks; it must not generate HTML, CSS, JavaScript, iframe markup, or arbitrary URLs. Server-side Pydantic validation ensures that every entity, resource, media link, and quote refers only to data present in the approved retrieval packet. This retains model flexibility without allowing it to bypass provenance, rights, or media safety rules.
 
 **Implementation note:** Begin with a deterministic adapter that produces the same response contract from agent/tool results. Add a separate model-guided composer only after the contract, renderers, and evaluation examples are in place. Spotify and YouTube embeds, when supported, are built by trusted provider adapters from approved stored media links; all other links remain normal outbound links. See `docs/experience-architecture.md`.
+
+## ADR-012 — Bounded, retry-safe collection passes
+
+**Decision:** Organize collection as bounded enumeration and typed enrichment
+passes. Preserve compact raw evidence separately from canonical conclusions,
+and fail closed when a retry returns broad transport errors or unexpectedly
+empty results.
+
+**Reasoning:** The 1972 pass showed that no single source is best for shows,
+recordings, composition credits, lyric availability, and historical context.
+Title-only catalog searches also produce plausible but unrelated works, and a
+network failure can otherwise look like a real source absence. Reviewable
+passes with explicit held cases preserve progress without turning uncertainty
+into false certainty.
+
+**Implementation note:** Each pass records requested/successful/unresolved/
+promoted/held counts, uses stable IDs and idempotent relationships, and ends
+with source, relational, and behavior validation. Full lyrics, tabs,
+transcriptions, audio, and video remain external links or compact metadata.
+See `docs/collection-methodology.md`.

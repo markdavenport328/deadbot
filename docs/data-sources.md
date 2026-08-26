@@ -1,6 +1,8 @@
 # Candidate data sources
 
-The 1972 pilot has collected three low-volume raw records from JerryBase and Internet Archive. Details not yet independently researched remain **TBD**.
+The 1972 pilot began with low-volume JerryBase and Internet Archive records and
+now includes the pinned gdshowsdb year baseline plus targeted song-source
+enrichment. Details not yet independently researched remain **TBD**.
 
 For each candidate, assess data quality, terms, attribution requirements, access stability, and whether records can be preserved and regenerated responsibly.
 
@@ -20,7 +22,8 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - What it provides: A public relational Grateful Dead show database with committed, year-specific YAML files, normalized song references, show sets, positions, and segue indicators.
 - Access method: Public Git repository and GitHub Contents API.
 - Structured fields: Year YAML files, song-reference data, show details, set segmentation, ordered song occurrences, and segue markers.
-- Coverage: A committed `1972.yaml` file is available in the repository.
+- Coverage: Committed year files are available in the repository; this project
+  has collected the 1965–1995 show/setlist baseline.
 - Authority / reliability: Primary bulk baseline for 1972 show and performance ingestion. JerryBase remains a review source for corrections and disputed records.
 - Licensing / usage considerations: Repository is published under the MIT License. Pin each retrieved raw file by its GitHub blob SHA.
 - Potential canonical entities populated: Shows, venues, songs, performances, and segues.
@@ -31,11 +34,17 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - What it provides: Recording-item metadata, identifiers, source descriptions, lineage, taper/transfer information, collection status, and file/track metadata.
 - Access method: Read-only item metadata endpoint and collection search endpoint.
 - Structured fields: Archive identifier, date, title, venue, coverage, source, lineage, taper, transferer, and supplied track/file fields.
-- Coverage: The pilot query returned 364 1972 collection items and preserved one item-metadata record for 1972-08-27.
+- Coverage: Metadata-only recording indexes now cover the 1965–1995 baseline
+  with 18,325 unique items; one representative item per 1,910 safely linked
+  canonical shows has also been preserved with full item metadata.
+- Track enrichment: 16,487 additional performance-recording links were
+  promoted from representative file metadata when source track order aligned
+  uniquely with the canonical setlist; source durations were retained, while
+  playback start times were left blank.
 - Authority / reliability: Primary source for the 1972 pilot's recording-source metadata.
 - Licensing / usage considerations: Audio availability varies by item and collection policy. This pilot retrieved metadata only; it did not download or store audio.
 - Potential canonical entities populated: Recordings and performance-recording locations, with supporting show/venue values for reconciliation.
-- Known limitations: Values are item-supplied metadata and can vary between sources; one show can have many items and a track title can use source-specific notation.
+- Known limitations: Values are item-supplied metadata and can vary between sources; one show can have many items, a track title can use source-specific notation, and same-day shows without a distinguishing source field remain unmapped rather than guessed.
 
 ## Relisten
 
