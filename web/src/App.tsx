@@ -353,7 +353,7 @@ export default function App() {
       const result = await fetch("/api/experience", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed, thread_id: activeThreadId })
+        body: JSON.stringify({ question: trimmed, thread_id: activeThreadId, conversation: response?.conversation ?? [] })
       });
       if (!result.ok) {
         const body = await result.json().catch(() => null) as { detail?: string } | null;

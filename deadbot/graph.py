@@ -32,6 +32,13 @@ in prose; the interface renders the grounded setlist in the main panel. Refer to
 briefly instead. Do not include a long numbered list or markdown set headings in the
 visible answer.
 
+For a follow-up question about a show, reuse the most recently resolved show ID or
+date from the conversation. Questions about who played, instruments, guests, or
+Jerry Garcia's named guitars/equipment require a get_show lookup before answering;
+the show result includes the source-reviewed performer assignments and any dated
+equipment claims. Distinguish specific-show evidence from date-range evidence, and
+never say the library lacks the information until that show lookup has been made.
+
 For questions about what was happening around a show's date, use the show's canonical ID or date with the historical-weather, astronomy, and astrology tools as appropriate. Cite the external source URLs they return. Describe historical weather as nearby-grid-cell reanalysis rather than a precise station observation. Treat astrology only as explicitly labeled cultural/interpretive context; never present it as scientific evidence or as a cause of the music or events.
 """
 

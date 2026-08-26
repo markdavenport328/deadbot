@@ -337,7 +337,10 @@ def test_api_returns_the_validated_experience_contract():
     client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
     health = client.get("/api/health")
     result = client.post("/api/experience", json={"question": "Tell me about Veneta", "thread_id": "browser-1"})
-    assert health.json() == {"status": "ok"}
+    assert health.json()["status"] == "ok"
+    assert health.json()["canonical_shows"] == "2358"
+    assert health.json()["performer_assignments"] == "26265"
+    assert health.json()["show_equipment_links"] == "2249"
     assert result.status_code == 200
     body = result.json()
     assert body["schema_version"] == "1"
@@ -361,6 +364,30 @@ def test_api_uses_one_thread_for_follow_ups_and_returns_the_transcript():
         {"role": "assistant", "text": "Reply to: What came next?"},
     ]
     assert {call[1]["configurable"]["thread_id"] for call in agent.calls} == {"browser-1"}
+
+
+def test_api_replays_browser_conversation_for_stateless_follow_up():
+    agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
+    client = TestClient(create_app(settings=Settings(), agent=agent))
+    result = client.post(
+        "/api/experience",
+        json={
+            "question": "What guitar did Jerry play?",
+            "thread_id": "browser-1",
+            "conversation": [
+                {"role": "user", "text": "When did the Dead play RFK in the early 90s?"},
+                {"role": "assistant", "text": "They played RFK on June 14 and 15, 1991."},
+            ],
+        },
+    )
+    assert result.status_code == 200
+    sent_messages = agent.calls[0][0]["messages"]
+    assert [message.content for message in sent_messages] == [
+        "When did the Dead play RFK in the early 90s?",
+        "They played RFK on June 14 and 15, 1991.",
+        "What guitar did Jerry play?",
+    ]
+    assert agent.calls[0][1]["configurable"]["thread_id"].startswith("browser-1:request:")
 
 
 def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):

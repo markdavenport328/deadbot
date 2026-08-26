@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import uuid
 from pathlib import Path
 from typing import Any
@@ -10,7 +11,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage
 
 from deadbot.composer import DeterministicComposer, ExperienceComposer, create_experience_composer
 from deadbot.config import Settings
@@ -47,15 +48,33 @@ def create_app(
 
     @app.get("/api/health")
     def health() -> dict[str, str]:
-        return {"status": "ok"}
+        return {
+            "status": "ok",
+            "git_commit": os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown"),
+            "canonical_shows": str(len(store.rows("shows"))),
+            "performer_assignments": str(len(store.rows("show_performers"))),
+            "show_equipment_links": str(len(store.rows("show_equipment"))),
+        }
 
     @app.post("/api/experience", response_model=ExperienceResponse)
     def experience(request: ExperienceRequest) -> ExperienceResponse:
         thread_id = request.thread_id or f"web-{uuid.uuid4()}"
+        messages = [
+            HumanMessage(content=turn.text) if turn.role == "user" else AIMessage(content=turn.text)
+            for turn in request.conversation
+        ]
+        messages.append(HumanMessage(content=request.question.strip()))
+        # Vercel may route successive requests to different function instances.
+        # When the browser supplies its visible transcript, use an isolated
+        # invocation thread so the transcript is authoritative and is not
+        # duplicated with a warm instance's MemorySaver checkpoint.
+        invocation_thread_id = (
+            f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
+        )
         try:
             result = app.state.agent.invoke(
-                {"messages": [HumanMessage(content=request.question.strip())]},
-                run_config(thread_id, app.state.settings),
+                {"messages": messages},
+                run_config(invocation_thread_id, app.state.settings),
             )
         except Exception as error:  # The browser receives no model/provider internals.
             logger.exception("Deadbot experience request failed")

@@ -235,16 +235,17 @@ ExperienceBlock = Annotated[
 ]
 
 
-class ExperienceRequest(ExperienceModel):
-    question: str = Field(min_length=1, max_length=2_000)
-    thread_id: str | None = Field(default=None, min_length=1, max_length=200)
-
-
 class ConversationTurn(ExperienceModel):
     """A browser-safe projection of one human or final assistant message."""
 
     role: Literal["user", "assistant"]
     text: str = Field(min_length=1, max_length=8_000)
+
+
+class ExperienceRequest(ExperienceModel):
+    question: str = Field(min_length=1, max_length=2_000)
+    thread_id: str | None = Field(default=None, min_length=1, max_length=200)
+    conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
 
 
 class LayoutSection(ExperienceModel):
