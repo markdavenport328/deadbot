@@ -155,6 +155,26 @@ export type PerformanceExtremesBlock = {
   last: PerformanceListBlock["items"][number];
 };
 
+export type PerformanceSpineBlock = {
+  type: "performance_spine";
+  performance_id: string;
+  song_id: string;
+  title: string;
+  show_label: string;
+  set_label?: string | null;
+  position_in_set?: string | null;
+  previous?: {
+    performance_id: string;
+    title: string;
+    follow_up: string;
+  } | null;
+  next?: {
+    performance_id: string;
+    title: string;
+    follow_up: string;
+  } | null;
+};
+
 export type CoverageBlock = {
   type: "coverage";
   title: string;
@@ -167,7 +187,30 @@ export type ArrangementBlock = {
   resource_id: string;
   source_id: string;
   key_signature?: string | null;
+  arrangement_scope: string;
+  capo?: string | null;
+  tuning?: string | null;
+  notes?: string | null;
   progressions: string[];
+};
+
+export type ArrangementSearchBlock = {
+  type: "arrangement_search";
+  title: string;
+  key_signature: string;
+  coverage_note: string;
+  items: Array<{
+    arrangement_id: string;
+    song_id: string;
+    title: string;
+    resource_id: string;
+    resource_title: string;
+    source_name: string;
+    url: string;
+    key_signature: string;
+    arrangement_scope: string;
+    follow_up: string;
+  }>;
 };
 
 export type ProvenanceNoteBlock = {
@@ -193,8 +236,10 @@ export type ExperienceBlock =
   | MediaLinkBlock
   | PerformanceListBlock
   | PerformanceExtremesBlock
+  | PerformanceSpineBlock
   | CoverageBlock
   | ArrangementBlock
+  | ArrangementSearchBlock
   | ProvenanceNoteBlock
   | GapStateBlock;
 
@@ -203,6 +248,7 @@ export type ExperienceResponse = {
   thread_id: string;
   title: string;
   answer: string;
+  mode: "quick_fact" | "performance" | "show" | "listening" | "comparison" | "research" | "musician" | "gap";
   conversation: Array<{
     role: "user" | "assistant";
     text: string;

@@ -30,6 +30,15 @@ def test_song_tool_returns_sugaree_resources_and_arrangement():
     assert len(result["resources"]) == len({resource["resource_id"] for resource in result["resources"]})
 
 
+def test_arrangement_tool_finds_only_documented_source_specific_keys():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "find_arrangements").invoke({"key_signature": "B"}))
+    assert result["arrangement_search"]["key_signature"] == "B"
+    assert result["arrangement_search"]["match_count"] == 1
+    assert result["arrangements"][0]["song_id"] == "song-sugaree"
+    assert "universal key" in result["arrangement_search"]["coverage_note"]
+
+
 def test_song_credit_cleanup_removes_legacy_generic_sugaree_rows():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_song").invoke({"song_id_or_title": "Sugaree"}))

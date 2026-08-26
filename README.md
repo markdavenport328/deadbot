@@ -41,6 +41,7 @@ See `docs/graph-scope.md` for the boundary between structured graph data and ext
 ## Project guide
 
 - `docs/product-vision.md` — the intended user experience, system shape, and information boundaries.
+- `docs/experience-brief.md` — visitor mindsets, response modes, source/claim policy, flagship response blueprints, and experience-quality rubric.
 - `docs/experience-architecture.md` — the FastAPI/React experience layer, composition contract, block catalog, and media/provenance safeguards.
 - `docs/development-plan.md` — current accomplishments, staged plan, and acceptance criteria.
 - `docs/collection-methodology.md` — practical collection workflow, retry safety, title matching, rights boundaries, and validation checklist.

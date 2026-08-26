@@ -67,7 +67,7 @@ def test_composer_creates_grounded_cards_resources_and_media():
         store=store,
     )
     assert response.thread_id == "web-test"
-    assert {block.type for block in response.blocks} >= {"entity_card", "resource_list", "song_overview", "arrangement", "media_link", "performance_extremes"}
+    assert {block.type for block in response.blocks} >= {"entity_card", "resource_list", "song_overview", "arrangement", "media_link", "performance_extremes", "performance_spine"}
     overview = next(block for block in response.blocks if block.type == "song_overview")
     assert any(item.name == "Robert Hunter" and item.role == "lyrics" for item in overview.credits)
     assert overview.known_performance_count == len(store.song_context(song)["performances"])
@@ -80,6 +80,12 @@ def test_composer_creates_grounded_cards_resources_and_media():
         block.type == "media_link" and block.embed_kind == "spotify" and block.is_official
         for block in response.blocks
     )
+    arrangement = next(block for block in response.blocks if block.type == "arrangement")
+    assert arrangement.key_signature == "B"
+    assert arrangement.arrangement_scope == "recorded-song-interpretation"
+    spine = next(block for block in response.blocks if block.type == "performance_spine")
+    assert spine.previous and spine.previous.title == "Promised Land"
+    assert spine.next and spine.next.title == "Me And My Uncle"
 
 
 def test_song_credits_are_usable_in_the_experience_response():
@@ -95,6 +101,26 @@ def test_song_credits_are_usable_in_the_experience_response():
     overview = next(block for block in response.blocks if block.type == "song_overview")
     assert {item.name for item in overview.credits} == {"Jerry Garcia", "Robert Hunter"}
     assert "resource:resource-musicbrainz-work-search-sugaree" in overview.source_ids
+
+
+def test_key_search_renders_only_documented_arrangements_with_a_coverage_note():
+    store = CanonicalStore()
+    response = compose_experience_response(
+        question="What documented arrangements are in B?",
+        thread_id="web-test",
+        messages=[
+            tool_message(store.arrangement_search("B")),
+            AIMessage(content="The current library has one documented arrangement in B."),
+        ],
+        store=store,
+    )
+    search = next(block for block in response.blocks if block.type == "arrangement_search")
+    assert response.mode == "musician"
+    assert response.title == "Documented arrangements in B"
+    assert search.items[0].title == "Sugaree"
+    assert search.items[0].key_signature == "B"
+    assert search.items[0].url.startswith("https://www.rukind.com/")
+    assert "universal key" in search.coverage_note
 
 
 def test_song_response_has_labeled_first_and_last_performances_with_follow_ups():
@@ -186,6 +212,7 @@ def test_composer_returns_a_safe_gap_when_no_tools_return_data():
         store=CanonicalStore(),
     )
     assert response.blocks[0].type == "gap_state"
+    assert response.mode == "gap"
     assert response.sources == []
 
 
@@ -300,11 +327,12 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     )
     resource_index = next(index for index, block in enumerate(response.blocks) if block.type == "resource_list")
     stub = SelectionStub(
-        CompositionPlan(sections=[CompositionSection(region="supporting", candidate_indexes=[resource_index, 0, 999])])
+        CompositionPlan(mode="musician", sections=[CompositionSection(region="supporting", candidate_indexes=[resource_index, 0, 999])])
     )
     composer = ModelGuidedComposer(selector=stub)
     composed = composer.compose("Tell me about Sugaree.", response)
     assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
+    assert composed.mode == "musician"
     assert len(stub.inputs) == 1
 
 

@@ -2,10 +2,27 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } 
 import type { ExperienceBlock, ExperienceResponse, SourceReference } from "./types";
 
 const suggestions = [
-  "What did they play after Dark Star on 1972-08-27?",
-  "Show me the Sugaree performance on 1972-08-27 and its chord source.",
-  "Where can I watch the full 1972-08-27 show?"
+  "Was Branford on the whole show, and where should I listen for him?",
+  "Show me the Sugaree arrangement and its chord source.",
+  "What did they play after Dark Star on 1972-08-27?"
 ];
+
+const modeLabels: Record<ExperienceResponse["mode"], string> = {
+  quick_fact: "Answer",
+  performance: "Performance guide",
+  show: "Show guide",
+  listening: "Listening guide",
+  comparison: "Comparison",
+  research: "Research desk",
+  musician: "Musician’s reference",
+  gap: "Library note"
+};
+
+const regionLabels: Partial<Record<"primary" | "supporting" | "context" | "media", string>> = {
+  supporting: "Keep exploring",
+  context: "Source context",
+  media: "Listen and watch"
+};
 
 function threadId(): string {
   const storageKey = "deadbot-thread-id";
@@ -296,6 +313,33 @@ function Block({
         </section>
       );
     }
+    case "performance_spine":
+      return (
+        <section className="card performance-spine">
+          <p className="eyebrow">Performance context</p>
+          <h2>{block.title}</h2>
+          <p className="subtitle">{block.show_label}{block.set_label ? ` · ${block.set_label}` : ""}{block.position_in_set ? ` · #${block.position_in_set}` : ""}</p>
+          <div className="set-thread" aria-label="Adjacent songs in the set">
+            <div>
+              <p className="fact-label">Before</p>
+              {block.previous ? (
+                <FollowUpButton prompt={block.previous.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  {block.previous.title}
+                </FollowUpButton>
+              ) : <span className="thread-boundary">Set opener</span>}
+            </div>
+            <div className="current-performance" aria-label="Current performance">This performance</div>
+            <div>
+              <p className="fact-label">After</p>
+              {block.next ? (
+                <FollowUpButton prompt={block.next.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  {block.next.title}
+                </FollowUpButton>
+              ) : <span className="thread-boundary">Set closer</span>}
+            </div>
+          </div>
+        </section>
+      );
     case "coverage":
       return (
         <aside className="coverage-card">
@@ -310,7 +354,13 @@ function Block({
         <section className="card arrangement-card">
           <p className="eyebrow">Source-specific arrangement</p>
           <h2>{block.title}</h2>
-          {block.key_signature && <p className="subtitle">Key: {block.key_signature}</p>}
+          <dl className="arrangement-facts">
+            {block.key_signature && <div><dt>Documented key</dt><dd>{block.key_signature}</dd></div>}
+            <div><dt>Scope</dt><dd>{block.arrangement_scope.replaceAll("-", " ")}</dd></div>
+            {block.capo && <div><dt>Capo</dt><dd>{block.capo}</dd></div>}
+            {block.tuning && <div><dt>Tuning</dt><dd>{block.tuning}</dd></div>}
+          </dl>
+          {block.notes && <p className="arrangement-note">{block.notes}</p>}
           {block.progressions.length > 0 && (
             <ul className="chords">
               {block.progressions.map((progression, index) => <li key={`${index}-${progression}`}>{progression}</li>)}
@@ -323,6 +373,26 @@ function Block({
         </section>
       );
     }
+    case "arrangement_search":
+      return (
+        <section className="card arrangement-search">
+          <p className="eyebrow">Musician’s reference</p>
+          <h2>{block.title}</h2>
+          <p className="arrangement-note">{block.coverage_note}</p>
+          <ul>
+            {block.items.map((item) => (
+              <li key={item.arrangement_id}>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
+                  <strong>{item.title}</strong>
+                </FollowUpButton>
+                <span>{item.arrangement_scope.replaceAll("-", " ")} · documented key {item.key_signature}</span>
+                <ExternalLink href={item.url}>{item.resource_title}</ExternalLink>
+                <span>{item.source_name}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
     case "provenance_note":
       return <aside className="provenance">{block.text}</aside>;
     case "gap_state":
@@ -424,10 +494,15 @@ export default function App() {
           {response ? (
             <>
               <div className="content-heading">
+                <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1>{response.title}</h1>
+                <div className="answer-lead">
+                  <p>{response.answer}</p>
+                </div>
               </div>
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
+                  {regionLabels[section.region] && <p className="region-label">{regionLabels[section.region]}</p>}
                   <div className="block-grid">
                     {section.block_indexes.map((index) => {
                       const block = response.blocks[index];
@@ -448,7 +523,7 @@ export default function App() {
             <div className="content-empty">
               <p className="eyebrow">Composed results</p>
               <h1>Start with a question.</h1>
-              <p>Your short answer will appear in the conversation. Related songs, shows, recordings, and media will appear here.</p>
+              <p>Deadbot will answer in the conversation, then assemble the relevant performances, shows, recordings, and source material here.</p>
             </div>
           )}
         </section>

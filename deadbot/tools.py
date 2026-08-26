@@ -255,6 +255,21 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         return _json(store.song_context(song))
 
     @tool
+    def find_arrangements(key_signature: str) -> str:
+        """Find source-documented song arrangements in one key, such as B, E, or A minor.
+
+        Use this for musician questions about keys, transpositions, charts, or
+        songs to cover. Results describe only arrangements whose source records
+        that key; never say the abstract song is universally in that key. Use
+        get_song on a returned song when the visitor wants its full chord/tab
+        resource, lyrics-source link, or performance history.
+        """
+        key = key_signature.strip()
+        if not key:
+            return _json({"error": "A key signature is required."})
+        return _json(store.arrangement_search(key))
+
+    @tool
     def get_show(show_id_or_date: str) -> str:
         """Get a show's canonical data, lineup, named guitar/equipment claims, venue, ordered performances, recording metadata, and links.
 
@@ -447,6 +462,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
     return [
         search_entities,
         get_song,
+        find_arrangements,
         get_show,
         get_performance,
         get_media_links,

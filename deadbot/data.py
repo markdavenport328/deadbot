@@ -120,6 +120,27 @@ class CanonicalStore:
             "arrangements": arrangements,
         }
 
+    def arrangement_search(self, key_signature: str) -> dict[str, Any]:
+        """Find only source-documented arrangements in the requested key."""
+
+        normalized_key = key_signature.strip()
+        arrangements = [
+            row
+            for row in self.rows("song_arrangements")
+            if row.get("key_signature", "").casefold() == normalized_key.casefold()
+        ]
+        return {
+            "arrangement_search": {
+                "key_signature": normalized_key,
+                "match_count": len(arrangements),
+                "coverage_note": (
+                    "Results include only arrangements documented in the current library. "
+                    "They do not establish a universal key for a song or cover undocumented transpositions."
+                ),
+            },
+            "arrangements": arrangements,
+        }
+
     def show_context(self, show: dict[str, str]) -> dict[str, Any]:
         show_id = show["show_id"]
         performances = [row for row in self.rows("performances") if row["show_id"] == show_id]

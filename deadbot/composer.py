@@ -10,7 +10,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ConfigDict, Field
 
 from deadbot.config import Settings
-from deadbot.experience import ExperienceBlock, ExperienceResponse, LayoutSection
+from deadbot.experience import ExperienceBlock, ExperienceMode, ExperienceResponse, LayoutSection
 from deadbot.models import ModelProvider, create_model_provider
 
 
@@ -29,6 +29,7 @@ class CompositionPlan(BaseModel):
     """The model's layout decision; it cannot create or mutate content blocks."""
 
     model_config = ConfigDict(extra="forbid")
+    mode: ExperienceMode = "quick_fact"
     sections: list[CompositionSection] = Field(min_length=1, max_length=4)
     omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=16)
 
@@ -61,6 +62,20 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "performance_count": block.known_count,
             "dates": [item.show_date for item in block.items if item.show_date],
             "helps_with": "known performance count and performance evidence",
+            "provenance": "canonical",
+        }
+    if block.type == "performance_spine":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "the directly adjacent songs in this performance's documented set",
+            "title": block.title,
+            "show": block.show_label,
+            "set_label": block.set_label,
+            "position_in_set": block.position_in_set,
+            "previous_song": block.previous.title if block.previous else None,
+            "next_song": block.next.title if block.next else None,
+            "helps_with": "placing one rendition in its immediate set context without claiming an interpretation of the music",
             "provenance": "canonical",
         }
     if block.type == "performance_extremes":
@@ -167,8 +182,23 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "scope": "source-specific chord arrangement",
             "title": block.title,
             "key": block.key_signature,
+            "arrangement_scope": block.arrangement_scope,
+            "capo": block.capo,
+            "tuning": block.tuning,
             "helps_with": "learning or playing this song; it is not a universal chart",
             "provenance": "contextual resource",
+        }
+    if block.type == "arrangement_search":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "only source-documented arrangements in one requested key",
+            "title": block.title,
+            "key": block.key_signature,
+            "match_count": len(block.items),
+            "song_titles": [item.title for item in block.items],
+            "helps_with": "rehearsal and cover planning without treating a documented arrangement as a universal song key",
+            "provenance": "source-specific arrangements",
         }
     if block.type == "provenance_note":
         return {
@@ -230,7 +260,7 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
         )
         for region, indexes in resolved_sections
     ]
-    return response.model_copy(update={"blocks": selected_blocks, "layout": layout})
+    return response.model_copy(update={"blocks": selected_blocks, "layout": layout, "mode": plan.mode})
 
 
 class DeterministicComposer:
@@ -258,10 +288,13 @@ class ModelGuidedComposer:
         prompt = (
             "Choose the most coherent main-column layout for the latest question using the grounded brief below. "
             "Reason from the question, answer, coverage, candidate scope, and provenance. "
+            "First choose one experience mode: quick_fact, performance, show, listening, comparison, research, musician, or gap. "
+            "Choose it from the visitor's request and the grounded material, not from a generic keyword rule. "
             "Select the smallest useful set of candidates and arrange them in primary, supporting, context, or media regions. "
             "Omission is the default: including an irrelevant candidate is worse than omitting optional material. Most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "The page title already identifies the main song, show, or performance. Omit an entity card when it only repeats that title and has no additional details. "
             "For a song question, prefer the song_overview block as the standard facts panel. For a first/last performance question, prefer the performance_extremes block, which already combines both endpoints; omit the generic performance_list unless the user asks for the full known list. "
+            "For a specific performance question, choose performance mode and use the performance_spine when it is available; it provides only canonical set adjacency, so do not imply musical analysis that was not retrieved. "
             "For a show question, prefer the show_setlist block in the main panel; do not select only the show card when an ordered setlist is available. "
             "When approved recordings are available for a show, include the recording_list for show overview or listening questions so the main panel exposes the recording links. "
             "When source-reviewed performers are available for a show, include the performer_list for lineup, guest, musician, or instrument questions; it groups each person with their recorded instruments. "
@@ -270,6 +303,7 @@ class ModelGuidedComposer:
             "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
             "Do not choose learning, media, or reading material unless it genuinely helps the question. "
             "For a direct factual, count, date, setlist, or coverage question, select only the factual entity/performance/coverage evidence needed to answer it; omit chord arrangements, contextual resource lists, and media unless the user explicitly asks for them. "
+            "For a musician, arrangement, key, chord, tab, or lyric-source request, choose musician mode. Include source-specific arrangement material when available, retain its scope, and do not treat the documented key as universal for the song. Full tabs and lyrics remain external-source links. "
             "For a count or scope-wide question, do not present partial library evidence as a historical total; use the coverage candidate when it explains that limit. "
             "For example, a question asking for a yearly count with incomplete coverage should normally have a primary coverage block and a supporting known-performance block, with no context or media section. "
             "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"

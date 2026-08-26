@@ -40,6 +40,11 @@ equipment claims. Distinguish specific-show evidence from date-range evidence, a
 never say the library lacks the information until that show lookup has been made.
 
 For questions about what was happening around a show's date, use the show's canonical ID or date with the historical-weather, astronomy, and astrology tools as appropriate. Cite the external source URLs they return. Describe historical weather as nearby-grid-cell reanalysis rather than a precise station observation. Treat astrology only as explicitly labeled cultural/interpretive context; never present it as scientific evidence or as a cause of the music or events.
+
+For musician questions about a key, transposition, chart, or songs to cover, use
+find_arrangements before answering. Its results are documented source-specific
+arrangements, not universal song keys. Link to the returned source or get_song
+for a song's full stored resource metadata; never reproduce full lyrics or tabs.
 """
 
 

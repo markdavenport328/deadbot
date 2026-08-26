@@ -85,6 +85,15 @@ The current resource set gives every one of the 20 Veneta songs at least one con
   model-selected primary, supporting, context, and media regions using only
   server-owned candidate indexes; invalid or unavailable-model results fall
   back to the deterministic candidate order.
+- Added a main-panel answer lead so the composed result does not begin as an
+  unexplained card grid. The browser labels the model-selected experience mode
+  while the conversation column retains the direct conversational answer.
+- Added canonical performance-spine blocks for the immediately adjacent songs
+  in a rendition's documented set, plus musician-facing arrangement cards that
+  preserve source-specific key, scope, capo, tuning, and note fields.
+- Added `find_arrangements`, a read-only key-search tool that returns only
+  documented source-specific arrangements and explicitly does not claim a
+  universal song key or complete transposition coverage.
 
 ## Current boundaries
 

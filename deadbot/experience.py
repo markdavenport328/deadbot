@@ -19,6 +19,18 @@ from pydantic import BaseModel, ConfigDict, Field
 from deadbot.data import CanonicalStore
 
 
+ExperienceMode = Literal[
+    "quick_fact",
+    "performance",
+    "show",
+    "listening",
+    "comparison",
+    "research",
+    "musician",
+    "gap",
+]
+
+
 class ExperienceModel(BaseModel):
     """Base model that rejects unrecognized browser-facing fields."""
 
@@ -189,6 +201,26 @@ class PerformanceListBlock(ExperienceModel):
     items: list[PerformanceListItem] = Field(min_length=1, max_length=20)
 
 
+class PerformanceSpineNeighbor(ExperienceModel):
+    performance_id: str
+    title: str
+    follow_up: str
+
+
+class PerformanceSpineBlock(ExperienceModel):
+    """Place one rendition back into its documented set sequence."""
+
+    type: Literal["performance_spine"]
+    performance_id: str
+    song_id: str
+    title: str
+    show_label: str
+    set_label: str | None = None
+    position_in_set: str | None = None
+    previous: PerformanceSpineNeighbor | None = None
+    next: PerformanceSpineNeighbor | None = None
+
+
 class CoverageBlock(ExperienceModel):
     type: Literal["coverage"]
     title: str
@@ -201,7 +233,32 @@ class ArrangementBlock(ExperienceModel):
     resource_id: str
     source_id: str
     key_signature: str | None = None
+    arrangement_scope: str
+    capo: str | None = None
+    tuning: str | None = None
+    notes: str | None = None
     progressions: list[str] = Field(default_factory=list, max_length=6)
+
+
+class ArrangementSearchItem(ExperienceModel):
+    arrangement_id: str
+    song_id: str
+    title: str
+    resource_id: str
+    resource_title: str
+    source_name: str
+    url: str
+    key_signature: str
+    arrangement_scope: str
+    follow_up: str
+
+
+class ArrangementSearchBlock(ExperienceModel):
+    type: Literal["arrangement_search"]
+    title: str
+    key_signature: str
+    coverage_note: str
+    items: list[ArrangementSearchItem] = Field(min_length=1, max_length=20)
 
 
 class ProvenanceNoteBlock(ExperienceModel):
@@ -227,8 +284,10 @@ ExperienceBlock = Annotated[
     | MediaLinkBlock
     | PerformanceListBlock
     | PerformanceExtremesBlock
+    | PerformanceSpineBlock
     | CoverageBlock
     | ArrangementBlock
+    | ArrangementSearchBlock
     | ProvenanceNoteBlock
     | GapStateBlock,
     Field(discriminator="type"),
@@ -260,6 +319,7 @@ class ExperienceResponse(ExperienceModel):
     thread_id: str
     title: str
     answer: str
+    mode: ExperienceMode = "quick_fact"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
     blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=16)
     layout: list[LayoutSection] = Field(default_factory=list, max_length=4)
@@ -540,6 +600,73 @@ def _performance_extremes(song: dict[str, Any], performances: list[dict[str, Any
     )
 
 
+def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> PerformanceSpineBlock | None:
+    """Return only the directly adjacent, canonical set context for a rendition."""
+
+    performance = payload.get("performance")
+    song = payload.get("song")
+    show = payload.get("show")
+    if not isinstance(performance, dict) or not isinstance(song, dict) or not isinstance(show, dict):
+        return None
+    performance_id = performance.get("performance_id")
+    song_id = song.get("song_id")
+    show_id = show.get("show_id")
+    if not performance_id or not song_id or not show_id:
+        return None
+
+    set_label = performance.get("set_label") or None
+    try:
+        current_position = int(performance.get("position_in_set") or 0)
+    except (TypeError, ValueError):
+        current_position = 0
+    same_set = [
+        item
+        for item in store.rows("performances")
+        if item.get("show_id") == show_id and (item.get("set_label") or None) == set_label
+    ]
+    def position(item: dict[str, str]) -> int:
+        try:
+            return int(item.get("position_in_set") or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    same_set.sort(key=position)
+    current_index = next((index for index, item in enumerate(same_set) if item.get("performance_id") == performance_id), None)
+    if current_index is None:
+        return None
+
+    def neighbor(item: dict[str, str] | None) -> PerformanceSpineNeighbor | None:
+        if not item or not item.get("performance_id"):
+            return None
+        neighbor_song = store.one("songs", item.get("song_id", "")) or {}
+        title = neighbor_song.get("title") or "Unknown song"
+        return PerformanceSpineNeighbor(
+            performance_id=item["performance_id"],
+            title=title,
+            follow_up=(
+                f"Tell me about the performance of {title} on {show.get('show_date')}."
+                if show.get("show_date")
+                else f"Tell me about the performance of {title}."
+            ),
+        )
+
+    venue = store.one("venues", show.get("venue_id", "")) or {}
+    show_label = " — ".join(
+        part for part in [show.get("show_date"), venue.get("name")] if part
+    ) or show_id
+    return PerformanceSpineBlock(
+        type="performance_spine",
+        performance_id=performance_id,
+        song_id=song_id,
+        title="Set context",
+        show_label=show_label,
+        set_label=set_label,
+        position_in_set=str(current_position) if current_position else performance.get("position_in_set") or None,
+        previous=neighbor(same_set[current_index - 1] if current_index > 0 else None),
+        next=neighbor(same_set[current_index + 1] if current_index + 1 < len(same_set) else None),
+    )
+
+
 def _show_setlist(payload: dict[str, Any], store: CanonicalStore) -> ShowSetlistBlock | None:
     show = payload.get("show")
     performances = payload.get("performances")
@@ -754,6 +881,60 @@ def _coverage_block(store: CanonicalStore) -> CoverageBlock:
     )
 
 
+def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) -> tuple[ArrangementSearchBlock | None, list[SourceReference]]:
+    """Turn a key-search tool result into an explicitly source-limited list."""
+
+    search = payload.get("arrangement_search")
+    arrangements = payload.get("arrangements")
+    if not isinstance(search, dict) or not isinstance(arrangements, list):
+        return None, []
+    key_signature = search.get("key_signature")
+    if not isinstance(key_signature, str) or not key_signature:
+        return None, []
+    items: list[ArrangementSearchItem] = []
+    sources: list[SourceReference] = []
+    for arrangement in arrangements:
+        if not isinstance(arrangement, dict):
+            continue
+        arrangement_id = arrangement.get("arrangement_id")
+        song = store.one("songs", arrangement.get("song_id", "")) or {}
+        resource = store.one("resources", arrangement.get("resource_id", "")) or {}
+        source = _resource_source(resource)
+        if not arrangement_id or not song.get("song_id") or not song.get("title") or not resource.get("resource_id") or not source:
+            continue
+        items.append(
+            ArrangementSearchItem(
+                arrangement_id=arrangement_id,
+                song_id=song["song_id"],
+                title=song["title"],
+                resource_id=resource["resource_id"],
+                resource_title=resource.get("title") or "Chord resource",
+                source_name=source.label,
+                url=source.url or "",
+                key_signature=arrangement.get("key_signature") or key_signature,
+                arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
+                follow_up=f"Show me the documented arrangement for {song['title']}.",
+            )
+        )
+        sources.append(source)
+    if not items:
+        return None, []
+    return (
+        ArrangementSearchBlock(
+            type="arrangement_search",
+            title=f"Documented arrangements in {key_signature}",
+            key_signature=key_signature,
+            coverage_note=(
+                search.get("coverage_note")
+                if isinstance(search.get("coverage_note"), str)
+                else "Results include only documented arrangements in the current library."
+            ),
+            items=items[:20],
+        ),
+        sources,
+    )
+
+
 def compose_experience_response(
     question: str,
     thread_id: str,
@@ -769,6 +950,7 @@ def compose_experience_response(
     seen_entities: set[str] = set()
     seen_resources: set[str] = set()
     seen_media: set[str] = set()
+    seen_arrangements: set[str] = set()
     resource_items: list[ResourceItem] = []
     chord_items: list[ResourceItem] = []
     credit_items: list[CreditItem] = []
@@ -777,6 +959,7 @@ def compose_experience_response(
     song_summary: dict[str, Any] | None = None
     song_performance_count = 0
     has_show_setlist = False
+    mode: ExperienceMode = "quick_fact"
     title = "Deadbot"
 
     def add_source(source: SourceReference | None) -> None:
@@ -852,6 +1035,14 @@ def compose_experience_response(
                 credit_source_ids.append(source.source_id)
 
     for payload in _tool_payloads(latest_turn_messages):
+        arrangement_search, arrangement_search_sources = _arrangement_search_block(payload, store)
+        if arrangement_search:
+            blocks.append(arrangement_search)
+            mode = "musician"
+            if title == "Deadbot":
+                title = arrangement_search.title
+            for source in arrangement_search_sources:
+                add_source(source)
         if "song" in payload and isinstance(payload["song"], dict):
             if song_summary is None:
                 song_summary = payload["song"]
@@ -913,7 +1104,17 @@ def compose_experience_response(
                     )
                 blocks.append(recording_list)
         if "performance" in payload and isinstance(payload["performance"], dict):
-            add_entity(_entity_card_from_performance(payload))
+            # A performance spine is a richer, non-redundant identifier for a
+            # rendition than a generic entity card. Keep the page title useful
+            # even when this is the only retrieved payload.
+            performance_song = payload.get("song")
+            if title == "Deadbot" and isinstance(performance_song, dict):
+                title = performance_song.get("title") or title
+            performance_spine = _performance_spine(payload, store)
+            if performance_spine:
+                blocks.append(performance_spine)
+            else:
+                add_entity(_entity_card_from_performance(payload))
         resources = payload.get("resources")
         if isinstance(resources, list):
             add_resources(item for item in resources if isinstance(item, dict))
@@ -936,8 +1137,15 @@ def compose_experience_response(
                 for release in official_releases
                 if isinstance(release, dict) and release.get("spotify_album_url")
             )
-        for arrangement in payload.get("arrangements", []) if isinstance(payload.get("arrangements"), list) else []:
+        for arrangement in (
+            []
+            if arrangement_search
+            else payload.get("arrangements", []) if isinstance(payload.get("arrangements"), list) else []
+        ):
             if not isinstance(arrangement, dict):
+                continue
+            arrangement_id = arrangement.get("arrangement_id")
+            if not arrangement_id or arrangement_id in seen_arrangements:
                 continue
             resource = store.one("resources", arrangement.get("resource_id", ""))
             if not resource:
@@ -957,9 +1165,14 @@ def compose_experience_response(
                     resource_id=resource["resource_id"],
                     source_id=source.source_id,
                     key_signature=arrangement.get("key_signature") or None,
+                    arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
+                    capo=arrangement.get("capo") or None,
+                    tuning=arrangement.get("tuning") or None,
+                    notes=arrangement.get("notes") or None,
                     progressions=sections,
                 )
             )
+            seen_arrangements.add(arrangement_id)
             add_source(source)
 
     if song_summary is not None:
@@ -984,6 +1197,7 @@ def compose_experience_response(
         blocks.append(ResourceListBlock(type="resource_list", title="Chord charts and arrangements", items=chord_items[:8]))
     blocks.extend(arrangements[:3])
     if not blocks:
+        mode = "gap"
         blocks.append(
             GapStateBlock(
                 type="gap_state",
@@ -1005,6 +1219,7 @@ def compose_experience_response(
         thread_id=thread_id,
         title=title,
         answer=_final_answer(latest_turn_messages, compact_setlist=has_show_setlist),
+        mode=mode,
         conversation=_conversation_turns(message_list, compact_setlists=has_show_setlist),
         blocks=blocks,
         layout=[
