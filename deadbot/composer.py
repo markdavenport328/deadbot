@@ -51,6 +51,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "details": block.details,
             "redundant_when_title_only": not block.subtitle and not block.details,
             "helps_with": "identity and canonical facts about this entity",
+            "usage_guidance": "identity anchor; the page title already names the main song, show, or performance, so omit this card when it only repeats that title and carries no additional details",
             "provenance": "canonical",
         }
     if block.type == "performance_list":
@@ -62,6 +63,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "performance_count": block.known_count,
             "dates": [item.show_date for item in block.items if item.show_date],
             "helps_with": "known performance count and performance evidence",
+            "usage_guidance": "full known-performance evidence; redundant for a first/last performance question when performance_extremes is available, unless the visitor asked for the full known list",
             "provenance": "canonical",
         }
     if block.type == "performance_spine":
@@ -76,6 +78,22 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "previous_song": block.previous.title if block.previous else None,
             "next_song": block.next.title if block.next else None,
             "helps_with": "placing one rendition in its immediate set context without claiming an interpretation of the music",
+            "usage_guidance": "preferred primary block for a specific-performance question; it conveys only canonical set adjacency, so never imply musical analysis that was not retrieved",
+            "provenance": "canonical",
+        }
+    if block.type == "comparison_strip":
+        years = [item.year for item in block.items]
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "one representative performance per known year of one song",
+            "title": block.title,
+            "year_range": f"{min(years)}–{max(years)}",
+            "years_represented": years,
+            "item_count": len(block.items),
+            "known_count": block.known_count,
+            "helps_with": "seeing where a song's grounded performances sit over time, with explicit library-coverage limits",
+            "usage_guidance": "preferred primary for comparison mode — era, evolution, or change-over-time questions about a song; entries are one representative rendition per year from current library coverage, not an exhaustive history; do not pair it with the generic performance_list unless the visitor asked for the full list; it conveys dates and set placement only, never musical analysis",
             "provenance": "canonical",
         }
     if block.type == "performance_extremes":
@@ -87,6 +105,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "first_show": block.first.show_label,
             "last_show": block.last.show_label,
             "helps_with": "answering first/last performance questions in one compact component",
+            "usage_guidance": "preferred for first/last performance questions; it already combines both endpoints, making the generic performance_list redundant unless the full list was requested",
             "provenance": "canonical",
         }
     if block.type == "song_overview":
@@ -99,6 +118,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "known_performance_count": block.known_performance_count,
             "credits": [{"name": credit.name, "role": credit.role} for credit in block.credits],
             "helps_with": "a compact overview of the song's identity, credits, and known performance count",
+            "usage_guidance": "preferred standard facts panel for song questions",
             "provenance": "canonical",
         }
     if block.type == "show_setlist":
@@ -110,7 +130,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "set_labels": [section.label for section in block.sets],
             "song_count": sum(len(section.songs) for section in block.sets),
             "helps_with": "show setlist questions; each song is a grounded follow-up target",
-            "decision_tradeoff": "the strongest orientation for questions about sequence, sets, or what was played; it can be supporting context when the visitor's next move is listening or investigating a specific performance",
+            "usage_guidance": "the strongest orientation for questions about sequence, sets, or what was played; it can be supporting context when the visitor's next move is listening or investigating a specific performance",
             "provenance": "canonical",
         }
     if block.type == "recording_list":
@@ -123,7 +143,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "source_types": sorted({item.source_type for item in block.items}),
             "archive_identifiers": [item.archive_identifier for item in block.items if item.archive_identifier],
             "helps_with": "listening to recordings of the show",
-            "decision_tradeoff": "an immediate listening path for a visitor asking about how a guitar or performance sounds; it can be supporting context when the visitor asked about set order or song sequence",
+            "usage_guidance": "an immediate listening path for a visitor asking about how a guitar or performance sounds; for a first-use or named-equipment question, pairing a recording with the grounded equipment claim lets the visitor hear the instrument in its documented setting; it can be supporting context when the visitor asked about set order or song sequence",
             "provenance": "stored recording metadata",
         }
     if block.type == "performer_list":
@@ -135,6 +155,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "performer_count": len(block.items),
             "guest_names": [item.name for item in block.items if item.role == "guest"],
             "helps_with": "show lineup, guest, role, and instrument questions",
+            "usage_guidance": "include for lineup, guest, musician, role, or instrument questions; it groups each person with their recorded instruments",
             "provenance": "source-reviewed canonical assignment",
         }
     if block.type == "equipment_list":
@@ -144,7 +165,9 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "scope": "source-dated guitar claims for one show",
             "title": block.title,
             "equipment_names": [item.name for item in block.items],
+            "claim_types": sorted({item.claim_type for item in block.items}),
             "helps_with": "named Jerry Garcia guitar and equipment questions",
+            "usage_guidance": "include for named-guitar or equipment questions; distinguish date-range evidence from specific-show evidence and never treat a date-range claim as a complete equipment log",
             "provenance": "dated photographic/video-evidence guide",
         }
     if block.type == "coverage":
@@ -155,6 +178,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "title": block.title,
             "message": block.message,
             "helps_with": "whether the current library can answer a scope-wide question completely",
+            "usage_guidance": "only for gap mode or an explicit library-scope, completeness, or limitation question — never filler on an ordinary song, show, performance, date, setlist, credit, media, or listening question; lead with it when a scope-wide count would otherwise present partial library evidence as a historical total",
             "provenance": "canonical coverage metadata",
         }
     if block.type == "resource_list":
@@ -166,6 +190,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "resource_types": [item.resource_type for item in block.items],
             "item_titles": [item.title for item in block.items],
             "helps_with": "reading, learning, or source research; not canonical proof",
+            "usage_guidance": "include only when reading or source research genuinely helps the question; omit for direct factual questions unless explicitly requested",
             "provenance": "contextual resources",
         }
     if block.type == "media_link":
@@ -177,6 +202,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "provider": block.provider,
             "official": block.is_official,
             "helps_with": "listening or watching",
+            "usage_guidance": "include only when listening or watching genuinely helps the question; omit for direct factual questions unless explicitly requested",
             "provenance": "external media link",
         }
     if block.type == "arrangement":
@@ -190,6 +216,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "capo": block.capo,
             "tuning": block.tuning,
             "helps_with": "learning or playing this song; it is not a universal chart",
+            "usage_guidance": "musician-mode material; the documented key is specific to this source, never a universal song key; full tabs and lyrics remain external-source links",
             "provenance": "contextual resource",
         }
     if block.type == "arrangement_search":
@@ -202,6 +229,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "match_count": len(block.items),
             "song_titles": [item.title for item in block.items],
             "helps_with": "rehearsal and cover planning without treating a documented arrangement as a universal song key",
+            "usage_guidance": "musician-mode material; matches are source-documented arrangements only, never a universal song key; full tabs and lyrics remain external-source links",
             "provenance": "source-specific arrangements",
         }
     if block.type == "provenance_note":
@@ -210,13 +238,26 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "type": block.type,
             "scope": "provenance explanation",
             "helps_with": "distinguishing contextual material from canonical facts",
+            "usage_guidance": "not a visible page section unless the visitor explicitly asks about sources or attribution; provenance is already retained in the response metadata",
             "provenance": "system safeguard",
+        }
+    if block.type == "credit_list":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "song credits",
+            "title": block.title,
+            "credits": [{"name": item.name, "role": item.role} for item in block.items],
+            "helps_with": "who wrote, composed, or is credited on the song",
+            "usage_guidance": "include for songwriting or credit questions",
+            "provenance": "canonical",
         }
     return {
         "index": index,
         "type": block.type,
         "scope": "coverage gap",
         "helps_with": "honest limitation when no grounded result is available",
+        "usage_guidance": "show only when no grounded result exists for the question",
         "provenance": "system safeguard",
     }
 
@@ -321,27 +362,13 @@ class ModelGuidedComposer:
             return response
         prompt = (
             "Choose the most coherent main-column guide for the latest question using the grounded brief below. "
-            "Reason from the question, answer, coverage, candidate scope, and provenance. "
             "The chat column already gives the direct answer. The main column must not repeat it; use it to provide the next useful grounded action, evidence, or connection. "
             "Serve the right thing at the right depth, like a trusted, well-prepared fan. Do not perform expertise or invent critical color. "
-            "First choose one experience mode: quick_fact, performance, show, listening, comparison, research, musician, or gap. "
-            "Choose it from the visitor's request and the grounded material, not from a generic keyword rule. "
-            "Select the smallest useful set of candidates and arrange them in primary, supporting, context, or media regions. "
-            "Omission is the default: including an irrelevant candidate is worse than omitting optional material. Most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
-            "The page title already identifies the main song, show, or performance. Omit an entity card when it only repeats that title and has no additional details. "
-            "For a song question, prefer the song_overview block as the standard facts panel. For a first/last performance question, prefer the performance_extremes block, which already combines both endpoints; omit the generic performance_list unless the user asks for the full known list. "
-            "For a specific performance question, choose performance mode and use the performance_spine when it is available; it provides only canonical set adjacency, so do not imply musical analysis that was not retrieved. "
-            "For a show question, use the related_show_paths and candidate decision_tradeoff fields to decide whether the setlist, recordings, performers, or equipment offers the most useful next step. Do not select only the show card when a richer grounded show path is available. "
-            "When a show has both recordings and a full setlist, decide their ordering from the visitor's intent. For a first-use or named-equipment question, the grounded equipment claim plus a recording from that show usually makes the more satisfying path: the visitor can hear the instrument in its documented setting. A full setlist is secondary unless the visitor asks about sequence or what was played. For a set-order question, the setlist may lead. Do not apply a universal ordering rule. "
-            "When source-reviewed performers are available for a show, include the performer_list for lineup, guest, musician, or instrument questions; it groups each person with their recorded instruments. "
-            "When named guitar claims are available for a show, include the equipment_list for Jerry Garcia guitar or equipment questions; distinguish date-range evidence from specific-show evidence and do not treat a date-range claim as a complete equipment log. "
-            "Do not select a provenance note merely because a resource is present; provenance is retained in the response metadata and should not become a visible page section unless the user explicitly asks about sources or attribution. "
-            "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only in gap mode when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
-            "Do not choose learning, media, or reading material unless it genuinely helps the question. "
-            "For a direct factual, count, date, setlist, or coverage question, select only the factual entity/performance/coverage evidence needed to answer it; omit chord arrangements, contextual resource lists, and media unless the user explicitly asks for them. "
-            "For a musician, arrangement, key, chord, tab, or lyric-source request, choose musician mode. Include source-specific arrangement material when available, retain its scope, and do not treat the documented key as universal for the song. Full tabs and lyrics remain external-source links. "
-            "For a count or scope-wide question, do not present partial library evidence as a historical total; use the coverage candidate when it explains that limit. "
-            "For example, a question asking for a yearly count with incomplete coverage should normally have a primary coverage block and a supporting known-performance block, with no context or media section. "
+            "First choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap) from the visitor's request and the grounded material, not from a generic keyword rule. "
+            "Then select the smallest useful set of candidates. Omission is the default: including an irrelevant candidate is worse than omitting optional material, and most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
+            "Arrange the selections into primary, supporting, context, or media regions by the visitor's intent; there is no universal ordering. "
+            "Judge each candidate's relevance from its usage_guidance, scope, and provenance in the brief, and use related_show_paths to weigh alternative paths into the same show. "
+            "Never present partial library evidence as a historical total. "
             "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )

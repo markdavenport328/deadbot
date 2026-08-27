@@ -156,6 +156,24 @@ export type PerformanceExtremesBlock = {
   last: PerformanceListBlock["items"][number];
 };
 
+export type ComparisonStripBlock = {
+  type: "comparison_strip";
+  song_id: string;
+  title: string;
+  known_count: number;
+  coverage_note: string;
+  items: Array<{
+    performance_id: string;
+    show_id: string;
+    year: number;
+    show_date?: string | null;
+    show_label: string;
+    set_label?: string | null;
+    position_in_set?: string | null;
+    follow_up: string;
+  }>;
+};
+
 export type PerformanceSpineBlock = {
   type: "performance_spine";
   performance_id: string;
@@ -238,6 +256,7 @@ export type ExperienceBlock =
   | PerformanceListBlock
   | PerformanceExtremesBlock
   | PerformanceSpineBlock
+  | ComparisonStripBlock
   | CoverageBlock
   | ArrangementBlock
   | ArrangementSearchBlock

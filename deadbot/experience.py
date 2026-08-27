@@ -202,6 +202,32 @@ class PerformanceListBlock(ExperienceModel):
     items: list[PerformanceListItem] = Field(min_length=1, max_length=20)
 
 
+class ComparisonStripItem(ExperienceModel):
+    performance_id: str
+    show_id: str
+    year: int
+    show_date: str | None = None
+    show_label: str
+    set_label: str | None = None
+    position_in_set: str | None = None
+    follow_up: str
+
+
+class ComparisonStripBlock(ExperienceModel):
+    """Selected grounded performances of one song over time.
+
+    Entries are representative selections from current library coverage —
+    canonical dates and set placement only, never musical analysis.
+    """
+
+    type: Literal["comparison_strip"]
+    song_id: str
+    title: str
+    known_count: int
+    coverage_note: str
+    items: list[ComparisonStripItem] = Field(min_length=2, max_length=12)
+
+
 class PerformanceSpineNeighbor(ExperienceModel):
     performance_id: str
     title: str
@@ -286,6 +312,7 @@ ExperienceBlock = Annotated[
     | PerformanceListBlock
     | PerformanceExtremesBlock
     | PerformanceSpineBlock
+    | ComparisonStripBlock
     | CoverageBlock
     | ArrangementBlock
     | ArrangementSearchBlock
@@ -598,6 +625,57 @@ def _performance_extremes(song: dict[str, Any], performances: list[dict[str, Any
         title="First and last performances",
         first=items[0],
         last=items[-1],
+    )
+
+
+def _comparison_strip(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> ComparisonStripBlock | None:
+    """Place one representative rendition per known year on a chronological strip.
+
+    The strip is a comparison-mode candidate built only from canonical dates and
+    set placement. It is skipped entirely when the library's coverage of the
+    song does not span at least two distinct years.
+    """
+
+    items = _performance_items(performances, store)
+    first_per_year: dict[int, PerformanceListItem] = {}
+    for item in items:
+        if not item.show_date or not item.show_date[:4].isdigit():
+            continue
+        year = int(item.show_date[:4])
+        first_per_year.setdefault(year, item)
+    years = sorted(first_per_year)
+    if len(years) < 2:
+        return None
+    if len(years) > 12:
+        # An evenly spread selection that always keeps the first and last year.
+        selected_positions = {round(step * (len(years) - 1) / 11) for step in range(12)}
+        years = [year for position, year in enumerate(years) if position in selected_positions]
+
+    title = song.get("title") or "this song"
+    strip_items = [
+        ComparisonStripItem(
+            performance_id=first_per_year[year].performance_id,
+            show_id=first_per_year[year].show_id,
+            year=year,
+            show_date=first_per_year[year].show_date,
+            show_label=first_per_year[year].show_label,
+            set_label=first_per_year[year].set_label,
+            position_in_set=first_per_year[year].position_in_set,
+            follow_up=f"Tell me about the performance of {title} on {first_per_year[year].show_date}.",
+        )
+        for year in years
+    ]
+    return ComparisonStripBlock(
+        type="comparison_strip",
+        song_id=song["song_id"],
+        title="Performances over time",
+        known_count=len(items),
+        coverage_note=(
+            "Each stop is one representative performance from that year, selected "
+            "from current library coverage. This strip is not a complete "
+            "performance history of the song."
+        ),
+        items=strip_items,
     )
 
 
@@ -1084,6 +1162,13 @@ def compose_experience_response(
                 )
                 if performance_extremes:
                     blocks.append(performance_extremes)
+                comparison_strip = _comparison_strip(
+                    payload["song"],
+                    performance_items,
+                    store,
+                )
+                if comparison_strip:
+                    blocks.append(comparison_strip)
                 performance_list = _performance_list(
                     payload["song"],
                     performance_items,

@@ -32,6 +32,18 @@ function sourceFor(sources: SourceReference[], sourceId: string): SourceReferenc
   return sources.find((source) => source.source_id === sourceId);
 }
 
+function dedupeSources(sources: SourceReference[]): SourceReference[] {
+  const seen = new Set<string>();
+  const result: SourceReference[] = [];
+  for (const source of sources) {
+    const key = `${source.label}|${source.url ?? ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(source);
+  }
+  return result;
+}
+
 function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
   return (
     <a href={href} target="_blank" rel="noreferrer">
@@ -44,7 +56,7 @@ function FollowUpButton({
   prompt,
   onFollowUp,
   children,
-  className = "follow-up-button"
+  className = ""
 }: {
   prompt: string;
   onFollowUp: (prompt: string) => void;
@@ -52,7 +64,12 @@ function FollowUpButton({
   className?: string;
 }) {
   return (
-    <button type="button" className={`follow-up-button ${className}`} onClick={() => onFollowUp(prompt)} title={`Ask Deadbot: ${prompt}`}>
+    <button
+      type="button"
+      className={className ? `follow-up-button ${className}` : "follow-up-button"}
+      onClick={() => onFollowUp(prompt)}
+      title={`Ask Deadbot: ${prompt}`}
+    >
       {children} <span aria-hidden="true">↗</span>
     </button>
   );
@@ -308,6 +325,32 @@ function Block({
         </section>
       );
     }
+    case "comparison_strip":
+      return (
+        <section className="card comparison-strip">
+          <p className="eyebrow">Performance history</p>
+          <h2>{block.title}</h2>
+          <p className="subtitle">
+            {block.known_count} known performance{block.known_count === 1 ? "" : "s"} · one representative per year
+          </p>
+          <ol className="comparison-track" aria-label="Selected performances by year">
+            {block.items.map((item) => (
+              <li className="comparison-stop" key={item.performance_id}>
+                <p className="comparison-year">{item.year}</p>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <strong>{item.show_label}</strong>
+                </FollowUpButton>
+                {(item.set_label || item.position_in_set) && (
+                  <span className="comparison-placement">
+                    {item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
+          <p className="coverage-note">{block.coverage_note}</p>
+        </section>
+      );
     case "performance_spine":
       return (
         <section className="card performance-spine">
@@ -449,7 +492,15 @@ export default function App() {
   }
 
   function chooseFollowUp(prompt: string) {
-    void askQuestion(prompt, { fresh: true });
+    void askQuestion(prompt);
+  }
+
+  function startNewChat() {
+    if (loading) return;
+    setActiveThreadId(createThreadId());
+    setResponse(null);
+    setError(null);
+    setQuestion("");
   }
 
   const visibleConversation = pendingQuestion
@@ -470,7 +521,12 @@ export default function App() {
       <div className="workspace">
         <aside className="conversation-pane" aria-label="Conversation">
           <header className="masthead">
-            <a className="wordmark" href="/">Deadbot</a>
+            <div className="masthead-row">
+              <a className="wordmark" href="/">Deadbot</a>
+              <button type="button" className="new-chat-button" onClick={startNewChat} disabled={loading}>
+                New chat
+              </button>
+            </div>
             <p>Grateful Dead knowledge, listening, and context</p>
           </header>
 
@@ -511,6 +567,7 @@ export default function App() {
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1>{response.title}</h1>
               </div>
+              {response.answer && <p className="answer-lead">{response.answer}</p>}
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
                   {regionLabels[section.region] && <p className="region-label">{regionLabels[section.region]}</p>}
@@ -529,6 +586,25 @@ export default function App() {
                   </div>
                 </section>
               ))}
+              {response.sources.length > 0 && (
+                <footer className="sources-footer">
+                  <p className="sources-footer-label">Sources</p>
+                  <ul>
+                    {dedupeSources(response.sources).map((source) => (
+                      <li key={`${source.label}-${source.url ?? source.source_id}`}>
+                        <span className="source-kind-chip">
+                          {source.kind === "canonical" ? "Canonical" : "External source"}
+                        </span>
+                        {source.url ? (
+                          <ExternalLink href={source.url}>{source.label}</ExternalLink>
+                        ) : (
+                          <span>{source.label}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </footer>
+              )}
             </>
           ) : (
             <div className="content-empty">
