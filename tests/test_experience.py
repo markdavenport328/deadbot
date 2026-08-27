@@ -37,6 +37,16 @@ class ConversationFakeAgent:
         return {"messages": self.messages}
 
 
+class FakeCheckpointer:
+    """Stand-in for LangGraph's MemorySaver that records delete_thread calls."""
+
+    def __init__(self):
+        self.deleted_threads = []
+
+    def delete_thread(self, thread_id):
+        self.deleted_threads.append(thread_id)
+
+
 class SelectionStub:
     def __init__(self, plan):
         self.plan = plan
@@ -717,6 +727,105 @@ def test_api_replays_browser_conversation_for_stateless_follow_up():
         "What guitar did Jerry play?",
     ]
     assert agent.calls[0][1]["configurable"]["thread_id"].startswith("browser-1:request:")
+
+
+def test_requests_beyond_the_per_minute_limit_get_429_while_earlier_ones_succeed():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    assert show
+    agent = FakeAgent(
+        [
+            tool_message(store.show_context(show)),
+            AIMessage(content="The Veneta show was held on August 27, 1972."),
+        ]
+    )
+    settings = Settings(rate_limit_per_minute=2)
+    client = TestClient(create_app(settings=settings, store=store, agent=agent))
+
+    first = client.post("/api/experience", json={"question": "Tell me about Veneta"})
+    second = client.post("/api/experience", json={"question": "Tell me about Veneta"})
+    third = client.post("/api/experience", json={"question": "Tell me about Veneta"})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert third.status_code == 429
+    assert third.json()["detail"]
+
+    # The health endpoint is never rate limited.
+    for _ in range(5):
+        assert client.get("/api/health").status_code == 200
+
+
+def test_a_nonpositive_rate_limit_disables_the_limiter():
+    agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
+    settings = Settings(rate_limit_per_minute=0)
+    client = TestClient(create_app(settings=settings, agent=agent))
+
+    for _ in range(5):
+        assert client.post("/api/experience", json={"question": "Tell me about Veneta"}).status_code == 200
+
+
+def test_agent_receives_only_the_most_recent_conversation_window_turns():
+    long_conversation = []
+    for index in range(20):
+        long_conversation.append({"role": "user", "text": f"Question {index}"})
+        long_conversation.append({"role": "assistant", "text": f"Answer {index}"})
+    agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
+    settings = Settings(conversation_window=4)
+    client = TestClient(create_app(settings=settings, agent=agent))
+
+    result = client.post(
+        "/api/experience",
+        json={"question": "What guitar did Jerry play?", "conversation": long_conversation},
+    )
+
+    assert result.status_code == 200
+    sent_messages = agent.calls[0][0]["messages"]
+    assert [message.content for message in sent_messages] == [
+        "Question 18",
+        "Answer 18",
+        "Question 19",
+        "Answer 19",
+        "What guitar did Jerry play?",
+    ]
+
+
+def test_the_per_request_checkpoint_is_deleted_after_a_conversation_replay():
+    checkpointer = FakeCheckpointer()
+    agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
+    agent.checkpointer = checkpointer
+    client = TestClient(create_app(settings=Settings(), agent=agent))
+
+    result = client.post(
+        "/api/experience",
+        json={
+            "question": "What guitar did Jerry play?",
+            "thread_id": "browser-1",
+            "conversation": [
+                {"role": "user", "text": "When did the Dead play RFK in the early 90s?"},
+                {"role": "assistant", "text": "They played RFK on June 14 and 15, 1991."},
+            ],
+        },
+    )
+
+    assert result.status_code == 200
+    invocation_thread_id = agent.calls[0][1]["configurable"]["thread_id"]
+    assert invocation_thread_id.startswith("browser-1:request:")
+    assert checkpointer.deleted_threads == [invocation_thread_id]
+
+
+def test_the_stable_thread_checkpoint_is_never_deleted_across_follow_ups():
+    checkpointer = FakeCheckpointer()
+    agent = ConversationFakeAgent()
+    agent.checkpointer = checkpointer
+    client = TestClient(create_app(settings=Settings(), agent=agent))
+
+    first = client.post("/api/experience", json={"question": "Tell me about Veneta", "thread_id": "browser-1"})
+    second = client.post("/api/experience", json={"question": "What came next?", "thread_id": "browser-1"})
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert checkpointer.deleted_threads == []
 
 
 def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):
