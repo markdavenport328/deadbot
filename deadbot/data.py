@@ -71,11 +71,16 @@ class CanonicalStore:
         matches = self.matching_rows("songs", identifier, ("title", "slug"))
         return matches[0] if len(matches) == 1 else None
 
-    def resolve_show(self, identifier: str) -> dict[str, str] | None:
+    def show_candidates(self, identifier: str) -> list[dict[str, str]]:
+        """Return every show matching an ID, date, or phrase, for disambiguation."""
+
         direct = self.one("shows", identifier)
         if direct:
-            return direct
-        matches = self.matching_rows("shows", identifier, ("show_date", "event_name", "tour_name"))
+            return [direct]
+        return self.matching_rows("shows", identifier, ("show_date", "event_name", "tour_name"))
+
+    def resolve_show(self, identifier: str) -> dict[str, str] | None:
+        matches = self.show_candidates(identifier)
         return matches[0] if len(matches) == 1 else None
 
     def resolve_equipment(self, identifier: str) -> dict[str, str] | None:

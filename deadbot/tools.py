@@ -63,6 +63,37 @@ def _geocode(query: str) -> dict[str, Any]:
     return result
 
 
+def _unresolved_show_payload(store: CanonicalStore, identifier: str) -> dict[str, Any]:
+    """Distinguish an unknown show from a date with multiple shows.
+
+    Sixties dates often carry an early and a late show. Returning the concrete
+    candidates lets the model choose the right show_id or ask the visitor,
+    instead of hitting a dead end on a date the library actually covers.
+    """
+
+    candidates = store.show_candidates(identifier)
+    if len(candidates) < 2:
+        return {"error": "Show not found", "query": identifier}
+    summaries = []
+    for show in candidates[:8]:
+        venue = store.one("venues", show.get("venue_id", "")) or {}
+        summaries.append(
+            {
+                "show_id": show["show_id"],
+                "show_date": show.get("show_date", ""),
+                "venue_name": venue.get("name", ""),
+                "city": venue.get("city", ""),
+                "state_region": venue.get("state_region", ""),
+                "event_name": show.get("event_name", ""),
+            }
+        )
+    return {
+        "error": "Multiple shows match. Choose one candidate show_id and call the tool again.",
+        "query": identifier,
+        "candidates": summaries,
+    }
+
+
 def _show_location(store: CanonicalStore, identifier: str) -> tuple[dict[str, str], dict[str, Any]] | None:
     """Resolve a show and its venue to coordinates, including a geocoder fallback."""
 
@@ -299,7 +330,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         """
         show = store.resolve_show(show_id_or_date)
         if not show:
-            return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+            return _json(_unresolved_show_payload(store, show_id_or_date))
         return _json(store.show_context(show))
 
     @tool
@@ -325,7 +356,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         if entity_type == "show":
             show = store.resolve_show(entity_id)
             if not show:
-                return _json({"error": "Show not found or ambiguous", "query": entity_id})
+                return _json(_unresolved_show_payload(store, entity_id))
             show_id = show["show_id"]
             return _json({"show_id": show_id, "links": [row for row in store.rows("show_links") if row["show_id"] == show_id]})
         if entity_type == "performance":
@@ -345,7 +376,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         try:
             resolved = _show_location(store, show_id_or_date)
             if not resolved:
-                return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+                return _json(_unresolved_show_payload(store, show_id_or_date))
             show, location = resolved
             requested_date = _show_date(show)
             params = {
@@ -405,7 +436,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         try:
             resolved = _show_location(store, show_id_or_date)
             if not resolved:
-                return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+                return _json(_unresolved_show_payload(store, show_id_or_date))
             show, location = resolved
             requested_date = _show_date(show)
             offset = _timezone_offset(location, requested_date)
@@ -460,7 +491,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         try:
             show = store.resolve_show(show_id_or_date)
             if not show:
-                return _json({"error": "Show not found or ambiguous", "query": show_id_or_date})
+                return _json(_unresolved_show_payload(store, show_id_or_date))
             requested_date = _show_date(show)
             sign = _astrology_sign(requested_date)
             return _json({
