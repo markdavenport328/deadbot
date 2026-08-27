@@ -281,6 +281,11 @@ class CanonicalStore:
             key: show.get(key, "")
             for key in ("show_id", "show_date", "venue_id", "tour_name", "event_name")
         }
+        # An empty setlist can mean two different things. When the source record
+        # itself had no setlist, say so, so a gap answer can attribute the limit
+        # to source coverage rather than to this library's collection state.
+        if "no setlist entries" in show.get("notes", ""):
+            show_summary["setlist_note"] = "The source record for this show contains no setlist entries."
         return {
             "show": show_summary,
             "venue": venue,

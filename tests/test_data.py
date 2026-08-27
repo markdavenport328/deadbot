@@ -277,3 +277,12 @@ def test_media_links_tool_returns_candidates_for_an_ambiguous_show_date():
     )
     assert "Multiple shows match" in result["error"]
     assert len(result["candidates"]) == 2
+
+
+def test_show_payload_keeps_source_setlist_gap_note_without_raw_provenance():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "gd-1965-05-05"}))
+    assert result["performances"] == []
+    assert "no setlist entries" in result["show"]["setlist_note"]
+    assert "notes" not in result["show"]
+    assert "source_key" not in result["show"]
