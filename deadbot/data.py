@@ -251,10 +251,34 @@ class CanonicalStore:
             if "search-index" not in recording.get("notes", ""):
                 summary["archive_identifier"] = recording["archive_identifier"]
             recording_summaries.append(summary)
+        # Keep the retrieval packet compact: source provenance (notes and the
+        # structured source columns) lives in the canonical CSVs and raw
+        # snapshot, while the model needs the grounded date, venue, and
+        # setlist values for show questions.
+        show_packet = {
+            key: show.get(key, "")
+            for key in ("show_id", "show_date", "venue_id", "tour_name", "event_name")
+        }
+        performance_packets = [
+            {
+                key: performance.get(key, "")
+                for key in (
+                    "performance_id",
+                    "show_id",
+                    "song_id",
+                    "set_number",
+                    "set_label",
+                    "position_in_set",
+                    "encore",
+                    "segue_into_next",
+                )
+            }
+            for performance in performances
+        ]
         return {
-            "show": show,
+            "show": show_packet,
             "venue": venue,
-            "performances": performances,
+            "performances": performance_packets,
             "performers": performers,
             "equipment": equipment,
             "resources": self.resources_for("resource_shows", "show_id", show_id),
