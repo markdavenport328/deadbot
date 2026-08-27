@@ -34,6 +34,11 @@ The original Veneta vertical slice contains:
 | Show / performance media links | 1 / 1 |
 | Source-specific chord arrangements / sections | 1 / 4 |
 
+These counts describe the original pilot slice only and predate the full
+collection, which now spans 1965-1995. See `docs/data-audit-2026-08-27.md`
+for the current, verified row counts and coverage gaps across every
+canonical table.
+
 The subsequent 1972 bulk pass expanded the canonical show/performance layer to
 86 shows, 51 venue instances, 80 songs, and 2,229 performances. It also added
 362 Internet Archive recording-index rows across all 86 shows. The year-level
@@ -85,15 +90,47 @@ The current resource set gives every one of the 20 Veneta songs at least one con
   model-selected primary, supporting, context, and media regions using only
   server-owned candidate indexes; invalid or unavailable-model results fall
   back to the deterministic candidate order.
-- Added a main-panel answer lead so the composed result does not begin as an
-  unexplained card grid. The browser labels the model-selected experience mode
-  while the conversation column retains the direct conversational answer.
+- Added a main-panel mode label and title so the composed result does not
+  begin as an unexplained card grid. The browser labels the model-selected
+  experience mode while the conversation column retains the direct
+  conversational answer. (The main panel's own answer-lead paragraph came
+  later; see "Experience refinements" below.)
 - Added canonical performance-spine blocks for the immediately adjacent songs
   in a rendition's documented set, plus musician-facing arrangement cards that
   preserve source-specific key, scope, capo, tuning, and note fields.
 - Added `find_arrangements`, a read-only key-search tool that returns only
   documented source-specific arrangements and explicitly does not claim a
   universal song key or complete transposition coverage.
+
+### Experience refinements
+
+- The main panel now opens with the composed answer text — `response.answer`
+  rendered as an answer-lead paragraph directly under the content heading —
+  so the panel leads with the direct answer instead of an unexplained card
+  grid or bare mode label.
+- Follow-up clicks now continue the same conversation thread instead of
+  resetting it; a separate "New chat" control starts a fresh thread with a
+  fresh thread ID.
+- Added a quiet sources footer that lists the response's deduplicated
+  provenance registry with canonical/external-source chips and outbound
+  links.
+- Moved every block's composer guidance out of the shared system prompt and
+  into a structured `usage_guidance` field on each candidate's brief entry.
+  The system prompt itself shrank from roughly 677 words to roughly 206
+  words of durable principles.
+- Added `comparison_strip`, a block that places one representative rendition
+  of a song per known year with an explicit coverage note, making
+  `comparison` mode expressible for the first time.
+- Ambiguous show dates (60 dates in 1966-1970 carry two shows apiece) now
+  return the concrete candidate shows — show_id, venue, city, event — from
+  `get_show`, `get_media_links`, and the weather/astronomy/astrology tools
+  instead of a silent not-found. The system prompt tells the model to pick a
+  candidate or ask the visitor; a date with no show at all still reports a
+  plain not-found without any external fetch.
+- Added `docs/data-audit-2026-08-27.md`, a from-source, verified row-count
+  and gap audit of every canonical table, with a prioritized list of next
+  data work. It is the current reference for coverage numbers; see "Veneta
+  vertical slice" below.
 
 ## Current boundaries
 
@@ -161,12 +198,14 @@ Use evaluation failures to refine tool descriptions, entity resolution, result s
 
 ### 3. Harden the baseline experience
 
-Exercise the web experience against a running local model with representative
-Veneta questions and tighten the adapter where real tool traces expose missing
-or redundant cards. Add browser-level automated checks once a suitable local
-test runner is selected. Keep the existing schema, source restrictions, and
-safe fallbacks intact while improving visual hierarchy, responsive behavior,
-and source presentation.
+Exercise the web experience against a running local model, and against the
+deployed OpenAI-compatible provider configuration (`DEADBOT_OPENAI_MODEL`,
+`gpt-4o-mini` by default), with representative Veneta questions, and tighten
+the adapter where real tool traces expose missing or redundant cards. Add
+browser-level automated checks once a suitable local test runner is selected.
+Keep the existing schema, source restrictions, and safe fallbacks intact
+while improving visual hierarchy, responsive behavior, and source
+presentation.
 
 **Done when:** a browser user can ask representative Veneta questions and see
 a validated response that makes canonical data, contextual sources, and media
@@ -177,10 +216,14 @@ tests.
 
 The first composer now reasons over an enriched decision brief and selects
 server-validated blocks into primary, supporting, context, and media regions.
-Run it against the configured local model with representative Veneta questions
-and compare its selections to the deterministic candidate order. Tune the
-model's grounded brief, instructions, and candidate metadata before adding
-deterministic intent routing.
+Each candidate in the brief now carries a structured `usage_guidance` field
+in place of block-specific rules that used to live only in the shared system
+prompt, which shrank to durable principles as a result. Run the composer
+against the configured local model and against the deployed OpenAI-compatible
+provider configuration with representative Veneta questions, and compare its
+selections to the deterministic candidate order. Tune the model's grounded
+brief, instructions, and candidate metadata before adding deterministic
+intent routing.
 
 Add example-based evaluations for questions that should emphasize a song card,
 show/performance card, media option, chord-resource list, provenance note, or

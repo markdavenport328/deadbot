@@ -44,6 +44,7 @@ See `docs/graph-scope.md` for the boundary between structured graph data and ext
 - `docs/experience-brief.md` — visitor mindsets, response modes, source/claim policy, flagship response blueprints, and experience-quality rubric.
 - `docs/experience-architecture.md` — the FastAPI/React experience layer, composition contract, block catalog, and media/provenance safeguards.
 - `docs/development-plan.md` — current accomplishments, staged plan, and acceptance criteria.
+- `docs/data-audit-2026-08-27.md` — a point-in-time, verified row-count and gap audit of the canonical CSV data, with prioritized next data-work steps.
 - `docs/collection-methodology.md` — practical collection workflow, retry safety, title matching, rights boundaries, and validation checklist.
 - `docs/collection-status-1965-1995.md` — full show/setlist baseline coverage and early-year gaps.
 - `docs/agent-handoff.md` — concise onboarding guide for a collaborating agent.
