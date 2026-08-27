@@ -127,7 +127,7 @@ class CanonicalStore:
         return {
             "song": song,
             "writers": writers,
-            "performances": performances,
+            "performances": [self._performance_summary(row, include_show_id=True) for row in performances],
             "resources": self.resources_for("resource_songs", "song_id", song_id),
             "arrangements": arrangements,
         }
@@ -199,6 +199,27 @@ class CanonicalStore:
             ),
         }
 
+    def _performance_summary(self, row: dict[str, str], include_show_id: bool = False) -> dict[str, str]:
+        """Project a performance row to the fields a model answer needs.
+
+        Row provenance (source_key, source_record_id, notes) stays in the
+        canonical CSV; sending it with every row would crowd the local-model
+        context window without grounding any visitor-facing claim.
+        """
+
+        summary = {
+            "performance_id": row["performance_id"],
+            "song_id": row["song_id"],
+            "set_number": row.get("set_number", ""),
+            "set_label": row.get("set_label", ""),
+            "position_in_set": row.get("position_in_set", ""),
+            "encore": row.get("encore", ""),
+            "segue_into_next": row.get("segue_into_next", ""),
+        }
+        if include_show_id:
+            summary["show_id"] = row.get("show_id", "")
+        return summary
+
     def show_context(self, show: dict[str, str]) -> dict[str, Any]:
         show_id = show["show_id"]
         performances = [row for row in self.rows("performances") if row["show_id"] == show_id]
@@ -256,10 +277,14 @@ class CanonicalStore:
             if "search-index" not in recording.get("notes", ""):
                 summary["archive_identifier"] = recording["archive_identifier"]
             recording_summaries.append(summary)
+        show_summary = {
+            key: show.get(key, "")
+            for key in ("show_id", "show_date", "venue_id", "tour_name", "event_name")
+        }
         return {
-            "show": show,
+            "show": show_summary,
             "venue": venue,
-            "performances": performances,
+            "performances": [self._performance_summary(row) for row in performances],
             "performers": performers,
             "equipment": equipment,
             "resources": self.resources_for("resource_shows", "show_id", show_id),
