@@ -204,6 +204,29 @@ def test_show_response_exposes_named_guitars_with_evidence_scope():
     assert any(source.source_id == "source:jerry-garcia-instrument-history" for source in response.sources)
 
 
+def test_equipment_first_show_lookup_can_expand_into_a_show_with_context_and_listening():
+    store = CanonicalStore()
+    tiger = store.resolve_equipment("Tiger")
+    show = store.resolve_show("1979-08-04")
+    assert tiger and show
+    response = compose_experience_response(
+        question="What was the first show Jerry played Tiger in?",
+        thread_id="web-test",
+        messages=[
+            tool_message(store.equipment_history(tiger)),
+            AIMessage(content="The first documented Tiger assignment is the Oakland show on August 4, 1979."),
+        ],
+        store=store,
+    )
+    entity = next(block for block in response.blocks if block.type == "entity_card")
+    assert entity.title == "Oakland Auditorium"
+    assert "Oakland, CA" in entity.details
+    assert any(block.type == "show_setlist" for block in response.blocks)
+    assert any(block.type == "recording_list" for block in response.blocks)
+    equipment = next(block for block in response.blocks if block.type == "equipment_list")
+    assert any(item.name == "Tiger" for item in equipment.items)
+
+
 def test_composer_returns_a_safe_gap_when_no_tools_return_data():
     response = compose_experience_response(
         question="Tell me about an unknown song.",
@@ -299,6 +322,57 @@ def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_prove
     assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
     assert all(block.type != "provenance_note" for block in composed.blocks)
     assert [section.region for section in composed.layout] == ["primary"]
+
+
+def test_composition_cannot_show_coverage_as_a_normal_result_instead_of_grounded_content():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    assert song
+    response = compose_experience_response(
+        question="Tell me about Sugaree.",
+        thread_id="web-test",
+        messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree is in the library.")],
+        store=store,
+    )
+    coverage_index = next(index for index, block in enumerate(response.blocks) if block.type == "coverage")
+    composed = apply_composition_plan(
+        response,
+        CompositionPlan(mode="quick_fact", sections=[CompositionSection(region="primary", candidate_indexes=[coverage_index])]),
+    )
+    assert composed == response
+    assert all(
+        response.blocks[index].type != "coverage"
+        for section in composed.layout
+        for index in section.block_indexes
+    )
+
+
+def test_composition_preserves_the_model_selected_show_order_and_regions():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    assert show
+    response = compose_experience_response(
+        question="Tell me about the show.",
+        thread_id="web-test",
+        messages=[tool_message(store.show_context(show)), AIMessage(content="The show is in the library.")],
+        store=store,
+    )
+    recording_index = next(index for index, block in enumerate(response.blocks) if block.type == "recording_list")
+    setlist_index = next(index for index, block in enumerate(response.blocks) if block.type == "show_setlist")
+    composed = apply_composition_plan(
+        response,
+        CompositionPlan(
+            mode="show",
+            sections=[
+                CompositionSection(region="context", candidate_indexes=[setlist_index]),
+                CompositionSection(region="media", candidate_indexes=[recording_index]),
+            ],
+        ),
+    )
+    assert [section.region for section in composed.layout] == ["context", "media"]
+    assert [block.type for block in composed.blocks] == ["show_setlist", "recording_list"]
+    assert composed.layout[0].block_indexes == [0]
+    assert composed.layout[1].block_indexes == [1]
 
 
 def test_an_invalid_composition_plan_uses_the_deterministic_candidate_order():

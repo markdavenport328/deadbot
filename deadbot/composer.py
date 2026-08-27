@@ -110,6 +110,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "set_labels": [section.label for section in block.sets],
             "song_count": sum(len(section.songs) for section in block.sets),
             "helps_with": "show setlist questions; each song is a grounded follow-up target",
+            "decision_tradeoff": "the strongest orientation for questions about sequence, sets, or what was played; it can be supporting context when the visitor's next move is listening or investigating a specific performance",
             "provenance": "canonical",
         }
     if block.type == "recording_list":
@@ -119,7 +120,10 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "scope": "approved recordings for one show",
             "title": block.title,
             "recording_count": len(block.items),
+            "source_types": sorted({item.source_type for item in block.items}),
+            "archive_identifiers": [item.archive_identifier for item in block.items if item.archive_identifier],
             "helps_with": "listening to recordings of the show",
+            "decision_tradeoff": "an immediate listening path for a visitor asking about how a guitar or performance sounds; it can be supporting context when the visitor asked about set order or song sequence",
             "provenance": "stored recording metadata",
         }
     if block.type == "performer_list":
@@ -217,6 +221,25 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
     }
 
 
+def _show_relationships(response: ExperienceResponse) -> list[dict[str, Any]]:
+    """Describe related candidates so the model can compare useful paths."""
+
+    grouped: dict[str, list[tuple[int, str]]] = {}
+    for index, block in enumerate(response.blocks):
+        show_id = getattr(block, "show_id", None)
+        if isinstance(show_id, str) and show_id:
+            grouped.setdefault(show_id, []).append((index, block.type))
+    return [
+        {
+            "show_id": show_id,
+            "candidate_indexes": [index for index, _ in candidates],
+            "available_paths": [block_type for _, block_type in candidates],
+            "reasoning_note": "Compare these related show paths against the visitor's intent. Their order and layout are a decision for this question, not a default sequence.",
+        }
+        for show_id, candidates in grouped.items()
+    ]
+
+
 def _composer_brief(question: str, response: ExperienceResponse) -> str:
     """Build the structured reasoning context for the model-first composer."""
 
@@ -225,6 +248,7 @@ def _composer_brief(question: str, response: ExperienceResponse) -> str:
         "grounded_agent_answer": response.answer,
         "recent_conversation": [turn.model_dump() for turn in response.conversation[-8:]],
         "candidate_blocks": [_block_brief(index, block) for index, block in enumerate(response.blocks)],
+        "related_show_paths": _show_relationships(response),
     }
     return json.dumps(brief, ensure_ascii=False, separators=(",", ":"))
 
@@ -240,9 +264,19 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
 
     selected_indexes: list[int] = []
     resolved_sections: list[tuple[str, list[int]]] = []
+    has_grounded_content = any(block.type not in {"coverage", "gap_state"} for block in response.blocks)
     for section in plan.sections:
         section_indexes = []
         for index in section.candidate_indexes:
+            # Coverage is an explanation of a limit, never a substitute for
+            # the show, performance, or gap the visitor actually asked about.
+            # A composer may surface it only in the dedicated gap mode.
+            if (
+                0 <= index < len(response.blocks)
+                and response.blocks[index].type == "coverage"
+                and (plan.mode != "gap" or has_grounded_content)
+            ):
+                continue
             if 0 <= index < len(response.blocks) and index not in selected_indexes:
                 selected_indexes.append(index)
                 section_indexes.append(index)
@@ -286,8 +320,10 @@ class ModelGuidedComposer:
         if len(response.blocks) <= 1:
             return response
         prompt = (
-            "Choose the most coherent main-column layout for the latest question using the grounded brief below. "
+            "Choose the most coherent main-column guide for the latest question using the grounded brief below. "
             "Reason from the question, answer, coverage, candidate scope, and provenance. "
+            "The chat column already gives the direct answer. The main column must not repeat it; use it to provide the next useful grounded action, evidence, or connection. "
+            "Serve the right thing at the right depth, like a trusted, well-prepared fan. Do not perform expertise or invent critical color. "
             "First choose one experience mode: quick_fact, performance, show, listening, comparison, research, musician, or gap. "
             "Choose it from the visitor's request and the grounded material, not from a generic keyword rule. "
             "Select the smallest useful set of candidates and arrange them in primary, supporting, context, or media regions. "
@@ -295,12 +331,12 @@ class ModelGuidedComposer:
             "The page title already identifies the main song, show, or performance. Omit an entity card when it only repeats that title and has no additional details. "
             "For a song question, prefer the song_overview block as the standard facts panel. For a first/last performance question, prefer the performance_extremes block, which already combines both endpoints; omit the generic performance_list unless the user asks for the full known list. "
             "For a specific performance question, choose performance mode and use the performance_spine when it is available; it provides only canonical set adjacency, so do not imply musical analysis that was not retrieved. "
-            "For a show question, prefer the show_setlist block in the main panel; do not select only the show card when an ordered setlist is available. "
-            "When approved recordings are available for a show, include the recording_list for show overview or listening questions so the main panel exposes the recording links. "
+            "For a show question, use the related_show_paths and candidate decision_tradeoff fields to decide whether the setlist, recordings, performers, or equipment offers the most useful next step. Do not select only the show card when a richer grounded show path is available. "
+            "When a show has both recordings and a full setlist, decide their ordering from the visitor's intent. For a first-use or named-equipment question, the grounded equipment claim plus a recording from that show usually makes the more satisfying path: the visitor can hear the instrument in its documented setting. A full setlist is secondary unless the visitor asks about sequence or what was played. For a set-order question, the setlist may lead. Do not apply a universal ordering rule. "
             "When source-reviewed performers are available for a show, include the performer_list for lineup, guest, musician, or instrument questions; it groups each person with their recorded instruments. "
             "When named guitar claims are available for a show, include the equipment_list for Jerry Garcia guitar or equipment questions; distinguish date-range evidence from specific-show evidence and do not treat a date-range claim as a complete equipment log. "
             "Do not select a provenance note merely because a resource is present; provenance is retained in the response metadata and should not become a visible page section unless the user explicitly asks about sources or attribution. "
-            "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
+            "Do not select library coverage for ordinary song, show, performance, date, setlist, credit, media, or listening questions. Select coverage only in gap mode when the user directly asks about library scope, completeness, coverage, or a limitation that the answer must explain. "
             "Do not choose learning, media, or reading material unless it genuinely helps the question. "
             "For a direct factual, count, date, setlist, or coverage question, select only the factual entity/performance/coverage evidence needed to answer it; omit chord arrangements, contextual resource lists, and media unless the user explicitly asks for them. "
             "For a musician, arrangement, key, chord, tab, or lyric-source request, choose musician mode. Include source-specific arrangement material when available, retain its scope, and do not treat the documented key as universal for the song. Full tabs and lyrics remain external-source links. "

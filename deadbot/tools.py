@@ -232,6 +232,10 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
                 for row in store.matching_rows(table, phrase, fields)[:10]:
                     add(table[:-1], row[id_field], row[label_field])
 
+        for phrase in phrases:
+            for item in store.matching_rows("equipment", phrase, ("name", "manufacturer", "model"))[:10]:
+                add("equipment", item["equipment_id"], item["name"])
+
         venues = store.by_id.get("venues", {})
         for show in store.rows("shows"):
             venue = venues.get(show["venue_id"], {})
@@ -268,6 +272,21 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         if not key:
             return _json({"error": "A key signature is required."})
         return _json(store.arrangement_search(key))
+
+    @tool
+    def get_equipment_history(equipment_id_or_name: str) -> str:
+        """Get the first and last documented Grateful Dead show assignments for a named instrument.
+
+        Use this before answering questions such as when Jerry first or last
+        played Tiger, Wolf, Rosebud, or another named guitar. The result names
+        the source-dated show assignment and its evidence scope. Follow with
+        get_show for the returned show when the visitor wants venue location,
+        setlist, recordings, or other show context.
+        """
+        equipment = store.resolve_equipment(equipment_id_or_name)
+        if not equipment:
+            return _json({"error": "Equipment not found or ambiguous", "query": equipment_id_or_name})
+        return _json(store.equipment_history(equipment))
 
     @tool
     def get_show(show_id_or_date: str) -> str:
@@ -463,6 +482,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         search_entities,
         get_song,
         find_arrangements,
+        get_equipment_history,
         get_show,
         get_performance,
         get_media_links,

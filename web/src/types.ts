@@ -36,6 +36,7 @@ export type ShowSetlistBlock = {
 
 export type RecordingListBlock = {
   type: "recording_list";
+  show_id?: string | null;
   title: string;
   items: Array<{
     recording_id: string;

@@ -86,6 +86,7 @@ class RecordingItem(ExperienceModel):
 
 class RecordingListBlock(ExperienceModel):
     type: Literal["recording_list"]
+    show_id: str | None = None
     title: str
     items: list[RecordingItem] = Field(min_length=1, max_length=8)
 
@@ -853,7 +854,12 @@ def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> Recording
         )
     if not items:
         return None
-    return RecordingListBlock(type="recording_list", title="Recordings", items=items[:8])
+    return RecordingListBlock(
+        type="recording_list",
+        show_id=show.get("show_id") if isinstance(show, dict) else None,
+        title="Recordings",
+        items=items[:8],
+    )
 
 
 def _coverage_block(store: CanonicalStore) -> CoverageBlock:
@@ -951,6 +957,7 @@ def compose_experience_response(
     seen_resources: set[str] = set()
     seen_media: set[str] = set()
     seen_arrangements: set[str] = set()
+    processed_show_ids: set[str] = set()
     resource_items: list[ResourceItem] = []
     chord_items: list[ResourceItem] = []
     credit_items: list[CreditItem] = []
@@ -1034,7 +1041,21 @@ def compose_experience_response(
             if source and source.source_id not in credit_source_ids:
                 credit_source_ids.append(source.source_id)
 
-    for payload in _tool_payloads(latest_turn_messages):
+    tool_payloads = _tool_payloads(latest_turn_messages)
+    # Equipment-history results identify a concrete canonical show. Expand that
+    # result locally so a first/last-guitar answer can still open into the
+    # venue, setlist, recording, and equipment context when the agent stops
+    # after its factual lookup.
+    expanded_payloads = list(tool_payloads)
+    for payload in tool_payloads:
+        first_show = payload.get("first_documented_show")
+        if not isinstance(first_show, dict):
+            continue
+        show = store.one("shows", first_show.get("show_id", ""))
+        if show:
+            expanded_payloads.append(store.show_context(show))
+
+    for payload in expanded_payloads:
         arrangement_search, arrangement_search_sources = _arrangement_search_block(payload, store)
         if arrangement_search:
             blocks.append(arrangement_search)
@@ -1071,38 +1092,41 @@ def compose_experience_response(
                 if performance_list:
                     blocks.append(performance_list)
         if "show" in payload and isinstance(payload["show"], dict):
-            add_entity(_entity_card_from_show(payload))
-            performer_list = _show_performers(payload, store)
-            if performer_list:
-                blocks.append(performer_list)
-            equipment_list = _show_equipment(payload)
-            if equipment_list:
-                blocks.append(equipment_list)
-                for item in equipment_list.items:
-                    add_source(
-                        SourceReference(
-                            source_id=item.source_id,
-                            kind="contextual_resource",
-                            label="Jerry Garcia Instrument History",
-                            url=item.source_url,
+            show_id = payload["show"].get("show_id")
+            if show_id and show_id not in processed_show_ids:
+                processed_show_ids.add(show_id)
+                add_entity(_entity_card_from_show(payload))
+                performer_list = _show_performers(payload, store)
+                if performer_list:
+                    blocks.append(performer_list)
+                equipment_list = _show_equipment(payload)
+                if equipment_list:
+                    blocks.append(equipment_list)
+                    for item in equipment_list.items:
+                        add_source(
+                            SourceReference(
+                                source_id=item.source_id,
+                                kind="contextual_resource",
+                                label="Jerry Garcia Instrument History",
+                                url=item.source_url,
+                            )
                         )
-                    )
-            show_setlist = _show_setlist(payload, store)
-            if show_setlist:
-                has_show_setlist = True
-                blocks.append(show_setlist)
-            recording_list = _recording_list(payload, store)
-            if recording_list:
-                for item in recording_list.items:
-                    add_source(
-                        SourceReference(
-                            source_id=item.source_id,
-                            kind="contextual_resource",
-                            label=item.source_type,
-                            url=item.url,
+                show_setlist = _show_setlist(payload, store)
+                if show_setlist:
+                    has_show_setlist = True
+                    blocks.append(show_setlist)
+                recording_list = _recording_list(payload, store)
+                if recording_list:
+                    for item in recording_list.items:
+                        add_source(
+                            SourceReference(
+                                source_id=item.source_id,
+                                kind="contextual_resource",
+                                label=item.source_type,
+                                url=item.url,
+                            )
                         )
-                    )
-                blocks.append(recording_list)
+                    blocks.append(recording_list)
         if "performance" in payload and isinstance(payload["performance"], dict):
             # A performance spine is a richer, non-redundant identifier for a
             # rendition than a generic entity card. Keep the page title useful

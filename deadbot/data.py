@@ -78,6 +78,13 @@ class CanonicalStore:
         matches = self.matching_rows("shows", identifier, ("show_date", "event_name", "tour_name"))
         return matches[0] if len(matches) == 1 else None
 
+    def resolve_equipment(self, identifier: str) -> dict[str, str] | None:
+        direct = self.one("equipment", identifier)
+        if direct:
+            return direct
+        matches = self.matching_rows("equipment", identifier, ("name", "manufacturer", "model"))
+        return matches[0] if len(matches) == 1 else None
+
     def resources_for(self, relation_table: str, target_key: str, target_id: str) -> list[dict[str, str]]:
         resource_ids = list(dict.fromkeys(
             row["resource_id"] for row in self.rows(relation_table) if row[target_key] == target_id
@@ -139,6 +146,52 @@ class CanonicalStore:
                 ),
             },
             "arrangements": arrangements,
+        }
+
+    def equipment_history(self, equipment: dict[str, str]) -> dict[str, Any]:
+        """Return source-dated show assignments for one named instrument."""
+
+        equipment_id = equipment["equipment_id"]
+        venues = self.by_id.get("venues", {})
+        shows = self.by_id.get("shows", {})
+        assignments = []
+        for row in self.rows("show_equipment"):
+            if row.get("equipment_id") != equipment_id:
+                continue
+            show = shows.get(row.get("show_id", ""))
+            if not show:
+                continue
+            venue = venues.get(show.get("venue_id", ""), {})
+            assignments.append({**row, "show": show, "venue": venue})
+        assignments.sort(key=lambda item: item["show"].get("show_date", "9999-99-99"))
+
+        def show_summary(assignment: dict[str, Any] | None) -> dict[str, str] | None:
+            if not assignment:
+                return None
+            show = assignment["show"]
+            venue = assignment["venue"]
+            return {
+                "show_id": show["show_id"],
+                "show_date": show.get("show_date", ""),
+                "venue_name": venue.get("name", ""),
+                "city": venue.get("city", ""),
+                "state_region": venue.get("state_region", ""),
+                "usage_context": assignment.get("usage_context", ""),
+                "claim_type": assignment.get("claim_type", ""),
+                "source_id": assignment.get("source_id", ""),
+                "source_url": assignment.get("source_url", ""),
+                "source_note": assignment.get("source_note", ""),
+            }
+
+        return {
+            "equipment": equipment,
+            "first_documented_show": show_summary(assignments[0] if assignments else None),
+            "last_documented_show": show_summary(assignments[-1] if assignments else None),
+            "documented_show_count": len(assignments),
+            "coverage_note": (
+                "These are source-dated equipment assignments in the current library, "
+                "not a complete instrument log for every show."
+            ),
         }
 
     def show_context(self, show: dict[str, str]) -> dict[str, Any]:

@@ -23,10 +23,6 @@ h1, h2 { font-family: Georgia, "Times New Roman", serif; line-height: 1.08; }
 h1 { margin: 0; font-size: clamp(2rem, 3.6vw, 3.5rem); }
 h2 { margin: 0; font-size: 1.45rem; }
 .thread { display: flex; flex: 1; flex-direction: column; gap: 0.7rem; min-height: 11rem; overflow-y: auto; padding: 0 0.7rem 1rem; }
-.thread-empty { color: #b9c5b9; font-size: 0.92rem; }
-.thread-empty p { margin-top: 0; }
-.thread-empty button { display: block; width: 100%; margin-top: 0.55rem; border: 1px solid #506757; border-radius: 0.5rem; background: transparent; color: #d4dfd2; padding: 0.7rem; text-align: left; }
-.thread-empty button:hover { background: #284332; }
 .message { max-width: 95%; border-radius: 0.75rem; padding: 0.75rem 0.85rem; font-size: 0.92rem; line-height: 1.5; white-space: pre-line; }
 .message p { margin: 0 0 0.3rem; color: #d3d9cd; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .message.user { align-self: flex-end; background: #334f3b; color: #f2f3eb; }
@@ -45,9 +41,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .content-heading { max-width: 780px; margin-bottom: 2rem; }
 .content-heading h1, .content-empty h1 { max-width: 12ch; }
 .content-heading > p:last-child, .content-empty > p:last-child { max-width: 46rem; margin: 1rem 0 0; color: #c3cec3; line-height: 1.6; }
-.answer-lead { max-width: 46rem; margin-top: 1.2rem; border-left: 2px solid #e7b94e; padding-left: 1rem; color: #e9e6d9; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.08rem, 1.5vw, 1.32rem); line-height: 1.5; }
-.answer-lead p { margin: 0; white-space: pre-line; }
 .content-empty { max-width: 760px; padding: clamp(3rem, 12vh, 10rem) 0; }
+.starting-points { display: grid; gap: 0.75rem; max-width: 46rem; margin-top: 1.5rem; }
+.starting-points button { border: 1px solid #506757; border-radius: 0.7rem; background: rgba(29, 48, 36, 0.82); color: #f1efdf; padding: 1rem 1.1rem; text-align: left; line-height: 1.45; }
+.starting-points button:hover, .starting-points button:focus-visible { border-color: #c49e48; background: #284332; }
+.starting-points button span { color: #e7b94e; }
 .layout-section + .layout-section { margin-top: 2rem; }
 .region-label { margin: 0 0 0.75rem; color: #9fb29f; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
 .block-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }

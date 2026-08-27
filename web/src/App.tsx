@@ -1,9 +1,9 @@
-import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { ExperienceBlock, ExperienceResponse, SourceReference } from "./types";
 
 const suggestions = [
-  "Was Branford on the whole show, and where should I listen for him?",
-  "Show me the Sugaree arrangement and its chord source.",
+  "Was Branford on the whole 1991-09-10 Madison Square Garden show, and where should I listen for him?",
+  "What are the chords to Sugaree?",
   "What did they play after Dark Star on 1972-08-27?"
 ];
 
@@ -20,17 +20,12 @@ const modeLabels: Record<ExperienceResponse["mode"], string> = {
 
 const regionLabels: Partial<Record<"primary" | "supporting" | "context" | "media", string>> = {
   supporting: "Keep exploring",
-  context: "Source context",
+  context: "Details and context",
   media: "Listen and watch"
 };
 
-function threadId(): string {
-  const storageKey = "deadbot-thread-id";
-  const existing = window.localStorage.getItem(storageKey);
-  if (existing) return existing;
-  const value = `web-${crypto.randomUUID()}`;
-  window.localStorage.setItem(storageKey, value);
-  return value;
+function createThreadId(): string {
+  return `web-${crypto.randomUUID()}`;
 }
 
 function sourceFor(sources: SourceReference[], sourceId: string): SourceReference | undefined {
@@ -405,42 +400,69 @@ export default function App() {
   const [response, setResponse] = useState<ExperienceResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const activeThreadId = useMemo(threadId, []);
+  const [activeThreadId, setActiveThreadId] = useState(createThreadId);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [pendingStartsFresh, setPendingStartsFresh] = useState(false);
   const threadEnd = useRef<HTMLDivElement>(null);
-  const questionInput = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [loading, response]);
+  }, [loading, pendingQuestion, response]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmed = question.trim();
+  async function askQuestion(nextQuestion?: string, { fresh = false }: { fresh?: boolean } = {}) {
+    const trimmed = (nextQuestion ?? question).trim();
     if (!trimmed || loading) return;
+    const requestThreadId = fresh ? createThreadId() : activeThreadId;
+    const conversation = fresh ? [] : response?.conversation ?? [];
+    if (fresh) {
+      setActiveThreadId(requestThreadId);
+      setResponse(null);
+    }
+    setPendingQuestion(trimmed);
+    setPendingStartsFresh(fresh);
+    setQuestion("");
     setLoading(true);
     setError(null);
     try {
       const result = await fetch("/api/experience", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed, thread_id: activeThreadId, conversation: response?.conversation ?? [] })
+        body: JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation })
       });
       if (!result.ok) {
         const body = await result.json().catch(() => null) as { detail?: string } | null;
         throw new Error(body?.detail ?? "Deadbot could not answer just now.");
       }
       setResponse(await result.json() as ExperienceResponse);
-      setQuestion("");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now.");
     } finally {
       setLoading(false);
+      setPendingQuestion(null);
+      setPendingStartsFresh(false);
     }
   }
 
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await askQuestion();
+  }
+
   function chooseFollowUp(prompt: string) {
-    setQuestion(prompt);
-    questionInput.current?.focus();
+    void askQuestion(prompt, { fresh: true });
+  }
+
+  const visibleConversation = pendingQuestion
+    ? [
+        ...(pendingStartsFresh ? [] : response?.conversation ?? []),
+        { role: "user" as const, text: pendingQuestion }
+      ]
+    : response?.conversation ?? [];
+
+  function submitOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    void askQuestion();
   }
 
   return (
@@ -453,15 +475,7 @@ export default function App() {
           </header>
 
           <section className="thread" aria-label="Deadbot conversation" aria-live="polite">
-            {!response && (
-              <div className="thread-empty">
-                <p>Try a starting point:</p>
-                {suggestions.map((suggestion) => (
-                  <button key={suggestion} type="button" onClick={() => setQuestion(suggestion)} disabled={loading}>{suggestion}</button>
-                ))}
-              </div>
-            )}
-            {response?.conversation.map((turn, index) => (
+            {visibleConversation.map((turn, index) => (
               <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
                 <p>{turn.role === "user" ? "You" : "Deadbot"}</p>
                 <div>{turn.text}</div>
@@ -478,11 +492,11 @@ export default function App() {
               <textarea
                 id="question"
                 aria-label="Question"
-                ref={questionInput}
                 rows={3}
                 placeholder="Ask about a song, show, source, or recording"
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={submitOnEnter}
                 disabled={loading}
               />
               <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
@@ -490,15 +504,12 @@ export default function App() {
           </form>
         </aside>
 
-        <section className="content-pane" aria-live="polite" aria-label="Composed results">
+        <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
           {response ? (
             <>
               <div className="content-heading">
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1>{response.title}</h1>
-                <div className="answer-lead">
-                  <p>{response.answer}</p>
-                </div>
               </div>
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
@@ -521,9 +532,14 @@ export default function App() {
             </>
           ) : (
             <div className="content-empty">
-              <p className="eyebrow">Composed results</p>
-              <h1>Start with a question.</h1>
-              <p>Deadbot will answer in the conversation, then assemble the relevant performances, shows, recordings, and source material here.</p>
+              <p className="eyebrow">Starting points</p>
+              <div className="starting-points">
+                {suggestions.map((suggestion) => (
+                  <button key={suggestion} type="button" onClick={() => void askQuestion(suggestion, { fresh: true })} disabled={loading}>
+                    {suggestion} <span aria-hidden="true">↗</span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </section>

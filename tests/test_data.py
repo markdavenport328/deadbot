@@ -39,6 +39,16 @@ def test_arrangement_tool_finds_only_documented_source_specific_keys():
     assert "universal key" in result["arrangement_search"]["coverage_note"]
 
 
+def test_equipment_history_returns_tiger_first_and_last_documented_shows():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_equipment_history").invoke({"equipment_id_or_name": "Tiger"}))
+    assert result["equipment"]["equipment_id"] == "guitar-tiger"
+    assert result["first_documented_show"]["show_date"] == "1979-08-04"
+    assert result["first_documented_show"]["venue_name"] == "Oakland Auditorium"
+    assert result["last_documented_show"]["show_date"] == "1995-07-09"
+    assert result["first_documented_show"]["claim_type"] == "date_range"
+
+
 def test_song_credit_cleanup_removes_legacy_generic_sugaree_rows():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_song").invoke({"song_id_or_title": "Sugaree"}))
