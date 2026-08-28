@@ -48,7 +48,9 @@ CREATE TABLE shows (
     venue_id TEXT NOT NULL REFERENCES venues (venue_id),
     tour_name TEXT,
     event_name TEXT,
-    notes TEXT
+    notes TEXT,
+    source_key TEXT,
+    source_record_id TEXT
 );
 
 CREATE TABLE song_writers (
@@ -93,6 +95,8 @@ CREATE TABLE show_performers (
     role TEXT NOT NULL,
     instrument TEXT NOT NULL,
     notes TEXT,
+    source_key TEXT,
+    source_record_id TEXT,
     PRIMARY KEY (show_id, person_id, role, instrument)
 );
 
@@ -106,6 +110,8 @@ CREATE TABLE performances (
     encore BOOLEAN NOT NULL DEFAULT FALSE,
     segue_into_next BOOLEAN NOT NULL DEFAULT FALSE,
     performance_notes TEXT,
+    source_key TEXT,
+    source_record_id TEXT,
     CHECK (set_number IS NULL OR set_number > 0),
     CHECK (position_in_set > 0),
     UNIQUE (show_id, set_number, position_in_set)

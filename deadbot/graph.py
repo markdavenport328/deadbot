@@ -54,7 +54,11 @@ the show result includes the source-reviewed performer assignments and any dated
 equipment claims. Distinguish specific-show evidence from date-range evidence, and
 never say the library lacks the information until that show lookup has been made.
 When a question itself names a show date, treat that date as sufficient context and
-resolve the show directly; do not depend on an earlier conversation.
+resolve the show directly; do not depend on an earlier conversation. Some dates have
+more than one show (for example an early and a late show). If a show tool returns
+candidate shows instead of one result, pick the correct candidate show_id from the
+visitor's context, or ask which venue or show they mean, then call the tool again
+with that show_id.
 
 For a question asking when a named guitar first or last appeared, call
 get_equipment_history before answering. It is the only tool that establishes

@@ -12,6 +12,27 @@ source-specific display value without recording the decision and evidence.
 
 Provenance will become increasingly important as multiple Dead datasets are reconciled. We will likely add provenance tables or columns once conflicting source assertions need to be represented explicitly.
 
+`shows.csv`, `performances.csv`, and `show_performers.csv` each end with two
+structured provenance columns, `source_key` and `source_record_id`, added by
+`scripts/add_provenance_columns.py`. `source_key` names the source system
+(`gdshowsdb`, `jerrybase`, or `manual`) and `source_record_id` is that
+source's stable identifier for the row (a gdshowsdb show or song UUID, or a
+JerryBase event id). These are derived, not hand-entered: the script parses
+them deterministically from the same prose citation that has always lived in
+`notes` / `performance_notes`, so that citation remains the source of truth
+and continues to carry any additional detail (blob hashes, snapshot
+filenames, instrument lists) the structured columns don't capture. Re-running
+the script recomputes both columns from scratch; it never trusts a prior run.
+
+The convention is fail-closed: a row whose `notes` doesn't match a known
+citation format gets an empty `source_key` and `source_record_id` rather than
+a guessed value, and the script's report lists every such row so it can be
+reviewed instead of silently passing. `source_key = "manual"` is reserved for
+rows confirmed by inspection to be hand-curated with no machine-parseable
+citation (currently the 20 original Veneta, `gd-1972-08-27`, performances,
+which predate the citation convention and have an empty `performance_notes`)
+— it is never used as a default for an unparseable row.
+
 Files began header-only. Canonical rows are added only after a documented normalization pass; they do not contain fabricated records.
 
 For `show_performers.csv`, enter one row per person's role-and-instrument assignment at a show. A performer with multiple instruments or vocal duties therefore has multiple rows with the same show and person IDs.

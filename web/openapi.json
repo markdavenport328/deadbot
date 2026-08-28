@@ -1,0 +1,1723 @@
+{
+  "components": {
+    "schemas": {
+      "ArrangementBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "arrangement_scope": {
+            "title": "Arrangement Scope",
+            "type": "string"
+          },
+          "capo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capo"
+          },
+          "key_signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key Signature"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "progressions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Progressions",
+            "type": "array"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tuning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tuning"
+          },
+          "type": {
+            "const": "arrangement",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "resource_id",
+          "source_id",
+          "arrangement_scope"
+        ],
+        "title": "ArrangementBlock",
+        "type": "object"
+      },
+      "ArrangementSearchBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage_note": {
+            "title": "Coverage Note",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ArrangementSearchItem"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "key_signature": {
+            "title": "Key Signature",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "arrangement_search",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "key_signature",
+          "coverage_note",
+          "items"
+        ],
+        "title": "ArrangementSearchBlock",
+        "type": "object"
+      },
+      "ArrangementSearchItem": {
+        "additionalProperties": false,
+        "properties": {
+          "arrangement_id": {
+            "title": "Arrangement Id",
+            "type": "string"
+          },
+          "arrangement_scope": {
+            "title": "Arrangement Scope",
+            "type": "string"
+          },
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "key_signature": {
+            "title": "Key Signature",
+            "type": "string"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "resource_title": {
+            "title": "Resource Title",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "arrangement_id",
+          "song_id",
+          "title",
+          "resource_id",
+          "resource_title",
+          "source_name",
+          "url",
+          "key_signature",
+          "arrangement_scope",
+          "follow_up"
+        ],
+        "title": "ArrangementSearchItem",
+        "type": "object"
+      },
+      "ComparisonStripBlock": {
+        "additionalProperties": false,
+        "description": "Selected grounded performances of one song over time.\n\nEntries are representative selections from current library coverage \u2014\ncanonical dates and set placement only, never musical analysis.",
+        "properties": {
+          "coverage_note": {
+            "title": "Coverage Note",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonStripItem"
+            },
+            "maxItems": 12,
+            "minItems": 2,
+            "title": "Items",
+            "type": "array"
+          },
+          "known_count": {
+            "title": "Known Count",
+            "type": "integer"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "comparison_strip",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "song_id",
+          "title",
+          "known_count",
+          "coverage_note",
+          "items"
+        ],
+        "title": "ComparisonStripBlock",
+        "type": "object"
+      },
+      "ComparisonStripItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "position_in_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position In Set"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "show_label": {
+            "title": "Show Label",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_id",
+          "year",
+          "show_label",
+          "follow_up"
+        ],
+        "title": "ComparisonStripItem",
+        "type": "object"
+      },
+      "ConversationTurn": {
+        "additionalProperties": false,
+        "description": "A browser-safe projection of one human or final assistant message.",
+        "properties": {
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "ConversationTurn",
+        "type": "object"
+      },
+      "CoverageBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "coverage",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "message"
+        ],
+        "title": "CoverageBlock",
+        "type": "object"
+      },
+      "CreditItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "role"
+        ],
+        "title": "CreditItem",
+        "type": "object"
+      },
+      "CreditListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CreditItem"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "credit_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items",
+          "source_ids"
+        ],
+        "title": "CreditListBlock",
+        "type": "object"
+      },
+      "EntityCardBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "details": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Details",
+            "type": "array"
+          },
+          "entity_id": {
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "enum": [
+              "song",
+              "show",
+              "performance"
+            ],
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtitle"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "entity_card",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "entity_type",
+          "entity_id",
+          "title",
+          "source_id"
+        ],
+        "title": "EntityCardBlock",
+        "type": "object"
+      },
+      "EquipmentItem": {
+        "additionalProperties": false,
+        "properties": {
+          "claim_type": {
+            "enum": [
+              "show",
+              "date_range"
+            ],
+            "title": "Claim Type",
+            "type": "string"
+          },
+          "equipment_id": {
+            "title": "Equipment Id",
+            "type": "string"
+          },
+          "evidence": {
+            "title": "Evidence",
+            "type": "string"
+          },
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "manufacturer": {
+            "title": "Manufacturer",
+            "type": "string"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_url": {
+            "title": "Source Url",
+            "type": "string"
+          },
+          "usage_context": {
+            "title": "Usage Context",
+            "type": "string"
+          }
+        },
+        "required": [
+          "equipment_id",
+          "name",
+          "manufacturer",
+          "model",
+          "usage_context",
+          "claim_type",
+          "evidence",
+          "source_id",
+          "source_url",
+          "follow_up"
+        ],
+        "title": "EquipmentItem",
+        "type": "object"
+      },
+      "EquipmentListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItem"
+            },
+            "maxItems": 16,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "equipment_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "show_id",
+          "title",
+          "items"
+        ],
+        "title": "EquipmentListBlock",
+        "type": "object"
+      },
+      "ExperienceRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "conversation": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationTurn"
+            },
+            "maxItems": 50,
+            "title": "Conversation",
+            "type": "array"
+          },
+          "question": {
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "title": "ExperienceRequest",
+        "type": "object"
+      },
+      "ExperienceResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "answer": {
+            "title": "Answer",
+            "type": "string"
+          },
+          "blocks": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "arrangement": "#/components/schemas/ArrangementBlock",
+                  "arrangement_search": "#/components/schemas/ArrangementSearchBlock",
+                  "comparison_strip": "#/components/schemas/ComparisonStripBlock",
+                  "coverage": "#/components/schemas/CoverageBlock",
+                  "credit_list": "#/components/schemas/CreditListBlock",
+                  "entity_card": "#/components/schemas/EntityCardBlock",
+                  "equipment_list": "#/components/schemas/EquipmentListBlock",
+                  "gap_state": "#/components/schemas/GapStateBlock",
+                  "media_link": "#/components/schemas/MediaLinkBlock",
+                  "performance_extremes": "#/components/schemas/PerformanceExtremesBlock",
+                  "performance_list": "#/components/schemas/PerformanceListBlock",
+                  "performance_spine": "#/components/schemas/PerformanceSpineBlock",
+                  "performer_list": "#/components/schemas/PerformerListBlock",
+                  "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
+                  "recording_list": "#/components/schemas/RecordingListBlock",
+                  "resource_list": "#/components/schemas/ResourceListBlock",
+                  "show_setlist": "#/components/schemas/ShowSetlistBlock",
+                  "song_overview": "#/components/schemas/SongOverviewBlock"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/EntityCardBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ShowSetlistBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/RecordingListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PerformerListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/EquipmentListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ResourceListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/CreditListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/SongOverviewBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/MediaLinkBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PerformanceListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PerformanceExtremesBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PerformanceSpineBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ComparisonStripBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/CoverageBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ArrangementBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ArrangementSearchBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ProvenanceNoteBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/GapStateBlock"
+                }
+              ]
+            },
+            "maxItems": 16,
+            "title": "Blocks",
+            "type": "array"
+          },
+          "conversation": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationTurn"
+            },
+            "maxItems": 50,
+            "title": "Conversation",
+            "type": "array"
+          },
+          "layout": {
+            "items": {
+              "$ref": "#/components/schemas/LayoutSection"
+            },
+            "maxItems": 4,
+            "title": "Layout",
+            "type": "array"
+          },
+          "mode": {
+            "default": "quick_fact",
+            "enum": [
+              "quick_fact",
+              "performance",
+              "show",
+              "listening",
+              "comparison",
+              "research",
+              "musician",
+              "gap"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1",
+            "default": "1",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/SourceReference"
+            },
+            "maxItems": 32,
+            "title": "Sources",
+            "type": "array"
+          },
+          "thread_id": {
+            "title": "Thread Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "thread_id",
+          "title",
+          "answer"
+        ],
+        "title": "ExperienceResponse",
+        "type": "object"
+      },
+      "GapStateBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "const": "gap_state",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "message"
+        ],
+        "title": "GapStateBlock",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "LayoutSection": {
+        "additionalProperties": false,
+        "description": "A server-validated region in the composed main column.",
+        "properties": {
+          "block_indexes": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Block Indexes",
+            "type": "array"
+          },
+          "region": {
+            "enum": [
+              "primary",
+              "supporting",
+              "context",
+              "media"
+            ],
+            "title": "Region",
+            "type": "string"
+          }
+        },
+        "required": [
+          "region",
+          "block_indexes"
+        ],
+        "title": "LayoutSection",
+        "type": "object"
+      },
+      "MediaLinkBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "embed_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Id"
+          },
+          "embed_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "spotify",
+                  "youtube"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Kind"
+          },
+          "is_official": {
+            "title": "Is Official",
+            "type": "boolean"
+          },
+          "link_type": {
+            "title": "Link Type",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "media_link",
+            "title": "Type",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "provider",
+          "url",
+          "link_type",
+          "is_official"
+        ],
+        "title": "MediaLinkBlock",
+        "type": "object"
+      },
+      "PerformanceExtremesBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "first": {
+            "$ref": "#/components/schemas/PerformanceListItem"
+          },
+          "last": {
+            "$ref": "#/components/schemas/PerformanceListItem"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "performance_extremes",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "song_id",
+          "title",
+          "first",
+          "last"
+        ],
+        "title": "PerformanceExtremesBlock",
+        "type": "object"
+      },
+      "PerformanceListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PerformanceListItem"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "known_count": {
+            "title": "Known Count",
+            "type": "integer"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "performance_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "song_id",
+          "known_count",
+          "items"
+        ],
+        "title": "PerformanceListBlock",
+        "type": "object"
+      },
+      "PerformanceListItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "position_in_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position In Set"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "show_label": {
+            "title": "Show Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_id",
+          "show_label",
+          "follow_up"
+        ],
+        "title": "PerformanceListItem",
+        "type": "object"
+      },
+      "PerformanceSpineBlock": {
+        "additionalProperties": false,
+        "description": "Place one rendition back into its documented set sequence.",
+        "properties": {
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceSpineNeighbor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "position_in_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position In Set"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceSpineNeighbor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_label": {
+            "title": "Show Label",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "performance_spine",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "performance_id",
+          "song_id",
+          "title",
+          "show_label"
+        ],
+        "title": "PerformanceSpineBlock",
+        "type": "object"
+      },
+      "PerformanceSpineNeighbor": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "title",
+          "follow_up"
+        ],
+        "title": "PerformanceSpineNeighbor",
+        "type": "object"
+      },
+      "PerformerItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "instruments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Instruments",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "performer",
+              "guest"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "role",
+          "instruments",
+          "follow_up"
+        ],
+        "title": "PerformerItem",
+        "type": "object"
+      },
+      "PerformerListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PerformerItem"
+            },
+            "maxItems": 24,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "performer_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "show_id",
+          "title",
+          "items"
+        ],
+        "title": "PerformerListBlock",
+        "type": "object"
+      },
+      "ProvenanceNoteBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "const": "provenance_note",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text",
+          "source_ids"
+        ],
+        "title": "ProvenanceNoteBlock",
+        "type": "object"
+      },
+      "RecordingItem": {
+        "additionalProperties": false,
+        "properties": {
+          "archive_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archive Identifier"
+          },
+          "recording_id": {
+            "title": "Recording Id",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "recording_id",
+          "title",
+          "source_type",
+          "url",
+          "source_id"
+        ],
+        "title": "RecordingItem",
+        "type": "object"
+      },
+      "RecordingListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecordingItem"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "show_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "recording_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items"
+        ],
+        "title": "RecordingListBlock",
+        "type": "object"
+      },
+      "ResourceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "resource_type": {
+            "title": "Resource Type",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource_id",
+          "title",
+          "resource_type",
+          "source_name",
+          "url",
+          "source_id"
+        ],
+        "title": "ResourceItem",
+        "type": "object"
+      },
+      "ResourceListBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ResourceItem"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "resource_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items"
+        ],
+        "title": "ResourceListBlock",
+        "type": "object"
+      },
+      "SetlistSection": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "songs": {
+            "items": {
+              "$ref": "#/components/schemas/SetlistSong"
+            },
+            "maxItems": 40,
+            "minItems": 1,
+            "title": "Songs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "label",
+          "songs"
+        ],
+        "title": "SetlistSection",
+        "type": "object"
+      },
+      "SetlistSong": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "position_in_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position In Set"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "song_id",
+          "title",
+          "follow_up"
+        ],
+        "title": "SetlistSong",
+        "type": "object"
+      },
+      "ShowSetlistBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/SetlistSection"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Sets",
+            "type": "array"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "show_setlist",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "show_id",
+          "title",
+          "sets"
+        ],
+        "title": "ShowSetlistBlock",
+        "type": "object"
+      },
+      "SongOverviewBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "credits": {
+            "items": {
+              "$ref": "#/components/schemas/CreditItem"
+            },
+            "maxItems": 12,
+            "title": "Credits",
+            "type": "array"
+          },
+          "known_performance_count": {
+            "title": "Known Performance Count",
+            "type": "integer"
+          },
+          "original_artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original Artist"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "source_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "title": "Source Ids",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "song_overview",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "song_id",
+          "title",
+          "known_performance_count"
+        ],
+        "title": "SongOverviewBlock",
+        "type": "object"
+      },
+      "SourceReference": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "canonical",
+              "contextual_resource"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind",
+          "label"
+        ],
+        "title": "SourceReference",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "Deadbot",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/experience": {
+      "post": {
+        "operationId": "experience_api_experience_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperienceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Experience"
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Api Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    }
+  }
+}

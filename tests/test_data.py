@@ -248,4 +248,41 @@ def test_context_tools_return_a_safe_error_for_unknown_show_without_fetching(mon
     monkeypatch.setattr(tools_module, "_fetch_json", lambda _url: (_ for _ in ()).throw(AssertionError("should not fetch")))
     for name in ("get_historical_weather", "get_astronomy", "get_astrology"):
         result = json.loads(tool_by_name(store, name).invoke({"show_id_or_date": "1900-01-01"}))
-        assert result["error"] == "Show not found or ambiguous"
+        assert result["error"] == "Show not found"
+
+
+def test_ambiguous_show_date_returns_candidates_instead_of_a_dead_end():
+    store = CanonicalStore()
+    assert store.resolve_show("1966-10-08") is None
+    assert len(store.show_candidates("1966-10-08")) == 2
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1966-10-08"}))
+    assert "Multiple shows match" in result["error"]
+    candidate_ids = {candidate["show_id"] for candidate in result["candidates"]}
+    assert candidate_ids == {"gd-1966-10-08-0", "gd-1966-10-08-1"}
+    venue_names = {candidate["venue_name"] for candidate in result["candidates"]}
+    assert len(venue_names) == 2
+
+
+def test_unknown_show_date_still_reports_not_found_without_candidates():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1999-01-01"}))
+    assert result["error"] == "Show not found"
+    assert "candidates" not in result
+
+
+def test_media_links_tool_returns_candidates_for_an_ambiguous_show_date():
+    store = CanonicalStore()
+    result = json.loads(
+        tool_by_name(store, "get_media_links").invoke({"entity_type": "show", "entity_id": "1966-10-08"})
+    )
+    assert "Multiple shows match" in result["error"]
+    assert len(result["candidates"]) == 2
+
+
+def test_show_payload_keeps_source_setlist_gap_note_without_raw_provenance():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "gd-1965-05-05"}))
+    assert result["performances"] == []
+    assert "no setlist entries" in result["show"]["setlist_note"]
+    assert "notes" not in result["show"]
+    assert "source_key" not in result["show"]

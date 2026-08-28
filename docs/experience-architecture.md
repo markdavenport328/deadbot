@@ -88,6 +88,7 @@ The first release should implement a deliberately small catalog. New block types
 | Entity header | Identify a song, show, performance, person, or venue. | Uses a canonical entity reference. |
 | Song, show, or performance card | Present core identity, ordering, personnel, recording, or release context. | Uses canonical data; show performance-specific facts only for the referenced rendition. |
 | Performance spine | Place one rendition among its directly adjacent songs in a documented set. | Uses only canonical set order; it must not imply musical analysis or a segue beyond what is stored. |
+| Comparison strip | Place selected renditions of one song across years. | Canonical performances only; one representative rendition per known year, with an explicit coverage note; never musical analysis. |
 | Resource list | Group relevant interviews, articles, lessons, chord charts, or videos. | Links use stored resource metadata and retain source labels. |
 | Composition credit list | Show known lyric, music, and writer roles for a song. | Uses canonical person/role rows and source-resource IDs; never presents unresolved candidates as confirmed credits. |
 | Media player | Offer approved playback or video. | Uses a server-validated provider link; never model-authored iframe markup. |
@@ -104,7 +105,7 @@ Cards and lists are presentation patterns, not new domain entities. The canonica
 
 Composition is model-guided but bounded. A composer may decide that a question would be clearer with a show card followed by an official listening link, for example. It may not create a new card shape, turn an unverified statement into a fact, or use an unreturned resource because its name seems plausible.
 
-The implemented first composer receives an enriched decision brief rather than raw files. It includes the latest question, recent conversation, grounded agent answer, and a rich inventory of candidates: their scope, purpose, canonical or contextual provenance, coverage metadata, and relevant facts. The model returns one bounded experience mode (`quick_fact`, `performance`, `show`, `listening`, `comparison`, `research`, `musician`, or `gap`) plus structured layout regions containing only server-owned candidate indexes. The server resolves those indexes back to the original validated blocks. Its system instructions and validation require it to:
+The implemented first composer receives an enriched decision brief rather than raw files. It includes the latest question, recent conversation, grounded agent answer, and a rich inventory of candidates: their scope, purpose, canonical or contextual provenance, coverage metadata, relevant facts, and a structured `usage_guidance` field describing when that candidate helps or is redundant, so block-specific rules live on each candidate rather than in the shared system prompt. The model returns one bounded experience mode (`quick_fact`, `performance`, `show`, `listening`, `comparison`, `research`, `musician`, or `gap`) plus structured layout regions containing only server-owned candidate indexes. The server resolves those indexes back to the original validated blocks. Its system instructions and validation require it to:
 
 - make the direct answer useful even when no optional block is appropriate;
 - choose the smallest helpful set of blocks, rather than filling a page by default;

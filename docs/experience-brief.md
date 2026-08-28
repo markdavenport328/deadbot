@@ -226,7 +226,9 @@ and documentation are the same thing.
 Prioritize additions that create an assembled path, not decorative density:
 
 1. **Answer lead** — the direct answer and any necessary scope statement in the
-   main panel. This is currently missing from the composed canvas.
+   main panel. Implemented: the main panel opens with the composed answer
+   text as a lead paragraph under the content heading, ahead of the
+   assembled blocks.
 2. **Performance spine** — song, show, set position, immediate neighbors, and
    a route into the performance.
 3. **Listening choice** — approved recording options with source metadata,
@@ -234,7 +236,9 @@ Prioritize additions that create an assembled path, not decorative density:
 4. **Arrangement reference** — source-specific key/capo/tuning/scope, concise
    permitted progressions, and links to the complete source material.
 5. **Comparison strip** — selected grounded performances over time with
-   explicit library coverage.
+   explicit library coverage. Implemented: one representative rendition per
+   known year of a song, with an explicit coverage note stating that it is
+   not a complete history.
 6. **Attributed source context** — short, rights-reviewed external context
    with a visible source label and outbound link.
 7. **Continue paths** — two or three entity-backed routes such as “hear the
