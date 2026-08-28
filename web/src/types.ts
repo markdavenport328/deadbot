@@ -1,282 +1,64 @@
-export type SourceReference = {
-  source_id: string;
-  kind: "canonical" | "contextual_resource";
-  label: string;
-  url?: string | null;
-};
+// Derived from web/openapi.json — do not hand-edit.
+//
+// The browser contract is defined once, in Python, as the Pydantic models in
+// deadbot/experience.py. This file re-exports typed aliases over the
+// TypeScript generated from that schema (web/src/generated/api.ts) so the two
+// never drift. To pick up a schema change, regenerate both files:
+//
+//   .venv/bin/python scripts/export_openapi.py
+//   npm run gen:types --prefix web
+//
+// CI fails the build if either regeneration step would change a committed
+// file (see .github/workflows/ci.yml).
+import type { components } from "./generated/api";
 
-export type EntityCardBlock = {
-  type: "entity_card";
-  entity_type: "song" | "show" | "performance";
-  entity_id: string;
-  title: string;
-  subtitle?: string | null;
-  details: string[];
-  source_id: string;
-  follow_up?: string | null;
-};
+// A handful of ExperienceResponse fields (`blocks`, `layout`, `sources`,
+// `conversation`) — and a few nested block fields (`details`, `progressions`,
+// `credits`, `source_ids`) — are declared in deadbot/experience.py with a
+// Pydantic default_factory (e.g. `Field(default_factory=list)`). FastAPI's
+// OpenAPI schema marks those as not required, because a *request* using this
+// same model could omit them. But every browser-facing response is built
+// through ExperienceResponse's own constructor, which always populates them
+// (with `[]` when empty) — the server never omits the key. `Require` restores
+// that always-present guarantee in the client's types without touching the
+// generated file or the components that consume these fields.
+type Require<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
-export type SetlistSong = {
-  performance_id: string;
-  song_id: string;
-  title: string;
-  position_in_set?: string | null;
-  follow_up: string;
-};
+export type SourceReference = components["schemas"]["SourceReference"];
 
-export type ShowSetlistBlock = {
-  type: "show_setlist";
-  show_id: string;
-  title: string;
-  sets: Array<{
-    label: string;
-    songs: SetlistSong[];
-  }>;
-};
-
-export type RecordingListBlock = {
-  type: "recording_list";
-  show_id?: string | null;
-  title: string;
-  items: Array<{
-    recording_id: string;
-    title: string;
-    source_type: string;
-    archive_identifier?: string | null;
-    url: string;
-    source_id: string;
-  }>;
-};
-
-export type PerformerListBlock = {
-  type: "performer_list";
-  show_id: string;
-  title: string;
-  items: Array<{
-    person_id: string;
-    name: string;
-    role: "performer" | "guest";
-    instruments: string[];
-    follow_up: string;
-  }>;
-};
-
-export type EquipmentListBlock = {
-  type: "equipment_list";
-  show_id: string;
-  title: string;
-  items: Array<{
-    equipment_id: string;
-    name: string;
-    manufacturer: string;
-    model: string;
-    usage_context: string;
-    claim_type: "show" | "date_range";
-    evidence: string;
-    source_id: string;
-    source_url: string;
-    follow_up: string;
-  }>;
-};
-
-export type ResourceListBlock = {
-  type: "resource_list";
-  title: string;
-  items: Array<{
-    resource_id: string;
-    title: string;
-    resource_type: string;
-    source_name: string;
-    url: string;
-    source_id: string;
-  }>;
-};
-
-export type CreditListBlock = {
-  type: "credit_list";
-  title: string;
-  items: Array<{
-    person_id: string;
-    name: string;
-    role: string;
-    follow_up?: string | null;
-  }>;
-  source_ids: string[];
-};
-
-export type SongCredit = {
-  person_id: string;
-  name: string;
-  role: string;
-  follow_up?: string | null;
-};
-
-export type SongOverviewBlock = {
-  type: "song_overview";
-  song_id: string;
-  title: string;
-  original_artist?: string | null;
-  known_performance_count: number;
-  credits: SongCredit[];
-  source_ids: string[];
-};
-
-export type MediaLinkBlock = {
-  type: "media_link";
-  title: string;
-  provider: string;
-  url: string;
-  link_type: string;
-  is_official: boolean;
-  embed_kind?: "spotify" | "youtube" | null;
-  embed_id?: string | null;
-};
-
-export type PerformanceListBlock = {
-  type: "performance_list";
-  title: string;
-  song_id: string;
-  known_count: number;
-  items: Array<{
-    performance_id: string;
-    show_id: string;
-    show_date?: string | null;
-    show_label: string;
-    set_label?: string | null;
-    position_in_set?: string | null;
-    follow_up: string;
-  }>;
-};
-
-export type PerformanceExtremesBlock = {
-  type: "performance_extremes";
-  song_id: string;
-  title: string;
-  first: PerformanceListBlock["items"][number];
-  last: PerformanceListBlock["items"][number];
-};
-
-export type ComparisonStripBlock = {
-  type: "comparison_strip";
-  song_id: string;
-  title: string;
-  known_count: number;
-  coverage_note: string;
-  items: Array<{
-    performance_id: string;
-    show_id: string;
-    year: number;
-    show_date?: string | null;
-    show_label: string;
-    set_label?: string | null;
-    position_in_set?: string | null;
-    follow_up: string;
-  }>;
-};
-
-export type PerformanceSpineBlock = {
-  type: "performance_spine";
-  performance_id: string;
-  song_id: string;
-  title: string;
-  show_label: string;
-  set_label?: string | null;
-  position_in_set?: string | null;
-  previous?: {
-    performance_id: string;
-    title: string;
-    follow_up: string;
-  } | null;
-  next?: {
-    performance_id: string;
-    title: string;
-    follow_up: string;
-  } | null;
-};
-
-export type CoverageBlock = {
-  type: "coverage";
-  title: string;
-  message: string;
-};
-
-export type ArrangementBlock = {
-  type: "arrangement";
-  title: string;
-  resource_id: string;
-  source_id: string;
-  key_signature?: string | null;
-  arrangement_scope: string;
-  capo?: string | null;
-  tuning?: string | null;
-  notes?: string | null;
-  progressions: string[];
-};
-
-export type ArrangementSearchBlock = {
-  type: "arrangement_search";
-  title: string;
-  key_signature: string;
-  coverage_note: string;
-  items: Array<{
-    arrangement_id: string;
-    song_id: string;
-    title: string;
-    resource_id: string;
-    resource_title: string;
-    source_name: string;
-    url: string;
-    key_signature: string;
-    arrangement_scope: string;
-    follow_up: string;
-  }>;
-};
-
-export type ProvenanceNoteBlock = {
-  type: "provenance_note";
-  text: string;
-  source_ids: string[];
-};
-
-export type GapStateBlock = {
-  type: "gap_state";
-  message: string;
-};
+type FixedEntityCardBlock = Require<components["schemas"]["EntityCardBlock"], "details">;
+type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], "progressions">;
+type FixedSongOverviewBlock = Require<
+  components["schemas"]["SongOverviewBlock"],
+  "credits" | "source_ids"
+>;
 
 export type ExperienceBlock =
-  | EntityCardBlock
-  | ShowSetlistBlock
-  | RecordingListBlock
-  | PerformerListBlock
-  | EquipmentListBlock
-  | ResourceListBlock
-  | CreditListBlock
-  | SongOverviewBlock
-  | MediaLinkBlock
-  | PerformanceListBlock
-  | PerformanceExtremesBlock
-  | PerformanceSpineBlock
-  | ComparisonStripBlock
-  | CoverageBlock
-  | ArrangementBlock
-  | ArrangementSearchBlock
-  | ProvenanceNoteBlock
-  | GapStateBlock;
+  | FixedEntityCardBlock
+  | components["schemas"]["ShowSetlistBlock"]
+  | components["schemas"]["RecordingListBlock"]
+  | components["schemas"]["PerformerListBlock"]
+  | components["schemas"]["EquipmentListBlock"]
+  | components["schemas"]["ResourceListBlock"]
+  | components["schemas"]["CreditListBlock"]
+  | FixedSongOverviewBlock
+  | components["schemas"]["MediaLinkBlock"]
+  | components["schemas"]["PerformanceListBlock"]
+  | components["schemas"]["PerformanceExtremesBlock"]
+  | components["schemas"]["PerformanceSpineBlock"]
+  | components["schemas"]["ComparisonStripBlock"]
+  | components["schemas"]["CoverageBlock"]
+  | FixedArrangementBlock
+  | components["schemas"]["ArrangementSearchBlock"]
+  | components["schemas"]["ProvenanceNoteBlock"]
+  | components["schemas"]["GapStateBlock"];
 
-export type ExperienceResponse = {
-  schema_version: "1";
-  thread_id: string;
-  title: string;
-  answer: string;
-  mode: "quick_fact" | "performance" | "show" | "listening" | "comparison" | "research" | "musician" | "gap";
-  conversation: Array<{
-    role: "user" | "assistant";
-    text: string;
-  }>;
-  blocks: ExperienceBlock[];
-  layout: Array<{
-    region: "primary" | "supporting" | "context" | "media";
-    block_indexes: number[];
-  }>;
-  sources: SourceReference[];
-};
+export type ExperienceResponse = Omit<
+  components["schemas"]["ExperienceResponse"],
+  "blocks" | "layout" | "sources" | "conversation"
+> &
+  Required<
+    Pick<components["schemas"]["ExperienceResponse"], "layout" | "sources" | "conversation">
+  > & {
+    blocks: ExperienceBlock[];
+  };
