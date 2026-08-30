@@ -250,8 +250,9 @@ ID that doesn't exist in the parent table). All are clean:
 No orphans anywhere. This is consistent with a normalization process that
 generates internal IDs from a bounded, already-validated show/song/person
 baseline rather than free-typing foreign keys — worth confirming holds once a
-PostgreSQL importer with real foreign-key constraints exists, but there's
-nothing to fix today.
+PostgreSQL importer with real foreign-key constraints runs. That importer was
+implemented after this audit and now validates the canonical files before a
+transaction; the zero-orphan result remains the expected baseline.
 
 ### 6. Songs layer
 
@@ -417,13 +418,14 @@ excerpt-length/rights guardrails are the real work, not the fetch itself.
 
 ### 7. Build the CSV → PostgreSQL importer
 
-**Why:** `docs/development-plan.md` item 6. The runtime is CSV-only today;
-this is the last step before the data layer stops being "a directory of
-files a script trusts" and becomes something with enforced constraints. It's
-also the natural forcing function for cleaning up the gaps documented above
-— a real foreign-key schema will surface anything Section 5's manual
-orphan-checks missed, and structured provenance columns (item 1) are much
-easier to add before this migration than after.
+**Status after this audit:** Implemented. The remaining gate is a live
+PostgreSQL smoke/parity run; see `docs/data-and-retrieval-roadmap.md`.
+
+**Why:** `docs/development-plan.md` item 6. PostgreSQL provides an operational
+projection with enforced constraints while CSV remains the reviewed source of
+truth. It is also a forcing function for cleaning up the gaps documented above:
+a real foreign-key schema surfaces anything Section 5's manual orphan checks
+missed.
 
 **Effort:** Large. Deterministic import, foreign-key validation, a rebuild
 command, and refactoring `CanonicalStore` behind its existing read interface

@@ -15,11 +15,18 @@ Before collecting, list the target entities and the fact types to be filled:
 | Composition credits | lyricist, composer, writer | Work/catalog lookup plus source-page review |
 | Lyric availability | page URL, page status, lyrics-present flag | External source link and compact metadata only |
 | Context | interview, article, memoir, lesson | Generic resource with typed entity relationships |
+| Discovery lead | a promising evolution, transition, lore, recording, or show-context path | Reviewed source/resource metadata and typed entity links; not a canonical assertion by itself |
+| Material show conditions | documented heat, rain, lightning, snow, benefit, production, or crowd conditions | Typed, source-qualified claim with direct/proxy/reported coverage |
 | Performance detail | lineup, recording track, timestamp | Targeted source review; never infer from a show-level record |
 
 Record the expected coverage and known gaps before the pass begins. A missing
 fact should remain visibly missing; it should not be silently replaced with a
 plausible value from a neighboring source.
+
+For a cross-decade song question, the matrix must also declare its performance
+universe, era scopes, exclusions, and denominator. A year-level pass can test
+the relationships needed for such a question, but it must not be presented as
+the song's career evolution. See `docs/question-driven-enrichment.md`.
 
 ## Use different sources for different jobs
 

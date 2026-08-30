@@ -1,12 +1,85 @@
 import json
 
 from deadbot.data import CanonicalStore
+from deadbot.deadnet import MetadataRecord, ResearchResult, ResultState
 import deadbot.tools as tools_module
 from deadbot.tools import build_tools
 
 
 def tool_by_name(store: CanonicalStore, name: str):
     return next(tool for tool in build_tools(store) if tool.name == name)
+
+
+def test_deadnet_song_context_returns_metadata_only_research_packet(monkeypatch):
+    store = CanonicalStore()
+
+    class FakeAdapter:
+        def read(self, request):
+            assert request.identifier == "sugaree"
+            return ResearchResult(
+                state=ResultState.OK,
+                records=(
+                    MetadataRecord(
+                        entity_type="song",
+                        identifier="sugaree",
+                        title="Sugaree | Dead.net",
+                        url="https://www.dead.net/song/sugaree",
+                    ),
+                ),
+                requested={"operation": "read", "entity_type": "song"},
+            )
+
+    monkeypatch.setattr(tools_module, "_reviewed_deadnet_adapter", lambda: FakeAdapter())
+    payload = json.loads(
+        tool_by_name(store, "get_deadnet_song_context").invoke({"song_id_or_title": "Sugaree"})
+    )
+    assert payload["song"]["song_id"] == "song-sugaree"
+    assert payload["research"]["coverage"] == "metadata_only"
+    assert payload["research"]["records"] == [
+        {
+            "entity_type": "song",
+            "identifier": "sugaree",
+            "title": "Sugaree | Dead.net",
+            "url": "https://www.dead.net/song/sugaree",
+            "source": "dead.net",
+        }
+    ]
+
+
+def test_deadcast_metadata_returns_bounded_metadata_only_packet(monkeypatch):
+    store = CanonicalStore()
+
+    class FakeAdapter:
+        def read(self, request):
+            assert request.entity_type.value == "deadcast"
+            assert request.identifier == "episode-1"
+            return ResearchResult(
+                state=ResultState.OK,
+                records=(MetadataRecord(entity_type="deadcast", identifier="episode-1", title="Deadcast: Veneta", url="https://www.dead.net/deadcast/episode-1"),),
+            )
+
+    monkeypatch.setattr(tools_module, "_reviewed_deadcast_adapter", lambda: FakeAdapter())
+    payload = json.loads(tool_by_name(store, "get_deadcast_metadata").invoke({"episode_id_or_slug": "episode-1"}))
+    assert payload["research"]["state"] == "ok"
+    assert payload["research"]["records"][0]["title"] == "Deadcast: Veneta"
+    assert "transcript" not in payload["research"]["records"][0]
+
+
+def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
+    store = CanonicalStore()
+    tool = tool_by_name(store, "get_lore_source_trails")
+    song_payload = json.loads(
+        tool.invoke({"entity_type": "song", "entity_id_or_name": "Friend Of The Devil"})
+    )
+    assert song_payload["entity"]["entity_id"] == "song-friend-of-the-devil"
+    assert song_payload["research"]["state"] == "ok"
+    assert any(record["source_kind"] == "official" for record in song_payload["research"]["records"])
+
+    show_payload = json.loads(
+        tool.invoke({"entity_type": "show", "entity_id_or_name": "1972-08-27"})
+    )
+    assert show_payload["entity"]["entity_id"] == "gd-1972-08-27"
+    assert show_payload["research"]["trail_ids"] == ["show-veneta-heat-context"]
 
 
 def test_every_veneta_song_has_a_context_resource():
@@ -28,6 +101,24 @@ def test_song_tool_returns_sugaree_resources_and_arrangement():
     assert result["arrangements"][0]["arrangement_id"] == "arrangement-sugaree-rukind-key-b"
     assert any(resource["source_name"] == "MusicBrainz" for resource in result["resources"])
     assert len(result["resources"]) == len({resource["resource_id"] for resource in result["resources"]})
+
+
+def test_song_performance_profile_is_bounded_and_reports_neighbor_denominators():
+    store = CanonicalStore()
+    result = json.loads(
+        tool_by_name(store, "get_song_performance_profile").invoke({"song_id_or_title": "Sugaree"})
+    )
+    assert result["song"]["song_id"] == "song-sugaree"
+    assert result["known_performance_count"] == 364
+    assert result["first_known_performance"]["show_date"] == "1971-07-31"
+    assert result["last_known_performance"]["show_date"] == "1995-07-08"
+    assert result["immediate_predecessors"] == [
+        {"song_id": "song-hell-in-a-bucket", "title": "Hell In A Bucket", "count": 66}
+    ]
+    assert result["predecessor_denominator"] == 338
+    assert result["successor_denominator"] == 359
+    assert result["coverage"]["scope"] == "current canonical library"
+    assert "not band-history-complete" in result["coverage"]["limitations"]
 
 
 def test_arrangement_tool_finds_only_documented_source_specific_keys():

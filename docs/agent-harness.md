@@ -16,12 +16,28 @@ The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the re
 - `get_song` — song identity, writers, arrangements, performances, and resource links.
 - `get_show` — show, venue, ordered performances, recording metadata, and show links.
 - `get_performance` — one rendition plus performance-specific context and media links.
+- `get_song_performance_profile` — on-demand derived performance totals, dated
+  endpoints, and frequent immediate set neighbors for one song. This describes
+  only the current documented library (with explicit transition denominators),
+  not complete band history, editorial lore, or a “best” score.
+- `get_deadnet_song_context` — an optional reviewed Dead.net song-page title,
+  short metadata, and link; it never returns page body or lyrics.
+- `get_deadcast_metadata` — an optional reviewed Deadcast episode title, short
+  metadata, and link for a supplied official episode slug; it never returns a
+  transcript or audio.
+- `get_lore_source_trails` — a selective, source-controlled set of links and
+  “why open” notes for the first song/show lore pilot. It supplies no source
+  text and does not turn editorial context into canonical fact.
 - `get_media_links` — stored YouTube, Spotify, Archive, or other link-out metadata.
-- `get_historical_weather` — show-date weather for the venue area from Open-Meteo historical reanalysis, with the limitation clearly labeled.
+- `get_historical_weather` — show-date weather for the venue area from Open-Meteo historical reanalysis, with the limitation clearly labeled. Use it when a question or a stored source makes weather material (for example heat, rain, lightning, or snow), not to infer an event context for every outdoor show.
 - `get_astronomy` — local Sun and Moon rise/set, twilight, transit, and lunar-phase context from the U.S. Naval Observatory.
 - `get_astrology` — date-based Western zodiac context, explicitly labeled as cultural/interpretive rather than scientific.
 
 All tools are read only. The canonical-data tools do not fetch arbitrary web pages; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. They return the source URL and retrieval metadata, while a later, sandboxed source-reader tool can retrieve only resources that are already present in `resources.csv`.
+
+Historical weather is nearby-grid-cell reanalysis, not an exact NWS station or
+concert-site measurement. Keep it distinct from direct weather observations and
+from attributed interview or memoir claims about conditions at a show.
 
 ## Provider contract
 

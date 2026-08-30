@@ -7,6 +7,7 @@ import os
 import time
 import uuid
 from collections import deque
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import ExperienceRequest, ExperienceResponse, compose_experience_response
 from deadbot.graph import build_agent, run_config
+from deadbot.storage import create_canonical_store
 
 
 logger = logging.getLogger(__name__)
@@ -35,14 +37,24 @@ def create_app(
     """Build an application with injectable runtime dependencies for tests."""
 
     settings = settings or Settings.from_env()
-    store = store or CanonicalStore()
+    store = store or create_canonical_store(settings)
     is_production_runtime = agent is None
     agent = agent or build_agent(settings, store=store)
     # An injected agent is a test/runtime seam. Avoid starting a second model
     # request in that path unless the caller explicitly supplies a composer.
     composer = composer or (create_experience_composer(settings) if is_production_runtime else DeterministicComposer())
     client_dist = client_dist or repository_root() / "web" / "dist"
-    app = FastAPI(title="Deadbot", version="0.1.0")
+    close_store = getattr(store, "close", None)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        try:
+            yield
+        finally:
+            if callable(close_store):
+                close_store()
+
+    app = FastAPI(title="Deadbot", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings
     app.state.store = store
     app.state.agent = agent
@@ -92,9 +104,9 @@ def create_app(
         return {
             "status": "ok",
             "git_commit": os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown"),
-            "canonical_shows": str(len(store.rows("shows"))),
-            "performer_assignments": str(len(store.rows("show_performers"))),
-            "show_equipment_links": str(len(store.rows("show_equipment"))),
+            "canonical_shows": str(store.row_count("shows")),
+            "performer_assignments": str(store.row_count("show_performers")),
+            "show_equipment_links": str(store.row_count("show_equipment")),
         }
 
     @app.post("/api/experience", response_model=ExperienceResponse)

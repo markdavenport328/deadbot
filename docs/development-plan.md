@@ -131,12 +131,20 @@ The current resource set gives every one of the 20 Veneta songs at least one con
   and gap audit of every canonical table, with a prioritized list of next
   data work. It is the current reference for coverage numbers; see "Veneta
   vertical slice" below.
+- Added immutable content-addressed canonical snapshot manifests and an
+  append-only PostgreSQL import ledger. Each successful import now reports a
+  `sha256:...` input revision, distinguishes bootstrap/rebuild from a
+  non-destructive merge, and gives future derived observations a
+  foreign-keyed revision reference. Schema v2 includes the explicit v1 → v2
+  migration; live import/restart/rollback verification remains outstanding.
 
 ## Current boundaries
 
 These boundaries are intentional and should not be bypassed casually:
 
-- Canonical CSV is the current runtime data source; PostgreSQL import is not implemented yet.
+- Canonical CSV remains the source of truth and zero-setup runtime. PostgreSQL
+  is now an optional, rebuildable operational read store selected by
+  configuration.
 - Agent tools are read only. The agent cannot edit canonical data, download media, or collect arbitrary web content.
 - A resource URL is a link-out reference. It does not turn an interview statement, memoir, or editorial interpretation into a canonical fact.
 - Do not copy full lyrics, tabs, transcriptions, audio, or video into the repository.
@@ -234,17 +242,62 @@ fallback category, without logging protected text or private model reasoning.
 main-column layout while preserving provenance, factual content, and the
 deterministic fallback.
 
-### 5. Add a restricted source-reader tool
+### 5. Add curated source research and a restricted source-reader
 
-Build a sandboxed tool that may fetch only URLs already present in `resources.csv`, returns concise source metadata/excerpts, records retrieval details, and never writes canonical claims automatically.
+Build a reviewed source registry plus source-specific, sandboxed research tools.
+Start with metadata-only Dead.net/Deadcast adapters, then add restricted
+readers that return concise permitted excerpts from returned or stored
+resources. The agent answers the question directly and uses research when it
+can add a worthwhile connection. Source tools operate through reviewed
+source-specific paths; canonical writes remain a reviewed data workflow, and
+source accounts stay attributed context.
 
-**Done when:** the agent can answer a question using a linked interview or article while naming the source and retaining the URL.
+**Status:** the schema-v3 registry/snapshot contract, a reviewed local
+Dead.net/Deadcast registry seed, and a bounded metadata-only Dead.net song
+reader are in place. The reader starts from a canonical song, follows the
+registry's approved host/path rules, returns explicit `ok`/`empty`/`partial`/
+`blocked`/`unavailable` states, and contributes only a vetted resource link to
+the model's decision brief and main-column candidate inventory. The same path
+has a deterministic resource-list fallback. It retains neither article body nor
+lyrics. Source discovery/search, show/performance routes, snapshot persistence,
+and any source-specific permitted excerpts remain future work.
+
+The first practical exploration layer now also includes a bounded Deadcast
+metadata reader and a six-entity, source-controlled lore-trail catalog for
+Friend of the Devil, Sugaree, They Love Each Other, Dancin' in the Streets,
+Veneta, and Cornell. These tools return only links, source kind, and a
+question-oriented reason to open the source. The response composer can render
+reviewed Dead.net, Deadhead High, and Deadessays links as main-column resources;
+none of their text becomes a canonical fact. See
+`docs/lore-source-trails.md` and `docs/lore-pilot-research.md`.
+
+**Next:** run live-model traces for factual-plus-exploratory answers, then use
+the results to improve research invocation, source discovery, main-column
+selection, and safe fallback behavior. Add source-specific excerpts only after
+rights review. See `docs/serendipity-research-plan.md`.
 
 ### 6. Build the canonical CSV → PostgreSQL importer
 
-Implement deterministic import, foreign-key validation, and a rebuild command. Refactor `CanonicalStore` behind the existing read interface so the agent can move from CSV to PostgreSQL without changing its tools.
+Implemented a strict, transactional importer for all 21 canonical CSV tables,
+a safe explicit rebuild command, an optional PostgreSQL read store behind the
+existing tool interface, environment-based store selection, and parity tests.
+The schema now also reserves normalized tables for release/show coverage,
+curator and fan selections, attributed claims, and recomputable structured
+observations. Every successful import records a content-addressed canonical
+snapshot and table-result ledger; schema v2 links future observations to that
+immutable input revision and upgrades v1 through a checked-in migration.
 
-**Done when:** a clean database can be rebuilt from canonical CSV and the same agent tests pass against it.
+**Status:** implementation and driver-independent parity tests are complete.
+A local Docker PostgreSQL 16 smoke check is complete: a clean schema-v2
+bootstrap imported all 107,404 canonical source rows in one transaction,
+recorded snapshot
+`sha256:524b5c16865ef59bf56174ea4f5eee5e8e7c47985fe874d0af72089e799e4218`,
+and served a PostgreSQL-backed Veneta show lookup with the expected 2,358-show
+and 39,774-performance coverage summary. The full suite passed with that local
+configuration (111 tests). Reconnect, rebuild of an already populated database,
+deliberately-invalid-import rollback, and CSV/PostgreSQL parity have since
+passed locally. Measured query plans and a production-like deployment
+validation remain cutover work.
 
 ### 7. Expand the 1972 collection responsibly
 
@@ -259,7 +312,73 @@ for every subsequent year and enrichment batch.
 
 **Done when:** a documented 1972 ingestion/reconciliation pass produces validated show/performance/recording coverage beyond the Veneta pilot.
 
-### 8. Add the document/RAG layer
+The next 1972 milestone is a deep enrichment pass, not another undifferentiated
+scrape. Prioritize recording-to-performance track mappings, release/show/track
+coverage, Dick's Picks and other sourced critic or fan selections, attributed
+claims and lore, show/performance-specific resources, and supported
+equipment/personnel details. Define expected coverage before each pass and keep
+claims and selections distinct from canonical event facts.
+
+In parallel, preserve and correct the broad 1965–1995 show/performance spine.
+1972 is a proving ground for typed relationships, retrieval, and coverage
+language—not the natural scope of cross-decade questions such as how a song
+evolved. Any 1972 observation needs a named source universe, input revision,
+and supporting entity/resource IDs; it must not imply a career-wide denominator.
+See `docs/question-driven-enrichment.md` and
+`docs/data-and-retrieval-roadmap.md` for the selection and rollout rules.
+
+### 8. Add bounded PostgreSQL graph retrieval and observations
+
+Replace whole-table or whole-history context with typed, parameterized traversal
+plans. Resolve a question to seed entities and scope, then use SQL to follow
+only the relevant one-to-three-hop relationships, aggregate large result sets,
+rank representative evidence, and paginate detail. Return a compact retrieval
+packet containing graph paths, provenance, coverage, gaps, and approved expansion
+references.
+
+Start with representative 1972 show, release, selection, lore, and pattern
+questions, then run the same plans against sparse early and later eras before
+claiming cross-timeline applicability. Compute a small library of versioned
+structured observations from the imported graph. Recompute an observation
+whenever its calculation version or canonical input revision changes; continue
+composing visitor-facing prose at request time.
+
+**Done when:** representative 1972 questions select the correct traversal,
+remain within measured context budgets, cite their coverage and provenance, and
+produce materially useful connections with drill-down paths. The initial packet
+targets are p95 below 10,000 tokens and a 20,000-token hard ceiling.
+
+### 9. Establish the cross-decade song and show-context cohort
+
+Select a stratified, evidence-backed 50–100-song cohort for enrichment beyond
+the canonical spine. This is internal collection planning; it does not enter
+the model's tool instructions or appear as a global song ranking. Choose the
+cohort from recorded question utility—recurring version/recommendation signals,
+cross-era comparison potential, transition/suite centrality, lyric/history
+sources, recording and release coverage, and a reserved long-tail share. Store
+recommendations as attributed selection signals.
+
+For outdoor shows, collect contextual weather, benefit, production, and crowd
+conditions only where sources make them material. Preserve direct observations,
+nearby station or grid data, and reported recollections as distinct scopes. The
+historical-weather tool may corroborate a notable-weather question with
+nearby-grid reanalysis; it must not be presented as an exact station or
+concert-site observation.
+
+**Done when:** the cohort and its question-family matrix have documented
+rationales, source inventory, coverage states, and representative cross-era
+evaluations. See `docs/question-driven-enrichment.md`.
+
+**Current first pass:** `data/editorial/song-cohort-candidates.csv` provides a
+72-song reproducible factual coverage queue. Its 32-entry priority-review
+overlay preserves factual coverage/risk fields while recording data,
+transition, long-tail, discovery-guide, lore-trail, and explicit editorial-
+override reasons. Dark Star, Dancin' in the Streets, and They Love Each Other
+show how a fertile editorial question can join factual coverage in the review
+queue. The queue directs review work and preserves each entry's rationale and
+coverage risk. See `docs/priority-review-queue.md`.
+
+### 10. Add the document/RAG layer
 
 After rights and access review, ingest or retrieve permissible interviews, liner notes, books, reviews, and essays as documents separate from canonical entities. Index them with source, date, rights, and entity links.
 

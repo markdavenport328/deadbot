@@ -1,0 +1,99 @@
+{
+  "suite_id": "fact-first-flexible-exploration",
+  "version": "v1",
+  "mode": "model-response-review",
+  "description": "Review fixtures for fact-first answers that may open a grounded two-column exploration view. The model chooses relevance and ordering from the supplied inventory; the reviewer checks that the direct answer remains primary and that coverage and provenance stay visible.",
+  "response_contract": {
+    "conversation_column": "visible conversation and follow-up affordances only",
+    "main_column": "direct answer followed by the most relevant grounded blocks",
+    "exploration_column": "optional related blocks, sources, or next steps; may be empty",
+    "allowed_regions": ["main", "exploration"],
+    "allowed_block_types": ["entity_card", "recording_list", "resource_list", "comparison_strip", "provenance_note", "gap_state"]
+  },
+  "cases": [
+    {
+      "id": "cornell-direct-fact-optional-exploration",
+      "question": "What was the famous Cornell show, and what else can I explore?",
+      "grounding": {
+        "canonical_facts": ["A Grateful Dead show took place at Barton Hall, Cornell University, on 1977-05-08."],
+        "coverage": "The packet contains the show identity and selected related records, not a complete account of why the show is famous."
+      },
+      "expected": {
+        "mode": "quick_fact",
+        "main_must_include": ["direct venue and date fact"],
+        "exploration_may_include": ["one or more grounded show, recording, or source blocks"],
+        "exploration_is_optional": true,
+        "must_not": ["invent a reason for the show's reputation", "bury the direct fact beneath cards"]
+      },
+      "failure_conditions": ["Does not answer the Cornell identity question directly.", "Fills the exploration column with unrelated material or unsupported claims."]
+    },
+    {
+      "id": "veneta-source-context-route",
+      "question": "What happened at Veneta, and is there firsthand context?",
+      "grounding": {
+        "canonical_facts": ["The Grateful Dead played the Springfield Creamery benefit at the Old Renaissance Faire Grounds in Veneta on 1972-08-27."],
+        "contextual_sources": ["A stored attendee memoir and an oral-history resource discuss the event."],
+        "coverage": "The sources are attributed perspectives, not a complete or neutral event history."
+      },
+      "expected": {
+        "mode": "show",
+        "main_must_include": ["canonical show fact"],
+        "exploration_should_include": ["attributed source/resource block"],
+        "source_scope": "label memoir and oral history as contextual sources",
+        "must_not": ["present a memoir as canonical fact", "quote source text not present in the packet"]
+      },
+      "failure_conditions": ["Collapses source context into the canonical event record.", "Omits source attribution or its stored link."]
+    },
+    {
+      "id": "sugar-magnolia-recordings-main",
+      "question": "Show me Sugar Magnolia recordings.",
+      "grounding": {
+        "canonical_facts": ["Sugar Magnolia is a known song with multiple stored performance recordings."],
+        "recordings": "The packet includes recording and performance records eligible for this song.",
+        "coverage": "The list is limited to recordings returned by retrieval; it is not a complete discography."
+      },
+      "expected": {
+        "mode": "listening",
+        "main_must_include": ["recording_list for Sugar Magnolia"],
+        "exploration_may_include": ["song or performance context"],
+        "coverage_note": "state that returned recordings are a bounded selection when relevant",
+        "must_not": ["put recordings only in the exploration column", "claim the list is complete"]
+      },
+      "failure_conditions": ["The main panel lacks the requested recordings.", "Invents recording URLs or completeness."]
+    },
+    {
+      "id": "song-evolution-cross-era-candidates",
+      "question": "How did Dark Star evolve across eras?",
+      "grounding": {
+        "canonical_facts": ["The packet contains selected Dark Star performances from more than one era."],
+        "candidates": "Each candidate has a canonical performance ID, show date, and set position.",
+        "coverage": "Available candidates are examples from covered dates, not a complete musical history; no audio analysis is supplied."
+      },
+      "expected": {
+        "mode": "comparison",
+        "main_must_include": ["comparison_strip of dated canonical performances"],
+        "exploration_may_include": ["performance cards or listening links for selected candidates"],
+        "coverage_note": "make partial era/date coverage explicit",
+        "must_not": ["invent musical evolution claims without grounded analysis", "present candidates as a complete timeline"]
+      },
+      "failure_conditions": ["Uses unreturned performances or dates.", "States subjective musical conclusions as retrieved facts."]
+    },
+    {
+      "id": "source-failure-partial-coverage",
+      "question": "Find a complete recording and detailed history for this song.",
+      "grounding": {
+        "canonical_facts": ["The packet identifies the song and includes one partial recording result."],
+        "source_status": ["The requested history source failed retrieval.", "Recording metadata is available, but the full recording asset is unavailable."],
+        "coverage": "Results are partial; absence of a returned source is not evidence that no source exists."
+      },
+      "expected": {
+        "mode": "gap",
+        "main_must_include": ["known fact and available partial result"],
+        "exploration_should_include": ["gap_state describing each unavailable source or asset"],
+        "must_say": ["coverage is partial", "what was and was not retrieved"],
+        "must_not": ["claim the source or recording does not exist", "substitute unrelated sources", "present partial coverage as complete"]
+      },
+      "failure_conditions": ["Hides a retrieval failure behind a confident answer.", "Treats partial results as a complete recording or history."]
+    }
+  ]
+}

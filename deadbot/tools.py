@@ -15,6 +15,15 @@ from zoneinfo import ZoneInfo
 from langchain_core.tools import BaseTool, tool
 
 from deadbot.data import CanonicalStore
+from deadbot.deadnet import (
+    DeadnetConfig,
+    DeadnetResearchAdapter,
+    EntityReadRequest,
+    EntityType,
+    UrlLibMetadataTransport,
+)
+from deadbot.source_registry import RegistryValidationError, load_registry
+from deadbot.lore_source_trails import source_trails_for_entity
 
 
 OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
@@ -220,8 +229,59 @@ def _json(value: Any) -> str:
     return json.dumps(compact(value), ensure_ascii=False, separators=(",", ":"))
 
 
+def _adapter_from_reviewed_source(source_id: str, *, needs_search: bool = False) -> DeadnetResearchAdapter | None:
+    """Create the one reviewed metadata adapter from the local registry seed.
+
+    The registry remains the policy source: a missing, invalid, or unapproved
+    entry disables this optional research path rather than widening access.
+    """
+
+    try:
+        sources = {source["source_id"]: source for source in load_registry()}
+        source = sources[source_id]
+    except (KeyError, RegistryValidationError):
+        return None
+    if (
+        source.get("review_state") != "approved"
+        or source.get("access_state") != "allowed"
+        or "read" not in source.get("allowed_operations", [])
+        or (needs_search and "search" not in source.get("allowed_operations", []))
+    ):
+        return None
+    policies = source.get("operation_policies", {})
+    paths = tuple(
+        path
+        for policy in policies.values()
+        if isinstance(policy, dict)
+        for path in policy.get("paths", [])
+        if isinstance(path, str)
+    )
+    hosts = frozenset(source.get("host_allowlist", []))
+    if not paths or not hosts:
+        return None
+    config = DeadnetConfig(
+        base_url="https://www.dead.net",
+        allowed_hosts=hosts,
+        allowed_paths=paths,
+        search_path="/search" if "/search" in paths else paths[0],
+        max_results=1,
+    )
+    return DeadnetResearchAdapter(UrlLibMetadataTransport(hosts), config)
+
+
+def _reviewed_deadnet_adapter() -> DeadnetResearchAdapter | None:
+    return _adapter_from_reviewed_source("deadnet-editorial", needs_search=True)
+
+
+def _reviewed_deadcast_adapter() -> DeadnetResearchAdapter | None:
+    return _adapter_from_reviewed_source("deadcast-metadata")
+
+
 def build_tools(store: CanonicalStore) -> list[BaseTool]:
     """Build read-only, provenance-aware tools bound to one canonical store."""
+
+    deadnet_adapter = _reviewed_deadnet_adapter()
+    deadcast_adapter = _reviewed_deadcast_adapter()
 
     @tool
     def search_entities(query: str) -> str:
@@ -267,14 +327,12 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
             for item in store.matching_rows("equipment", phrase, ("name", "manufacturer", "model"))[:10]:
                 add("equipment", item["equipment_id"], item["name"])
 
-        venues = store.by_id.get("venues", {})
-        for show in store.rows("shows"):
-            venue = venues.get(show["venue_id"], {})
-            searchable = " ".join(
-                [show["show_id"], show["show_date"], show.get("event_name", ""), show.get("tour_name", ""), venue.get("name", ""), venue.get("city", ""), venue.get("state_region", "")]
-            ).casefold()
-            if any(phrase.casefold() in searchable for phrase in phrases):
-                add("show", show["show_id"], f'{show["show_date"]} — {venue.get("name", "Unknown venue")}')
+        for show in store.search_shows(phrases, limit=20):
+            add(
+                "show",
+                show["show_id"],
+                f'{show["show_date"]} — {show.get("venue_name", "Unknown venue")}',
+            )
         return _json({"query": query, "matches": matches[:20]})
 
     @tool
@@ -288,6 +346,124 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
         return _json(store.song_context(song))
+
+    @tool
+    def get_song_performance_profile(song_id_or_title: str) -> str:
+        """Get derived counts, dated endpoints, and frequent set neighbors for a song.
+
+        This is an on-demand observation of the current documented library.
+        It is not editorial lore, a complete band-history total, or a ranking
+        of the best performance. Neighbor counts include their denominator.
+        """
+        song = store.resolve_song(song_id_or_title)
+        if not song:
+            return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
+        return _json(store.song_performance_profile(song))
+
+    @tool
+    def get_deadnet_song_context(song_id_or_title: str) -> str:
+        """Find the reviewed Dead.net metadata page for one canonical song.
+
+        Use after resolving a song when an outside editorial or lyric/source
+        trail could make an answer more useful. This tool returns only a
+        title, link, and short page metadata for the main panel; it does not
+        retrieve article text, lyrics, audio, or a verdict about the song.
+        Do not use it for every direct factual question.
+        """
+        song = store.resolve_song(song_id_or_title)
+        if not song:
+            return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
+        if deadnet_adapter is None:
+            return _json(
+                {
+                    "research": {
+                        "state": "unavailable",
+                        "coverage": "metadata_only",
+                        "source": "dead.net",
+                        "message": "The reviewed Dead.net metadata adapter is not enabled.",
+                    }
+                }
+            )
+        result = deadnet_adapter.read(
+            EntityReadRequest(entity_type=EntityType.SONG, identifier=song["slug"])
+        )
+        return _json(
+            {
+                "song": song,
+                "research": {
+                    "state": result.state.value,
+                    "coverage": result.coverage,
+                    "source": result.source,
+                    "message": result.message,
+                    "requested": dict(result.requested),
+                    "records": [
+                        {
+                            "entity_type": record.entity_type,
+                            "identifier": record.identifier,
+                            "title": record.title,
+                            "url": record.url,
+                            "description": record.description,
+                            "published_at": record.published_at,
+                            "source": record.source,
+                        }
+                        for record in result.records
+                    ],
+                },
+            }
+        )
+
+    @tool
+    def get_deadcast_metadata(episode_id_or_slug: str) -> str:
+        """Read metadata for one official Deadcast episode.
+
+        Returns only the episode title, link, and short page metadata. It never
+        retrieves or returns transcript, article body, or audio content.
+        Use a slug or identifier from an official Deadcast link.
+        """
+        identifier = episode_id_or_slug.strip()
+        if not identifier:
+            return _json({"research": {"state": "invalid", "coverage": "metadata_only", "source": "dead.net", "message": "An episode identifier is required."}})
+        if deadcast_adapter is None:
+            return _json({"research": {"state": "unavailable", "coverage": "metadata_only", "source": "dead.net", "message": "The reviewed Deadcast metadata adapter is not enabled."}})
+        result = deadcast_adapter.read(EntityReadRequest(entity_type=EntityType.DEADCAST, identifier=identifier))
+        return _json({
+            "research": {
+                "state": result.state.value,
+                "coverage": result.coverage,
+                "source": result.source,
+                "message": result.message,
+                "requested": dict(result.requested),
+                "records": [
+                    {"entity_type": record.entity_type, "identifier": record.identifier,
+                     "title": record.title, "url": record.url, "description": record.description,
+                     "published_at": record.published_at, "source": record.source}
+                    for record in result.records
+                ],
+            }
+        })
+
+    @tool
+    def get_lore_source_trails(entity_type: str, entity_id_or_name: str) -> str:
+        """Return reviewed, metadata-only lore links for one canonical song or show.
+
+        Use after resolving an entity when the visitor's question invites
+        history, evolution, reputation, or show-context color. This offline
+        catalog supplies source titles, URLs, themes, and why-to-open hints;
+        it does not contain source text or canonical facts. Use the canonical
+        tools for the direct answer first, and treat linked editorial claims
+        as attributed until separately researched.
+        """
+        if entity_type == "song":
+            entity = store.resolve_song(entity_id_or_name)
+        elif entity_type == "show":
+            entity = store.resolve_show(entity_id_or_name)
+        else:
+            return _json({"research": {"state": "invalid", "coverage": "metadata_only", "records": [], "message": "entity_type must be song or show."}})
+        if not entity:
+            return _json({"research": {"state": "empty", "coverage": "metadata_only", "records": [], "message": "Canonical entity not found or ambiguous.", "query": entity_id_or_name}})
+        entity_id = entity["song_id"] if entity_type == "song" else entity["show_id"]
+        result = source_trails_for_entity(entity_type, entity_id)
+        return _json({"entity": {"entity_type": entity_type, "entity_id": entity_id}, "research": result})
 
     @tool
     def find_arrangements(key_signature: str) -> str:
@@ -358,11 +534,20 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
             if not show:
                 return _json(_unresolved_show_payload(store, entity_id))
             show_id = show["show_id"]
-            return _json({"show_id": show_id, "links": [row for row in store.rows("show_links") if row["show_id"] == show_id]})
+            return _json(
+                {"show_id": show_id, "links": store.filtered_rows("show_links", show_id=show_id)}
+            )
         if entity_type == "performance":
             if not store.performance_context(entity_id):
                 return _json({"error": "Performance not found", "performance_id": entity_id})
-            return _json({"performance_id": entity_id, "links": [row for row in store.rows("performance_links") if row["performance_id"] == entity_id]})
+            return _json(
+                {
+                    "performance_id": entity_id,
+                    "links": store.filtered_rows(
+                        "performance_links", performance_id=entity_id
+                    ),
+                }
+            )
         return _json({"error": "entity_type must be 'show' or 'performance'"})
 
     @tool
@@ -512,6 +697,10 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
     return [
         search_entities,
         get_song,
+        get_song_performance_profile,
+        get_deadnet_song_context,
+        get_deadcast_metadata,
+        get_lore_source_trails,
         find_arrangements,
         get_equipment_history,
         get_show,
