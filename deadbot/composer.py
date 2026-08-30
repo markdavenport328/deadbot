@@ -284,11 +284,30 @@ def _show_relationships(response: ExperienceResponse) -> list[dict[str, Any]]:
 def _composer_brief(question: str, response: ExperienceResponse) -> str:
     """Build the structured reasoning context for the model-first composer."""
 
+    research_candidates = []
+    for index, block in enumerate(response.blocks):
+        if block.type != "resource_list":
+            continue
+        for item in block.items:
+            research_candidates.append(
+                {
+                    "candidate_index": index,
+                    "resource_id": item.resource_id,
+                    "title": item.title,
+                    "scope": item.resource_type,
+                    "purpose": "open a grounded contextual source for reading, listening, or research",
+                    "relationship": "attached resource candidate",
+                    "provenance": "contextual resource metadata",
+                    "source_id": item.source_id,
+                }
+            )
+
     brief = {
         "latest_question": question,
         "grounded_agent_answer": response.answer,
         "recent_conversation": [turn.model_dump() for turn in response.conversation[-8:]],
         "candidate_blocks": [_block_brief(index, block) for index, block in enumerate(response.blocks)],
+        "research_candidates": research_candidates,
         "related_show_paths": _show_relationships(response),
     }
     return json.dumps(brief, ensure_ascii=False, separators=(",", ":"))

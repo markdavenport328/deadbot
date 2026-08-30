@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["httpx>=0.28", "pytest>=8"]
+postgres = ["psycopg[binary]>=3.2"]
 
 [project.scripts]
 deadbot = "deadbot.cli:main"

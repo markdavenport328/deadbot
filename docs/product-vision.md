@@ -4,7 +4,12 @@
 
 Deadbot is an agentic Grateful Dead knowledge and music companion. A person should be able to explore a song, a show, a performance, a recording source, or a musician in ordinary language and move naturally between them.
 
-The product is not meant to be a generic chat interface with a few links attached. Its useful core is a connected, provenance-aware model of the Dead's live history: what was played, where and when it happened, who performed, how pieces flowed together, which recordings and official releases document it, and where a listener can hear or learn more about it.
+Its useful core is a connected, provenance-aware model of the Dead's live
+history: what was played, where and when it happened, who performed, how pieces
+flowed together, which recordings and official releases document it, and where
+a listener can hear or learn more about it. The experience should feel like a
+conversation with a fascinating, well-informed Deadhead, not a static
+encyclopedia.
 
 The user experience should feel like a knowledgeable guide and research companion. It should support both a quick factual answer ("What did they play after Dark Star?") and a richer path of discovery ("Show me a strong Veneta Bird Song recording, the players' roles, official listening options, chords, and worthwhile reading about it").
 
@@ -40,6 +45,8 @@ The runtime uses an agent loop: the model decides which structured or approved e
 
 - resolve a natural-language question to the correct entities;
 - traverse structured relationships for factual answers;
+- put detailed evidence, lists, comparisons, and listening paths in the main
+  exploration column when that is the clearest way to answer;
 - offer listening and viewing links for the relevant show or performance;
 - surface relevant interviews, articles, lessons, chord sources, and anecdotal material when useful;
 - distinguish a verified canonical fact from an attributed claim, recollection, or interpretation;
@@ -65,16 +72,30 @@ The system has four complementary parts:
 3. **Tool-using agent** — a bounded agent loop that combines structured retrieval, approved source reading, and later live tools.
 4. **Listening and exploration experience** — a FastAPI-backed interface that presents answers, provenance, entity cards, contextual links, and approved external-media paths clearly.
 
-PostgreSQL is the planned operational store for the canonical graph. It can later support structured queries plus full-text/vector retrieval without prematurely adopting a separate graph database. The initial agent reads the canonical CSV layer directly while the importer is still to be built.
+PostgreSQL is the optional operational store for the canonical graph, imported
+from the reviewed CSV source of truth behind the same read interface. The
+importer and driver-independent parity tests are implemented; live deployment
+verification and bounded full-timeline query work remain. PostgreSQL can support
+structured queries plus later full-text/vector retrieval without prematurely
+adopting a separate graph database.
 
 ## Near-term definition of success
 
 The first success criterion is not a broad all-years chatbot. It is a trustworthy Veneta 1972 vertical slice that can answer structured questions, find the relevant source links, make provenance clear, and hand a listener off to official or archival media.
 
-After that is measured with an evaluation set, the collection can expand through 1972 and then outward. The product should grow by adding well-attributed coverage and dependable retrieval, not by pretending that all web material or model-generated music knowledge is equally authoritative.
+After that is measured with an evaluation set, all of 1972 becomes the first
+deep slice while the broad show/performance spine remains available across the
+timeline. Expansion should repeat typed, attributable enrichment passes and
+bounded retrieval patterns rather than create isolated show dossiers. See
+`docs/data-and-retrieval-roadmap.md`.
 
 ## How an answer becomes an experience
 
-Deadbot should not ask a model to create a page from scratch. Instead, grounded retrieval is followed by a bounded composition step that selects and orders approved display patterns: direct answer text, entity and performance cards, resource lists, media paths, provenance notes, and explicit gap states. The application renders that validated composition with normal frontend code.
+Grounded retrieval feeds a bounded composition step that selects and orders
+approved display patterns: direct answer text, entity and performance cards,
+resource lists, media paths, provenance notes, and explicit gap states. The
+model exercises ordinary editorial judgment over relevance, omission, ordering,
+and column placement; the application renders the validated composition with
+normal frontend code.
 
 This means a question about a song can naturally become a concise answer, performance listing, official listening option, source-specific chord link, and attributed reading list, while a question outside current coverage remains an honest explanation of the gap. Media embeds and short quotes are specialized patterns with their own approval, attribution, and rights safeguards; they are not arbitrary model output. See `docs/experience-architecture.md`.

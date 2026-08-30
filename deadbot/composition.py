@@ -189,6 +189,47 @@ def _resource_item(resource: dict[str, Any]) -> ResourceItem | None:
     )
 
 
+def _research_resource(resource: dict[str, Any]) -> dict[str, Any] | None:
+    """Project a metadata-only research record into a trusted resource row.
+
+    Research adapters own the source and URL validation.  The composition
+    layer deliberately accepts only a small, explicit record shape and never
+    turns descriptions or excerpts into canonical claims.
+    """
+
+    identifier = str(resource.get("resource_id") or resource.get("identifier") or "").strip()
+    title = resource.get("title")
+    url = resource.get("url")
+    parsed_url = urlparse(url) if isinstance(url, str) else None
+    approved_hosts = {
+        "dead.net",
+        "www.dead.net",
+        "deadheadhigh.com",
+        "www.deadheadhigh.com",
+        "deadessays.blogspot.com",
+    }
+    if (
+        not identifier
+        or not isinstance(title, str)
+        or not title.strip()
+        or parsed_url is None
+        or parsed_url.scheme != "https"
+        or parsed_url.hostname not in approved_hosts
+        or parsed_url.username is not None
+        or parsed_url.password is not None
+        or parsed_url.fragment
+    ):
+        return None
+    source = str(resource.get("source") or resource.get("source_name") or "research").strip()
+    return {
+        "resource_id": f"research:{source}:{identifier}",
+        "title": title.strip(),
+        "resource_type": str(resource.get("resource_type") or resource.get("entity_type") or "research").strip(),
+        "source_name": source,
+        "source_url": url,
+    }
+
+
 def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
     url = link.get("url", "")
     platform = link.get("platform", "")
@@ -402,8 +443,8 @@ def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> Perfor
         current_position = 0
     same_set = [
         item
-        for item in store.rows("performances")
-        if item.get("show_id") == show_id and (item.get("set_label") or None) == set_label
+        for item in store.filtered_rows("performances", show_id=show_id)
+        if (item.get("set_label") or None) == set_label
     ]
     def position(item: dict[str, str]) -> int:
         try:
@@ -600,7 +641,7 @@ def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
 def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> RecordingListBlock | None:
     show = payload.get("show")
     recordings = (
-        [recording for recording in store.rows("recordings") if recording.get("show_id") == show.get("show_id")]
+        store.filtered_rows("recordings", show_id=show.get("show_id"))
         if isinstance(show, dict) and show.get("show_id")
         else payload.get("recordings")
     )
@@ -643,24 +684,18 @@ def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> Recording
 
 
 def _coverage_block(store: CanonicalStore) -> CoverageBlock:
-    dated_shows = [show for show in store.rows("shows") if show.get("show_date", "")]
-    years = sorted({show["show_date"][:4] for show in dated_shows})
-    performance_song_ids = {
-        performance.get("song_id")
-        for performance in store.rows("performances")
-        if performance.get("song_id")
-    }
-    if years:
-        year_range = f"{years[0]}–{years[-1]}"
+    coverage = store.coverage_summary()
+    if coverage["first_year"] and coverage["last_year"]:
+        year_range = f"{coverage['first_year']}–{coverage['last_year']}"
     else:
         year_range = "no dated years"
     return CoverageBlock(
         type="coverage",
         title="Current library coverage",
         message=(
-            f"The current canonical library contains {len(dated_shows)} dated shows, "
-            f"{len(store.rows('performances'))} ordered performances, and "
-            f"{len(performance_song_ids)} song labels spanning {year_range}. "
+            f"The current canonical library contains {coverage['dated_show_count']} dated shows, "
+            f"{coverage['performance_count']} ordered performances, and "
+            f"{coverage['performance_song_count']} song labels spanning {year_range}. "
             "This is a source-derived baseline with uneven enrichment; it is not a complete record "
             "of every historical performance or song-related fact."
         ),
@@ -929,6 +964,26 @@ def compose_experience_response(
         resources = payload.get("resources")
         if isinstance(resources, list):
             add_resources(item for item in resources if isinstance(item, dict))
+        # Metadata-only source research is returned as a server-owned packet.
+        # Normalize records into the same resource_list path as canonical
+        # resources so the main column and its safe fallback stay identical.
+        research_packets: list[Any] = []
+        for key in ("research", "research_result", "research_results"):
+            value = payload.get(key)
+            if isinstance(value, dict):
+                records = value.get("records")
+                if isinstance(records, list):
+                    research_packets.extend(records)
+            elif isinstance(value, list):
+                research_packets.extend(value)
+        research_resources = []
+        for record in research_packets:
+            if isinstance(record, dict):
+                resource = _research_resource(record)
+                if resource:
+                    research_resources.append(resource)
+        if research_resources:
+            add_resources(research_resources)
         links = payload.get("links")
         if isinstance(links, list):
             add_media(item for item in links if isinstance(item, dict))
@@ -966,8 +1021,10 @@ def compose_experience_response(
                 continue
             sections = [
                 section.get("progression", "")
-                for section in store.rows("arrangement_chord_sections")
-                if section.get("arrangement_id") == arrangement.get("arrangement_id") and section.get("progression")
+                for section in store.filtered_rows(
+                    "arrangement_chord_sections", arrangement_id=arrangement_id
+                )
+                if section.get("progression")
             ]
             arrangements.append(
                 ArrangementBlock(

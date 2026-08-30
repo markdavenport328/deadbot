@@ -105,10 +105,21 @@ Cards and lists are presentation patterns, not new domain entities. The canonica
 
 Composition is model-guided but bounded. A composer may decide that a question would be clearer with a show card followed by an official listening link, for example. It may not create a new card shape, turn an unverified statement into a fact, or use an unreturned resource because its name seems plausible.
 
-The implemented first composer receives an enriched decision brief rather than raw files. It includes the latest question, recent conversation, grounded agent answer, and a rich inventory of candidates: their scope, purpose, canonical or contextual provenance, coverage metadata, relevant facts, and a structured `usage_guidance` field describing when that candidate helps or is redundant, so block-specific rules live on each candidate rather than in the shared system prompt. The model returns one bounded experience mode (`quick_fact`, `performance`, `show`, `listening`, `comparison`, `research`, `musician`, or `gap`) plus structured layout regions containing only server-owned candidate indexes. The server resolves those indexes back to the original validated blocks. Its system instructions and validation require it to:
+The implemented first composer receives an enriched decision brief. It includes
+the latest question, recent conversation, grounded agent answer, and a rich
+inventory of candidates: their scope, purpose, canonical or contextual
+provenance, coverage metadata, relevant facts, and a structured
+`usage_guidance` field describing when that candidate helps or is redundant.
+The model returns one bounded experience mode (`quick_fact`, `performance`,
+`show`, `listening`, `comparison`, `research`, `musician`, or `gap`) plus
+structured layout regions containing only server-owned candidate indexes. The
+server resolves those indexes back to the original validated blocks. The model
+may place recordings, comparisons, source trails, or a detailed factual answer
+in the main region whenever that makes the response clearer. Its system
+instructions and validation require it to:
 
 - make the direct answer useful even when no optional block is appropriate;
-- choose the smallest helpful set of blocks, rather than filling a page by default;
+- choose a focused set of blocks that advances the visitor's question;
 - reference only entities, resources, media links, and excerpts present in the retrieval packet;
 - preserve the canonical-versus-contextual distinction in both text and block selection;
 - use a gap state for unavailable information; and
@@ -146,9 +157,9 @@ The client creates one opaque thread ID and reuses it for follow-up questions.
 The FastAPI endpoint maps that ID to the LangGraph checkpoint identity. The
 agent therefore receives the preceding user and assistant messages as its
 conversation context on each later request. The API returns that safe transcript
-for the left conversation column, while the composition adapter considers only
-the newest user turn and its retrieval results for the main content column.
-Older cards and source lists must not accumulate in the main column.
+for the left conversation column, while the composition adapter considers the
+newest user turn and its retrieval results for the main content column. Each
+answer builds a fresh main-column experience from the current question.
 
 The current checkpoint is intentionally in memory. It persists for the life of
 one running application process, but is not durable across restart and is not a

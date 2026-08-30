@@ -11,13 +11,18 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage
 
 from deadbot.config import Settings
-from deadbot.graph import build_agent, run_config
 from deadbot.evaluations import DEFAULT_SUITE_PATH, evaluate_suite, model_evaluate_suite
+from deadbot.graph import build_agent, run_config
+from deadbot.storage import create_canonical_store
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the local Deadbot LangGraph agent.")
-    parser.add_argument("command", choices=["chat", "evaluate", "serve"], help="Run chat, an evaluation, or the web experience.")
+    parser.add_argument(
+        "command",
+        choices=["chat", "evaluate", "serve", "db-import"],
+        help="Run chat, an evaluation, the web experience, or a canonical database import.",
+    )
     parser.add_argument("--thread-id", default=None, help="Optional in-memory session identifier.")
     parser.add_argument("--suite", type=Path, default=DEFAULT_SUITE_PATH, help="Evaluation-suite JSON file.")
     parser.add_argument("--output", type=Path, default=None, help="Optional file for evaluation results as JSON.")
@@ -26,7 +31,59 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1", help="Host interface for the web experience.")
     parser.add_argument("--port", type=int, default=8000, help="Port for the web experience.")
     parser.add_argument("--reload", action="store_true", help="Reload the web experience when Python files change.")
+    parser.add_argument(
+        "--database-url",
+        default=None,
+        help="PostgreSQL URL for db-import; defaults to DEADBOT_DATABASE_URL or DATABASE_URL.",
+    )
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="For db-import, delete and reload only known canonical tables.",
+    )
     args = parser.parse_args()
+
+    settings = Settings.from_env()
+
+    if args.command == "db-import":
+        from deadbot.postgres_import import import_from_dsn
+
+        database_url = args.database_url or settings.database_url
+        if not database_url:
+            parser.error(
+                "db-import requires --database-url, DEADBOT_DATABASE_URL, or DATABASE_URL"
+            )
+        report = import_from_dsn(database_url, rebuild=args.rebuild)
+        total_rows = sum(report.row_counts.values())
+        table_results = {
+            name: {
+                "source_rows": result.source_rows,
+                "inserted_rows": result.inserted_rows,
+                "skipped_rows": result.skipped_rows,
+            }
+            for name, result in report.tables.items()
+        }
+        print(
+            json.dumps(
+                {
+                    "schema_created": report.schema_created,
+                    "rebuilt": report.rebuilt,
+                    "migrations": list(report.migrations),
+                    "canonical_snapshot": report.snapshot.snapshot_id,
+                    "canonical_tables": len(report.tables),
+                    "source_rows": total_rows,
+                    "row_counts": report.row_counts,
+                    "tables": table_results,
+                    "mode_note": (
+                        "Canonical tables were deleted and reloaded."
+                        if args.rebuild
+                        else "Existing conflicting rows were kept; use --rebuild to apply canonical corrections."
+                    ),
+                },
+                indent=2,
+            )
+        )
+        return
 
     if args.command == "serve":
         import uvicorn
@@ -38,7 +95,6 @@ def main() -> None:
         if args.case and not args.model:
             parser.error("--case requires --model")
         if args.model:
-            settings = Settings.from_env()
             results = model_evaluate_suite(
                 args.suite,
                 set(args.case) if args.case else None,
@@ -46,7 +102,7 @@ def main() -> None:
                 config_factory=lambda thread_id: run_config(thread_id, settings),
             )
         else:
-            results = evaluate_suite(args.suite)
+            results = evaluate_suite(args.suite, store=create_canonical_store(settings))
         rendered = json.dumps(results, ensure_ascii=False, indent=2)
         print(rendered)
         if args.output:
@@ -56,7 +112,6 @@ def main() -> None:
             sys.exit(1)
         return
 
-    settings = Settings.from_env()
     agent = build_agent(settings)
     thread_id = args.thread_id or f"cli-{uuid.uuid4()}"
     config = run_config(thread_id, settings)

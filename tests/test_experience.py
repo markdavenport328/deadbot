@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from deadbot import experience
 from deadbot.api import create_app
-from deadbot.composer import CompositionPlan, CompositionSection, ModelGuidedComposer, _block_brief, apply_composition_plan
+from deadbot.composer import CompositionPlan, CompositionSection, ModelGuidedComposer, _block_brief, _composer_brief, apply_composition_plan
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse, _embed_details, compose_experience_response
@@ -113,6 +113,111 @@ def test_song_credits_are_usable_in_the_experience_response():
     overview = next(block for block in response.blocks if block.type == "song_overview")
     assert {item.name for item in overview.credits} == {"Jerry Garcia", "Robert Hunter"}
     assert "resource:resource-musicbrainz-work-search-sugaree" in overview.source_ids
+
+
+def test_metadata_only_research_records_join_the_main_column_resource_path():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    assert song
+    response = compose_experience_response(
+        question="Find some Dead.net context for Sugaree.",
+        thread_id="research-test",
+        messages=[
+            tool_message(
+                {
+                    "song": song,
+                    "research": {
+                        "state": "ok",
+                        "records": [
+                            {
+                                "entity_type": "song",
+                                "identifier": "sugaree",
+                                "title": "Sugaree | Dead.net",
+                                "url": "https://www.dead.net/song/sugaree",
+                                "source": "dead.net",
+                            }
+                        ],
+                    },
+                }
+            ),
+            AIMessage(content="I found a Dead.net source for additional context."),
+        ],
+        store=store,
+    )
+    resource_blocks = [block for block in response.blocks if block.type == "resource_list"]
+    assert resource_blocks
+    assert any(item.title == "Sugaree | Dead.net" for block in resource_blocks for item in block.items)
+    assert any(item.source_id == "resource:research:dead.net:sugaree" for block in resource_blocks for item in block.items)
+    assert any(section.block_indexes for section in response.layout)
+
+
+def test_research_candidates_in_brief_are_server_owned_and_provenanced():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    assert song
+    response = compose_experience_response(
+        question="Find context for Sugaree.",
+        thread_id="research-brief-test",
+        messages=[
+            tool_message(
+                {
+                    "song": song,
+                    "research_results": [
+                        {"identifier": "sugaree", "title": "Sugaree", "url": "https://www.dead.net/song/sugaree", "source": "dead.net"}
+                    ],
+                }
+            ),
+            AIMessage(content="Context is available."),
+        ],
+        store=store,
+    )
+    brief = json.loads(_composer_brief("Find context for Sugaree.", response))
+    candidate = next(item for item in brief["research_candidates"] if item["title"] == "Sugaree")
+    assert candidate["provenance"] == "contextual resource metadata"
+    assert candidate["candidate_index"] < len(response.blocks)
+
+
+def test_research_resource_rejects_non_deadnet_urls():
+    store = CanonicalStore()
+    response = compose_experience_response(
+        question="Find context.",
+        thread_id="research-safe-test",
+        messages=[
+            tool_message({"research": {"records": [{"identifier": "x", "title": "X", "url": "https://evil.example/x", "source": "dead.net"}]}}),
+            AIMessage(content="No trusted source was returned."),
+        ],
+        store=store,
+    )
+    assert not any(block.type == "resource_list" for block in response.blocks)
+
+
+def test_reviewed_lore_catalog_hosts_can_reach_main_column_resources():
+    store = CanonicalStore()
+    response = compose_experience_response(
+        question="How did Friend of the Devil change?",
+        thread_id="lore-catalog-test",
+        messages=[
+            tool_message(
+                {
+                    "research": {
+                        "records": [
+                            {
+                                "resource_id": "lore:friend:deadhead-high",
+                                "title": "How Grateful Dead Songs Changed Live",
+                                "url": "https://deadheadhigh.com/guides/how-grateful-dead-songs-changed-live",
+                                "source": "editorial",
+                                "resource_type": "lore_source_trail",
+                            }
+                        ]
+                    }
+                }
+            ),
+            AIMessage(content="I found a useful listening trail."),
+        ],
+        store=store,
+    )
+    resources = [block for block in response.blocks if block.type == "resource_list"]
+    assert any(item.title == "How Grateful Dead Songs Changed Live" for block in resources for item in block.items)
 
 
 def test_key_search_renders_only_documented_arrangements_with_a_coverage_note():
@@ -686,6 +791,20 @@ def test_api_returns_the_validated_experience_contract():
     assert body["thread_id"] == "browser-1"
     assert body["blocks"][0]["type"] == "entity_card"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
+
+
+def test_api_closes_a_closeable_store_on_shutdown():
+    class CloseableStore(CanonicalStore):
+        closed = False
+
+        def close(self):
+            self.closed = True
+
+    store = CloseableStore()
+    with TestClient(create_app(settings=Settings(), store=store, agent=FakeAgent([]))) as client:
+        assert client.get("/api/health").status_code == 200
+
+    assert store.closed is True
 
 
 def test_api_uses_one_thread_for_follow_ups_and_returns_the_transcript():

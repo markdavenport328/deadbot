@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "kind": "lore_source_trail_catalog",
+  "purpose": "Reviewed links that invite model-led editorial exploration; not canonical claims or rankings.",
+  "trails": [
+    {
+      "trail_id": "song-friend-of-the-devil-evolution",
+      "entity_type": "song",
+      "entity_id": "song-friend-of-the-devil",
+      "entity_label": "Friend Of The Devil",
+      "question_themes": ["arrangement changes", "tempo and feel", "studio-to-stage evolution"],
+      "sources": [
+        {"title": "American Beauty 50: Friend of the Devil", "url": "https://www.dead.net/deadcast/american-beauty-50-friend-devil", "source_kind": "official", "why_open": "Writing and recording context for an across-the-years comparison."},
+        {"title": "Friend of the Devil", "url": "https://www.dead.net/song/friend-devil", "source_kind": "official", "why_open": "Official song context and early lyric-history route."},
+        {"title": "How Grateful Dead Songs Changed Live", "url": "https://deadheadhigh.com/guides/how-grateful-dead-songs-changed-live", "source_kind": "editorial", "why_open": "A secondary listening lead for the often-discussed fast-to-slower live arc; attribute its musical characterization."}
+      ]
+    },
+    {
+      "trail_id": "song-sugaree-evolution", "entity_type": "song", "entity_id": "song-sugaree", "entity_label": "Sugaree", "question_themes": ["guitar phrasing", "vocal intensity", "long-form development"],
+      "sources": [{"title": "Sugaree", "url": "https://www.dead.net/features/greatest-stories-ever-told/greatest-stories-ever-told-sugaree", "source_kind": "official", "why_open": "Hunter's writing context and an official editorial route into varied live tempos and intensity."}]
+    },
+    {
+      "trail_id": "song-they-love-each-other-evolution", "entity_type": "song", "entity_id": "song-they-love-each-other", "entity_label": "They Love Each Other", "question_themes": ["groove", "vocal delivery", "arrangement eras"],
+      "sources": [
+        {"title": "They Love Each Other", "url": "https://www.dead.net/features/greatest-stories-ever-told/greatest-stories-ever-told-they-love-each-other", "source_kind": "official", "why_open": "Debut and studio context for comparing early and later arrangements."},
+        {"title": "Blues for Allah 50", "url": "https://www.dead.net/blues-allah-50-blues-allah", "source_kind": "official", "why_open": "Official context for the slower arrangement associated with the 1975 revival."},
+        {"title": "How Grateful Dead Songs Changed Live", "url": "https://deadheadhigh.com/guides/how-grateful-dead-songs-changed-live", "source_kind": "editorial", "why_open": "Compact secondary listening comparison; use alongside dated local performances."}
+      ]
+    },
+    {
+      "trail_id": "song-dancin-in-the-streets-evolution", "entity_type": "song", "entity_id": "song-dancin-in-the-streets", "entity_label": "Dancin' In The Streets", "question_themes": ["funk and dance feel", "arrangement", "era comparison"],
+      "sources": [
+        {"title": "Dead Song Debuts", "url": "https://deadessays.blogspot.com/2009/09/dead-song-debuts.html", "source_kind": "editorial", "why_open": "Independent chronology lead for the 1976 rearrangement and returning-song context."},
+        {"title": "Grateful Dead Hour No. 458", "url": "https://www.dead.net/features/gd-radio-hour/grateful-dead-hour-no-458", "source_kind": "official", "why_open": "Phil Lesh framing for the song's cultural identity and a useful comparison prompt."}
+      ]
+    },
+    {
+      "trail_id": "show-veneta-heat-context", "entity_type": "show", "entity_id": "gd-1972-08-27", "entity_label": "Veneta, 1972-08-27", "question_themes": ["weather and venue", "festival context", "performance conditions"],
+      "sources": [
+        {"title": "Sunshine Daydream: Veneta 8/27/72, Part 1", "url": "https://www.dead.net/sunshine-daydream-veneta-82772-part-1", "source_kind": "official", "why_open": "Reported heat, benefit, setting, and recording context; keep differing reported temperatures attributed."},
+        {"title": "Sunshine Daydream: Veneta 8/27/72, Part 2", "url": "https://www.dead.net/sunshine-daydream-veneta-82772-part-2", "source_kind": "official", "why_open": "Additional first-party show-story and afterlife context to pair with the canonical show facts."}
+      ]
+    },
+    {
+      "trail_id": "show-cornell-context", "entity_type": "show", "entity_id": "gd-1977-05-08", "entity_label": "Cornell, 1977-05-08", "question_themes": ["reputation and memory", "recording circulation", "show context"],
+      "sources": [
+        {"title": "All in the Family: Peter Conners", "url": "https://www.dead.net/features/all-family/all-family-peter-conners", "source_kind": "official", "why_open": "A route into the show's recording circulation and reception history after answering the factual question."},
+        {"title": "Documenting the Dead: Dick Latvala Collection", "url": "https://www.dead.net/features/blog/documenting-dead-dick-latvala-collection", "source_kind": "official", "why_open": "Archive and tape-circulation context for why Cornell has an enduring afterlife."},
+        {"title": "Barton Hall archive page", "url": "https://www.dead.net/show/may-8-1977", "source_kind": "official", "why_open": "Canonical show page and a place to distinguish visitor recollections from event facts."}
+      ]
+    }
+  ]
+}

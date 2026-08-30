@@ -95,3 +95,23 @@ promoted/held counts, uses stable IDs and idempotent relationships, and ends
 with source, relational, and behavior validation. Full lyrics, tabs,
 transcriptions, audio, and video remain external links or compact metadata.
 See `docs/collection-methodology.md`.
+
+## ADR-013 — Base facts before derived observations; prose at request time
+
+**Decision:** Build each insight in dependency order: preserve source evidence,
+review canonical entities and relationships, import that snapshot into
+PostgreSQL, then compute versioned structured observations. Store an
+observation's calculation version, input revision, coverage boundary, and
+supporting entities/resources. Compose visitor-facing prose at request time.
+
+**Reasoning:** Derived insight is trustworthy only when its inputs and coverage
+are inspectable. Versioning makes a result reproducible and replaceable when
+the collection improves, while request-time prose prevents an old narrative
+from surviving after the underlying graph changes. This order applies per
+dataset slice or question family; it does not require collecting the band's
+entire history before shipping useful, clearly bounded insights.
+
+**Implementation note:** CSV remains the reviewed source of truth during the
+transition. PostgreSQL is the operational projection and query surface. A
+dedicated graph database is still deferred until measured traversals show that
+relational joins and indexes are insufficient.

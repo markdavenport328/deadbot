@@ -1,14 +1,14 @@
-"""Read-only access to the canonical CSV graph.
+"""Read-only access to the reviewable canonical CSV graph.
 
-The harness intentionally reads from the reviewable canonical files during the
-pilot. Replacing this with PostgreSQL later changes only this store interface,
-not the agent's tools or model-provider layer.
+CSV is the portable source-of-truth representation. The PostgreSQL adapter
+implements this same interface for operational use without changing agent
+tools or the model-provider layer.
 """
 
 from __future__ import annotations
 
 import csv
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
@@ -45,6 +45,76 @@ class CanonicalStore:
 
     def rows(self, table: str) -> list[dict[str, str]]:
         return self.tables.get(table, [])
+
+    def filtered_rows(self, table: str, **criteria: str) -> list[dict[str, str]]:
+        """Return rows matching exact field values.
+
+        PostgreSQL implements this as a bounded query; the CSV store preserves
+        the same contract with a small in-memory scan.
+        """
+
+        return [
+            row
+            for row in self.rows(table)
+            if all(row.get(column, "") == value for column, value in criteria.items())
+        ]
+
+    def row_count(self, table: str) -> int:
+        """Return a table count without requiring callers to fetch its rows."""
+
+        return len(self.rows(table))
+
+    def coverage_summary(self) -> dict[str, Any]:
+        """Return compact catalog-wide counts without exposing full tables."""
+
+        dated_shows = [show for show in self.rows("shows") if show.get("show_date", "")]
+        years = sorted({show["show_date"][:4] for show in dated_shows})
+        performance_song_ids = {
+            performance.get("song_id")
+            for performance in self.rows("performances")
+            if performance.get("song_id")
+        }
+        return {
+            "dated_show_count": len(dated_shows),
+            "performance_count": len(self.rows("performances")),
+            "performance_song_count": len(performance_song_ids),
+            "first_year": years[0] if years else "",
+            "last_year": years[-1] if years else "",
+        }
+
+    def search_shows(self, phrases: list[str], limit: int = 20) -> list[dict[str, str]]:
+        """Find shows through event and venue text with compact venue labels."""
+
+        needles = [phrase.casefold() for phrase in phrases if phrase.strip()]
+        if not needles or limit <= 0:
+            return []
+        venues = self.by_id.get("venues", {})
+        matches = []
+        for show in self.rows("shows"):
+            venue = venues.get(show.get("venue_id", ""), {})
+            searchable = " ".join(
+                [
+                    show.get("show_id", ""),
+                    show.get("show_date", ""),
+                    show.get("event_name", ""),
+                    show.get("tour_name", ""),
+                    venue.get("name", ""),
+                    venue.get("city", ""),
+                    venue.get("state_region", ""),
+                ]
+            ).casefold()
+            if any(needle in searchable for needle in needles):
+                matches.append(
+                    {
+                        **show,
+                        "venue_name": venue.get("name", ""),
+                        "venue_city": venue.get("city", ""),
+                        "venue_state_region": venue.get("state_region", ""),
+                    }
+                )
+                if len(matches) >= limit:
+                    break
+        return matches
 
     def one(self, table: str, entity_id: str) -> dict[str, str] | None:
         return self.by_id.get(table, {}).get(entity_id)
@@ -130,6 +200,104 @@ class CanonicalStore:
             "performances": [self._performance_summary(row, include_show_id=True) for row in performances],
             "resources": self.resources_for("resource_songs", "song_id", song_id),
             "arrangements": arrangements,
+        }
+
+    def song_performance_profile(self, song: dict[str, str]) -> dict[str, Any]:
+        """Derive bounded performance observations for one song.
+
+        Adjacencies are counted only inside a documented show/set, using the
+        stored set and position fields.  This is deliberately a library
+        observation, not a claim about the band's complete performance history.
+        """
+        song_id = song["song_id"]
+        performances = [row for row in self.rows("performances") if row.get("song_id") == song_id]
+        shows = self.by_id.get("shows", {})
+        songs = self.by_id.get("songs", {})
+
+        def order_key(row: dict[str, str]) -> tuple[str, int, int, str]:
+            def number(value: str, missing: int = 10**9) -> int:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return missing
+            show = shows.get(row.get("show_id", ""), {})
+            return (
+                show.get("show_date", "9999-99-99") or "9999-99-99",
+                number(row.get("set_number", "")),
+                number(row.get("position_in_set", "")),
+                row.get("performance_id", ""),
+            )
+
+        dated = sorted(performances, key=order_key)
+
+        def endpoint(row: dict[str, str] | None) -> dict[str, str] | None:
+            if not row:
+                return None
+            show = shows.get(row.get("show_id", ""), {})
+            return {
+                "performance_id": row.get("performance_id", ""),
+                "show_id": row.get("show_id", ""),
+                "show_date": show.get("show_date", ""),
+                "set_number": row.get("set_number", ""),
+                "position_in_set": row.get("position_in_set", ""),
+            }
+
+        predecessor_counts: Counter[str] = Counter()
+        successor_counts: Counter[str] = Counter()
+        predecessor_denominator = successor_denominator = 0
+        by_show: dict[str, list[dict[str, str]]] = defaultdict(list)
+        for row in self.rows("performances"):
+            by_show[row.get("show_id", "")].append(row)
+        for rows in by_show.values():
+            # A transition never crosses a set boundary. Missing positions are
+            # retained deterministically but are not treated as adjacent.
+            rows.sort(key=lambda row: (
+                int(row["set_number"]) if row.get("set_number", "").isdigit() else 10**9,
+                int(row["position_in_set"]) if row.get("position_in_set", "").isdigit() else 10**9,
+                row.get("performance_id", ""),
+            ))
+            for index, row in enumerate(rows):
+                if row.get("song_id") != song_id:
+                    continue
+                set_number = row.get("set_number", "")
+                if index > 0 and rows[index - 1].get("set_number", "") == set_number:
+                    predecessor_denominator += 1
+                    predecessor_counts[rows[index - 1].get("song_id", "")] += 1
+                if index + 1 < len(rows) and rows[index + 1].get("set_number", "") == set_number:
+                    successor_denominator += 1
+                    successor_counts[rows[index + 1].get("song_id", "")] += 1
+
+        def neighbors(counts: Counter[str]) -> list[dict[str, Any]]:
+            if not counts:
+                return []
+            highest = max(counts.values())
+            return [
+                {"song_id": neighbor_id, "title": songs.get(neighbor_id, {}).get("title", ""), "count": count}
+                for neighbor_id, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+                if count == highest
+            ]
+
+        coverage = self.coverage_summary()
+        return {
+            "song": song,
+            "known_performance_count": len(performances),
+            "first_known_performance": endpoint(dated[0] if dated else None),
+            "last_known_performance": endpoint(dated[-1] if dated else None),
+            "immediate_predecessors": neighbors(predecessor_counts),
+            "immediate_successors": neighbors(successor_counts),
+            "predecessor_denominator": predecessor_denominator,
+            "successor_denominator": successor_denominator,
+            "coverage": {
+                "scope": "current canonical library",
+                "documented_performance_count": coverage["performance_count"],
+                "documented_show_count": coverage["dated_show_count"],
+                "first_documented_year": coverage["first_year"],
+                "last_documented_year": coverage["last_year"],
+                "limitations": (
+                    "Counts, endpoints, and neighboring songs describe only performances and set order "
+                    "documented in this library; they are not band-history-complete and do not identify a best version."
+                ),
+            },
         }
 
     def arrangement_search(self, key_signature: str) -> dict[str, Any]:

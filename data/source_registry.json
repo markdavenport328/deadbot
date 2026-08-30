@@ -1,0 +1,61 @@
+{
+  "schema_version": 3,
+  "sources": [
+    {
+      "source_id": "deadnet-editorial",
+      "name": "Dead.net editorial",
+      "host_allowlist": ["dead.net", "www.dead.net"],
+      "authority_level": "official",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": ["search", "read"],
+      "operation_policies": {
+        "search": {"methods": ["GET"], "paths": ["/search"]},
+        "read": {"methods": ["GET"], "paths": ["/song", "/show", "/person", "/venue", "/album", "/features", "/listen-"]}
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 10,
+        "burst": 1,
+        "min_interval_seconds": 1,
+        "retry_after_seconds": 30
+      },
+      "adapter_version": "deadnet-editorial-v1",
+      "notes": "First-party editorial metadata and links only; retain attribution and do not copy article text."
+    },
+    {
+      "source_id": "deadcast-metadata",
+      "name": "Deadcast metadata-only",
+      "host_allowlist": ["dead.net", "www.dead.net"],
+      "authority_level": "official",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": ["read"],
+      "operation_policies": {
+        "read": {"methods": ["GET"], "paths": ["/deadcast"]}
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_transcripts": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 6,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "deadcast-metadata-v1",
+      "notes": "Episode title, date, scope, and source link only; no transcript or audio retrieval or redistribution."
+    }
+  ]
+}

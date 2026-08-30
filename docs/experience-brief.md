@@ -58,7 +58,7 @@ because it invents a critic's voice.
 | Canonical graph data | State dates, set order, show/venue identity, performers, roles, recording/release relationships, and stored arrangement metadata as facts. | Quiet verified/source label when useful; direct link to supporting entity or source where available. |
 | Approved resource metadata | Identify and link to interviews, articles, lessons, tab/chord pages, lyric pages, and media. | Source name and resource type are always visible. |
 | Restricted source-reader result | Summarize or show a short permitted excerpt from a stored, approved URL. | Attribute the claim to the source, show the source/date when known, and provide the destination link. |
-| Editorial or fan interpretation | Present only when a reviewed source supplies it; never rephrase it as canonical history. | Use language such as “In [source], …” rather than “Deadbot knows …”. |
+| Editorial or fan interpretation | Present reviewed source context with a visible distinction from canonical history. | Use language such as “In [source], …”. |
 | Inference from graph structure | Make limited, plainly framed observations (for example, set placement or adjacency) only when the underlying relationship is visible. | Do not call it musical analysis or causal explanation without a source. |
 | Unsupported color | Do not generate claims about energy, legendary status, intention, musicianship, audience reaction, tape quality, or “best” versions. | Omit it; offer the relevant source or say the current library does not establish it. |
 
@@ -85,15 +85,18 @@ entity, recording, resource, and source.
 | `musician` | What can I use to learn, arrange, or cover this? | Version-specific playable reference and source links. |
 | `gap` | Can the current library answer this honestly? | Clear limitation and the closest grounded next step. |
 
-The chat column remains Deadbot's conversational voice: concise answer,
+The chat column remains Deadbot's conversational voice: concise takeaway,
 clarification, and context for what the main panel contains. The main panel is
-the assembled working surface, not a duplicate transcript.
+the assembled working surface. It can carry the detailed answer whenever a
+recording comparison, performance list, set fragment, timeline, source trail,
+or other substantial result reads better there. The chat orients the visitor
+and gives a natural handoff; the model chooses the balance for the question.
 
 ## Flagship response blueprints
 
-These examples are response shapes, not promises that all listed source data is
-already present. If a required relationship or source is missing, the result
-must reduce gracefully rather than filling the space with generic cards.
+These examples are response shapes. When a required relationship or source is
+missing, the result should surface the useful grounded material and its current
+coverage.
 
 ### 1. “I have twenty minutes. Give me a 1974 show to put on.”
 
@@ -237,8 +240,7 @@ Prioritize additions that create an assembled path, not decorative density:
    permitted progressions, and links to the complete source material.
 5. **Comparison strip** — selected grounded performances over time with
    explicit library coverage. Implemented: one representative rendition per
-   known year of a song, with an explicit coverage note stating that it is
-   not a complete history.
+   known year of a song, with a coverage note describing its scope.
 6. **Attributed source context** — short, rights-reviewed external context
    with a visible source label and outbound link.
 7. **Continue paths** — two or three entity-backed routes such as “hear the

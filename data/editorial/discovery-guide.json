@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "kind": "editorial_discovery_guide",
+  "purpose": "A candidate inventory of fruitful lore paths for model-led exploration. It guides model judgment about relevant songs, shows, transitions, and source trails.",
+  "model_instruction": "Use these leads as optional invitations when they fit the user's question. Choose, combine, omit, and order them by relevance. Treat every lead as a research prompt: verify with retrieved sources before stating anything, and label uncertainty or incomplete coverage.",
+  "leads": [
+    {
+      "id": "song-friend-of-the-devil-evolution",
+      "category": "song_evolution",
+      "entities": ["Friend of the Devil"],
+      "question_themes": ["arrangement changes", "tempo and feel", "studio-to-stage evolution"],
+      "editorial_prompt": "Invite a comparison of how Friend of the Devil's arrangement and feel may have changed across eras, using specific recordings as a trail and leaving room for meaningful variation.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "Deadessays", "HeadyVersion"],
+      "verification_instruction": "Research and verify each recording, date, and musical observation before presenting it as fact."
+    },
+    {
+      "id": "song-they-love-each-other-evolution",
+      "category": "song_evolution",
+      "entities": ["They Love Each Other"],
+      "question_themes": ["groove", "vocal delivery", "arrangement eras"],
+      "editorial_prompt": "Explore whether a listener's preferred They Love Each Other reflects an era, groove, or arrangement change; offer a small listening path for testing that idea.",
+      "source_trail_preference": ["Dead.net", "HeadyVersion", "Deadessays"],
+      "verification_instruction": "Verify dates, releases, and any claims about arrangement or performance practice from primary or well-sourced references."
+    },
+    {
+      "id": "song-dancin-in-the-streets-evolution",
+      "category": "song_evolution",
+      "entities": ["Dancin' in the Streets"],
+      "question_themes": ["funk and dance feel", "arrangement", "era comparison"],
+      "editorial_prompt": "Use Dancin' in the Streets as a route into changing rhythmic and ensemble approaches, asking the listener to compare a few era-appropriate performances.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "HeadyVersion"],
+      "verification_instruction": "Research the selected performances and distinguish documented context from editorial interpretation."
+    },
+    {
+      "id": "song-sugaree-evolution",
+      "category": "song_evolution",
+      "entities": ["Sugaree"],
+      "question_themes": ["guitar phrasing", "vocal intensity", "long-form development"],
+      "editorial_prompt": "Suggest a Sugaree listening arc centered on how phrasing, dynamics, and duration invite different readings across the band's history.",
+      "source_trail_preference": ["Dead.net", "HeadyVersion", "Deadessays"],
+      "verification_instruction": "Verify performance metadata and support musical descriptions with identifiable recordings or scholarship."
+    },
+    {
+      "id": "song-ripple-lyric-and-arrangement",
+      "category": "lyrics_history",
+      "entities": ["Ripple"],
+      "question_themes": ["lyric interpretation", "acoustic arrangement", "song history"],
+      "editorial_prompt": "Pair a careful, plural reading of Ripple's imagery with a documented look at its writing and performance history, leaving room for ambiguity.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "Deadessays"],
+      "verification_instruction": "Research provenance and use authorized sources for lyric quotations or paraphrases; present interpretation as interpretation."
+    },
+    {
+      "id": "song-box-of-rain-origins",
+      "category": "lyrics_history",
+      "entities": ["Box of Rain", "Phil Lesh"],
+      "question_themes": ["song origins", "collaboration", "arrangement"],
+      "editorial_prompt": "Open a research path into Box of Rain's origins and collaborative shaping, then connect that history to how listeners hear its arrangement.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "Deadessays"],
+      "verification_instruction": "Verify attribution, chronology, and quoted recollections against reliable published sources."
+    },
+    {
+      "id": "song-terrapin-station-scope",
+      "category": "lyrics_history",
+      "entities": ["Terrapin Station"],
+      "question_themes": ["ambition and structure", "lyrics", "production history"],
+      "editorial_prompt": "Offer Terrapin Station as a path through questions about scope, studio production, and the relationship between its lyrics and later live treatment.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "Deadessays", "HeadyVersion"],
+      "verification_instruction": "Research which parts concern documented production or history and which are listener interpretation; verify both separately."
+    },
+    {
+      "id": "improv-dark-star-explorer",
+      "category": "improvisation",
+      "entities": ["Dark Star"],
+      "question_themes": ["open improvisation", "motif development", "era listening"],
+      "editorial_prompt": "Build a guided Dark Star explorer around contrasting performances and clear listening contrasts a listener can investigate.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net", "Deadessays"],
+      "verification_instruction": "Verify dates, lineups, and suite boundaries, and present aesthetic judgments as situated opinions."
+    },
+    {
+      "id": "improv-playing-in-the-band-explorer",
+      "category": "improvisation",
+      "entities": ["Playing in the Band"],
+      "question_themes": ["rhythmic elasticity", "space", "re-entry"],
+      "editorial_prompt": "Invite listening for how Playing in the Band moves between song form and open space, using selected versions as listening points for comparison.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net", "Deadessays"],
+      "verification_instruction": "Research performance details and mark any claims about structure or musicianship as interpretation unless sourced."
+    },
+    {
+      "id": "improv-eyes-of-the-world-explorer",
+      "category": "improvisation",
+      "entities": ["Eyes of the World"],
+      "question_themes": ["groove", "harmonic motion", "ensemble interplay"],
+      "editorial_prompt": "Use Eyes of the World to explore how groove and harmonic conversation can vary by era, with a compact set of performances to compare.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net"],
+      "verification_instruction": "Verify the listening set and distinguish observable musical features from speculative explanation."
+    },
+    {
+      "id": "improv-bird-song-explorer",
+      "category": "improvisation",
+      "entities": ["Bird Song"],
+      "question_themes": ["texture", "lyric space", "improvisational openness"],
+      "editorial_prompt": "Suggest Bird Song as a way to hear shifts in texture and spaciousness, asking what changes a listener notices across documented versions.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net", "Deadessays"],
+      "verification_instruction": "Verify recording metadata and avoid treating a subjective description as a settled historical claim."
+    },
+    {
+      "id": "improv-morning-dew-explorer",
+      "category": "improvisation",
+      "entities": ["Morning Dew"],
+      "question_themes": ["dynamics", "tension and release", "performance context"],
+      "editorial_prompt": "Frame Morning Dew as an invitation to compare dynamics and emotional pacing, with context that helps a listener investigate why versions feel different.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net", "Deadessays"],
+      "verification_instruction": "Research the performances and their context; qualify evaluative judgments and explain their basis."
+    },
+    {
+      "id": "suite-china-rider-transition",
+      "category": "transition_suite",
+      "entities": ["China Cat Sunflower", "I Know You Rider"],
+      "question_themes": ["transition design", "set placement", "continuity"],
+      "editorial_prompt": "Explore how China Cat Sunflower > I Know You Rider functions as a transition suite, comparing continuity and variation across eras.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net", "Deadessays"],
+      "verification_instruction": "Verify the exact sequence and dates for every cited performance, including whether the transition is continuous."
+    },
+    {
+      "id": "suite-scarlet-fire-transition",
+      "category": "transition_suite",
+      "entities": ["Scarlet Begonias", "Fire on the Mountain"],
+      "question_themes": ["jamming bridge", "tempo", "suite identity"],
+      "editorial_prompt": "Use Scarlet Begonias > Fire on the Mountain to ask what makes a transition feel inevitable, exploratory, or unusually spacious in different performances.",
+      "source_trail_preference": ["HeadyVersion", "Dead.net", "Deadessays"],
+      "verification_instruction": "Research the cited versions and support any claim about transition length or character with a source or clearly marked listening note."
+    },
+    {
+      "id": "suite-help-slip-franklin",
+      "category": "transition_suite",
+      "entities": ["Help on the Way", "Slipknot!", "Franklin's Tower"],
+      "question_themes": ["composed suite", "arrangement", "live variation"],
+      "editorial_prompt": "Invite a comparison of the Help on the Way > Slipknot! > Franklin's Tower suite as a composed sequence that still leaves room for live variation.",
+      "source_trail_preference": ["Dead.net", "HeadyVersion", "Deadessays"],
+      "verification_instruction": "Verify suite order, release details, and performance dates before making historical or comparative claims."
+    },
+    {
+      "id": "suite-dark-star-stephen-eleven",
+      "category": "transition_suite",
+      "entities": ["Dark Star", "St. Stephen", "The Eleven"],
+      "question_themes": ["suite architecture", "early-era improvisation", "transition practice"],
+      "editorial_prompt": "Offer Dark Star / St. Stephen / The Eleven as a route into early suite architecture, asking how boundaries and momentum are heard in selected shows.",
+      "source_trail_preference": ["HeadyVersion", "Deadessays", "Dead.net"],
+      "verification_instruction": "Verify the actual sequence and circulating recording provenance; treat suite labels as potentially edition-dependent."
+    },
+    {
+      "id": "show-cornell-context",
+      "category": "show_context",
+      "entities": ["Cornell University", "1977-05-08"],
+      "question_themes": ["reputation and memory", "recording circulation", "show context"],
+      "editorial_prompt": "Use the Cornell show as a path into how reputation, recording circulation, and listener memory shape a show's afterlife, separating context from legend.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "HeadyVersion"],
+      "verification_instruction": "Research venue, date, recording lineage, and reception history independently; distinguish documented history from circulating legend."
+    },
+    {
+      "id": "show-veneta-heat-context",
+      "category": "show_context",
+      "entities": ["Veneta", "1972-08-27"],
+      "question_themes": ["weather and venue", "festival context", "performance conditions"],
+      "editorial_prompt": "Invite research into how the setting and reported heat at Veneta might frame listening, while keeping environmental context distinct from claims about the music.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "Deadessays"],
+      "verification_instruction": "Verify weather, venue, and festival details from authoritative sources before connecting them to performance interpretation."
+    },
+    {
+      "id": "late-era-midi-sound",
+      "category": "late_era_sound",
+      "entities": ["MIDI", "Jerry Garcia", "Grateful Dead"],
+      "question_themes": ["instrument technology", "tone and texture", "late-era performance"],
+      "editorial_prompt": "Use late-era MIDI as a research path into changing instrumental color and technology, asking what is documented versus inferred from recordings.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "Deadessays"],
+      "verification_instruction": "Verify equipment history and dates from documented sources; describe sound-based observations as listening observations unless equipment evidence supports them."
+    },
+    {
+      "id": "late-era-soundboard-listening",
+      "category": "late_era_sound",
+      "entities": ["Grateful Dead", "1980s", "1990s"],
+      "question_themes": ["mix and production", "recording context", "late-era sound"],
+      "editorial_prompt": "Suggest a late-era sound comparison that considers room, mix, recording source, and production context before attributing sonic differences to the band alone.",
+      "source_trail_preference": ["Dead.net", "Deadcast", "HeadyVersion"],
+      "verification_instruction": "Research recording provenance, venue, and release/mix information; state uncertainty where the source trail is incomplete."
+    }
+  ]
+}
