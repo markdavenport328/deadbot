@@ -669,10 +669,11 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
     def get_show(show_id_or_date: str) -> str:
         """Get a show's canonical data, lineup, named guitar/equipment claims, venue, ordered performances, recording metadata, and links.
 
-        Use a canonical show ID or an unambiguous date such as 1972-08-27. For
-        follow-up questions about who played, instruments, guests, or Jerry
-        Garcia's named guitars, reuse the most recent show ID/date and call
-        this tool before answering.
+        Use a canonical show ID returned by another tool, or an unambiguous
+        date explicitly supplied by the visitor. Never use a date or show ID
+        from model memory. For follow-up questions about who played,
+        instruments, guests, or Jerry Garcia's named guitars, reuse the most
+        recent retrieved show ID/date and call this tool before answering.
         """
         show = store.resolve_show(show_id_or_date)
         if not show:

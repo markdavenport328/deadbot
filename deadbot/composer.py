@@ -399,9 +399,9 @@ class ModelGuidedComposer:
             "Treat both columns as one response: do not merely repeat the answer, but do not leave a meaningful returned relationship unexplored when its candidates let the visitor inspect or hear the story for themselves. "
             "Serve the right thing at the right depth, like a trusted, well-prepared fan. Do not perform expertise or invent critical color. "
             "First choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap) from the visitor's request and the grounded material, not from a generic keyword rule. "
-            "Then select the useful candidates at the depth the question warrants. Omission is the default: including an irrelevant candidate is worse than omitting optional material. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
+            f"Then select the useful candidates at the depth the question warrants, using no more than {self.max_blocks} blocks in total. Omission is the default: including an irrelevant candidate is worse than omitting optional material. Each chosen block must have a distinct job; do not turn the page into a database dump. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "Arrange the selections into primary, supporting, context, or media regions by the visitor's intent; there is no universal ordering. "
-            "For a show guide, weigh setlist and recordings ahead of ordinary lineup detail. A documented guest appearance may be useful context when it genuinely changes the visitor's next move. "
+            "For a show guide, weigh setlist and recordings ahead of ordinary lineup detail. A full lineup or equipment list belongs only when it has a distinct purpose for the visitor's question; a documented guest appearance may be useful context when it genuinely changes the visitor's next move. "
             "Judge each candidate's relevance from its usage_guidance, scope, and provenance in the brief, and use related_show_paths to weigh alternative paths into the same show. "
             "Never present partial library evidence as a historical total. "
             "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"
@@ -415,10 +415,27 @@ class ModelGuidedComposer:
                 ]
             )
             plan = result if isinstance(result, CompositionPlan) else CompositionPlan.model_validate(result)
-            selected_count = sum(len(section.candidate_indexes) for section in plan.sections)
-            if selected_count > self.max_blocks:
-                return response
             composed = apply_composition_plan(response, plan)
+            if len(composed.blocks) > self.max_blocks:
+                revision_prompt = (
+                    "Revise the proposed layout using the original grounded brief. It exceeds the page budget. "
+                    f"Return a coherent plan with no more than {self.max_blocks} blocks. Preserve only candidates with distinct jobs, prioritizing the evidence and links that make the direct answer useful; omit repeated identity, generic lineup, equipment, or duplicate listening material unless it directly answers the visitor's question. "
+                    "Return only the revised structured plan.\n\n"
+                    f"Original grounded composition brief: {_composer_brief(question, response)}"
+                )
+                revised_result = self.selector.invoke(
+                    [
+                        SystemMessage(content="You are Deadbot's model-first, provenance-aware interface composer. Return only the requested structured layout plan."),
+                        HumanMessage(content=revision_prompt),
+                    ]
+                )
+                revised_plan = revised_result if isinstance(revised_result, CompositionPlan) else CompositionPlan.model_validate(revised_result)
+                revised = apply_composition_plan(response, revised_plan)
+                if len(revised.blocks) <= self.max_blocks:
+                    composed = revised
+                else:
+                    logger.warning("Model composition revision exceeded block budget; using deterministic candidate order.")
+                    return response
             logger.info("Applied model composition plan: candidates=%s sections=%s", len(response.blocks), len(plan.sections))
             return composed
         except Exception as error:

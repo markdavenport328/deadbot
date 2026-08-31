@@ -58,6 +58,16 @@ class SelectionStub:
         return self.plan
 
 
+class SelectionSequenceStub:
+    def __init__(self, plans):
+        self.plans = iter(plans)
+        self.inputs = []
+
+    def invoke(self, messages):
+        self.inputs.append(messages)
+        return next(self.plans)
+
+
 def tool_message(payload):
     return ToolMessage(content=json.dumps(payload), tool_call_id="tool-call")
 
@@ -654,6 +664,35 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
     assert composed.mode == "musician"
     assert len(stub.inputs) == 1
+
+
+def test_model_guided_composer_revises_an_overfull_layout_instead_of_dumping_candidates():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    assert show
+    response = compose_experience_response(
+        question="Tell me about the show.",
+        thread_id="web-test",
+        messages=[tool_message(store.show_context(show)), AIMessage(content="The show is in the library.")],
+        store=store,
+    )
+    setlist_index = next(index for index, block in enumerate(response.blocks) if block.type == "show_setlist")
+    recording_index = next(index for index, block in enumerate(response.blocks) if block.type == "recording_list")
+    first_plan = CompositionPlan(
+        mode="show",
+        sections=[CompositionSection(region="primary", candidate_indexes=list(range(min(8, len(response.blocks)))))],
+    )
+    revised_plan = CompositionPlan(
+        mode="show",
+        sections=[CompositionSection(region="primary", candidate_indexes=[setlist_index, recording_index])],
+    )
+    stub = SelectionSequenceStub([first_plan, revised_plan])
+
+    composed = ModelGuidedComposer(selector=stub, max_blocks=2).compose("Tell me about the show.", response)
+
+    assert [block.type for block in composed.blocks] == ["show_setlist", "recording_list"]
+    assert composed.layout[0].block_indexes == [0, 1]
+    assert len(stub.inputs) == 2
 
 
 def _one_block_of_every_type():
