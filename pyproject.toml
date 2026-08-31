@@ -13,13 +13,14 @@ dependencies = [
     "langchain-ollama>=0.3",
     "langchain-openai>=0.3",
     "langgraph>=0.4",
+    "psycopg[binary]>=3.2",
     "uvicorn[standard]>=0.30",
     "PyYAML>=6.0",
 ]
 
 [project.optional-dependencies]
 dev = ["httpx>=0.28", "pytest>=8"]
-postgres = ["psycopg[binary]>=3.2"]
+postgres = []
 
 [project.scripts]
 deadbot = "deadbot.cli:main"
