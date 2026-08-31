@@ -567,7 +567,6 @@ export default function App() {
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1>{response.title}</h1>
               </div>
-              {response.answer && <p className="answer-lead">{response.answer}</p>}
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
                   {regionLabels[section.region] && <p className="region-label">{regionLabels[section.region]}</p>}
