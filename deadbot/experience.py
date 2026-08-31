@@ -76,6 +76,26 @@ class ShowSetlistBlock(ExperienceModel):
     sets: list[SetlistSection] = Field(min_length=1, max_length=4)
 
 
+class ShowSelectionItem(ExperienceModel):
+    show_id: str
+    show_date: str
+    venue_name: str
+    location: str | None = None
+    follow_up: str
+
+
+class ShowSelectionBlock(ExperienceModel):
+    """A clearly attributed selection of shows from one reviewed source."""
+
+    type: Literal["show_selection"]
+    title: str
+    selection_type: str
+    selector_name: str
+    coverage_note: str
+    source_id: str
+    items: list[ShowSelectionItem] = Field(min_length=1, max_length=24)
+
+
 class RecordingItem(ExperienceModel):
     recording_id: str
     title: str
@@ -303,6 +323,7 @@ class GapStateBlock(ExperienceModel):
 ExperienceBlock = Annotated[
     EntityCardBlock
     | ShowSetlistBlock
+    | ShowSelectionBlock
     | RecordingListBlock
     | PerformerListBlock
     | EquipmentListBlock

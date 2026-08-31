@@ -8,7 +8,7 @@ from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -19,11 +19,17 @@ from deadbot.deadnet import (
     DeadnetConfig,
     DeadnetResearchAdapter,
     EntityReadRequest,
+    EntitySearchRequest,
     EntityType,
     UrlLibMetadataTransport,
 )
 from deadbot.source_registry import RegistryValidationError, load_registry
 from deadbot.lore_source_trails import source_trails_for_entity
+from deadbot.selection_signals import (
+    SelectionSignalError,
+    load_selection_signals,
+    load_show_selections,
+)
 
 
 OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
@@ -264,7 +270,7 @@ def _adapter_from_reviewed_source(source_id: str, *, needs_search: bool = False)
         allowed_hosts=hosts,
         allowed_paths=paths,
         search_path="/search" if "/search" in paths else paths[0],
-        max_results=1,
+        max_results=10 if needs_search else 1,
     )
     return DeadnetResearchAdapter(UrlLibMetadataTransport(hosts), config)
 
@@ -285,10 +291,14 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
 
     @tool
     def search_entities(query: str) -> str:
-        """Find canonical songs, shows, performers, and venues matching a user phrase.
+        """Find canonical songs, shows, people, equipment, and venues matching a user phrase.
 
         Use this before other entity tools when an ID is unknown or ambiguous.
-        Returns stable IDs and display names only; it never searches the web.
+        The people search covers the whole canonical people table, including
+        people who appear only in guest credits. Use search_guest_musicians
+        when the distinction between a guest credit and the regular lineup is
+        material. Returns stable IDs and display names only; it never searches
+        the web.
         """
         words = query.casefold().split()
         stop_words = {"a", "an", "and", "at", "for", "in", "of", "on", "the", "to"}
@@ -334,6 +344,124 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
                 f'{show["show_date"]} — {show.get("venue_name", "Unknown venue")}',
             )
         return _json({"query": query, "matches": matches[:20]})
+
+    @tool
+    def search_guest_musicians(query: str = "") -> str:
+        """Search the complete canonical directory of musicians with guest credits.
+
+        This is relationship data, not a preselected list of famous guests:
+        every returned person has at least one show_performers row whose role
+        is guest. An empty query returns the complete directory; a name or
+        phrase narrows it. Each result includes all documented guest-show
+        dates and credited instruments so the caller can decide what is
+        relevant without confusing a guest credit with formal band membership.
+        The returned show IDs can be passed to get_show when the visitor would
+        benefit from the show's setlist, recording links, or other grounded
+        context; decide which appearances to expand from the question rather
+        than treating the directory as a complete rendered answer.
+        """
+        needle = query.casefold().strip()
+        people = {person["person_id"]: person for person in store.rows("people")}
+        shows = {show["show_id"]: show for show in store.rows("shows")}
+        by_person: dict[str, list[dict[str, str]]] = {}
+        for assignment in store.rows("show_performers"):
+            if assignment.get("role") == "guest" and assignment.get("person_id") in people:
+                by_person.setdefault(assignment["person_id"], []).append(assignment)
+        guests = []
+        for person_id, assignments in by_person.items():
+            person = people[person_id]
+            if needle and needle not in person.get("name", "").casefold() and needle not in person_id.casefold():
+                continue
+            appearances = []
+            for assignment in assignments:
+                show = shows.get(assignment.get("show_id", ""))
+                if not show:
+                    continue
+                appearances.append(
+                    {
+                        "show_id": show["show_id"],
+                        "show_date": show.get("show_date"),
+                        "instrument": assignment.get("instrument"),
+                    }
+                )
+            guests.append(
+                {
+                    "person_id": person_id,
+                    "name": person.get("name", person_id),
+                    "guest_show_count": len({appearance["show_id"] for appearance in appearances}),
+                    "appearances": sorted(appearances, key=lambda appearance: (appearance.get("show_date") or "", appearance["show_id"])),
+                }
+            )
+        guests.sort(key=lambda guest: guest["name"].casefold())
+        return _json(
+            {
+                "query": query,
+                "coverage_note": "Complete current canonical guest-credit directory; a guest credit does not establish formal band membership.",
+                "guests": guests,
+            }
+        )
+
+    @tool
+    def search_stored_resources(query: str) -> str:
+        """Search all locally cataloged external links and their provenance notes.
+
+        This is the broadest local route to interviews, oral histories,
+        eyewitness accounts, official features, song history, release context,
+        and other anecdotal material already cataloged for Grateful Dead topics.
+        It searches resource title, creator, source, type, and catalog notes;
+        results identify their song, show, or performance relationships when
+        known. Returned links are metadata and source descriptions, not the
+        source text or proof of a claim beyond that description.
+        """
+        needle = query.casefold().strip()
+        if not needle:
+            return _json({"query": query, "resources": [], "message": "A topic or source phrase is required."})
+        song_ids_by_resource: dict[str, list[str]] = {}
+        show_ids_by_resource: dict[str, list[str]] = {}
+        performance_ids_by_resource: dict[str, list[str]] = {}
+        for relation, destination in (
+            ("resource_songs", song_ids_by_resource),
+            ("resource_shows", show_ids_by_resource),
+            ("resource_performances", performance_ids_by_resource),
+        ):
+            id_field = {"resource_songs": "song_id", "resource_shows": "show_id", "resource_performances": "performance_id"}[relation]
+            for row in store.rows(relation):
+                resource_id, entity_id = row.get("resource_id"), row.get(id_field)
+                if resource_id and entity_id:
+                    destination.setdefault(resource_id, []).append(entity_id)
+        resources = []
+        for resource in store.rows("resources"):
+            searchable = " ".join(
+                resource.get(field, "")
+                for field in ("title", "creator", "source_name", "resource_type", "notes")
+            ).casefold()
+            if needle not in searchable:
+                continue
+            parsed = urlparse(resource.get("source_url", ""))
+            if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
+                continue
+            resource_id = resource["resource_id"]
+            resources.append(
+                {
+                    "resource_id": resource_id,
+                    "title": resource.get("title"),
+                    "resource_type": resource.get("resource_type"),
+                    "creator": resource.get("creator") or None,
+                    "source_name": resource.get("source_name"),
+                    "url": resource["source_url"],
+                    "notes": resource.get("notes") or None,
+                    "song_ids": song_ids_by_resource.get(resource_id, []),
+                    "show_ids": show_ids_by_resource.get(resource_id, []),
+                    "performance_ids": performance_ids_by_resource.get(resource_id, []),
+                }
+            )
+        return _json(
+            {
+                "query": query,
+                "coverage_note": "All matching cataloged resource metadata; source text is not retrieved.",
+                "resources": resources,
+            }
+        )
 
     @tool
     def get_song(song_id_or_title: str) -> str:
@@ -409,6 +537,48 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
                         for record in result.records
                     ],
                 },
+            }
+        )
+
+    @tool
+    def search_deadnet_editorial(query: str, entity_type: str = "song") -> str:
+        """Search approved Dead.net editorial metadata for a Grateful Dead topic.
+
+        Use this when a question would benefit from an official story, oral
+        history, interview, feature, person, venue, album, show, or song link.
+        It searches the reviewed Dead.net source only and returns link metadata
+        rather than article text, transcripts, audio, or conclusions. Choose
+        the entity type that best fits the question: song, show, person, venue,
+        album, or deadcast.
+        """
+        try:
+            requested_type = EntityType(entity_type)
+        except ValueError:
+            return _json({"research": {"state": "invalid", "coverage": "metadata_only", "records": [], "message": "entity_type must be song, show, person, venue, album, or deadcast."}})
+        if deadnet_adapter is None:
+            return _json({"research": {"state": "unavailable", "coverage": "metadata_only", "source": "dead.net", "records": [], "message": "The reviewed Dead.net metadata adapter is not enabled."}})
+        result = deadnet_adapter.search(EntitySearchRequest(query=query, entity_type=requested_type))
+        return _json(
+            {
+                "research": {
+                    "state": result.state.value,
+                    "coverage": result.coverage,
+                    "source": result.source,
+                    "message": result.message,
+                    "requested": dict(result.requested),
+                    "records": [
+                        {
+                            "entity_type": record.entity_type,
+                            "identifier": record.identifier,
+                            "title": record.title,
+                            "url": record.url,
+                            "description": record.description,
+                            "published_at": record.published_at,
+                            "source": record.source,
+                        }
+                        for record in result.records
+                    ],
+                }
             }
         )
 
@@ -508,6 +678,83 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
         return _json(store.show_context(show))
+
+    @tool
+    def get_show_selections() -> str:
+        """Get reviewed, source-attributed show selections for discovery questions.
+
+        Use when a visitor asks which shows are notable, essential,
+        recommended, or worth exploring. The results are a source's selection,
+        not a Deadbot ranking or consensus; never claim omitted shows matter
+        less. Do not use this for a direct question about a named show.
+        """
+        try:
+            return _json({"show_selections": load_show_selections(store)})
+        except SelectionSignalError as error:
+            return _json({"show_selections": [], "error": str(error)})
+
+    @tool
+    def get_selection_signals() -> str:
+        """Get the complete reviewed critic, fan, official, and curator selection inventory.
+
+        It retains each source's signal type, source/access constraint, and
+        canonical resolution state. Use it to investigate a recommendation,
+        performance-version, release, or individual-curator question. It is
+        evidence from distinct sources, never a combined score, consensus, or
+        automatic ranking. Fully resolved editorial show selections are also
+        included as browser-ready grounded selections.
+        """
+        try:
+            payload = load_selection_signals(store)
+            payload["show_selections"] = load_show_selections(store)
+            return _json(payload)
+        except SelectionSignalError as error:
+            return _json({"selection_signals": [], "show_selections": [], "error": str(error)})
+
+    @tool
+    def get_research_source_directory() -> str:
+        """Describe every currently approved external research path and stored context-link catalog.
+
+        Use this to choose where to look for the story, anecdote, interview,
+        lore, reputation, or listening context behind a question. It states
+        which sources can be searched as metadata, which only have stored links,
+        and their coverage limits; it does not claim that any source has been
+        searched or that every topic has a stored context link.
+        """
+        try:
+            registry = load_registry()
+        except RegistryValidationError as error:
+            return _json({"research_sources": [], "error": str(error)})
+        sources = [
+            {
+                "source_id": source["source_id"],
+                "name": source["name"],
+                "authority_level": source["authority_level"],
+                "access_state": source["access_state"],
+                "allowed_operations": source["allowed_operations"],
+                "retention_mode": source["retention_policy"].get("mode"),
+                "notes": source.get("notes"),
+            }
+            for source in registry
+        ]
+        return _json(
+            {
+                "research_sources": sources,
+                "stored_context_link_coverage": {
+                    "entity_scope": "specific canonical songs and shows only",
+                    "access": "metadata links only; source content is not in the library",
+                    "tool": "get_lore_source_trails",
+                },
+                "stored_resource_catalog": {
+                    "access": "searchable metadata and provenance notes for locally cataloged external links",
+                    "tool": "search_stored_resources",
+                },
+                "selection_signal_coverage": {
+                    "tool": "get_selection_signals",
+                    "access": "reviewed local source-attributed signals with explicit constraints",
+                },
+            }
+        )
 
     @tool
     def get_performance(performance_id: str) -> str:
@@ -696,14 +943,20 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
 
     return [
         search_entities,
+        search_guest_musicians,
+        search_stored_resources,
         get_song,
         get_song_performance_profile,
         get_deadnet_song_context,
+        search_deadnet_editorial,
         get_deadcast_metadata,
         get_lore_source_trails,
         find_arrangements,
         get_equipment_history,
         get_show,
+        get_show_selections,
+        get_selection_signals,
+        get_research_source_directory,
         get_performance,
         get_media_links,
         get_historical_weather,

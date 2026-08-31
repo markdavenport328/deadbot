@@ -14,10 +14,14 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from datetime import date, datetime
+import json
 import re
 from typing import Any, Protocol
 
 from deadbot.data import CanonicalStore
+
+
+REQUIRED_SCHEMA_VERSION = 4
 
 
 class DBAPICursor(Protocol):
@@ -255,6 +259,60 @@ class PostgresCanonicalStore(CanonicalStore):
             f"SELECT COUNT(*) AS row_count FROM {self._qualified_table(table)}"
         )
         return int(rows[0]["row_count"]) if rows else 0
+
+    def verify_ready(self) -> None:
+        """Fail closed unless this database is ready to serve the full product."""
+
+        version_rows = self._query(
+            f"SELECT schema_version FROM {self._qualified_table('deadbot_schema_metadata')}"
+        )
+        version = int(version_rows[0]["schema_version"]) if version_rows else 0
+        if version != REQUIRED_SCHEMA_VERSION:
+            raise RuntimeError(
+                f"PostgreSQL schema version {version} is not ready; expected {REQUIRED_SCHEMA_VERSION}."
+            )
+        counts = self._query(
+            "SELECT "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('shows')}) AS show_count, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('performances')}) AS performance_count, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('selection_evidence')}) AS selection_signal_count"
+        )
+        ready = counts[0] if counts else {}
+        missing = [
+            label for label, key in (
+                ("shows", "show_count"),
+                ("performances", "performance_count"),
+                ("selection evidence", "selection_signal_count"),
+            )
+            if int(ready.get(key) or 0) <= 0
+        ]
+        if missing:
+            raise RuntimeError(
+                "PostgreSQL is not ready to serve Deadbot; missing " + ", ".join(missing) + "."
+            )
+
+    def selection_signal_rows(self) -> list[dict[str, Any]]:
+        """Read the complete reviewed source-attributed evidence packet."""
+
+        rows = self._query(
+            f"SELECT e.\"selection_evidence_id\", e.\"payload\"::text AS payload, "
+            f"r.\"source_url\" AS resource_url, l.\"title\" AS selection_list_title "
+            f"FROM {self._qualified_table('selection_evidence')} e "
+            f"JOIN {self._qualified_table('resources')} r ON r.\"resource_id\" = e.\"source_resource_id\" "
+            f"LEFT JOIN {self._qualified_table('selection_lists')} l ON l.\"selection_list_id\" = e.\"selection_list_id\" "
+            'ORDER BY e."selection_evidence_id"'
+        )
+        evidence = []
+        for row in rows:
+            try:
+                payload = json.loads(row["payload"])
+            except (KeyError, TypeError, json.JSONDecodeError) as exc:
+                raise RuntimeError("Stored selection evidence payload is invalid.") from exc
+            if not isinstance(payload, dict):
+                raise RuntimeError("Stored selection evidence payload is invalid.")
+            payload.setdefault("source_url", row.get("resource_url"))
+            evidence.append(payload)
+        return evidence
 
     def coverage_summary(self) -> dict[str, Any]:
         """Compute catalog coverage without transferring whole tables."""

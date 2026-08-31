@@ -61,7 +61,7 @@ def _as_int(value: str | None, default: int) -> int:
 class Settings:
     """Configuration shared by the graph and model-provider layer."""
 
-    data_store: str = "csv"
+    data_store: str = "postgres"
     database_url: str | None = None
     model_provider: str = "ollama"
     ollama_model: str = "qwen3:8b"
@@ -92,7 +92,7 @@ class Settings:
         )
 
         return cls(
-            data_store=(value("DEADBOT_DATA_STORE", "csv") or "csv").strip().lower(),
+            data_store=(value("DEADBOT_DATA_STORE", "postgres") or "postgres").strip().lower(),
             database_url=database_url,
             model_provider=value("DEADBOT_MODEL_PROVIDER", "ollama") or "ollama",
             ollama_model=value("DEADBOT_OLLAMA_MODEL", "qwen3:8b") or "qwen3:8b",

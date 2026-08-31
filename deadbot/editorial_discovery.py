@@ -1,8 +1,14 @@
 """Offline loading and validation for the model-facing editorial discovery guide."""
 
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
+
+from deadbot.data import CanonicalStore
+from deadbot.lore_source_trails import LoreTrailValidationError, load_lore_trails
+from deadbot.selection_signals import SelectionSignalError, selection_signal_summary
+from deadbot.source_registry import RegistryValidationError, load_registry
 
 GUIDE_PATH = Path(__file__).parents[1] / "data" / "editorial" / "discovery-guide.json"
 REQUIRED_LEAD_FIELDS = {
@@ -82,4 +88,87 @@ def model_discovery_brief(path: str | Path = GUIDE_PATH) -> str:
             for lead in guide["leads"]
         ],
     }
+    return json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
+
+
+def model_capability_map(store: CanonicalStore) -> str:
+    """Return a grounded inventory of the model's data and research surface.
+
+    This is deliberately a map, not a router: the model decides whether and
+    how a question calls for any part of it. Tool descriptions provide the
+    precise argument contracts and output limits.
+    """
+
+    guest_person_ids = {
+        assignment.get("person_id")
+        for assignment in store.rows("show_performers")
+        if assignment.get("role") == "guest" and assignment.get("person_id")
+    }
+    resource_types = Counter(resource.get("resource_type", "unknown") for resource in store.rows("resources"))
+    resource_sources = sorted({resource.get("source_name", "") for resource in store.rows("resources") if resource.get("source_name")})
+    packet: dict[str, Any] = {
+        "decision_principle": (
+            "This is the complete currently available map, not a prescribed retrieval plan. "
+            "Choose the relevant tools and sources from the visitor's actual question, then distinguish "
+            "canonical facts, source-attributed selections, and metadata-only external links."
+        ),
+        "canonical_library": {
+            "coverage": store.coverage_summary(),
+            "entity_types": {
+                "songs": store.row_count("songs"),
+                "shows": store.row_count("shows"),
+                "performances": store.row_count("performances"),
+                "people": store.row_count("people"),
+                "venues": store.row_count("venues"),
+                "recordings": store.row_count("recordings"),
+                "cataloged_external_resources": store.row_count("resources"),
+            },
+            "relationships": {
+                "show_performer_credits": store.row_count("show_performers"),
+                "people_with_guest_credits": len(guest_person_ids),
+                "guest_credit_meaning": "A guest credit is a documented show relationship, not evidence of formal band membership.",
+                "other_relationships": ["ordered show setlists", "show recordings and media links", "song-performance history", "equipment assignments", "song resources and arrangements"],
+            },
+            "stored_resource_catalog": {
+                "access": "searchable metadata and provenance notes; external source text is not locally available",
+                "resource_types": dict(sorted(resource_types.items())),
+                "source_names": resource_sources,
+            },
+        },
+    }
+    try:
+        packet["reviewed_selection_signals"] = selection_signal_summary(store)
+    except SelectionSignalError:
+        packet["reviewed_selection_signals"] = {"state": "unavailable"}
+    try:
+        packet["approved_external_research"] = [
+            {
+                "source_id": source["source_id"],
+                "name": source["name"],
+                "authority_level": source["authority_level"],
+                "allowed_operations": source["allowed_operations"],
+                "retention_mode": source["retention_policy"].get("mode"),
+                "notes": source.get("notes"),
+            }
+            for source in load_registry()
+        ]
+    except RegistryValidationError:
+        packet["approved_external_research"] = []
+    try:
+        trails = load_lore_trails()
+        packet["stored_context_links"] = {
+            "access": "reviewed link metadata only; no article body, transcript, or audio is locally available",
+            "trail_count": len(trails),
+            "scopes": [
+                {
+                    "entity_type": trail["entity_type"],
+                    "entity_id": trail["entity_id"],
+                    "entity_label": trail["entity_label"],
+                    "question_themes": trail["question_themes"],
+                }
+                for trail in trails
+            ],
+        }
+    except LoreTrailValidationError:
+        packet["stored_context_links"] = {"state": "unavailable"}
     return json.dumps(packet, ensure_ascii=False, separators=(",", ":"))

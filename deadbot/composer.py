@@ -133,6 +133,20 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "usage_guidance": "the default primary block for a broad show guide and the strongest orientation for questions about sequence, sets, or what was played; pair it with recordings when available. It can be supporting context when the visitor's next move is listening or investigating a specific performance",
             "provenance": "canonical",
         }
+    if block.type == "show_selection":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "one reviewed, source-attributed editorial selection of shows",
+            "title": block.title,
+            "selection_type": block.selection_type,
+            "selector_name": block.selector_name,
+            "show_count": len(block.items),
+            "coverage_note": block.coverage_note,
+            "helps_with": "broad questions about notable, essential, recommended, or worth-exploring shows",
+            "usage_guidance": "a source-attributed route into show discovery. Preserve its attribution and do not reframe it as a Deadbot ranking, consensus, or complete map of important shows",
+            "provenance": "reviewed source-attributed selection",
+        }
     if block.type == "recording_list":
         return {
             "index": index,
@@ -381,12 +395,13 @@ class ModelGuidedComposer:
             return response
         prompt = (
             "Choose the most coherent main-column guide for the latest question using the grounded brief below. "
-            "The chat column already gives the direct answer. The main column must not repeat it; use it to provide the next useful grounded action, evidence, or connection. "
+            "The chat column gives the direct answer; the main column should bring that answer to life with the most useful grounded evidence, listening paths, sources, or connections. "
+            "Treat both columns as one response: do not merely repeat the answer, but do not leave a meaningful returned relationship unexplored when its candidates let the visitor inspect or hear the story for themselves. "
             "Serve the right thing at the right depth, like a trusted, well-prepared fan. Do not perform expertise or invent critical color. "
             "First choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap) from the visitor's request and the grounded material, not from a generic keyword rule. "
-            "Then select the smallest useful set of candidates. Omission is the default: including an irrelevant candidate is worse than omitting optional material, and most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
+            "Then select the useful candidates at the depth the question warrants. Omission is the default: including an irrelevant candidate is worse than omitting optional material. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "Arrange the selections into primary, supporting, context, or media regions by the visitor's intent; there is no universal ordering. "
-            "For a broad show question, setlist is normally the primary guide and recordings are its highest-priority companion. Omit the ordinary performer list unless the visitor asks about the lineup, roles, instruments, or guests. When the supplied guest names identify a truly notable guest appearance, it may be useful as lower-priority context, but it must not displace the setlist or recordings. "
+            "For a show guide, weigh setlist and recordings ahead of ordinary lineup detail. A documented guest appearance may be useful context when it genuinely changes the visitor's next move. "
             "Judge each candidate's relevance from its usage_guidance, scope, and provenance in the brief, and use related_show_paths to weigh alternative paths into the same show. "
             "Never present partial library evidence as a historical total. "
             "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"

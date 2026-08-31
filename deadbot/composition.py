@@ -50,6 +50,8 @@ from deadbot.experience import (
     ResourceListBlock,
     SetlistSection,
     SetlistSong,
+    ShowSelectionBlock,
+    ShowSelectionItem,
     ShowSetlistBlock,
     SongOverviewBlock,
     SourceReference,
@@ -529,6 +531,60 @@ def _show_setlist(payload: dict[str, Any], store: CanonicalStore) -> ShowSetlist
     )
 
 
+def _show_selection_blocks(payload: dict[str, Any]) -> tuple[list[ShowSelectionBlock], list[SourceReference]]:
+    """Project source-attributed show selections into safe browser blocks."""
+
+    selections = payload.get("show_selections")
+    if not isinstance(selections, list):
+        return [], []
+    blocks: list[ShowSelectionBlock] = []
+    sources: list[SourceReference] = []
+    for selection in selections:
+        if not isinstance(selection, dict):
+            continue
+        selection_id = selection.get("selection_id")
+        title = selection.get("title")
+        source_url = selection.get("source_url")
+        raw_items = selection.get("items")
+        if not isinstance(selection_id, str) or not isinstance(title, str) or not isinstance(source_url, str) or not isinstance(raw_items, list):
+            continue
+        parsed = urlparse(source_url)
+        if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
+            continue
+        items = []
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            show_id, show_date, venue_name = item.get("show_id"), item.get("show_date"), item.get("venue_name")
+            if not all(isinstance(value, str) and value for value in (show_id, show_date, venue_name)):
+                continue
+            items.append(
+                ShowSelectionItem(
+                    show_id=show_id,
+                    show_date=show_date,
+                    venue_name=venue_name,
+                    location=item.get("location") if isinstance(item.get("location"), str) and item.get("location") else None,
+                    follow_up=f"Tell me about the Grateful Dead show on {show_date}.",
+                )
+            )
+        if not items:
+            continue
+        source_id = f"selection:{selection_id}"
+        blocks.append(
+            ShowSelectionBlock(
+                type="show_selection",
+                title=title,
+                selection_type=selection.get("selection_type") if isinstance(selection.get("selection_type"), str) else "source-attributed selection",
+                selector_name=selection.get("selector_name") if isinstance(selection.get("selector_name"), str) else "Editorial source",
+                coverage_note=selection.get("coverage_note") if isinstance(selection.get("coverage_note"), str) else "This is a source-attributed selection, not a ranking.",
+                source_id=source_id,
+                items=items[:24],
+            )
+        )
+        sources.append(SourceReference(source_id=source_id, kind="contextual_resource", label=title, url=source_url))
+    return blocks, sources
+
+
 def _show_performers(payload: dict[str, Any], store: CanonicalStore) -> PerformerListBlock | None:
     show = payload.get("show")
     assignments = payload.get("performers")
@@ -871,6 +927,14 @@ def compose_experience_response(
             expanded_payloads.append(store.show_context(show))
 
     for payload in expanded_payloads:
+        show_selection_blocks, show_selection_sources = _show_selection_blocks(payload)
+        if show_selection_blocks:
+            blocks.extend(show_selection_blocks)
+            for source in show_selection_sources:
+                add_source(source)
+            if title == "Deadbot":
+                title = show_selection_blocks[0].title
+            mode = "research"
         arrangement_search, arrangement_search_sources = _arrangement_search_block(payload, store)
         if arrangement_search:
             blocks.append(arrangement_search)

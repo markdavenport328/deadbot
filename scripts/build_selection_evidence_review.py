@@ -168,11 +168,11 @@ def document() -> dict[str, object]:
     return {
         "schema_version": 1,
         "kind": "selection_evidence_review",
-        "status": "staging_only",
+        "status": "reviewed_runtime_inventory",
         "purpose": (
-            "Conservatively resolved source-attributed selection evidence. It is "
-            "not runtime input or a best-version score; unresolved or access-limited "
-            "signals remain held for review."
+            "Conservatively resolved source-attributed selection evidence for the "
+            "runtime's provenance-labeled inventory. It is not a best-version score; "
+            "unresolved or access-limited signals retain their explicit held state."
         ),
         "source_constraints": {
             "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",

@@ -658,6 +658,7 @@
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
                   "recording_list": "#/components/schemas/RecordingListBlock",
                   "resource_list": "#/components/schemas/ResourceListBlock",
+                  "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_setlist": "#/components/schemas/ShowSetlistBlock",
                   "song_overview": "#/components/schemas/SongOverviewBlock"
                 },
@@ -669,6 +670,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/ShowSetlistBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ShowSelectionBlock"
                 },
                 {
                   "$ref": "#/components/schemas/RecordingListBlock"
@@ -1478,6 +1482,97 @@
           "follow_up"
         ],
         "title": "SetlistSong",
+        "type": "object"
+      },
+      "ShowSelectionBlock": {
+        "additionalProperties": false,
+        "description": "A clearly attributed selection of shows from one reviewed source.",
+        "properties": {
+          "coverage_note": {
+            "title": "Coverage Note",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ShowSelectionItem"
+            },
+            "maxItems": 24,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "selection_type": {
+            "title": "Selection Type",
+            "type": "string"
+          },
+          "selector_name": {
+            "title": "Selector Name",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "show_selection",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "selection_type",
+          "selector_name",
+          "coverage_note",
+          "source_id",
+          "items"
+        ],
+        "title": "ShowSelectionBlock",
+        "type": "object"
+      },
+      "ShowSelectionItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "venue_name": {
+            "title": "Venue Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "show_id",
+          "show_date",
+          "venue_name",
+          "follow_up"
+        ],
+        "title": "ShowSelectionItem",
         "type": "object"
       },
       "ShowSetlistBlock": {

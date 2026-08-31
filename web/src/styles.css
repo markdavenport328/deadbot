@@ -105,6 +105,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .comparison-placement { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
 .coverage-note { margin: 1rem 0 0; color: #bdc9bb; font-size: 0.92rem; line-height: 1.55; }
 .show-setlist { grid-column: span 12; }
+.show-selection { grid-column: span 12; background: linear-gradient(110deg, #1d3024, #223126); }
+.show-selection-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2rem; margin: 1.2rem 0 0; padding: 0; list-style: none; }
+.show-selection-list li { border-top: 1px solid #3e5544; padding: 0.65rem 0; }
+.show-selection-list li span + span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
 .setlist-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; margin-top: 1.2rem; }
 .setlist-section { border-top: 1px solid #3e5544; padding-top: 0.65rem; }
 .setlist-section .fact-label { margin: 0 0 0.55rem; }
@@ -156,5 +160,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .set-thread > div:first-child, .set-thread > div:last-child { text-align: left; }
   .current-performance { width: fit-content; }
   .setlist-sections { grid-template-columns: 1fr; }
+  .show-selection-list { grid-template-columns: 1fr; }
   .comparison-track { grid-auto-flow: row; grid-auto-columns: unset; overflow-x: visible; padding-bottom: 0; }
 }

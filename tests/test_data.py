@@ -1,9 +1,26 @@
 import json
+from pathlib import Path
 
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import MetadataRecord, ResearchResult, ResultState
 import deadbot.tools as tools_module
 from deadbot.tools import build_tools
+
+
+def store_with_selection_evidence() -> CanonicalStore:
+    document = json.loads(
+        (Path(__file__).parents[1] / "data" / "editorial" / "selection-evidence-review.json").read_text(encoding="utf-8")
+    )
+    entries = [
+        {**entry, "review_packet": {"source_constraints": document["source_constraints"]}}
+        for entry in document["entries"]
+    ]
+
+    class StoreWithSelectionEvidence(CanonicalStore):
+        def selection_signal_rows(self):
+            return entries
+
+    return StoreWithSelectionEvidence()
 
 
 def tool_by_name(store: CanonicalStore, name: str):
@@ -80,6 +97,33 @@ def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
     )
     assert show_payload["entity"]["entity_id"] == "gd-1972-08-27"
     assert show_payload["research"]["trail_ids"] == ["show-veneta-heat-context"]
+
+
+def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford"}))
+    assert payload["coverage_note"].startswith("Complete current canonical guest-credit directory")
+    assert {guest["name"] for guest in payload["guests"]} >= {"Branford Marsalis"}
+    branford = next(guest for guest in payload["guests"] if guest["name"] == "Branford Marsalis")
+    assert branford["guest_show_count"] >= 1
+    assert all(appearance["show_date"] for appearance in branford["appearances"])
+
+
+def test_resource_directory_searches_cataloged_anecdotal_sources_across_scopes():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "search_stored_resources").invoke({"query": "Veneta"}))
+    assert payload["resources"]
+    assert any(resource["resource_type"] == "eyewitness-memoir" for resource in payload["resources"])
+    assert all(resource["url"].startswith("https://") for resource in payload["resources"])
+
+
+def test_selection_signal_tool_preserves_critic_fan_and_curator_provenance():
+    store = store_with_selection_evidence()
+    payload = json.loads(tool_by_name(store, "get_selection_signals").invoke({}))
+    signal_types = {signal["signal_type"] for signal in payload["selection_signals"]}
+    assert {"critic_editorial_show_selection", "fan_ranked_version", "individual_curator_song_selection"} <= signal_types
+    assert "headyversion" in payload["source_constraints"]
+    assert payload["show_selections"][0]["selector_name"] == "David Fricke / Rolling Stone"
 
 
 def test_every_veneta_song_has_a_context_resource():

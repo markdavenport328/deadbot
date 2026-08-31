@@ -153,6 +153,25 @@ function Block({
           </div>
         </section>
       );
+    case "show_selection":
+      return (
+        <section className="card show-selection">
+          <p className="eyebrow">{block.selection_type}</p>
+          <h2>{block.title}</h2>
+          <p className="subtitle">Selected by {block.selector_name}</p>
+          <ol className="show-selection-list">
+            {block.items.map((item) => (
+              <li key={item.show_id}>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <span>{item.show_date} · {item.venue_name}</span>
+                </FollowUpButton>
+                {item.location && <span>{item.location}</span>}
+              </li>
+            ))}
+          </ol>
+          <p className="coverage-note">{block.coverage_note}</p>
+        </section>
+      );
     case "recording_list":
       return (
         <section className="card recording-list">

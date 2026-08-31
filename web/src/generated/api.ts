@@ -279,7 +279,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"])[];
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Layout */
@@ -551,6 +551,42 @@ export interface components {
             song_id: string;
             /** Title */
             title: string;
+        };
+        /**
+         * ShowSelectionBlock
+         * @description A clearly attributed selection of shows from one reviewed source.
+         */
+        ShowSelectionBlock: {
+            /** Coverage Note */
+            coverage_note: string;
+            /** Items */
+            items: components["schemas"]["ShowSelectionItem"][];
+            /** Selection Type */
+            selection_type: string;
+            /** Selector Name */
+            selector_name: string;
+            /** Source Id */
+            source_id: string;
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "show_selection";
+        };
+        /** ShowSelectionItem */
+        ShowSelectionItem: {
+            /** Follow Up */
+            follow_up: string;
+            /** Location */
+            location?: string | null;
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+            /** Venue Name */
+            venue_name: string;
         };
         /** ShowSetlistBlock */
         ShowSetlistBlock: {

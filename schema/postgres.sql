@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (3);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (4);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -494,6 +494,21 @@ CREATE TABLE selection_entries (
     CHECK (num_nonnulls(show_id, performance_id, song_id, release_id, recording_id) = 1)
 );
 
+-- The full reviewed evidence packet is stored separately from normalized list
+-- entries so held or ambiguous signals remain available to the model without
+-- forcing an unsafe single-entity resolution.
+CREATE TABLE selection_evidence (
+    selection_evidence_id TEXT PRIMARY KEY,
+    source_resource_id TEXT NOT NULL REFERENCES resources (resource_id)
+        DEFERRABLE INITIALLY DEFERRED,
+    selection_list_id TEXT REFERENCES selection_lists (selection_list_id)
+        DEFERRABLE INITIALLY DEFERRED,
+    signal_type TEXT NOT NULL,
+    resolution_state TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    CHECK (jsonb_typeof(payload) = 'object')
+);
+
 -- Claims are concise, attributed source assertions. They are not promoted to
 -- canonical facts merely because they have been collected.
 CREATE TABLE claims (
@@ -680,6 +695,10 @@ CREATE INDEX selection_lists_source_resource_idx
     ON selection_lists (source_resource_id);
 CREATE INDEX selection_entries_list_order_idx
     ON selection_entries (selection_list_id, entry_position);
+CREATE INDEX selection_evidence_source_resource_idx
+    ON selection_evidence (source_resource_id);
+CREATE INDEX selection_evidence_list_idx
+    ON selection_evidence (selection_list_id);
 CREATE UNIQUE INDEX selection_entries_list_show_unique
     ON selection_entries (show_id, selection_list_id) WHERE show_id IS NOT NULL;
 CREATE UNIQUE INDEX selection_entries_list_performance_unique

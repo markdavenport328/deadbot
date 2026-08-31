@@ -36,6 +36,7 @@ type FixedSongOverviewBlock = Require<
 export type ExperienceBlock =
   | FixedEntityCardBlock
   | components["schemas"]["ShowSetlistBlock"]
+  | components["schemas"]["ShowSelectionBlock"]
   | components["schemas"]["RecordingListBlock"]
   | components["schemas"]["PerformerListBlock"]
   | components["schemas"]["EquipmentListBlock"]

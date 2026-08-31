@@ -20,9 +20,10 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CANONICAL_DIR = ROOT / "data" / "canonical"
+DEFAULT_SELECTION_EVIDENCE_PATH = ROOT / "data" / "editorial" / "selection-evidence-review.json"
 DEFAULT_SCHEMA_PATH = ROOT / "schema" / "postgres.sql"
 DEFAULT_MIGRATIONS_DIR = ROOT / "schema" / "migrations"
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 Converter = Callable[[str], Any]
@@ -150,6 +151,168 @@ class ImportReport:
 
 class CanonicalImportError(ValueError):
     """Raised when canonical input violates its explicit import contract."""
+
+
+def read_selection_evidence(path: Path | str = DEFAULT_SELECTION_EVIDENCE_PATH) -> dict[str, Any]:
+    """Read the reviewed selection packet that must accompany every database import."""
+
+    source = Path(path)
+    try:
+        document = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CanonicalImportError(f"selection evidence is unavailable or invalid: {source}") from exc
+    entries = document.get("entries") if isinstance(document, dict) else None
+    if document.get("kind") != "selection_evidence_review" or not isinstance(entries, list):
+        raise CanonicalImportError("selection evidence must be a selection_evidence_review with entries")
+    for position, entry in enumerate(entries, start=1):
+        if not isinstance(entry, dict):
+            raise CanonicalImportError(f"selection evidence entry {position} must be an object")
+        if not isinstance(entry.get("source"), str) or not entry["source"]:
+            raise CanonicalImportError(f"selection evidence entry {position} is missing source")
+        if not isinstance(entry.get("signal_type"), str) or not entry["signal_type"]:
+            raise CanonicalImportError(f"selection evidence entry {position} is missing signal_type")
+        if not isinstance(entry.get("resolution_state"), str) or not entry["resolution_state"]:
+            raise CanonicalImportError(f"selection evidence entry {position} is missing resolution_state")
+    return document
+
+
+def _stable_selection_id(prefix: str, *parts: str) -> str:
+    digest = hashlib.sha256("\0".join(parts).encode("utf-8")).hexdigest()[:24]
+    return f"{prefix}-{digest}"
+
+
+def _selection_source_url(entry: Mapping[str, Any]) -> str:
+    value = entry.get("source_url")
+    if isinstance(value, str) and value.startswith("https://"):
+        return value
+    if entry.get("source") == "charlie-miller-user-provided-threads":
+        return "https://www.threads.com/@charliedmiller87"
+    raise CanonicalImportError(
+        f"selection source {entry.get('source')!r} has no usable source URL"
+    )
+
+
+def _selector_name(entry: Mapping[str, Any]) -> str | None:
+    source = entry.get("source")
+    if source in {"charlie-miller-user-provided-threads", "charlie-miller-reddit"}:
+        return "Charlie Miller"
+    if source == "rolling-stone-australia":
+        return "David Fricke / Rolling Stone"
+    return None
+
+
+def _replace_selection_evidence(cursor: Any, document: Mapping[str, Any]) -> None:
+    """Atomically replace the generated selection projection with the reviewed packet."""
+
+    entries = document["entries"]
+    # These rows are generated solely from the reviewed packet, so replacement
+    # makes the operational database exactly match the reviewed input.
+    cursor.execute("DELETE FROM public.selection_evidence")
+    cursor.execute("DELETE FROM public.selection_entries")
+    cursor.execute("DELETE FROM public.selection_lists")
+
+    resources: dict[str, tuple[Any, ...]] = {}
+    lists: dict[str, tuple[Any, ...]] = {}
+    evidence_rows: list[tuple[Any, ...]] = []
+    entry_rows: list[tuple[Any, ...]] = []
+    review_packet = {
+        "purpose": document.get("purpose"),
+        "source_constraints": document.get("source_constraints", {}),
+        "summary": document.get("summary", {}),
+    }
+    for position, raw_entry in enumerate(entries, start=1):
+        entry = dict(raw_entry)
+        source = entry["source"]
+        source_url = _selection_source_url(entry)
+        resource_id = _stable_selection_id("resource-selection", source, source_url)
+        title = entry.get("selection_label") or f"{source} selection evidence"
+        resources[resource_id] = (
+            resource_id,
+            "selection-evidence",
+            title,
+            _selector_name(entry),
+            source,
+            source_url,
+            None,
+            "Reviewed source-attributed selection evidence.",
+        )
+        list_key = str(entry.get("selection_label") or entry["signal_type"])
+        list_id = _stable_selection_id("selection-list", source, list_key, source_url)
+        lists[list_id] = (
+            list_id,
+            list_key,
+            entry["signal_type"],
+            _selector_name(entry),
+            resource_id,
+            None,
+            None,
+            "Generated from the reviewed selection-evidence packet.",
+        )
+        evidence_id = _stable_selection_id(
+            "selection-evidence", source, str(entry.get("source_record_id") or ""), str(position)
+        )
+        entry["review_packet"] = review_packet
+        evidence_rows.append(
+            (
+                evidence_id,
+                resource_id,
+                list_id,
+                entry["signal_type"],
+                entry["resolution_state"],
+                json.dumps(entry, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
+            )
+        )
+        show_ids = entry.get("candidate_show_ids")
+        performance_ids = entry.get("candidate_performance_ids")
+        target_column = target_id = None
+        if entry["resolution_state"] in {"resolved_unique_show", "resolved_show_pending_release_review"} and isinstance(show_ids, list) and len(show_ids) == 1:
+            target_column, target_id = "show_id", show_ids[0]
+        elif entry["resolution_state"] == "resolved_unique_performance" and isinstance(performance_ids, list) and len(performance_ids) == 1:
+            target_column, target_id = "performance_id", performance_ids[0]
+        if target_column and isinstance(target_id, str):
+            targets = {"show_id": None, "performance_id": None, "song_id": None, "release_id": None, "recording_id": None}
+            targets[target_column] = target_id
+            entry_rows.append(
+                (
+                    _stable_selection_id("selection-entry", evidence_id),
+                    list_id,
+                    position,
+                    entry.get("recommendation_rank") if isinstance(entry.get("recommendation_rank"), int) else None,
+                    entry.get("fan_vote_count") if isinstance(entry.get("fan_vote_count"), int) else None,
+                    None,
+                    targets["show_id"],
+                    targets["performance_id"],
+                    targets["song_id"],
+                    targets["release_id"],
+                    targets["recording_id"],
+                    entry.get("source_label") if isinstance(entry.get("source_label"), str) else None,
+                    f"resolution_state={entry['resolution_state']}",
+                )
+            )
+
+    cursor.executemany(
+        "INSERT INTO public.resources (resource_id, resource_type, title, creator, source_name, source_url, published_date, notes) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+        "ON CONFLICT (resource_id) DO UPDATE SET resource_type = EXCLUDED.resource_type, title = EXCLUDED.title, "
+        "creator = EXCLUDED.creator, source_name = EXCLUDED.source_name, source_url = EXCLUDED.source_url, notes = EXCLUDED.notes",
+        list(resources.values()),
+    )
+    cursor.executemany(
+        "INSERT INTO public.selection_lists (selection_list_id, title, selection_type, selector_name, source_resource_id, published_date, retrieved_at, notes) "
+        "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+        list(lists.values()),
+    )
+    if entry_rows:
+        cursor.executemany(
+            "INSERT INTO public.selection_entries (selection_entry_id, selection_list_id, entry_position, rank, vote_count, score, show_id, performance_id, song_id, release_id, recording_id, source_label, notes) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            entry_rows,
+        )
+    cursor.executemany(
+        "INSERT INTO public.selection_evidence (selection_evidence_id, source_resource_id, selection_list_id, signal_type, resolution_state, payload) "
+        "VALUES (%s, %s, %s, %s, %s, %s::jsonb)",
+        evidence_rows,
+    )
 
 
 class SchemaMigrationRequired(RuntimeError):
@@ -360,6 +523,7 @@ def import_canonical(
     connection: Any,
     *,
     canonical_dir: Path | str = DEFAULT_CANONICAL_DIR,
+    selection_evidence_path: Path | str = DEFAULT_SELECTION_EVIDENCE_PATH,
     schema_path: Path | str = DEFAULT_SCHEMA_PATH,
     rebuild: bool = False,
     specs: Sequence[TableSpec] = TABLE_SPECS,
@@ -374,6 +538,7 @@ def import_canonical(
 
     # Fail before touching PostgreSQL if a file is missing or malformed.
     rows_by_table = read_canonical_tables(canonical_dir, specs)
+    selection_document = read_selection_evidence(selection_evidence_path)
     snapshot = canonical_snapshot(canonical_dir, rows_by_table, specs)
     cursor = connection.cursor()
     schema_created = False
@@ -408,6 +573,8 @@ def import_canonical(
                 source_rows=len(rows),
                 inserted_rows=inserted,
             )
+
+        _replace_selection_evidence(cursor, selection_document)
 
         import_mode = "bootstrap" if schema_created else "rebuild" if rebuild else "merge"
         _record_import(cursor, snapshot=snapshot, mode=import_mode, results=results)
@@ -451,6 +618,7 @@ def import_from_dsn(
     dsn: str,
     *,
     canonical_dir: Path | str = DEFAULT_CANONICAL_DIR,
+    selection_evidence_path: Path | str = DEFAULT_SELECTION_EVIDENCE_PATH,
     schema_path: Path | str = DEFAULT_SCHEMA_PATH,
     rebuild: bool = False,
     **connect_kwargs: Any,
@@ -462,6 +630,7 @@ def import_from_dsn(
         return import_canonical(
             connection,
             canonical_dir=canonical_dir,
+            selection_evidence_path=selection_evidence_path,
             schema_path=schema_path,
             rebuild=rebuild,
         )

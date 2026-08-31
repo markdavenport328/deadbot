@@ -11,6 +11,7 @@ from deadbot.composer import CompositionPlan, CompositionSection, ModelGuidedCom
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse, _embed_details, compose_experience_response
+from deadbot.tools import build_tools
 
 
 class FakeAgent:
@@ -113,6 +114,39 @@ def test_song_credits_are_usable_in_the_experience_response():
     overview = next(block for block in response.blocks if block.type == "song_overview")
     assert {item.name for item in overview.credits} == {"Jerry Garcia", "Robert Hunter"}
     assert "resource:resource-musicbrainz-work-search-sugaree" in overview.source_ids
+
+
+def test_guest_count_question_keeps_model_selected_show_and_listening_paths():
+    """A guest directory plus chosen show contexts must never collapse to a gap."""
+
+    store = CanonicalStore()
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    guest_payload = json.loads(guest_tool.invoke({"query": "Branford"}))
+    selected_show_ids = ["gd-1990-03-29", "gd-1991-09-10", "gd-1993-12-10"]
+    response = compose_experience_response(
+        question="How many shows did Branford play with the Dead?",
+        thread_id="guest-count-test",
+        messages=[
+            tool_message(guest_payload),
+            *[
+                tool_message(store.show_context(store.one("shows", show_id)))
+                for show_id in selected_show_ids
+            ],
+            AIMessage(
+                content=(
+                    "The current canonical guest-credit directory documents five Branford Marsalis "
+                    "show appearances. I pulled three grounded show and listening paths below."
+                )
+            ),
+        ],
+        store=store,
+    )
+
+    assert response.answer.startswith("The current canonical guest-credit directory documents five")
+    assert response.mode == "quick_fact"
+    assert {block.show_id for block in response.blocks if block.type == "recording_list"} == set(selected_show_ids)
+    assert {block.show_id for block in response.blocks if block.type == "show_setlist"} == set(selected_show_ids)
+    assert not any(block.type == "gap_state" for block in response.blocks)
 
 
 def test_metadata_only_research_records_join_the_main_column_resource_path():
@@ -639,6 +673,22 @@ def _one_block_of_every_type():
                 )
             ],
         ),
+        experience.ShowSelectionBlock(
+            type="show_selection",
+            title="20 Essential Grateful Dead Shows",
+            selection_type="critic/editorial selection",
+            selector_name="David Fricke / Rolling Stone",
+            coverage_note="One source selection, not a ranking.",
+            source_id="selection:critic-show-selection-1",
+            items=[
+                experience.ShowSelectionItem(
+                    show_id="s1",
+                    show_date="1972-08-27",
+                    venue_name="Old Renaissance Faire Grounds",
+                    follow_up="Tell me about the show.",
+                )
+            ],
+        ),
         experience.RecordingListBlock(
             type="recording_list",
             show_id="s1",
@@ -809,7 +859,7 @@ def test_api_closes_a_closeable_store_on_shutdown():
 
 def test_api_uses_one_thread_for_follow_ups_and_returns_the_transcript():
     agent = ConversationFakeAgent()
-    client = TestClient(create_app(settings=Settings(), agent=agent))
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
     first = client.post("/api/experience", json={"question": "Tell me about Veneta", "thread_id": "browser-1"})
     second = client.post("/api/experience", json={"question": "What came next?", "thread_id": "browser-1"})
     assert first.status_code == 200
@@ -826,7 +876,7 @@ def test_api_uses_one_thread_for_follow_ups_and_returns_the_transcript():
 
 def test_api_replays_browser_conversation_for_stateless_follow_up():
     agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
-    client = TestClient(create_app(settings=Settings(), agent=agent))
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
     result = client.post(
         "/api/experience",
         json={
@@ -878,7 +928,7 @@ def test_requests_beyond_the_per_minute_limit_get_429_while_earlier_ones_succeed
 def test_a_nonpositive_rate_limit_disables_the_limiter():
     agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
     settings = Settings(rate_limit_per_minute=0)
-    client = TestClient(create_app(settings=settings, agent=agent))
+    client = TestClient(create_app(settings=settings, store=CanonicalStore(), agent=agent))
 
     for _ in range(5):
         assert client.post("/api/experience", json={"question": "Tell me about Veneta"}).status_code == 200
@@ -891,7 +941,7 @@ def test_agent_receives_only_the_most_recent_conversation_window_turns():
         long_conversation.append({"role": "assistant", "text": f"Answer {index}"})
     agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
     settings = Settings(conversation_window=4)
-    client = TestClient(create_app(settings=settings, agent=agent))
+    client = TestClient(create_app(settings=settings, store=CanonicalStore(), agent=agent))
 
     result = client.post(
         "/api/experience",
@@ -913,7 +963,7 @@ def test_the_per_request_checkpoint_is_deleted_after_a_conversation_replay():
     checkpointer = FakeCheckpointer()
     agent = FakeAgent([AIMessage(content="The grounded follow-up answer.")])
     agent.checkpointer = checkpointer
-    client = TestClient(create_app(settings=Settings(), agent=agent))
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
 
     result = client.post(
         "/api/experience",
@@ -937,7 +987,7 @@ def test_the_stable_thread_checkpoint_is_never_deleted_across_follow_ups():
     checkpointer = FakeCheckpointer()
     agent = ConversationFakeAgent()
     agent.checkpointer = checkpointer
-    client = TestClient(create_app(settings=Settings(), agent=agent))
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
 
     first = client.post("/api/experience", json={"question": "Tell me about Veneta", "thread_id": "browser-1"})
     second = client.post("/api/experience", json={"question": "What came next?", "thread_id": "browser-1"})

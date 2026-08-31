@@ -1,14 +1,18 @@
 from deadbot.config import Settings
-from deadbot.data import CanonicalStore
 from deadbot.models import OllamaProvider, OpenAIProvider, create_model_provider
 from deadbot.storage import create_canonical_store
 
 
-def test_csv_is_the_default_canonical_store():
+def test_postgres_is_the_only_runtime_store():
     settings = Settings()
-    assert settings.data_store == "csv"
+    assert settings.data_store == "postgres"
     assert settings.database_url is None
-    assert isinstance(create_canonical_store(settings), CanonicalStore)
+    try:
+        create_canonical_store(settings)
+    except ValueError as error:
+        assert "requires DEADBOT_DATABASE_URL" in str(error)
+    else:
+        raise AssertionError("PostgreSQL runtime must require a database URL")
 
 
 def test_postgres_store_requires_a_database_url():
@@ -24,7 +28,7 @@ def test_unknown_canonical_store_fails_clearly():
     try:
         create_canonical_store(Settings(data_store="unknown"))
     except ValueError as error:
-        assert "expected 'csv' or 'postgres'" in str(error)
+        assert "serves only PostgreSQL" in str(error)
     else:
         raise AssertionError("Unknown canonical store should fail")
 

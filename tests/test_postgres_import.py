@@ -221,7 +221,15 @@ def test_default_import_is_non_destructive_and_idempotent(tmp_path):
     first = import_canonical(connection, canonical_dir=tmp_path)
     second = import_canonical(connection, canonical_dir=tmp_path)
 
-    assert not any(sql.startswith("DELETE") for sql, _ in connection.commands)
+    deletes = [sql for sql, _ in connection.commands if sql.startswith("DELETE")]
+    assert deletes == [
+        "DELETE FROM public.selection_evidence",
+        "DELETE FROM public.selection_entries",
+        "DELETE FROM public.selection_lists",
+        "DELETE FROM public.selection_evidence",
+        "DELETE FROM public.selection_entries",
+        "DELETE FROM public.selection_lists",
+    ]
     assert first.tables["people"].inserted_rows == 1
     assert second.tables["people"].inserted_rows == 0
     assert "ON CONFLICT DO NOTHING" in next(
@@ -240,7 +248,11 @@ def test_rebuild_deletes_only_known_tables_in_reverse_dependency_order(tmp_path)
         for sql, _ in connection.commands
         if sql.startswith("DELETE")
     ]
-    assert deletes == [spec.name for spec in reversed(TABLE_SPECS)]
+    assert deletes == [spec.name for spec in reversed(TABLE_SPECS)] + [
+        "selection_evidence",
+        "selection_entries",
+        "selection_lists",
+    ]
     assert "shows" in deletes
     assert report.rebuilt is True
 
