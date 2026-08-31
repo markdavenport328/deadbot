@@ -378,6 +378,11 @@ show how a fertile editorial question can join factual coverage in the review
 queue. The queue directs review work and preserves each entry's rationale and
 coverage risk. See `docs/priority-review-queue.md`.
 
+The companion `data/editorial/featured-show-candidates.json` provides 20
+cross-era show anchors with canonical coverage counts and explicit relationship
+gaps. It is an internal enhancement queue, not a best-show ranking or runtime
+retrieval input. See `docs/featured-show-candidates.md`.
+
 ### 10. Add the document/RAG layer
 
 After rights and access review, ingest or retrieve permissible interviews, liner notes, books, reviews, and essays as documents separate from canonical entities. Index them with source, date, rights, and entity links.
