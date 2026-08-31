@@ -1,0 +1,618 @@
+{
+  "schema_version": 1,
+  "kind": "editorial_featured_show_candidates",
+  "status": "first_pass_review_queue",
+  "purpose": "A bounded, cross-era work queue for show enrichment. It is editorial planning only: canonical coverage fields are recalculated from the current CSV snapshot, while selection rationales are not factual claims.",
+  "selection_policy": {
+    "scope": "20 cross-era show anchors from 1969 through 1991",
+    "not_a_ranking": true,
+    "runtime_visible": false,
+    "required_review": [
+      "source provenance and raw-record availability",
+      "setlist and performer coverage state",
+      "recording-to-performance mappings",
+      "official-release mappings",
+      "direct show or performance context"
+    ]
+  },
+  "candidates": [
+    {
+      "queue_position": 1,
+      "show_id": "gd-1969-02-27",
+      "show_date": "1969-02-27",
+      "venue_id": "venue-fillmore-west-san-francisco",
+      "venue_name": "Fillmore West",
+      "city": "San Francisco",
+      "state_region": "CA",
+      "country": "US",
+      "editorial_rationale": "early-era comparison and source-reconciliation anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "a4f0064f-8efe-4e25-a4f4-2e2002839b13"
+      },
+      "coverage": {
+        "performance_count": 15,
+        "performer_assignment_count": 13,
+        "recording_count": 9,
+        "recording_mapped_performance_count": 7,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 2,
+      "show_id": "gd-1970-05-08",
+      "show_date": "1970-05-08",
+      "venue_id": "venue-farrell-hall-suny-delhi",
+      "venue_name": "Farrell Hall, SUNY",
+      "city": "Delhi",
+      "state_region": "NY",
+      "country": "US",
+      "editorial_rationale": "early-era performer and setlist-coverage anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "8fc8e961-98d3-4455-a462-e59a75264f47"
+      },
+      "coverage": {
+        "performance_count": 6,
+        "performer_assignment_count": 12,
+        "recording_count": 1,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 3,
+      "show_id": "gd-1972-04-08",
+      "show_date": "1972-04-08",
+      "venue_id": "venue-empire-pool-london",
+      "venue_name": "Empire Pool",
+      "city": "London",
+      "state_region": "",
+      "country": "England",
+      "editorial_rationale": "1972 international-tour comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "1d5ea6f6-db0c-4293-9680-8369d9cf023d"
+      },
+      "coverage": {
+        "performance_count": 22,
+        "performer_assignment_count": 13,
+        "recording_count": 4,
+        "recording_mapped_performance_count": 19,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 4,
+      "show_id": "gd-1972-05-26",
+      "show_date": "1972-05-26",
+      "venue_id": "venue-lyceum-london",
+      "venue_name": "Lyceum",
+      "city": "London",
+      "state_region": "",
+      "country": "England",
+      "editorial_rationale": "1972 international-tour comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "fea624b4-b6e3-4849-9a54-fb5749675796"
+      },
+      "coverage": {
+        "performance_count": 31,
+        "performer_assignment_count": 12,
+        "recording_count": 4,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 5,
+      "show_id": "gd-1972-08-27",
+      "show_date": "1972-08-27",
+      "venue_id": "venue-old-renaissance-faire-grounds-veneta",
+      "venue_name": "Old Renaissance Faire Grounds",
+      "city": "Veneta",
+      "state_region": "OR",
+      "country": "",
+      "editorial_rationale": "existing deep-slice reference for validating enrichment",
+      "source": {
+        "source_key": "jerrybase",
+        "source_record_id": "19720827-01"
+      },
+      "coverage": {
+        "performance_count": 20,
+        "performer_assignment_count": 10,
+        "recording_count": 7,
+        "recording_mapped_performance_count": 20,
+        "direct_context_resource_count": 6,
+        "official_release_count": 1,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "deep_slice_regression_control"
+      ]
+    },
+    {
+      "queue_position": 6,
+      "show_id": "gd-1972-09-21",
+      "show_date": "1972-09-21",
+      "venue_id": "venue-spectrum-philadelphia",
+      "venue_name": "Spectrum",
+      "city": "Philadelphia",
+      "state_region": "PA",
+      "country": "US",
+      "editorial_rationale": "1972 autumn comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "f7407745-7f3b-47c0-9ac6-3718ac274d29"
+      },
+      "coverage": {
+        "performance_count": 28,
+        "performer_assignment_count": 10,
+        "recording_count": 5,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 7,
+      "show_id": "gd-1973-02-09",
+      "show_date": "1973-02-09",
+      "venue_id": "venue-roscoe-maples-pavilion-stanford-university-palo-alto",
+      "venue_name": "Roscoe Maples Pavilion, Stanford University",
+      "city": "Palo Alto",
+      "state_region": "CA",
+      "country": "US",
+      "editorial_rationale": "1973 repertoire and recording-path comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "c6770746-c4d4-4f55-8e5d-9ef8c1233e32"
+      },
+      "coverage": {
+        "performance_count": 28,
+        "performer_assignment_count": 10,
+        "recording_count": 8,
+        "recording_mapped_performance_count": 26,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 8,
+      "show_id": "gd-1973-11-11",
+      "show_date": "1973-11-11",
+      "venue_id": "venue-winterland-san-francisco",
+      "venue_name": "Winterland",
+      "city": "San Francisco",
+      "state_region": "CA",
+      "country": "US",
+      "editorial_rationale": "1973 late-year comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "95f305fd-42c0-4034-a130-c99af6b38f00"
+      },
+      "coverage": {
+        "performance_count": 26,
+        "performer_assignment_count": 10,
+        "recording_count": 7,
+        "recording_mapped_performance_count": 24,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 9,
+      "show_id": "gd-1974-02-24",
+      "show_date": "1974-02-24",
+      "venue_id": "venue-winterland-san-francisco",
+      "venue_name": "Winterland",
+      "city": "San Francisco",
+      "state_region": "CA",
+      "country": "US",
+      "editorial_rationale": "1974 winter comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "0fbe2e88-8bcc-4792-85b9-6cdadf0032fe"
+      },
+      "coverage": {
+        "performance_count": 28,
+        "performer_assignment_count": 10,
+        "recording_count": 15,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 10,
+      "show_id": "gd-1974-06-18",
+      "show_date": "1974-06-18",
+      "venue_id": "venue-freedom-hall-louisville",
+      "venue_name": "Freedom Hall",
+      "city": "Louisville",
+      "state_region": "KY",
+      "country": "US",
+      "editorial_rationale": "1974 summer comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "5b62b6b4-e112-4a65-b86a-d80d7fcf05db"
+      },
+      "coverage": {
+        "performance_count": 26,
+        "performer_assignment_count": 10,
+        "recording_count": 4,
+        "recording_mapped_performance_count": 19,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 11,
+      "show_id": "gd-1977-05-08",
+      "show_date": "1977-05-08",
+      "venue_id": "venue-barton-hall-cornell-university-ithaca",
+      "venue_name": "Barton Hall, Cornell University",
+      "city": "Ithaca",
+      "state_region": "NY",
+      "country": "US",
+      "editorial_rationale": "1977 show-context and source-trail test anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "40cb4e0a-7c88-4f44-bf87-2596c174b699"
+      },
+      "coverage": {
+        "performance_count": 20,
+        "performer_assignment_count": 11,
+        "recording_count": 23,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 12,
+      "show_id": "gd-1977-05-22",
+      "show_date": "1977-05-22",
+      "venue_id": "venue-sportatorium-pembroke-pines",
+      "venue_name": "Sportatorium",
+      "city": "Pembroke Pines",
+      "state_region": "FL",
+      "country": "US",
+      "editorial_rationale": "1977 listening-path comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "96270ee8-88b7-43e2-8575-e5b9e99a5c20"
+      },
+      "coverage": {
+        "performance_count": 23,
+        "performer_assignment_count": 11,
+        "recording_count": 8,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 13,
+      "show_id": "gd-1978-04-12",
+      "show_date": "1978-04-12",
+      "venue_id": "venue-cameron-indoor-stadium-duke-university-durham",
+      "venue_name": "Cameron Indoor Stadium, Duke University",
+      "city": "Durham",
+      "state_region": "NC",
+      "country": "US",
+      "editorial_rationale": "late-1970s transition comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "2c4d1359-8910-4038-aec8-73cd860d0167"
+      },
+      "coverage": {
+        "performance_count": 21,
+        "performer_assignment_count": 13,
+        "recording_count": 17,
+        "recording_mapped_performance_count": 19,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 14,
+      "show_id": "gd-1980-11-30",
+      "show_date": "1980-11-30",
+      "venue_id": "venue-fox-theatre-atlanta",
+      "venue_name": "Fox Theatre",
+      "city": "Atlanta",
+      "state_region": "GA",
+      "country": "US",
+      "editorial_rationale": "acoustic/electric-era retrieval comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "ea79c5f6-3e7c-4407-9ffa-4860907a0f73"
+      },
+      "coverage": {
+        "performance_count": 24,
+        "performer_assignment_count": 11,
+        "recording_count": 10,
+        "recording_mapped_performance_count": 20,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 15,
+      "show_id": "gd-1981-03-09",
+      "show_date": "1981-03-09",
+      "venue_id": "venue-madison-square-garden-new-york",
+      "venue_name": "Madison Square Garden",
+      "city": "New York",
+      "state_region": "NY",
+      "country": "US",
+      "editorial_rationale": "early-1980s recording-path comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "d98c5c98-cda1-49e9-a560-56015933a200"
+      },
+      "coverage": {
+        "performance_count": 21,
+        "performer_assignment_count": 11,
+        "recording_count": 13,
+        "recording_mapped_performance_count": 20,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 16,
+      "show_id": "gd-1982-07-27",
+      "show_date": "1982-07-27",
+      "venue_id": "venue-red-rocks-amphitheatre-morrison",
+      "venue_name": "Red Rocks Amphitheatre",
+      "city": "Morrison",
+      "state_region": "CO",
+      "country": "US",
+      "editorial_rationale": "early-1980s outdoor-show context anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "cf3377fc-9ac6-4379-a59e-dd1dcf24ba20"
+      },
+      "coverage": {
+        "performance_count": 20,
+        "performer_assignment_count": 11,
+        "recording_count": 17,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 17,
+      "show_id": "gd-1987-09-18",
+      "show_date": "1987-09-18",
+      "venue_id": "venue-madison-square-garden-new-york",
+      "venue_name": "Madison Square Garden",
+      "city": "New York",
+      "state_region": "NY",
+      "country": "US",
+      "editorial_rationale": "late-1980s full-band comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "34fce718-5ed7-42ed-a7b6-8383136ee6db"
+      },
+      "coverage": {
+        "performance_count": 18,
+        "performer_assignment_count": 12,
+        "recording_count": 24,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 18,
+      "show_id": "gd-1989-07-17",
+      "show_date": "1989-07-17",
+      "venue_id": "venue-alpine-valley-music-theatre-east-troy",
+      "venue_name": "Alpine Valley Music Theatre",
+      "city": "East Troy",
+      "state_region": "WI",
+      "country": "US",
+      "editorial_rationale": "late-1980s listening-path comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "202858eb-2d1e-4bd1-bbe9-a8e2e236b662"
+      },
+      "coverage": {
+        "performance_count": 23,
+        "performer_assignment_count": 12,
+        "recording_count": 17,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 19,
+      "show_id": "gd-1990-03-29",
+      "show_date": "1990-03-29",
+      "venue_id": "venue-nassau-veterans-memorial-coliseum-uniondale",
+      "venue_name": "Nassau Veterans Memorial Coliseum",
+      "city": "Uniondale",
+      "state_region": "NY",
+      "country": "US",
+      "editorial_rationale": "1990 personnel-era comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "68586ed9-1f86-4c47-84d8-2767a558a389"
+      },
+      "coverage": {
+        "performance_count": 17,
+        "performer_assignment_count": 13,
+        "recording_count": 29,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    },
+    {
+      "queue_position": 20,
+      "show_id": "gd-1991-09-10",
+      "show_date": "1991-09-10",
+      "venue_id": "venue-madison-square-garden-new-york",
+      "venue_name": "Madison Square Garden",
+      "city": "New York",
+      "state_region": "NY",
+      "country": "US",
+      "editorial_rationale": "1990s repertoire and personnel comparison anchor",
+      "source": {
+        "source_key": "gdshowsdb",
+        "source_record_id": "5b00d461-26ab-4e83-84bf-32e22bbdf961"
+      },
+      "coverage": {
+        "performance_count": 20,
+        "performer_assignment_count": 15,
+        "recording_count": 26,
+        "recording_mapped_performance_count": 0,
+        "direct_context_resource_count": 0,
+        "official_release_count": 0,
+        "setlist_status": "available",
+        "performer_status": "available"
+      },
+      "enhancement_targets": [
+        "recording_to_performance_track_mappings",
+        "official_release_track_review",
+        "direct_show_or_performance_context"
+      ]
+    }
+  ]
+}
