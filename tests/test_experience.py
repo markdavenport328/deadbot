@@ -58,16 +58,6 @@ class SelectionStub:
         return self.plan
 
 
-class SelectionSequenceStub:
-    def __init__(self, plans):
-        self.plans = iter(plans)
-        self.inputs = []
-
-    def invoke(self, messages):
-        self.inputs.append(messages)
-        return next(self.plans)
-
-
 def tool_message(payload):
     return ToolMessage(content=json.dumps(payload), tool_call_id="tool-call")
 
@@ -460,7 +450,7 @@ def test_show_response_exposes_named_guitars_with_evidence_scope():
     assert any(source.source_id == "source:jerry-garcia-instrument-history" for source in response.sources)
 
 
-def test_equipment_first_show_lookup_can_expand_into_a_show_with_context_and_listening():
+def test_equipment_first_show_lookup_does_not_synthesize_show_context():
     store = CanonicalStore()
     tiger = store.resolve_equipment("Tiger")
     show = store.resolve_show("1979-08-04")
@@ -474,13 +464,7 @@ def test_equipment_first_show_lookup_can_expand_into_a_show_with_context_and_lis
         ],
         store=store,
     )
-    entity = next(block for block in response.blocks if block.type == "entity_card")
-    assert entity.title == "Oakland Auditorium"
-    assert "Oakland, CA" in entity.details
-    assert any(block.type == "show_setlist" for block in response.blocks)
-    assert any(block.type == "recording_list" for block in response.blocks)
-    equipment = next(block for block in response.blocks if block.type == "equipment_list")
-    assert any(item.name == "Tiger" for item in equipment.items)
+    assert [block.type for block in response.blocks] == ["gap_state", "coverage"]
 
 
 def test_composer_returns_a_safe_gap_when_no_tools_return_data():
@@ -666,7 +650,7 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     assert len(stub.inputs) == 1
 
 
-def test_model_guided_composer_revises_an_overfull_layout_instead_of_dumping_candidates():
+def test_model_guided_composer_uses_one_bounded_model_plan():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
     assert show
@@ -678,21 +662,17 @@ def test_model_guided_composer_revises_an_overfull_layout_instead_of_dumping_can
     )
     setlist_index = next(index for index, block in enumerate(response.blocks) if block.type == "show_setlist")
     recording_index = next(index for index, block in enumerate(response.blocks) if block.type == "recording_list")
-    first_plan = CompositionPlan(
-        mode="show",
-        sections=[CompositionSection(region="primary", candidate_indexes=list(range(min(8, len(response.blocks)))))],
-    )
-    revised_plan = CompositionPlan(
+    plan = CompositionPlan(
         mode="show",
         sections=[CompositionSection(region="primary", candidate_indexes=[setlist_index, recording_index])],
     )
-    stub = SelectionSequenceStub([first_plan, revised_plan])
+    stub = SelectionStub(plan)
 
-    composed = ModelGuidedComposer(selector=stub, max_blocks=2).compose("Tell me about the show.", response)
+    composed = ModelGuidedComposer(selector=stub).compose("Tell me about the show.", response)
 
     assert [block.type for block in composed.blocks] == ["show_setlist", "recording_list"]
     assert composed.layout[0].block_indexes == [0, 1]
-    assert len(stub.inputs) == 2
+    assert len(stub.inputs) == 1
 
 
 def _one_block_of_every_type():

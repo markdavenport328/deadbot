@@ -112,7 +112,6 @@ def test_ollama_is_the_default_provider():
 def test_model_guided_composition_is_enabled_by_default():
     settings = Settings()
     assert settings.composer_enabled is True
-    assert settings.composer_max_blocks == 8
 
 
 def test_hardening_settings_have_safe_defaults():
@@ -131,12 +130,10 @@ def test_hardening_settings_are_read_from_the_environment(monkeypatch):
 
 def test_blank_numeric_environment_values_use_defaults(monkeypatch):
     monkeypatch.setenv("DEADBOT_MAX_TOOL_ROUNDS", "")
-    monkeypatch.setenv("DEADBOT_COMPOSER_MAX_BLOCKS", "")
     monkeypatch.setenv("DEADBOT_RATE_LIMIT_PER_MINUTE", "")
     monkeypatch.setenv("DEADBOT_CONVERSATION_WINDOW", "")
     settings = Settings.from_env()
     assert settings.max_tool_rounds == 8
-    assert settings.composer_max_blocks == 8
     assert settings.rate_limit_per_minute == 10
     assert settings.conversation_window == 12
 

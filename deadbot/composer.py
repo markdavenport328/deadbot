@@ -22,7 +22,7 @@ class CompositionSection(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     region: Literal["primary", "supporting", "context", "media"]
-    candidate_indexes: list[int] = Field(min_length=1, max_length=8)
+    candidate_indexes: list[int] = Field(min_length=1, max_length=4)
 
 
 class CompositionPlan(BaseModel):
@@ -30,7 +30,10 @@ class CompositionPlan(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     mode: ExperienceMode = "quick_fact"
-    sections: list[CompositionSection] = Field(min_length=1, max_length=4)
+    # This is a response-schema boundary, not a relevance rule: a page can
+    # have two regions of up to four server-owned blocks. The model still
+    # decides what belongs there, in which region, and in what order.
+    sections: list[CompositionSection] = Field(min_length=1, max_length=2)
     omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=16)
 
 
@@ -381,14 +384,13 @@ class DeterministicComposer:
 class ModelGuidedComposer:
     """Let the model reason over an enriched brief and select a safe layout."""
 
-    def __init__(self, provider: ModelProvider | None = None, max_blocks: int = 8, selector: Any | None = None):
+    def __init__(self, provider: ModelProvider | None = None, selector: Any | None = None):
         if selector is None:
             if provider is None:
                 raise ValueError("A model provider or structured selector is required.")
             model = provider.create_chat_model()
             selector = model.with_structured_output(CompositionPlan, method="json_schema").bind(stream=False)
         self.selector = selector
-        self.max_blocks = max_blocks
 
     def compose(self, question: str, response: ExperienceResponse) -> ExperienceResponse:
         if len(response.blocks) <= 1:
@@ -399,7 +401,7 @@ class ModelGuidedComposer:
             "Treat both columns as one response: do not merely repeat the answer, but do not leave a meaningful returned relationship unexplored when its candidates let the visitor inspect or hear the story for themselves. "
             "Serve the right thing at the right depth, like a trusted, well-prepared fan. Do not perform expertise or invent critical color. "
             "First choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap) from the visitor's request and the grounded material, not from a generic keyword rule. "
-            f"Then select the useful candidates at the depth the question warrants, using no more than {self.max_blocks} blocks in total. Omission is the default: including an irrelevant candidate is worse than omitting optional material. Each chosen block must have a distinct job; do not turn the page into a database dump. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
+            "Then select the useful candidates at the depth the question warrants, using the compact page shape supplied by the response schema. Omission is the default: including an irrelevant candidate is worse than omitting optional material. Each chosen block must have a distinct job; do not turn the page into a database dump. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "Arrange the selections into primary, supporting, context, or media regions by the visitor's intent; there is no universal ordering. "
             "For a show guide, weigh setlist and recordings ahead of ordinary lineup detail. A full lineup or equipment list belongs only when it has a distinct purpose for the visitor's question; a documented guest appearance may be useful context when it genuinely changes the visitor's next move. "
             "Judge each candidate's relevance from its usage_guidance, scope, and provenance in the brief, and use related_show_paths to weigh alternative paths into the same show. "
@@ -416,26 +418,6 @@ class ModelGuidedComposer:
             )
             plan = result if isinstance(result, CompositionPlan) else CompositionPlan.model_validate(result)
             composed = apply_composition_plan(response, plan)
-            if len(composed.blocks) > self.max_blocks:
-                revision_prompt = (
-                    "Revise the proposed layout using the original grounded brief. It exceeds the page budget. "
-                    f"Return a coherent plan with no more than {self.max_blocks} blocks. Preserve only candidates with distinct jobs, prioritizing the evidence and links that make the direct answer useful; omit repeated identity, generic lineup, equipment, or duplicate listening material unless it directly answers the visitor's question. "
-                    "Return only the revised structured plan.\n\n"
-                    f"Original grounded composition brief: {_composer_brief(question, response)}"
-                )
-                revised_result = self.selector.invoke(
-                    [
-                        SystemMessage(content="You are Deadbot's model-first, provenance-aware interface composer. Return only the requested structured layout plan."),
-                        HumanMessage(content=revision_prompt),
-                    ]
-                )
-                revised_plan = revised_result if isinstance(revised_result, CompositionPlan) else CompositionPlan.model_validate(revised_result)
-                revised = apply_composition_plan(response, revised_plan)
-                if len(revised.blocks) <= self.max_blocks:
-                    composed = revised
-                else:
-                    logger.warning("Model composition revision exceeded block budget; using deterministic candidate order.")
-                    return response
             logger.info("Applied model composition plan: candidates=%s sections=%s", len(response.blocks), len(plan.sections))
             return composed
         except Exception as error:
@@ -448,4 +430,4 @@ def create_experience_composer(settings: Settings, provider: ModelProvider | Non
 
     if not settings.composer_enabled:
         return DeterministicComposer()
-    return ModelGuidedComposer(provider or create_model_provider(settings), max_blocks=settings.composer_max_blocks)
+    return ModelGuidedComposer(provider or create_model_provider(settings))

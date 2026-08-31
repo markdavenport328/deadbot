@@ -913,20 +913,7 @@ def compose_experience_response(
                 credit_source_ids.append(source.source_id)
 
     tool_payloads = _tool_payloads(latest_turn_messages)
-    # Equipment-history results identify a concrete canonical show. Expand that
-    # result locally so a first/last-guitar answer can still open into the
-    # venue, setlist, recording, and equipment context when the agent stops
-    # after its factual lookup.
-    expanded_payloads = list(tool_payloads)
     for payload in tool_payloads:
-        first_show = payload.get("first_documented_show")
-        if not isinstance(first_show, dict):
-            continue
-        show = store.one("shows", first_show.get("show_id", ""))
-        if show:
-            expanded_payloads.append(store.show_context(show))
-
-    for payload in expanded_payloads:
         show_selection_blocks, show_selection_sources = _show_selection_blocks(payload)
         if show_selection_blocks:
             blocks.extend(show_selection_blocks)

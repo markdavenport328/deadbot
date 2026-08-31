@@ -72,7 +72,6 @@ class Settings:
     openai_api_key: str | None = None
     max_tool_rounds: int = 8
     composer_enabled: bool = True
-    composer_max_blocks: int = 8
     rate_limit_per_minute: int = 10
     conversation_window: int = 12
 
@@ -103,7 +102,6 @@ class Settings:
             openai_api_key=value("OPENAI_API_KEY"),
             max_tool_rounds=_as_int(value("DEADBOT_MAX_TOOL_ROUNDS"), 8),
             composer_enabled=_as_bool(value("DEADBOT_COMPOSER_ENABLED"), True),
-            composer_max_blocks=_as_int(value("DEADBOT_COMPOSER_MAX_BLOCKS"), 8),
             rate_limit_per_minute=_as_int(value("DEADBOT_RATE_LIMIT_PER_MINUTE"), 10),
             conversation_window=_as_int(value("DEADBOT_CONVERSATION_WINDOW"), 12),
         )
