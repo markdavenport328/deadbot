@@ -62,6 +62,7 @@ See `docs/graph-scope.md` for the boundary between structured graph data and ext
 - `docs/song-cohort-candidates.md` — reproducible 72-song factual coverage queue for cross-decade enrichment review.
 - `docs/featured-show-candidates.md` — reviewable cross-era show enhancement queue with current coverage and relationship gaps.
 - `docs/data-audit-2026-08-27.md` — a point-in-time, verified row-count and gap audit of the canonical CSV data, with prioritized next data-work steps.
+- `docs/canonical-spine-baseline.md` — generated, machine-readable entity and relationship coverage baseline with explicit unresolved gaps.
 - `docs/collection-methodology.md` — practical collection workflow, retry safety, title matching, rights boundaries, and validation checklist.
 - `docs/collection-status-1965-1995.md` — full show/setlist baseline coverage and early-year gaps.
 - `docs/agent-handoff.md` — concise onboarding guide for a collaborating agent.
