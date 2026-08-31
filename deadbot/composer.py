@@ -130,7 +130,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "set_labels": [section.label for section in block.sets],
             "song_count": sum(len(section.songs) for section in block.sets),
             "helps_with": "show setlist questions; each song is a grounded follow-up target",
-            "usage_guidance": "the strongest orientation for questions about sequence, sets, or what was played; it can be supporting context when the visitor's next move is listening or investigating a specific performance",
+            "usage_guidance": "the default primary block for a broad show guide and the strongest orientation for questions about sequence, sets, or what was played; pair it with recordings when available. It can be supporting context when the visitor's next move is listening or investigating a specific performance",
             "provenance": "canonical",
         }
     if block.type == "recording_list":
@@ -143,7 +143,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "source_types": sorted({item.source_type for item in block.items}),
             "archive_identifiers": [item.archive_identifier for item in block.items if item.archive_identifier],
             "helps_with": "listening to recordings of the show",
-            "usage_guidance": "an immediate listening path for a visitor asking about how a guitar or performance sounds; for a first-use or named-equipment question, pairing a recording with the grounded equipment claim lets the visitor hear the instrument in its documented setting; it can be supporting context when the visitor asked about set order or song sequence",
+            "usage_guidance": "a top-priority companion to the setlist for a broad show guide and an immediate listening path for a visitor asking about how a guitar or performance sounds; for a first-use or named-equipment question, pairing a recording with the grounded equipment claim lets the visitor hear the instrument in its documented setting; it can be supporting context when the visitor asked about set order or song sequence",
             "provenance": "stored recording metadata",
         }
     if block.type == "performer_list":
@@ -155,7 +155,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "performer_count": len(block.items),
             "guest_names": [item.name for item in block.items if item.role == "guest"],
             "helps_with": "show lineup, guest, role, and instrument questions",
-            "usage_guidance": "include for lineup, guest, musician, role, or instrument questions; it groups each person with their recorded instruments",
+            "usage_guidance": "include for lineup, guest, musician, role, or instrument questions; it groups each person with their recorded instruments. For a broad show guide, omit the standard lineup by default: the setlist and recordings take priority. A sourced guest name may justify a lower-priority context card when it is a genuinely notable listening lead, but never place the full lineup ahead of the setlist or recordings",
             "provenance": "source-reviewed canonical assignment",
         }
     if block.type == "equipment_list":
@@ -386,6 +386,7 @@ class ModelGuidedComposer:
             "First choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap) from the visitor's request and the grounded material, not from a generic keyword rule. "
             "Then select the smallest useful set of candidates. Omission is the default: including an irrelevant candidate is worse than omitting optional material, and most questions need one to three candidates. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
             "Arrange the selections into primary, supporting, context, or media regions by the visitor's intent; there is no universal ordering. "
+            "For a broad show question, setlist is normally the primary guide and recordings are its highest-priority companion. Omit the ordinary performer list unless the visitor asks about the lineup, roles, instruments, or guests. When the supplied guest names identify a truly notable guest appearance, it may be useful as lower-priority context, but it must not displace the setlist or recordings. "
             "Judge each candidate's relevance from its usage_guidance, scope, and provenance in the brief, and use related_show_paths to weigh alternative paths into the same show. "
             "Never present partial library evidence as a historical total. "
             "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"
