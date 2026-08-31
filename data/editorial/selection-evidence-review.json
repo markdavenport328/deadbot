@@ -1,0 +1,607 @@
+{
+  "schema_version": 1,
+  "kind": "selection_evidence_review",
+  "status": "staging_only",
+  "purpose": "Conservatively resolved source-attributed selection evidence. It is not runtime input or a best-version score; unresolved or access-limited signals remain held for review.",
+  "source_constraints": {
+    "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",
+    "rolling_stone_australia": "copyright-restricted metadata-only critic list",
+    "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion"
+  },
+  "summary": {
+    "entry_count": 41,
+    "by_source": {
+      "deadnet-official-release-pass": 5,
+      "headyversion": 16,
+      "rolling-stone-australia": 20
+    },
+    "by_resolution_state": {
+      "held_ambiguous_show_date": 2,
+      "held_multiple_canonical_performances": 4,
+      "held_source_detail_needed": 1,
+      "resolved_show_pending_release_review": 4,
+      "resolved_unique_performance": 11,
+      "resolved_unique_show": 19
+    }
+  },
+  "entries": [
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1966-12-01",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1966-12-01",
+      "candidate_show_ids": [
+        "gd-1966-12-01"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1967-03-18",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1967-03-18",
+      "candidate_show_ids": [
+        "gd-1967-03-18"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1967-09-03",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1967-09-03",
+      "candidate_show_ids": [
+        "gd-1967-09-03"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1968-02-14",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1968-02-14",
+      "candidate_show_ids": [
+        "gd-1968-02-14"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1969-02-22",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1969-02-22",
+      "candidate_show_ids": [
+        "gd-1969-02-22"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1969-12-26",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1969-12-26",
+      "candidate_show_ids": [
+        "gd-1969-12-26"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1970-02-13",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1970-02-13",
+      "candidate_show_ids": [
+        "gd-1970-02-13-0",
+        "gd-1970-02-13-1"
+      ],
+      "resolution_state": "held_ambiguous_show_date",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1970-05-02",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1970-05-02",
+      "candidate_show_ids": [
+        "gd-1970-05-02"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1971-02-19",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1971-02-19",
+      "candidate_show_ids": [
+        "gd-1971-02-19"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1972-04-16",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1972-04-16",
+      "candidate_show_ids": [
+        "gd-1972-04-16"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1972-05-07",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1972-05-07",
+      "candidate_show_ids": [
+        "gd-1972-05-07"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1974-08-05",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1974-08-05",
+      "candidate_show_ids": [
+        "gd-1974-08-05"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1975-08-13",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1975-08-13",
+      "candidate_show_ids": [
+        "gd-1975-08-13"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1976-06-14",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1976-06-14",
+      "candidate_show_ids": [
+        "gd-1976-06-14"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1977-06-09",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1984-10-12",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1984-10-12",
+      "candidate_show_ids": [
+        "gd-1984-10-12"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1987-09-18",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1987-09-18",
+      "candidate_show_ids": [
+        "gd-1987-09-18"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1989-10-09",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1989-10-09",
+      "candidate_show_ids": [
+        "gd-1989-10-09"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1990-03-29",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1990-03-29",
+      "candidate_show_ids": [
+        "gd-1990-03-29"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "rolling-stone-australia",
+      "signal_type": "critic_editorial_show_selection",
+      "source_record_id": "20-essential-grateful-dead-shows:1991-09-14",
+      "source_url": "https://au.rollingstone.com/music/music-features/grateful-dead-shows-david-fricke-15410/",
+      "show_date": "1991-09-14",
+      "candidate_show_ids": [
+        "gd-1991-09-14"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "selection_label": "David Fricke / Rolling Stone: 20 Essential Grateful Dead Shows"
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-dark-star"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 1,
+      "fan_vote_count": 496
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1970-02-13",
+      "candidate_show_ids": [
+        "gd-1970-02-13-0",
+        "gd-1970-02-13-1"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-02-13-1-dark-star-1-12"
+      ],
+      "resolution_state": "held_ambiguous_show_date",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 2,
+      "fan_vote_count": 346
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1969-02-27",
+      "candidate_show_ids": [
+        "gd-1969-02-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-02-27-dark-star-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 3,
+      "fan_vote_count": 289
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1971-02-18",
+      "candidate_show_ids": [
+        "gd-1971-02-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-02-18-dark-star-1-9",
+        "gd-1971-02-18-dark-star-1-12"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 4,
+      "fan_vote_count": 257
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1971-10-31",
+      "candidate_show_ids": [
+        "gd-1971-10-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-10-31-dark-star-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 5,
+      "fan_vote_count": 243
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1973-11-11",
+      "candidate_show_ids": [
+        "gd-1973-11-11"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-11-11-dark-star-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 6,
+      "fan_vote_count": 234
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1972-09-21",
+      "candidate_show_ids": [
+        "gd-1972-09-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-09-21-dark-star-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 7,
+      "fan_vote_count": 230
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1972-04-08",
+      "candidate_show_ids": [
+        "gd-1972-04-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-04-08-dark-star-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 8,
+      "fan_vote_count": 219
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1970-09-19",
+      "candidate_show_ids": [
+        "gd-1970-09-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-09-19-dark-star-2-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 9,
+      "fan_vote_count": 155
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1972-05-11",
+      "candidate_show_ids": [
+        "gd-1972-05-11"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-05-11-dark-star-2-7",
+        "gd-1972-05-11-dark-star-2-9"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 10,
+      "fan_vote_count": 145
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1973-12-06",
+      "candidate_show_ids": [
+        "gd-1973-12-06"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-12-06-dark-star-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 11,
+      "fan_vote_count": 144
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1989-10-26",
+      "candidate_show_ids": [
+        "gd-1989-10-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-10-26-dark-star-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 12,
+      "fan_vote_count": 138
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1972-09-27",
+      "candidate_show_ids": [
+        "gd-1972-09-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-09-27-dark-star-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 13,
+      "fan_vote_count": 124
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1974-10-18",
+      "candidate_show_ids": [
+        "gd-1974-10-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-10-18-dark-star-2-3",
+        "gd-1974-10-18-dark-star-2-5"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 14,
+      "fan_vote_count": 122
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/song/66/grateful-dead/dark-star/",
+      "song_id": "song-dark-star",
+      "show_date": "1972-04-24",
+      "candidate_show_ids": [
+        "gd-1972-04-24"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-04-24-dark-star-2-1",
+        "gd-1972-04-24-dark-star-2-3"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": 15,
+      "fan_vote_count": 118
+    },
+    {
+      "source": "headyversion",
+      "signal_type": "fan_ranked_version",
+      "source_url": "https://headyversion.com/submission/3779/grateful-dead-bird-song-1972-09-21/",
+      "song_id": "song-bird-song",
+      "show_date": "1972-09-21",
+      "candidate_show_ids": [
+        "gd-1972-09-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-09-21-bird-song-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "collection_state": "indexed_excerpt",
+      "recommendation_rank": null,
+      "fan_vote_count": 141
+    },
+    {
+      "source": "deadnet-official-release-pass",
+      "signal_type": "official_release_candidate",
+      "source_url": "https://www.dead.net/archives/1995/artwork/dicks-picks-volume-3",
+      "release_candidate_id": "dicks-picks-3",
+      "candidate_show_ids": [
+        "gd-1977-05-22"
+      ],
+      "resolution_state": "resolved_show_pending_release_review",
+      "release_status": "confirmed",
+      "title": "Dick's Picks Volume 3"
+    },
+    {
+      "source": "deadnet-official-release-pass",
+      "signal_type": "official_release_candidate",
+      "source_url": "https://store.dead.net/products/duke-78-3cd",
+      "release_candidate_id": "duke-78",
+      "candidate_show_ids": [
+        "gd-1978-04-12"
+      ],
+      "resolution_state": "resolved_show_pending_release_review",
+      "release_status": "confirmed",
+      "title": "Duke '78"
+    },
+    {
+      "source": "deadnet-official-release-pass",
+      "signal_type": "official_release_candidate",
+      "source_url": "https://store.dead.net/products/madison-square-garden-new-york-ny-3-9-81-3cd-1",
+      "release_candidate_id": "madison-square-garden-1981-03-09",
+      "candidate_show_ids": [
+        "gd-1981-03-09"
+      ],
+      "resolution_state": "resolved_show_pending_release_review",
+      "release_status": "confirmed",
+      "title": "Madison Square Garden, New York, NY 3/9/81 [3CD]"
+    },
+    {
+      "source": "deadnet-official-release-pass",
+      "signal_type": "official_release_candidate",
+      "source_url": "https://store.dead.net/collections/digital",
+      "release_candidate_id": "cornell-1977-05-08-digital",
+      "candidate_show_ids": [
+        "gd-1977-05-08"
+      ],
+      "resolution_state": "resolved_show_pending_release_review",
+      "release_status": "confirmed_collection_only",
+      "title": "Cornell 5/8/77 Digital Album ALAC"
+    },
+    {
+      "source": "deadnet-official-release-pass",
+      "signal_type": "official_release_candidate",
+      "source_url": "https://www.dead.net/taxonomy/term/546",
+      "release_candidate_id": "dicks-picks-36",
+      "candidate_show_ids": [
+        "gd-1972-09-21"
+      ],
+      "resolution_state": "held_source_detail_needed",
+      "release_status": "series_candidate_unresolved",
+      "title": "Dick's Picks Volume 36"
+    }
+  ]
+}
