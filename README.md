@@ -64,6 +64,7 @@ See `docs/graph-scope.md` for the boundary between structured graph data and ext
 - `docs/data-audit-2026-08-27.md` — a point-in-time, verified row-count and gap audit of the canonical CSV data, with prioritized next data-work steps.
 - `docs/canonical-spine-baseline.md` — generated, machine-readable entity and relationship coverage baseline with explicit unresolved gaps.
 - `docs/reconciliation-queue.md` — source-scoped queue for resolving missing setlists and performer assignments without inventing facts.
+- `docs/selection-evidence-review.md` — staged official-release, critic, and fan signals with explicit source and entity-resolution limits.
 - `docs/collection-methodology.md` — practical collection workflow, retry safety, title matching, rights boundaries, and validation checklist.
 - `docs/collection-status-1965-1995.md` — full show/setlist baseline coverage and early-year gaps.
 - `docs/agent-handoff.md` — concise onboarding guide for a collaborating agent.
