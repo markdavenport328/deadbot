@@ -6,22 +6,27 @@
   "source_constraints": {
     "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",
     "rolling_stone_australia": "copyright-restricted metadata-only critic list",
-    "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion"
+    "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion",
+    "charlie_miller_threads": "user-provided screenshot; account identity is probable but not platform-verified in this dataset",
+    "charlie_miller_reddit": "self-identified account replies; retain as individual-curator selections, not a consensus signal"
   },
   "summary": {
-    "entry_count": 41,
+    "entry_count": 78,
     "by_source": {
+      "charlie-miller-reddit": 17,
+      "charlie-miller-user-provided-threads": 20,
       "deadnet-official-release-pass": 5,
       "headyversion": 16,
       "rolling-stone-australia": 20
     },
     "by_resolution_state": {
-      "held_ambiguous_show_date": 2,
-      "held_multiple_canonical_performances": 4,
+      "held_ambiguous_show_date": 3,
+      "held_era_scope": 1,
+      "held_multiple_canonical_performances": 5,
       "held_source_detail_needed": 1,
       "resolved_show_pending_release_review": 4,
-      "resolved_unique_performance": 11,
-      "resolved_unique_show": 19
+      "resolved_unique_performance": 29,
+      "resolved_unique_show": 35
     }
   },
   "entries": [
@@ -602,6 +607,569 @@
       "resolution_state": "held_source_detail_needed",
       "release_status": "series_candidate_unresolved",
       "title": "Dick's Picks Volume 36"
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-mr-charlie",
+      "show_date": "1972-03-27",
+      "candidate_show_ids": [
+        "gd-1972-03-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-03-27-mr-charlie-1-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Mr Charlie",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-shakedown-street",
+      "show_date": "1981-12-31",
+      "candidate_show_ids": [
+        "gd-1981-12-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1981-12-31-shakedown-street-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Shakedown Street",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-new-speedway-boogie",
+      "show_date": "1970-05-14",
+      "candidate_show_ids": [
+        "gd-1970-05-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-05-14-new-speedway-boogie-2-16",
+        "gd-1970-05-14-new-speedway-boogie-2-18"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "source_label": "New Speedway Boogie",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-west-l-a-fadeaway",
+      "show_date": "1986-03-31",
+      "candidate_show_ids": [
+        "gd-1986-03-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1986-03-31-west-l-a-fadeaway-1-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "West LA Fadeaway",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-china-cat-sunflower",
+      "show_date": "1981-03-09",
+      "candidate_show_ids": [
+        "gd-1981-03-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1981-03-09-china-cat-sunflower-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "China Cat Sunflower",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-i-know-you-rider",
+      "show_date": "1981-03-09",
+      "candidate_show_ids": [
+        "gd-1981-03-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1981-03-09-i-know-you-rider-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "I Know You Rider",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-samson-and-delilah",
+      "show_date": "1981-03-09",
+      "candidate_show_ids": [
+        "gd-1981-03-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1981-03-09-samson-and-delilah-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Samson And Delilah",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-feel-like-a-stranger",
+      "show_date": "1984-06-26",
+      "candidate_show_ids": [
+        "gd-1984-06-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-06-26-feel-like-a-stranger-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Feel Like A Stranger",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-althea",
+      "show_date": "1984-06-26",
+      "candidate_show_ids": [
+        "gd-1984-06-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-06-26-althea-1-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Althea",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1977-05-13",
+      "candidate_show_ids": [
+        "gd-1977-05-13"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-13-scarlet-begonias-1-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Scarlet",
+      "source_context": "Scarlet > Fire"
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-fire-on-the-mountain",
+      "show_date": "1977-05-13",
+      "candidate_show_ids": [
+        "gd-1977-05-13"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-13-fire-on-the-mountain-1-11"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Fire",
+      "source_context": "Scarlet > Fire"
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-peggy-o",
+      "show_date": "1985-03-28",
+      "candidate_show_ids": [
+        "gd-1985-03-28"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-03-28-peggy-o-1-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Peggy-O",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-gloria",
+      "show_date": "1985-04-14",
+      "candidate_show_ids": [
+        "gd-1985-04-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-04-14-gloria-3-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Gloria",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-dancin-in-the-streets",
+      "show_date": "1970-02-14",
+      "candidate_show_ids": [
+        "gd-1970-02-14-0",
+        "gd-1970-02-14-1"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-02-14-1-dancin-in-the-streets-1-11"
+      ],
+      "resolution_state": "held_ambiguous_show_date",
+      "source_label": "Dancing In The Street",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-brown-eyed-women",
+      "show_date": "1983-12-30",
+      "candidate_show_ids": [
+        "gd-1983-12-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1983-12-30-brown-eyed-women-1-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Brown Eyed Women",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-stuck-inside-of-mobile-with-the-memphis-blues-again",
+      "show_date": "1991-09-09",
+      "candidate_show_ids": [
+        "gd-1991-09-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-09-09-stuck-inside-of-mobile-with-the-memphis-blues-again-1-6"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Memphis Blues",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1985-03-31",
+      "candidate_show_ids": [
+        "gd-1985-03-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-03-31-playing-in-the-band-2-9"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "PITB",
+      "source_context": "PITB > Day Tripper"
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-day-tripper",
+      "show_date": "1985-03-31",
+      "candidate_show_ids": [
+        "gd-1985-03-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-03-31-day-tripper-2-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Day Tripper",
+      "source_context": "PITB > Day Tripper"
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1979-11-05",
+      "candidate_show_ids": [
+        "gd-1979-11-05"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-11-05-eyes-of-the-world-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Eyes Of The World",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-user-provided-threads",
+      "signal_type": "individual_curator_song_selection",
+      "source_handle": "charliedmiller87",
+      "source_provenance": "user_provided_screenshot",
+      "identity_state": "probable_charlie_miller_unverified_by_platform",
+      "song_id": "song-morning-dew",
+      "show_date": "1972-12-31",
+      "candidate_show_ids": [
+        "gd-1972-12-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-12-31-morning-dew-2-9"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "source_label": "Morning Dew",
+      "source_context": null
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1978-04-15",
+      "candidate_show_ids": [
+        "gd-1978-04-15"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1979-01-08",
+      "candidate_show_ids": [
+        "gd-1979-01-08"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1980-05-11",
+      "candidate_show_ids": [
+        "gd-1980-05-11"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1980-08-31",
+      "candidate_show_ids": [
+        "gd-1980-08-31"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1981-09-26",
+      "candidate_show_ids": [
+        "gd-1981-09-26"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1981-12-31",
+      "candidate_show_ids": [
+        "gd-1981-12-31"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1982-09-21",
+      "candidate_show_ids": [
+        "gd-1982-09-21"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_era_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "resolution_state": "held_era_scope",
+      "era_label": "Spring 1983",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1983-06-24",
+      "candidate_show_ids": [
+        "gd-1983-06-24"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1983-08-27",
+      "candidate_show_ids": [
+        "gd-1983-08-27"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1984-04-13",
+      "candidate_show_ids": [
+        "gd-1984-04-13"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/1jz51d6/charlie_miller_has_listened_to_and_transferred/",
+      "show_date": "1984-04-17",
+      "candidate_show_ids": [
+        "gd-1984-04-17"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "Some of my favorites"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/bxjjlf/hello_everyone_its_me_charlie_miller_ill_be_here/",
+      "show_date": "1993-04-01",
+      "candidate_show_ids": [
+        "gd-1993-04-01"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "AMA response: good work / recommended show"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/bxjjlf/hello_everyone_its_me_charlie_miller_ill_be_here/",
+      "show_date": "1993-09-12",
+      "candidate_show_ids": [
+        "gd-1993-09-12"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "AMA response: good work / recommended show"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/bxjjlf/hello_everyone_its_me_charlie_miller_ill_be_here/",
+      "show_date": "1992-12-16",
+      "candidate_show_ids": [
+        "gd-1992-12-16"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "AMA response: good work / recommended show"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/bxjjlf/hello_everyone_its_me_charlie_miller_ill_be_here/",
+      "show_date": "1994-12-08",
+      "candidate_show_ids": [
+        "gd-1994-12-08"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "AMA response: good work / recommended show"
+    },
+    {
+      "source": "charlie-miller-reddit",
+      "signal_type": "individual_curator_show_recommendation",
+      "source_handle": "u/charliemiller87",
+      "source_url": "https://www.reddit.com/r/gratefuldead/comments/bxjjlf/hello_everyone_its_me_charlie_miller_ill_be_here/",
+      "show_date": "1993-06-21",
+      "candidate_show_ids": [
+        "gd-1993-06-21"
+      ],
+      "resolution_state": "resolved_unique_show",
+      "source_context": "AMA response: good work / recommended show"
     }
   ]
 }

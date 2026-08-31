@@ -15,5 +15,6 @@ and does not claim that a source signal identifies an objectively best show or
 version.
 
 Promotion requires a reviewed source-registry entry, a typed `resource`, and
-a selection-list import path. Keep critic, fan, and official-release evidence
-as separate selection types rather than normalizing them into one score.
+a selection-list import path. Keep critic, fan, individual-curator, and
+official-release evidence as separate selection types rather than normalizing
+them into one score.

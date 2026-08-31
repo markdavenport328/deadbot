@@ -96,6 +96,73 @@ def document() -> dict[str, object]:
             "title": record["title"],
         })
 
+    screenshot_records = jsonl(
+        RAW / "individual-curators" / "charlie-miller-user-provided-threads-screenshot-2026-08-30.jsonl"
+    )
+    for record in screenshot_records:
+        payload = record.get("raw_payload", {})
+        if not isinstance(payload, dict):
+            continue
+        for item in payload.get("entries", []):
+            if not isinstance(item, dict):
+                continue
+            date = str(item["performance_date"])
+            song_id = str(item["song_id_candidate"])
+            date_show_candidates = shows_by_date.get(date, [])
+            performance_candidates = [
+                performance for performance in performances
+                if performance["song_id"] == song_id
+                and performance["show_id"] in {show["show_id"] for show in date_show_candidates}
+            ]
+            if len(date_show_candidates) != 1:
+                state = "held_ambiguous_show_date"
+            elif len(performance_candidates) == 1:
+                state = "resolved_unique_performance"
+            elif not performance_candidates:
+                state = "held_missing_canonical_performance"
+            else:
+                state = "held_multiple_canonical_performances"
+            entries.append({
+                "source": "charlie-miller-user-provided-threads",
+                "signal_type": "individual_curator_song_selection",
+                "source_handle": record["source_handle"],
+                "source_provenance": "user_provided_screenshot",
+                "identity_state": record["identity_state"],
+                "song_id": song_id,
+                "show_date": date,
+                "candidate_show_ids": [show["show_id"] for show in date_show_candidates],
+                "candidate_performance_ids": [performance["performance_id"] for performance in performance_candidates],
+                "resolution_state": state,
+                "source_label": item["source_label"],
+                "source_context": item.get("source_context"),
+            })
+
+    reddit_records = jsonl(RAW / "individual-curators" / "charlie-miller-reddit-recommendations-2026-08-30.jsonl")
+    for record in reddit_records:
+        if "performance_date" not in record:
+            entries.append({
+                "source": "charlie-miller-reddit",
+                "signal_type": str(record["selection_type"]),
+                "source_handle": record["source_handle"],
+                "source_url": record["source_url"],
+                "resolution_state": "held_era_scope",
+                "era_label": record.get("era_label"),
+                "source_context": record["source_context"],
+            })
+            continue
+        date = str(record["performance_date"])
+        candidates = shows_by_date.get(date, [])
+        entries.append({
+            "source": "charlie-miller-reddit",
+            "signal_type": str(record["selection_type"]),
+            "source_handle": record["source_handle"],
+            "source_url": record["source_url"],
+            "show_date": date,
+            "candidate_show_ids": [show["show_id"] for show in candidates],
+            "resolution_state": "resolved_unique_show" if len(candidates) == 1 else "held_ambiguous_show_date",
+            "source_context": record["source_context"],
+        })
+
     state_counts = Counter(entry["resolution_state"] for entry in entries)
     source_counts = Counter(entry["source"] for entry in entries)
     return {
@@ -111,6 +178,8 @@ def document() -> dict[str, object]:
             "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",
             "rolling_stone_australia": "copyright-restricted metadata-only critic list",
             "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion",
+            "charlie_miller_threads": "user-provided screenshot; account identity is probable but not platform-verified in this dataset",
+            "charlie_miller_reddit": "self-identified account replies; retain as individual-curator selections, not a consensus signal",
         },
         "summary": {"entry_count": len(entries), "by_source": dict(sorted(source_counts.items())), "by_resolution_state": dict(sorted(state_counts.items()))},
         "entries": entries,
