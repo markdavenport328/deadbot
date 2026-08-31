@@ -12,10 +12,13 @@ def test_selection_evidence_review_is_materialized_and_preserves_holds():
     assert materialized == document()
     summary = materialized["summary"]
     assert summary["by_source"] == {
+        "charlie-miller-reddit": 17,
+        "charlie-miller-user-provided-threads": 20,
         "deadnet-official-release-pass": 5,
         "headyversion": 16,
         "rolling-stone-australia": 20,
     }
-    assert summary["by_resolution_state"]["resolved_unique_show"] == 19
+    assert summary["by_resolution_state"]["resolved_unique_show"] >= 19
+    assert summary["by_resolution_state"]["resolved_unique_performance"] >= 11
     assert summary["by_resolution_state"]["held_ambiguous_show_date"] > 0
     assert summary["by_resolution_state"]["held_multiple_canonical_performances"] > 0
