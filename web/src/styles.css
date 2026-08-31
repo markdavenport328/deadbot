@@ -71,9 +71,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .song-credits li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .song-credits li span, .inline-follow-up + span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
 .inline-follow-up { color: #f1efdf; font-weight: 700; }
-.resource-list ul, .recording-list ul, .performer-list ul, .equipment-list ul, .arrangement-search ul, .chords { margin: 1rem 0 0; padding: 0; list-style: none; }
-.resource-list li + li, .recording-list li + li, .performer-list li + li, .equipment-list li + li, .arrangement-search li + li, .chords li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
-.resource-list li span, .recording-list li span, .performer-list li span, .equipment-list li span, .arrangement-search li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; }
+.resource-list ul, .recording-list ul, .performer-list ul, .guest-appearance-list ol, .equipment-list ul, .arrangement-search ul, .chords { margin: 1rem 0 0; padding: 0; list-style: none; }
+.resource-list li + li, .recording-list li + li, .performer-list li + li, .guest-appearance-list li + li, .equipment-list li + li, .arrangement-search li + li, .chords li + li { border-top: 1px solid #3e5544; margin-top: 0.8rem; padding-top: 0.8rem; }
+.resource-list li span, .recording-list li span, .performer-list li span, .guest-appearance-list li span, .equipment-list li span, .arrangement-search li span { display: block; margin-top: 0.3rem; color: #aebbac; font-size: 0.86rem; }
+.resource-list li p { margin: 0.45rem 0 0; color: #d5ddd2; font-size: 0.92rem; line-height: 1.45; }
 .performer-list { background: #233028; }
 .performer-list .performer-role { color: #d0b77a; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; }
 .equipment-list { background: #2d2b22; }

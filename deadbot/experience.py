@@ -127,6 +127,25 @@ class PerformerListBlock(ExperienceModel):
     items: list[PerformerItem] = Field(min_length=1, max_length=24)
 
 
+class GuestAppearanceItem(ExperienceModel):
+    show_id: str
+    show_date: str
+    instruments: list[str] = Field(min_length=1, max_length=8)
+    participation_scope: str | None = None
+    follow_up: str
+
+
+class GuestAppearanceListBlock(ExperienceModel):
+    """Canonical guest-show relationships for one resolved person."""
+
+    type: Literal["guest_appearance_list"]
+    person_id: str
+    person_name: str
+    known_show_count: int = Field(ge=1)
+    coverage_note: str
+    items: list[GuestAppearanceItem] = Field(min_length=1, max_length=24)
+
+
 class EquipmentItem(ExperienceModel):
     equipment_id: str
     name: str
@@ -154,6 +173,7 @@ class ResourceItem(ExperienceModel):
     source_name: str
     url: str
     source_id: str
+    context_note: str | None = None
 
 
 class ResourceListBlock(ExperienceModel):
@@ -326,6 +346,7 @@ ExperienceBlock = Annotated[
     | ShowSelectionBlock
     | RecordingListBlock
     | PerformerListBlock
+    | GuestAppearanceListBlock
     | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock
@@ -371,9 +392,9 @@ class ExperienceResponse(ExperienceModel):
     answer: str
     mode: ExperienceMode = "quick_fact"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
-    blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=16)
+    blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=24)
     layout: list[LayoutSection] = Field(default_factory=list, max_length=4)
-    sources: list[SourceReference] = Field(default_factory=list, max_length=32)
+    sources: list[SourceReference] = Field(default_factory=list, max_length=48)
 
 
 # ---------------------------------------------------------------------------

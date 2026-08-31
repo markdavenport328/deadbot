@@ -650,6 +650,7 @@
                   "entity_card": "#/components/schemas/EntityCardBlock",
                   "equipment_list": "#/components/schemas/EquipmentListBlock",
                   "gap_state": "#/components/schemas/GapStateBlock",
+                  "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
                   "performance_extremes": "#/components/schemas/PerformanceExtremesBlock",
                   "performance_list": "#/components/schemas/PerformanceListBlock",
@@ -679,6 +680,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/PerformerListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/GuestAppearanceListBlock"
                 },
                 {
                   "$ref": "#/components/schemas/EquipmentListBlock"
@@ -724,7 +728,7 @@
                 }
               ]
             },
-            "maxItems": 16,
+            "maxItems": 24,
             "title": "Blocks",
             "type": "array"
           },
@@ -769,7 +773,7 @@
             "items": {
               "$ref": "#/components/schemas/SourceReference"
             },
-            "maxItems": 32,
+            "maxItems": 48,
             "title": "Sources",
             "type": "array"
           },
@@ -808,6 +812,98 @@
           "message"
         ],
         "title": "GapStateBlock",
+        "type": "object"
+      },
+      "GuestAppearanceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "instruments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Instruments",
+            "type": "array"
+          },
+          "participation_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participation Scope"
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "show_id",
+          "show_date",
+          "instruments",
+          "follow_up"
+        ],
+        "title": "GuestAppearanceItem",
+        "type": "object"
+      },
+      "GuestAppearanceListBlock": {
+        "additionalProperties": false,
+        "description": "Canonical guest-show relationships for one resolved person.",
+        "properties": {
+          "coverage_note": {
+            "title": "Coverage Note",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GuestAppearanceItem"
+            },
+            "maxItems": 24,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "known_show_count": {
+            "minimum": 1.0,
+            "title": "Known Show Count",
+            "type": "integer"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "person_name": {
+            "title": "Person Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "guest_appearance_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "person_id",
+          "person_name",
+          "known_show_count",
+          "coverage_note",
+          "items"
+        ],
+        "title": "GuestAppearanceListBlock",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1354,6 +1450,17 @@
       "ResourceItem": {
         "additionalProperties": false,
         "properties": {
+          "context_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Note"
+          },
           "resource_id": {
             "title": "Resource Id",
             "type": "string"

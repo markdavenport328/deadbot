@@ -103,10 +103,43 @@ def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
     store = CanonicalStore()
     payload = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford"}))
     assert payload["coverage_note"].startswith("Complete current canonical guest-credit directory")
-    assert {guest["name"] for guest in payload["guests"]} >= {"Branford Marsalis"}
-    branford = next(guest for guest in payload["guests"] if guest["name"] == "Branford Marsalis")
-    assert branford["guest_show_count"] >= 1
+    assert [guest["name"] for guest in payload["guests"]] == ["Branford Marsalis"]
+    branford = payload["guests"][0]
+    assert branford["guest_show_count"] == 5
+    assert {appearance["show_id"] for appearance in branford["appearances"]} == {
+        "gd-1990-03-29",
+        "gd-1990-12-31",
+        "gd-1991-09-10",
+        "gd-1993-12-10",
+        "gd-1994-12-16",
+    }
     assert all(appearance["show_date"] for appearance in branford["appearances"])
+    enrichment = json.loads(
+        tool_by_name(store, "search_stored_resources").invoke({"query": branford["name"]})
+    )
+    assert {resource["resource_type"] for resource in enrichment["resources"]} >= {
+        "community-show-page",
+        "artist-hosted-feature",
+        "community-forum-thread",
+    }
+    community_pages = [
+        resource for resource in enrichment["resources"]
+        if resource["resource_type"] == "community-show-page"
+    ]
+    assert len(community_pages) == 5
+    assert all(resource["notes"].startswith("Visitor context:") for resource in community_pages)
+
+
+def test_guest_search_accepts_a_natural_language_person_query():
+    payload = json.loads(
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "how many times did branford play with them"}
+        )
+    )
+
+    assert [(guest["name"], guest["guest_show_count"]) for guest in payload["guests"]] == [
+        ("Branford Marsalis", 5)
+    ]
 
 
 def test_resource_directory_searches_cataloged_anecdotal_sources_across_scopes():

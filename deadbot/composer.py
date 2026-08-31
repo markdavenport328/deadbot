@@ -22,19 +22,16 @@ class CompositionSection(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     region: Literal["primary", "supporting", "context", "media"]
-    candidate_indexes: list[int] = Field(min_length=1, max_length=4)
+    candidate_indexes: list[int] = Field(min_length=1, max_length=8)
 
 
 class CompositionPlan(BaseModel):
-    """The model's layout decision; it cannot create or mutate content blocks."""
+    """The model's editorial and layout decision over grounded candidates."""
 
     model_config = ConfigDict(extra="forbid")
     mode: ExperienceMode = "quick_fact"
-    # This is a response-schema boundary, not a relevance rule: a page can
-    # have two regions of up to four server-owned blocks. The model still
-    # decides what belongs there, in which region, and in what order.
-    sections: list[CompositionSection] = Field(min_length=1, max_length=2)
-    omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=16)
+    sections: list[CompositionSection] = Field(min_length=1, max_length=4)
+    omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=24)
 
 
 class ExperienceComposer(Protocol):
@@ -54,7 +51,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "details": block.details,
             "redundant_when_title_only": not block.subtitle and not block.details,
             "helps_with": "identity and canonical facts about this entity",
-            "usage_guidance": "identity anchor; the page title already names the main song, show, or performance, so omit this card when it only repeats that title and carries no additional details",
+            "layout_guidance": "identity anchor; keep it low-prominence when it only repeats the page title, and move it toward primary when its details orient the rest of the page",
             "provenance": "canonical",
         }
     if block.type == "performance_list":
@@ -66,7 +63,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "performance_count": block.known_count,
             "dates": [item.show_date for item in block.items if item.show_date],
             "helps_with": "known performance count and performance evidence",
-            "usage_guidance": "full known-performance evidence; redundant for a first/last performance question when performance_extremes is available, unless the visitor asked for the full known list",
+            "layout_guidance": "detailed evidence block; place after a compact endpoint or overview block when both are present",
             "provenance": "canonical",
         }
     if block.type == "performance_spine":
@@ -81,7 +78,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "previous_song": block.previous.title if block.previous else None,
             "next_song": block.next.title if block.next else None,
             "helps_with": "placing one rendition in its immediate set context without claiming an interpretation of the music",
-            "usage_guidance": "preferred primary block for a specific-performance question; it conveys only canonical set adjacency, so never imply musical analysis that was not retrieved",
+            "layout_guidance": "strong primary anchor for a specific performance; keep adjacent show and listening context nearby",
             "provenance": "canonical",
         }
     if block.type == "comparison_strip":
@@ -96,7 +93,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "item_count": len(block.items),
             "known_count": block.known_count,
             "helps_with": "seeing where a song's grounded performances sit over time, with explicit library-coverage limits",
-            "usage_guidance": "preferred primary for comparison mode — era, evolution, or change-over-time questions about a song; entries are one representative rendition per year from current library coverage, not an exhaustive history; do not pair it with the generic performance_list unless the visitor asked for the full list; it conveys dates and set placement only, never musical analysis",
+            "layout_guidance": "strong primary comparison anchor; if a full performance list is also present, position that detailed evidence as supporting material",
             "provenance": "canonical",
         }
     if block.type == "performance_extremes":
@@ -108,7 +105,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "first_show": block.first.show_label,
             "last_show": block.last.show_label,
             "helps_with": "answering first/last performance questions in one compact component",
-            "usage_guidance": "preferred for first/last performance questions; it already combines both endpoints, making the generic performance_list redundant unless the full list was requested",
+            "layout_guidance": "compact primary endpoint block; place any full performance list after it as supporting detail",
             "provenance": "canonical",
         }
     if block.type == "song_overview":
@@ -121,7 +118,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "known_performance_count": block.known_performance_count,
             "credits": [{"name": credit.name, "role": credit.role} for credit in block.credits],
             "helps_with": "a compact overview of the song's identity, credits, and known performance count",
-            "usage_guidance": "preferred standard facts panel for song questions",
+            "layout_guidance": "standard primary facts panel for song questions",
             "provenance": "canonical",
         }
     if block.type == "show_setlist":
@@ -133,7 +130,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "set_labels": [section.label for section in block.sets],
             "song_count": sum(len(section.songs) for section in block.sets),
             "helps_with": "show setlist questions; each song is a grounded follow-up target",
-            "usage_guidance": "the default primary block for a broad show guide and the strongest orientation for questions about sequence, sets, or what was played; pair it with recordings when available. It can be supporting context when the visitor's next move is listening or investigating a specific performance",
+            "layout_guidance": "primary orientation for a broad show guide or sequence question; keep recordings close, and use supporting placement when a specific performance is the stronger anchor",
             "provenance": "canonical",
         }
     if block.type == "show_selection":
@@ -147,7 +144,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "show_count": len(block.items),
             "coverage_note": block.coverage_note,
             "helps_with": "broad questions about notable, essential, recommended, or worth-exploring shows",
-            "usage_guidance": "a source-attributed route into show discovery. Preserve its attribution and do not reframe it as a Deadbot ranking, consensus, or complete map of important shows",
+            "layout_guidance": "source-attributed discovery anchor; position its attribution and coverage limits with the selection",
             "provenance": "reviewed source-attributed selection",
         }
     if block.type == "recording_list":
@@ -160,7 +157,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "source_types": sorted({item.source_type for item in block.items}),
             "archive_identifiers": [item.archive_identifier for item in block.items if item.archive_identifier],
             "helps_with": "listening to recordings of the show",
-            "usage_guidance": "a top-priority companion to the setlist for a broad show guide and an immediate listening path for a visitor asking about how a guitar or performance sounds; for a first-use or named-equipment question, pairing a recording with the grounded equipment claim lets the visitor hear the instrument in its documented setting; it can be supporting context when the visitor asked about set order or song sequence",
+            "layout_guidance": "media-region companion to its show, setlist, performance, or equipment claim; keep the audible evidence close to the relationship it supports",
             "provenance": "stored recording metadata",
         }
     if block.type == "performer_list":
@@ -172,7 +169,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "performer_count": len(block.items),
             "guest_names": [item.name for item in block.items if item.role == "guest"],
             "helps_with": "show lineup, guest, role, and instrument questions",
-            "usage_guidance": "include for lineup, guest, musician, role, or instrument questions; it groups each person with their recorded instruments. For a broad show guide, omit the standard lineup by default: the setlist and recordings take priority. A sourced guest name may justify a lower-priority context card when it is a genuinely notable listening lead, but never place the full lineup ahead of the setlist or recordings",
+            "layout_guidance": "primary for lineup or musician questions and supporting for a broad show guide; do not place an ordinary full lineup ahead of the show's setlist or recordings",
             "provenance": "source-reviewed canonical assignment",
         }
     if block.type == "equipment_list":
@@ -184,7 +181,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "equipment_names": [item.name for item in block.items],
             "claim_types": sorted({item.claim_type for item in block.items}),
             "helps_with": "named Jerry Garcia guitar and equipment questions",
-            "usage_guidance": "include for named-guitar or equipment questions; distinguish date-range evidence from specific-show evidence and never treat a date-range claim as a complete equipment log",
+            "layout_guidance": "primary for named-equipment questions; keep it beside the dated show and audible evidence that establish its context",
             "provenance": "dated photographic/video-evidence guide",
         }
     if block.type == "coverage":
@@ -195,7 +192,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "title": block.title,
             "message": block.message,
             "helps_with": "whether the current library can answer a scope-wide question completely",
-            "usage_guidance": "only for gap mode or an explicit library-scope, completeness, or limitation question — never filler on an ordinary song, show, performance, date, setlist, credit, media, or listening question; lead with it when a scope-wide count would otherwise present partial library evidence as a historical total",
+            "layout_guidance": "lead in a gap experience so the library limit is clear before any next-step material",
             "provenance": "canonical coverage metadata",
         }
     if block.type == "resource_list":
@@ -206,8 +203,9 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "title": block.title,
             "resource_types": [item.resource_type for item in block.items],
             "item_titles": [item.title for item in block.items],
-            "helps_with": "reading, learning, or source research; not canonical proof",
-            "usage_guidance": "include only when reading or source research genuinely helps the question; omit for direct factual questions unless explicitly requested",
+            "context_notes": [item.context_note for item in block.items if item.context_note],
+            "helps_with": "source-attributed interpretation, community perspective, reading, or further research; not canonical proof",
+            "layout_guidance": "place in the region where its contextual and subjective provenance is clearest",
             "provenance": "contextual resources",
         }
     if block.type == "media_link":
@@ -219,7 +217,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "provider": block.provider,
             "official": block.is_official,
             "helps_with": "listening or watching",
-            "usage_guidance": "include only when listening or watching genuinely helps the question; omit for direct factual questions unless explicitly requested",
+            "layout_guidance": "place in the media region or beside the grounded performance it supports",
             "provenance": "external media link",
         }
     if block.type == "arrangement":
@@ -233,7 +231,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "capo": block.capo,
             "tuning": block.tuning,
             "helps_with": "learning or playing this song; it is not a universal chart",
-            "usage_guidance": "musician-mode material; the documented key is specific to this source, never a universal song key; full tabs and lyrics remain external-source links",
+            "layout_guidance": "musician material; keep the source-specific key and external resource visually connected",
             "provenance": "contextual resource",
         }
     if block.type == "arrangement_search":
@@ -246,7 +244,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "match_count": len(block.items),
             "song_titles": [item.title for item in block.items],
             "helps_with": "rehearsal and cover planning without treating a documented arrangement as a universal song key",
-            "usage_guidance": "musician-mode material; matches are source-documented arrangements only, never a universal song key; full tabs and lyrics remain external-source links",
+            "layout_guidance": "musician material; lead with the matching arrangements and keep their coverage limit nearby",
             "provenance": "source-specific arrangements",
         }
     if block.type == "provenance_note":
@@ -255,7 +253,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "type": block.type,
             "scope": "provenance explanation",
             "helps_with": "distinguishing contextual material from canonical facts",
-            "usage_guidance": "not a visible page section unless the visitor explicitly asks about sources or attribution; provenance is already retained in the response metadata",
+            "layout_guidance": "provenance metadata is retained outside the ordinary visible layout",
             "provenance": "system safeguard",
         }
     if block.type == "credit_list":
@@ -266,15 +264,28 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "title": block.title,
             "credits": [{"name": item.name, "role": item.role} for item in block.items],
             "helps_with": "who wrote, composed, or is credited on the song",
-            "usage_guidance": "include for songwriting or credit questions",
+            "layout_guidance": "place near the song overview or other songwriting context",
             "provenance": "canonical",
+        }
+    if block.type == "guest_appearance_list":
+        return {
+            "index": index,
+            "type": block.type,
+            "scope": "all documented guest-show relationships for one resolved person in the current canonical directory",
+            "title": block.person_name,
+            "known_show_count": block.known_show_count,
+            "dates": [item.show_date for item in block.items],
+            "coverage_note": block.coverage_note,
+            "helps_with": "guest appearance counts, dates, instruments, and show follow-up paths",
+            "layout_guidance": "primary guest anchor; keep selected show, listening, and commentary paths after or beside it",
+            "provenance": "canonical guest-credit relationships",
         }
     return {
         "index": index,
         "type": block.type,
         "scope": "coverage gap",
         "helps_with": "honest limitation when no grounded result is available",
-        "usage_guidance": "show only when no grounded result exists for the question",
+        "layout_guidance": "primary orientation when no grounded result exists",
         "provenance": "system safeguard",
     }
 
@@ -316,6 +327,7 @@ def _composer_brief(question: str, response: ExperienceResponse) -> str:
                     "relationship": "attached resource candidate",
                     "provenance": "contextual resource metadata",
                     "source_id": item.source_id,
+                    "context_note": item.context_note,
                 }
             )
 
@@ -331,35 +343,41 @@ def _composer_brief(question: str, response: ExperienceResponse) -> str:
 
 
 def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) -> ExperienceResponse:
-    """Resolve model choices to server-owned blocks and a browser-safe layout.
+    """Resolve model editorial choices to server-owned blocks and a safe layout.
 
-    The deterministic work here is intentionally narrow: discard invalid
-    references and prevent duplicated blocks. The model decides relevance,
-    omission, and the arrangement of valid blocks; source metadata remains in
-    the response contract without forcing a visible explanation onto the page.
+    The composer may select, omit, order, and place candidates, but it cannot
+    create or mutate them. Every supplied candidate must be explicitly selected
+    or omitted; invalid, duplicate, or unaccounted references preserve the
+    deterministic fallback.
     """
 
+    expected_indexes = set(range(len(response.blocks)))
     selected_indexes: list[int] = []
     resolved_sections: list[tuple[str, list[int]]] = []
-    has_grounded_content = any(block.type not in {"coverage", "gap_state"} for block in response.blocks)
+    has_grounded_content = any(
+        candidate.type not in {"coverage", "gap_state", "provenance_note"}
+        for candidate in response.blocks
+    )
     for section in plan.sections:
         section_indexes = []
         for index in section.candidate_indexes:
-            # Coverage is an explanation of a limit, never a substitute for
-            # the show, performance, or gap the visitor actually asked about.
-            # A composer may surface it only in the dedicated gap mode.
-            if (
-                0 <= index < len(response.blocks)
-                and response.blocks[index].type == "coverage"
-                and (plan.mode != "gap" or has_grounded_content)
-            ):
-                continue
-            if 0 <= index < len(response.blocks) and index not in selected_indexes:
-                selected_indexes.append(index)
-                section_indexes.append(index)
+            if index not in expected_indexes or index in selected_indexes:
+                return response
+            block = response.blocks[index]
+            if block.type == "coverage" and (plan.mode != "gap" or has_grounded_content):
+                return response
+            selected_indexes.append(index)
+            section_indexes.append(index)
         if section_indexes:
             resolved_sections.append((section.region, section_indexes))
-    if not selected_indexes:
+    omitted_indexes = plan.omitted_candidate_indexes
+    if (
+        len(omitted_indexes) != len(set(omitted_indexes))
+        or any(index not in expected_indexes for index in omitted_indexes)
+        or set(omitted_indexes) & set(selected_indexes)
+        or set(selected_indexes) | set(omitted_indexes) != expected_indexes
+        or not selected_indexes
+    ):
         return response
 
     selected_blocks = [response.blocks[index] for index in selected_indexes]
@@ -396,23 +414,25 @@ class ModelGuidedComposer:
         if len(response.blocks) <= 1:
             return response
         prompt = (
-            "Choose the most coherent main-column guide for the latest question using the grounded brief below. "
-            "The chat column gives the direct answer; the main column should bring that answer to life with the most useful grounded evidence, listening paths, sources, or connections. "
-            "Treat both columns as one response: do not merely repeat the answer, but do not leave a meaningful returned relationship unexplored when its candidates let the visitor inspect or hear the story for themselves. "
-            "Serve the right thing at the right depth, like a trusted, well-prepared fan. Do not perform expertise or invent critical color. "
-            "First choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap) from the visitor's request and the grounded material, not from a generic keyword rule. "
-            "Then select the useful candidates at the depth the question warrants, using the compact page shape supplied by the response schema. Omission is the default: including an irrelevant candidate is worse than omitting optional material. Each chosen block must have a distinct job; do not turn the page into a database dump. Use omitted_candidate_indexes to explicitly exclude candidates that do not answer the latest question. "
-            "Arrange the selections into primary, supporting, context, or media regions by the visitor's intent; there is no universal ordering. "
-            "For a show guide, weigh setlist and recordings ahead of ordinary lineup detail. A full lineup or equipment list belongs only when it has a distinct purpose for the visitor's question; a documented guest appearance may be useful context when it genuinely changes the visitor's next move. "
-            "Judge each candidate's relevance from its usage_guidance, scope, and provenance in the brief, and use related_show_paths to weigh alternative paths into the same show. "
-            "Never present partial library evidence as a historical total. "
-            "Return only candidate indexes received in the brief. Do not create facts, sources, URLs, blocks, or headings.\n\n"
+            "You are a knowledgeable, curious, and helpful Grateful Dead authority editing a rich exploratory experience for the visitor's latest question. "
+            "The upstream model has assembled a grounded candidate packet. Exercise editorial judgment over that packet: decide what best answers the visitor, what creates a worthwhile next step, what adds illuminating listening or source-attributed context, what would merely clutter the page, and what should lead. "
+            "Choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), then select, omit, order, prioritize, and arrange candidates into primary, supporting, context, or media regions. There is no universal template. "
+            "Treat the short chat answer and main panel as one response. The panel should make the answer more useful and engaging, not simply repeat it or display every available database field. "
+            "Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
+            "For a show guide, place setlist and recordings ahead of ordinary lineup detail, and keep blocks about the same guest, equipment claim, or performance together. "
+            "Use each candidate's scope, purpose, relationship, and provenance to make these judgments, and use related_show_paths to keep blocks about the same show coherent. "
+            "Your factual universe is closed: return only candidate indexes from the brief. Do not research, create, rewrite, or embellish facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )
         try:
             result = self.selector.invoke(
                 [
-                    SystemMessage(content="You are Deadbot's model-first, provenance-aware interface composer. Return only the requested structured layout plan."),
+                    SystemMessage(
+                        content=(
+                            "You are Deadbot's knowledgeable, curious, and provenance-aware Grateful Dead experience editor. "
+                            "Use editorial judgment to create a rich, helpful experience from grounded candidates, and return only the requested structured composition plan."
+                        )
+                    ),
                     HumanMessage(content=prompt),
                 ]
             )

@@ -35,6 +35,8 @@ from deadbot.experience import (
     ExperienceMode,
     ExperienceResponse,
     GapStateBlock,
+    GuestAppearanceItem,
+    GuestAppearanceListBlock,
     LayoutSection,
     MediaLinkBlock,
     PerformanceExtremesBlock,
@@ -181,6 +183,9 @@ def _resource_item(resource: dict[str, Any]) -> ResourceItem | None:
     source = _resource_source(resource)
     if not source:
         return None
+    notes = str(resource.get("notes") or "").strip()
+    visitor_prefix = "Visitor context:"
+    context_note = notes[len(visitor_prefix) :].strip() if notes.startswith(visitor_prefix) else None
     return ResourceItem(
         resource_id=resource["resource_id"],
         title=resource.get("title") or "Untitled resource",
@@ -188,6 +193,7 @@ def _resource_item(resource: dict[str, Any]) -> ResourceItem | None:
         source_name=source.label,
         url=source.url or "",
         source_id=source.source_id,
+        context_note=context_note or None,
     )
 
 
@@ -812,6 +818,88 @@ def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) ->
     )
 
 
+def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceListBlock]:
+    """Project resolved guest-credit relationships into browser-safe blocks."""
+
+    raw_guests = payload.get("guests")
+    coverage_note = payload.get("coverage_note")
+    if not isinstance(raw_guests, list) or not isinstance(coverage_note, str):
+        return []
+    blocks: list[GuestAppearanceListBlock] = []
+    # Keep the candidate packet within the response's global block budget even
+    # if the model asks for the full guest directory. A named-person query
+    # normally produces one block; broad directory exploration stays bounded.
+    for guest in raw_guests[:8]:
+        if not isinstance(guest, dict):
+            continue
+        person_id = guest.get("person_id")
+        person_name = guest.get("name")
+        raw_appearances = guest.get("appearances")
+        if not isinstance(person_id, str) or not isinstance(person_name, str) or not isinstance(raw_appearances, list):
+            continue
+        items: list[GuestAppearanceItem] = []
+        for appearance in raw_appearances:
+            if not isinstance(appearance, dict):
+                continue
+            show_id = appearance.get("show_id")
+            show_date = appearance.get("show_date")
+            raw_instruments = appearance.get("instruments")
+            if not isinstance(raw_instruments, list):
+                legacy_instrument = appearance.get("instrument")
+                raw_instruments = [legacy_instrument] if isinstance(legacy_instrument, str) else []
+            instruments = [item for item in raw_instruments if isinstance(item, str) and item]
+            if not isinstance(show_id, str) or not isinstance(show_date, str) or not instruments:
+                continue
+            scope = appearance.get("participation_scope")
+            items.append(
+                GuestAppearanceItem(
+                    show_id=show_id,
+                    show_date=show_date,
+                    instruments=instruments[:8],
+                    participation_scope=scope if isinstance(scope, str) and scope else None,
+                    follow_up=f"Tell me about the Grateful Dead show on {show_date}.",
+                )
+            )
+        if not items:
+            continue
+        documented_count = guest.get("guest_show_count")
+        count = documented_count if isinstance(documented_count, int) and documented_count == len(items) else len(items)
+        blocks.append(
+            GuestAppearanceListBlock(
+                type="guest_appearance_list",
+                person_id=person_id,
+                person_name=person_name,
+                known_show_count=count,
+                coverage_note=coverage_note,
+                items=items[:24],
+            )
+        )
+    return blocks
+
+
+def _grounded_guest_count_answer(answer: str, blocks: list[GuestAppearanceListBlock]) -> str:
+    """Reject a model-supplied guest count that conflicts with retrieved rows."""
+
+    if len(blocks) != 1:
+        return answer
+    block = blocks[0]
+    claimed_counts = {
+        int(value)
+        for value in re.findall(
+            r"\b(\d{1,2})\s+(?:times|occasions|appearances|shows)\b",
+            answer,
+            flags=re.IGNORECASE,
+        )
+    }
+    if not claimed_counts or claimed_counts == {block.known_show_count}:
+        return answer
+    count_label = "appearance" if block.known_show_count == 1 else "appearances"
+    return (
+        f"The current canonical guest-credit directory documents {block.known_show_count} "
+        f"{block.person_name} {count_label} with the Grateful Dead."
+    )
+
+
 def compose_experience_response(
     question: str,
     thread_id: str,
@@ -913,7 +1001,17 @@ def compose_experience_response(
                 credit_source_ids.append(source.source_id)
 
     tool_payloads = _tool_payloads(latest_turn_messages)
+    guest_appearance_blocks: list[GuestAppearanceListBlock] = []
     for payload in tool_payloads:
+        guest_blocks = _guest_appearance_blocks(payload)
+        if guest_blocks:
+            guest_appearance_blocks.extend(guest_blocks)
+            blocks.extend(guest_blocks)
+            mode = "musician"
+            if title == "Deadbot" and len(guest_blocks) == 1:
+                title = guest_blocks[0].person_name
+            for block in guest_blocks:
+                add_source(_canonical_source(block.person_id))
         show_selection_blocks, show_selection_sources = _show_selection_blocks(payload)
         if show_selection_blocks:
             blocks.extend(show_selection_blocks)
@@ -1134,12 +1232,20 @@ def compose_experience_response(
         if block.type not in {"coverage", "provenance_note"}
     ]
 
+    answer = _grounded_guest_count_answer(
+        _final_answer(latest_turn_messages, compact_setlist=has_show_setlist),
+        guest_appearance_blocks,
+    )
+    conversation = _conversation_turns(message_list, compact_setlists=has_show_setlist)
+    if conversation and conversation[-1].role == "assistant":
+        conversation[-1] = ConversationTurn(role="assistant", text=answer)
+
     return ExperienceResponse(
         thread_id=thread_id,
         title=title,
-        answer=_final_answer(latest_turn_messages, compact_setlist=has_show_setlist),
+        answer=answer,
         mode=mode,
-        conversation=_conversation_turns(message_list, compact_setlists=has_show_setlist),
+        conversation=conversation,
         blocks=blocks,
         layout=[
             LayoutSection(

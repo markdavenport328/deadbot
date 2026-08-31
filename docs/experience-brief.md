@@ -34,8 +34,8 @@ what I came for, plus the one or two connections that make it more useful.*
 
 Mindsets are situations, not audience tiers. An experienced collector may want
 a quick confirmation in one session and a musician's reference desk in the
-next. The composer should infer the requested mode of help, not make
-assumptions about the visitor's level of fandom.
+next. The retrieval model and composer should reason from the requested mode of
+help, not make assumptions about the visitor's level of fandom.
 
 | Mindset | They arrive wanting | Chat-column response | Main-panel delivery |
 | --- | --- | --- | --- |
@@ -69,10 +69,13 @@ to a documented **arrangement**, not automatically to the abstract song.
 
 ## Experience modes
 
-The model-guided composer should choose one primary mode from the grounded
-retrieval packet. That decision is presentation judgment, not a brittle
-keyword rule. The server validates the chosen mode and every referenced block,
-entity, recording, resource, and source.
+The first model builds a grounded candidate packet: it answers factual
+questions, anticipates natural exploration and listening opportunities, and
+retrieves worthwhile source-attributed enrichment. The composer then exercises
+presentation-level editorial judgment over that packet: it chooses the primary
+mode, relevance, omission, priority, ordering, and layout. It cannot research or
+invent. The server validates every referenced block, entity, recording,
+resource, and source.
 
 | Mode | Primary question it answers | Main-panel emphasis |
 | --- | --- | --- |
@@ -85,12 +88,12 @@ entity, recording, resource, and source.
 | `musician` | What can I use to learn, arrange, or cover this? | Version-specific playable reference and source links. |
 | `gap` | Can the current library answer this honestly? | Clear limitation and the closest grounded next step. |
 
-The chat column remains Deadbot's conversational voice: concise takeaway,
-clarification, and context for what the main panel contains. The main panel is
+The chat column remains Deadbot's conversational voice: a short direct answer
+or a brief pointer to the answer assembled in the main panel. The main panel is
 the assembled working surface. It can carry the detailed answer whenever a
 recording comparison, performance list, set fragment, timeline, source trail,
-or other substantial result reads better there. The chat orients the visitor
-and gives a natural handoff; the model chooses the balance for the question.
+or other substantial result reads better there. The first model ensures the
+material exists; the composer chooses that presentation balance.
 
 ## Flagship response blueprints
 
@@ -257,7 +260,8 @@ Review representative responses against these questions:
 4. Is optional source context clearly attributed and never passed off as fact?
 5. Is a musician told the arrangement's scope, rather than a misleading
    universal key or chart?
-6. Did the composer omit irrelevant material instead of filling the page?
+6. Did the retrieval model provide a rich grounded candidate set, and did the
+   composer exercise good editorial judgment rather than filling the page?
 7. If coverage is inadequate, did the result say so plainly and still offer the
    closest grounded route?
 

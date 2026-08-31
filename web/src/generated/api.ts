@@ -279,7 +279,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"])[];
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Layout */
@@ -312,6 +312,40 @@ export interface components {
              * @enum {string}
              */
             type: "gap_state";
+        };
+        /** GuestAppearanceItem */
+        GuestAppearanceItem: {
+            /** Follow Up */
+            follow_up: string;
+            /** Instruments */
+            instruments: string[];
+            /** Participation Scope */
+            participation_scope?: string | null;
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+        };
+        /**
+         * GuestAppearanceListBlock
+         * @description Canonical guest-show relationships for one resolved person.
+         */
+        GuestAppearanceListBlock: {
+            /** Coverage Note */
+            coverage_note: string;
+            /** Items */
+            items: components["schemas"]["GuestAppearanceItem"][];
+            /** Known Show Count */
+            known_show_count: number;
+            /** Person Id */
+            person_id: string;
+            /** Person Name */
+            person_name: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "guest_appearance_list";
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -507,6 +541,8 @@ export interface components {
         };
         /** ResourceItem */
         ResourceItem: {
+            /** Context Note */
+            context_note?: string | null;
             /** Resource Id */
             resource_id: string;
             /** Resource Type */

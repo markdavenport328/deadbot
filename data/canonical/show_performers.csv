@@ -22913,7 +22913,7 @@ gd-1991-09-09,person-phil-lesh,performer,bass,"JerryBase source event 19910909-0
 gd-1991-09-09,person-phil-lesh,performer,vocals,"JerryBase source event 19910909-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19910909-01
 gd-1991-09-09,person-vince-welnick,performer,keyboards,"JerryBase source event 19910909-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19910909-01
 gd-1991-09-09,person-vince-welnick,performer,vocals,"JerryBase source event 19910909-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19910909-01
-gd-1991-09-10,person-branford-marsalis-complete-show,guest,saxophone,JerryBase source event 19910910-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: saxophone.,jerrybase,19910910-01
+gd-1991-09-10,person-branford-marsalis,guest,saxophone,JerryBase source event 19910910-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: saxophone. JerryBase source participation scope: complete show.,jerrybase,19910910-01
 gd-1991-09-10,person-bill-kreutzmann,performer,drums,"JerryBase source event 19910910-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19910910-01
 gd-1991-09-10,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19910910-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19910910-01
 gd-1991-09-10,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19910910-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19910910-01
@@ -25706,7 +25706,7 @@ gd-1994-12-15,person-mickey-hart,performer,percussion,"JerryBase source event 19
 gd-1994-12-15,person-phil-lesh,performer,bass,JerryBase source event 19941215-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: electric bass.,jerrybase,19941215-01
 gd-1994-12-15,person-vince-welnick,performer,keyboards,"JerryBase source event 19941215-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19941215-01
 gd-1994-12-15,person-vince-welnick,performer,vocals,"JerryBase source event 19941215-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19941215-01
-gd-1994-12-16,person-branford-marsalis-complete-show,guest,saxophone,JerryBase source event 19941216-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: saxophone.,jerrybase,19941216-01
+gd-1994-12-16,person-branford-marsalis,guest,saxophone,JerryBase source event 19941216-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: saxophone. JerryBase source participation scope: complete show.,jerrybase,19941216-01
 gd-1994-12-16,person-bill-kreutzmann,performer,drums,"JerryBase source event 19941216-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19941216-01
 gd-1994-12-16,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19941216-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19941216-01
 gd-1994-12-16,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19941216-01; raw snapshot jerrybase-1994.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19941216-01

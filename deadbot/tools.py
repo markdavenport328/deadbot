@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
@@ -358,38 +359,92 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         The returned show IDs can be passed to get_show when the visitor would
         benefit from the show's setlist, recording links, or other grounded
         context; decide which appearances to expand from the question rather
-        than treating the directory as a complete rendered answer.
+        than treating the directory as a complete rendered answer. After a
+        narrow guest match, use search_stored_resources with the returned
+        canonical name when reviewed community, artist, or editorial context
+        would make the page more exploratory.
         """
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
         shows = {show["show_id"]: show for show in store.rows("shows")}
-        by_person: dict[str, list[dict[str, str]]] = {}
+        # JerryBase sometimes appends a participation qualifier to a person's
+        # display name (for example, ``Branford Marsalis (complete show)``).
+        # That qualifier describes the appearance, not a second human being.
+        # Collapse legacy rows here as well as at import time so an operational
+        # database created from an older snapshot still returns one identity.
+        canonical_people_by_name = {
+            person.get("name", "").casefold(): person
+            for person in people.values()
+            if person.get("name") and not re.search(r"\s+\(complete show\)\s*$", person["name"], re.IGNORECASE)
+        }
+
+        def canonical_person(person_id: str) -> tuple[str, dict[str, str], str | None]:
+            person = people[person_id]
+            source_name = person.get("name", person_id)
+            match = re.search(r"\s+\((complete show)\)\s*$", source_name, re.IGNORECASE)
+            if not match:
+                return person_id, person, None
+            base_name = source_name[: match.start()].strip()
+            canonical = canonical_people_by_name.get(base_name.casefold())
+            if canonical:
+                return canonical["person_id"], canonical, match.group(1).casefold()
+            return person_id, {**person, "name": base_name}, match.group(1).casefold()
+
+        by_person: dict[str, list[dict[str, str | None]]] = {}
         for assignment in store.rows("show_performers"):
             if assignment.get("role") == "guest" and assignment.get("person_id") in people:
-                by_person.setdefault(assignment["person_id"], []).append(assignment)
+                person_id, _, participation_scope = canonical_person(assignment["person_id"])
+                if not participation_scope:
+                    scope_match = re.search(
+                        r"JerryBase source participation scope:\s*([^.;]+)",
+                        assignment.get("notes", ""),
+                        re.IGNORECASE,
+                    )
+                    participation_scope = scope_match.group(1).strip().casefold() if scope_match else None
+                by_person.setdefault(person_id, []).append(
+                    {**assignment, "participation_scope": participation_scope}
+                )
         guests = []
         for person_id, assignments in by_person.items():
-            person = people[person_id]
-            if needle and needle not in person.get("name", "").casefold() and needle not in person_id.casefold():
+            _, person, _ = canonical_person(person_id)
+            person_name = person.get("name", person_id)
+            query_words = {
+                word
+                for word in re.findall(r"[a-z0-9]+", needle)
+                if len(word) >= 4 and word not in {"many", "times", "play", "played", "with", "them", "show", "shows"}
+            }
+            name_words = set(re.findall(r"[a-z0-9]+", person_name.casefold()))
+            if needle and needle not in person_name.casefold() and needle not in person_id.casefold() and not (query_words & name_words):
                 continue
-            appearances = []
+            appearances_by_show: dict[str, dict[str, Any]] = {}
             for assignment in assignments:
                 show = shows.get(assignment.get("show_id", ""))
                 if not show:
                     continue
-                appearances.append(
+                appearance = appearances_by_show.setdefault(
+                    show["show_id"],
                     {
                         "show_id": show["show_id"],
                         "show_date": show.get("show_date"),
-                        "instrument": assignment.get("instrument"),
-                    }
+                        "instruments": [],
+                        "participation_scope": assignment.get("participation_scope"),
+                    },
                 )
+                instrument = assignment.get("instrument")
+                if instrument and instrument not in appearance["instruments"]:
+                    appearance["instruments"].append(instrument)
+                if assignment.get("participation_scope"):
+                    appearance["participation_scope"] = assignment["participation_scope"]
+            appearances = sorted(
+                appearances_by_show.values(),
+                key=lambda appearance: (appearance.get("show_date") or "", appearance["show_id"]),
+            )
             guests.append(
                 {
                     "person_id": person_id,
-                    "name": person.get("name", person_id),
-                    "guest_show_count": len({appearance["show_id"] for appearance in appearances}),
-                    "appearances": sorted(appearances, key=lambda appearance: (appearance.get("show_date") or "", appearance["show_id"])),
+                    "name": person_name,
+                    "guest_show_count": len(appearances),
+                    "appearances": appearances,
                 }
             )
         guests.sort(key=lambda guest: guest["name"].casefold())
@@ -416,6 +471,10 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         needle = query.casefold().strip()
         if not needle:
             return _json({"query": query, "resources": [], "message": "A topic or source phrase is required."})
+        query_words = {
+            word for word in re.findall(r"[a-z0-9]+", needle)
+            if len(word) >= 4 and word not in {"about", "commentary", "community", "source", "sources"}
+        }
         song_ids_by_resource: dict[str, list[str]] = {}
         show_ids_by_resource: dict[str, list[str]] = {}
         performance_ids_by_resource: dict[str, list[str]] = {}
@@ -435,7 +494,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
                 resource.get(field, "")
                 for field in ("title", "creator", "source_name", "resource_type", "notes")
             ).casefold()
-            if needle not in searchable:
+            if needle not in searchable and not any(word in searchable for word in query_words):
                 continue
             parsed = urlparse(resource.get("source_url", ""))
             if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:

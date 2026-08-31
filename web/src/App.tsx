@@ -205,6 +205,27 @@ function Block({
           </ul>
         </section>
       );
+    case "guest_appearance_list":
+      return (
+        <section className="card guest-appearance-list">
+          <p className="eyebrow">Guest appearances</p>
+          <h2>{block.person_name}</h2>
+          <p className="subtitle">
+            {block.known_show_count} documented show{block.known_show_count === 1 ? "" : "s"}
+          </p>
+          <ol>
+            {block.items.map((item) => (
+              <li key={item.show_id}>
+                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <strong>{item.show_date}</strong>
+                </FollowUpButton>
+                <span>{item.instruments.join(", ")}{item.participation_scope ? ` · ${item.participation_scope}` : ""}</span>
+              </li>
+            ))}
+          </ol>
+          <p className="coverage-note">{block.coverage_note}</p>
+        </section>
+      );
     case "equipment_list":
       return (
         <section className="card equipment-list">
@@ -270,6 +291,7 @@ function Block({
               <li key={item.resource_id}>
                 <ExternalLink href={item.url}>{item.title}</ExternalLink>
                 <span>{item.resource_type} · {item.source_name}</span>
+                {item.context_note && <p>{item.context_note}</p>}
               </li>
             ))}
           </ul>

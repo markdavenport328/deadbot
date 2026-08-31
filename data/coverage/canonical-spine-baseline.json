@@ -11,8 +11,8 @@
     "shows": 2358,
     "songs": 436,
     "performances": 39774,
-    "people": 277,
-    "people_with_show_assignments": 155,
+    "people": 276,
+    "people_with_show_assignments": 154,
     "show_performer_assignments": 26265
   },
   "relationship_integrity": {
@@ -28,7 +28,7 @@
     "songs_without_performances": 0,
     "shows_with_performer_assignments": 2268,
     "shows_without_performer_assignments": 90,
-    "people_with_show_assignments": 155,
+    "people_with_show_assignments": 154,
     "people_without_show_assignments": 122
   },
   "gaps": {

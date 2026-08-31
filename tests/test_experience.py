@@ -11,6 +11,7 @@ from deadbot.composer import CompositionPlan, CompositionSection, ModelGuidedCom
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse, _embed_details, compose_experience_response
+from deadbot.graph import SYSTEM_PROMPT
 from deadbot.tools import build_tools
 
 
@@ -143,9 +144,80 @@ def test_guest_count_question_keeps_model_selected_show_and_listening_paths():
     )
 
     assert response.answer.startswith("The current canonical guest-credit directory documents five")
-    assert response.mode == "quick_fact"
+    assert response.mode == "musician"
+    guest_appearances = next(block for block in response.blocks if block.type == "guest_appearance_list")
+    assert guest_appearances.person_name == "Branford Marsalis"
+    assert guest_appearances.known_show_count == 5
     assert {block.show_id for block in response.blocks if block.type == "recording_list"} == set(selected_show_ids)
     assert {block.show_id for block in response.blocks if block.type == "show_setlist"} == set(selected_show_ids)
+    source_block = next(block for block in response.blocks if block.type == "resource_list")
+    assert any(item.resource_type == "community-show-page" for item in source_block.items)
+    assert any(item.context_note and "subjective" in item.context_note for item in source_block.items)
+    assert not any(block.type == "gap_state" for block in response.blocks)
+
+
+def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspective():
+    assert "You own the information and experience curation" in SYSTEM_PROMPT
+    assert "Answer the visitor's factual question" in SYSTEM_PROMPT
+    assert "Anticipate exploration or experience opportunities" in SYSTEM_PROMPT
+    assert "Retrieve worthwhile enrichment" in SYSTEM_PROMPT
+    assert "Think one useful step ahead" in SYSTEM_PROMPT
+    assert '"where do I listen?"' in SYSTEM_PROMPT
+    assert "source-attributed community" in SYSTEM_PROMPT
+    assert "either answers the factual question directly or points the visitor" in SYSTEM_PROMPT
+    assert "presentation-level editorial decisions" in SYSTEM_PROMPT
+    assert "only work with the grounded candidate material" in SYSTEM_PROMPT
+
+
+def test_guest_directory_renders_its_grounded_result_and_rejects_a_conflicting_model_count():
+    store = CanonicalStore()
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    guest_payload = json.loads(guest_tool.invoke({"query": "how many times did branford play with them"}))
+    response = compose_experience_response(
+        question="how many times did branford play with them",
+        thread_id="guest-count-regression",
+        messages=[
+            HumanMessage(content="how many times did branford play with them"),
+            tool_message(guest_payload),
+            AIMessage(content="Branford Marsalis played with the Grateful Dead on a total of 31 occasions."),
+        ],
+        store=store,
+    )
+
+    assert response.answer == (
+        "The current canonical guest-credit directory documents 5 Branford Marsalis "
+        "appearances with the Grateful Dead."
+    )
+    assert response.conversation[-1].text == response.answer
+    assert response.title == "Branford Marsalis"
+    assert response.mode == "musician"
+    appearances = next(block for block in response.blocks if block.type == "guest_appearance_list")
+    assert appearances.known_show_count == 5
+    assert [item.show_date for item in appearances.items] == [
+        "1990-03-29",
+        "1990-12-31",
+        "1991-09-10",
+        "1993-12-10",
+        "1994-12-16",
+    ]
+    assert not any(block.type == "gap_state" for block in response.blocks)
+
+
+def test_broad_guest_directory_result_stays_within_the_experience_block_budget():
+    store = CanonicalStore()
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    response = compose_experience_response(
+        question="Which guest musicians are in the current library?",
+        thread_id="guest-directory-budget",
+        messages=[
+            tool_message(json.loads(guest_tool.invoke({"query": ""}))),
+            AIMessage(content="The current guest-credit directory is available below."),
+        ],
+        store=store,
+    )
+
+    assert len(response.blocks) <= 16
+    assert sum(block.type == "guest_appearance_list" for block in response.blocks) == 8
     assert not any(block.type == "gap_state" for block in response.blocks)
 
 
@@ -544,6 +616,10 @@ def test_only_recognized_provider_urls_receive_embed_identifiers():
     assert _embed_details("youtube", "https://example.com/watch?v=Ip48SfRx4ho") == (None, None)
 
 
+def _omitted_indexes(response, selected_indexes):
+    return [index for index in range(len(response.blocks)) if index not in selected_indexes]
+
+
 def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_provenance():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
@@ -555,11 +631,16 @@ def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_prove
         store=store,
     )
     resource_index = next(index for index, block in enumerate(response.blocks) if block.type == "resource_list")
+    reordered = [resource_index, 0]
     composed = apply_composition_plan(
         response,
-        CompositionPlan(sections=[CompositionSection(region="primary", candidate_indexes=[999, resource_index, 0, 0])]),
+        CompositionPlan(
+            mode="research",
+            sections=[CompositionSection(region="primary", candidate_indexes=reordered)],
+            omitted_candidate_indexes=_omitted_indexes(response, reordered),
+        ),
     )
-    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
+    assert [block.type for block in composed.blocks] == [response.blocks[index].type for index in reordered]
     assert all(block.type != "provenance_note" for block in composed.blocks)
     assert [section.region for section in composed.layout] == ["primary"]
 
@@ -577,7 +658,10 @@ def test_composition_cannot_show_coverage_as_a_normal_result_instead_of_grounded
     coverage_index = next(index for index, block in enumerate(response.blocks) if block.type == "coverage")
     composed = apply_composition_plan(
         response,
-        CompositionPlan(mode="quick_fact", sections=[CompositionSection(region="primary", candidate_indexes=[coverage_index])]),
+        CompositionPlan(
+            sections=[CompositionSection(region="primary", candidate_indexes=[coverage_index])],
+            omitted_candidate_indexes=_omitted_indexes(response, [coverage_index]),
+        ),
     )
     assert composed == response
     assert all(
@@ -599,6 +683,7 @@ def test_composition_preserves_the_model_selected_show_order_and_regions():
     )
     recording_index = next(index for index, block in enumerate(response.blocks) if block.type == "recording_list")
     setlist_index = next(index for index, block in enumerate(response.blocks) if block.type == "show_setlist")
+    selected_indexes = [setlist_index, recording_index]
     composed = apply_composition_plan(
         response,
         CompositionPlan(
@@ -607,6 +692,7 @@ def test_composition_preserves_the_model_selected_show_order_and_regions():
                 CompositionSection(region="context", candidate_indexes=[setlist_index]),
                 CompositionSection(region="media", candidate_indexes=[recording_index]),
             ],
+            omitted_candidate_indexes=_omitted_indexes(response, selected_indexes),
         ),
     )
     assert [section.region for section in composed.layout] == ["context", "media"]
@@ -640,13 +726,18 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
         store=store,
     )
     resource_index = next(index for index, block in enumerate(response.blocks) if block.type == "resource_list")
+    ordered_indexes = [resource_index, 0]
     stub = SelectionStub(
-        CompositionPlan(mode="musician", sections=[CompositionSection(region="supporting", candidate_indexes=[resource_index, 0, 999])])
+        CompositionPlan(
+            mode="research",
+            sections=[CompositionSection(region="supporting", candidate_indexes=ordered_indexes)],
+            omitted_candidate_indexes=_omitted_indexes(response, ordered_indexes),
+        )
     )
     composer = ModelGuidedComposer(selector=stub)
     composed = composer.compose("Tell me about Sugaree.", response)
-    assert [block.type for block in composed.blocks] == [response.blocks[resource_index].type, response.blocks[0].type]
-    assert composed.mode == "musician"
+    assert [block.type for block in composed.blocks] == [response.blocks[index].type for index in ordered_indexes]
+    assert composed.mode == "research"
     assert len(stub.inputs) == 1
 
 
@@ -662,16 +753,18 @@ def test_model_guided_composer_uses_one_bounded_model_plan():
     )
     setlist_index = next(index for index, block in enumerate(response.blocks) if block.type == "show_setlist")
     recording_index = next(index for index, block in enumerate(response.blocks) if block.type == "recording_list")
+    ordered_indexes = [setlist_index, recording_index]
     plan = CompositionPlan(
         mode="show",
-        sections=[CompositionSection(region="primary", candidate_indexes=[setlist_index, recording_index])],
+        sections=[CompositionSection(region="primary", candidate_indexes=ordered_indexes)],
+        omitted_candidate_indexes=_omitted_indexes(response, ordered_indexes),
     )
     stub = SelectionStub(plan)
 
     composed = ModelGuidedComposer(selector=stub).compose("Tell me about the show.", response)
 
-    assert [block.type for block in composed.blocks] == ["show_setlist", "recording_list"]
-    assert composed.layout[0].block_indexes == [0, 1]
+    assert [block.type for block in composed.blocks[:2]] == ["show_setlist", "recording_list"]
+    assert composed.layout[0].block_indexes == list(range(len(ordered_indexes)))
     assert len(stub.inputs) == 1
 
 
@@ -719,6 +812,21 @@ def _one_block_of_every_type():
             show_id="s1",
             title="Performers",
             items=[experience.PerformerItem(person_id="pe1", name="Jerry Garcia", role="performer", instruments=["guitar"], follow_up="Who played")],
+        ),
+        experience.GuestAppearanceListBlock(
+            type="guest_appearance_list",
+            person_id="person-branford-marsalis",
+            person_name="Branford Marsalis",
+            known_show_count=1,
+            coverage_note="Complete current canonical guest-credit directory.",
+            items=[
+                experience.GuestAppearanceItem(
+                    show_id="s1",
+                    show_date="1990-03-29",
+                    instruments=["saxophone"],
+                    follow_up="Tell me about the show on 1990-03-29.",
+                )
+            ],
         ),
         experience.EquipmentListBlock(
             type="equipment_list",
@@ -807,7 +915,7 @@ def _one_block_of_every_type():
     ]
 
 
-def test_every_block_type_brief_carries_structured_usage_guidance():
+def test_every_block_type_brief_carries_structured_layout_guidance():
     blocks = _one_block_of_every_type()
     union_members = get_args(get_args(experience.ExperienceBlock)[0])
     all_block_types = {get_args(member.model_fields["type"].annotation)[0] for member in union_members}
@@ -816,7 +924,7 @@ def test_every_block_type_brief_carries_structured_usage_guidance():
         brief = _block_brief(index, block)
         assert brief["index"] == index
         assert brief["type"] == block.type
-        for field in ("scope", "helps_with", "usage_guidance", "provenance"):
+        for field in ("scope", "helps_with", "layout_guidance", "provenance"):
             assert isinstance(brief.get(field), str) and brief[field].strip(), f"{block.type} brief is missing {field}"
         assert "decision_tradeoff" not in brief
 

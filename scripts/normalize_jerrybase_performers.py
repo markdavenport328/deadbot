@@ -44,6 +44,15 @@ def append_note(value: str, addition: str) -> str:
     return value if addition in value else f"{value}; {addition}" if value else addition
 
 
+def person_name_and_scope(value: str) -> tuple[str, str | None]:
+    """Separate JerryBase participation notes from a person's identity."""
+
+    match = re.search(r"\s+\((complete show)\)\s*$", value, re.IGNORECASE)
+    if not match:
+        return value.strip(), None
+    return value[: match.start()].strip(), match.group(1).casefold()
+
+
 def instruments(value: str) -> list[str]:
     """Split source instrument prose into the schema's one-instrument rows."""
 
@@ -52,8 +61,8 @@ def instruments(value: str) -> list[str]:
     value = value.replace("electric guitar (lead)", "lead guitar")
     value = value.replace("electric guitar (rhythm)", "rhythm guitar")
     value = value.replace("electric bass", "bass")
-    value = value.replace("perc", "percussion")
-    value = value.replace("keys", "keyboards")
+    value = re.sub(r"\bperc\b", "percussion", value)
+    value = re.sub(r"\bkeys\b", "keyboards", value)
     result: list[str] = []
     for item in value.split(","):
         item = item.strip()
@@ -106,7 +115,8 @@ def main_for_year(year: int, input_path: Path | None = None) -> None:
         source_id = record.get("source_record_id", "unknown")
         for group, role in (("musicians", "performer"), ("guests", "guest")):
             for assignment in payload.get(group, []):
-                source_name = str(assignment.get("name") or "").strip()
+                raw_source_name = str(assignment.get("name") or "").strip()
+                source_name, participation_scope = person_name_and_scope(raw_source_name)
                 if not source_name or source_name.endswith("?") or source_name.startswith("unidentified-"):
                     held += 1
                     continue
@@ -126,6 +136,11 @@ def main_for_year(year: int, input_path: Path | None = None) -> None:
                     people_by_key[person_key] = person
                     new_people += 1
                 source_instrument = str(assignment.get("instrument") or "").strip()
+                participation_note = (
+                    f"JerryBase source participation scope: {participation_scope}."
+                    if participation_scope
+                    else ""
+                )
                 for instrument in instruments(str(assignment.get("instrument") or "")):
                     row_key = (show_id, person_id, role, instrument)
                     if row_key in existing:
@@ -133,6 +148,11 @@ def main_for_year(year: int, input_path: Path | None = None) -> None:
                             existing[row_key].get("notes", ""),
                             f"JerryBase source instrument: {source_instrument}",
                         )
+                        if participation_note:
+                            existing[row_key]["notes"] = append_note(
+                                existing[row_key].get("notes", ""),
+                                participation_note,
+                            )
                         continue
                     performer_rows.append(
                         {
@@ -143,6 +163,7 @@ def main_for_year(year: int, input_path: Path | None = None) -> None:
                             "notes": (
                                 f"JerryBase source event {source_id}; raw snapshot {input_path.name}; "
                                 f"JerryBase source instrument: {source_instrument}."
+                                f"{' ' + participation_note if participation_note else ''}"
                             ),
                         }
                     )
