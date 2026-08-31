@@ -2,10 +2,9 @@
 
 This pass preserves two distinct source forms:
 
-- A project-owner-provided screenshot of a Threads post by `charliedmiller87`.
-  The individual account linkage is probable from independent community
-  references, but is not platform-verified in this dataset. Its transcribed
-  entries remain user-provided source material.
+- A project-owner-provided screenshot of a Threads post by Charlie Miller
+  (`charliedmiller87`). The project owner identifies the account; its
+  transcribed entries are Charlie Miller individual-curator source material.
 - Public Reddit replies by the self-identified `u/charliemiller87`, collected
   as individual-curator recommendations with their original post URLs.
 

@@ -178,7 +178,7 @@ def document() -> dict[str, object]:
             "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",
             "rolling_stone_australia": "copyright-restricted metadata-only critic list",
             "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion",
-            "charlie_miller_threads": "user-provided screenshot; account identity is probable but not platform-verified in this dataset",
+            "charlie_miller_threads": "user-provided screenshot; project owner identifies the account as Charlie Miller",
             "charlie_miller_reddit": "self-identified account replies; retain as individual-curator selections, not a consensus signal",
         },
         "summary": {"entry_count": len(entries), "by_source": dict(sorted(source_counts.items())), "by_resolution_state": dict(sorted(state_counts.items()))},
