@@ -26,7 +26,10 @@ FastAPI experience endpoint
 read-only agent and approved retrieval tools
       |
       v
-answer composer
+grounded research packet
+      |
+      v
+final response composer (chat answer + main-body plan)
       |
       v
 validated experience response (answer + typed blocks + sources)
@@ -35,12 +38,16 @@ validated experience response (answer + typed blocks + sources)
 React block renderer
 ```
 
-The agent remains responsible for deciding which read-only tools to use and for obtaining grounded material. The composer is a separate, bounded step that turns those retrieved results into a presentation plan. The renderer is deterministic application code.
+The agent remains responsible for deciding which read-only tools to use and for
+obtaining grounded material. The composer is the final editor: in one bounded
+decision it writes the visible chat answer and turns the retrieved candidates
+into a main-body plan. The renderer is deterministic application code.
 
 This separation is intentional:
 
 - Retrieval determines what the system knows and which connections it can offer.
-- Composition determines which approved presentation patterns best help a person explore that grounded material.
+- Composition determines the concise visible answer and which approved
+  presentation patterns best help a person explore the supporting material.
 - Rendering determines how those patterns look and behave in the browser.
 
 Neither composition nor rendering may alter canonical data or make an unapproved external request.
@@ -110,15 +117,14 @@ the latest question, recent conversation, grounded agent answer, and a rich
 inventory of candidates: their scope, purpose, canonical or contextual
 provenance, coverage metadata, relevant facts, and a structured
 `usage_guidance` field describing when that candidate helps or is redundant.
-The model returns one bounded experience mode (`quick_fact`, `performance`,
-`show`, `listening`, `comparison`, `research`, `musician`, or `gap`) plus
-structured layout regions containing only server-owned candidate indexes. The
-server resolves those indexes back to the original validated blocks. The model
-may place recordings, comparisons, source trails, or a detailed factual answer
-in the main region whenever that makes the response clearer. Its system
-instructions and validation require it to:
+The model returns a concise `chat_answer`, one bounded experience mode
+(`quick_fact`, `performance`, `show`, `listening`, `comparison`, `research`,
+`musician`, or `gap`), and structured layout regions containing only
+server-owned candidate indexes. The server resolves those indexes back to the
+original validated blocks and uses the same model decision for the final visible
+assistant turn. Its system instructions and validation require it to:
 
-- make the direct answer useful even when no optional block is appropriate;
+- make chat direct and concise while the main body carries broader support;
 - choose a focused set of blocks that advances the visitor's question;
 - reference only entities, resources, media links, and excerpts present in the retrieval packet;
 - preserve the canonical-versus-contextual distinction in both text and block selection;

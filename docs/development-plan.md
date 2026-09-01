@@ -149,9 +149,11 @@ These boundaries are intentional and should not be bypassed casually:
 - A resource URL is a link-out reference. It does not turn an interview statement, memoir, or editorial interpretation into a canonical fact.
 - Do not copy full lyrics, tabs, transcriptions, audio, or video into the repository.
 - The local model is useful for harness development, but its answer quality has not yet been evaluated against a Deadbot-specific test set.
-- The model-guided composer is selection-only: it cannot write visible facts,
-  URLs, iframe markup, HTML, or new block types. It requires an available local
-  model to improve layout; model failure returns the deterministic layout.
+- The model-guided composer is the final response editor: it writes the concise
+  visible chat answer from the grounded brief and selects the main-body layout
+  in the same decision. It cannot write URLs, iframe markup, HTML, new block
+  types, or facts outside the grounded packet. Model failure returns the
+  grounded fallback response.
 - `AGENTS.md` records the project-wide model-first principle: favor richer
   grounded context and instructions for ordinary product judgment; reserve
   deterministic code for validation and narrow safety guardrails.

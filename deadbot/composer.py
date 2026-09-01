@@ -10,7 +10,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ConfigDict, Field
 
 from deadbot.config import Settings
-from deadbot.experience import ExperienceBlock, ExperienceMode, ExperienceResponse, LayoutSection
+from deadbot.experience import ConversationTurn, ExperienceBlock, ExperienceMode, ExperienceResponse, LayoutSection
 from deadbot.models import ModelProvider, create_model_provider
 
 
@@ -26,9 +26,10 @@ class CompositionSection(BaseModel):
 
 
 class CompositionPlan(BaseModel):
-    """The model's editorial and layout decision over grounded candidates."""
+    """The model's final chat and layout decision over grounded candidates."""
 
     model_config = ConfigDict(extra="forbid")
+    chat_answer: str = Field(min_length=1)
     mode: ExperienceMode = "quick_fact"
     sections: list[CompositionSection] = Field(min_length=1, max_length=4)
     omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=32)
@@ -398,7 +399,21 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
         )
         for region, indexes in resolved_sections
     ]
-    return response.model_copy(update={"blocks": selected_blocks, "layout": layout, "mode": plan.mode})
+    chat_answer = plan.chat_answer.strip()
+    conversation = list(response.conversation)
+    for index in range(len(conversation) - 1, -1, -1):
+        if conversation[index].role == "assistant":
+            conversation[index] = ConversationTurn(role="assistant", text=chat_answer)
+            break
+    return response.model_copy(
+        update={
+            "answer": chat_answer,
+            "conversation": conversation,
+            "blocks": selected_blocks,
+            "layout": layout,
+            "mode": plan.mode,
+        }
+    )
 
 
 class DeterministicComposer:
@@ -423,13 +438,12 @@ class ModelGuidedComposer:
         if len(response.blocks) <= 1:
             return response
         prompt = (
-            "You are Deadbot's most perceptive Grateful Dead guide: well-read, musically alive, and allergic to both database dumps and empty hype. "
-            "The upstream model has assembled grounded material. Your goal is to turn it into the kind of clear, delightful little guide a curious fan would be glad to stumble into: an answer with a point of view, an easy way to take it in, and an enticing way onward. Trust your editorial taste. "
-            "Choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), then select, omit, order, prioritize, and arrange candidates into primary, supporting, context, or media regions. There is no universal template. "
-            "Treat the short chat answer and main panel as one response. Let the panel carry the material that gives the answer life, without merely echoing chat or displaying every available database field. "
-            "Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
-            "Use each candidate's purpose, relationship, and exploration value to make these judgments, and use related_show_paths when they help you see the shape of a possible guide. Source and coverage details belong where they genuinely illuminate the visitor's understanding, not where they interrupt it. "
-            "Your factual universe is closed: return only candidate indexes from the brief. Do not research, create, rewrite, or embellish facts, sources, URLs, blocks, or headings.\n\n"
+            "You are Deadbot's final editor: a perceptive, companionable Grateful Dead guide. Make the two parts of the response work together. "
+            "CHAT ANSWER: Answer the visitor's question briefly and directly. Do not put a list or a catalogue in chat. Do not repeat details the main body can show. "
+            "MAIN BODY: Select and arrange the broader supporting material that makes the answer useful, interesting, and explorable. "
+            "The chat answer and main body should complement each other, not duplicate each other. "
+            "Return chat_answer, choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), and arrange selected candidates into primary, supporting, context, or media regions. Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
+            "Use editorial judgment; there is no universal template. Your factual universe is closed to the grounded brief. Do not invent facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )
         try:
@@ -437,7 +451,7 @@ class ModelGuidedComposer:
                 [
                     SystemMessage(
                         content=(
-                            "You are Deadbot's discerning, music-first Grateful Dead editor. Shape grounded material into a guide a curious fan would genuinely enjoy, then return only the requested structured composition plan."
+                            "You are Deadbot's final editor. Return one short, direct chat answer and a complementary main-body plan from grounded material."
                         )
                     ),
                     HumanMessage(content=prompt),

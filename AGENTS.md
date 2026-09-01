@@ -11,6 +11,10 @@ visitor's experience unless they change the meaning of the answer.
 
 For experience composition in particular:
 
+- Keep model responsibilities coherent. The retrieval model assembles grounded
+  material; the final composer owns both the visible chat answer and the main
+  body plan in one decision. Do not ask an earlier model to avoid repeating a
+  layout that a later model has not created yet.
 - Supply a structured decision brief: the latest question, relevant
   conversation, grounded answer, useful facts and relationships, and a rich
   inventory of eligible blocks with their purpose, exploration value, and

@@ -215,6 +215,7 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
     composed = apply_composition_plan(
         response,
         CompositionPlan(
+            chat_answer="Branford Marsalis played five shows with the Grateful Dead.",
             mode="listening",
             sections=[
                 CompositionSection(region="primary", candidate_indexes=selected_indexes[:3]),
@@ -233,20 +234,11 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
     assert not any(block.type in {"performer_list", "equipment_list"} for block in composed.blocks)
 
 
-def test_agent_prompt_gives_the_model_a_grounded_editorial_persona_and_goal():
-    assert "You own the information and experience curation" in SYSTEM_PROMPT
-    assert "Answer the visitor's factual question" in SYSTEM_PROMPT
-    assert "Anticipate exploration or experience opportunities" in SYSTEM_PROMPT
-    assert "Retrieve worthwhile enrichment" in SYSTEM_PROMPT
-    assert "Think one useful step ahead" in SYSTEM_PROMPT
-    assert '"where do I listen?"' in SYSTEM_PROMPT
-    assert "source-attributed community" in SYSTEM_PROMPT
-    assert "perceptive, well-read fan" in SYSTEM_PROMPT
-    assert "give the facts a shape" in SYSTEM_PROMPT
-    assert "presentation-level editorial decisions" in SYSTEM_PROMPT
-    assert "only work with the grounded candidate material" in SYSTEM_PROMPT
-    assert "generic closing such as \"let me know if" in SYSTEM_PROMPT
-    assert "natural, companionable voice" in SYSTEM_PROMPT
+def test_agent_prompt_is_a_grounded_research_handoff_to_the_final_editor():
+    assert "research lead for a final editor" in SYSTEM_PROMPT
+    assert "factual handoff to the editor" in SYSTEM_PROMPT
+    assert "not the finished\nchat interface" in SYSTEM_PROMPT
+    assert "enough grounded material" in SYSTEM_PROMPT
 
 
 def test_guest_directory_renders_its_grounded_result():
@@ -712,6 +704,7 @@ def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_prove
     composed = apply_composition_plan(
         response,
         CompositionPlan(
+            chat_answer="Sugaree has several useful reading and listening paths.",
             mode="research",
             sections=[CompositionSection(region="primary", candidate_indexes=reordered)],
             omitted_candidate_indexes=_omitted_indexes(response, reordered),
@@ -736,6 +729,7 @@ def test_composition_cannot_show_coverage_as_a_normal_result_instead_of_grounded
     composed = apply_composition_plan(
         response,
         CompositionPlan(
+            chat_answer="Sugaree is in the current library.",
             sections=[CompositionSection(region="primary", candidate_indexes=[coverage_index])],
             omitted_candidate_indexes=_omitted_indexes(response, [coverage_index]),
         ),
@@ -764,6 +758,7 @@ def test_composition_preserves_the_model_selected_show_order_and_regions():
     composed = apply_composition_plan(
         response,
         CompositionPlan(
+            chat_answer="The show is documented below.",
             mode="show",
             sections=[
                 CompositionSection(region="context", candidate_indexes=[setlist_index]),
@@ -788,7 +783,10 @@ def test_an_invalid_composition_plan_uses_the_deterministic_candidate_order():
         messages=[tool_message(store.song_context(song)), AIMessage(content="Sugaree is in the library.")],
         store=store,
     )
-    invalid = CompositionPlan(sections=[CompositionSection(region="primary", candidate_indexes=[999])])
+    invalid = CompositionPlan(
+        chat_answer="This invalid plan must not replace the answer.",
+        sections=[CompositionSection(region="primary", candidate_indexes=[999])],
+    )
     assert apply_composition_plan(response, invalid) == response
 
 
@@ -806,6 +804,7 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     ordered_indexes = [resource_index, 0]
     stub = SelectionStub(
         CompositionPlan(
+            chat_answer="Sugaree is in the library; the body has the useful context.",
             mode="research",
             sections=[CompositionSection(region="supporting", candidate_indexes=ordered_indexes)],
             omitted_candidate_indexes=_omitted_indexes(response, ordered_indexes),
@@ -816,6 +815,10 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     assert [block.type for block in composed.blocks] == [response.blocks[index].type for index in ordered_indexes]
     assert composed.mode == "research"
     assert len(stub.inputs) == 1
+    final_editor_prompt = stub.inputs[0][1].content
+    assert "CHAT ANSWER: Answer the visitor's question briefly and directly" in final_editor_prompt
+    assert "MAIN BODY: Select and arrange the broader supporting material" in final_editor_prompt
+    assert "should complement each other, not duplicate each other" in final_editor_prompt
 
 
 def test_model_guided_composer_uses_one_bounded_model_plan():
@@ -832,6 +835,7 @@ def test_model_guided_composer_uses_one_bounded_model_plan():
     recording_index = next(index for index, block in enumerate(response.blocks) if block.type == "recording_list")
     ordered_indexes = [setlist_index, recording_index]
     plan = CompositionPlan(
+        chat_answer="The show is documented below.",
         mode="show",
         sections=[CompositionSection(region="primary", candidate_indexes=ordered_indexes)],
         omitted_candidate_indexes=_omitted_indexes(response, ordered_indexes),
@@ -841,6 +845,8 @@ def test_model_guided_composer_uses_one_bounded_model_plan():
     composed = ModelGuidedComposer(selector=stub).compose("Tell me about the show.", response)
 
     assert [block.type for block in composed.blocks[:2]] == ["show_setlist", "recording_list"]
+    assert composed.answer == "The show is documented below."
+    assert composed.conversation[-1].text == composed.answer
     assert composed.layout[0].block_indexes == list(range(len(ordered_indexes)))
     assert len(stub.inputs) == 1
 
