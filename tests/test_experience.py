@@ -156,6 +156,37 @@ def test_guest_count_question_keeps_model_selected_show_and_listening_paths():
     assert not any(block.type == "gap_state" for block in response.blocks)
 
 
+def test_guest_count_with_all_five_show_contexts_fits_the_response_layout_budget():
+    """A compact guest timeline may expand into every documented show path."""
+
+    store = CanonicalStore()
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    guest_payload = json.loads(guest_tool.invoke({"query": "Branford"}))
+    appearances = guest_payload["guests"][0]["appearances"]
+    response = compose_experience_response(
+        question="How many shows did Branford play with the Dead?",
+        thread_id="guest-all-shows-budget",
+        messages=[
+            tool_message(guest_payload),
+            *[
+                tool_message(store.show_context(store.one("shows", appearance["show_id"])))
+                for appearance in appearances
+            ],
+            AIMessage(content="Branford Marsalis played five shows with the Grateful Dead."),
+        ],
+        store=store,
+    )
+
+    assert len(response.blocks) == 26
+    assert len(response.blocks) <= 32
+    assert {block.show_id for block in response.blocks if block.type == "show_setlist"} == {
+        appearance["show_id"] for appearance in appearances
+    }
+    assert {block.show_id for block in response.blocks if block.type == "recording_list"} == {
+        appearance["show_id"] for appearance in appearances
+    }
+
+
 def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspective():
     assert "You own the information and experience curation" in SYSTEM_PROMPT
     assert "Answer the visitor's factual question" in SYSTEM_PROMPT

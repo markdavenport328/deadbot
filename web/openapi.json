@@ -728,7 +728,7 @@
                 }
               ]
             },
-            "maxItems": 24,
+            "maxItems": 32,
             "title": "Blocks",
             "type": "array"
           },
@@ -773,7 +773,7 @@
             "items": {
               "$ref": "#/components/schemas/SourceReference"
             },
-            "maxItems": 48,
+            "maxItems": 64,
             "title": "Sources",
             "type": "array"
           },

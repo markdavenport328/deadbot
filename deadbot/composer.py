@@ -31,7 +31,7 @@ class CompositionPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
     mode: ExperienceMode = "quick_fact"
     sections: list[CompositionSection] = Field(min_length=1, max_length=4)
-    omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=24)
+    omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=32)
 
 
 class ExperienceComposer(Protocol):
