@@ -23,9 +23,9 @@ partial year is a complete career denominator.
 
 ## Start from question families
 
-Before collection, each question family needs: required graph paths, expected
-universe, source priorities, a minimum usable evidence threshold, an explicit
-partial-coverage response, and a deterministic safe fallback.
+Question families can guide collection toward useful graph paths and evidence,
+but they must not become response templates or deterministic fallback rules.
+The models decide what a particular question needs from the material available.
 
 | Question family | Example | Required enrichment |
 | --- | --- | --- |

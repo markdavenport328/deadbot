@@ -83,10 +83,10 @@ independently of any model.
    show fact, a Cornell fact with optional source trail, “best Sugar Magnolia
    recordings,” Friend of the Devil across decades, Veneta's notable weather,
    source unavailability, and a quick fact that should stay compact.
-2. Use the traces to improve the decision brief, tool descriptions, composition
-   inventory, and model configuration. The model chooses relevance, ordering,
-   omission, and column placement; validation stays focused on allowed blocks,
-   supplied references, provider links, provenance, and safe fallback.
+2. Use the traces to improve the research handoff, tool descriptions,
+   presentation palette, persona, goal, and model configuration. The model
+   chooses relevance, synthesis, omission, and reading order; application code
+   stays focused on response shape and resolving supplied references.
 3. Review and enrich the existing priority queue. It is internal planning only:
    the model receives the discovery guide, source trails, factual tools, and
    coverage for a current question, never a cohort-size target or global rank.

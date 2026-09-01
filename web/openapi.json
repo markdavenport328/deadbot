@@ -649,9 +649,11 @@
                   "credit_list": "#/components/schemas/CreditListBlock",
                   "entity_card": "#/components/schemas/EntityCardBlock",
                   "equipment_list": "#/components/schemas/EquipmentListBlock",
+                  "fact_grid": "#/components/schemas/FactGridBlock",
                   "gap_state": "#/components/schemas/GapStateBlock",
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
+                  "narrative": "#/components/schemas/NarrativeBlock",
                   "performance_extremes": "#/components/schemas/PerformanceExtremesBlock",
                   "performance_list": "#/components/schemas/PerformanceListBlock",
                   "performance_spine": "#/components/schemas/PerformanceSpineBlock",
@@ -661,7 +663,8 @@
                   "resource_list": "#/components/schemas/ResourceListBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_setlist": "#/components/schemas/ShowSetlistBlock",
-                  "song_overview": "#/components/schemas/SongOverviewBlock"
+                  "song_overview": "#/components/schemas/SongOverviewBlock",
+                  "timeline": "#/components/schemas/TimelineBlock"
                 },
                 "propertyName": "type"
               },
@@ -725,12 +728,32 @@
                 },
                 {
                   "$ref": "#/components/schemas/GapStateBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/NarrativeBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/FactGridBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/TimelineBlock"
                 }
               ]
             },
             "maxItems": 32,
             "title": "Blocks",
             "type": "array"
+          },
+          "body_lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Lead"
           },
           "conversation": {
             "items": {
@@ -792,6 +815,89 @@
           "answer"
         ],
         "title": "ExperienceResponse",
+        "type": "object"
+      },
+      "FactGridBlock": {
+        "additionalProperties": false,
+        "description": "A compact, model-selected set of facts rather than a database dump.",
+        "properties": {
+          "eyebrow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eyebrow"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/FactItem"
+            },
+            "maxItems": 8,
+            "minItems": 2,
+            "title": "Items",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "fact_grid",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items"
+        ],
+        "title": "FactGridBlock",
+        "type": "object"
+      },
+      "FactItem": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "FactItem",
         "type": "object"
       },
       "GapStateBlock": {
@@ -1031,6 +1137,54 @@
           "is_official"
         ],
         "title": "MediaLinkBlock",
+        "type": "object"
+      },
+      "NarrativeBlock": {
+        "additionalProperties": false,
+        "description": "Model-authored connective context drawn from the grounded packet.",
+        "properties": {
+          "eyebrow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eyebrow"
+          },
+          "paragraphs": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "title": "Paragraphs",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "narrative",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "paragraphs"
+        ],
+        "title": "NarrativeBlock",
         "type": "object"
       },
       "PerformanceExtremesBlock": {
@@ -1828,6 +1982,89 @@
           "label"
         ],
         "title": "SourceReference",
+        "type": "object"
+      },
+      "TimelineBlock": {
+        "additionalProperties": false,
+        "description": "A model-shaped sequence built only from facts in the grounded packet.",
+        "properties": {
+          "eyebrow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eyebrow"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TimelineItem"
+            },
+            "maxItems": 12,
+            "minItems": 2,
+            "title": "Items",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "timeline",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items"
+        ],
+        "title": "TimelineBlock",
+        "type": "object"
+      },
+      "TimelineItem": {
+        "additionalProperties": false,
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "marker": {
+            "title": "Marker",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "marker",
+          "title"
+        ],
+        "title": "TimelineItem",
         "type": "object"
       },
       "ValidationError": {

@@ -348,22 +348,10 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
 
     @tool
     def search_guest_musicians(query: str = "") -> str:
-        """Search the complete canonical directory of musicians with guest credits.
+        """Find guest musicians and their documented Grateful Dead show appearances.
 
-        This is relationship data, not a preselected list of famous guests:
-        every returned person has at least one show_performers row whose role
-        is guest. An empty query returns the complete directory; a name or
-        phrase narrows it. Each result includes all documented guest-show
-        dates and credited instruments so the caller can decide what is
-        relevant. Whether a guest was a formal band member is a separate question
-        and should not displace an ordinary appearance query.
-        The returned show IDs can be passed to get_show when the visitor would
-        benefit from the show's setlist, recording links, or other grounded
-        context; decide which appearances to expand from the question rather
-        than treating the directory as a complete rendered answer. After a
-        narrow guest match, use search_stored_resources with the returned
-        canonical name when reviewed community, artist, or editorial context
-        would make the page more exploratory.
+        A name or phrase narrows the results. Each appearance includes its show,
+        venue, location, credited instruments, and any known participation scope.
         """
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
@@ -460,7 +448,6 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         return _json(
             {
                 "query": query,
-                "coverage_note": "Coverage: complete current canonical guest-credit directory.",
                 "guests": guests,
             }
         )

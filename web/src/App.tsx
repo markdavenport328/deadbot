@@ -28,6 +28,18 @@ function createThreadId(): string {
   return `web-${crypto.randomUUID()}`;
 }
 
+async function refreshIfServerChanged(): Promise<void> {
+  const result = await fetch("/api/health", { cache: "no-store" });
+  if (!result.ok) return;
+  const health = await result.json() as { git_commit?: string };
+  const current = health.git_commit;
+  if (!current || current === "unknown") return;
+  const storageKey = "deadbot-server-version";
+  const previous = sessionStorage.getItem(storageKey);
+  sessionStorage.setItem(storageKey, current);
+  if (previous && previous !== current) window.location.reload();
+}
+
 function sourceFor(sources: SourceReference[], sourceId: string): SourceReference | undefined {
   return sources.find((source) => source.source_id === sourceId);
 }
@@ -471,6 +483,54 @@ function Block({
           </ul>
         </section>
       );
+    case "narrative":
+      return (
+        <section className="editorial-block narrative-block">
+          {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
+          {block.title && <h2>{block.title}</h2>}
+          {block.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+        </section>
+      );
+    case "fact_grid":
+      return (
+        <section className="editorial-block fact-grid-block">
+          {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
+          <h2>{block.title}</h2>
+          <dl>
+            {block.items.map((item, index) => (
+              <div key={`${item.label}-${index}`}>
+                <dt>{item.label}</dt>
+                <dd>
+                  {item.follow_up ? (
+                    <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.value}</FollowUpButton>
+                  ) : item.value}
+                </dd>
+                {item.detail && <dd className="fact-detail">{item.detail}</dd>}
+              </div>
+            ))}
+          </dl>
+        </section>
+      );
+    case "timeline":
+      return (
+        <section className="editorial-block timeline-block">
+          {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
+          <h2>{block.title}</h2>
+          <ol>
+            {block.items.map((item, index) => (
+              <li key={`${item.marker}-${index}`}>
+                <span className="timeline-marker">{item.marker}</span>
+                <strong>
+                  {item.follow_up ? (
+                    <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.title}</FollowUpButton>
+                  ) : item.title}
+                </strong>
+                {item.detail && <span>{item.detail}</span>}
+              </li>
+            ))}
+          </ol>
+        </section>
+      );
     case "provenance_note":
       return <aside className="provenance">{block.text}</aside>;
     case "gap_state":
@@ -491,6 +551,12 @@ export default function App() {
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [loading, pendingQuestion, response]);
+
+  useEffect(() => {
+    void refreshIfServerChanged();
+    const check = window.setInterval(() => void refreshIfServerChanged(), 60_000);
+    return () => window.clearInterval(check);
+  }, []);
 
   async function askQuestion(nextQuestion?: string, { fresh = false }: { fresh?: boolean } = {}) {
     const trimmed = (nextQuestion ?? question).trim();
@@ -607,6 +673,7 @@ export default function App() {
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1>{response.title}</h1>
               </div>
+              {response.body_lead && <p className="answer-lead">{response.body_lead}</p>}
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
                   {regionLabels[section.region] && <p className="region-label">{regionLabels[section.region]}</p>}

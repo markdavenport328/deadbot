@@ -50,20 +50,17 @@ set of candidates—not an objectively final musical ranking.
 
 ## What guides the model
 
-The model receives a rich decision brief. It includes:
+The final editor receives a focused grounded packet. It includes:
 
 - latest question and relevant conversation;
 - grounded direct answer and resolved entity IDs;
-- canonical facts, graph paths, coverage, and listening paths;
-- eligible main-column blocks with scope, purpose, provenance, and
-  `usage_guidance`;
-- discovery-guide candidates, marked as editorial leads rather than facts;
-- registered source capabilities, rights, and relevant current resources;
+- canonical facts, graph paths, and listening paths retrieved for this question;
+- complete eligible component data without block-specific editorial guidance;
 - source research results, if requested; and
-- explicit gaps, held items, and partial coverage.
+- a real information gap when it affects the answer.
 
-Prompt and skill guidance should encourage curiosity, contrast, surprise,
-continuity, weirdness, and a good story. The model may make a transparent
+Its persona and goal encourage curiosity, contrast, surprise, continuity,
+weirdness, and a good story. The model may make a transparent
 recommendation (“I would start here”), explain its listening judgment, and
 surface a source trail when it enriches the answer. Facts, quotations, source
 claims, and event details come from the supplied retrieval packet.

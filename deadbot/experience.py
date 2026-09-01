@@ -341,6 +341,47 @@ class GapStateBlock(ExperienceModel):
     message: str
 
 
+class NarrativeBlock(ExperienceModel):
+    """Model-authored connective context drawn from the grounded packet."""
+
+    type: Literal["narrative"]
+    eyebrow: str | None = None
+    title: str | None = None
+    paragraphs: list[str] = Field(min_length=1, max_length=4)
+
+
+class FactItem(ExperienceModel):
+    label: str
+    value: str
+    detail: str | None = None
+    follow_up: str | None = None
+
+
+class FactGridBlock(ExperienceModel):
+    """A compact, model-selected set of facts rather than a database dump."""
+
+    type: Literal["fact_grid"]
+    eyebrow: str | None = None
+    title: str
+    items: list[FactItem] = Field(min_length=2, max_length=8)
+
+
+class TimelineItem(ExperienceModel):
+    marker: str
+    title: str
+    detail: str | None = None
+    follow_up: str | None = None
+
+
+class TimelineBlock(ExperienceModel):
+    """A model-shaped sequence built only from facts in the grounded packet."""
+
+    type: Literal["timeline"]
+    eyebrow: str | None = None
+    title: str
+    items: list[TimelineItem] = Field(min_length=2, max_length=12)
+
+
 ExperienceBlock = Annotated[
     EntityCardBlock
     | ShowSetlistBlock
@@ -361,7 +402,10 @@ ExperienceBlock = Annotated[
     | ArrangementBlock
     | ArrangementSearchBlock
     | ProvenanceNoteBlock
-    | GapStateBlock,
+    | GapStateBlock
+    | NarrativeBlock
+    | FactGridBlock
+    | TimelineBlock,
     Field(discriminator="type"),
 ]
 
@@ -391,6 +435,7 @@ class ExperienceResponse(ExperienceModel):
     thread_id: str
     title: str
     answer: str
+    body_lead: str | None = None
     mode: ExperienceMode = "quick_fact"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
     # Four layout regions can each carry up to eight blocks. Keep the response

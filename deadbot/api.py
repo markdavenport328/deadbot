@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot.composer import DeterministicComposer, ExperienceComposer, create_experience_composer
+from deadbot.composer import CompositionError, DeterministicComposer, ExperienceComposer, create_experience_composer
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import ExperienceRequest, ExperienceResponse, compose_experience_response
@@ -154,7 +154,13 @@ def create_app(
             messages=result.get("messages", []),
             store=app.state.store,
         )
-        return app.state.composer.compose(request.question, response)
+        try:
+            return app.state.composer.compose(request.question, response)
+        except CompositionError as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Deadbot's final editor could not finish this response. Please try again.",
+            ) from error
 
     if client_dist.is_dir():
         assets = client_dist / "assets"
@@ -164,7 +170,12 @@ def create_app(
         @app.get("/{full_path:path}", include_in_schema=False)
         def client(full_path: str) -> FileResponse:
             # The SPA owns browser routes. API routes were registered above.
-            return FileResponse(client_dist / "index.html")
+            # Always revalidate the shell so a production deploy cannot leave a
+            # browser loading an older hashed bundle from a cached index page.
+            return FileResponse(
+                client_dist / "index.html",
+                headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+            )
 
     return app
 

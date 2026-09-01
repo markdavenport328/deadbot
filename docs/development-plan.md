@@ -84,12 +84,11 @@ The current resource set gives every one of the 20 Veneta songs at least one con
 - The browser reuses one opaque thread ID, which maps to LangGraph's in-memory
   checkpoint. Conversation context lasts for the current server process only;
   durable user history remains a separate future decision.
-- Added a model-guided composer that receives an enriched decision brief:
-  grounded answer, recent conversation, candidate scope/purpose/provenance,
-  known performance evidence, and current library coverage. It returns
-  model-selected primary, supporting, context, and media regions using only
-  server-owned candidate indexes; invalid or unavailable-model results fall
-  back to the deterministic candidate order.
+- Added a model-guided final editor that receives the grounded answer, recent
+  conversation, and complete candidate data. It writes chat, title, and body
+  synthesis together; it can shape grounded narrative, fact grids, or timelines
+  and reuse richer server-owned components without an omission ledger or
+  block-specific editorial instructions.
 - Added a main-panel mode label and title so the composed result does not
   begin as an unexplained card grid. The browser labels the model-selected
   experience mode while the conversation column retains the direct
@@ -114,10 +113,9 @@ The current resource set gives every one of the 20 Veneta songs at least one con
 - Added a quiet sources footer that lists the response's deduplicated
   provenance registry with canonical/external-source chips and outbound
   links.
-- Moved every block's composer guidance out of the shared system prompt and
-  into a structured `usage_guidance` field on each candidate's brief entry.
-  The system prompt itself shrank from roughly 677 words to roughly 206
-  words of durable principles.
+- Removed block-specific composer guidance from both the shared prompt and the
+  candidate brief. The editor now sees each grounded candidate itself and uses
+  its persona and response goal to decide what helps.
 - Added `comparison_strip`, a block that places one representative rendition
   of a song per known year with an explicit coverage note, making
   `comparison` mode expressible for the first time.
@@ -150,13 +148,14 @@ These boundaries are intentional and should not be bypassed casually:
 - Do not copy full lyrics, tabs, transcriptions, audio, or video into the repository.
 - The local model is useful for harness development, but its answer quality has not yet been evaluated against a Deadbot-specific test set.
 - The model-guided composer is the final response editor: it writes the concise
-  visible chat answer from the grounded brief and selects the main-body layout
-  in the same decision. It cannot write URLs, iframe markup, HTML, new block
-  types, or facts outside the grounded packet. Model failure returns the
-  grounded fallback response.
+  visible chat answer and shapes the main body in the same decision. It can
+  synthesize grounded narrative, fact grids, and timelines as well as select
+  richer domain components. It cannot write browser code or facts outside the
+  grounded packet.
 - `AGENTS.md` records the project-wide model-first principle: favor richer
-  grounded context and instructions for ordinary product judgment; reserve
-  deterministic code for validation and narrow safety guardrails.
+  grounded context, useful tools, a clear persona and goal, and an expressive
+  presentation palette. Deterministic code is transport and structure, not an
+  editorial backstop.
 - A model may not generate browser code, iframe markup, arbitrary embeds, or arbitrary external URLs. The future client must render only server-validated, allowlisted blocks.
 
 ## Next work
@@ -213,36 +212,32 @@ deployed OpenAI-compatible provider configuration (`DEADBOT_OPENAI_MODEL`,
 `gpt-4o-mini` by default), with representative Veneta questions, and tighten
 the adapter where real tool traces expose missing or redundant cards. Add
 browser-level automated checks once a suitable local test runner is selected.
-Keep the existing schema, source restrictions, and safe fallbacks intact
-while improving visual hierarchy, responsive behavior, and source
-presentation.
+Keep the response structurally valid while improving model context, visual
+hierarchy, responsive behavior, and source presentation. Do not treat an
+unedited candidate packet as an acceptable finished response.
 
 **Done when:** a browser user can ask representative Veneta questions and see
 a validated response that makes canonical data, contextual sources, and media
 paths visibly distinct; the full flow is checked with both API and browser-level
 tests.
 
-### 4. Evaluate and tune the bounded model-guided composer
+### 4. Evaluate and tune the final editor
 
-The first composer now reasons over an enriched decision brief and selects
-server-validated blocks into primary, supporting, context, and media regions.
-Each candidate in the brief now carries a structured `usage_guidance` field
-in place of block-specific rules that used to live only in the shared system
-prompt, which shrank to durable principles as a result. Run the composer
-against the configured local model and against the deployed OpenAI-compatible
-provider configuration with representative Veneta questions, and compare its
-selections to the deterministic candidate order. Tune the model's grounded
-brief, instructions, and candidate metadata before adding deterministic
-intent routing.
+The final editor now receives the full grounded candidates without prescriptive
+per-block usage or placement guidance. It writes chat and body together and can
+shape facts into narrative, a compact fact grid, or a timeline before selecting
+any domain-rich candidates worth retaining. Run it against representative
+questions and tune the research handoff, persona, goal, palette, and model
+configuration—not keyword routing or example-specific component rules.
 
-Add example-based evaluations for questions that should emphasize a song card,
-show/performance card, media option, chord-resource list, provenance note, or
-gap state. Record schema version, candidate count, selected indexes, and safe
-fallback category, without logging protected text or private model reasoning.
+Add example-based evaluations that judge the experience as a whole: directness
+in chat, usefulness and interest in the body, non-duplication, groundedness, and
+whether the chosen presentation helps the particular material. Do not make a
+specific block choice the expected answer unless that component is itself the
+feature under test.
 
-**Done when:** local-model composition reliably makes a smaller, more relevant
-main-column layout while preserving provenance, factual content, and the
-deterministic fallback.
+**Done when:** model composition reliably produces a concise chat answer and a
+useful, grounded main body without deterministic editorial correction.
 
 ### 5. Add curated source research and a restricted source-reader
 
@@ -274,8 +269,8 @@ none of their text becomes a canonical fact. See
 `docs/lore-source-trails.md` and `docs/lore-pilot-research.md`.
 
 **Next:** run live-model traces for factual-plus-exploratory answers, then use
-the results to improve research invocation, source discovery, main-column
-selection, and safe fallback behavior. Add source-specific excerpts only after
+the results to improve research invocation, source discovery, and final editing.
+Add source-specific excerpts only after
 rights review. See `docs/serendipity-research-plan.md`.
 
 ### 6. Build the canonical CSV → PostgreSQL importer

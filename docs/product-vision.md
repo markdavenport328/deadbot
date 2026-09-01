@@ -91,11 +91,11 @@ bounded retrieval patterns rather than create isolated show dossiers. See
 
 ## How an answer becomes an experience
 
-Grounded retrieval feeds a bounded composition step that selects and orders
-approved display patterns: direct answer text, entity and performance cards,
-resource lists, media paths, provenance notes, and explicit gap states. The
-model exercises ordinary editorial judgment over relevance, omission, ordering,
-and column placement; the application renders the validated composition with
-normal frontend code.
+Grounded retrieval feeds a final editorial step that writes the direct chat
+answer and shapes the supporting body. The model can synthesize narrative,
+compact facts, or a timeline and mix those with domain-rich components such as
+setlists, recordings, arrangements, and media. It owns relevance, omission,
+emphasis, and reading order; the application supplies the visual vocabulary and
+renders the result with normal frontend code.
 
 This means a question about a song can naturally become a concise answer, performance listing, official listening option, source-specific chord link, and attributed reading list, while a question outside current coverage remains an honest explanation of the gap. Media embeds and short quotes are specialized patterns with their own approval, attribution, and rights safeguards; they are not arbitrary model output. See `docs/experience-architecture.md`.

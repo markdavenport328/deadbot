@@ -87,11 +87,14 @@ The illustration is a contract pattern, not an instruction to expose all databas
 
 ## Block catalog
 
-The first release should implement a deliberately small catalog. New block types require a schema, renderer, provenance behavior, accessibility review, and tests before a composer can use them.
+The catalog combines flexible editorial patterns with richer domain components. New visual patterns require a schema, renderer, accessibility review, and tests before a composer can use them; they are capabilities for the editor, never routes tied to question wording.
 
 | Block | Purpose | Grounding and constraints |
 | --- | --- | --- |
 | Answer text | Concise direct answer with source references. | Must distinguish canonical facts from source-attributed context. |
+| Narrative | Connect facts into a short, readable explanation. | Model-written from the grounded packet; never a fixed article template. |
+| Fact grid | Emphasize a small set of details that matter together. | Model selects labels, values, and optional context from grounded material. |
+| Timeline | Show sequence, change, or span when it clarifies the material. | Model shapes grounded markers and details; chronology is not forced for every date-bearing result. |
 | Entity header | Identify a song, show, performance, person, or venue. | Uses a canonical entity reference. |
 | Song, show, or performance card | Present core identity, ordering, personnel, recording, or release context. | Uses canonical data; show performance-specific facts only for the referenced rendition. |
 | Performance spine | Place one rendition among its directly adjacent songs in a documented set. | Uses only canonical set order; it must not imply musical analysis or a segue beyond what is stored. |
@@ -110,37 +113,29 @@ Cards and lists are presentation patterns, not new domain entities. The canonica
 
 ## Composition rules
 
-Composition is model-guided but bounded. A composer may decide that a question would be clearer with a show card followed by an official listening link, for example. It may not create a new card shape, turn an unverified statement into a fact, or use an unreturned resource because its name seems plausible.
+The composer is Deadbot's final editor, not a card sorter. It receives the
+latest question, recent conversation, the research lead's grounded synthesis,
+and the complete data carried by each available candidate. It writes the short
+chat answer and owns the main body as one editorial decision.
 
-The implemented first composer receives an enriched decision brief. It includes
-the latest question, recent conversation, grounded agent answer, and a rich
-inventory of candidates: their scope, purpose, canonical or contextual
-provenance, coverage metadata, relevant facts, and a structured
-`usage_guidance` field describing when that candidate helps or is redundant.
-The model returns a concise `chat_answer`, one bounded experience mode
-(`quick_fact`, `performance`, `show`, `listening`, `comparison`, `research`,
-`musician`, or `gap`), and an ordered list containing only server-owned
-candidate indexes. The server resolves those indexes back to the original
-validated blocks, lays them out within the bounded main body, and uses the same
-model decision for the final visible assistant turn. Its system instructions
-and validation require it to:
+The editor can write a body title and lead, shape grounded material into
+narrative, fact-grid, or timeline patterns, and mix those with richer
+server-owned candidates such as setlists, recordings, arrangements, and media.
+The palette supplies expressive options; no question type is mapped to a
+particular pattern, depth, or ordering.
 
-- make chat direct and concise while the main body carries broader support;
-- choose a focused set of blocks that advances the visitor's question;
-- reference only entities, resources, media links, and excerpts present in the retrieval packet;
-- preserve the canonical-versus-contextual distinction in both text and block selection;
-- use a gap state for unavailable information; and
-- remain within response-size and block-count limits.
+The prompt gives the editor a persona and an outcome: answer crisply in chat
+and make the main body useful, interesting, and explorable without repetition.
+It does not provide a checklist for a "complete" guide or block-specific
+placement rules. The model decides relevance, emphasis, omission, synthesis,
+and reading order from the grounded packet.
 
-Deadbot follows a model-first design principle: improve the model's context,
-retrieval brief, instructions, and evaluations before adding deterministic
-intent-to-template rules. Deterministic code enforces safety and validation
-boundaries; it does not replace ordinary relevance and presentation judgment.
-See `AGENTS.md` for the working principle that applies to future changes.
-
-The backend validates the composer output against the response model and resolves each reference against the retrieval packet. Invalid, missing, unsupported, empty, or unavailable-model results fall back to the deterministic candidate order. Provenance and coverage-gap blocks remain present when they were included in the candidate response; nothing is passed through as arbitrary JSON.
-
-The deterministic adapter creates the candidate response directly from agent/tool results. It remains the fallback when the model-guided selection is disabled or fails. The API contract is unchanged by either path.
+Application code enforces only the response shape and resolves referenced
+candidate indexes. It does not require an omission ledger, veto coverage or
+provenance choices, select components from keywords, or substitute an unedited
+database packet as though it were a finished experience. Editorial failures
+are diagnosed at the model boundary and improved through context, tools,
+prompting, palette design, and evaluations.
 
 ## Media and external-resource safety
 

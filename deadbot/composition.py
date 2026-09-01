@@ -1073,8 +1073,8 @@ def compose_experience_response(
         if isinstance(resources, list):
             add_resources(item for item in resources if isinstance(item, dict))
         # Metadata-only source research is returned as a server-owned packet.
-        # Normalize records into the same resource_list path as canonical
-        # resources so the main column and its safe fallback stay identical.
+        # Normalize records into the same resource_list candidate shape as
+        # canonical resources so the final editor can compare them directly.
         research_packets: list[Any] = []
         for key in ("research", "research_result", "research_results"):
             value = payload.get(key)

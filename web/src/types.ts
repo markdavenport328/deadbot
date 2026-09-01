@@ -53,7 +53,10 @@ export type ExperienceBlock =
   | FixedArrangementBlock
   | components["schemas"]["ArrangementSearchBlock"]
   | components["schemas"]["ProvenanceNoteBlock"]
-  | components["schemas"]["GapStateBlock"];
+  | components["schemas"]["GapStateBlock"]
+  | components["schemas"]["NarrativeBlock"]
+  | components["schemas"]["FactGridBlock"]
+  | components["schemas"]["TimelineBlock"];
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],

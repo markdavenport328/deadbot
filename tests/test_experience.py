@@ -216,9 +216,10 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
         response,
         CompositionPlan(
             chat_answer="Branford Marsalis played five shows with the Grateful Dead.",
+            body_title="Branford Marsalis",
+            body_lead="Five guest appearances between 1990 and 1994 show how the collaboration grew.",
             mode="listening",
             body_candidate_indexes=selected_indexes,
-            omitted_candidate_indexes=_omitted_indexes(response, selected_indexes),
         ),
     )
 
@@ -232,10 +233,11 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
 
 
 def test_agent_prompt_is_a_grounded_research_handoff_to_the_final_editor():
-    assert "research lead for a final editor" in SYSTEM_PROMPT
-    assert "factual handoff to the editor" in SYSTEM_PROMPT
-    assert "not the finished\nchat interface" in SYSTEM_PROMPT
-    assert "enough grounded material" in SYSTEM_PROMPT
+    assert "Deadbot's research lead" in SYSTEM_PROMPT
+    assert "enough worthwhile supporting material for a final editor" in SYSTEM_PROMPT
+    assert "no retrieval\nchecklist" in SYSTEM_PROMPT
+    assert "Stop when the editor has enough" in SYSTEM_PROMPT
+    assert "capability map" not in SYSTEM_PROMPT
 
 
 def test_guest_directory_renders_its_grounded_result():
@@ -323,7 +325,7 @@ def test_metadata_only_research_records_join_the_main_column_resource_path():
     assert any(section.block_indexes for section in response.layout)
 
 
-def test_research_candidates_in_brief_are_server_owned_and_provenanced():
+def test_research_resources_reach_the_editor_as_complete_grounded_candidates():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
     assert song
@@ -344,9 +346,14 @@ def test_research_candidates_in_brief_are_server_owned_and_provenanced():
         store=store,
     )
     brief = json.loads(_composer_brief("Find context for Sugaree.", response))
-    candidate = next(item for item in brief["research_candidates"] if item["title"] == "Sugaree")
-    assert candidate["provenance"] == "contextual resource metadata"
-    assert candidate["candidate_index"] < len(response.blocks)
+    candidate = next(
+        item
+        for item in brief["candidate_blocks"]
+        if item["block"]["type"] == "resource_list"
+        and any(resource["title"] == "Sugaree" for resource in item["block"]["items"])
+    )
+    assert candidate["index"] < len(response.blocks)
+    assert candidate["block"] == response.blocks[candidate["index"]].model_dump(mode="json")
 
 
 def test_research_resource_rejects_non_deadnet_urls():
@@ -682,10 +689,6 @@ def test_only_recognized_provider_urls_receive_embed_identifiers():
     assert _embed_details("youtube", "https://example.com/watch?v=Ip48SfRx4ho") == (None, None)
 
 
-def _omitted_indexes(response, selected_indexes):
-    return [index for index in range(len(response.blocks)) if index not in selected_indexes]
-
-
 def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_provenance():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
@@ -702,9 +705,10 @@ def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_prove
         response,
         CompositionPlan(
             chat_answer="Sugaree has several useful reading and listening paths.",
+            body_title="Sugaree",
+            body_lead="The grounded material connects the song's history with places to keep exploring.",
             mode="research",
             body_candidate_indexes=reordered,
-            omitted_candidate_indexes=_omitted_indexes(response, reordered),
         ),
     )
     assert [block.type for block in composed.blocks] == [response.blocks[index].type for index in reordered]
@@ -742,9 +746,10 @@ def test_composition_preserves_the_model_selected_show_order_in_the_main_body():
         response,
         CompositionPlan(
             chat_answer="The show is documented below.",
+            body_title="Veneta, 1972",
+            body_lead="The setlist and recordings make the shape of the day easy to explore.",
             mode="show",
             body_candidate_indexes=selected_indexes,
-            omitted_candidate_indexes=_omitted_indexes(response, selected_indexes),
         ),
     )
     assert [section.region for section in composed.layout] == ["primary"]
@@ -764,6 +769,8 @@ def test_an_invalid_composition_plan_uses_the_deterministic_candidate_order():
     )
     invalid = CompositionPlan(
         chat_answer="This invalid plan must not replace the answer.",
+        body_title="Invalid",
+        body_lead="This should never appear.",
         body_candidate_indexes=[999],
     )
     assert apply_composition_plan(response, invalid) == response
@@ -784,20 +791,23 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     stub = SelectionStub(
         CompositionPlan(
             chat_answer="Sugaree is in the library; the body has the useful context.",
+            body_title="Sugaree",
+            body_lead="A compact guide to the grounded song material.",
             mode="research",
             body_candidate_indexes=ordered_indexes,
-            omitted_candidate_indexes=_omitted_indexes(response, ordered_indexes),
         )
     )
     composer = ModelGuidedComposer(selector=stub)
     composed = composer.compose("Tell me about Sugaree.", response)
     assert [block.type for block in composed.blocks] == [response.blocks[index].type for index in ordered_indexes]
     assert composed.mode == "research"
+    assert composed.title == "Sugaree"
+    assert composed.body_lead == "A compact guide to the grounded song material."
     assert len(stub.inputs) == 1
     final_editor_prompt = stub.inputs[0][1].content
-    assert "CHAT ANSWER: Answer the visitor's question briefly and directly" in final_editor_prompt
-    assert "MAIN BODY: Select and arrange the broader supporting material" in final_editor_prompt
-    assert "should complement each other, not duplicate each other" in final_editor_prompt
+    assert "perceptive, companionable Grateful Dead guide with excellent taste" in final_editor_prompt
+    assert "make the main body the rewarding part" in final_editor_prompt
+    assert "narrative, fact_grid, or timeline" in final_editor_prompt
 
 
 def test_model_guided_composer_uses_one_bounded_model_plan():
@@ -815,9 +825,10 @@ def test_model_guided_composer_uses_one_bounded_model_plan():
     ordered_indexes = [setlist_index, recording_index]
     plan = CompositionPlan(
         chat_answer="The show is documented below.",
+        body_title="Veneta, 1972",
+        body_lead="A concise route into the show and its recordings.",
         mode="show",
         body_candidate_indexes=ordered_indexes,
-        omitted_candidate_indexes=_omitted_indexes(response, ordered_indexes),
     )
     stub = SelectionStub(plan)
 
@@ -828,6 +839,45 @@ def test_model_guided_composer_uses_one_bounded_model_plan():
     assert composed.conversation[-1].text == composed.answer
     assert composed.layout[0].block_indexes == list(range(len(ordered_indexes)))
     assert len(stub.inputs) == 1
+
+
+def test_final_editor_can_replace_database_shaped_candidates_with_a_fact_pattern():
+    store = CanonicalStore()
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    guest_payload = json.loads(guest_tool.invoke({"query": "Branford"}))
+    response = compose_experience_response(
+        question="How many shows did Branford play in?",
+        thread_id="web-test",
+        messages=[
+            tool_message(guest_payload),
+            AIMessage(content="Branford Marsalis played five shows with the Grateful Dead."),
+        ],
+        store=store,
+    )
+    plan = CompositionPlan(
+        chat_answer="Branford Marsalis played five Grateful Dead shows.",
+        body_title="Five nights with Branford",
+        body_lead="The appearances span 1990 to 1994, with two full-show collaborations.",
+        mode="musician",
+        body_blocks=[
+            experience.FactGridBlock(
+                type="fact_grid",
+                title="The shape of the run",
+                items=[
+                    experience.FactItem(label="Appearances", value="5"),
+                    experience.FactItem(label="Years", value="1990–1994"),
+                    experience.FactItem(label="Full shows", value="2"),
+                ],
+            )
+        ],
+    )
+
+    composed = apply_composition_plan(response, plan)
+
+    assert composed.title == "Five nights with Branford"
+    assert composed.body_lead.startswith("The appearances span")
+    assert [block.type for block in composed.blocks] == ["fact_grid"]
+    assert composed.layout[0].block_indexes == [0]
 
 
 def _one_block_of_every_type():
@@ -975,10 +1025,27 @@ def _one_block_of_every_type():
         ),
         experience.ProvenanceNoteBlock(type="provenance_note", text="Contextual material differs from canonical facts.", source_ids=["src:1"]),
         experience.GapStateBlock(type="gap_state", message="Not in the current library."),
+        experience.NarrativeBlock(type="narrative", title="A useful thread", paragraphs=["One grounded observation."]),
+        experience.FactGridBlock(
+            type="fact_grid",
+            title="At a glance",
+            items=[
+                experience.FactItem(label="Shows", value="5"),
+                experience.FactItem(label="Span", value="1990–1994"),
+            ],
+        ),
+        experience.TimelineBlock(
+            type="timeline",
+            title="The appearances",
+            items=[
+                experience.TimelineItem(marker="1990", title="First appearance"),
+                experience.TimelineItem(marker="1994", title="Final documented appearance"),
+            ],
+        ),
     ]
 
 
-def test_every_block_type_brief_carries_structured_layout_guidance():
+def test_every_block_type_brief_exposes_grounded_data_without_editorial_instructions():
     blocks = _one_block_of_every_type()
     union_members = get_args(get_args(experience.ExperienceBlock)[0])
     all_block_types = {get_args(member.model_fields["type"].annotation)[0] for member in union_members}
@@ -986,10 +1053,8 @@ def test_every_block_type_brief_carries_structured_layout_guidance():
     for index, block in enumerate(blocks):
         brief = _block_brief(index, block)
         assert brief["index"] == index
-        assert brief["type"] == block.type
-        for field in ("scope", "helps_with", "layout_guidance", "provenance"):
-            assert isinstance(brief.get(field), str) and brief[field].strip(), f"{block.type} brief is missing {field}"
-        assert "decision_tradeoff" not in brief
+        assert brief["block"] == block.model_dump(mode="json")
+        assert "layout_guidance" not in brief
 
 
 def test_schema_rejects_an_unrecognized_browser_block():
@@ -1196,3 +1261,4 @@ def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):
     page = client.get("/songs/sugaree")
     assert page.status_code == 200
     assert "Deadbot client" in page.text
+    assert page.headers["cache-control"] == "no-cache, no-store, must-revalidate"

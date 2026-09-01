@@ -102,7 +102,6 @@ def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
 def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
     store = CanonicalStore()
     payload = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford"}))
-    assert payload["coverage_note"] == "Coverage: complete current canonical guest-credit directory."
     assert [guest["name"] for guest in payload["guests"]] == ["Branford Marsalis"]
     branford = payload["guests"][0]
     assert branford["guest_show_count"] == 5

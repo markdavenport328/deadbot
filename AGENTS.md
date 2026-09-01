@@ -32,20 +32,22 @@ For experience composition in particular:
   instructions, tool outputs, and model configuration before introducing
   deterministic behavior.
 
-## Deterministic guardrails
+## Keep the model in charge
 
-Deterministic code remains essential, but its job is to enforce boundaries—not
-to take over ordinary product judgment. It must:
+Deadbot's product quality comes from the model's judgment, not from an
+accumulation of corrective code. Give the model a clear persona, a clear goal,
+the user's conversation, and rich grounded material. Let it write the chat
+answer, synthesize the main body, choose among presentation patterns, and decide
+what to leave out.
 
-- validate model references against the supplied retrieval packet;
-- allow only known response schemas, block types, layout regions, and provider
-  embeds;
-- retain the evidence and scope needed to support claims, while leaving the
-  model to decide when that context belongs in the visitor-facing experience;
-- reject invented entities, URLs, markup, and ungrounded content; and
-- provide a safe deterministic fallback when a model response is unavailable
-  or invalid.
+Deterministic code is limited to transport and structural integrity: parse the
+response, resolve references to supplied records, and render supported UI and
+provider primitives. It must not veto an editorial choice, demand bookkeeping
+about omitted material, force provenance or coverage copy into the experience,
+choose content because of keywords, or silently replace the model's work with a
+database-shaped dump.
 
-Do not turn ordinary editorial or product-quality feedback into a deterministic
-rule. Validation remains about the boundary of what the model may return, not
-about choosing the visitor's experience.
+When the model produces a weak experience, first improve its context, tools,
+persona, goal, or available presentation palette. Do not encode the example as
+a rule. If the model step fails, surface and diagnose that failure rather than
+pretending an unedited retrieval packet is a finished response.
