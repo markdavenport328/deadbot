@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Annotated, Any, Protocol
+from typing import Any, Protocol
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ConfigDict, Field
@@ -12,13 +12,11 @@ from pydantic import BaseModel, ConfigDict, Field
 from deadbot.config import Settings
 from deadbot.experience import (
     ConversationTurn,
+    EditorialBlock,
     ExperienceBlock,
     ExperienceMode,
     ExperienceResponse,
-    FactGridBlock,
     LayoutSection,
-    NarrativeBlock,
-    TimelineBlock,
 )
 from deadbot.models import ModelProvider, create_model_provider
 
@@ -30,9 +28,6 @@ class CompositionError(RuntimeError):
     """The final editor did not produce a usable response."""
 
 
-EditorialBlock = Annotated[NarrativeBlock | FactGridBlock | TimelineBlock, Field(discriminator="type")]
-
-
 class CompositionPlan(BaseModel):
     """The model's final editorial decision over grounded material."""
 
@@ -40,9 +35,9 @@ class CompositionPlan(BaseModel):
     chat_answer: str = Field(min_length=1)
     body_title: str = Field(min_length=1)
     body_lead: str = Field(min_length=1)
-    mode: ExperienceMode = "quick_fact"
-    body_blocks: list[EditorialBlock] = Field(default_factory=list, max_length=8)
-    body_candidate_indexes: list[int] = Field(default_factory=list, max_length=24)
+    mode: ExperienceMode
+    body_blocks: list[EditorialBlock] = Field(max_length=8)
+    body_candidate_indexes: list[int] = Field(max_length=24)
 
 
 class ExperienceComposer(Protocol):
@@ -131,7 +126,7 @@ class ModelGuidedComposer:
             "You are Deadbot's final editor: a perceptive, companionable Grateful Dead guide with excellent taste. "
             "Give the visitor a crisp answer in chat, then make the main body the rewarding part: a clear title, a short synthesis that notices what matters, and useful supporting material in a natural reading order. "
             "Chat and body work together instead of repeating each other. Be selective, specific, and inviting. "
-            "You may shape grounded facts into narrative, fact_grid, or timeline body blocks, and may also reuse any supplied candidate blocks by index. "
+            "You may shape grounded facts into editorial body blocks using narrative, fact_grid, or timeline presentation, and may also reuse any supplied candidate blocks by index. "
             "Use only the grounded material below.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}\n\n"
             "Edit this into one coherent response."

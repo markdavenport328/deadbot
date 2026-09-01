@@ -200,6 +200,43 @@ export interface components {
              */
             type: "credit_list";
         };
+        /**
+         * EditorialBlock
+         * @description Flexible model-shaped material rendered in one of several visual forms.
+         */
+        EditorialBlock: {
+            /** Eyebrow */
+            eyebrow: string | null;
+            /** Items */
+            items: components["schemas"]["EditorialItem"][];
+            /** Paragraphs */
+            paragraphs: string[];
+            /**
+             * Presentation
+             * @enum {string}
+             */
+            presentation: "narrative" | "fact_grid" | "timeline";
+            /** Title */
+            title: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "editorial";
+        };
+        /** EditorialItem */
+        EditorialItem: {
+            /** Detail */
+            detail: string | null;
+            /** Follow Up */
+            follow_up: string | null;
+            /** Marker */
+            marker: string | null;
+            /** Title */
+            title: string;
+            /** Value */
+            value: string | null;
+        };
         /** EntityCardBlock */
         EntityCardBlock: {
             /** Details */
@@ -279,7 +316,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["NarrativeBlock"] | components["schemas"]["FactGridBlock"] | components["schemas"]["TimelineBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -304,34 +341,6 @@ export interface components {
             thread_id: string;
             /** Title */
             title: string;
-        };
-        /**
-         * FactGridBlock
-         * @description A compact, model-selected set of facts rather than a database dump.
-         */
-        FactGridBlock: {
-            /** Eyebrow */
-            eyebrow?: string | null;
-            /** Items */
-            items: components["schemas"]["FactItem"][];
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "fact_grid";
-        };
-        /** FactItem */
-        FactItem: {
-            /** Detail */
-            detail?: string | null;
-            /** Follow Up */
-            follow_up?: string | null;
-            /** Label */
-            label: string;
-            /** Value */
-            value: string;
         };
         /** GapStateBlock */
         GapStateBlock: {
@@ -418,23 +427,6 @@ export interface components {
             type: "media_link";
             /** Url */
             url: string;
-        };
-        /**
-         * NarrativeBlock
-         * @description Model-authored connective context drawn from the grounded packet.
-         */
-        NarrativeBlock: {
-            /** Eyebrow */
-            eyebrow?: string | null;
-            /** Paragraphs */
-            paragraphs: string[];
-            /** Title */
-            title?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "narrative";
         };
         /** PerformanceExtremesBlock */
         PerformanceExtremesBlock: {
@@ -720,34 +712,6 @@ export interface components {
             source_id: string;
             /** Url */
             url?: string | null;
-        };
-        /**
-         * TimelineBlock
-         * @description A model-shaped sequence built only from facts in the grounded packet.
-         */
-        TimelineBlock: {
-            /** Eyebrow */
-            eyebrow?: string | null;
-            /** Items */
-            items: components["schemas"]["TimelineItem"][];
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "timeline";
-        };
-        /** TimelineItem */
-        TimelineItem: {
-            /** Detail */
-            detail?: string | null;
-            /** Follow Up */
-            follow_up?: string | null;
-            /** Marker */
-            marker: string;
-            /** Title */
-            title: string;
         };
         /** ValidationError */
         ValidationError: {

@@ -219,6 +219,7 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
             body_title="Branford Marsalis",
             body_lead="Five guest appearances between 1990 and 1994 show how the collaboration grew.",
             mode="listening",
+            body_blocks=[],
             body_candidate_indexes=selected_indexes,
         ),
     )
@@ -708,6 +709,7 @@ def test_composition_plan_can_only_reorder_existing_blocks_without_forcing_prove
             body_title="Sugaree",
             body_lead="The grounded material connects the song's history with places to keep exploring.",
             mode="research",
+            body_blocks=[],
             body_candidate_indexes=reordered,
         ),
     )
@@ -749,6 +751,7 @@ def test_composition_preserves_the_model_selected_show_order_in_the_main_body():
             body_title="Veneta, 1972",
             body_lead="The setlist and recordings make the shape of the day easy to explore.",
             mode="show",
+            body_blocks=[],
             body_candidate_indexes=selected_indexes,
         ),
     )
@@ -771,6 +774,8 @@ def test_an_invalid_composition_plan_uses_the_deterministic_candidate_order():
         chat_answer="This invalid plan must not replace the answer.",
         body_title="Invalid",
         body_lead="This should never appear.",
+        mode="quick_fact",
+        body_blocks=[],
         body_candidate_indexes=[999],
     )
     assert apply_composition_plan(response, invalid) == response
@@ -794,6 +799,7 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
             body_title="Sugaree",
             body_lead="A compact guide to the grounded song material.",
             mode="research",
+            body_blocks=[],
             body_candidate_indexes=ordered_indexes,
         )
     )
@@ -828,6 +834,7 @@ def test_model_guided_composer_uses_one_bounded_model_plan():
         body_title="Veneta, 1972",
         body_lead="A concise route into the show and its recordings.",
         mode="show",
+        body_blocks=[],
         body_candidate_indexes=ordered_indexes,
     )
     stub = SelectionStub(plan)
@@ -860,23 +867,28 @@ def test_final_editor_can_replace_database_shaped_candidates_with_a_fact_pattern
         body_lead="The appearances span 1990 to 1994, with two full-show collaborations.",
         mode="musician",
         body_blocks=[
-            experience.FactGridBlock(
-                type="fact_grid",
+            experience.EditorialBlock(
+                type="editorial",
+                presentation="fact_grid",
+                eyebrow=None,
                 title="The shape of the run",
+                paragraphs=[],
                 items=[
-                    experience.FactItem(label="Appearances", value="5"),
-                    experience.FactItem(label="Years", value="1990–1994"),
-                    experience.FactItem(label="Full shows", value="2"),
+                    experience.EditorialItem(marker="Appearances", title="Appearances", value="5", detail=None, follow_up=None),
+                    experience.EditorialItem(marker="Years", title="Years", value="1990–1994", detail=None, follow_up=None),
+                    experience.EditorialItem(marker="Full shows", title="Full shows", value="2", detail=None, follow_up=None),
                 ],
             )
         ],
+        body_candidate_indexes=[],
     )
 
     composed = apply_composition_plan(response, plan)
 
     assert composed.title == "Five nights with Branford"
     assert composed.body_lead.startswith("The appearances span")
-    assert [block.type for block in composed.blocks] == ["fact_grid"]
+    assert [block.type for block in composed.blocks] == ["editorial"]
+    assert composed.blocks[0].presentation == "fact_grid"
     assert composed.layout[0].block_indexes == [0]
 
 
@@ -1025,22 +1037,13 @@ def _one_block_of_every_type():
         ),
         experience.ProvenanceNoteBlock(type="provenance_note", text="Contextual material differs from canonical facts.", source_ids=["src:1"]),
         experience.GapStateBlock(type="gap_state", message="Not in the current library."),
-        experience.NarrativeBlock(type="narrative", title="A useful thread", paragraphs=["One grounded observation."]),
-        experience.FactGridBlock(
-            type="fact_grid",
-            title="At a glance",
-            items=[
-                experience.FactItem(label="Shows", value="5"),
-                experience.FactItem(label="Span", value="1990–1994"),
-            ],
-        ),
-        experience.TimelineBlock(
-            type="timeline",
-            title="The appearances",
-            items=[
-                experience.TimelineItem(marker="1990", title="First appearance"),
-                experience.TimelineItem(marker="1994", title="Final documented appearance"),
-            ],
+        experience.EditorialBlock(
+            type="editorial",
+            presentation="narrative",
+            eyebrow=None,
+            title="A useful thread",
+            paragraphs=["One grounded observation."],
+            items=[],
         ),
     ]
 

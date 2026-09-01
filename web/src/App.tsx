@@ -483,27 +483,26 @@ function Block({
           </ul>
         </section>
       );
-    case "narrative":
-      return (
+    case "editorial":
+      if (block.presentation === "narrative") return (
         <section className="editorial-block narrative-block">
           {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
           {block.title && <h2>{block.title}</h2>}
           {block.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
         </section>
       );
-    case "fact_grid":
-      return (
+      if (block.presentation === "fact_grid") return (
         <section className="editorial-block fact-grid-block">
           {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
-          <h2>{block.title}</h2>
+          {block.title && <h2>{block.title}</h2>}
           <dl>
             {block.items.map((item, index) => (
-              <div key={`${item.label}-${index}`}>
-                <dt>{item.label}</dt>
+              <div key={`${item.marker ?? item.title}-${index}`}>
+                <dt>{item.marker ?? item.title}</dt>
                 <dd>
                   {item.follow_up ? (
-                    <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.value}</FollowUpButton>
-                  ) : item.value}
+                    <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.value ?? item.title}</FollowUpButton>
+                  ) : item.value ?? item.title}
                 </dd>
                 {item.detail && <dd className="fact-detail">{item.detail}</dd>}
               </div>
@@ -511,15 +510,14 @@ function Block({
           </dl>
         </section>
       );
-    case "timeline":
       return (
         <section className="editorial-block timeline-block">
           {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
-          <h2>{block.title}</h2>
+          {block.title && <h2>{block.title}</h2>}
           <ol>
             {block.items.map((item, index) => (
-              <li key={`${item.marker}-${index}`}>
-                <span className="timeline-marker">{item.marker}</span>
+              <li key={`${item.marker ?? item.title}-${index}`}>
+                {item.marker && <span className="timeline-marker">{item.marker}</span>}
                 <strong>
                   {item.follow_up ? (
                     <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.title}</FollowUpButton>

@@ -341,45 +341,23 @@ class GapStateBlock(ExperienceModel):
     message: str
 
 
-class NarrativeBlock(ExperienceModel):
-    """Model-authored connective context drawn from the grounded packet."""
-
-    type: Literal["narrative"]
-    eyebrow: str | None = None
-    title: str | None = None
-    paragraphs: list[str] = Field(min_length=1, max_length=4)
-
-
-class FactItem(ExperienceModel):
-    label: str
-    value: str
-    detail: str | None = None
-    follow_up: str | None = None
-
-
-class FactGridBlock(ExperienceModel):
-    """A compact, model-selected set of facts rather than a database dump."""
-
-    type: Literal["fact_grid"]
-    eyebrow: str | None = None
+class EditorialItem(ExperienceModel):
+    marker: str | None
     title: str
-    items: list[FactItem] = Field(min_length=2, max_length=8)
+    value: str | None
+    detail: str | None
+    follow_up: str | None
 
 
-class TimelineItem(ExperienceModel):
-    marker: str
-    title: str
-    detail: str | None = None
-    follow_up: str | None = None
+class EditorialBlock(ExperienceModel):
+    """Flexible model-shaped material rendered in one of several visual forms."""
 
-
-class TimelineBlock(ExperienceModel):
-    """A model-shaped sequence built only from facts in the grounded packet."""
-
-    type: Literal["timeline"]
-    eyebrow: str | None = None
-    title: str
-    items: list[TimelineItem] = Field(min_length=2, max_length=12)
+    type: Literal["editorial"]
+    presentation: Literal["narrative", "fact_grid", "timeline"]
+    eyebrow: str | None
+    title: str | None
+    paragraphs: list[str] = Field(max_length=4)
+    items: list[EditorialItem] = Field(max_length=12)
 
 
 ExperienceBlock = Annotated[
@@ -403,9 +381,7 @@ ExperienceBlock = Annotated[
     | ArrangementSearchBlock
     | ProvenanceNoteBlock
     | GapStateBlock
-    | NarrativeBlock
-    | FactGridBlock
-    | TimelineBlock,
+    | EditorialBlock,
     Field(discriminator="type"),
 ]
 

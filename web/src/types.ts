@@ -28,6 +28,7 @@ export type SourceReference = components["schemas"]["SourceReference"];
 
 type FixedEntityCardBlock = Require<components["schemas"]["EntityCardBlock"], "details">;
 type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], "progressions">;
+type FixedEditorialBlock = Require<components["schemas"]["EditorialBlock"], "paragraphs" | "items">;
 type FixedSongOverviewBlock = Require<
   components["schemas"]["SongOverviewBlock"],
   "credits" | "source_ids"
@@ -54,9 +55,7 @@ export type ExperienceBlock =
   | components["schemas"]["ArrangementSearchBlock"]
   | components["schemas"]["ProvenanceNoteBlock"]
   | components["schemas"]["GapStateBlock"]
-  | components["schemas"]["NarrativeBlock"]
-  | components["schemas"]["FactGridBlock"]
-  | components["schemas"]["TimelineBlock"];
+  | FixedEditorialBlock;
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],
