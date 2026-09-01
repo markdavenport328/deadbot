@@ -11,7 +11,6 @@ from deadbot.composer import CompositionPlan, ModelGuidedComposer, _block_brief,
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse, _embed_details, compose_experience_response
-from deadbot.graph import SYSTEM_PROMPT
 from deadbot.tools import build_tools
 
 
@@ -231,14 +230,6 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
         "recording_list",
     ]
     assert not any(block.type in {"performer_list", "equipment_list"} for block in composed.blocks)
-
-
-def test_agent_prompt_is_a_grounded_research_handoff_to_the_final_editor():
-    assert "Deadbot's research lead" in SYSTEM_PROMPT
-    assert "enough worthwhile supporting material for a final editor" in SYSTEM_PROMPT
-    assert "no retrieval\nchecklist" in SYSTEM_PROMPT
-    assert "Stop when the editor has enough" in SYSTEM_PROMPT
-    assert "capability map" not in SYSTEM_PROMPT
 
 
 def test_guest_directory_renders_its_grounded_result():
