@@ -1025,6 +1025,7 @@ def test_api_returns_the_validated_experience_contract():
     assert health.json()["canonical_shows"] == "2358"
     assert health.json()["performer_assignments"] == "26265"
     assert health.json()["show_equipment_links"] == "2249"
+    assert health.json()["composer"] == "DeterministicComposer"
     assert result.status_code == 200
     body = result.json()
     assert body["schema_version"] == "1"

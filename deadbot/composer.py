@@ -430,7 +430,8 @@ class ModelGuidedComposer:
             "The chat answer and main body should complement each other, not duplicate each other. "
             "Return chat_answer, choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), and put the body blocks in reading order in body_candidate_indexes. The only valid indexes are the top-level candidate_blocks indexes listed in allowed_candidate_indexes; nested item positions are not candidate indexes. Account for every allowed index by selecting or omitting it. "
             "Use editorial judgment; there is no universal template. Your factual universe is closed to the grounded brief. Do not invent facts, sources, URLs, blocks, or headings.\n\n"
-            f"Grounded composition brief: {_composer_brief(question, response)}"
+            f"Grounded composition brief: {_composer_brief(question, response)}\n\n"
+            "Final editing instruction: chat_answer is only the short, direct answer. Put the broader details in the selected main-body blocks."
         )
         try:
             result = self.selector.invoke(

@@ -107,6 +107,7 @@ def create_app(
             "canonical_shows": str(store.row_count("shows")),
             "performer_assignments": str(store.row_count("show_performers")),
             "show_equipment_links": str(store.row_count("show_equipment")),
+            "composer": type(app.state.composer).__name__,
         }
 
     @app.post("/api/experience", response_model=ExperienceResponse)
