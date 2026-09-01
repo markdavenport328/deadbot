@@ -1,3 +1,6 @@
+import sys
+from types import SimpleNamespace
+
 from deadbot.config import Settings
 from deadbot.models import OllamaProvider, OpenAIProvider, create_model_provider
 from deadbot.storage import create_canonical_store
@@ -139,6 +142,21 @@ def test_openai_is_a_registered_alternative_provider():
     )
     assert isinstance(provider, OpenAIProvider)
     assert provider.model == "gpt-test"
+
+
+def test_openai_provider_uses_responses_api(monkeypatch):
+    captured_options = {}
+
+    class FakeChatOpenAI:
+        def __init__(self, **options):
+            captured_options.update(options)
+
+    monkeypatch.setitem(sys.modules, "langchain_openai", SimpleNamespace(ChatOpenAI=FakeChatOpenAI))
+
+    model = OpenAIProvider(model="gpt-5.6-luna", api_key="test-key").create_chat_model()
+
+    assert isinstance(model, FakeChatOpenAI)
+    assert captured_options["use_responses_api"] is True
 
 
 def test_unknown_provider_fails_clearly():

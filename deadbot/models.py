@@ -56,6 +56,10 @@ class OpenAIProvider:
         options = {
             "model": self.model,
             "temperature": 0,
+            # GPT-5.6 reasoning models require the Responses API when they
+            # make function calls. It is also the API OpenAI recommends for
+            # reasoning and multi-turn workflows.
+            "use_responses_api": True,
         }
         if self.api_key:
             options["api_key"] = self.api_key
