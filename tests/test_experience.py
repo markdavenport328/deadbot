@@ -814,6 +814,8 @@ def test_model_guided_composer_uses_a_structured_selection_without_creating_bloc
     assert "perceptive, companionable Grateful Dead guide with excellent taste" in final_editor_prompt
     assert "make the main body the rewarding part" in final_editor_prompt
     assert "narrative, fact_grid, or timeline" in final_editor_prompt
+    assert "never generic praise" in final_editor_prompt
+    assert "omit the original candidate" in final_editor_prompt
 
 
 def test_model_guided_composer_uses_one_bounded_model_plan():
