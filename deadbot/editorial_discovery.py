@@ -108,9 +108,8 @@ def model_capability_map(store: CanonicalStore) -> str:
     resource_sources = sorted({resource.get("source_name", "") for resource in store.rows("resources") if resource.get("source_name")})
     packet: dict[str, Any] = {
         "decision_principle": (
-            "This is the complete currently available map, not a prescribed retrieval plan. "
-            "Choose the relevant tools and sources from the visitor's actual question, then favor "
-            "the facts and exploration paths that make the answer worth opening."
+            "This is the map of Deadbot's canonical data and approved external research. Choose the relevant tools and sources from the visitor's actual question, then favor "
+            "the facts and exploration paths that make the answer worth opening. Seek to not only answer the question, but also to anticipate what a curious dead fan might want to know or do next, such as listening to a show, learning about a song or exploring a topic. Use the external sources to gather the lore and context that makes the answer interesting and insightful. Our goal is to go beyond a wiki answer and provide a rich, engaging experience for Grateful Dead fans."
         ),
         "canonical_library": {
             "coverage": store.coverage_summary(),
