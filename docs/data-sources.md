@@ -63,6 +63,18 @@ For each candidate, assess data quality, terms, attribution requirements, access
   promoted from representative file metadata when source track order aligned
   uniquely with the canonical setlist; source durations were retained, while
   playback start times were left blank.
+- Per-track playback links (2026-09-01): 16,505 `performance_links` rows
+  (`platform=archive`, `link_type=recording-track`) were derived offline from
+  the preserved representative file names as
+  `https://archive.org/details/{identifier}/{file}`, which opens the
+  archive.org player on that track. Two Veneta encore rows are held because
+  their source titles carry an `E1:`/`E2:` prefix. See
+  `docs/collection-status-performance-track-links.md`.
+- Show listing links (2026-09-01): 1,910 `show_links` rows
+  (`platform=archive`, `link_type=recording-index`) point at the collection
+  search page for the show date, written only for shows that already have
+  recording rows because the listing page returns HTTP 200 even for dates
+  with no items. See `docs/collection-status-show-listening-links.md`.
 - Authority / reliability: Primary source for the 1972 pilot's recording-source metadata.
 - Licensing / usage considerations: Audio availability varies by item and collection policy. This pilot retrieved metadata only; it did not download or store audio.
 - Potential canonical entities populated: Recordings and performance-recording locations, with supporting show/venue values for reconciliation.
@@ -71,13 +83,13 @@ For each candidate, assess data quality, terms, attribution requirements, access
 ## Relisten
 
 - What it provides: Public browsing of shows, recording sources, source types, taper/transfer details, SHNIDs, lineages, and track-level presentation.
-- Access method: Public web pages were confirmed; an API and its usage policy remain to be evaluated before automated collection.
-- Structured fields: Show date/location, source type, recording duration, taper, transferer, SHNID, lineage, and track information are visible on source pages.
-- Coverage: 1972 is the chosen pilot year, but no Relisten record has yet been collected.
-- Authority / reliability: Secondary enrichment and reconciliation candidate for recording and timing data; not yet selected as a 1972 primary source.
-- Licensing / usage considerations: TBD.
-- Potential canonical entities populated: Recordings, performance recordings, and source cross-references.
-- Known limitations: Its source records may represent, link to, or derive from external archive material; preserve identifiers and compare against the underlying item metadata.
+- Access method: Public JSON API (`https://api.relisten.net/api/v2/artists/grateful-dead/years/<year>` and `/years/<year>/<date>`), confirmed working 2026-09-01. `scripts/collect/fetch_relisten_years.py` fetches one year listing per request at one request per second with a descriptive User-Agent and stores compact metadata only.
+- Structured fields: Per show, display date, source count, average rating, soundboard/FLAC flags, venue name and location; per source, source type, taper, transferer, SHNID, lineage, and per-track archive.org stream URLs.
+- Coverage: 31 year listings (1965–1995) preserved in `data/raw/recordings/relisten-years.jsonl`; 2,080 Relisten show dates, 1,963 of which match canonical shows. Those shows now carry a `show_links` row (`platform=relisten`, `link_type=streaming-show-page`) pointing at `https://relisten.net/grateful-dead/YYYY/MM/DD`. 144 Relisten dates have no canonical show and are reconciliation candidates. See `docs/collection-status-show-listening-links.md`.
+- Authority / reliability: Secondary. Relisten is a player over the Internet Archive's Grateful Dead collection; its ratings and review counts are archive.org community signals surfaced through the API. Preserve identifiers and compare against the underlying item metadata.
+- Licensing / usage considerations: The about page describes a free, non-commercial, open-source project (API server MIT, web client AGPL-3.0) that complies with Archive.org policy and posts the band's taping and distribution stipulations. No written API terms, rate limits, or usage policy were found; the API docs endpoint is not public. Current use is 31 metadata requests and link-outs to Relisten's own pages. Ask the Relisten team (GitHub or Discord) before higher-volume or scheduled collection, and add a source-registry entry before the runtime agent reads Relisten directly. Name Relisten as the player and the Internet Archive as the recording source in any user-facing surface.
+- Potential canonical entities populated: Show links today; recordings, performance recordings, and source cross-references later.
+- Known limitations: Relisten lists one show per date, so early and late shows on the same date share a URL (54 rows, noted on each row). Shows with no known tape (nearly all 1965–1970 gaps) do not appear.
 
 ## setlist.fm
 
@@ -125,14 +137,14 @@ For each candidate, assess data quality, terms, attribution requirements, access
 
 ## Official Grateful Dead releases / catalog
 
-- What it provides: TBD
-- Access method: TBD
-- Structured fields: TBD
-- Coverage: TBD
-- Authority / reliability: TBD
-- Licensing / usage considerations: TBD
-- Potential canonical entities populated: TBD
-- Known limitations: TBD
+- What it provides: Official live release identities, release dates, track lists, per-track recording dates where MusicBrainz editors recorded them, and streaming URL relationships.
+- Access method: MusicBrainz web service (JSON, one request per second, descriptive User-Agent, backoff on 429/503). `scripts/collect/fetch_musicbrainz_live_releases.py` resolves the artist MBID by search, enumerates Album+Live release groups, and browses official releases with recordings and URL relationships; `scripts/normalize_musicbrainz_live_releases.py` resolves releases to canonical shows and aligns tracks with setlists.
+- Structured fields: Release-group and release MBIDs, titles, disambiguations, dates, medium and track titles and lengths, recording disambiguations (often `live, YYYY-MM-DD: venue`), and `streaming` URL relationships.
+- Coverage (2026-09-01): 991 live release groups enumerated; 293 promoted to `official_releases.csv` (157 single-show, 136 spanning several shows); 10,024 tracks written, 6,993 mapped to a canonical performance; 65 releases and 399 tracks carry Spotify URLs from MusicBrainz. 33 release groups and 3,031 tracks are held with reasons. See `docs/collection-status-official-releases.md`.
+- Authority / reliability: Secondary structured catalog. Titles, order, and dates are contributor-entered; recording dates were used as attribution evidence for existing canonical shows, never to create shows.
+- Licensing / usage considerations: MusicBrainz core data is CC0. Rows cite the release MBID in `source_url` and `notes`; keep a "source: MusicBrainz" credit where these fields are shown. Spotify and Apple Music URL coverage needs a credentialed API pass with a rights review; it is deferred until credentials exist.
+- Potential canonical entities populated: Official releases, official release tracks, and later a release-to-show coverage table and a track-segment bridge for suites and medleys.
+- Known limitations: Two-show releases without per-track dates, early/late show dates, undated bonus tracks, and segment names such as `Rhythm Devils` (the drummers' segment that `songs.csv` calls `Drums`) remain unmapped pending explicit decisions.
 
 ## YouTube
 
@@ -150,7 +162,7 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - What it provides: Official catalog and release/track links for streaming and playback where available.
 - Access method: Public album and track pages; any API use is TBD.
 - Structured fields: Release/track titles, artist, release date, duration, and provider URLs.
-- Coverage: The Veneta pilot includes the 2013 complete-concert album and maps its 20 song tracks to canonical performances.
+- Coverage: The Veneta pilot includes the 2013 complete-concert album and maps its 20 song tracks to canonical performances. The 2026-09-01 MusicBrainz pass added 65 album URLs and 399 track URLs from MusicBrainz streaming relationships; most Dick's Picks, Dave's Picks, Road Trips, and Download Series entries still lack one.
 - Authority / reliability: Primary link-out source for the provider's own catalog metadata; cross-check release identity and performance mapping against other evidence where needed.
 - Licensing / usage considerations: Store links and metadata only. Playback is governed by Spotify's service and the user's access.
 - Potential canonical entities populated: Official releases, official release tracks, and provider links.

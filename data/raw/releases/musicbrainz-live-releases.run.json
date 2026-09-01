@@ -1,0 +1,306 @@
+{
+ "artist": {
+  "id": "6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6",
+  "name": "Grateful Dead",
+  "score": 100,
+  "type": "Group",
+  "disambiguation": "",
+  "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Grateful+Dead%22&limit=5&fmt=json",
+  "retrieved_at": "2026-09-01T21:43:53Z"
+ },
+ "release_group_count": 991,
+ "release_count": 572,
+ "release_requests": 37,
+ "total_requests": 48,
+ "completed_at": "2026-09-01T21:45:29Z",
+ "request_log": [
+  {
+   "step": "artist-search",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Grateful+Dead%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:43:53Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:43:56Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=100&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:43:56Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=200&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:43:57Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=300&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:01Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=400&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:02Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=500&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:05Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=600&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:06Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=700&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:07Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=800&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:08Z"
+  },
+  {
+   "step": "release-group-browse",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&limit=100&offset=900&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:10Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:11Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=25&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:16Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=50&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:20Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=73&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:21Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=93&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:22Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=115&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:23Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=136&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:24Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=155&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:25Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=172&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:27Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=191&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:29Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=206&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:30Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=207&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:31Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=227&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:33Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=246&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:37Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=265&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:38Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=277&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:39Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=294&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:43Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=300&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:47Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=311&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:48Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=329&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:56Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=344&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:57Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=358&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:58Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=376&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:44:59Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=386&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:00Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=399&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:03Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=411&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:05Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=428&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:06Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=444&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:10Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=456&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:11Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=465&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:12Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=478&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:16Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=493&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:17Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=495&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:18Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=497&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:26Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=520&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:27Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=545&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:28Z"
+  },
+  {
+   "step": "release-browse",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album|live&status=official&inc=recordings+url-rels+release-groups+recording-level-rels&limit=25&offset=568&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-01T21:45:29Z"
+  }
+ ]
+}
