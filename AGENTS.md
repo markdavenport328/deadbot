@@ -19,6 +19,11 @@ For experience composition in particular:
 - Let the model decide relevance, omission, ordering, and layout regions from
   that brief. Do not replace this reasoning with a growing set of brittle
   keyword-to-template rules.
+- Do not encode question-specific content choices in deterministic code. In
+  particular, do not hard-wire which components appear, how much related
+  material to retrieve, what belongs in chat versus the main panel, or a
+  response depth in reaction to an individual example. Improve the model's
+  brief, candidate design, instructions, and evaluations instead.
 - Use evaluations based on representative user questions to improve context,
   instructions, tool outputs, and model configuration before introducing
   deterministic behavior.
@@ -37,6 +42,6 @@ to take over ordinary product judgment. It must:
 - provide a safe deterministic fallback when a model response is unavailable
   or invalid.
 
-If an evaluation exposes a repeated safety failure that cannot be addressed by
-better context or instructions, add the narrowest deterministic guardrail that
-solves that failure and document why it is necessary.
+Do not turn ordinary editorial or product-quality feedback into a deterministic
+rule. Validation remains about the boundary of what the model may return, not
+about choosing the visitor's experience.

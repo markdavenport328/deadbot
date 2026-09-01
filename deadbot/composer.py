@@ -51,7 +51,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "details": block.details,
             "redundant_when_title_only": not block.subtitle and not block.details,
             "helps_with": "identity and canonical facts about this entity",
-            "layout_guidance": "identity anchor; keep it low-prominence when it only repeats the page title, and move it toward primary when its details orient the rest of the page",
+            "layout_guidance": "identity anchor only when it orients the guide; omit it when it merely repeats a title, and keep it with the material it introduces rather than leaving it as an isolated card",
             "provenance": "canonical",
         }
     if block.type == "performance_list":
@@ -181,7 +181,7 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "equipment_names": [item.name for item in block.items],
             "claim_types": sorted({item.claim_type for item in block.items}),
             "helps_with": "named Jerry Garcia guitar and equipment questions",
-            "layout_guidance": "primary for named-equipment questions; keep it beside the dated show and audible evidence that establish its context",
+            "layout_guidance": "specialist material for a question that turns on named equipment; omit it when it adds metadata rather than a meaningful answer or exploration path",
             "provenance": "dated photographic/video-evidence guide",
         }
     if block.type == "coverage":
@@ -274,10 +274,18 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
             "scope": "all documented guest-show relationships for one resolved person in the current canonical directory",
             "title": block.person_name,
             "known_show_count": block.known_show_count,
-            "dates": [item.show_date for item in block.items],
+            "appearances": [
+                {
+                    "show_id": item.show_id,
+                    "show_date": item.show_date,
+                    "instruments": item.instruments,
+                    "participation_scope": item.participation_scope,
+                }
+                for item in block.items
+            ],
             "coverage_note": block.coverage_note,
             "helps_with": "guest appearance counts, dates, instruments, and show follow-up paths",
-            "layout_guidance": "primary guest anchor; keep selected show, listening, and commentary paths after or beside it",
+            "layout_guidance": "compact relationship map; it can stand on its own for a count or timeline, while a connected show path is optional only when it adds a clear reason to explore",
             "provenance": "canonical guest-credit relationships",
         }
     return {
@@ -417,10 +425,10 @@ class ModelGuidedComposer:
             "You are a knowledgeable, curious, and helpful Grateful Dead authority editing a rich exploratory experience for the visitor's latest question. "
             "The upstream model has assembled a grounded candidate packet. Exercise editorial judgment over that packet: decide what best answers the visitor, what creates a worthwhile next step, what adds illuminating listening or contextual material, what would merely clutter the page, and what should lead. "
             "Choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), then select, omit, order, prioritize, and arrange candidates into primary, supporting, context, or media regions. There is no universal template. "
-            "Treat the short chat answer and main panel as one response. The panel should make the answer more useful and engaging, not simply repeat it or display every available database field. Its primary region must carry the most substantive answer and its best grounded exploration paths; do not leave those paths to a generic chat invitation. A bare directory of dates, repeated instruments, or coverage metadata is evidence, not a satisfying primary experience when the packet includes show, musical, listening, or source context. "
+            "Treat the short chat answer and main panel as one response. The panel should make the answer more useful and engaging, not simply repeat it or display every available database field. Its primary region must carry the most substantive answer and its best grounded exploration paths; do not leave those paths to a generic chat invitation. A bare directory of dates, repeated instruments, or coverage metadata is evidence, not a satisfying primary experience when the packet includes a more meaningful connection. "
             "Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
-            "For a show guide, place setlist and recordings ahead of ordinary lineup detail, and keep blocks about the same guest, equipment claim, or performance together. For a guest-appearance question with related show candidates, use the guest list as the count and timeline, then foreground the show context that tells the visitor where the appearances happened and what they can explore. "
-            "Use each candidate's purpose, relationship, and exploration value to make these judgments, and use related_show_paths to keep blocks about the same show coherent. Source and coverage details are supporting context, not a reason to make a block prominent unless they change what the visitor should understand. "
+            "Choose one coherent guide rather than a catalogue. A candidate earns its place only when it answers a distinct part of the question, reveals a meaningful connection, or opens a concrete next move. A relationship summary may be the complete guide; related candidates are options, not an instruction to expand every linked entity. When you select a show path, keep its identity and the material it introduces together so the visitor can follow it without scanning across the page. Omit specialist metadata, duplicate identity cards, and component suites that do not deepen the chosen guide. "
+            "Use each candidate's purpose, relationship, and exploration value to make these judgments, and use related_show_paths to compare coherent show paths. Source and coverage details are supporting context, not a reason to make a block prominent unless they change what the visitor should understand. "
             "Your factual universe is closed: return only candidate indexes from the brief. Do not research, create, rewrite, or embellish facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )

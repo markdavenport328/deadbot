@@ -393,12 +393,12 @@ class ExperienceResponse(ExperienceModel):
     mode: ExperienceMode = "quick_fact"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
     # Four layout regions can each carry up to eight blocks. Keep the response
-    # envelope aligned with that 32-block layout capacity so a compact guest
-    # directory can coexist with the grounded show paths it opens.
+    # envelope aligned with that 32-block layout capacity so a deeply researched
+    # candidate packet can be edited without a schema failure.
     blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=32)
     layout: list[LayoutSection] = Field(default_factory=list, max_length=4)
-    # A 32-block exploratory response can legitimately reference more than
-    # one source per block (for example, show identity plus a recording path).
+    # A 32-block exploratory response can legitimately reference more than one
+    # source per block (for example, show identity plus a recording path).
     sources: list[SourceReference] = Field(default_factory=list, max_length=64)
 
 
@@ -418,7 +418,6 @@ _COMPOSITION_EXPORTS = frozenset(
         "compose_experience_response",
         "_content_text",
         "_tool_payloads",
-        "_without_setlist",
         "_final_answer",
         "_latest_turn",
         "_conversation_turns",

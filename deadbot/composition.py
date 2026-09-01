@@ -1,4 +1,4 @@
-"""Deterministic candidate composition from grounded tool output.
+"""Grounded candidate projection from tool output.
 
 This module is the deterministic adapter between Deadbot's read-only agent and
 the versioned browser schema in :mod:`deadbot.experience`. It turns already-
@@ -13,7 +13,6 @@ arbitrary embeds to the client.
 from __future__ import annotations
 
 import json
-import re
 from collections.abc import Iterable
 from typing import Any, Literal
 from urllib.parse import parse_qs, urlparse
@@ -84,23 +83,10 @@ def _tool_payloads(messages: Iterable[Any]) -> list[dict[str, Any]]:
     return payloads
 
 
-def _without_setlist(text: str) -> str:
-    """Keep show answers concise when the structured setlist is rendered below."""
-
-    match = re.search(
-        r"^\s*(?:#{1,6}\s*)?set\s+\d+\s*:?.*$",
-        text,
-        flags=re.IGNORECASE | re.MULTILINE,
-    )
-    return text[: match.start()].rstrip() if match else text
-
-
-def _final_answer(messages: Iterable[Any], compact_setlist: bool = False) -> str:
+def _final_answer(messages: Iterable[Any]) -> str:
     for message in reversed(list(messages)):
         if getattr(message, "type", None) == "ai":
             answer = _content_text(getattr(message, "content", "")).strip()
-            if compact_setlist:
-                answer = _without_setlist(answer)
             if answer:
                 return answer
     return "I could not produce a grounded answer from the current library."
@@ -120,7 +106,7 @@ def _latest_turn(messages: list[Any]) -> list[Any]:
     return messages
 
 
-def _conversation_turns(messages: Iterable[Any], compact_setlists: bool = False) -> list[ConversationTurn]:
+def _conversation_turns(messages: Iterable[Any]) -> list[ConversationTurn]:
     turns: list[ConversationTurn] = []
     for message in messages:
         message_type = getattr(message, "type", None)
@@ -128,8 +114,6 @@ def _conversation_turns(messages: Iterable[Any], compact_setlists: bool = False)
         if not role:
             continue
         text = _content_text(getattr(message, "content", "")).strip()
-        if compact_setlists and role == "assistant":
-            text = _without_setlist(text)
         # Tool-call AI messages normally have no visible content. The browser
         # should never show the tool request itself in the conversation thread.
         if text:
@@ -877,29 +861,6 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
     return blocks
 
 
-def _grounded_guest_count_answer(answer: str, blocks: list[GuestAppearanceListBlock]) -> str:
-    """Reject a model-supplied guest count that conflicts with retrieved rows."""
-
-    if len(blocks) != 1:
-        return answer
-    block = blocks[0]
-    claimed_counts = {
-        int(value)
-        for value in re.findall(
-            r"\b(\d{1,2})\s+(?:times|occasions|appearances|shows)\b",
-            answer,
-            flags=re.IGNORECASE,
-        )
-    }
-    if not claimed_counts or claimed_counts == {block.known_show_count}:
-        return answer
-    count_label = "appearance" if block.known_show_count == 1 else "appearances"
-    return (
-        f"The current canonical guest-credit directory documents {block.known_show_count} "
-        f"{block.person_name} {count_label} with the Grateful Dead."
-    )
-
-
 def compose_experience_response(
     question: str,
     thread_id: str,
@@ -924,7 +885,6 @@ def compose_experience_response(
     arrangements: list[ArrangementBlock] = []
     song_summary: dict[str, Any] | None = None
     song_performance_count = 0
-    has_show_setlist = False
     mode: ExperienceMode = "quick_fact"
     title = "Deadbot"
 
@@ -1001,11 +961,9 @@ def compose_experience_response(
                 credit_source_ids.append(source.source_id)
 
     tool_payloads = _tool_payloads(latest_turn_messages)
-    guest_appearance_blocks: list[GuestAppearanceListBlock] = []
     for payload in tool_payloads:
         guest_blocks = _guest_appearance_blocks(payload)
         if guest_blocks:
-            guest_appearance_blocks.extend(guest_blocks)
             blocks.extend(guest_blocks)
             mode = "musician"
             if title == "Deadbot" and len(guest_blocks) == 1:
@@ -1084,7 +1042,6 @@ def compose_experience_response(
                         )
                 show_setlist = _show_setlist(payload, store)
                 if show_setlist:
-                    has_show_setlist = True
                     blocks.append(show_setlist)
                 recording_list = _recording_list(payload, store)
                 if recording_list:
@@ -1232,13 +1189,8 @@ def compose_experience_response(
         if block.type not in {"coverage", "provenance_note"}
     ]
 
-    answer = _grounded_guest_count_answer(
-        _final_answer(latest_turn_messages, compact_setlist=has_show_setlist),
-        guest_appearance_blocks,
-    )
-    conversation = _conversation_turns(message_list, compact_setlists=has_show_setlist)
-    if conversation and conversation[-1].role == "assistant":
-        conversation[-1] = ConversationTurn(role="assistant", text=answer)
+    answer = _final_answer(latest_turn_messages)
+    conversation = _conversation_turns(message_list)
 
     return ExperienceResponse(
         thread_id=thread_id,

@@ -156,8 +156,8 @@ def test_guest_count_question_keeps_model_selected_show_and_listening_paths():
     assert not any(block.type == "gap_state" for block in response.blocks)
 
 
-def test_guest_count_with_all_five_show_contexts_fits_the_response_layout_budget():
-    """A compact guest timeline may expand into every documented show path."""
+def test_full_related_show_packet_fits_the_response_layout_budget():
+    """A fully researched packet remains available for model-led editing."""
 
     store = CanonicalStore()
     guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
@@ -187,6 +187,52 @@ def test_guest_count_with_all_five_show_contexts_fits_the_response_layout_budget
     }
 
 
+def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
+    """The composer may omit every candidate that does not serve its chosen guide."""
+
+    store = CanonicalStore()
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    guest_payload = json.loads(guest_tool.invoke({"query": "Branford"}))
+    show = store.resolve_show("1990-03-29")
+    assert show
+    response = compose_experience_response(
+        question="How many shows did Branford play with the Dead?",
+        thread_id="guest-coherent-guide",
+        messages=[
+            tool_message(guest_payload),
+            tool_message(store.show_context(show)),
+            AIMessage(content="Branford Marsalis played five shows with the Grateful Dead."),
+        ],
+        store=store,
+    )
+
+    selected_indexes = [
+        next(index for index, block in enumerate(response.blocks) if block.type == "guest_appearance_list"),
+        next(index for index, block in enumerate(response.blocks) if block.type == "entity_card"),
+        next(index for index, block in enumerate(response.blocks) if block.type == "show_setlist"),
+        next(index for index, block in enumerate(response.blocks) if block.type == "recording_list"),
+    ]
+    composed = apply_composition_plan(
+        response,
+        CompositionPlan(
+            mode="listening",
+            sections=[
+                CompositionSection(region="primary", candidate_indexes=selected_indexes[:3]),
+                CompositionSection(region="media", candidate_indexes=selected_indexes[3:]),
+            ],
+            omitted_candidate_indexes=_omitted_indexes(response, selected_indexes),
+        ),
+    )
+
+    assert [block.type for block in composed.blocks] == [
+        "guest_appearance_list",
+        "entity_card",
+        "show_setlist",
+        "recording_list",
+    ]
+    assert not any(block.type in {"performer_list", "equipment_list"} for block in composed.blocks)
+
+
 def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspective():
     assert "You own the information and experience curation" in SYSTEM_PROMPT
     assert "Answer the visitor's factual question" in SYSTEM_PROMPT
@@ -195,15 +241,17 @@ def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspecti
     assert "Think one useful step ahead" in SYSTEM_PROMPT
     assert '"where do I listen?"' in SYSTEM_PROMPT
     assert "source-attributed community" in SYSTEM_PROMPT
-    assert "answers the factual question directly and, when available, names the most" in SYSTEM_PROMPT
+    assert "short sentences: answer the factual question" in SYSTEM_PROMPT
     assert "presentation-level editorial decisions" in SYSTEM_PROMPT
     assert "only work with the grounded candidate material" in SYSTEM_PROMPT
-    assert "use the returned\nshow IDs to retrieve the most revealing show context" in SYSTEM_PROMPT
-    assert "generic closing such\nas \"let me know if you'd like more\"" in SYSTEM_PROMPT
-    assert "bare list of dates and repeated\ninstruments" in SYSTEM_PROMPT
+    assert "Distinguish a relationship map from a guided tour" in SYSTEM_PROMPT
+    assert "Do not expand every returned relationship" in SYSTEM_PROMPT
+    assert "generic closing such as \"let me know if" in SYSTEM_PROMPT
+    assert "bare list of dates and repeated instruments" in SYSTEM_PROMPT
+    assert "Keep it to one or two\nshort sentences" in SYSTEM_PROMPT
 
 
-def test_guest_directory_renders_its_grounded_result_and_rejects_a_conflicting_model_count():
+def test_guest_directory_renders_its_grounded_result():
     store = CanonicalStore()
     guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
     guest_payload = json.loads(guest_tool.invoke({"query": "how many times did branford play with them"}))
@@ -213,15 +261,12 @@ def test_guest_directory_renders_its_grounded_result_and_rejects_a_conflicting_m
         messages=[
             HumanMessage(content="how many times did branford play with them"),
             tool_message(guest_payload),
-            AIMessage(content="Branford Marsalis played with the Grateful Dead on a total of 31 occasions."),
+            AIMessage(content="Branford Marsalis played with the Grateful Dead on five documented occasions."),
         ],
         store=store,
     )
 
-    assert response.answer == (
-        "The current canonical guest-credit directory documents 5 Branford Marsalis "
-        "appearances with the Grateful Dead."
-    )
+    assert response.answer == "Branford Marsalis played with the Grateful Dead on five documented occasions."
     assert response.conversation[-1].text == response.answer
     assert response.title == "Branford Marsalis"
     assert response.mode == "musician"
@@ -492,7 +537,7 @@ def test_comparison_strip_spreads_more_than_twelve_years_and_keeps_the_endpoints
     assert set(strip_years) <= set(all_years)
 
 
-def test_show_response_uses_location_title_and_moves_setlist_and_recordings_to_body():
+def test_show_response_uses_location_title_and_preserves_the_model_chat_answer():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
     assert show
@@ -512,8 +557,8 @@ def test_show_response_uses_location_title_and_moves_setlist_and_recordings_to_b
     assert entity.subtitle == "1972-08-27"
     assert len(setlist.sets) == 3
     assert len(recordings.items) == 7
-    assert response.answer == "The show was held at the Old Renaissance Faire Grounds."
-    assert "Set 1" not in response.conversation[-1].text
+    assert response.answer == "The show was held at the Old Renaissance Faire Grounds.\n\n### Set 1:\n1. Truckin'"
+    assert response.conversation[-1].text == response.answer
 
 
 def test_show_response_exposes_source_reviewed_performers_and_instruments():
