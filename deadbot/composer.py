@@ -461,8 +461,6 @@ class ModelGuidedComposer:
 
 
 def create_experience_composer(settings: Settings, provider: ModelProvider | None = None) -> ExperienceComposer:
-    """Return the configured composer without changing the agent's tool contract."""
+    """Return the final response editor without changing the agent's tool contract."""
 
-    if not settings.composer_enabled:
-        return DeterministicComposer()
     return ModelGuidedComposer(provider or create_model_provider(settings))

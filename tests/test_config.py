@@ -109,11 +109,6 @@ def test_ollama_is_the_default_provider():
     assert provider.model == "qwen3:8b"
 
 
-def test_model_guided_composition_is_enabled_by_default():
-    settings = Settings()
-    assert settings.composer_enabled is True
-
-
 def test_hardening_settings_have_safe_defaults():
     settings = Settings()
     assert settings.rate_limit_per_minute == 10
