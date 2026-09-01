@@ -119,10 +119,11 @@ provenance, coverage metadata, relevant facts, and a structured
 `usage_guidance` field describing when that candidate helps or is redundant.
 The model returns a concise `chat_answer`, one bounded experience mode
 (`quick_fact`, `performance`, `show`, `listening`, `comparison`, `research`,
-`musician`, or `gap`), and structured layout regions containing only
-server-owned candidate indexes. The server resolves those indexes back to the
-original validated blocks and uses the same model decision for the final visible
-assistant turn. Its system instructions and validation require it to:
+`musician`, or `gap`), and an ordered list containing only server-owned
+candidate indexes. The server resolves those indexes back to the original
+validated blocks, lays them out within the bounded main body, and uses the same
+model decision for the final visible assistant turn. Its system instructions
+and validation require it to:
 
 - make chat direct and concise while the main body carries broader support;
 - choose a focused set of blocks that advances the visitor's question;

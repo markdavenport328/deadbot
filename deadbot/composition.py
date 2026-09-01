@@ -1180,11 +1180,11 @@ def compose_experience_response(
                 message="The current experience did not receive a matching grounded result. Try a song, show, or performance that appears in the current library.",
             )
         )
-    blocks.append(_coverage_block(store))
+        blocks.append(_coverage_block(store))
 
     # This is the conservative fallback used when model composition is
-    # disabled or unavailable. Coverage is still a validated candidate for a
-    # question that asks about scope, but it should not fill ordinary pages.
+    # disabled or unavailable. Coverage belongs only to a genuine gap packet;
+    # it is not an ordinary-page candidate.
     visible_indexes = [
         index
         for index, block in enumerate(blocks)

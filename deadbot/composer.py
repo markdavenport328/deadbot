@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Literal, Protocol
+from typing import Any, Protocol
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, ConfigDict, Field
@@ -17,21 +17,13 @@ from deadbot.models import ModelProvider, create_model_provider
 logger = logging.getLogger(__name__)
 
 
-class CompositionSection(BaseModel):
-    """A model-selected region containing only candidate indexes it received."""
-
-    model_config = ConfigDict(extra="forbid")
-    region: Literal["primary", "supporting", "context", "media"]
-    candidate_indexes: list[int] = Field(min_length=1, max_length=8)
-
-
 class CompositionPlan(BaseModel):
     """The model's final chat and layout decision over grounded candidates."""
 
     model_config = ConfigDict(extra="forbid")
     chat_answer: str = Field(min_length=1)
     mode: ExperienceMode = "quick_fact"
-    sections: list[CompositionSection] = Field(min_length=1, max_length=4)
+    body_candidate_indexes: list[int] = Field(min_length=1, max_length=32)
     omitted_candidate_indexes: list[int] = Field(default_factory=list, max_length=32)
 
 
@@ -345,6 +337,7 @@ def _composer_brief(question: str, response: ExperienceResponse) -> str:
         "latest_question": question,
         "grounded_agent_answer": response.answer,
         "recent_conversation": [turn.model_dump() for turn in response.conversation[-8:]],
+        "allowed_candidate_indexes": list(range(len(response.blocks))),
         "candidate_blocks": [_block_brief(index, block) for index, block in enumerate(response.blocks)],
         "research_candidates": research_candidates,
         "related_show_paths": _show_relationships(response),
@@ -362,24 +355,20 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
     """
 
     expected_indexes = set(range(len(response.blocks)))
-    selected_indexes: list[int] = []
-    resolved_sections: list[tuple[str, list[int]]] = []
+    selected_indexes = plan.body_candidate_indexes
     has_grounded_content = any(
         candidate.type not in {"coverage", "gap_state", "provenance_note"}
         for candidate in response.blocks
     )
-    for section in plan.sections:
-        section_indexes = []
-        for index in section.candidate_indexes:
-            if index not in expected_indexes or index in selected_indexes:
-                return response
-            block = response.blocks[index]
-            if block.type == "coverage" and (plan.mode != "gap" or has_grounded_content):
-                return response
-            selected_indexes.append(index)
-            section_indexes.append(index)
-        if section_indexes:
-            resolved_sections.append((section.region, section_indexes))
+    if (
+        len(selected_indexes) != len(set(selected_indexes))
+        or any(index not in expected_indexes for index in selected_indexes)
+    ):
+        return response
+    for index in selected_indexes:
+        block = response.blocks[index]
+        if block.type == "coverage" and (plan.mode != "gap" or has_grounded_content):
+            return response
     omitted_indexes = plan.omitted_candidate_indexes
     if (
         len(omitted_indexes) != len(set(omitted_indexes))
@@ -391,13 +380,12 @@ def apply_composition_plan(response: ExperienceResponse, plan: CompositionPlan) 
         return response
 
     selected_blocks = [response.blocks[index] for index in selected_indexes]
-    original_to_selected = {original: selected for selected, original in enumerate(selected_indexes)}
     layout = [
         LayoutSection(
-            region=region,
-            block_indexes=[original_to_selected[index] for index in indexes],
+            region="primary" if start == 0 else "supporting",
+            block_indexes=list(range(start, min(start + 8, len(selected_blocks)))),
         )
-        for region, indexes in resolved_sections
+        for start in range(0, len(selected_blocks), 8)
     ]
     chat_answer = plan.chat_answer.strip()
     conversation = list(response.conversation)
@@ -435,14 +423,12 @@ class ModelGuidedComposer:
         self.selector = selector
 
     def compose(self, question: str, response: ExperienceResponse) -> ExperienceResponse:
-        if len(response.blocks) <= 1:
-            return response
         prompt = (
             "You are Deadbot's final editor: a perceptive, companionable Grateful Dead guide. Make the two parts of the response work together. "
             "CHAT ANSWER: Answer the visitor's question briefly and directly. Do not put a list or a catalogue in chat. Do not repeat details the main body can show. "
             "MAIN BODY: Select and arrange the broader supporting material that makes the answer useful, interesting, and explorable. "
             "The chat answer and main body should complement each other, not duplicate each other. "
-            "Return chat_answer, choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), and arrange selected candidates into primary, supporting, context, or media regions. Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
+            "Return chat_answer, choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), and put the body blocks in reading order in body_candidate_indexes. The only valid indexes are the top-level candidate_blocks indexes listed in allowed_candidate_indexes; nested item positions are not candidate indexes. Account for every allowed index by selecting or omitting it. "
             "Use editorial judgment; there is no universal template. Your factual universe is closed to the grounded brief. Do not invent facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )
@@ -459,7 +445,14 @@ class ModelGuidedComposer:
             )
             plan = result if isinstance(result, CompositionPlan) else CompositionPlan.model_validate(result)
             composed = apply_composition_plan(response, plan)
-            logger.info("Applied model composition plan: candidates=%s sections=%s", len(response.blocks), len(plan.sections))
+            if composed is response:
+                logger.warning(
+                    "Rejected invalid model composition plan; using grounded candidate response: candidates=%s selected=%s",
+                    len(response.blocks),
+                    len(plan.body_candidate_indexes),
+                )
+            else:
+                logger.info("Applied model composition plan: candidates=%s selected=%s", len(response.blocks), len(plan.body_candidate_indexes))
             return composed
         except Exception as error:
             logger.warning("Model composer failed (%s); using deterministic candidate order.", type(error).__name__)
