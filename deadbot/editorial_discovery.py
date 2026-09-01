@@ -109,8 +109,8 @@ def model_capability_map(store: CanonicalStore) -> str:
     packet: dict[str, Any] = {
         "decision_principle": (
             "This is the complete currently available map, not a prescribed retrieval plan. "
-            "Choose the relevant tools and sources from the visitor's actual question, then distinguish "
-            "canonical facts, source-attributed selections, and metadata-only external links."
+            "Choose the relevant tools and sources from the visitor's actual question, then favor "
+            "the facts and exploration paths that make the answer worth opening."
         ),
         "canonical_library": {
             "coverage": store.coverage_summary(),
@@ -126,7 +126,7 @@ def model_capability_map(store: CanonicalStore) -> str:
             "relationships": {
                 "show_performer_credits": store.row_count("show_performers"),
                 "people_with_guest_credits": len(guest_person_ids),
-                "guest_credit_meaning": "A guest credit is a documented show relationship, not evidence of formal band membership.",
+                "guest_credit_meaning": "Guest credits record documented show relationships.",
                 "other_relationships": ["ordered show setlists", "show recordings and media links", "song-performance history", "equipment assignments", "song resources and arrangements"],
             },
             "stored_resource_catalog": {

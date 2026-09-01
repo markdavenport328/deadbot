@@ -2,17 +2,20 @@
 
 ## Model-first product design
 
-Deadbot should first empower the model to reason over clear, grounded context.
-When designing a feature, prefer giving the model the information, relationships,
-provenance, coverage limits, and explicit instructions it needs to make a good
-choice before adding deterministic routing or presentation rules.
+Deadbot should first empower the model to reason over clear, useful context.
+When designing a feature, prefer giving the model the facts, relationships,
+listening paths, and explicit instructions it needs to make a good choice before
+adding deterministic routing or presentation rules. Keep source and coverage
+metadata available as background context, but do not make them the center of a
+visitor's experience unless they change the meaning of the answer.
 
 For experience composition in particular:
 
 - Supply a structured decision brief: the latest question, relevant
-  conversation, grounded agent answer, canonical facts, coverage metadata, and
-  a rich inventory of eligible blocks with their scope, purpose, relationship,
-  and provenance.
+  conversation, grounded answer, useful facts and relationships, and a rich
+  inventory of eligible blocks with their purpose, exploration value, and
+  connections. Include source or coverage context only where it changes how a
+  visitor should understand or use the material.
 - Let the model decide relevance, omission, ordering, and layout regions from
   that brief. Do not replace this reasoning with a growing set of brittle
   keyword-to-template rules.
@@ -28,8 +31,8 @@ to take over ordinary product judgment. It must:
 - validate model references against the supplied retrieval packet;
 - allow only known response schemas, block types, layout regions, and provider
   embeds;
-- preserve source/provenance requirements and prevent partial coverage from
-  being presented as a complete factual result;
+- retain the evidence and scope needed to support claims, while leaving the
+  model to decide when that context belongs in the visitor-facing experience;
 - reject invented entities, URLs, markup, and ungrounded content; and
 - provide a safe deterministic fallback when a model response is unavailable
   or invalid.

@@ -1,6 +1,6 @@
 # Experience and composition architecture
 
-This document defines the durable architecture for Deadbot's user-facing experience. It supplements the product vision and agent-harness documents: it describes how a retrieved answer becomes an explorable interface without allowing a model to invent interface code, bypass provenance, or embed untrusted media.
+This document defines the durable architecture for Deadbot's user-facing experience. It supplements the product vision and agent-harness documents: it describes how a retrieved answer becomes an explorable interface without allowing a model to invent interface code or embed untrusted media.
 
 ## Decision summary
 
@@ -10,7 +10,7 @@ The interface is schema-driven. A model may choose and order a small catalog of 
 
 ## Why this shape
 
-The product needs more than a transcript of a chat answer. A question can meaningfully lead to a performance card, an official listening option, a source-specific chord resource, or a carefully attributed interview excerpt. These are different kinds of information with different provenance and rights rules.
+The product needs more than a transcript of a chat answer. A question can meaningfully lead to a performance card, an official listening option, a chord resource, or an interview excerpt. These should feel like inviting routes into the music, not a display of the system's paperwork.
 
 React is suitable for composing those reusable interactive patterns. FastAPI fits the existing Python, LangGraph, and Pydantic runtime, keeps the agent and data access on the server, and can expose both ordinary JSON endpoints and later streaming updates without a second application backend.
 
@@ -39,7 +39,7 @@ The agent remains responsible for deciding which read-only tools to use and for 
 
 This separation is intentional:
 
-- Retrieval determines what the system knows and where it came from.
+- Retrieval determines what the system knows and which connections it can offer.
 - Composition determines which approved presentation patterns best help a person explore that grounded material.
 - Rendering determines how those patterns look and behave in the browser.
 
@@ -52,7 +52,7 @@ The backend will expose a versioned Pydantic response model. Its top-level shape
 - Every block has an explicit, allowlisted `type`.
 - Entity-oriented blocks refer to canonical IDs and/or server-supplied display data; the client does not resolve free-form model text into entities.
 - Resources and media refer to approved stored records or server-validated external URLs.
-- Any block that makes or presents a source-attributed claim identifies its source and distinguishes it from canonical data.
+- A block that relies on an outside perspective keeps its source linked and identifiable without making attribution the headline when it adds no value to the visitor.
 - The client handles an unknown block type safely and visibly rather than attempting to interpret it.
 - The response schema is versioned, tested, and validated on the server before it is returned to a browser.
 - The transcript contains only visible human and final assistant text; it never exposes tool requests, tool payloads, internal prompts, or model reasoning.

@@ -415,12 +415,12 @@ class ModelGuidedComposer:
             return response
         prompt = (
             "You are a knowledgeable, curious, and helpful Grateful Dead authority editing a rich exploratory experience for the visitor's latest question. "
-            "The upstream model has assembled a grounded candidate packet. Exercise editorial judgment over that packet: decide what best answers the visitor, what creates a worthwhile next step, what adds illuminating listening or source-attributed context, what would merely clutter the page, and what should lead. "
+            "The upstream model has assembled a grounded candidate packet. Exercise editorial judgment over that packet: decide what best answers the visitor, what creates a worthwhile next step, what adds illuminating listening or contextual material, what would merely clutter the page, and what should lead. "
             "Choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), then select, omit, order, prioritize, and arrange candidates into primary, supporting, context, or media regions. There is no universal template. "
-            "Treat the short chat answer and main panel as one response. The panel should make the answer more useful and engaging, not simply repeat it or display every available database field. "
+            "Treat the short chat answer and main panel as one response. The panel should make the answer more useful and engaging, not simply repeat it or display every available database field. Its primary region must carry the most substantive answer and its best grounded exploration paths; do not leave those paths to a generic chat invitation. A bare directory of dates, repeated instruments, or coverage metadata is evidence, not a satisfying primary experience when the packet includes show, musical, listening, or source context. "
             "Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
-            "For a show guide, place setlist and recordings ahead of ordinary lineup detail, and keep blocks about the same guest, equipment claim, or performance together. "
-            "Use each candidate's scope, purpose, relationship, and provenance to make these judgments, and use related_show_paths to keep blocks about the same show coherent. "
+            "For a show guide, place setlist and recordings ahead of ordinary lineup detail, and keep blocks about the same guest, equipment claim, or performance together. For a guest-appearance question with related show candidates, use the guest list as the count and timeline, then foreground the show context that tells the visitor where the appearances happened and what they can explore. "
+            "Use each candidate's purpose, relationship, and exploration value to make these judgments, and use related_show_paths to keep blocks about the same show coherent. Source and coverage details are supporting context, not a reason to make a block prominent unless they change what the visitor should understand. "
             "Your factual universe is closed: return only candidate indexes from the brief. Do not research, create, rewrite, or embellish facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )
@@ -429,7 +429,7 @@ class ModelGuidedComposer:
                 [
                     SystemMessage(
                         content=(
-                            "You are Deadbot's knowledgeable, curious, and provenance-aware Grateful Dead experience editor. "
+                            "You are Deadbot's knowledgeable, curious, and music-first Grateful Dead experience editor. "
                             "Use editorial judgment to create a rich, helpful experience from grounded candidates, and return only the requested structured composition plan."
                         )
                     ),

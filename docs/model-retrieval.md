@@ -1,4 +1,4 @@
-# Resource retrieval for the future model
+# Resource retrieval for the model
 
 External links are first-class, queryable graph records. A model should discover
 relevant resources through structured lookup before opening a reviewed source.
@@ -15,7 +15,8 @@ question. Its layers have different jobs:
 - **Editorial discovery guidance** offers fruitful song, transition, era, and
   show-context routes the model may investigate.
 - **Source trails and research results** make selected lore, criticism, oral
-  history, and listening paths available with their source context.
+  history, and listening paths available when they add something worth
+  exploring.
 - **Eligible experience blocks** let the model put a detailed list,
   comparison, recording route, or source trail in the main column when that is
   the clearest answer.
@@ -34,7 +35,7 @@ Resolve canonical entity ID
       ↓
 Query attached resources and media links
       ↓
-Rank by relationship type, source, and provenance
+Rank by relationship type, relevance, and usefulness
       ↓
 Open only the relevant external link when more detail is needed
 ```
@@ -44,12 +45,16 @@ For example, an interview about a song receives a `resources` row with type `int
 The model can therefore answer with known structured facts immediately, offer
 relevant links, or research a registered source when context would make the
 answer more useful. Source tools have reviewed hosts, paths, and capabilities;
-their result packets preserve source identity, scope, coverage, and permitted
-use. The fact-first/serendipity loop and source-adapter plan are in
+their result packets retain the information needed to use them responsibly
+without turning every answer into a methodology note. The fact-first/serendipity
+loop and source-adapter plan are in
 `docs/serendipity-research-plan.md`.
 
 ## Contextual material
 
 For interviews, oral histories, articles, reviews, and memoirs, the graph stores the link, author or speaker, date, source, entity relationship, and a brief scope note—not a copied transcript. Retrieval should favor a direct interview or a performance-specific account over a broad essay, then use source quality and relationship type to rank ties.
 
-Source-attributed claims remain source-attributed in answers. A musician's recollection, an eyewitness memoir, or an editor's analysis is valuable context, but it does not silently become a canonical show, songwriting, or recording fact. This lets the model say both *what the source says* and *where to read it*.
+When Deadbot relies on a musician's recollection, an eyewitness memoir, or an
+editor's analysis, it should name the source naturally and link to it. Otherwise,
+keep the sourcing in the supporting card or link rather than interrupting a
+straightforward answer.

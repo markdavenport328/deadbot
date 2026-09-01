@@ -285,7 +285,7 @@ def _reviewed_deadcast_adapter() -> DeadnetResearchAdapter | None:
 
 
 def build_tools(store: CanonicalStore) -> list[BaseTool]:
-    """Build read-only, provenance-aware tools bound to one canonical store."""
+    """Build read-only, grounded tools bound to one canonical store."""
 
     deadnet_adapter = _reviewed_deadnet_adapter()
     deadcast_adapter = _reviewed_deadcast_adapter()
@@ -355,7 +355,8 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         is guest. An empty query returns the complete directory; a name or
         phrase narrows it. Each result includes all documented guest-show
         dates and credited instruments so the caller can decide what is
-        relevant without confusing a guest credit with formal band membership.
+        relevant. Whether a guest was a formal band member is a separate question
+        and should not displace an ordinary appearance query.
         The returned show IDs can be passed to get_show when the visitor would
         benefit from the show's setlist, recording links, or other grounded
         context; decide which appearances to expand from the question rather
@@ -451,7 +452,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         return _json(
             {
                 "query": query,
-                "coverage_note": "Complete current canonical guest-credit directory; a guest credit does not establish formal band membership.",
+                "coverage_note": "Coverage: complete current canonical guest-credit directory.",
                 "guests": guests,
             }
         )

@@ -164,9 +164,12 @@ def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspecti
     assert "Think one useful step ahead" in SYSTEM_PROMPT
     assert '"where do I listen?"' in SYSTEM_PROMPT
     assert "source-attributed community" in SYSTEM_PROMPT
-    assert "either answers the factual question directly or points the visitor" in SYSTEM_PROMPT
+    assert "answers the factual question directly and, when available, names the most" in SYSTEM_PROMPT
     assert "presentation-level editorial decisions" in SYSTEM_PROMPT
     assert "only work with the grounded candidate material" in SYSTEM_PROMPT
+    assert "use the returned\nshow IDs to retrieve the most revealing show context" in SYSTEM_PROMPT
+    assert "generic closing such\nas \"let me know if you'd like more\"" in SYSTEM_PROMPT
+    assert "bare list of dates and repeated\ninstruments" in SYSTEM_PROMPT
 
 
 def test_guest_directory_renders_its_grounded_result_and_rejects_a_conflicting_model_count():

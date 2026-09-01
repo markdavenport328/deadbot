@@ -4,7 +4,7 @@
 
 Deadbot is an agentic Grateful Dead knowledge and music companion. A person should be able to explore a song, a show, a performance, a recording source, or a musician in ordinary language and move naturally between them.
 
-Its useful core is a connected, provenance-aware model of the Dead's live
+Its useful core is a connected model of the Dead's live
 history: what was played, where and when it happened, who performed, how pieces
 flowed together, which recordings and official releases document it, and where
 a listener can hear or learn more about it. The experience should feel like a
@@ -49,7 +49,7 @@ The runtime uses an agent loop: the model decides which structured or approved e
   exploration column when that is the clearest way to answer;
 - offer listening and viewing links for the relevant show or performance;
 - surface relevant interviews, articles, lessons, chord sources, and anecdotal material when useful;
-- distinguish a verified canonical fact from an attributed claim, recollection, or interpretation;
+- keep external perspectives linked and clearly framed when they matter to the answer;
 - acknowledge a gap rather than inventing an answer; and
 - use live external tools only when a question actually requires current or outside information (for example weather, maps, astronomy, or newly published material).
 
@@ -57,7 +57,7 @@ The agent is a reasoning and retrieval layer over a reviewable knowledge base. I
 
 ## What belongs in Deadbot versus a link
 
-Deadbot should retain the structured facts and metadata needed to find, explain, connect, and evaluate information: identities, dates, set order, personnel and roles, recording lineage, identifiers, release mappings, resource relationships, provenance, and concise source-specific musical facts such as chord progressions.
+Deadbot should retain the structured facts and metadata needed to find, explain, connect, and evaluate information: identities, dates, set order, personnel and roles, recording lineage, identifiers, release mappings, resource relationships, and concise source-specific musical facts such as chord progressions.
 
 It should usually link out to hosted or rights-sensitive material: audio, video, full lyrics, complete tabs or notation, full interviews, articles, books, reviews, and lesson text. Future document retrieval may use licensed or permitted excerpts and metadata, but must keep their source and rights context visible.
 
@@ -70,7 +70,7 @@ The system has four complementary parts:
 1. **Canonical knowledge graph** — reviewable normalized data for factual relationships.
 2. **Context and document layer** — source-attributed prose and research material, separate from canonical facts.
 3. **Tool-using agent** — a bounded agent loop that combines structured retrieval, approved source reading, and later live tools.
-4. **Listening and exploration experience** — a FastAPI-backed interface that presents answers, provenance, entity cards, contextual links, and approved external-media paths clearly.
+4. **Listening and exploration experience** — a FastAPI-backed interface that presents answers, entity cards, contextual links, and approved external-media paths clearly.
 
 PostgreSQL is the optional operational store for the canonical graph, imported
 from the reviewed CSV source of truth behind the same read interface. The
