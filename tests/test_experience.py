@@ -233,7 +233,7 @@ def test_model_plan_can_shape_a_large_related_packet_into_one_coherent_guide():
     assert not any(block.type in {"performer_list", "equipment_list"} for block in composed.blocks)
 
 
-def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspective():
+def test_agent_prompt_gives_the_model_a_grounded_editorial_persona_and_goal():
     assert "You own the information and experience curation" in SYSTEM_PROMPT
     assert "Answer the visitor's factual question" in SYSTEM_PROMPT
     assert "Anticipate exploration or experience opportunities" in SYSTEM_PROMPT
@@ -241,14 +241,12 @@ def test_agent_prompt_requires_one_step_ahead_listening_and_attributed_perspecti
     assert "Think one useful step ahead" in SYSTEM_PROMPT
     assert '"where do I listen?"' in SYSTEM_PROMPT
     assert "source-attributed community" in SYSTEM_PROMPT
-    assert "short sentences: answer the factual question" in SYSTEM_PROMPT
+    assert "perceptive, well-read fan" in SYSTEM_PROMPT
+    assert "give the facts a shape" in SYSTEM_PROMPT
     assert "presentation-level editorial decisions" in SYSTEM_PROMPT
     assert "only work with the grounded candidate material" in SYSTEM_PROMPT
-    assert "Distinguish a relationship map from a guided tour" in SYSTEM_PROMPT
-    assert "Do not expand every returned relationship" in SYSTEM_PROMPT
     assert "generic closing such as \"let me know if" in SYSTEM_PROMPT
-    assert "bare list of dates and repeated instruments" in SYSTEM_PROMPT
-    assert "Keep it to one or two\nshort sentences" in SYSTEM_PROMPT
+    assert "natural, companionable voice" in SYSTEM_PROMPT
 
 
 def test_guest_directory_renders_its_grounded_result():
@@ -897,11 +895,12 @@ def _one_block_of_every_type():
             person_id="person-branford-marsalis",
             person_name="Branford Marsalis",
             known_show_count=1,
-            coverage_note="Complete current canonical guest-credit directory.",
             items=[
                 experience.GuestAppearanceItem(
                     show_id="s1",
                     show_date="1990-03-29",
+                    venue_name="Nassau Veterans Memorial Coliseum",
+                    location="Uniondale, NY",
                     instruments=["saxophone"],
                     follow_up="Tell me about the show on 1990-03-29.",
                 )

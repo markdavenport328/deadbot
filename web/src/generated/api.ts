@@ -319,20 +319,22 @@ export interface components {
             follow_up: string;
             /** Instruments */
             instruments: string[];
+            /** Location */
+            location?: string | null;
             /** Participation Scope */
             participation_scope?: string | null;
             /** Show Date */
             show_date: string;
             /** Show Id */
             show_id: string;
+            /** Venue Name */
+            venue_name?: string | null;
         };
         /**
          * GuestAppearanceListBlock
          * @description Canonical guest-show relationships for one resolved person.
          */
         GuestAppearanceListBlock: {
-            /** Coverage Note */
-            coverage_note: string;
             /** Items */
             items: components["schemas"]["GuestAppearanceItem"][];
             /** Known Show Count */

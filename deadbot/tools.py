@@ -368,6 +368,7 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
         shows = {show["show_id"]: show for show in store.rows("shows")}
+        venues = {venue["venue_id"]: venue for venue in store.rows("venues")}
         # JerryBase sometimes appends a participation qualifier to a person's
         # display name (for example, ``Branford Marsalis (complete show)``).
         # That qualifier describes the appearance, not a second human being.
@@ -422,11 +423,18 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
                 show = shows.get(assignment.get("show_id", ""))
                 if not show:
                     continue
+                venue = venues.get(show.get("venue_id", ""), {})
+                venue_name = venue.get("name") or None
+                location = ", ".join(
+                    part for part in (venue.get("city"), venue.get("state_region")) if part
+                ) or None
                 appearance = appearances_by_show.setdefault(
                     show["show_id"],
                     {
                         "show_id": show["show_id"],
                         "show_date": show.get("show_date"),
+                        "venue_name": venue_name,
+                        "location": location,
                         "instruments": [],
                         "participation_scope": assignment.get("participation_scope"),
                     },

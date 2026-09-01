@@ -278,12 +278,13 @@ def _block_brief(index: int, block: ExperienceBlock) -> dict[str, Any]:
                 {
                     "show_id": item.show_id,
                     "show_date": item.show_date,
+                    "venue_name": item.venue_name,
+                    "location": item.location,
                     "instruments": item.instruments,
                     "participation_scope": item.participation_scope,
                 }
                 for item in block.items
             ],
-            "coverage_note": block.coverage_note,
             "helps_with": "guest appearance counts, dates, instruments, and show follow-up paths",
             "layout_guidance": "compact relationship map; it can stand on its own for a count or timeline, while a connected show path is optional only when it adds a clear reason to explore",
             "provenance": "canonical guest-credit relationships",
@@ -422,13 +423,12 @@ class ModelGuidedComposer:
         if len(response.blocks) <= 1:
             return response
         prompt = (
-            "You are a knowledgeable, curious, and helpful Grateful Dead authority editing a rich exploratory experience for the visitor's latest question. "
-            "The upstream model has assembled a grounded candidate packet. Exercise editorial judgment over that packet: decide what best answers the visitor, what creates a worthwhile next step, what adds illuminating listening or contextual material, what would merely clutter the page, and what should lead. "
+            "You are Deadbot's most perceptive Grateful Dead guide: well-read, musically alive, and allergic to both database dumps and empty hype. "
+            "The upstream model has assembled grounded material. Your goal is to turn it into the kind of clear, delightful little guide a curious fan would be glad to stumble into: an answer with a point of view, an easy way to take it in, and an enticing way onward. Trust your editorial taste. "
             "Choose one experience mode (quick_fact, performance, show, listening, comparison, research, musician, or gap), then select, omit, order, prioritize, and arrange candidates into primary, supporting, context, or media regions. There is no universal template. "
-            "Treat the short chat answer and main panel as one response. The panel should make the answer more useful and engaging, not simply repeat it or display every available database field. Its primary region must carry the most substantive answer and its best grounded exploration paths; do not leave those paths to a generic chat invitation. A bare directory of dates, repeated instruments, or coverage metadata is evidence, not a satisfying primary experience when the packet includes a more meaningful connection. "
+            "Treat the short chat answer and main panel as one response. Let the panel carry the material that gives the answer life, without merely echoing chat or displaying every available database field. "
             "Account for every candidate index by placing it exactly once or listing it in omitted_candidate_indexes. "
-            "Choose one coherent guide rather than a catalogue. A candidate earns its place only when it answers a distinct part of the question, reveals a meaningful connection, or opens a concrete next move. A relationship summary may be the complete guide; related candidates are options, not an instruction to expand every linked entity. When you select a show path, keep its identity and the material it introduces together so the visitor can follow it without scanning across the page. Omit specialist metadata, duplicate identity cards, and component suites that do not deepen the chosen guide. "
-            "Use each candidate's purpose, relationship, and exploration value to make these judgments, and use related_show_paths to compare coherent show paths. Source and coverage details are supporting context, not a reason to make a block prominent unless they change what the visitor should understand. "
+            "Use each candidate's purpose, relationship, and exploration value to make these judgments, and use related_show_paths when they help you see the shape of a possible guide. Source and coverage details belong where they genuinely illuminate the visitor's understanding, not where they interrupt it. "
             "Your factual universe is closed: return only candidate indexes from the brief. Do not research, create, rewrite, or embellish facts, sources, URLs, blocks, or headings.\n\n"
             f"Grounded composition brief: {_composer_brief(question, response)}"
         )
@@ -437,8 +437,7 @@ class ModelGuidedComposer:
                 [
                     SystemMessage(
                         content=(
-                            "You are Deadbot's knowledgeable, curious, and music-first Grateful Dead experience editor. "
-                            "Use editorial judgment to create a rich, helpful experience from grounded candidates, and return only the requested structured composition plan."
+                            "You are Deadbot's discerning, music-first Grateful Dead editor. Shape grounded material into a guide a curious fan would genuinely enjoy, then return only the requested structured composition plan."
                         )
                     ),
                     HumanMessage(content=prompt),

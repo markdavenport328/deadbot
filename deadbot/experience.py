@@ -130,6 +130,8 @@ class PerformerListBlock(ExperienceModel):
 class GuestAppearanceItem(ExperienceModel):
     show_id: str
     show_date: str
+    venue_name: str | None = None
+    location: str | None = None
     instruments: list[str] = Field(min_length=1, max_length=8)
     participation_scope: str | None = None
     follow_up: str
@@ -142,7 +144,6 @@ class GuestAppearanceListBlock(ExperienceModel):
     person_id: str
     person_name: str
     known_show_count: int = Field(ge=1)
-    coverage_note: str
     items: list[GuestAppearanceItem] = Field(min_length=1, max_length=24)
 
 

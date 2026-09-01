@@ -114,6 +114,13 @@ def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
         "gd-1994-12-16",
     }
     assert all(appearance["show_date"] for appearance in branford["appearances"])
+    assert [appearance["venue_name"] for appearance in branford["appearances"]] == [
+        "Nassau Veterans Memorial Coliseum",
+        "Oakland-Alameda County Coliseum Arena",
+        "Madison Square Garden",
+        "Los Angeles Memorial Sports Arena",
+        "Los Angeles Memorial Sports Arena",
+    ]
     enrichment = json.loads(
         tool_by_name(store, "search_stored_resources").invoke({"query": branford["name"]})
     )

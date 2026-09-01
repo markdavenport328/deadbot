@@ -217,13 +217,12 @@ function Block({
             {block.items.map((item) => (
               <li key={item.show_id}>
                 <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <strong>{item.show_date}</strong>
+                  <strong>{item.show_date}{item.venue_name ? ` · ${item.venue_name}` : ""}</strong>
                 </FollowUpButton>
-                <span>{item.instruments.join(", ")}{item.participation_scope ? ` · ${item.participation_scope}` : ""}</span>
+                <span>{[item.location, item.instruments.join(", "), item.participation_scope].filter(Boolean).join(" · ")}</span>
               </li>
             ))}
           </ol>
-          <p className="coverage-note">{block.coverage_note}</p>
         </section>
       );
     case "equipment_list":

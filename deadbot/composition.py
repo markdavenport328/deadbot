@@ -806,8 +806,7 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
     """Project resolved guest-credit relationships into browser-safe blocks."""
 
     raw_guests = payload.get("guests")
-    coverage_note = payload.get("coverage_note")
-    if not isinstance(raw_guests, list) or not isinstance(coverage_note, str):
+    if not isinstance(raw_guests, list):
         return []
     blocks: list[GuestAppearanceListBlock] = []
     # Keep the candidate packet within the response's global block budget even
@@ -827,6 +826,8 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
                 continue
             show_id = appearance.get("show_id")
             show_date = appearance.get("show_date")
+            venue_name = appearance.get("venue_name")
+            location = appearance.get("location")
             raw_instruments = appearance.get("instruments")
             if not isinstance(raw_instruments, list):
                 legacy_instrument = appearance.get("instrument")
@@ -839,6 +840,8 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
                 GuestAppearanceItem(
                     show_id=show_id,
                     show_date=show_date,
+                    venue_name=venue_name if isinstance(venue_name, str) and venue_name else None,
+                    location=location if isinstance(location, str) and location else None,
                     instruments=instruments[:8],
                     participation_scope=scope if isinstance(scope, str) and scope else None,
                     follow_up=f"Tell me about the Grateful Dead show on {show_date}.",
@@ -854,7 +857,6 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
                 person_id=person_id,
                 person_name=person_name,
                 known_show_count=count,
-                coverage_note=coverage_note,
                 items=items[:24],
             )
         )
