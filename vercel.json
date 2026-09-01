@@ -3,9 +3,7 @@
   "buildCommand": "npm --prefix web ci && npm --prefix web run build",
   "functions": {
     "app.py": {
-      "includeFiles": [
-        "web/dist/**"
-      ],
+      "includeFiles": "{web/dist/index.html,web/dist/assets/**}",
       "maxDuration": 60
     }
   }
