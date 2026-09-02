@@ -178,3 +178,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .show-selection-list { grid-template-columns: 1fr; }
   .comparison-track { grid-auto-flow: row; grid-auto-columns: unset; overflow-x: visible; padding-bottom: 0; }
 }
+
+.message a, .answer-lead a, .narrative-block a { color: #f1c96a; }
+.fact-grid-block .fact-link { margin-top: 0.35rem; font-size: 0.9rem; }
+.timeline-block li > a { grid-column: 2; font-size: 0.9rem; }

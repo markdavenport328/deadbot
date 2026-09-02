@@ -64,6 +64,21 @@ function ExternalLink({ href, children }: { href: string; children: ReactNode })
   );
 }
 
+const inlineLink = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+function renderInline(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(inlineLink)) {
+    const index = match.index ?? 0;
+    if (index > last) nodes.push(text.slice(last, index));
+    nodes.push(<ExternalLink key={`${index}-${match[2]}`} href={match[2]}>{match[1]}</ExternalLink>);
+    last = index + match[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
+
 function FollowUpButton({
   prompt,
   onFollowUp,
@@ -82,7 +97,7 @@ function FollowUpButton({
       onClick={() => onFollowUp(prompt)}
       title={`Ask Deadbot: ${prompt}`}
     >
-      {children} <span aria-hidden="true">↗</span>
+      {children} <span aria-hidden="true">→</span>
     </button>
   );
 }
@@ -488,7 +503,7 @@ function Block({
         <section className="editorial-block narrative-block">
           {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
           {block.title && <h2>{block.title}</h2>}
-          {block.paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {block.paragraphs.map((paragraph, index) => <p key={index}>{renderInline(paragraph)}</p>)}
         </section>
       );
       if (block.presentation === "fact_grid") return (
@@ -504,7 +519,8 @@ function Block({
                     <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.value ?? item.title}</FollowUpButton>
                   ) : item.value ?? item.title}
                 </dd>
-                {item.detail && <dd className="fact-detail">{item.detail}</dd>}
+                {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
+                {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
               </div>
             ))}
           </dl>
@@ -523,7 +539,8 @@ function Block({
                     <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.title}</FollowUpButton>
                   ) : item.title}
                 </strong>
-                {item.detail && <span>{item.detail}</span>}
+                {item.detail && <span>{renderInline(item.detail)}</span>}
+                {item.link && <ExternalLink href={item.link.url}>{item.link.label}</ExternalLink>}
               </li>
             ))}
           </ol>
@@ -638,7 +655,7 @@ export default function App() {
             {visibleConversation.map((turn, index) => (
               <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
                 <p>{turn.role === "user" ? "You" : "Deadbot"}</p>
-                <div>{turn.text}</div>
+                <div>{renderInline(turn.text)}</div>
               </article>
             ))}
             {loading && <article className="message assistant pending"><p>Deadbot</p><div>Looking through the library…</div></article>}
@@ -671,7 +688,7 @@ export default function App() {
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1>{response.title}</h1>
               </div>
-              {response.body_lead && <p className="answer-lead">{response.body_lead}</p>}
+              {response.body_lead && <p className="answer-lead">{renderInline(response.body_lead)}</p>}
               {response.layout.map((section, sectionIndex) => (
                 <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
                   {regionLabels[section.region] && <p className="region-label">{regionLabels[section.region]}</p>}
