@@ -1,13 +1,12 @@
-"""Grounded candidate projection from tool output.
+"""Block builders that project tool output into the browser schema.
 
-This module is the deterministic adapter between Deadbot's read-only agent and
-the versioned browser schema in :mod:`deadbot.experience`. It turns already-
-grounded agent/tool messages into a validated ``ExperienceResponse`` full of
-candidate blocks — the model-guided composer in :mod:`deadbot.composer` then
-selects and arranges from these candidates. Because the adapter only ever
-receives tool outputs that passed through the read-only agent, and only emits
-the allowlisted block schema, it cannot pass browser code, raw HTML, or
-arbitrary embeds to the client.
+This module holds the deterministic block builders used by
+:mod:`deadbot.finish`, plus the small message helpers that find the current
+turn and its tool payloads. Each builder turns one already-grounded tool
+payload into a validated block from the allowlisted schema in
+:mod:`deadbot.experience`, so nothing here can pass browser code, raw HTML, or
+arbitrary embeds to the client. The agent chooses what to build; this module
+only decides how a chosen component is shaped.
 """
 
 from __future__ import annotations
@@ -24,19 +23,11 @@ from deadbot.experience import (
     ArrangementSearchItem,
     ComparisonStripBlock,
     ComparisonStripItem,
-    ConversationTurn,
-    CoverageBlock,
     CreditItem,
-    EntityCardBlock,
     EquipmentItem,
     EquipmentListBlock,
-    ExperienceBlock,
-    ExperienceMode,
-    ExperienceResponse,
-    GapStateBlock,
     GuestAppearanceItem,
     GuestAppearanceListBlock,
-    LayoutSection,
     MediaLinkBlock,
     PerformanceExtremesBlock,
     PerformanceListBlock,
@@ -48,7 +39,6 @@ from deadbot.experience import (
     RecordingItem,
     RecordingListBlock,
     ResourceItem,
-    ResourceListBlock,
     SetlistSection,
     SetlistSong,
     ShowSelectionBlock,
@@ -83,15 +73,6 @@ def _tool_payloads(messages: Iterable[Any]) -> list[dict[str, Any]]:
     return payloads
 
 
-def _final_answer(messages: Iterable[Any]) -> str:
-    for message in reversed(list(messages)):
-        if getattr(message, "type", None) == "ai":
-            answer = _content_text(getattr(message, "content", "")).strip()
-            if answer:
-                return answer
-    return "I could not produce a grounded answer from the current library."
-
-
 def _latest_turn(messages: list[Any]) -> list[Any]:
     """Return only the most recent user turn and its tool/answer messages.
 
@@ -104,29 +85,6 @@ def _latest_turn(messages: list[Any]) -> list[Any]:
         if getattr(messages[index], "type", None) == "human":
             return messages[index:]
     return messages
-
-
-def _conversation_turns(messages: Iterable[Any]) -> list[ConversationTurn]:
-    turns: list[ConversationTurn] = []
-    for message in messages:
-        message_type = getattr(message, "type", None)
-        role = "user" if message_type == "human" else "assistant" if message_type == "ai" else None
-        if not role:
-            continue
-        text = _content_text(getattr(message, "content", "")).strip()
-        # Tool-call AI messages normally have no visible content. The browser
-        # should never show the tool request itself in the conversation thread.
-        if text:
-            turns.append(ConversationTurn(role=role, text=text))
-    return turns[-50:]
-
-
-def _canonical_source(entity_id: str) -> SourceReference:
-    return SourceReference(
-        source_id=f"canonical:{entity_id}",
-        kind="canonical",
-        label="Deadbot canonical data",
-    )
 
 
 def _resource_source(resource: dict[str, Any]) -> SourceReference | None:
@@ -237,72 +195,6 @@ def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
         is_official=link.get("is_official", "").casefold() == "true" if isinstance(link.get("is_official"), str) else bool(link.get("is_official")),
         embed_kind=embed_kind,
         embed_id=embed_id,
-    )
-
-
-def _entity_card_from_song(song: dict[str, Any]) -> EntityCardBlock | None:
-    source_id = f"canonical:{song['song_id']}"
-    details = [f"Original artist: {song['original_artist']}"] if song.get("original_artist") else []
-    # The page already carries the song title. A title-only card adds no useful
-    # information, so keep it out of the composed page while retaining the
-    # canonical entity in the retrieval result.
-    if not details:
-        return None
-    return EntityCardBlock(
-        type="entity_card",
-        entity_type="song",
-        entity_id=song["song_id"],
-        title=song.get("title") or "Untitled song",
-        details=details,
-        source_id=source_id,
-        follow_up=f"Tell me about {song.get('title') or 'this song'}." if song.get("title") else None,
-    )
-
-
-def _entity_card_from_show(payload: dict[str, Any]) -> EntityCardBlock:
-    show = payload["show"]
-    venue = payload.get("venue") or {}
-    source_id = f"canonical:{show['show_id']}"
-    location = ", ".join(part for part in [venue.get("city"), venue.get("state_region")] if part)
-    details = [location] if location else []
-    if show.get("event_name"):
-        details.append(show["event_name"])
-    venue_name = venue.get("name") or show.get("show_date") or "Undated show"
-    return EntityCardBlock(
-        type="entity_card",
-        entity_type="show",
-        entity_id=show["show_id"],
-        title=venue_name,
-        subtitle=show.get("show_date") or None,
-        details=details,
-        source_id=source_id,
-        follow_up=f"Tell me about the show on {show.get('show_date')}." if show.get("show_date") else None,
-    )
-
-
-def _entity_card_from_performance(payload: dict[str, Any]) -> EntityCardBlock:
-    performance = payload["performance"]
-    song = payload.get("song") or {}
-    show = payload.get("show") or {}
-    source_id = f"canonical:{performance['performance_id']}"
-    details = []
-    if show.get("show_date"):
-        details.append(show["show_date"])
-    if performance.get("set_label"):
-        details.append(f"{performance['set_label']} · #{performance.get('position_in_set', '?')}")
-    return EntityCardBlock(
-        type="entity_card",
-        entity_type="performance",
-        entity_id=performance["performance_id"],
-        title=song.get("title") or "Untitled performance",
-        subtitle="Performance",
-        details=details,
-        source_id=source_id,
-        follow_up=(
-            f"Tell me about the performance of {song.get('title')} on {show.get('show_date')}."
-            if song.get("title") and show.get("show_date")
-            else None
-        ),
     )
 
 
@@ -780,25 +672,6 @@ def _arrangement_block(arrangement_id: str, store: CanonicalStore) -> Arrangemen
     )
 
 
-def _coverage_block(store: CanonicalStore) -> CoverageBlock:
-    coverage = store.coverage_summary()
-    if coverage["first_year"] and coverage["last_year"]:
-        year_range = f"{coverage['first_year']}–{coverage['last_year']}"
-    else:
-        year_range = "no dated years"
-    return CoverageBlock(
-        type="coverage",
-        title="Current library coverage",
-        message=(
-            f"The current canonical library contains {coverage['dated_show_count']} dated shows, "
-            f"{coverage['performance_count']} ordered performances, and "
-            f"{coverage['performance_song_count']} song labels spanning {year_range}. "
-            "This is a source-derived baseline with uneven enrichment; it is not a complete record "
-            "of every historical performance or song-related fact."
-        ),
-    )
-
-
 def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) -> tuple[ArrangementSearchBlock | None, list[SourceReference]]:
     """Turn a key-search tool result into an explicitly source-limited list."""
 
@@ -912,352 +785,3 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
             )
         )
     return blocks
-
-
-def compose_experience_response(
-    question: str,
-    thread_id: str,
-    messages: Iterable[Any],
-    store: CanonicalStore,
-) -> ExperienceResponse:
-    """Create a safe, deterministic response from already-grounded tool output."""
-
-    message_list = list(messages)
-    latest_turn_messages = _latest_turn(message_list)
-    blocks: list[ExperienceBlock] = []
-    sources: list[SourceReference] = []
-    seen_entities: set[str] = set()
-    seen_resources: set[str] = set()
-    seen_media: set[str] = set()
-    seen_arrangements: set[str] = set()
-    processed_show_ids: set[str] = set()
-    resource_items: list[ResourceItem] = []
-    chord_items: list[ResourceItem] = []
-    credit_items: list[CreditItem] = []
-    credit_source_ids: list[str] = []
-    arrangements: list[ArrangementBlock] = []
-    song_summary: dict[str, Any] | None = None
-    song_performance_count = 0
-    mode: ExperienceMode = "quick_fact"
-    title = "Deadbot"
-
-    def add_source(source: SourceReference | None) -> None:
-        if source and source.source_id not in {item.source_id for item in sources}:
-            sources.append(source)
-
-    def add_entity(block: EntityCardBlock) -> None:
-        nonlocal title
-        if block.entity_id not in seen_entities:
-            seen_entities.add(block.entity_id)
-            blocks.append(block)
-            add_source(_canonical_source(block.entity_id))
-            if title == "Deadbot":
-                title = block.title
-
-    def add_resources(resources: Iterable[dict[str, Any]]) -> None:
-        for resource in resources:
-            resource_id = resource.get("resource_id")
-            if not resource_id or resource_id in seen_resources:
-                continue
-            item = _resource_item(resource)
-            if not item:
-                continue
-            seen_resources.add(resource_id)
-            add_source(_resource_source(resource))
-            if resource.get("resource_type") in {"tab", "chord_chart"}:
-                chord_items.append(item)
-            else:
-                resource_items.append(item)
-
-    def add_media(links: Iterable[dict[str, Any]]) -> None:
-        for link in links:
-            url = link.get("url")
-            if not url or url in seen_media:
-                continue
-            block = _media_block(link)
-            if block:
-                seen_media.add(url)
-                blocks.append(block)
-
-    def add_credits(payload: dict[str, Any]) -> None:
-        writers = payload.get("writers")
-        song = payload.get("song") or {}
-        if not isinstance(writers, list) or not isinstance(song, dict):
-            return
-        for writer in writers:
-            if not isinstance(writer, dict):
-                continue
-            person_id = writer.get("person_id", "")
-            person = store.one("people", person_id)
-            role = writer.get("writer_role", "")
-            if not person or not role:
-                continue
-            credit_name = person.get("name") or person_id
-            song_title = song.get("title") or "this song"
-            credit = CreditItem(
-                person_id=person_id,
-                name=credit_name,
-                role=role,
-                follow_up=f"Tell me more about {credit_name}'s {role} role on {song_title}.",
-            )
-            if (credit.person_id, credit.role) not in {(item.person_id, item.role) for item in credit_items}:
-                credit_items.append(credit)
-            if not credit_source_ids:
-                credit_source_ids.append(f"canonical:{song.get('song_id', '')}")
-        for resource in payload.get("resources", []) if isinstance(payload.get("resources"), list) else []:
-            if not isinstance(resource, dict):
-                continue
-            if resource.get("resource_type") not in {"catalog-work-search", "lyrics-and-credits", "catalog-song-page"}:
-                continue
-            source = _resource_source(resource)
-            if source and source.source_id not in credit_source_ids:
-                credit_source_ids.append(source.source_id)
-
-    tool_payloads = _tool_payloads(latest_turn_messages)
-    for payload in tool_payloads:
-        guest_blocks = _guest_appearance_blocks(payload)
-        if guest_blocks:
-            blocks.extend(guest_blocks)
-            mode = "musician"
-            if title == "Deadbot" and len(guest_blocks) == 1:
-                title = guest_blocks[0].person_name
-            for block in guest_blocks:
-                add_source(_canonical_source(block.person_id))
-        show_selection_blocks, show_selection_sources = _show_selection_blocks(payload)
-        if show_selection_blocks:
-            blocks.extend(show_selection_blocks)
-            for source in show_selection_sources:
-                add_source(source)
-            if title == "Deadbot":
-                title = show_selection_blocks[0].title
-            mode = "research"
-        arrangement_search, arrangement_search_sources = _arrangement_search_block(payload, store)
-        if arrangement_search:
-            blocks.append(arrangement_search)
-            mode = "musician"
-            if title == "Deadbot":
-                title = arrangement_search.title
-            for source in arrangement_search_sources:
-                add_source(source)
-        if "song" in payload and isinstance(payload["song"], dict):
-            if song_summary is None:
-                song_summary = payload["song"]
-            if title == "Deadbot":
-                title = payload["song"].get("title") or title
-            song_card = _entity_card_from_song(payload["song"])
-            if song_card:
-                add_entity(song_card)
-            add_credits(payload)
-            performances = payload.get("performances")
-            if isinstance(performances, list):
-                song_performance_count = len([item for item in performances if isinstance(item, dict)])
-                performance_items = [item for item in performances if isinstance(item, dict)]
-                performance_extremes = _performance_extremes(
-                    payload["song"],
-                    performance_items,
-                    store,
-                )
-                if performance_extremes:
-                    blocks.append(performance_extremes)
-                comparison_strip = _comparison_strip(
-                    payload["song"],
-                    performance_items,
-                    store,
-                )
-                if comparison_strip:
-                    blocks.append(comparison_strip)
-                performance_list = _performance_list(
-                    payload["song"],
-                    performance_items,
-                    store,
-                )
-                if performance_list:
-                    blocks.append(performance_list)
-        if "show" in payload and isinstance(payload["show"], dict):
-            show_id = payload["show"].get("show_id")
-            if show_id and show_id not in processed_show_ids:
-                processed_show_ids.add(show_id)
-                add_entity(_entity_card_from_show(payload))
-                performer_list = _show_performers(payload, store)
-                if performer_list:
-                    blocks.append(performer_list)
-                equipment_list = _show_equipment(payload)
-                if equipment_list:
-                    blocks.append(equipment_list)
-                    for item in equipment_list.items:
-                        add_source(
-                            SourceReference(
-                                source_id=item.source_id,
-                                kind="contextual_resource",
-                                label="Jerry Garcia Instrument History",
-                                url=item.source_url,
-                            )
-                        )
-                show_setlist = _show_setlist(payload, store)
-                if show_setlist:
-                    blocks.append(show_setlist)
-                recording_list = _recording_list(payload, store)
-                if recording_list:
-                    for item in recording_list.items:
-                        add_source(
-                            SourceReference(
-                                source_id=item.source_id,
-                                kind="contextual_resource",
-                                label=item.source_type,
-                                url=item.url,
-                            )
-                        )
-                    blocks.append(recording_list)
-        if "performance" in payload and isinstance(payload["performance"], dict):
-            # A performance spine is a richer, non-redundant identifier for a
-            # rendition than a generic entity card. Keep the page title useful
-            # even when this is the only retrieved payload.
-            performance_song = payload.get("song")
-            if title == "Deadbot" and isinstance(performance_song, dict):
-                title = performance_song.get("title") or title
-            performance_spine = _performance_spine(payload, store)
-            if performance_spine:
-                blocks.append(performance_spine)
-            else:
-                add_entity(_entity_card_from_performance(payload))
-        resources = payload.get("resources")
-        if isinstance(resources, list):
-            add_resources(item for item in resources if isinstance(item, dict))
-        # Metadata-only source research is returned as a server-owned packet.
-        # Normalize records into the same resource_list candidate shape as
-        # canonical resources so the final editor can compare them directly.
-        research_packets: list[Any] = []
-        for key in ("research", "research_result", "research_results"):
-            value = payload.get(key)
-            if isinstance(value, dict):
-                records = value.get("records")
-                if isinstance(records, list):
-                    research_packets.extend(records)
-            elif isinstance(value, list):
-                research_packets.extend(value)
-        research_resources = []
-        for record in research_packets:
-            if isinstance(record, dict):
-                resource = _research_resource(record)
-                if resource:
-                    research_resources.append(resource)
-        if research_resources:
-            add_resources(research_resources)
-        links = payload.get("links")
-        if isinstance(links, list):
-            add_media(item for item in links if isinstance(item, dict))
-        show_links = payload.get("show_links")
-        if isinstance(show_links, list):
-            add_media(item for item in show_links if isinstance(item, dict))
-        official_releases = payload.get("official_releases")
-        if isinstance(official_releases, list):
-            add_media(
-                {
-                    "platform": "spotify",
-                    "link_type": "official-release",
-                    "url": release.get("spotify_album_url", ""),
-                    "title": release.get("title", "Official release"),
-                    "is_official": True,
-                }
-                for release in official_releases
-                if isinstance(release, dict) and release.get("spotify_album_url")
-            )
-        for arrangement in (
-            []
-            if arrangement_search
-            else payload.get("arrangements", []) if isinstance(payload.get("arrangements"), list) else []
-        ):
-            if not isinstance(arrangement, dict):
-                continue
-            arrangement_id = arrangement.get("arrangement_id")
-            if not arrangement_id or arrangement_id in seen_arrangements:
-                continue
-            resource = store.one("resources", arrangement.get("resource_id", ""))
-            if not resource:
-                continue
-            source = _resource_source(resource)
-            if not source:
-                continue
-            sections = [
-                section.get("progression", "")
-                for section in store.filtered_rows(
-                    "arrangement_chord_sections", arrangement_id=arrangement_id
-                )
-                if section.get("progression")
-            ]
-            arrangements.append(
-                ArrangementBlock(
-                    type="arrangement",
-                    title=f"Source-specific arrangement: {resource.get('title', 'Chord resource')}",
-                    resource_id=resource["resource_id"],
-                    source_id=source.source_id,
-                    key_signature=arrangement.get("key_signature") or None,
-                    arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
-                    capo=arrangement.get("capo") or None,
-                    tuning=arrangement.get("tuning") or None,
-                    notes=arrangement.get("notes") or None,
-                    progressions=sections,
-                )
-            )
-            seen_arrangements.add(arrangement_id)
-            add_source(source)
-
-    if song_summary is not None:
-        blocks.insert(
-            0,
-            SongOverviewBlock(
-                type="song_overview",
-                song_id=song_summary["song_id"],
-                title=song_summary.get("title") or "Untitled song",
-                original_artist=song_summary.get("original_artist") or None,
-                known_performance_count=song_performance_count,
-                credits=credit_items[:12],
-                source_ids=(
-                    [f"canonical:{song_summary['song_id']}"]
-                    + [source_id for source_id in credit_source_ids if source_id != f"canonical:{song_summary['song_id']}"]
-                )[:8],
-            ),
-        )
-    if resource_items:
-        blocks.append(ResourceListBlock(type="resource_list", title="Further reading and listening", items=resource_items[:8]))
-    if chord_items:
-        blocks.append(ResourceListBlock(type="resource_list", title="Chord charts and arrangements", items=chord_items[:8]))
-    blocks.extend(arrangements[:3])
-    if not blocks:
-        mode = "gap"
-        blocks.append(
-            GapStateBlock(
-                type="gap_state",
-                message="The current experience did not receive a matching grounded result. Try a song, show, or performance that appears in the current library.",
-            )
-        )
-        blocks.append(_coverage_block(store))
-
-    # This is the conservative fallback used when model composition is
-    # disabled or unavailable. Coverage belongs only to a genuine gap packet;
-    # it is not an ordinary-page candidate.
-    visible_indexes = [
-        index
-        for index, block in enumerate(blocks)
-        if block.type not in {"coverage", "provenance_note"}
-    ]
-
-    answer = _final_answer(latest_turn_messages)
-    conversation = _conversation_turns(message_list)
-
-    return ExperienceResponse(
-        thread_id=thread_id,
-        title=title,
-        answer=answer,
-        mode=mode,
-        conversation=conversation,
-        blocks=blocks,
-        layout=[
-            LayoutSection(
-                region="primary" if start == 0 else "supporting",
-                block_indexes=visible_indexes[start : start + 8],
-            )
-            for start in range(0, len(visible_indexes), 8)
-        ],
-        sources=sources,
-    )

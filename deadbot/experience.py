@@ -3,19 +3,14 @@
 This module defines the allowlisted block schema Deadbot's server sends to the
 browser: Pydantic block models, the discriminated ``ExperienceBlock`` union,
 request/response envelopes, and layout/source references. Every browser-facing
-payload is validated against these models, so neither the deterministic
-adapter in :mod:`deadbot.composition` nor the model-guided composer in
-:mod:`deadbot.composer` can pass browser code, raw HTML, or arbitrary embeds
-to the client.
-
-For backward compatibility, the deterministic adapter's names (for example
-``compose_experience_response``) remain importable from this module; they are
-re-exported lazily from :mod:`deadbot.composition` at the bottom of this file.
+payload is validated against these models, so neither the block builders in
+:mod:`deadbot.composition` nor the response assembly in :mod:`deadbot.finish`
+can pass browser code, raw HTML, or arbitrary embeds to the client.
 """
 
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -434,53 +429,3 @@ class ExperienceResponse(ExperienceModel):
     # A 32-block exploratory response can legitimately reference more than one
     # source per block (for example, show identity plus a recording path).
     sources: list[SourceReference] = Field(default_factory=list, max_length=64)
-
-
-# ---------------------------------------------------------------------------
-# Backward-compatible re-exports from the deterministic adapter.
-#
-# The adapter in deadbot.composition imports this schema module, so importing
-# it eagerly here would be circular when deadbot.composition is imported
-# first. A module-level __getattr__ (PEP 562) resolves the moved names lazily,
-# keeping ``from deadbot.experience import compose_experience_response`` (and
-# helper access such as ``experience._comparison_strip``) working regardless
-# of which module is imported first.
-# ---------------------------------------------------------------------------
-
-_COMPOSITION_EXPORTS = frozenset(
-    {
-        "compose_experience_response",
-        "_content_text",
-        "_tool_payloads",
-        "_final_answer",
-        "_latest_turn",
-        "_conversation_turns",
-        "_canonical_source",
-        "_resource_source",
-        "_embed_details",
-        "_resource_item",
-        "_media_block",
-        "_entity_card_from_song",
-        "_entity_card_from_show",
-        "_entity_card_from_performance",
-        "_performance_items",
-        "_performance_list",
-        "_performance_extremes",
-        "_comparison_strip",
-        "_performance_spine",
-        "_show_setlist",
-        "_show_performers",
-        "_show_equipment",
-        "_recording_list",
-        "_coverage_block",
-        "_arrangement_search_block",
-    }
-)
-
-
-def __getattr__(name: str) -> Any:
-    if name in _COMPOSITION_EXPORTS:
-        from deadbot import composition
-
-        return getattr(composition, name)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

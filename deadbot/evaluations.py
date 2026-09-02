@@ -165,7 +165,11 @@ def model_evaluate_suite(
             config=config_factory(f"model-eval-{case['id']}-{index}"),
         )
         messages = result["messages"]
-        answer = str(messages[-1].content)
+        from deadbot.finish import build_experience_response
+
+        response = build_experience_response(case["question"], f"model-eval-{case['id']}", messages, store or CanonicalStore())
+        answer = response.answer
+        body_types = [block.type for block in response.blocks]
         tool_calls = [
             {"name": call["name"], "arguments": call["args"]}
             for message in messages
@@ -177,6 +181,7 @@ def model_evaluate_suite(
                 "id": case["id"],
                 "question": case["question"],
                 "answer": answer,
+                "body_block_types": body_types,
                 "tool_calls": tool_calls,
                 "required_source_urls": required_urls,
                 "required_source_urls_cited": all(url in answer for url in required_urls),

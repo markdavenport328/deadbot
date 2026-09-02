@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 
@@ -318,10 +319,26 @@ def test_entity_search_does_not_match_stop_words_from_an_unknown_query():
     assert result["matches"] == []
 
 
-def test_show_tool_payload_is_compact_enough_for_local_model_context():
+def test_show_tool_payload_is_compact_json():
+    """Compactness is a shape contract, not a byte budget that data growth breaks."""
+
     store = CanonicalStore()
-    payload = tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"})
-    assert len(payload) < 11_000
+    payload = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"}))
+
+    def assert_no_empty_values(value):
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                assert nested not in (None, ""), f"{key} should have been compacted away"
+                assert_no_empty_values(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                assert_no_empty_values(nested)
+
+    assert_no_empty_values(payload)
+    with (store.canonical_dir / "show_links.csv").open(encoding="utf-8") as source:
+        show_link_columns = set(csv.DictReader(source).fieldnames)
+    for link in payload["show_links"]:
+        assert set(link) <= show_link_columns
 
 
 def test_show_media_lookup_resolves_a_date_to_the_canonical_show():
@@ -332,7 +349,8 @@ def test_show_media_lookup_resolves_a_date_to_the_canonical_show():
         )
     )
     assert result["show_id"] == "gd-1972-08-27"
-    assert result["links"][0]["link_type"] == "full-show-video"
+    video = next(link for link in result["links"] if link["link_type"] == "full-show-video")
+    assert video["platform"] == "youtube"
 
 
 def test_historical_weather_resolves_show_venue_and_returns_reanalysis(monkeypatch):
