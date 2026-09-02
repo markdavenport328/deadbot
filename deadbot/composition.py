@@ -729,6 +729,57 @@ def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> Recording
     )
 
 
+def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOverviewBlock | None:
+    song = context.get("song")
+    if not isinstance(song, dict) or not song.get("song_id"):
+        return None
+    credits: list[CreditItem] = []
+    for writer in context.get("writers", []) if isinstance(context.get("writers"), list) else []:
+        person = store.one("people", writer.get("person_id", "")) if isinstance(writer, dict) else None
+        role = writer.get("writer_role", "") if isinstance(writer, dict) else ""
+        if person and role:
+            credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=role, follow_up=None))
+    performances = context.get("performances") if isinstance(context.get("performances"), list) else []
+    return SongOverviewBlock(
+        type="song_overview",
+        song_id=song["song_id"],
+        title=song.get("title") or "Untitled song",
+        original_artist=song.get("original_artist") or None,
+        known_performance_count=len(performances),
+        credits=credits[:12],
+        source_ids=[f"canonical:{song['song_id']}"],
+    )
+
+
+def _arrangement_block(arrangement_id: str, store: CanonicalStore) -> ArrangementBlock | None:
+    # ``store.one`` indexes tables by ``<singular>_id``; this table's key is
+    # ``arrangement_id``, so look it up by scanning the rows.
+    arrangement = next((row for row in store.rows("song_arrangements") if row.get("arrangement_id") == arrangement_id), None)
+    if not arrangement:
+        return None
+    resource = store.one("resources", arrangement.get("resource_id", ""))
+    source = _resource_source(resource) if resource else None
+    if not resource or not source:
+        return None
+    sections = [
+        section.get("progression", "")
+        for section in store.filtered_rows("arrangement_chord_sections", arrangement_id=arrangement_id)
+        if section.get("progression")
+    ]
+    return ArrangementBlock(
+        type="arrangement",
+        title=f"Source-specific arrangement: {resource.get('title', 'Chord resource')}",
+        resource_id=resource["resource_id"],
+        source_id=source.source_id,
+        key_signature=arrangement.get("key_signature") or None,
+        arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
+        capo=arrangement.get("capo") or None,
+        tuning=arrangement.get("tuning") or None,
+        notes=arrangement.get("notes") or None,
+        progressions=sections[:6],
+    )
+
+
 def _coverage_block(store: CanonicalStore) -> CoverageBlock:
     coverage = store.coverage_summary()
     if coverage["first_year"] and coverage["last_year"]:
