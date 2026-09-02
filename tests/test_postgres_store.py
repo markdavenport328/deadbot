@@ -63,7 +63,17 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "position_in_set": "2",
             "encore": "false",
             "segue_into_next": "true",
-        }
+        },
+        {
+            "performance_id": "performance-dark-star-no-links",
+            "show_id": "show-1972-08-27",
+            "song_id": "song-dark-star",
+            "set_number": "3",
+            "set_label": "Set 3",
+            "position_in_set": "5",
+            "encore": "false",
+            "segue_into_next": "false",
+        },
     ],
     "song_writers": [
         {
@@ -155,6 +165,8 @@ TABLES: dict[str, list[dict[str, Any]]] = {
         {
             "performance_link_id": "pl-1",
             "performance_id": "performance-dark-star",
+            "platform": "archive",
+            "link_type": "recording-track",
             "url": "https://example.test/play",
         }
     ],
@@ -178,6 +190,7 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "official_release_track_id": "ort-1",
             "release_id": "release-sunshine-daydream",
             "performance_id": "performance-dark-star",
+            "spotify_track_url": "https://open.spotify.test/track/1",
         }
     ],
 }
@@ -275,7 +288,14 @@ def test_context_methods_match_existing_domain_projection(store, csv_store):
     assert store.resources_for("resource_songs", "song_id", song["song_id"]) == csv_store.resources_for(
         "resource_songs", "song_id", song["song_id"]
     )
-    assert store.song_context(song) == csv_store.song_context(song)
+    song_context = store.song_context(song)
+    assert song_context == csv_store.song_context(song)
+    performances_by_id = {row["performance_id"]: row for row in song_context["performances"]}
+    assert performances_by_id["performance-dark-star"]["listen"] == {
+        "archive_track_url": "https://example.test/play",
+        "release_track_url": "https://open.spotify.test/track/1",
+    }
+    assert "listen" not in performances_by_id["performance-dark-star-no-links"]
     assert store.arrangement_search("a") == csv_store.arrangement_search("a")
     assert store.equipment_history(equipment) == csv_store.equipment_history(equipment)
     assert store.show_context(show) == csv_store.show_context(show)

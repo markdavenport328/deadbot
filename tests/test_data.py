@@ -28,6 +28,28 @@ def tool_by_name(store: CanonicalStore, name: str):
     return next(tool for tool in build_tools(store) if tool.name == name)
 
 
+def test_song_context_adds_a_compact_listening_path_per_performance():
+    store = CanonicalStore()
+    song = store.resolve_song("Deal")
+    payload = store.song_context(song)
+    performances_by_id = {row["performance_id"]: row for row in payload["performances"]}
+
+    both_kinds = performances_by_id["gd-1979-11-06-deal-1-11"]
+    assert both_kinds["listen"] == {
+        "archive_track_url": "https://archive.org/details/gd1979-11-06.137296.sbd.GEMS.flac16/gd1979-11-06s1t17.mp3",
+        "release_track_url": "https://open.spotify.com/track/5ePRqn1CsdffrUXEvqtEiW",
+    }
+
+    archive_only = performances_by_id["gd-1971-03-20-deal-1-6"]
+    assert archive_only["listen"] == {
+        "archive_track_url": "https://archive.org/details/gd71-03-20.sbd.barbella.5582.sbeok.shnf/gd71-03-20d1t06.mp3",
+    }
+    assert "release_track_url" not in archive_only["listen"]
+
+    no_links = performances_by_id["gd-1971-02-19-deal-2-5"]
+    assert "listen" not in no_links
+
+
 def test_deadnet_song_context_returns_metadata_only_research_packet(monkeypatch):
     store = CanonicalStore()
 

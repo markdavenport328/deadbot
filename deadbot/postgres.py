@@ -429,13 +429,21 @@ class PostgresCanonicalStore(CanonicalStore):
     def song_context(self, song: dict[str, str]) -> dict[str, Any]:
         song_id = song["song_id"]
         relationships = self._filtered_rows("resource_songs", song_id=song_id)
+        performances = self._filtered_rows("performances", song_id=song_id)
+        performance_ids = [row["performance_id"] for row in performances]
         tables = {
             "song_writers": self._filtered_rows("song_writers", song_id=song_id),
-            "performances": self._filtered_rows("performances", song_id=song_id),
+            "performances": performances,
             "song_arrangements": self._filtered_rows("song_arrangements", song_id=song_id),
             "resource_songs": relationships,
             "resources": self._rows_in(
                 "resources", "resource_id", (row["resource_id"] for row in relationships)
+            ),
+            "performance_links": self._rows_in(
+                "performance_links", "performance_id", performance_ids
+            ),
+            "official_release_tracks": self._rows_in(
+                "official_release_tracks", "performance_id", performance_ids
             ),
         }
         return CanonicalStore.song_context(self._projection(tables), song)

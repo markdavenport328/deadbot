@@ -194,13 +194,62 @@ class CanonicalStore:
         writers = [row for row in self.rows("song_writers") if row["song_id"] == song_id]
         performances = [row for row in self.rows("performances") if row["song_id"] == song_id]
         arrangements = [row for row in self.rows("song_arrangements") if row["song_id"] == song_id]
+        performance_ids = {row["performance_id"] for row in performances}
+        listen_by_performance = self._listen_paths(performance_ids)
+        performance_summaries = []
+        for row in performances:
+            summary = self._performance_summary(row, include_show_id=True)
+            listen = listen_by_performance.get(row["performance_id"])
+            if listen:
+                summary["listen"] = listen
+            performance_summaries.append(summary)
         return {
             "song": song,
             "writers": writers,
-            "performances": [self._performance_summary(row, include_show_id=True) for row in performances],
+            "performances": performance_summaries,
             "resources": self.resources_for("resource_songs", "song_id", song_id),
             "arrangements": arrangements,
         }
+
+    def _listen_paths(self, performance_ids: set[str]) -> dict[str, dict[str, str]]:
+        """Build a compact per-performance listening path: URLs only.
+
+        An archive track link comes from ``performance_links`` rows tagged as
+        an Internet Archive recording track; a release track link comes from
+        the first ``official_release_tracks`` row for that performance with a
+        resolvable streaming URL. A performance with neither is omitted
+        entirely rather than carrying empty listening keys.
+        """
+
+        archive_urls: dict[str, str] = {}
+        for row in self.rows("performance_links"):
+            performance_id = row.get("performance_id", "")
+            if performance_id not in performance_ids or performance_id in archive_urls:
+                continue
+            if row.get("platform") == "archive" and row.get("link_type") == "recording-track":
+                url = row.get("url", "")
+                if url:
+                    archive_urls[performance_id] = url
+
+        release_urls: dict[str, str] = {}
+        for row in self.rows("official_release_tracks"):
+            performance_id = row.get("performance_id", "")
+            if performance_id not in performance_ids or performance_id in release_urls:
+                continue
+            url = row.get("spotify_track_url", "")
+            if url:
+                release_urls[performance_id] = url
+
+        listen: dict[str, dict[str, str]] = {}
+        for performance_id in performance_ids:
+            paths: dict[str, str] = {}
+            if performance_id in archive_urls:
+                paths["archive_track_url"] = archive_urls[performance_id]
+            if performance_id in release_urls:
+                paths["release_track_url"] = release_urls[performance_id]
+            if paths:
+                listen[performance_id] = paths
+        return listen
 
     def song_performance_profile(self, song: dict[str, str]) -> dict[str, Any]:
         """Derive bounded performance observations for one song.
