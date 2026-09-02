@@ -139,6 +139,18 @@ unedited database packet as though it were a finished experience. Editorial
 failures are diagnosed at the model boundary and improved through context,
 tools, prompting, palette design, and evaluations.
 
+Research resources resolve differently from stored components. A reviewed
+Dead.net tool result is referenced by a projected id, `research:<source>:<identifier>`,
+and application code resolves it by re-matching that id against the turn's
+own tool output rather than looking it up in the store; the host allowlist
+in `deadbot/composition.py` still governs which URLs those tools can ever
+surface to the browser. An editorial item may also carry its own outbound
+link alongside its title, value, or detail. The browser renders markdown
+links in the chat answer, lead, and editorial text, and renders an
+editorial item's link the same way, so an outbound link (marked ↗) reads
+distinctly from an ask-Deadbot follow-up button (marked →) that keeps the
+visitor in the conversation instead of sending them away from it.
+
 ## Media and external-resource safety
 
 Deadbot links to externally hosted media; it does not host, download, or proxy it. A media player is allowed only for providers with a deliberately implemented embed adapter, initially Spotify and YouTube where the provider's terms and available link form permit it.
@@ -171,7 +183,7 @@ multi-process session store. Persistent conversation history is a later
 operational feature and must include retention, privacy, and authentication
 decisions before it replaces this boundary.
 
-Streaming is a follow-on capability. When added, it should emit typed progress events such as retrieval started, tool completed, composition completed, and final response. Tool payloads, model reasoning, and internal prompts should not be exposed to the browser by default.
+Streaming is a follow-on capability. When added, it should emit typed progress events such as retrieval started, tool completed, plan resolution completed, and final response. Tool payloads, model reasoning, and internal prompts should not be exposed to the browser by default.
 
 Authentication, rate limits, persistent conversation storage, and deployment configuration are separate product decisions. Their eventual addition must not weaken the read-only tool boundary or make the client a direct data-store or model client.
 
@@ -183,7 +195,7 @@ The experience layer requires tests at three levels:
 - **Renderer tests:** every implemented block has an accessible fallback and external links show their source/provider context.
 - **End-to-end examples:** representative Veneta questions produce a grounded answer with the expected cards, links, provenance notes, or gap state.
 
-Record enough server-side trace information to diagnose a bad composition: schema version, selected block types, referenced canonical/resource IDs, and validation fallback reason. Do not record protected source text or model reasoning merely for UI analytics.
+Record enough server-side trace information to diagnose a bad plan resolution: schema version, selected block types, referenced canonical/resource IDs, and validation fallback reason. Do not record protected source text or model reasoning merely for UI analytics.
 
 ## Non-goals
 

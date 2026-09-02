@@ -8,7 +8,13 @@ user message → model chooses a read-only tool → tool result enters graph sta
      └──── model chooses another tool, or calls finish_response ┘
 ```
 
-The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the repository, canonical graph, or external sources through this harness. A turn ends only when a `finish_response` call validates. If its arguments fail validation, the tool result carries an error and the loop returns to the model so it can correct the call. If the model exhausts the round budget, or ends a turn without calling `finish_response`, or delivers a blank chat answer, the application logs a warning and falls back to the last assistant text (or the lead, or a short placeholder) with a gap-state body rather than failing the request.
+The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the repository, canonical graph, or external sources through this harness. A turn ends only when a `finish_response` call validates, and the application handles three distinct outcomes short of that:
+
+- If `finish_response`'s arguments fail validation, the tool result carries an error and the loop returns to the model so it can correct the call, still bounded by the round budget.
+- If the model ends a turn without calling `finish_response` at all, the application logs a warning and shows the last assistant text, or a short placeholder, with a gap-state body.
+- If a validated `finish_response` call delivers a blank chat answer, the application logs a warning and shows the lead, or a short placeholder, in its place; the plan's body still renders normally.
+
+Exhausting the round budget is not a graceful fallback: LangGraph raises a recursion error at the limit, and the request fails with an HTTP 503 rather than returning a partial response.
 
 ## Initial tool surface
 
