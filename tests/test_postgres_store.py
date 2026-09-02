@@ -74,6 +74,16 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "encore": "false",
             "segue_into_next": "false",
         },
+        {
+            "performance_id": "performance-dark-star-release-only",
+            "show_id": "show-1972-08-27",
+            "song_id": "song-dark-star",
+            "set_number": "3",
+            "set_label": "Set 3",
+            "position_in_set": "6",
+            "encore": "false",
+            "segue_into_next": "false",
+        },
     ],
     "song_writers": [
         {
@@ -191,7 +201,26 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "release_id": "release-sunshine-daydream",
             "performance_id": "performance-dark-star",
             "spotify_track_url": "https://open.spotify.test/track/1",
-        }
+        },
+        # Listed here in raw (non-alphabetical) release_id order on purpose: a
+        # naive "first row encountered" selection would pick this row's URL,
+        # while PostgreSQL's ORDER BY release_id would pick the other row's
+        # URL first. The deterministic sort in _listen_paths must make both
+        # stores agree on "release-alpha-sessions" regardless of row order.
+        {
+            "official_release_track_id": "ort-2",
+            "release_id": "release-sunshine-daydream",
+            "performance_id": "performance-dark-star-release-only",
+            "track_number": "9",
+            "spotify_track_url": "https://open.spotify.test/track/sunshine-dup",
+        },
+        {
+            "official_release_track_id": "ort-3",
+            "release_id": "release-alpha-sessions",
+            "performance_id": "performance-dark-star-release-only",
+            "track_number": "1",
+            "spotify_track_url": "https://open.spotify.test/track/alpha",
+        },
     ],
 }
 
@@ -289,13 +318,24 @@ def test_context_methods_match_existing_domain_projection(store, csv_store):
         "resource_songs", "song_id", song["song_id"]
     )
     song_context = store.song_context(song)
-    assert song_context == csv_store.song_context(song)
+    csv_song_context = csv_store.song_context(song)
+    assert song_context == csv_song_context
     performances_by_id = {row["performance_id"]: row for row in song_context["performances"]}
+    csv_performances_by_id = {row["performance_id"]: row for row in csv_song_context["performances"]}
     assert performances_by_id["performance-dark-star"]["listen"] == {
         "archive_track_url": "https://example.test/play",
         "release_track_url": "https://open.spotify.test/track/1",
     }
     assert "listen" not in performances_by_id["performance-dark-star-no-links"]
+    # "performance-dark-star-release-only" has no performance_links row (so no
+    # archive_track_url) and two official_release_tracks rows with different
+    # spotify_track_url values. Both stores must deterministically pick the
+    # same one ("release-alpha-sessions" sorts first) regardless of the raw
+    # row order each store happens to iterate.
+    for by_id in (performances_by_id, csv_performances_by_id):
+        assert by_id["performance-dark-star-release-only"]["listen"] == {
+            "release_track_url": "https://open.spotify.test/track/alpha",
+        }
     assert store.arrangement_search("a") == csv_store.arrangement_search("a")
     assert store.equipment_history(equipment) == csv_store.equipment_history(equipment)
     assert store.show_context(show) == csv_store.show_context(show)
