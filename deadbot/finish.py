@@ -22,7 +22,6 @@ from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from deadbot import composition
-from deadbot.composition import _latest_turn, _tool_payloads
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     ConversationTurn,
@@ -525,6 +524,9 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
     blocks, sources = resolve_body(plan, grounded, payloads, store)
     chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
     lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None
+    if not chat_answer.strip():
+        logger.warning("finish_response delivered a blank chat_answer (question=%r); substituting the lead or a placeholder", question)
+        chat_answer = lead if lead else "Deadbot could not write a chat answer for this response."
     return ExperienceResponse(
         thread_id=thread_id,
         title=plan.title.strip() or "Deadbot",

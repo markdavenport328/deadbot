@@ -300,3 +300,22 @@ def test_build_experience_response_only_uses_the_latest_turn():
     response = finish.build_experience_response("Second", "web-1", messages, store)
     assert response.title == "Later" and response.blocks == []
     assert [turn.text for turn in response.conversation] == ["First", "Earlier.", "Second", "Later."]
+
+
+def test_build_experience_response_substitutes_a_placeholder_for_a_blank_chat_answer(caplog):
+    store = CanonicalStore()
+    plan = {"chat_answer": "   ", "title": "t", "lead": None, "mode": "quick_fact", "body": []}
+    messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
+    with caplog.at_level("WARNING"):
+        response = finish.build_experience_response("Hi", "web-1", messages, store)
+    assert response.answer == "Deadbot could not write a chat answer for this response."
+    assert response.conversation[-1].text == response.answer
+    assert "blank chat_answer" in caplog.text
+
+
+def test_build_experience_response_substitutes_the_lead_for_a_blank_chat_answer():
+    store = CanonicalStore()
+    plan = {"chat_answer": "   ", "title": "t", "lead": "A short lead.", "mode": "quick_fact", "body": []}
+    messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
+    response = finish.build_experience_response("Hi", "web-1", messages, store)
+    assert response.answer == "A short lead."
