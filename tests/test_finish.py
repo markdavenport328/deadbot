@@ -156,3 +156,84 @@ def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
     )
     blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
     assert blocks[0].type == "guest_appearance_list" and blocks[0].person_id == person_id
+
+
+def test_resolve_body_resolves_research_and_canonical_resources_together():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    song_payload = store.song_context(song)
+    canonical_resource_id = song_payload["resources"][0]["resource_id"]
+    research_payload = {
+        "research": {
+            "state": "ok",
+            "coverage": "metadata_only",
+            "source": "dead.net",
+            "records": [
+                {
+                    "entity_type": "song",
+                    "identifier": "sugaree",
+                    "title": "Sugaree | Dead.net",
+                    "url": "https://www.dead.net/song/sugaree",
+                    "description": "",
+                    "published_at": "",
+                    "source": "dead.net",
+                }
+            ],
+        }
+    }
+    payloads = [song_payload, research_payload]
+    grounded = finish.grounded_context(payloads)
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        lead=None,
+        mode="research",
+        body=[
+            finish.ResourceListRef(
+                type="resource_list",
+                resource_ids=[canonical_resource_id, "research:dead.net:sugaree", "research:dead.net:missing"],
+            )
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
+    block = blocks[0]
+    assert block.type == "resource_list"
+    titles = [item.title for item in block.items]
+    assert "Sugaree | Dead.net" in titles
+    assert song_payload["resources"][0]["title"] in titles
+    assert len(block.items) == 2
+
+
+def test_resolve_body_resolves_song_overview():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    payload = store.song_context(song)
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="quick_fact",
+        body=[finish.SongOverviewRef(type="song_overview", song_id=song["song_id"])],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    block = blocks[0]
+    assert block.type == "song_overview"
+    assert block.title == song["title"]
+    assert block.known_performance_count > 0
+    assert block.credits and all(credit.name for credit in block.credits)
+
+
+def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
+    store = CanonicalStore()
+    arrangement = next(iter(store.rows("song_arrangements")), None)
+    assert arrangement is not None, "expected at least one row in song_arrangements for this test"
+    song = store.one("songs", arrangement["song_id"])
+    payload = store.song_context(song)
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="musician",
+        body=[finish.ArrangementRef(type="arrangement", arrangement_id=arrangement["arrangement_id"])],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    block = blocks[0]
+    assert block.type == "arrangement"
+    assert block.resource_id == arrangement["resource_id"]
+    assert isinstance(block.progressions, list)

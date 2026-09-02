@@ -28,7 +28,6 @@ from deadbot.experience import (
     EditorialBlock as _EditorialBlock,
     ExperienceBlock,
     ExperienceMode,
-    RecordingListBlock,
     ResourceListBlock,
     SourceReference,
 )
@@ -236,6 +235,33 @@ def _find_in_payloads(payloads: list[dict[str, Any]], key: str, match_key: str, 
     return None
 
 
+def _find_research_resource(payloads: list[dict[str, Any]], resource_id: str) -> dict[str, Any] | None:
+    """Locate a research-sourced resource by its projected id.
+
+    ``composition._research_resource`` synthesizes ``research:<source>:<identifier>``
+    from a raw research record, so that id never appears verbatim in tool output for
+    ``grounded.ids`` to have captured. It is grounded by construction instead: this
+    scans the turn's research payloads and re-projects each record to find the match.
+    """
+
+    for payload in payloads:
+        for key in ("research", "research_result", "research_results"):
+            value = payload.get(key)
+            if isinstance(value, dict):
+                records = value.get("records")
+            elif isinstance(value, list):
+                records = value
+            else:
+                records = None
+            for candidate in records or []:
+                if not isinstance(candidate, dict):
+                    continue
+                projected = composition._research_resource(candidate)
+                if projected and projected["resource_id"] == resource_id:
+                    return projected
+    return None
+
+
 def _resolve_reference(
     item: Any,
     grounded: GroundedContext,
@@ -346,20 +372,19 @@ def _resolve_reference(
     if kind == "resource_list":
         rows: list[Any] = []
         for resource_id in item.resource_ids:
-            if resource_id not in grounded.ids:
-                continue
-            resource = store.one("resources", resource_id)
-            if not resource:
-                record = _find_in_payloads(payloads, "resources", "resource_id", resource_id)
-                if record is None:
-                    for payload in payloads:
-                        research = payload.get("research")
-                        records = research.get("records") if isinstance(research, dict) else None
-                        for candidate in records or []:
-                            projected = composition._research_resource(candidate) if isinstance(candidate, dict) else None
-                            if projected and projected["resource_id"] == resource_id:
-                                record = projected
-                resource = record
+            resource: dict[str, Any] | None
+            if resource_id.startswith("research:"):
+                # A research resource's id is synthesized by the projection, not
+                # copied from tool output, so it cannot appear in grounded.ids.
+                # It is grounded by construction: only ids re-derivable from this
+                # turn's own research payloads can match.
+                resource = _find_research_resource(payloads, resource_id)
+            else:
+                if resource_id not in grounded.ids:
+                    continue
+                resource = store.one("resources", resource_id)
+                if not resource:
+                    resource = _find_in_payloads(payloads, "resources", "resource_id", resource_id)
             entry = composition._resource_item(resource) if resource else None
             if entry:
                 rows.append(entry)
