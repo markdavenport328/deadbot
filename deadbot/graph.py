@@ -63,12 +63,21 @@ def route_after_model(state: MessagesState) -> str:
 
 
 def route_after_tools(state: MessagesState) -> str:
-    """End the turn once the latest batch of tool results includes the delivered response."""
+    """End the turn once the latest batch of tool results includes a successfully
+    delivered response. An errored ``finish_response`` call (its arguments failed
+    ``FinishPlan`` validation) is not a delivered response: routing back to
+    ``agent`` lets the model see the tool error and retry, bounded by
+    ``recursion_limit``.
+    """
 
     for message in reversed(state["messages"]):
         if getattr(message, "type", None) == "ai":
             break
-        if getattr(message, "type", None) == "tool" and getattr(message, "name", None) == FINISH_TOOL_NAME:
+        if (
+            getattr(message, "type", None) == "tool"
+            and getattr(message, "name", None) == FINISH_TOOL_NAME
+            and getattr(message, "status", None) != "error"
+        ):
             return END
     return "agent"
 
