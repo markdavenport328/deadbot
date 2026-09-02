@@ -40,8 +40,8 @@ The models decide what a particular question needs from the material available.
 
 This is an internal collection and review budget. It directs research effort
 across the repertoire and carries no runtime rank or cohort-size metadata into
-the model's tools, prompt, or decision brief. Let collected evidence determine
-the mix. Start with a transparent candidate score and preserve its dimensions:
+the model's tools, prompt, or retrieved context. Let collected evidence
+determine the mix. Start with a transparent candidate score and preserve its dimensions:
 
 - recurring version or recommendation discussion from independent, dated fan
   signals;

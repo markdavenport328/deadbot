@@ -167,6 +167,6 @@ How Deadbot uses Relisten in this pass, consistent with those findings:
    collected"; usage considerations "TBD") and `scripts/README.md` (new
    collector and normalizer).
 6. `link_type` values `streaming-show-page` and `recording-index` and platform
-   value `archive` are new; the schema imposes no vocabulary, but the composer
-   and media-link tooling should be checked for any assumptions about
-   `full-show-video`.
+   value `archive` are new; the schema imposes no vocabulary, but
+   `deadbot/composition.py` and the media-link tooling should be checked for
+   any assumptions about `full-show-video`.

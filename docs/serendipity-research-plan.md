@@ -130,8 +130,9 @@ database-only lore corpus.
    and rights review.
 3. **Done:** build the resolved-song Dead.net metadata reader and bounded
    Deadcast metadata reader; both return coverage states and source links.
-4. **Done:** add an initial reviewed lore-trail catalog and pass discovery
-   leads, research results, and resource candidates into the decision brief.
+4. **Done:** add an initial reviewed lore-trail catalog and make discovery
+   leads, research results, and resource candidates available to the model
+   through its read-only tools.
 5. **Next:** evaluate live model traces for direct facts, listening requests,
    song evolution, show lore, and unavailable-source cases; use the findings to
    improve the persona, tool descriptions, and source paths.

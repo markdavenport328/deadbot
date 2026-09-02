@@ -76,6 +76,13 @@ The model may select and order approved blocks; it must not generate HTML, CSS, 
 
 **Implementation note:** Begin with a deterministic adapter that produces the same response contract from agent/tool results. Add a separate model-guided composer only after the contract, renderers, and evaluation examples are in place. Spotify and YouTube embeds, when supported, are built by trusted provider adapters from approved stored media links; all other links remain normal outbound links. See `docs/experience-architecture.md`.
 
+**2026-09 update:** The separate model-guided composer described above was
+built, then merged back into the single research model: one model now ends
+its turn by calling `finish_response` with the chat answer and body plan in
+one step, and `deadbot/finish.py` resolves that plan into the same validated
+response contract. Do not reintroduce a second model step or a handoff
+between models; see `docs/agent-harness.md` and `docs/experience-architecture.md`.
+
 ## ADR-012 — Bounded, retry-safe collection passes
 
 **Decision:** Organize collection as bounded enumeration and typed enrichment

@@ -3,10 +3,14 @@
 External links are first-class, queryable graph records. A model should discover
 relevant resources through structured lookup before opening a reviewed source.
 
-## The answer brief
+## What the model retrieves
 
-The agent answers from a compact decision brief assembled for the current
-question. Its layers have different jobs:
+One model owns the whole turn. It calls read-only tools directly for what the
+current question needs, then ends the turn with one `finish_response` call
+carrying the chat answer and main-body plan. There is no separate
+research-then-compose step and no assembled hand-off packet between models;
+the tools' JSON output, gathered over however many calls the turn takes, is
+what the model reasons over. That output serves different jobs:
 
 - **Canonical facts** answer identity, date, set order, people, recording, and
   release questions.
@@ -17,14 +21,15 @@ question. Its layers have different jobs:
 - **Source trails and research results** make selected lore, criticism, oral
   history, and listening paths available when they add something worth
   exploring.
-- **Eligible experience blocks** let the model put a detailed list,
-  comparison, recording route, or source trail in the main column when that is
-  the clearest answer.
+- **Eligible experience blocks** let the model reference a library component
+  by canonical ID in `finish_response`'s body plan — a detailed list,
+  comparison, recording route, or source trail — when that is the clearest
+  answer.
 
-The model chooses which of these layers serve the question. A straightforward
+The model chooses which of these serve the question. A straightforward
 fact can stand on its own; the same fact can open into a source trail when that
 adds a useful connection. Cohort files and review queues remain internal
-collection-planning artifacts and are excluded from runtime answer packets.
+collection-planning artifacts and are excluded from runtime tool output.
 
 ## Retrieval path
 
