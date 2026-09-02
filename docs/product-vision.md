@@ -91,8 +91,9 @@ bounded retrieval patterns rather than create isolated show dossiers. See
 
 ## How an answer becomes an experience
 
-Grounded retrieval feeds a final editorial step that writes the direct chat
-answer and shapes the supporting body. The model can synthesize narrative,
+One model owns the whole turn. It researches with read-only tools and then
+calls `finish_response`, whose arguments are the direct chat answer and the
+plan for the supporting body. The model can synthesize narrative,
 compact facts, or a timeline and mix those with domain-rich components such as
 setlists, recordings, arrangements, and media. It owns relevance, omission,
 emphasis, and reading order; the application supplies the visual vocabulary and

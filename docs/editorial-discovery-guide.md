@@ -16,5 +16,7 @@ instructions. It performs no network calls.
 
 At agent construction, `model_discovery_brief()` provides the answering model
 the whole compact inventory. The model decides which leads fit, which ones to
-combine, and when a direct answer needs no exploration. The composer retains
-its separate, narrower job of selecting only server-owned main-column blocks.
+combine, and when a direct answer needs no exploration. Whatever it chooses
+reaches the visitor through its own `finish_response` call; the server's
+narrower job is to resolve that plan's references into server-owned
+main-column blocks.

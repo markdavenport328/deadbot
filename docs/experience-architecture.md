@@ -130,6 +130,11 @@ repetition. It does not provide a checklist for a "complete" guide or
 block-specific placement rules. The model decides relevance, emphasis,
 omission, titles, and reading order.
 
+Grounding is id-level and deliberate: a component may be referenced by any
+canonical ID that appeared in this turn's tool output, including a search
+result, and the server then fetches the full component from the store — the
+model does not have to re-retrieve an entity in full before it can show it.
+
 Application code enforces only the response shape: it resolves referenced
 component IDs against the store, drops any link whose URL the tools did not
 return this turn, and rejects a call that does not fit the schema so the

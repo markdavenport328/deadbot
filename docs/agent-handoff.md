@@ -12,7 +12,7 @@ Use this guide when joining the Deadbot project midstream.
 5. `docs/decisions.md` for durable architectural choices.
 6. `docs/provenance-policy.md`, `docs/graph-scope.md`, and `docs/model-retrieval.md` before changing data or retrieval behavior.
 7. `docs/agent-harness.md` before changing the LangGraph runtime.
-8. `docs/experience-architecture.md` before changing the FastAPI API, composer, or frontend blocks.
+8. `docs/experience-architecture.md` before changing the FastAPI API, the `finish_response` plan and its resolution, or frontend blocks.
 
 ## Current state
 
@@ -60,8 +60,11 @@ The tests do not require Ollama. The chat command requires a running local Ollam
 The agent loop is:
 
 ```text
-user message → model chooses local read-only tool(s) → model answers
+user message → model chooses local read-only tool(s) → model calls
+finish_response with the chat answer and main-body plan
 ```
+
+One model owns the whole turn; there is no second editing model.
 
 The tools resolve entities and return canonical facts, typed relationships,
 arrangements, equipment history, contextual data, and external media links.
@@ -83,7 +86,7 @@ independently of any model.
    show fact, a Cornell fact with optional source trail, “best Sugar Magnolia
    recordings,” Friend of the Devil across decades, Veneta's notable weather,
    source unavailability, and a quick fact that should stay compact.
-2. Use the traces to improve the research handoff, tool descriptions,
+2. Use the traces to improve the tool outputs, tool descriptions,
    presentation palette, persona, goal, and model configuration. The model
    chooses relevance, synthesis, omission, and reading order; application code
    stays focused on response shape and resolving supplied references.
