@@ -5,10 +5,10 @@ Deadbot uses **LangGraph** as its permanent agent harness. The first graph is a 
 ```text
 user message → model chooses a read-only tool → tool result enters graph state
      ↑                                                    ↓
-     └──────── model either chooses another tool or answers ┘
+     └──── model chooses another tool, or calls finish_response ┘
 ```
 
-The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the repository, canonical graph, or external sources through this harness.
+The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the repository, canonical graph, or external sources through this harness. A turn ends only when a `finish_response` call validates. If its arguments fail validation, the tool result carries an error and the loop returns to the model so it can correct the call. If the model exhausts the round budget, or ends a turn without calling `finish_response`, or delivers a blank chat answer, the application logs a warning and falls back to the last assistant text (or the lead, or a short placeholder) with a gap-state body rather than failing the request.
 
 ## Initial tool surface
 
@@ -32,6 +32,7 @@ The loop is bounded by `DEADBOT_MAX_TOOL_ROUNDS`; a model cannot write to the re
 - `get_historical_weather` — show-date weather for the venue area from Open-Meteo historical reanalysis, with the limitation clearly labeled. Use it when a question or a stored source makes weather material (for example heat, rain, lightning, or snow), not to infer an event context for every outdoor show.
 - `get_astronomy` — local Sun and Moon rise/set, twilight, transit, and lunar-phase context from the U.S. Naval Observatory.
 - `get_astrology` — date-based Western zodiac context, explicitly labeled as cultural/interpretive rather than scientific.
+- `finish_response` — the only way a turn ends: the model's chat answer and main-body plan, resolved by `deadbot/finish.py`.
 
 All tools are read only. The canonical-data tools do not fetch arbitrary web pages; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. They return the source URL and retrieval metadata, while a later, sandboxed source-reader tool can retrieve only resources that are already present in `resources.csv`.
 

@@ -147,11 +147,14 @@ These boundaries are intentional and should not be bypassed casually:
 - A resource URL is a link-out reference. It does not turn an interview statement, memoir, or editorial interpretation into a canonical fact.
 - Do not copy full lyrics, tabs, transcriptions, audio, or video into the repository.
 - The local model is useful for harness development, but its answer quality has not yet been evaluated against a Deadbot-specific test set.
-- The model-guided composer is the final response editor: it writes the concise
-  visible chat answer and shapes the main body in the same decision. It can
-  synthesize grounded narrative, fact grids, and timelines as well as select
-  richer domain components. It cannot write browser code or facts outside the
-  grounded packet.
+- One model owns the whole turn: it researches with read-only tools and ends
+  by calling `finish_response`, writing the concise visible chat answer and
+  the main body in the same decision. It can synthesize grounded narrative,
+  fact grids, and timelines as well as reference richer library components.
+  It cannot write browser code or facts outside what it retrieved this turn.
+- 2026-09: merged the research and editing models into one loop with a
+  `finish_response` tool; removed `deadbot/composer.py`; editorial items can
+  carry grounded outbound links.
 - `AGENTS.md` records the project-wide model-first principle: favor richer
   grounded context, useful tools, a clear persona and goal, and an expressive
   presentation palette. Deterministic code is transport and structure, not an
@@ -221,14 +224,15 @@ a validated response that makes canonical data, contextual sources, and media
 paths visibly distinct; the full flow is checked with both API and browser-level
 tests.
 
-### 4. Evaluate and tune the final editor
+### 4. Evaluate and tune the single agent loop
 
-The final editor now receives the full grounded candidates without prescriptive
-per-block usage or placement guidance. It writes chat and body together and can
-shape facts into narrative, a compact fact grid, or a timeline before selecting
-any domain-rich candidates worth retaining. Run it against representative
-questions and tune the research handoff, persona, goal, palette, and model
-configuration—not keyword routing or example-specific component rules.
+The model now researches with read-only tools and ends the turn with
+`finish_response`, without prescriptive per-block usage or placement
+guidance. It writes chat and body together and can shape facts into
+narrative, a compact fact grid, or a timeline before referencing any
+domain-rich library components worth retaining. Run it against
+representative questions and tune its tools, persona, goal, palette, and
+model configuration—not keyword routing or example-specific component rules.
 
 Add example-based evaluations that judge the experience as a whole: directness
 in chat, usefulness and interest in the body, non-duplication, groundedness, and
@@ -236,7 +240,7 @@ whether the chosen presentation helps the particular material. Do not make a
 specific block choice the expected answer unless that component is itself the
 feature under test.
 
-**Done when:** model composition reliably produces a concise chat answer and a
+**Done when:** the model reliably produces a concise chat answer and a
 useful, grounded main body without deterministic editorial correction.
 
 ### 5. Add curated source research and a restricted source-reader
@@ -254,7 +258,7 @@ Dead.net/Deadcast registry seed, and a bounded metadata-only Dead.net song
 reader are in place. The reader starts from a canonical song, follows the
 registry's approved host/path rules, returns explicit `ok`/`empty`/`partial`/
 `blocked`/`unavailable` states, and contributes only a vetted resource link to
-the model's decision brief and main-column candidate inventory. The same path
+the model's tool output for it to reference in its plan. The same path
 has a deterministic resource-list fallback. It retains neither article body nor
 lyrics. Source discovery/search, show/performance routes, snapshot persistence,
 and any source-specific permitted excerpts remain future work.
@@ -263,7 +267,7 @@ The first practical exploration layer now also includes a bounded Deadcast
 metadata reader and a six-entity, source-controlled lore-trail catalog for
 Friend of the Devil, Sugaree, They Love Each Other, Dancin' in the Streets,
 Veneta, and Cornell. These tools return only links, source kind, and a
-question-oriented reason to open the source. The response composer can render
+question-oriented reason to open the source. The model's plan can render
 reviewed Dead.net, Deadhead High, and Deadessays links as main-column resources;
 none of their text becomes a canonical fact. See
 `docs/lore-source-trails.md` and `docs/lore-pilot-research.md`.

@@ -20,25 +20,30 @@ have a span, contrast, surprise, continuity, or good next move, but it does not
 manufacture color. Source and coverage details stay quiet unless they change
 the meaning of the answer or the visitor asks for them.
 
-## How the models work together
+## How the model works
 
-The research lead understands the question and retrieves enough grounded
-material for a good answer and an interesting body. It is not given a global
-source checklist, capability census, or response blueprint.
+One model owns the whole turn: it understands the question, researches with
+read-only tools until it has enough grounded material for a good answer and
+an interesting body, and then ends the turn by calling `finish_response`. It
+is not given a global source checklist, capability census, or response
+blueprint.
 
-The final editor owns the visible response. It writes the short chat answer,
-the body title and synthesis, and decides what material to emphasize, reshape,
-reuse, or omit. It receives the complete grounded candidate data without
-block-specific placement instructions or an omission ledger.
+`finish_response`'s arguments are the visible response: the short chat
+answer, the body title and lead, and a plan that decides what material to
+emphasize, reshape, reuse, or omit. The model writes this from what it
+retrieved, without block-specific placement instructions or an omission
+ledger. Links in the chat answer, lead, or body text must point only to
+material the tools actually returned this turn; lore and other editorial
+color must come from sourced material, carried with its attribution.
 
 ## Presentation palette
 
-The editor may shape grounded material as narrative, a compact fact grid, or a
+The model may shape grounded material as narrative, a compact fact grid, or a
 timeline, and may mix those with domain-rich components such as setlists,
 recordings, arrangements, media, performance context, and resource links.
 These are expressive options, not mappings from question types to templates.
 
-Adding a pattern should expand the editor's expressive range. Do not add a
+Adding a pattern should expand the model's expressive range. Do not add a
 pattern to force the outcome of one example, and do not make a database-shaped
 card the only way a fact can appear.
 
@@ -49,10 +54,10 @@ Use representative questions and judge the result:
 1. Did chat answer directly and briefly?
 2. Is the main body useful, interesting, and easy to follow?
 3. Do chat and body avoid duplication?
-4. Did the editor select and synthesize rather than dump everything retrieved?
+4. Did the model select and synthesize rather than dump everything retrieved?
 5. Are factual claims grounded in the supplied material?
 6. Does the presentation fit this material without following a hidden template?
 
-When an answer is weak, improve the research handoff, model context, persona,
-goal, tools, presentation palette, or model configuration. Do not turn the
-example into deterministic product logic.
+When an answer is weak, improve the model's tools, context, persona, goal,
+presentation palette, or model configuration. Do not turn the example into
+deterministic product logic.
