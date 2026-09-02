@@ -230,12 +230,26 @@ export interface components {
             detail: string | null;
             /** Follow Up */
             follow_up: string | null;
+            link?: components["schemas"]["EditorialLink"] | null;
             /** Marker */
             marker: string | null;
             /** Title */
             title: string;
             /** Value */
             value: string | null;
+        };
+        /**
+         * EditorialLink
+         * @description An outbound link the model attaches to something it wrote.
+         *
+         *     The server keeps a link only when its URL appeared in material the tools
+         *     returned during the same turn; anything else is dropped before rendering.
+         */
+        EditorialLink: {
+            /** Label */
+            label: string;
+            /** Url */
+            url: string;
         };
         /** EntityCardBlock */
         EntityCardBlock: {

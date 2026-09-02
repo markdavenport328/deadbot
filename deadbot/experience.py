@@ -341,12 +341,24 @@ class GapStateBlock(ExperienceModel):
     message: str
 
 
+class EditorialLink(ExperienceModel):
+    """An outbound link the model attaches to something it wrote.
+
+    The server keeps a link only when its URL appeared in material the tools
+    returned during the same turn; anything else is dropped before rendering.
+    """
+
+    url: str
+    label: str
+
+
 class EditorialItem(ExperienceModel):
     marker: str | None
     title: str
     value: str | None
     detail: str | None
     follow_up: str | None
+    link: EditorialLink | None = None
 
 
 class EditorialBlock(ExperienceModel):
