@@ -16,10 +16,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot.composer import CompositionError, DeterministicComposer, ExperienceComposer, create_experience_composer
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import ExperienceRequest, ExperienceResponse, compose_experience_response
+from deadbot.experience import ExperienceRequest, ExperienceResponse
+from deadbot.finish import build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.storage import create_canonical_store
 
@@ -31,18 +31,13 @@ def create_app(
     settings: Settings | None = None,
     store: CanonicalStore | None = None,
     agent: Any | None = None,
-    composer: ExperienceComposer | None = None,
     client_dist: Path | None = None,
 ) -> FastAPI:
     """Build an application with injectable runtime dependencies for tests."""
 
     settings = settings or Settings.from_env()
     store = store or create_canonical_store(settings)
-    is_production_runtime = agent is None
     agent = agent or build_agent(settings, store=store)
-    # An injected agent is a test/runtime seam. Avoid starting a second model
-    # request in that path unless the caller explicitly supplies a composer.
-    composer = composer or (create_experience_composer(settings) if is_production_runtime else DeterministicComposer())
     client_dist = client_dist or repository_root() / "web" / "dist"
     close_store = getattr(store, "close", None)
 
@@ -58,7 +53,6 @@ def create_app(
     app.state.settings = settings
     app.state.store = store
     app.state.agent = agent
-    app.state.composer = composer
     # Sliding-window rate-limit state: client IP -> deque of request timestamps
     # within the trailing 60s window. This is per process instance only — on
     # Vercel, separate function instances each keep their own counters, so this
@@ -107,7 +101,6 @@ def create_app(
             "canonical_shows": str(store.row_count("shows")),
             "performer_assignments": str(store.row_count("show_performers")),
             "show_equipment_links": str(store.row_count("show_equipment")),
-            "composer": type(app.state.composer).__name__,
         }
 
     @app.post("/api/experience", response_model=ExperienceResponse)
@@ -132,6 +125,15 @@ def create_app(
                 {"messages": messages},
                 run_config(invocation_thread_id, app.state.settings),
             )
+            # Assembling the response is inside the try so an unexpected raise
+            # while resolving the plan reaches the visitor as the same friendly
+            # 503 as an agent failure, not as a stack trace.
+            return build_experience_response(
+                question=request.question,
+                thread_id=thread_id,
+                messages=result.get("messages", []),
+                store=app.state.store,
+            )
         except Exception as error:  # The browser receives no model/provider internals.
             logger.exception("Deadbot experience request failed")
             raise HTTPException(
@@ -148,19 +150,6 @@ def create_app(
                 checkpointer = getattr(app.state.agent, "checkpointer", None)
                 if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
                     checkpointer.delete_thread(invocation_thread_id)
-        response = compose_experience_response(
-            question=request.question,
-            thread_id=thread_id,
-            messages=result.get("messages", []),
-            store=app.state.store,
-        )
-        try:
-            return app.state.composer.compose(request.question, response)
-        except CompositionError as error:
-            raise HTTPException(
-                status_code=503,
-                detail="Deadbot's final editor could not finish this response. Please try again.",
-            ) from error
 
     if client_dist.is_dir():
         assets = client_dist / "assets"
@@ -180,4 +169,18 @@ def create_app(
     return app
 
 
-app = create_app()
+def __getattr__(name: str) -> Any:
+    """Build the production application on first access of ``deadbot.api:app``.
+
+    Importing this module for tests or for the OpenAPI export must not read
+    the environment or connect to the database. Uvicorn, the Vercel
+    entrypoint, and the ``app`` console script all resolve ``app`` through
+    normal attribute access, which reaches this hook once and caches the
+    result in the module namespace.
+    """
+
+    if name == "app":
+        application = create_app()
+        globals()["app"] = application
+        return application
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

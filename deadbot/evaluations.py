@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from deadbot.data import CanonicalStore, repository_root
+from deadbot.finish import build_experience_response
 from deadbot.tools import build_tools
 
 
@@ -154,10 +155,8 @@ def model_evaluate_suite(
     if unknown_ids:
         raise ValueError(f"Unknown evaluation case IDs: {', '.join(sorted(unknown_ids))}")
 
-    resource_urls = {
-        row["resource_id"]: row["source_url"]
-        for row in (store or CanonicalStore()).rows("resources")
-    }
+    store = store or CanonicalStore()
+    resource_urls = {row["resource_id"]: row["source_url"] for row in store.rows("resources")}
     results = []
     for index, case in enumerate(selected_cases):
         result = agent.invoke(
@@ -165,21 +164,31 @@ def model_evaluate_suite(
             config=config_factory(f"model-eval-{case['id']}-{index}"),
         )
         messages = result["messages"]
-        answer = str(messages[-1].content)
+        response = build_experience_response(case["question"], f"model-eval-{case['id']}", messages, store)
+        answer = response.answer
+        body_types = [block.type for block in response.blocks]
         tool_calls = [
             {"name": call["name"], "arguments": call["args"]}
             for message in messages
             for call in getattr(message, "tool_calls", [])
         ]
         required_urls = [resource_urls[source_id] for source_id in case.get("required_source_ids", [])]
+        # A required URL can legitimately reach the visitor anywhere in the
+        # delivered experience: the chat answer, a source reference, or a
+        # resolved block such as a resource_list or an editorial link. Check the
+        # whole response, not just the short chat answer.
+        cited_text = "\n".join(
+            [answer, *(source.url or "" for source in response.sources), response.model_dump_json()]
+        )
         results.append(
             {
                 "id": case["id"],
                 "question": case["question"],
                 "answer": answer,
+                "body_block_types": body_types,
                 "tool_calls": tool_calls,
                 "required_source_urls": required_urls,
-                "required_source_urls_cited": all(url in answer for url in required_urls),
+                "required_source_urls_cited": all(url in cited_text for url in required_urls),
                 "failure_conditions": case["failure_conditions"],
                 "manual_review_required": True,
             }

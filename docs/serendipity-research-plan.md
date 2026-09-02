@@ -32,7 +32,9 @@ bit of show lore when it gives the visitor a worthwhile next move.
 4. When useful, the model calls an approved source-specific research tool,
    then pairs the returned source-attributed context with the local graph's
    exact performances, recordings, releases, and links.
-5. The composer selects a small, server-validated set of main-column blocks.
+5. The model ends its turn by calling `finish_response` with the chat answer
+   and a main-body plan; the server resolves that plan's references against the
+   store into a small, validated set of main-column blocks.
 
 For “What are the best recordings of Sugar Magnolia?”, the chat might say
 “I've pulled several highly regarded listening paths; the main column shows the
@@ -50,10 +52,11 @@ set of candidates—not an objectively final musical ranking.
 
 ## What guides the model
 
-The final editor receives a focused grounded packet. It includes:
+The one model that owns the turn works from what its read-only tools return.
+That grounded material includes:
 
 - latest question and relevant conversation;
-- grounded direct answer and resolved entity IDs;
+- resolved entity IDs for what the question names;
 - canonical facts, graph paths, and listening paths retrieved for this question;
 - complete eligible component data without block-specific editorial guidance;
 - source research results, if requested; and
@@ -131,7 +134,7 @@ database-only lore corpus.
    leads, research results, and resource candidates into the decision brief.
 5. **Next:** evaluate live model traces for direct facts, listening requests,
    song evolution, show lore, and unavailable-source cases; use the findings to
-   improve the brief, tool descriptions, and source paths.
+   improve the persona, tool descriptions, and source paths.
 6. **Next:** add show/performance discovery, snapshot persistence, and
    source-specific permitted excerpts after each source's rights review.
 

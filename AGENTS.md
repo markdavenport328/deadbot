@@ -11,23 +11,22 @@ visitor's experience unless they change the meaning of the answer.
 
 For experience composition in particular:
 
-- Keep model responsibilities coherent. The retrieval model assembles grounded
-  material; the final composer owns both the visible chat answer and the main
-  body plan in one decision. Do not ask an earlier model to avoid repeating a
-  layout that a later model has not created yet.
-- Supply a structured decision brief: the latest question, relevant
-  conversation, grounded answer, useful facts and relationships, and a rich
-  inventory of eligible blocks with their purpose, exploration value, and
-  connections. Include source or coverage context only where it changes how a
-  visitor should understand or use the material.
+- One model owns the whole turn. It researches with read-only tools and
+  delivers the visible chat answer and main-body plan in one `finish_response`
+  call. Do not reintroduce a handoff between a retrieval model and an editing
+  model; improve the persona, tools, and plan palette instead.
+- Supply rich tool output: the facts, relationships, listening paths, and
+  sourced context a knowledgeable fan would want, with IDs and URLs the model
+  can reference in its plan. Include source or coverage context only where it
+  changes how a visitor should understand or use the material.
 - Let the model decide relevance, omission, ordering, and layout regions from
-  that brief. Do not replace this reasoning with a growing set of brittle
-  keyword-to-template rules.
+  what it retrieves. Do not replace this reasoning with a growing set of
+  brittle keyword-to-template rules.
 - Do not encode question-specific content choices in deterministic code. In
   particular, do not hard-wire which components appear, how much related
   material to retrieve, what belongs in chat versus the main panel, or a
   response depth in reaction to an individual example. Improve the model's
-  brief, candidate design, instructions, and evaluations instead.
+  tools, persona, instructions, and evaluations instead.
 - Use evaluations based on representative user questions to improve context,
   instructions, tool outputs, and model configuration before introducing
   deterministic behavior.

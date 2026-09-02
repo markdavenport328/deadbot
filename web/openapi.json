@@ -519,6 +519,16 @@
             ],
             "title": "Follow Up"
           },
+          "link": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditorialLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "marker": {
             "anyOf": [
               {
@@ -554,6 +564,26 @@
           "follow_up"
         ],
         "title": "EditorialItem",
+        "type": "object"
+      },
+      "EditorialLink": {
+        "additionalProperties": false,
+        "description": "An outbound link the model attaches to something it wrote.\n\nThe server keeps a link only when its URL appeared in material the tools\nreturned during the same turn; anything else is dropped before rendering.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "label"
+        ],
+        "title": "EditorialLink",
         "type": "object"
       },
       "EntityCardBlock": {

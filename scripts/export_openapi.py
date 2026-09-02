@@ -32,7 +32,7 @@ def export_schema() -> dict:
     Passing a plain ``object()`` as the agent avoids constructing a real
     model-service agent (and its network dependencies) purely to read off
     the schema: ``create_app`` treats any non-``None`` agent as a test seam
-    and falls back to the ``DeterministicComposer``.
+    and never invokes it while building the application.
     """
 
     app = create_app(settings=Settings(), store=CanonicalStore(), agent=object())

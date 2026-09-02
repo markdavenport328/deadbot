@@ -23,13 +23,10 @@ browser question
 FastAPI experience endpoint
       |
       v
-read-only agent and approved retrieval tools
+agent loop: read-only tools ... finish_response(plan)
       |
       v
-grounded research packet
-      |
-      v
-final response composer (chat answer + main-body plan)
+plan resolution (references → validated blocks; ungrounded links dropped)
       |
       v
 validated experience response (answer + typed blocks + sources)
@@ -38,19 +35,22 @@ validated experience response (answer + typed blocks + sources)
 React block renderer
 ```
 
-The agent remains responsible for deciding which read-only tools to use and for
-obtaining grounded material. The composer is the final editor: in one bounded
-decision it writes the visible chat answer and turns the retrieved candidates
-into a main-body plan. The renderer is deterministic application code.
+One model owns the turn. It decides which tools to use, reads their results,
+and ends by calling `finish_response`, whose arguments are the chat answer,
+title, lead, mode, and a body that mixes model-written editorial blocks with
+library components referenced by canonical ID. `deadbot/finish.py` resolves
+those references against the store, keeps only links whose URLs the tools
+returned this turn, and produces the validated response. The renderer is
+deterministic application code.
 
 This separation is intentional:
 
-- Retrieval determines what the system knows and which connections it can offer.
-- Composition determines the concise visible answer and which approved
+- Research determines what the system knows and which connections it can offer.
+- The plan determines the concise visible answer and which approved
   presentation patterns best help a person explore the supporting material.
 - Rendering determines how those patterns look and behave in the browser.
 
-Neither composition nor rendering may alter canonical data or make an unapproved external request.
+Neither plan resolution nor rendering may alter canonical data or make an unapproved external request.
 
 ## Experience response contract
 
@@ -87,7 +87,7 @@ The illustration is a contract pattern, not an instruction to expose all databas
 
 ## Block catalog
 
-The catalog combines flexible editorial patterns with richer domain components. New visual patterns require a schema, renderer, accessibility review, and tests before a composer can use them; they are capabilities for the editor, never routes tied to question wording.
+The catalog combines flexible editorial patterns with richer domain components. New visual patterns require a schema, renderer, accessibility review, and tests before the model can reference them in a plan; they are capabilities for the model, never routes tied to question wording.
 
 | Block | Purpose | Grounding and constraints |
 | --- | --- | --- |
@@ -111,31 +111,50 @@ The catalog combines flexible editorial patterns with richer domain components. 
 
 Cards and lists are presentation patterns, not new domain entities. The canonical graph remains the source of truth for the relationships they expose.
 
-## Composition rules
+## Plan resolution rules
 
-The composer is Deadbot's final editor, not a card sorter. It receives the
-latest question, recent conversation, the research lead's grounded synthesis,
-and the complete data carried by each available candidate. It writes the short
-chat answer and owns the main body as one editorial decision.
+The model is Deadbot's editor, not a card sorter. Across the turn it reads the
+latest question, recent conversation, and whatever it retrieves with the
+read-only tools, then ends by calling `finish_response` with the short chat
+answer and the main body as one editorial decision.
 
-The editor can write a body title and lead, shape grounded material into
+The plan can carry a body title and lead, shape grounded material into
 narrative, fact-grid, or timeline patterns, and mix those with richer
-server-owned candidates such as setlists, recordings, arrangements, and media.
-The palette supplies expressive options; no question type is mapped to a
-particular pattern, depth, or ordering.
+library components such as setlists, recordings, arrangements, and media,
+referenced by canonical ID. The palette supplies expressive options; no
+question type is mapped to a particular pattern, depth, or ordering.
 
-The prompt gives the editor a persona and an outcome: answer crisply in chat
-and make the main body useful, interesting, and explorable without repetition.
-It does not provide a checklist for a "complete" guide or block-specific
-placement rules. The model decides relevance, emphasis, omission, synthesis,
-and reading order from the grounded packet.
+The prompt gives the model a persona and an outcome: answer crisply in chat
+and make the main body useful, interesting, and explorable without
+repetition. It does not provide a checklist for a "complete" guide or
+block-specific placement rules. The model decides relevance, emphasis,
+omission, titles, and reading order.
 
-Application code enforces only the response shape and resolves referenced
-candidate indexes. It does not require an omission ledger, veto coverage or
-provenance choices, select components from keywords, or substitute an unedited
-database packet as though it were a finished experience. Editorial failures
-are diagnosed at the model boundary and improved through context, tools,
-prompting, palette design, and evaluations.
+Grounding is id-level and deliberate: a component may be referenced by any
+canonical ID that appeared in this turn's tool output, including a search
+result, and the server then fetches the full component from the store — the
+model does not have to re-retrieve an entity in full before it can show it.
+
+Application code enforces only the response shape: it resolves referenced
+component IDs against the store, drops any link whose URL the tools did not
+return this turn, and rejects a call that does not fit the schema so the
+model can correct it. It does not require an omission ledger, veto coverage
+or provenance choices, select components from keywords, or substitute an
+unedited database packet as though it were a finished experience. Editorial
+failures are diagnosed at the model boundary and improved through context,
+tools, prompting, palette design, and evaluations.
+
+Research resources resolve differently from stored components. A reviewed
+Dead.net tool result is referenced by a projected id, `research:<source>:<identifier>`,
+and application code resolves it by re-matching that id against the turn's
+own tool output rather than looking it up in the store; the host allowlist
+in `deadbot/composition.py` still governs which URLs those tools can ever
+surface to the browser. An editorial item may also carry its own outbound
+link alongside its title, value, or detail. The browser renders markdown
+links in the chat answer, lead, and editorial text, and renders an
+editorial item's link the same way, so an outbound link (marked ↗) reads
+distinctly from an ask-Deadbot follow-up button (marked →) that keeps the
+visitor in the conversation instead of sending them away from it.
 
 ## Media and external-resource safety
 
@@ -159,8 +178,8 @@ The client creates one opaque thread ID and reuses it for follow-up questions.
 The FastAPI endpoint maps that ID to the LangGraph checkpoint identity. The
 agent therefore receives the preceding user and assistant messages as its
 conversation context on each later request. The API returns that safe transcript
-for the left conversation column, while the composition adapter considers the
-newest user turn and its retrieval results for the main content column. Each
+for the left conversation column, while plan resolution considers the
+newest user turn and its `finish_response` plan for the main content column. Each
 answer builds a fresh main-column experience from the current question.
 
 The current checkpoint is intentionally in memory. It persists for the life of
@@ -169,7 +188,7 @@ multi-process session store. Persistent conversation history is a later
 operational feature and must include retention, privacy, and authentication
 decisions before it replaces this boundary.
 
-Streaming is a follow-on capability. When added, it should emit typed progress events such as retrieval started, tool completed, composition completed, and final response. Tool payloads, model reasoning, and internal prompts should not be exposed to the browser by default.
+Streaming is a follow-on capability. When added, it should emit typed progress events such as retrieval started, tool completed, plan resolution completed, and final response. Tool payloads, model reasoning, and internal prompts should not be exposed to the browser by default.
 
 Authentication, rate limits, persistent conversation storage, and deployment configuration are separate product decisions. Their eventual addition must not weaken the read-only tool boundary or make the client a direct data-store or model client.
 
@@ -181,7 +200,7 @@ The experience layer requires tests at three levels:
 - **Renderer tests:** every implemented block has an accessible fallback and external links show their source/provider context.
 - **End-to-end examples:** representative Veneta questions produce a grounded answer with the expected cards, links, provenance notes, or gap state.
 
-Record enough server-side trace information to diagnose a bad composition: schema version, selected block types, referenced canonical/resource IDs, and validation fallback reason. Do not record protected source text or model reasoning merely for UI analytics.
+Record enough server-side trace information to diagnose a bad plan resolution: schema version, selected block types, referenced canonical/resource IDs, and validation fallback reason. Do not record protected source text or model reasoning merely for UI analytics.
 
 ## Non-goals
 

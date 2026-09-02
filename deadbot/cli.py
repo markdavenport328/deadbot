@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage
 
 from deadbot.config import Settings
 from deadbot.evaluations import DEFAULT_SUITE_PATH, evaluate_suite, model_evaluate_suite
+from deadbot.finish import build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.storage import create_canonical_store
 
@@ -112,7 +113,8 @@ def main() -> None:
             sys.exit(1)
         return
 
-    agent = build_agent(settings)
+    store = create_canonical_store(settings)
+    agent = build_agent(settings, store=store)
     thread_id = args.thread_id or f"cli-{uuid.uuid4()}"
     config = run_config(thread_id, settings)
     print(f"Deadbot is ready using {settings.model_provider}:{settings.ollama_model}. Type 'quit' to exit.")
@@ -128,5 +130,7 @@ def main() -> None:
         if not question:
             continue
         result = agent.invoke({"messages": [HumanMessage(content=question)]}, config=config)
-        answer = result["messages"][-1].content
-        print(f"\nDeadbot: {answer}")
+        response = build_experience_response(question, thread_id, result["messages"], store)
+        print(f"\nDeadbot: {response.answer}")
+        if response.body_lead:
+            print(f"\n{response.title}\n{response.body_lead}")
