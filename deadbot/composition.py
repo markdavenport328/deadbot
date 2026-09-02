@@ -645,8 +645,8 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
 
 def _arrangement_block(arrangement_id: str, store: CanonicalStore) -> ArrangementBlock | None:
     # ``store.one`` indexes tables by ``<singular>_id``; this table's key is
-    # ``arrangement_id``, so look it up by scanning the rows.
-    arrangement = next((row for row in store.rows("song_arrangements") if row.get("arrangement_id") == arrangement_id), None)
+    # ``arrangement_id``, so look it up by filtering on that column instead.
+    arrangement = next(iter(store.filtered_rows("song_arrangements", arrangement_id=arrangement_id)), None)
     if not arrangement:
         return None
     resource = store.one("resources", arrangement.get("resource_id", ""))

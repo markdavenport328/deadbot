@@ -26,7 +26,6 @@ from deadbot.data import CanonicalStore
 from deadbot.experience import (
     ConversationTurn,
     EditorialBlock,
-    EditorialBlock as _EditorialBlock,
     ExperienceBlock,
     ExperienceMode,
     ExperienceResponse,
@@ -195,7 +194,7 @@ class FinishPlan(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     chat_answer: str = Field(
-        description="The direct answer shown in the conversation. Short, specific, may use markdown links to URLs the tools returned."
+        description="The direct answer shown in the conversation. Short, specific, may use markdown links to URLs the tools returned this turn."
     )
     title: str = Field(description="Main-body title.")
     lead: str | None = Field(default=None, description="One or two sentences that notice what matters. Markdown links allowed.")
@@ -205,7 +204,7 @@ class FinishPlan(BaseModel):
         max_length=12,
         description=(
             "Reading order for the main body. Mix editorial blocks you write (narrative, fact_grid, timeline; items may carry a link or a follow_up question) "
-            "with library components referenced by IDs you retrieved: show_setlist, recording_list, performer_list, equipment_list, performance_spine, "
+            "with library components referenced by the IDs you retrieved this turn: show_setlist, recording_list, performer_list, equipment_list, performance_spine, "
             "comparison_strip, performance_list, performance_extremes, song_overview, guest_appearance_list, show_selection, arrangement, arrangement_search, "
             "media_link, resource_list. Give a component a title when the default would read like a database label."
         ),
@@ -218,7 +217,7 @@ def _retitle(block: Any, title: str | None) -> Any:
     return block
 
 
-def _sanitize_editorial(block: _EditorialBlock, urls: frozenset[str]) -> _EditorialBlock:
+def _sanitize_editorial(block: EditorialBlock, urls: frozenset[str]) -> EditorialBlock:
     items = [
         item.model_copy(update={"link": item.link if item.link and item.link.url in urls else None})
         for item in block.items
@@ -413,7 +412,7 @@ def resolve_body(
     blocks: list[ExperienceBlock] = []
     sources: list[SourceReference] = []
     for item in plan.body:
-        if isinstance(item, _EditorialBlock):
+        if isinstance(item, EditorialBlock):
             blocks.append(_sanitize_editorial(item, grounded.urls))
             continue
         block, block_sources = _resolve_reference(item, grounded, payloads, store)
@@ -440,7 +439,7 @@ def build_finish_tool() -> BaseTool:
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
             "chat_answer is the crisp direct answer; the body is the rewarding part: your own narrative, fact grids or timelines "
-            "mixed with library components referenced by the IDs you retrieved. Links you write are kept only if the URL came from a tool result."
+            "mixed with library components referenced by the IDs you retrieved this turn. Links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,
     )
@@ -463,20 +462,35 @@ def finish_plan_from_messages(messages: list[Any]) -> FinishPlan | None:
 
 
 def _conversation(all_messages: list[Any], chat_answer: str) -> list[ConversationTurn]:
-    """Visible turns: user text, earlier assistant answers, and this turn's chat answer."""
+    """Visible turns: user text, earlier assistant answers, and this turn's chat answer.
+
+    A single turn can carry more than one ``finish_response`` call: when the
+    first one's arguments fail ``FinishPlan`` validation the model sees the tool
+    error and retries. The visitor asked one question and must see one answer,
+    so only the last finish call after each human message becomes an assistant
+    turn — a later call overwrites the turn an earlier one produced.
+    """
 
     turns: list[ConversationTurn] = []
+    answer_index: int | None = None
     for message in all_messages:
         message_type = getattr(message, "type", None)
         text = composition._content_text(getattr(message, "content", "")).strip()
         if message_type == "human" and text:
             turns.append(ConversationTurn(role="user", text=text[:8_000]))
+            answer_index = None
         elif message_type == "ai":
             for call in getattr(message, "tool_calls", None) or []:
                 if call.get("name") == FINISH_TOOL_NAME and isinstance(call.get("args"), dict):
                     answer = str(call["args"].get("chat_answer") or "").strip()
-                    if answer:
-                        turns.append(ConversationTurn(role="assistant", text=answer[:8_000]))
+                    if not answer:
+                        continue
+                    turn = ConversationTurn(role="assistant", text=answer[:8_000])
+                    if answer_index is None:
+                        turns.append(turn)
+                        answer_index = len(turns) - 1
+                    else:
+                        turns[answer_index] = turn
             if text and not getattr(message, "tool_calls", None):
                 turns.append(ConversationTurn(role="assistant", text=text[:8_000]))
     final = ConversationTurn(role="assistant", text=chat_answer[:8_000])

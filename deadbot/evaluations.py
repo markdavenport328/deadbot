@@ -173,6 +173,13 @@ def model_evaluate_suite(
             for call in getattr(message, "tool_calls", [])
         ]
         required_urls = [resource_urls[source_id] for source_id in case.get("required_source_ids", [])]
+        # A required URL can legitimately reach the visitor anywhere in the
+        # delivered experience: the chat answer, a source reference, or a
+        # resolved block such as a resource_list or an editorial link. Check the
+        # whole response, not just the short chat answer.
+        cited_text = "\n".join(
+            [answer, *(source.url or "" for source in response.sources), response.model_dump_json()]
+        )
         results.append(
             {
                 "id": case["id"],
@@ -181,7 +188,7 @@ def model_evaluate_suite(
                 "body_block_types": body_types,
                 "tool_calls": tool_calls,
                 "required_source_urls": required_urls,
-                "required_source_urls_cited": all(url in answer for url in required_urls),
+                "required_source_urls_cited": all(url in cited_text for url in required_urls),
                 "failure_conditions": case["failure_conditions"],
                 "manual_review_required": True,
             }

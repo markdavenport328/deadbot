@@ -92,6 +92,24 @@ def test_resolve_body_builds_referenced_components_with_model_titles():
     assert any(source.url and "archive.org" in source.url for source in sources)
 
 
+def test_resolve_body_builds_the_default_recording_list_when_no_recordings_are_named():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    grounded = finish.grounded_context(payloads)
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        lead=None,
+        mode="show",
+        body=[finish.RecordingListRef(type="recording_list", show_id="gd-1972-08-27")],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
+    block = blocks[0]
+    assert block.type == "recording_list"
+    assert block.show_id == "gd-1972-08-27"
+    assert block.items
+
+
 def test_resolve_body_drops_references_the_tools_did_not_return():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
@@ -475,6 +493,27 @@ def test_build_experience_response_only_uses_the_latest_turn():
     response = finish.build_experience_response("Second", "web-1", messages, store)
     assert response.title == "Later" and response.blocks == []
     assert [turn.text for turn in response.conversation] == ["First", "Earlier.", "Second", "Later."]
+
+
+def test_build_experience_response_shows_one_assistant_turn_when_a_finish_call_is_retried():
+    """A rejected finish call plus its retry is still one answer to the visitor."""
+
+    store = CanonicalStore()
+    partial_plan = {"chat_answer": "A first draft answer.", "lead": None, "mode": "quick_fact", "body": []}
+    retry_plan = {"chat_answer": "The corrected answer.", "title": "Corrected", "lead": None, "mode": "quick_fact", "body": []}
+    messages = [
+        HumanMessage(content="Hi"),
+        AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": partial_plan, "id": "finish-0", "type": "tool_call"}]),
+        ToolMessage(content="Error: title is required", tool_call_id="finish-0", name=finish.FINISH_TOOL_NAME, status="error"),
+        finish_call(retry_plan),
+        delivered(),
+    ]
+    response = finish.build_experience_response("Hi", "web-1", messages, store)
+    assert response.title == "Corrected"
+    assert [(turn.role, turn.text) for turn in response.conversation] == [
+        ("user", "Hi"),
+        ("assistant", "The corrected answer."),
+    ]
 
 
 def test_build_experience_response_substitutes_a_placeholder_for_a_blank_chat_answer(caplog):

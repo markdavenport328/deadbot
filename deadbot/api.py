@@ -125,6 +125,15 @@ def create_app(
                 {"messages": messages},
                 run_config(invocation_thread_id, app.state.settings),
             )
+            # Assembling the response is inside the try so an unexpected raise
+            # while resolving the plan reaches the visitor as the same friendly
+            # 503 as an agent failure, not as a stack trace.
+            return build_experience_response(
+                question=request.question,
+                thread_id=thread_id,
+                messages=result.get("messages", []),
+                store=app.state.store,
+            )
         except Exception as error:  # The browser receives no model/provider internals.
             logger.exception("Deadbot experience request failed")
             raise HTTPException(
@@ -141,12 +150,6 @@ def create_app(
                 checkpointer = getattr(app.state.agent, "checkpointer", None)
                 if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
                     checkpointer.delete_thread(invocation_thread_id)
-        return build_experience_response(
-            question=request.question,
-            thread_id=thread_id,
-            messages=result.get("messages", []),
-            store=app.state.store,
-        )
 
     if client_dist.is_dir():
         assets = client_dist / "assets"

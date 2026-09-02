@@ -38,13 +38,14 @@ Favor pathways into the music. Link to full-show recordings and, when the
 library has them, to the specific performance, and to the interviews, essays
 and community commentary you retrieved. Lore and interpretation come from
 sourced material and carry their attribution lightly. Links are kept only when
-their URL came from a tool result. When the library cannot answer, say so
+their URL came from a tool result this turn, so retrieve again rather than
+reaching back to an earlier turn. When the library cannot answer, say so
 plainly instead of filling the gap.
 
 When you finish, chat_answer is the direct, crisp answer. The body is the
 rewarding part: a title, a short lead, then your own narrative, fact grids or
 timelines mixed with library components referenced by the IDs you retrieved
-(setlists, recordings, performance context, arrangements, media, resources,
+this turn (setlists, recordings, performance context, arrangements, media, resources,
 guest appearances, selections). Retitle a component when its default would
 read like a database label. Chat and body complement each other; be selective
 and put a few strong pieces in a natural reading order.
@@ -112,4 +113,8 @@ def build_agent(
 def run_config(thread_id: str, settings: Settings) -> dict:
     """Return the stable session ID and a hard bound on agent iterations."""
 
-    return {"configurable": {"thread_id": thread_id}, "recursion_limit": settings.max_tool_rounds * 2 + 2}
+    # Each research round costs two graph steps (agent, tools). The extra pair
+    # beyond the rounds themselves reserves room to finish: one for the
+    # ``finish_response`` call, and one more so a call whose arguments failed
+    # validation can be corrected instead of the turn dying mid-answer.
+    return {"configurable": {"thread_id": thread_id}, "recursion_limit": settings.max_tool_rounds * 2 + 4}
