@@ -180,4 +180,18 @@ def create_app(
     return app
 
 
-app = create_app()
+def __getattr__(name: str) -> Any:
+    """Build the production application on first access of ``deadbot.api:app``.
+
+    Importing this module for tests or for the OpenAPI export must not read
+    the environment or connect to the database. Uvicorn, the Vercel
+    entrypoint, and the ``app`` console script all resolve ``app`` through
+    normal attribute access, which reaches this hook once and caches the
+    result in the module namespace.
+    """
+
+    if name == "app":
+        application = create_app()
+        globals()["app"] = application
+        return application
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
