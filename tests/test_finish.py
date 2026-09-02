@@ -26,3 +26,39 @@ def test_keep_grounded_links_strips_urls_the_tools_did_not_return():
     urls = frozenset({"https://archive.org/details/gd1972-08-27"})
     text = "Hear it on [Archive.org](https://archive.org/details/gd1972-08-27) or [elsewhere](https://example.com/x)."
     assert finish.keep_grounded_links(text, urls) == "Hear it on [Archive.org](https://archive.org/details/gd1972-08-27) or elsewhere."
+
+
+def test_finish_plan_accepts_editorial_blocks_and_library_references():
+    plan = finish.FinishPlan.model_validate(
+        {
+            "chat_answer": "Sugaree opened the second set.",
+            "title": "Sugaree at Veneta",
+            "lead": "A relaxed early version.",
+            "mode": "performance",
+            "body": [
+                {
+                    "type": "editorial",
+                    "presentation": "narrative",
+                    "eyebrow": None,
+                    "title": "Why this one",
+                    "paragraphs": ["Garcia stretches the solo."],
+                    "items": [],
+                },
+                {"type": "show_setlist", "show_id": "gd-1972-08-27", "title": "The whole night"},
+                {"type": "recording_list", "show_id": "gd-1972-08-27", "recording_ids": ["recording-gd-1972-08-27-sbd-4682"], "title": None},
+            ],
+        }
+    )
+    assert [item.type for item in plan.body] == ["editorial", "show_setlist", "recording_list"]
+    assert plan.body[1].title == "The whole night"
+
+
+def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
+    tool = finish.build_finish_tool()
+    assert tool.name == finish.FINISH_TOOL_NAME
+    assert tool.args_schema is finish.FinishPlan
+    assert "finished" in tool.description.casefold() or "deliver" in tool.description.casefold()
+    result = tool.invoke(
+        {"chat_answer": "Hi", "title": "Deadbot", "lead": None, "mode": "quick_fact", "body": []}
+    )
+    assert "delivered" in result.casefold()
