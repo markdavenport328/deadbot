@@ -79,6 +79,16 @@ function renderInline(text: string): ReactNode[] {
   return nodes;
 }
 
+function Eyebrow({ label, title }: { label?: string | null; title?: string | null }) {
+  if (!label) return null;
+  if (title) {
+    const normalizedLabel = label.trim().toLowerCase();
+    const normalizedTitle = title.trim().toLowerCase();
+    if (normalizedTitle === normalizedLabel || normalizedTitle.startsWith(`${normalizedLabel}:`)) return null;
+  }
+  return <p className="eyebrow">{label}</p>;
+}
+
 function FollowUpButton({
   prompt,
   onFollowUp,
@@ -141,8 +151,8 @@ function Block({
   switch (block.type) {
     case "entity_card": {
       return (
-        <article className="card entity-card">
-          <p className="eyebrow">{block.entity_type}</p>
+        <article className="typography-block entity-block">
+          <Eyebrow label={block.entity_type} title={block.title} />
           {block.follow_up ? (
             <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp} className="card-title-link">
               <span>{block.title}</span>
@@ -160,7 +170,7 @@ function Block({
     case "show_setlist":
       return (
         <section className="card show-setlist">
-          <p className="eyebrow">Setlist</p>
+          <Eyebrow label="Setlist" title={block.title} />
           <h2>{block.title}</h2>
           <div className="setlist-sections">
             {block.sets.map((set) => (
@@ -182,8 +192,8 @@ function Block({
       );
     case "show_selection":
       return (
-        <section className="card show-selection">
-          <p className="eyebrow">{block.selection_type}</p>
+        <section className="typography-block show-selection">
+          <Eyebrow label={block.selection_type} title={block.title} />
           <h2>{block.title}</h2>
           <p className="subtitle">Selected by {block.selector_name}</p>
           <ol className="show-selection-list">
@@ -202,7 +212,7 @@ function Block({
     case "recording_list":
       return (
         <section className="card recording-list">
-          <p className="eyebrow">Listening</p>
+          <Eyebrow label="Listening" title={block.title} />
           <h2>{block.title}</h2>
           <ul>
             {block.items.map((item) => (
@@ -216,8 +226,8 @@ function Block({
       );
     case "performer_list":
       return (
-        <section className="card performer-list">
-          <p className="eyebrow">Lineup</p>
+        <section className="typography-block performer-list">
+          <Eyebrow label="Lineup" title={block.title} />
           <h2>{block.title}</h2>
           <ul>
             {block.items.map((item) => (
@@ -234,8 +244,8 @@ function Block({
       );
     case "guest_appearance_list":
       return (
-        <section className="card guest-appearance-list">
-          <p className="eyebrow">Guest appearances</p>
+        <section className="typography-block guest-appearance-list">
+          <Eyebrow label="Guest appearances" title={block.person_name} />
           <h2>{block.person_name}</h2>
           <p className="subtitle">
             {block.known_show_count} documented show{block.known_show_count === 1 ? "" : "s"}
@@ -254,8 +264,8 @@ function Block({
       );
     case "equipment_list":
       return (
-        <section className="card equipment-list">
-          <p className="eyebrow">Equipment</p>
+        <section className="typography-block equipment-list">
+          <Eyebrow label="Equipment" title={block.title} />
           <h2>{block.title}</h2>
           <ul>
             {block.items.map((item) => (
@@ -273,8 +283,8 @@ function Block({
       );
     case "song_overview":
       return (
-        <section className="card song-overview">
-          <p className="eyebrow">Song facts</p>
+        <section className="typography-block song-overview">
+          <Eyebrow label="Song facts" title={block.title} />
           <h2>{block.title}</h2>
           <dl className="song-facts">
             {block.original_artist && (
@@ -309,8 +319,8 @@ function Block({
       );
     case "resource_list":
       return (
-        <section className="card resource-list">
-          <p className="eyebrow">Sources</p>
+        <section className="typography-block resource-list">
+          <Eyebrow label="Sources" title={block.title} />
           <h2>{block.title}</h2>
           <ul>
             {block.items.map((item) => (
@@ -325,8 +335,8 @@ function Block({
       );
     case "credit_list":
       return (
-        <section className="card credit-list">
-          <p className="eyebrow">Composition</p>
+        <section className="typography-block credit-list">
+          <Eyebrow label="Composition" title={block.title} />
           <h2>{block.title}</h2>
           <ul>
             {block.items.map((item) => (
@@ -345,7 +355,7 @@ function Block({
     case "media_link":
       return (
         <section className="card media-card">
-          <p className="eyebrow">{block.provider}{block.is_official ? " · official" : ""}</p>
+          <Eyebrow label={`${block.provider}${block.is_official ? " · official" : ""}`} title={block.title} />
           <h2>{block.title}</h2>
           <MediaEmbed block={block} />
           <ExternalLink href={block.url}>Open on {block.provider}</ExternalLink>
@@ -353,8 +363,8 @@ function Block({
       );
     case "performance_list":
       return (
-        <section className="card performance-list">
-          <p className="eyebrow">Canonical performance evidence</p>
+        <section className="typography-block performance-list">
+          <Eyebrow label="Canonical performance evidence" title={block.title} />
           <h2>{block.title}</h2>
           <p className="subtitle">{block.known_count} known performance{block.known_count === 1 ? "" : "s"}</p>
           <ul>
@@ -382,8 +392,8 @@ function Block({
         </div>
       );
       return (
-        <section className="card performance-extremes">
-          <p className="eyebrow">Performance history</p>
+        <section className="typography-block performance-extremes">
+          <Eyebrow label="Performance history" title={block.title} />
           <h2>{block.title}</h2>
           <div className="performance-endpoints">
             {endpoint("First", block.first)}
@@ -394,8 +404,8 @@ function Block({
     }
     case "comparison_strip":
       return (
-        <section className="card comparison-strip">
-          <p className="eyebrow">Performance history</p>
+        <section className="typography-block comparison-strip">
+          <Eyebrow label="Performance history" title={block.title} />
           <h2>{block.title}</h2>
           <p className="subtitle">
             {block.known_count} known performance{block.known_count === 1 ? "" : "s"} · one representative per year
@@ -420,8 +430,8 @@ function Block({
       );
     case "performance_spine":
       return (
-        <section className="card performance-spine">
-          <p className="eyebrow">Performance context</p>
+        <section className="typography-block performance-spine">
+          <Eyebrow label="Performance context" title={block.title} />
           <h2>{block.title}</h2>
           <p className="subtitle">{block.show_label}{block.set_label ? ` · ${block.set_label}` : ""}{block.position_in_set ? ` · #${block.position_in_set}` : ""}</p>
           <div className="set-thread" aria-label="Adjacent songs in the set">
@@ -447,8 +457,8 @@ function Block({
       );
     case "coverage":
       return (
-        <aside className="coverage-card">
-          <p className="eyebrow">Library coverage</p>
+        <aside className="typography-block coverage-block">
+          <Eyebrow label="Library coverage" title={block.title} />
           <h2>{block.title}</h2>
           <p>{block.message}</p>
         </aside>
@@ -456,8 +466,8 @@ function Block({
     case "arrangement": {
       const source = sourceFor(sources, block.source_id);
       return (
-        <section className="card arrangement-card">
-          <p className="eyebrow">Source-specific arrangement</p>
+        <section className="typography-block arrangement-block">
+          <Eyebrow label="Source-specific arrangement" title={block.title} />
           <h2>{block.title}</h2>
           <dl className="arrangement-facts">
             {block.key_signature && <div><dt>Documented key</dt><dd>{block.key_signature}</dd></div>}
@@ -480,8 +490,8 @@ function Block({
     }
     case "arrangement_search":
       return (
-        <section className="card arrangement-search">
-          <p className="eyebrow">Musician’s reference</p>
+        <section className="typography-block arrangement-search">
+          <Eyebrow label="Musician’s reference" title={block.title} />
           <h2>{block.title}</h2>
           <p className="arrangement-note">{block.coverage_note}</p>
           <ul>
@@ -500,15 +510,15 @@ function Block({
       );
     case "editorial":
       if (block.presentation === "narrative") return (
-        <section className="editorial-block narrative-block">
-          {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
+        <section className="typography-block narrative-block">
+          <Eyebrow label={block.eyebrow} title={block.title} />
           {block.title && <h2>{block.title}</h2>}
           {block.paragraphs.map((paragraph, index) => <p key={index}>{renderInline(paragraph)}</p>)}
         </section>
       );
       if (block.presentation === "fact_grid") return (
-        <section className="editorial-block fact-grid-block">
-          {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
+        <section className="typography-block fact-grid-block">
+          <Eyebrow label={block.eyebrow} title={block.title} />
           {block.title && <h2>{block.title}</h2>}
           <dl>
             {block.items.map((item, index) => (
@@ -527,8 +537,8 @@ function Block({
         </section>
       );
       return (
-        <section className="editorial-block timeline-block">
-          {block.eyebrow && <p className="eyebrow">{block.eyebrow}</p>}
+        <section className="typography-block timeline-block">
+          <Eyebrow label={block.eyebrow} title={block.title} />
           {block.title && <h2>{block.title}</h2>}
           <ol>
             {block.items.map((item, index) => (
@@ -547,9 +557,9 @@ function Block({
         </section>
       );
     case "provenance_note":
-      return <aside className="provenance">{block.text}</aside>;
+      return <aside className="typography-block provenance-note">{block.text}</aside>;
     case "gap_state":
-      return <aside className="gap-state">{block.message}</aside>;
+      return <aside className="typography-block gap-state">{block.message}</aside>;
   }
 }
 
@@ -651,34 +661,36 @@ export default function App() {
             <p>Grateful Dead knowledge, listening, and context</p>
           </header>
 
-          <section className="thread" aria-label="Deadbot conversation" aria-live="polite">
-            {visibleConversation.map((turn, index) => (
-              <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
-                <p>{turn.role === "user" ? "You" : "Deadbot"}</p>
-                <div>{renderInline(turn.text)}</div>
-              </article>
-            ))}
-            {loading && <article className="message assistant pending"><p>Deadbot</p><div>Looking through the library…</div></article>}
-            <div ref={threadEnd} />
-          </section>
-
-          {error && <p className="error" role="alert">{error}</p>}
-
-          <form className="composer" onSubmit={submit}>
-            <div className="question-row">
-              <textarea
-                id="question"
-                aria-label="Question"
-                rows={3}
-                placeholder="Ask about a song, show, source, or recording"
-                value={question}
-                onChange={(event) => setQuestion(event.target.value)}
-                onKeyDown={submitOnEnter}
-                disabled={loading}
-              />
-              <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
+          <section className="thread" aria-label="Deadbot conversation">
+            <div className="thread-messages" aria-live="polite">
+              {visibleConversation.map((turn, index) => (
+                <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
+                  <p>{turn.role === "user" ? "You" : "Deadbot"}</p>
+                  <div>{renderInline(turn.text)}</div>
+                </article>
+              ))}
+              {loading && <article className="message assistant pending"><p>Deadbot</p><div>Looking through the library…</div></article>}
+              <div ref={threadEnd} />
             </div>
-          </form>
+
+            {error && <p className="error" role="alert">{error}</p>}
+
+            <form className="composer" onSubmit={submit}>
+              <div className="question-row">
+                <textarea
+                  id="question"
+                  aria-label="Question"
+                  rows={3}
+                  placeholder="Ask about a song, show, source, or recording"
+                  value={question}
+                  onChange={(event) => setQuestion(event.target.value)}
+                  onKeyDown={submitOnEnter}
+                  disabled={loading}
+                />
+                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
+              </div>
+            </form>
+          </section>
         </aside>
 
         <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
