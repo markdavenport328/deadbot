@@ -88,10 +88,13 @@ def normalized_title(value: str) -> str:
 
 # Punctuation, contraction, abbreviation, and documented alternate-title
 # variants that appear on official release track lists.  Every target is the
-# normalized form of an existing songs.csv title.  Segment names that are not
-# title variants (for example "Rhythm Devils" for the drums segment) are
-# deliberately absent; suites and medleys are left to the segment bridge.
+# normalized form of an existing songs.csv title.  "Rhythm Devils" is the
+# drummers' own name for the drums segment that the setlist spine records as
+# "Drums" (decision 2026-09-01); suites and medleys are left to the segment
+# bridge.
 TITLE_ALIASES = {
+    # segment names
+    "rhythm devils": "drums",
     # inherited from normalize_internet_archive_tracks.py
     "dancing in the street": "dancin in the streets",
     "dancing in the streets": "dancin in the streets",

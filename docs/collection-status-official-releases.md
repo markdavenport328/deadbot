@@ -222,6 +222,8 @@ statement that the album is missing from Spotify.
 8. **Duplicate release groups in MusicBrainz.** The two RFK 6/10/73 groups
    look like one product entered twice; if confirmed, one should be folded into
    the other upstream or marked in the review file.
-9. `Rhythm Devils` (37 tracks) is the drummers' segment that `songs.csv` calls
-   `Drums`. Mapping it needs an explicit decision, since it is a segment name
-   rather than a title variant.
+9. Resolved 2026-09-01: `Rhythm Devils` is the drummers' own name for the
+   segment that `songs.csv` calls `Drums`, so the normalizer now treats it as
+   an alias of `Drums`. 33 of the 40 `Rhythm Devils` tracks map to a canonical
+   `Drums` performance; the remaining 7 sit on releases whose show attribution
+   or alignment is still held for the reasons above.

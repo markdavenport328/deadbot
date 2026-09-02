@@ -144,7 +144,7 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Authority / reliability: Secondary structured catalog. Titles, order, and dates are contributor-entered; recording dates were used as attribution evidence for existing canonical shows, never to create shows.
 - Licensing / usage considerations: MusicBrainz core data is CC0. Rows cite the release MBID in `source_url` and `notes`; keep a "source: MusicBrainz" credit where these fields are shown. Spotify and Apple Music URL coverage needs a credentialed API pass with a rights review; it is deferred until credentials exist.
 - Potential canonical entities populated: Official releases, official release tracks, and later a release-to-show coverage table and a track-segment bridge for suites and medleys.
-- Known limitations: Two-show releases without per-track dates, early/late show dates, undated bonus tracks, and segment names such as `Rhythm Devils` (the drummers' segment that `songs.csv` calls `Drums`) remain unmapped pending explicit decisions.
+- Known limitations: Two-show releases without per-track dates, early/late show dates, and undated bonus tracks remain unmapped pending per-track evidence. `Rhythm Devils` is treated as an alias of `Drums`, the setlist spine's name for the drummers' segment.
 
 ## YouTube
 
