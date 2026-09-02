@@ -237,3 +237,66 @@ def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
     assert block.type == "arrangement"
     assert block.resource_id == arrangement["resource_id"]
     assert isinstance(block.progressions, list)
+
+
+def finish_call(plan: dict):
+    return AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": plan, "id": "finish-1", "type": "tool_call"}])
+
+
+def delivered():
+    return ToolMessage(content="Response delivered to the visitor.", tool_call_id="finish-1", name=finish.FINISH_TOOL_NAME)
+
+
+def test_build_experience_response_uses_the_finish_plan():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    payload = store.show_context(show)
+    good_url = next(url for url in sorted(finish.grounded_context([payload]).urls) if "archive.org" in url or "relisten.net" in url)
+    plan = {
+        "chat_answer": f"They opened with [Promised Land]({good_url}).",
+        "title": "Veneta, 1972",
+        "lead": "The Sunshine Daydream show.",
+        "mode": "show",
+        "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27", "title": None}],
+    }
+    messages = [
+        HumanMessage(content="What opened Veneta?"),
+        AIMessage(content="", tool_calls=[{"name": "get_show", "args": {"show_id_or_date": "1972-08-27"}, "id": "call-1", "type": "tool_call"}]),
+        tool_message(payload),
+        finish_call(plan),
+        delivered(),
+    ]
+    response = finish.build_experience_response("What opened Veneta?", "web-1", messages, store)
+    assert response.title == "Veneta, 1972"
+    assert response.answer == f"They opened with [Promised Land]({good_url})."
+    assert response.body_lead == "The Sunshine Daydream show."
+    assert response.mode == "show"
+    assert [block.type for block in response.blocks] == ["show_setlist"]
+    assert response.layout[0].block_indexes == [0]
+    assert response.conversation[-1].role == "assistant" and response.conversation[-1].text == response.answer
+    assert response.conversation[0].text == "What opened Veneta?"
+
+
+def test_build_experience_response_falls_back_when_no_plan_was_delivered(caplog):
+    store = CanonicalStore()
+    messages = [HumanMessage(content="Hi"), AIMessage(content="I could not find that show.")]
+    with caplog.at_level("WARNING"):
+        response = finish.build_experience_response("Hi", "web-1", messages, store)
+    assert response.answer == "I could not find that show."
+    assert response.mode == "gap"
+    assert response.blocks[0].type == "gap_state"
+    assert "finish_response" in caplog.text
+
+
+def test_build_experience_response_only_uses_the_latest_turn():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    earlier_plan = {"chat_answer": "Earlier.", "title": "Earlier", "lead": None, "mode": "show", "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27", "title": None}]}
+    later_plan = {"chat_answer": "Later.", "title": "Later", "lead": None, "mode": "quick_fact", "body": []}
+    messages = [
+        HumanMessage(content="First"), tool_message(store.show_context(show)), finish_call(earlier_plan), delivered(),
+        HumanMessage(content="Second"), finish_call(later_plan), delivered(),
+    ]
+    response = finish.build_experience_response("Second", "web-1", messages, store)
+    assert response.title == "Later" and response.blocks == []
+    assert [turn.text for turn in response.conversation] == ["First", "Earlier.", "Second", "Later."]

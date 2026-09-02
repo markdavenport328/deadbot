@@ -14,20 +14,25 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
 from langchain_core.tools import BaseTool, StructuredTool
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from deadbot import composition
 from deadbot.composition import _latest_turn, _tool_payloads
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
+    ConversationTurn,
     EditorialBlock,
     EditorialBlock as _EditorialBlock,
     ExperienceBlock,
     ExperienceMode,
+    ExperienceResponse,
+    GapStateBlock,
+    LayoutSection,
     ResourceListBlock,
     SourceReference,
 )
@@ -439,4 +444,95 @@ def build_finish_tool() -> BaseTool:
             "mixed with library components referenced by the IDs you retrieved. Links you write are kept only if the URL came from a tool result."
         ),
         args_schema=FinishPlan,
+    )
+
+
+def finish_plan_from_messages(messages: list[Any]) -> FinishPlan | None:
+    """Return the validated plan from the latest ``finish_response`` call, if any."""
+
+    for message in reversed(messages):
+        if getattr(message, "type", None) != "ai":
+            continue
+        for call in getattr(message, "tool_calls", None) or []:
+            if call.get("name") == FINISH_TOOL_NAME:
+                try:
+                    return FinishPlan.model_validate(call.get("args") or {})
+                except ValidationError as error:
+                    logger.warning("finish_response arguments failed validation: %s", error)
+                    return None
+    return None
+
+
+def _conversation(all_messages: list[Any], chat_answer: str) -> list[ConversationTurn]:
+    """Visible turns: user text, earlier assistant answers, and this turn's chat answer."""
+
+    turns: list[ConversationTurn] = []
+    for message in all_messages:
+        message_type = getattr(message, "type", None)
+        text = composition._content_text(getattr(message, "content", "")).strip()
+        if message_type == "human" and text:
+            turns.append(ConversationTurn(role="user", text=text[:8_000]))
+        elif message_type == "ai":
+            for call in getattr(message, "tool_calls", None) or []:
+                if call.get("name") == FINISH_TOOL_NAME and isinstance(call.get("args"), dict):
+                    answer = str(call["args"].get("chat_answer") or "").strip()
+                    if answer:
+                        turns.append(ConversationTurn(role="assistant", text=answer[:8_000]))
+            if text and not getattr(message, "tool_calls", None):
+                turns.append(ConversationTurn(role="assistant", text=text[:8_000]))
+    final = ConversationTurn(role="assistant", text=chat_answer[:8_000])
+    if turns and turns[-1].role == "assistant":
+        turns[-1] = final
+    else:
+        turns.append(final)
+    return turns[-50:]
+
+
+def _layout(block_count: int) -> list[LayoutSection]:
+    return [
+        LayoutSection(region="primary" if start == 0 else "supporting", block_indexes=list(range(start, min(start + 8, block_count))))
+        for start in range(0, block_count, 8)
+    ][:4]
+
+
+def build_experience_response(question: str, thread_id: str, messages: Iterable[Any], store: CanonicalStore) -> ExperienceResponse:
+    """Assemble the browser response from the agent's latest turn."""
+
+    all_messages = list(messages)
+    turn = composition._latest_turn(all_messages)
+    payloads = composition._tool_payloads(turn)
+    plan = finish_plan_from_messages(turn)
+
+    if plan is None:
+        last_text = next(
+            (composition._content_text(m.content).strip() for m in reversed(turn) if getattr(m, "type", None) == "ai" and composition._content_text(m.content).strip()),
+            "",
+        )
+        logger.warning("The agent ended the turn without calling finish_response (question=%r, tool_payloads=%s)", question, len(payloads))
+        answer = last_text or "Deadbot could not finish shaping this answer. Please try again."
+        return ExperienceResponse(
+            thread_id=thread_id,
+            title="Deadbot",
+            answer=answer,
+            mode="gap",
+            conversation=_conversation(all_messages, answer),
+            blocks=[GapStateBlock(type="gap_state", message="The main body was not delivered for this answer.")],
+            layout=_layout(1),
+            sources=[],
+        )
+
+    grounded = grounded_context(payloads)
+    blocks, sources = resolve_body(plan, grounded, payloads, store)
+    chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
+    lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None
+    return ExperienceResponse(
+        thread_id=thread_id,
+        title=plan.title.strip() or "Deadbot",
+        answer=chat_answer,
+        body_lead=lead,
+        mode=plan.mode,
+        conversation=_conversation(all_messages, chat_answer),
+        blocks=blocks,
+        layout=_layout(len(blocks)),
+        sources=sources,
     )
