@@ -194,13 +194,71 @@ class CanonicalStore:
         writers = [row for row in self.rows("song_writers") if row["song_id"] == song_id]
         performances = [row for row in self.rows("performances") if row["song_id"] == song_id]
         arrangements = [row for row in self.rows("song_arrangements") if row["song_id"] == song_id]
+        performance_ids = {row["performance_id"] for row in performances}
+        listen_by_performance = self._listen_paths(performance_ids)
+        performance_summaries = []
+        for row in performances:
+            summary = self._performance_summary(row, include_show_id=True)
+            listen = listen_by_performance.get(row["performance_id"])
+            if listen:
+                summary["listen"] = listen
+            performance_summaries.append(summary)
         return {
             "song": song,
             "writers": writers,
-            "performances": [self._performance_summary(row, include_show_id=True) for row in performances],
+            "performances": performance_summaries,
             "resources": self.resources_for("resource_songs", "song_id", song_id),
             "arrangements": arrangements,
         }
+
+    def _listen_paths(self, performance_ids: set[str]) -> dict[str, dict[str, str]]:
+        """Build a compact per-performance listening path: URLs only.
+
+        An archive track link comes from ``performance_links`` rows tagged as
+        an Internet Archive recording track; a release track link comes from
+        an ``official_release_tracks`` row for that performance with a
+        resolvable streaming URL. When a performance has more than one
+        candidate row, the selection is sorted deterministically (by the
+        link's own identifying columns, never by source row order) so the
+        CSV and PostgreSQL stores agree regardless of how their underlying
+        rows happen to be ordered. A performance with neither link is
+        omitted entirely rather than carrying empty listening keys.
+        """
+
+        archive_candidates: dict[str, list[tuple[str, str]]] = defaultdict(list)
+        for row in self.rows("performance_links"):
+            performance_id = row.get("performance_id", "")
+            if performance_id not in performance_ids:
+                continue
+            if row.get("platform") != "archive" or row.get("link_type") != "recording-track":
+                continue
+            url = row.get("url", "")
+            if url:
+                archive_candidates[performance_id].append((row.get("performance_link_id", ""), url))
+
+        release_candidates: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+        for row in self.rows("official_release_tracks"):
+            performance_id = row.get("performance_id", "")
+            if performance_id not in performance_ids:
+                continue
+            url = row.get("spotify_track_url", "")
+            if url:
+                release_candidates[performance_id].append(
+                    (row.get("release_id", ""), row.get("track_number", ""), url)
+                )
+
+        listen: dict[str, dict[str, str]] = {}
+        for performance_id in performance_ids:
+            paths: dict[str, str] = {}
+            archive_options = archive_candidates.get(performance_id)
+            if archive_options:
+                paths["archive_track_url"] = min(archive_options)[1]
+            release_options = release_candidates.get(performance_id)
+            if release_options:
+                paths["release_track_url"] = min(release_options)[2]
+            if paths:
+                listen[performance_id] = paths
+        return listen
 
     def song_performance_profile(self, song: dict[str, str]) -> dict[str, Any]:
         """Derive bounded performance observations for one song.

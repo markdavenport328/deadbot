@@ -160,6 +160,37 @@ def test_resolve_body_keeps_editorial_blocks_and_strips_ungrounded_links():
     assert block.items[0].link is not None and block.items[1].link is None
 
 
+def test_resolve_body_keeps_a_song_payload_listening_link_and_strips_an_unreturned_one():
+    store = CanonicalStore()
+    song = store.resolve_song("Deal")
+    payload = store.song_context(song)
+    grounded = finish.grounded_context([payload])
+    archive_url = next(
+        performance["listen"]["archive_track_url"]
+        for performance in payload["performances"]
+        if "listen" in performance and "archive_track_url" in performance["listen"]
+    )
+    assert archive_url in grounded.urls
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        lead=None,
+        mode="performance",
+        body=[
+            {
+                "type": "editorial",
+                "presentation": "narrative",
+                "eyebrow": None,
+                "title": "Hear it",
+                "paragraphs": [f"Listen on [Archive.org]({archive_url}) or [elsewhere](https://example.com/not-returned)."],
+                "items": [],
+            }
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    assert blocks[0].paragraphs[0] == f"Listen on [Archive.org]({archive_url}) or elsewhere."
+
+
 def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
     store = CanonicalStore()
     from deadbot.tools import build_tools
