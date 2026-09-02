@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from deadbot.data import CanonicalStore, repository_root
+from deadbot.finish import build_experience_response
 from deadbot.tools import build_tools
 
 
@@ -154,10 +155,8 @@ def model_evaluate_suite(
     if unknown_ids:
         raise ValueError(f"Unknown evaluation case IDs: {', '.join(sorted(unknown_ids))}")
 
-    resource_urls = {
-        row["resource_id"]: row["source_url"]
-        for row in (store or CanonicalStore()).rows("resources")
-    }
+    store = store or CanonicalStore()
+    resource_urls = {row["resource_id"]: row["source_url"] for row in store.rows("resources")}
     results = []
     for index, case in enumerate(selected_cases):
         result = agent.invoke(
@@ -165,9 +164,7 @@ def model_evaluate_suite(
             config=config_factory(f"model-eval-{case['id']}-{index}"),
         )
         messages = result["messages"]
-        from deadbot.finish import build_experience_response
-
-        response = build_experience_response(case["question"], f"model-eval-{case['id']}", messages, store or CanonicalStore())
+        response = build_experience_response(case["question"], f"model-eval-{case['id']}", messages, store)
         answer = response.answer
         body_types = [block.type for block in response.blocks]
         tool_calls = [
