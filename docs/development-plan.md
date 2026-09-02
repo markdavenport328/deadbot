@@ -114,8 +114,9 @@ The current resource set gives every one of the 20 Veneta songs at least one con
   provenance registry with canonical/external-source chips and outbound
   links.
 - Removed block-specific composer guidance from both the shared prompt and the
-  candidate brief. The editor now sees each grounded candidate itself and uses
-  its persona and response goal to decide what helps.
+  candidate brief. The editor then saw each grounded candidate itself and used
+  its persona and response goal to decide what helps. (That separate editor
+  model was itself merged away later; see the 2026-09 entry below.)
 - Added `comparison_strip`, a block that places one representative rendition
   of a song per known year with an explicit coverage note, making
   `comparison` mode expressible for the first time.

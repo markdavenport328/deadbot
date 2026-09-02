@@ -270,7 +270,7 @@ narrowed the question's scope.
 1. Run live-model evaluations for direct facts, recording recommendations,
    cross-decade song evolution, show-lore handoffs, notable-weather questions,
    source failures, and questions that merit no main-column expansion.
-2. Use those traces to refine the decision brief, tool descriptions, eligible
+2. Use those traces to refine tool output, tool descriptions, eligible
    blocks, and source research routes. Measure when derived facts should become
    materialized observations.
 3. Review the existing cross-decade priority queue against the question matrix:

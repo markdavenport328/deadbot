@@ -8,13 +8,31 @@ on:
 jobs:
   python:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: deadbot
+          POSTGRES_PASSWORD: deadbot
+          POSTGRES_DB: deadbot
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DEADBOT_DATABASE_URL: postgresql://deadbot:deadbot@localhost:5432/deadbot
+      DEADBOT_DATA_STORE: postgres
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
-      - run: pip install -e '.[dev]'
+      - run: pip install -e '.[dev,postgres]'
+      - run: deadbot db-import --rebuild
       - run: pytest
       - run: deadbot evaluate
       - run: python scripts/export_openapi.py
