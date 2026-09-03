@@ -4,12 +4,13 @@ Deadbot is an experimental Grateful Dead knowledge and music system. It has a re
 
 ## Current phase
 
-The agent harness can read the canonical graph from CSV (the zero-setup
-default) or from PostgreSQL. It is deliberately read-only: it can find songs,
-shows, performances, contextual resources, and playback links. Its first
-reviewed external reader can also retrieve Dead.net page metadata and links for
-a resolved song; it cannot collect article bodies, lyrics, audio, or change
-canonical data.
+The agent harness serves the canonical graph from PostgreSQL only. CSV files
+in `data/canonical/` are the reviewed import inputs the database is rebuilt
+from, not a runtime fallback; the test suite uses the CSV store directly. The
+harness is deliberately read-only: it can find songs, shows, performances,
+contextual resources, and playback links. Its first reviewed external reader
+can also retrieve Dead.net page metadata and links for a resolved song; it
+cannot collect article bodies, lyrics, audio, or change canonical data.
 
 ## Why the model is separated
 
@@ -96,7 +97,8 @@ See `docs/agent-harness.md` for the architecture, available tools, and model-pro
 
 ## Use PostgreSQL
 
-Install the optional driver, create an empty PostgreSQL database, and import the
+PostgreSQL is the only runtime store; CSV files are import inputs, not a
+serving fallback. Create an empty PostgreSQL database and import the
 canonical snapshot:
 
 ```bash
@@ -121,8 +123,10 @@ export DEADBOT_DATA_STORE=postgres
 .venv/bin/deadbot serve
 ```
 
-Leave `DEADBOT_DATA_STORE=csv` for the portable, zero-setup path. See
-`schema/README.md` for load order and the forward enrichment tables.
+`DEADBOT_DATA_STORE=postgres` is already the default; the export above is
+explicit for clarity. CSV remains the reviewed source of truth the database is
+rebuilt from, and tests use it directly, but it is never a runtime fallback.
+See `schema/README.md` for load order and the forward enrichment tables.
 
 ## Run the web experience
 

@@ -114,8 +114,9 @@ The current resource set gives every one of the 20 Veneta songs at least one con
   provenance registry with canonical/external-source chips and outbound
   links.
 - Removed block-specific composer guidance from both the shared prompt and the
-  candidate brief. The editor now sees each grounded candidate itself and uses
-  its persona and response goal to decide what helps.
+  candidate brief. The editor then saw each grounded candidate itself and used
+  its persona and response goal to decide what helps. (That separate editor
+  model was itself merged away later; see the 2026-09 entry below.)
 - Added `comparison_strip`, a block that places one representative rendition
   of a song per known year with an explicit coverage note, making
   `comparison` mode expressible for the first time.
@@ -140,9 +141,10 @@ The current resource set gives every one of the 20 Veneta songs at least one con
 
 These boundaries are intentional and should not be bypassed casually:
 
-- Canonical CSV remains the source of truth and zero-setup runtime. PostgreSQL
-  is now an optional, rebuildable operational read store selected by
-  configuration.
+- Canonical CSV remains the reviewed source of truth from which the
+  PostgreSQL database is rebuilt. The runtime store is PostgreSQL only
+  (`deadbot/storage.py` refuses anything else); the CSV store is used by
+  tests.
 - Agent tools are read only. The agent cannot edit canonical data, download media, or collect arbitrary web content.
 - A resource URL is a link-out reference. It does not turn an interview statement, memoir, or editorial interpretation into a canonical fact.
 - Do not copy full lyrics, tabs, transcriptions, audio, or video into the repository.

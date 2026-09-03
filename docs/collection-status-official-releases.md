@@ -46,9 +46,9 @@ unavailable)`).
 | Release groups held for review (official release, not promoted) | 33 |
 | Promoted releases with a full `release_date` | 244 of 293 (49 have only a month or year in MusicBrainz; noted in `notes`) |
 | Track rows written | 10,024 |
-| Tracks mapped to a canonical performance | 6,993 (69.8%) |
-| Tracks left without `performance_id` | 3,031 |
-| Releases with every track mapped / some / none | 78 / 191 / 24 |
+| Tracks mapped to a canonical performance | 7,026 (70.1%) |
+| Tracks left without `performance_id` | 2,998 |
+| Releases with every track mapped / some / none | 82 / 187 / 24 |
 | Distinct canonical shows attributed to a promoted release | 648 |
 | Distinct canonical shows with at least one mapped track | 529 |
 | Tracks with `duration_seconds` | 9,790 |
@@ -62,19 +62,21 @@ Held release groups and reasons:
 | `date_matches_multiple_canonical_shows` | 2 | Fillmore East 2-11-69, Dave's Picks Bonus Disc 2019 (early and late shows on the same date) |
 | `possible_duplicate_of_curated_release` | 1 | Sunshine Daydream (same show and release year as the curated Veneta row) |
 
-Unmapped-track reasons (all recorded per row in `notes`):
+Unmapped-track reasons (all recorded per row in `notes`; sums to 2,998):
 
 | Reason | Tracks |
 | --- | --- |
 | Release order contradicts the canonical setlist, whole show group held | 1,153 |
 | Multi-show release and the track has no per-track date in MusicBrainz | 1,058 |
-| Title not in the show's canonical setlist (intro, tuning, banter, source-only segment, `Rhythm Devils`, suite names) | 409 |
+| Title not in the show's canonical setlist (intro, tuning, banter, source-only segment; `Rhythm Devils` is now aliased to `Drums`, see open question 9) | 376 |
 | No release title for that show matched any canonical title (mostly `A / B` medley tracks on 30 Days of Dead compilations) | 223 |
 | Track date resolves to two canonical shows (early/late) | 81 |
-| Track date not in `shows.csv` | 48 |
 | Title fits more than one setlist position after all consistent alignments are compared | 46 |
+| Track date not in `shows.csv` | 49 |
 | Track combines more than one canonical performance (medley) | 11 |
 | More than one date in the track's own metadata | 1 |
+
+(Refreshed 2026-09-02 from a fresh run of `scripts/normalize_musicbrainz_live_releases.py` against a scratch copy of `data/`, printed-summary and committed-CSV counts alike: the run is byte-identical to the committed `official_releases.csv` and `official_release_tracks.csv`, confirmed by SHA-256, so the CSVs were not rewritten, only this table. The prior table's 6,993/3,031/409/10,081 figures predated the `Rhythm Devils` → `Drums` alias resolved in open question 9 below; the "releases with every track mapped / some / none" row was independently stale and is corrected here from the same committed tracks table. The unmapped-reasons table now sums to the stated 2,998 total.)
 
 ## Show-resolution rule
 
@@ -176,7 +178,7 @@ statement that the album is missing from Spotify.
   `performances.csv` and belongs to the show the track was attributed to;
   CSV headers unchanged.
 - `deadbot.postgres_import.read_canonical_table` converts both tables with the
-  importer's `TableSpec`s without error (294 releases, 10,081 tracks including
+  importer's `TableSpec`s without error (294 releases, 10,045 tracks including
   the curated Veneta rows).
 - `pytest tests/test_data.py tests/test_provenance.py tests/test_postgres_import.py`:
   50 passed, 2 failed. `test_show_media_lookup_resolves_a_date_to_the_canonical_show`

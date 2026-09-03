@@ -523,7 +523,9 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         """Get one song's canonical data, resource links, arrangements, and known performances.
 
         Use the returned resource URLs for interviews, articles, tabs, or other
-        context. Treat source notes and interviews as attributed material.
+        context. Treat source notes and interviews as attributed material. Each
+        performance may carry a `listen` object with an archive track URL and,
+        when mapped, a release track URL, ready to offer as a listening link.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:

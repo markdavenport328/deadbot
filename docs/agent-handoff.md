@@ -4,15 +4,17 @@ Use this guide when joining the Deadbot project midstream.
 
 ## Read first
 
-1. `README.md` for setup and repository layout.
-2. `docs/product-vision.md` for the intended app and its boundaries.
-3. `docs/development-plan.md` for current status and next work.
-4. `docs/data-and-retrieval-roadmap.md` for collection order, PostgreSQL
+1. `docs/handoff-2026-09-02.md` for the current state of the project: what
+   changed in PR #9, what works in production, and what to do next.
+2. `README.md` for setup and repository layout.
+3. `docs/product-vision.md` for the intended app and its boundaries.
+4. `docs/development-plan.md` for current status and next work.
+5. `docs/data-and-retrieval-roadmap.md` for collection order, PostgreSQL
    cutover gates, bounded context, and the 1972-to-full-timeline rollout.
-5. `docs/decisions.md` for durable architectural choices.
-6. `docs/provenance-policy.md`, `docs/graph-scope.md`, and `docs/model-retrieval.md` before changing data or retrieval behavior.
-7. `docs/agent-harness.md` before changing the LangGraph runtime.
-8. `docs/experience-architecture.md` before changing the FastAPI API, the `finish_response` plan and its resolution, or frontend blocks.
+6. `docs/decisions.md` for durable architectural choices.
+7. `docs/provenance-policy.md`, `docs/graph-scope.md`, and `docs/model-retrieval.md` before changing data or retrieval behavior.
+8. `docs/agent-harness.md` before changing the LangGraph runtime.
+9. `docs/experience-architecture.md` before changing the FastAPI API, the `finish_response` plan and its resolution, or frontend blocks.
 
 ## Current state
 
@@ -28,19 +30,17 @@ Use this guide when joining the Deadbot project midstream.
   all 21 canonical tables into the versioned PostgreSQL schema and records an
   immutable `sha256:...` canonical snapshot plus append-only import ledger;
   `deadbot/postgres.py` supplies the interchangeable read store.
-- `DEADBOT_DATA_STORE=csv` is the code default. This local checkout has an
-  ignored `.env` that selects its Docker PostgreSQL database; process
-  environment values still take precedence. PostgreSQL configuration and the
-  `deadbot db-import` command are documented in `README.md`.
+- `DEADBOT_DATA_STORE=postgres` is the code default, and it is the only
+  runtime store `deadbot/storage.py` will start with: it raises if the store
+  is anything but `postgres`, or if `DEADBOT_DATABASE_URL`/`DATABASE_URL` is
+  unset. CSV is never a serving fallback; it is the reviewed source of truth
+  the database is rebuilt from, and tests use the CSV `CanonicalStore`
+  directly. This local checkout has an ignored `.env` that selects its Docker
+  PostgreSQL database. PostgreSQL configuration and the `deadbot db-import`
+  command are documented in `README.md`.
 - Driver-independent importer, store-parity, CLI, API, and retrieval tests are
-  implemented. The local Docker PostgreSQL 16 smoke check cleanly bootstrapped
-  schema v2, imported 107,404 canonical rows, recorded snapshot
-  `sha256:524b5c16865ef59bf56174ea4f5eee5e8e7c47985fe874d0af72089e799e4218`,
-  and verified a PostgreSQL-backed Veneta lookup; 142 tests passed. Reconnect,
-  populated-database rebuild, invalid-import rollback, and CSV/PostgreSQL
-  result parity also passed locally. Deployment-like query measurements and a
-  production-like deployment validation remain cutover work, so do not call the
-  database path deployment-verified yet.
+  implemented. See `docs/handoff-2026-09-02.md` for current test status,
+  production behavior, and outstanding cutover work.
 - `deadbot/` contains the current read-only LangGraph harness.
 - `.venv/` is local and ignored. The project is installed there in editable mode.
 - The development machine has Ollama and `qwen3:8b` installed. The default model configuration is in `.env.example`; no secrets belong in Git.
@@ -53,7 +53,7 @@ PYTHONPATH=. .venv/bin/python -m pytest -q
 .venv/bin/deadbot chat
 ```
 
-The tests do not require Ollama. The chat command requires a running local Ollama service and the configured model. Start with `qwen3:8b` in non-thinking mode; use real evaluation questions before changing model parameters.
+The tests do not require Ollama. The chat command requires a running local Ollama service and the configured model. Start with `qwen3:8b` in non-thinking mode; use real evaluation questions before changing model parameters. One test needs a database; set `DEADBOT_DATABASE_URL` (local Docker example `postgresql://deadbot:deadbot@localhost:5432/deadbot`) and `DEADBOT_DATA_STORE=postgres` for a fully green run.
 
 ## How the agent works
 

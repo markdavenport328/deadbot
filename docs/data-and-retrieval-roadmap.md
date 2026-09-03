@@ -76,8 +76,9 @@ loading and scanning all CSV rows for each process.
 
 The current foundation provides a PostgreSQL schema, a deterministic canonical
 import path, and a read-store implementation behind the same application
-interface as CSV. CSV remains the reviewable source of truth and zero-setup
-fallback. Driver-independent importer and parity tests exercise the bridge. A
+interface as CSV. CSV remains the reviewable source of truth from which the
+PostgreSQL database is rebuilt; the CSV store is used by tests.
+Driver-independent importer and parity tests exercise the bridge. A
 local Docker PostgreSQL 16 smoke check completed a clean schema-v2 bootstrap
 of all 107,404 canonical rows, recorded a named snapshot, and read the Veneta
 show through the PostgreSQL store. That establishes the basic live path, but
@@ -270,7 +271,7 @@ narrowed the question's scope.
 1. Run live-model evaluations for direct facts, recording recommendations,
    cross-decade song evolution, show-lore handoffs, notable-weather questions,
    source failures, and questions that merit no main-column expansion.
-2. Use those traces to refine the decision brief, tool descriptions, eligible
+2. Use those traces to refine tool output, tool descriptions, eligible
    blocks, and source research routes. Measure when derived facts should become
    materialized observations.
 3. Review the existing cross-decade priority queue against the question matrix:
