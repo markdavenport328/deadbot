@@ -11,14 +11,18 @@ links; it does not store track lists, audio, or item binaries.
 Relisten is a free, non-commercial, open-source platform that itself streams
 from Archive.org (see https://relisten.net/about). This collector fetches
 metadata only, identifies itself with a descriptive User-Agent, and refuses to
-overwrite an existing raw file without ``--force`` so a failed retry can never
-erase a successful earlier run.
+overwrite an existing raw file without ``--force``. Each request retries on
+HTTP 429/503 with capped exponential backoff. ``--force`` merges its results
+into the existing file year by year, preferring whichever record for a year
+has ``status == 200``, so a failed retry (or a rerun with the network down)
+can never erase a successful earlier year.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -34,6 +38,7 @@ USER_AGENT = "Deadbot/0.1 (historical-show-context)"
 FIRST_YEAR = 1965
 LAST_YEAR = 1995
 MIN_SECONDS_BETWEEN_REQUESTS = 1.0
+MAX_ATTEMPTS = 6
 
 YEAR_FIELDS = ("year", "show_count", "source_count", "avg_rating", "avg_duration", "uuid", "id", "updated_at")
 SHOW_FIELDS = (
@@ -76,50 +81,97 @@ def compact_payload(payload: dict) -> dict:
 
 
 def fetch_year(year: int) -> dict:
+    """Fetch one year with bounded retry and backoff on 429/503 (a transient
+    error is never written as a permanent one on the first attempt)."""
+
     url = year_url(year)
-    record = {
+    request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
+    status: int | str | None = None
+    error: str | None = None
+    raw_payload: dict | None = None
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            with urlopen(request, timeout=60) as response:
+                status = response.status
+                raw_payload = compact_payload(json.load(response))
+                error = None
+            break
+        except HTTPError as exc:
+            status = exc.code
+            error = f"HTTP {exc.code}: {exc.reason}"
+            raw_payload = None
+            if status not in (429, 503):
+                break
+        except (URLError, TimeoutError, ValueError) as exc:
+            status = "error"
+            error = f"{type(exc).__name__}: {exc}"
+            raw_payload = None
+        if attempt + 1 >= MAX_ATTEMPTS:
+            break
+        backoff = min(2 ** (attempt + 1), 30)
+        print(f"  retry {attempt + 1}/{MAX_ATTEMPTS} for {year} after status {status} in {backoff}s", file=sys.stderr)
+        time.sleep(backoff)
+    return {
         "source": "relisten",
         "source_record_id": f"relisten:artists/grateful-dead/years/{year}",
         "retrieved_at": timestamp(),
         "source_url": url,
-        "status": None,
-        "error": None,
-        "raw_payload": None,
+        "status": status,
+        "error": error,
+        "raw_payload": raw_payload,
     }
-    request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
-    try:
-        with urlopen(request, timeout=60) as response:
-            record["status"] = response.status
-            record["raw_payload"] = compact_payload(json.load(response))
-    except HTTPError as error:
-        record["status"] = error.code
-        record["error"] = f"HTTP {error.code}: {error.reason}"
-    except (URLError, TimeoutError, ValueError) as error:
-        record["status"] = "error"
-        record["error"] = f"{type(error).__name__}: {error}"
-    return record
+
+
+def read_records(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
+
+
+def merge_year_records(existing: list[dict], new: list[dict]) -> list[dict]:
+    """Merge freshly fetched year records into the previously preserved ones.
+
+    A newly successful record always replaces what was there. A newly failed
+    record never overwrites an existing successful one, so ``--force`` can
+    retry failed years (even every year) without erasing prior successes.
+    Records for years not present in ``new`` are kept unchanged. The result
+    is sorted by year.
+    """
+
+    by_id = {record["source_record_id"]: record for record in existing}
+    for record in new:
+        key = record["source_record_id"]
+        current = by_id.get(key)
+        if record.get("status") == 200 or current is None or current.get("status") != 200:
+            by_id[key] = record
+    return [by_id[key] for key in sorted(by_id, key=lambda source_record_id: int(source_record_id.rsplit("/", 1)[-1]))]
 
 
 def collect(years: list[int], force: bool = False) -> Path:
     if OUTPUT.exists() and not force:
         raise FileExistsError(f"refusing to overwrite {OUTPUT}; rerun with --force to replace it")
+    existing_records = read_records(OUTPUT) if OUTPUT.exists() else []
 
-    records = []
+    new_records = []
     for index, year in enumerate(years):
         if index:
             time.sleep(MIN_SECONDS_BETWEEN_REQUESTS)
         record = fetch_year(year)
-        records.append(record)
+        new_records.append(record)
         payload = record["raw_payload"] or {}
         print(f"{year}: status={record['status']} shows={payload.get('show_count_returned', 0)} {record['error'] or ''}".rstrip())
 
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    with OUTPUT.open("w", encoding="utf-8") as handle:
-        for record in records:
-            handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+    merged = merge_year_records(existing_records, new_records)
 
-    successful = sum(1 for record in records if record["status"] == 200)
-    print(f"Preserved {len(records)} Relisten year records ({successful} successful) at {OUTPUT}.")
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    partial = OUTPUT.with_name(OUTPUT.name + ".partial")
+    with partial.open("w", encoding="utf-8") as handle:
+        for record in merged:
+            handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+    partial.replace(OUTPUT)
+
+    successful = sum(1 for record in merged if record["status"] == 200)
+    print(f"Preserved {len(merged)} Relisten year records ({successful} successful) at {OUTPUT}.")
     return OUTPUT
 
 

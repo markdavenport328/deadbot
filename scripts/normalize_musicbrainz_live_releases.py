@@ -407,6 +407,9 @@ def process_group(
     primary = choose_release(releases)
     tracks = flatten_tracks(primary)
     decision.update({"release_id_mbid": primary["id"], "release_title": primary["title"], "track_count": len(tracks)})
+    if not tracks:
+        decision["reason"] = "release_has_no_tracks"
+        return decision
 
     title_sources = [
         ("release-group title", group["title"]),
