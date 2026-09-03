@@ -277,6 +277,13 @@ def merge_links(existing: list[dict], candidates: list[dict], review: list[dict]
     already belongs to a *different* performance (for example a segued pair
     sharing one source file) holds the candidate instead of silently
     dropping it.
+
+    Dropping a managed row is provisional on its own regenerated candidate
+    actually being written. When that candidate instead loses a same-run URL
+    collision (held as ``url_already_used_by_another_performance``), the
+    previous row is not simply gone: it is re-inserted into the result and
+    the review entry records ``previous_row_kept: true``. A fact must stay
+    visibly missing, never be silently destroyed.
     """
 
     managed_ids = {candidate["performance_link_id"] for candidate in candidates}
@@ -305,6 +312,21 @@ def merge_links(existing: list[dict], candidates: list[dict], review: list[dict]
         conflict = by_url.get(candidate["url"])
         if conflict is not None:
             counts["held:url_already_used_by_another_performance"] += 1
+            # This candidate loses the collision, so its own regenerated
+            # replacement never lands. If it was going to replace a managed
+            # row we already dropped from `kept`, that row must come back
+            # instead of silently disappearing.
+            previous_row_kept = False
+            if (
+                previous is not None
+                and previous["platform"] == PLATFORM
+                and previous["link_type"] == LINK_TYPE
+                and previous["url"] not in by_url
+            ):
+                merged.append(previous)
+                by_url[previous["url"]] = previous
+                by_id[previous["performance_link_id"]] = previous
+                previous_row_kept = True
             review.append(
                 {
                     "source": "internet-archive",
@@ -315,6 +337,7 @@ def merge_links(existing: list[dict], candidates: list[dict], review: list[dict]
                     "url": candidate["url"],
                     "existing_performance_id": conflict.get("performance_id", ""),
                     "existing_performance_link_id": conflict["performance_link_id"],
+                    "previous_row_kept": previous_row_kept,
                 }
             )
             continue

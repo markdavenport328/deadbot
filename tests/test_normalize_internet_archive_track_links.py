@@ -128,6 +128,38 @@ def test_merge_links_holds_candidate_whose_url_matches_a_pre_existing_different_
     assert review[0]["existing_performance_link_id"] == existing[0]["performance_link_id"]
 
 
+def test_merge_links_restores_a_managed_row_whose_own_candidate_loses_a_url_collision():
+    # Reviewer-confirmed regression: perf-X had a good previous link
+    # (old.mp3). This run regenerates a candidate for perf-X pointing at
+    # shared.mp3, but a different candidate (perf-Y) claims shared.mp3 first
+    # in iteration order. perf-X's candidate is rightly held for the url
+    # collision, but perf-X's own previous row must not vanish along with
+    # it -- a fact must stay visibly missing, not be silently destroyed.
+    old_url = "https://archive.org/details/item/old.mp3"
+    shared_url = "https://archive.org/details/item/shared.mp3"
+    existing = [link_row("gd-1977-05-08-scarlet-begonias", old_url)]  # perf-X
+    candidates = [
+        link_row("gd-1977-05-08-fire-on-the-mountain", shared_url),  # perf-Y, processed first
+        link_row("gd-1977-05-08-scarlet-begonias", shared_url),  # perf-X's regenerated (losing) candidate
+    ]
+    review: list[dict] = []
+    counts = counter()
+
+    merged = ia_links.merge_links(existing, candidates, review, counts)
+
+    by_performance = {row["performance_id"]: row for row in merged}
+    assert len(merged) == 2
+    assert by_performance["gd-1977-05-08-fire-on-the-mountain"]["url"] == shared_url
+    # perf-X's previous row survived instead of being silently dropped.
+    assert by_performance["gd-1977-05-08-scarlet-begonias"]["url"] == old_url
+    assert by_performance["gd-1977-05-08-scarlet-begonias"] == existing[0]
+
+    held_entries = [entry for entry in review if entry["performance_id"] == "gd-1977-05-08-scarlet-begonias"]
+    assert len(held_entries) == 1
+    assert held_entries[0]["reason"] == "url_already_used_by_another_performance"
+    assert held_entries[0]["previous_row_kept"] is True
+
+
 # ---------------------------------------------------------------------------
 # A managed row this run could not regenerate (held in build_links) is left
 # untouched rather than dropped.
