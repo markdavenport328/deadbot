@@ -53,7 +53,7 @@ PYTHONPATH=. .venv/bin/python -m pytest -q
 .venv/bin/deadbot chat
 ```
 
-The tests do not require Ollama. The chat command requires a running local Ollama service and the configured model. Start with `qwen3:8b` in non-thinking mode; use real evaluation questions before changing model parameters.
+The tests do not require Ollama. The chat command requires a running local Ollama service and the configured model. Start with `qwen3:8b` in non-thinking mode; use real evaluation questions before changing model parameters. One test needs a database; set `DEADBOT_DATABASE_URL` (local Docker example `postgresql://deadbot:deadbot@localhost:5432/deadbot`) and `DEADBOT_DATA_STORE=postgres` for a fully green run.
 
 ## How the agent works
 

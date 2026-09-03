@@ -670,7 +670,6 @@ export default function App() {
                 </article>
               ))}
               {loading && <article className="message assistant pending"><p>Deadbot</p><div>Looking through the library…</div></article>}
-              <div ref={threadEnd} />
             </div>
 
             {error && <p className="error" role="alert">{error}</p>}
@@ -690,6 +689,7 @@ export default function App() {
                 <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
               </div>
             </form>
+            <div ref={threadEnd} />
           </section>
         </aside>
 

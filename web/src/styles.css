@@ -34,7 +34,7 @@ h2 { margin: 0; font-size: 1.45rem; }
 .message.assistant div { overflow-wrap: anywhere; }
 .message.pending { color: #adbbac; font-style: italic; }
 
-.composer { position: sticky; bottom: 0; flex-shrink: 0; border-top: 1px solid #405345; background: #17281f; padding: 1rem 0; }
+.composer { position: sticky; bottom: 0; flex-shrink: 0; border-top: 1px solid #405345; background: #122119; padding: 1rem 0; }
 .question-row { display: flex; align-items: center; gap: 0.6rem; }
 textarea { min-width: 0; flex: 1; resize: vertical; border: 1px solid #59705e; border-radius: 0.45rem; background: #eff1e7; color: #14221b; line-height: 1.4; padding: 0.78rem 0.85rem; }
 button[type="submit"] { align-self: center; border: 0; border-radius: 0.45rem; background: #e7b94e; color: #1c271d; font-weight: 750; padding: 0.78rem 0.95rem; }

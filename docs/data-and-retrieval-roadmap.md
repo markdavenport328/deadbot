@@ -76,8 +76,9 @@ loading and scanning all CSV rows for each process.
 
 The current foundation provides a PostgreSQL schema, a deterministic canonical
 import path, and a read-store implementation behind the same application
-interface as CSV. CSV remains the reviewable source of truth and zero-setup
-fallback. Driver-independent importer and parity tests exercise the bridge. A
+interface as CSV. CSV remains the reviewable source of truth from which the
+PostgreSQL database is rebuilt; the CSV store is used by tests.
+Driver-independent importer and parity tests exercise the bridge. A
 local Docker PostgreSQL 16 smoke check completed a clean schema-v2 bootstrap
 of all 107,404 canonical rows, recorded a named snapshot, and read the Veneta
 show through the PostgreSQL store. That establishes the basic live path, but
