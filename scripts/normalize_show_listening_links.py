@@ -289,7 +289,7 @@ def main() -> None:
         "existing_rows_kept": len(merged) - len(generated),
         "generated_rows": len(generated),
         "total_rows": len(merged),
-        "held_rows": 0,
+        "held_rows": len(review),
         **counts,
     }
     for key, value in summary.items():

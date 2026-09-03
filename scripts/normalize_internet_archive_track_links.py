@@ -263,14 +263,83 @@ def build_links(
 
 
 def merge_links(existing: list[dict], candidates: list[dict], review: list[dict], counts: dict[str, int]) -> list[dict]:
-    """Keep every existing row; add candidates whose url and id are both new."""
+    """Replace rows this script manages when regenerated; hold real conflicts.
 
-    by_url = {row["url"]: row for row in existing}
-    by_id = {row["performance_link_id"]: row for row in existing}
-    merged = list(existing)
+    A managed row (``platform == archive``, ``link_type == recording-track``)
+    whose ``performance_link_id`` is produced again this run is dropped
+    before candidates are considered, so a corrected mapping (a fixed
+    ``performance_recordings.csv`` row) can replace a wrong link instead of
+    being held forever. Rows this script does not manage, and managed rows
+    this run did not regenerate, are always kept untouched.
+
+    A candidate is counted as ``existing_url_unchanged`` only when it is
+    identical to its own previous row (same id, same url); a url that
+    already belongs to a *different* performance (for example a segued pair
+    sharing one source file) holds the candidate instead of silently
+    dropping it.
+
+    Dropping a managed row is provisional on its own regenerated candidate
+    actually being written. When that candidate instead loses a same-run URL
+    collision (held as ``url_already_used_by_another_performance``), the
+    previous row is not simply gone: it is re-inserted into the result and
+    the review entry records ``previous_row_kept: true``. A fact must stay
+    visibly missing, never be silently destroyed.
+    """
+
+    managed_ids = {candidate["performance_link_id"] for candidate in candidates}
+    previous_by_id = {row["performance_link_id"]: row for row in existing}
+    kept = [
+        row
+        for row in existing
+        if not (row["platform"] == PLATFORM and row["link_type"] == LINK_TYPE and row["performance_link_id"] in managed_ids)
+    ]
+    by_url = {row["url"]: row for row in kept}
+    by_id = {row["performance_link_id"]: row for row in kept}
+    merged = list(kept)
     for candidate in candidates:
-        if candidate["url"] in by_url:
+        previous = previous_by_id.get(candidate["performance_link_id"])
+        if (
+            previous is not None
+            and previous["url"] == candidate["url"]
+            and previous["platform"] == PLATFORM
+            and previous["link_type"] == LINK_TYPE
+        ):
             counts["existing_url_unchanged"] += 1
+            merged.append(previous)
+            by_url[previous["url"]] = previous
+            by_id[previous["performance_link_id"]] = previous
+            continue
+        conflict = by_url.get(candidate["url"])
+        if conflict is not None:
+            counts["held:url_already_used_by_another_performance"] += 1
+            # This candidate loses the collision, so its own regenerated
+            # replacement never lands. If it was going to replace a managed
+            # row we already dropped from `kept`, that row must come back
+            # instead of silently disappearing.
+            previous_row_kept = False
+            if (
+                previous is not None
+                and previous["platform"] == PLATFORM
+                and previous["link_type"] == LINK_TYPE
+                and previous["url"] not in by_url
+            ):
+                merged.append(previous)
+                by_url[previous["url"]] = previous
+                by_id[previous["performance_link_id"]] = previous
+                previous_row_kept = True
+            review.append(
+                {
+                    "source": "internet-archive",
+                    "status": "held",
+                    "reason": "url_already_used_by_another_performance",
+                    "performance_id": candidate["performance_id"],
+                    "performance_link_id": candidate["performance_link_id"],
+                    "url": candidate["url"],
+                    "existing_performance_id": conflict.get("performance_id", ""),
+                    "existing_performance_link_id": conflict["performance_link_id"],
+                    "previous_row_kept": previous_row_kept,
+                }
+            )
             continue
         if candidate["performance_link_id"] in by_id:
             counts["held:existing_link_id_with_different_url"] += 1
