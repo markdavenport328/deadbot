@@ -348,11 +348,15 @@ class EditorialLink(ExperienceModel):
 
 
 class EditorialItem(ExperienceModel):
-    marker: str | None
+    # Everything but the title is optional with a default, because this model
+    # doubles as the finish_response tool schema: when the optional fields were
+    # required-but-nullable, the model's first finish call regularly omitted one
+    # and had to be retried, costing a research round on every rich answer.
+    marker: str | None = None
     title: str
-    value: str | None
-    detail: str | None
-    follow_up: str | None
+    value: str | None = None
+    detail: str | None = None
+    follow_up: str | None = None
     link: EditorialLink | None = None
 
 
@@ -361,10 +365,10 @@ class EditorialBlock(ExperienceModel):
 
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"]
-    eyebrow: str | None
-    title: str | None
-    paragraphs: list[str] = Field(max_length=4)
-    items: list[EditorialItem] = Field(max_length=12)
+    eyebrow: str | None = None
+    title: str | None = None
+    paragraphs: list[str] = Field(default_factory=list, max_length=4)
+    items: list[EditorialItem] = Field(default_factory=list, max_length=12)
 
 
 ExperienceBlock = Annotated[

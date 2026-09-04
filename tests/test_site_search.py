@@ -58,6 +58,26 @@ def test_blogger_feed_search_returns_hits_with_snippet_date_and_author():
     assert "q=Veneta+creamery" in transport.calls[0]
 
 
+def test_blogger_search_retries_with_the_specific_words_when_the_full_query_finds_nothing():
+    empty = {"feed": {"openSearch$totalResults": {"$t": "0"}, "entry": []}}
+
+    class Transport:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def get(self, url: str, *, timeout: float) -> FetchedPage:
+            self.calls.append(url)
+            if "q=Eyes+of+the+World+Grateful+Dead+evolution" in url:
+                return _json_page(url, empty)
+            return _json_page(url, BLOGGER_FEED)
+
+    transport = Transport()
+    result = SiteSearcher(transport).search("dead essays", "Eyes of the World Grateful Dead evolution")
+    assert result.state == "ok" and len(transport.calls) == 2
+    assert "q=Eyes+World" in transport.calls[1]
+    assert "Eyes World" in result.message
+
+
 def test_omeka_api_search_builds_public_item_urls():
     items = [{"o:id": 38378, "o:title": "SAVE THE CREAMERY!! A field trip account", "dcterms:description": [{"@value": "Big open field. Hot as freaking hell."}], "dcterms:created": [{"@value": "2013-04-07"}]}]
     transport = FakeTransport({"/api/items": _json_page("https://www.gdao.org/api/items", items)})

@@ -99,6 +99,23 @@ def _strip_html(value: str) -> str:
     return re.sub(r"\s+", " ", unescape(_TAG.sub(" ", value))).strip()
 
 
+_GENERIC_WORDS = frozenset({
+    "grateful", "dead", "the", "and", "for", "with", "from", "about", "history", "evolution", "evolved",
+    "best", "version", "versions", "show", "shows", "song", "songs", "performance", "performances",
+    "live", "band", "jerry", "garcia", "how", "why", "what", "when", "did", "does", "changed", "change",
+})
+
+
+def _narrow_query(query: str) -> str:
+    """Keep the two or three most specific words of a query for a stricter site search."""
+
+    words = [word for word in re.findall(r"[A-Za-z0-9][A-Za-z0-9'-]+", query) if word.casefold() not in _GENERIC_WORDS and len(word) >= 3]
+    if not words:
+        return ""
+    # Prefer words in their original order; cap at three so the retry stays broad.
+    return " ".join(words[:3])
+
+
 def _snippet(text: str, query: str, width: int = 320) -> str:
     text = _strip_html(text)
     if not text:
@@ -176,7 +193,21 @@ class SiteSearcher:
 
     # -- adapters
     def _blogger(self, host: str, query: str, limit: int, label: str) -> SearchResult:
-        url = f"https://{host}/feeds/posts/default?q={quote_plus(query)}&alt=json&max-results={limit}"
+        result = self._blogger_query(host, query, query, limit, label)
+        if result.state != "empty":
+            return result
+        # Blogger's feed search requires every word to match. When a long query
+        # finds nothing, retry with just its most specific words so "Eyes of the
+        # World Grateful Dead evolution" still finds the posts about the song.
+        narrowed = _narrow_query(query)
+        if narrowed and narrowed.casefold() != query.casefold():
+            retry = self._blogger_query(host, narrowed, query, limit, label)
+            if retry.state == "ok":
+                return SearchResult(retry.state, label, "blogger_feed", query, retry.hits, total=retry.total, message=f"No posts matched the full query; these match \"{narrowed}\".")
+        return result
+
+    def _blogger_query(self, host: str, feed_query: str, query: str, limit: int, label: str) -> SearchResult:
+        url = f"https://{host}/feeds/posts/default?q={quote_plus(feed_query)}&alt=json&max-results={limit}"
         page = self._get(url)
         document = self._json(page)
         if document is None:

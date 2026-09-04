@@ -206,18 +206,18 @@ export interface components {
          */
         EditorialBlock: {
             /** Eyebrow */
-            eyebrow: string | null;
+            eyebrow?: string | null;
             /** Items */
-            items: components["schemas"]["EditorialItem"][];
+            items?: components["schemas"]["EditorialItem"][];
             /** Paragraphs */
-            paragraphs: string[];
+            paragraphs?: string[];
             /**
              * Presentation
              * @enum {string}
              */
             presentation: "narrative" | "fact_grid" | "timeline";
             /** Title */
-            title: string | null;
+            title?: string | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -227,16 +227,16 @@ export interface components {
         /** EditorialItem */
         EditorialItem: {
             /** Detail */
-            detail: string | null;
+            detail?: string | null;
             /** Follow Up */
-            follow_up: string | null;
+            follow_up?: string | null;
             link?: components["schemas"]["EditorialLink"] | null;
             /** Marker */
-            marker: string | null;
+            marker?: string | null;
             /** Title */
             title: string;
             /** Value */
-            value: string | null;
+            value?: string | null;
         };
         /**
          * EditorialLink
