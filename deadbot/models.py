@@ -47,6 +47,7 @@ class OpenAIProvider:
     model: str
     api_key: str | None = None
     base_url: str | None = None
+    reasoning_effort: str | None = None
 
     def create_chat_model(self) -> BaseChatModel:
         # Keep the hosted-provider dependency out of the local Ollama import
@@ -61,6 +62,8 @@ class OpenAIProvider:
             # reasoning and multi-turn workflows.
             "use_responses_api": True,
         }
+        if self.reasoning_effort:
+            options["reasoning"] = {"effort": self.reasoning_effort}
         if self.api_key:
             options["api_key"] = self.api_key
         if self.base_url:
@@ -86,6 +89,7 @@ def create_model_provider(settings: Settings) -> ModelProvider:
             model=settings.openai_model,
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
+            reasoning_effort=settings.openai_reasoning_effort,
         )
     raise ValueError(
         f"Unsupported DEADBOT_MODEL_PROVIDER={settings.model_provider!r}. "

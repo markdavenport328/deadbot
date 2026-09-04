@@ -1,5 +1,36 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import type { ExperienceBlock, ExperienceResponse, SourceReference } from "./types";
+import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
+
+type SetlistSections = ShowUnitBlock["sets"];
+type ListenActions = ShowUnitBlock["listen"];
+type UnitSources = ShowUnitBlock["sources"];
+
+// Roles are the composer's interpretive relationships; these labels are how
+// the page names them. The composer never chooses styling.
+const roleLabels: Record<string, string> = {
+  anchor: "Start here",
+  supporting: "Supporting",
+  contrast: "Contrast",
+  turning_point: "Turning point",
+  outlier: "Outlier",
+  culmination: "Culmination",
+  overlooked: "Overlooked",
+  representative: "Representative"
+};
+
+const organizationLabels: Record<string, string> = {
+  chronological: "In order",
+  curated: "A selection",
+  comparative: "Side by side"
+};
+
+function formatShowDate(iso: string | null | undefined): string {
+  if (!iso) return "Undated";
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return iso;
+  const [, year, month, day] = match;
+  return `${Number(month)}/${Number(day)}/${year.slice(2)}`;
+}
 
 const suggestions = [
   "Was Branford on the whole 1991-09-10 Madison Square Garden show, and where should I listen for him?",
@@ -139,6 +170,156 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
   return null;
 }
 
+function RoleChip({ role }: { role?: string | null }) {
+  if (!role) return null;
+  return <span className={`role-chip role-${role}`}>{roleLabels[role] ?? role.replaceAll("_", " ")}</span>;
+}
+
+function ListenActionList({ actions }: { actions: ListenActions }) {
+  if (actions.length === 0) return null;
+  return (
+    <ul className="listen-actions" aria-label="Listen">
+      {actions.map((action) => (
+        <li key={action.url}>
+          <a className={action.is_official ? "listen-action official" : "listen-action"} href={action.url} target="_blank" rel="noreferrer">
+            <span aria-hidden="true">▶</span> {action.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function UnitSourceList({ sources }: { sources: UnitSources }) {
+  if (sources.length === 0) return null;
+  return (
+    <ul className="unit-sources" aria-label="Sources for this item">
+      {sources.map((source) => (
+        <li key={source.url}>
+          {source.note && <p className="unit-source-note">{source.note}</p>}
+          <ExternalLink href={source.url}>{source.label}</ExternalLink>
+          {source.source_name && <span className="unit-source-name"> · {source.source_name}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function SetlistSectionList({ sets, onFollowUp }: { sets: SetlistSections; onFollowUp: (prompt: string) => void }) {
+  return (
+    <div className="setlist-sections">
+      {sets.map((set) => (
+        <div className="setlist-section" key={set.label}>
+          <p className="fact-label">{set.label}</p>
+          <ol>
+            {set.songs.map((song) => (
+              <li key={song.performance_id} className={song.highlighted ? "setlist-song highlighted" : "setlist-song"}>
+                <FollowUpButton prompt={song.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <span>{song.title}</span>
+                </FollowUpButton>
+                {song.highlighted && <span className="highlight-mark" title="A performance worth your attention" aria-label="Highlighted">★</span>}
+                {song.listen_url && (
+                  <a className="song-play" href={song.listen_url} target="_blank" rel="noreferrer" aria-label={`Play ${song.title}`} title={`Play ${song.title}`}>
+                    ▶
+                  </a>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ShowUnit({
+  unit,
+  onFollowUp,
+  collapsed = false
+}: {
+  unit: ShowUnitBlock;
+  onFollowUp: (prompt: string) => void;
+  collapsed?: boolean;
+}) {
+  const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
+  const showPrompt = `Tell me about the Grateful Dead show on ${unit.show_date}.`;
+  return (
+    <article className={`card show-unit${unit.role ? ` role-${unit.role}` : ""}`}>
+      <header className="unit-heading">
+        <div>
+          {unit.title && <Eyebrow label={unit.title} />}
+          <h2>
+            <FollowUpButton prompt={showPrompt} onFollowUp={onFollowUp} className="card-title-link">
+              <span>
+                <time dateTime={unit.show_date}>{formatShowDate(unit.show_date)}</time>
+                {unit.venue_name ? ` · ${unit.venue_name}` : ""}
+              </span>
+            </FollowUpButton>
+          </h2>
+          {unit.location && <p className="subtitle">{unit.location}</p>}
+        </div>
+        <RoleChip role={unit.role} />
+      </header>
+      {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
+      {unit.guests.length > 0 && (
+        <p className="unit-guests">
+          <span className="fact-label">With </span>
+          {unit.guests.map((guest, index) => (
+            <span key={`${guest.person_id}-${index}`}>
+              {index > 0 ? ", " : ""}
+              <FollowUpButton prompt={guest.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
+                <strong>{guest.name}</strong>
+              </FollowUpButton>
+              {" "}({guest.instruments.join(", ")})
+            </span>
+          ))}
+        </p>
+      )}
+      {collapsed && highlights.length > 0 && (
+        <div className="unit-highlights">
+          <p className="fact-label">Listen for</p>
+          <ul>
+            {highlights.map((song) => (
+              <li key={song.performance_id}>
+                <FollowUpButton prompt={song.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <span>{song.title}</span>
+                </FollowUpButton>
+                {song.listen_url && (
+                  <a className="listen-action compact" href={song.listen_url} target="_blank" rel="noreferrer">
+                    <span aria-hidden="true">▶</span> Play
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {unit.sets.length > 0 ? (
+        collapsed ? (
+          <details className="unit-setlist">
+            <summary>Setlist</summary>
+            <SetlistSectionList sets={unit.sets} onFollowUp={onFollowUp} />
+          </details>
+        ) : (
+          <div className="unit-setlist">
+            <p className="fact-label">Setlist</p>
+            <SetlistSectionList sets={unit.sets} onFollowUp={onFollowUp} />
+          </div>
+        )
+      ) : unit.setlist_note ? (
+        <p className="coverage-note">{unit.setlist_note}</p>
+      ) : null}
+      <ListenActionList actions={unit.listen} />
+      <UnitSourceList sources={unit.sources} />
+      {unit.follow_up && (
+        <p className="unit-follow-up">
+          <FollowUpButton prompt={unit.follow_up} onFollowUp={onFollowUp}>{unit.follow_up}</FollowUpButton>
+        </p>
+      )}
+    </article>
+  );
+}
+
 function Block({
   block,
   sources,
@@ -149,6 +330,113 @@ function Block({
   onFollowUp: (prompt: string) => void;
 }) {
   switch (block.type) {
+    case "show_unit":
+      return <ShowUnit unit={block} onFollowUp={onFollowUp} />;
+    case "show_explorer":
+      return (
+        <section className="show-explorer">
+          <Eyebrow label={organizationLabels[block.organization] ?? block.organization} title={block.title} />
+          <h2>{block.title}</h2>
+          <div className="explorer-units">
+            {block.items.map((unit) => (
+              <ShowUnit
+                key={unit.show_id}
+                unit={unit}
+                onFollowUp={onFollowUp}
+                collapsed={block.items.length > 1 && unit.role !== "anchor"}
+              />
+            ))}
+          </div>
+        </section>
+      );
+    case "performance_unit":
+      return (
+        <article className={`card performance-unit${block.role ? ` role-${block.role}` : ""}`}>
+          <header className="unit-heading">
+            <div>
+              <p className="eyebrow">{block.song_title}</p>
+              <h2>
+                <FollowUpButton prompt={`Tell me about the Grateful Dead show on ${block.show_date ?? block.show_label}.`} onFollowUp={onFollowUp} className="card-title-link">
+                  <span>
+                    <time dateTime={block.show_date ?? undefined}>{formatShowDate(block.show_date)}</time>
+                    {block.venue_name ? ` · ${block.venue_name}` : ""}
+                  </span>
+                </FollowUpButton>
+              </h2>
+              <p className="subtitle">
+                {[block.location, block.set_label, block.position_in_set ? `#${block.position_in_set}` : null].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+            <RoleChip role={block.role} />
+          </header>
+          {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+          {(block.previous || block.next) && (
+            <div className="set-thread" aria-label="Adjacent songs in the set">
+              <div>
+                <p className="fact-label">Before</p>
+                {block.previous ? (
+                  <FollowUpButton prompt={block.previous.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                    {block.previous.title}
+                  </FollowUpButton>
+                ) : <span className="thread-boundary">Set opener</span>}
+              </div>
+              <div className="current-performance" aria-label="Current performance">{block.song_title}</div>
+              <div>
+                <p className="fact-label">After</p>
+                {block.next ? (
+                  <FollowUpButton prompt={block.next.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                    {block.next.title}
+                  </FollowUpButton>
+                ) : <span className="thread-boundary">Set closer</span>}
+              </div>
+            </div>
+          )}
+          <ListenActionList actions={block.listen} />
+          <UnitSourceList sources={block.sources} />
+          {block.follow_up && (
+            <p className="unit-follow-up">
+              <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp}>{block.follow_up}</FollowUpButton>
+            </p>
+          )}
+        </article>
+      );
+    case "era_unit":
+      return (
+        <section className={`card era-unit${block.role ? ` role-${block.role}` : ""}`}>
+          <header className="unit-heading">
+            <div>
+              {block.span && <Eyebrow label={block.span} title={block.title} />}
+              <h2>{block.title}</h2>
+            </div>
+            <RoleChip role={block.role} />
+          </header>
+          {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+          <ul className="era-performances">
+            {block.performances.map((performance) => (
+              <li key={performance.performance_id}>
+                <FollowUpButton prompt={performance.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
+                  <strong>
+                    <time dateTime={performance.show_date ?? undefined}>{formatShowDate(performance.show_date)}</time>
+                    {" · "}{performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}
+                  </strong>
+                </FollowUpButton>
+                <span>{[performance.song_title, performance.set_label].filter(Boolean).join(" · ")}</span>
+                {performance.listen && (
+                  <a className="listen-action compact" href={performance.listen.url} target="_blank" rel="noreferrer">
+                    <span aria-hidden="true">▶</span> {performance.listen.label}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+          <UnitSourceList sources={block.sources} />
+          {block.follow_up && (
+            <p className="unit-follow-up">
+              <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp}>{block.follow_up}</FollowUpButton>
+            </p>
+          )}
+        </section>
+      );
     case "entity_card": {
       return (
         <article className="typography-block entity-block">
@@ -172,22 +460,7 @@ function Block({
         <section className="card show-setlist">
           <Eyebrow label="Setlist" title={block.title} />
           <h2>{block.title}</h2>
-          <div className="setlist-sections">
-            {block.sets.map((set) => (
-              <div className="setlist-section" key={set.label}>
-                <p className="fact-label">{set.label}</p>
-                <ol>
-                  {set.songs.map((song) => (
-                    <li key={song.performance_id}>
-                      <FollowUpButton prompt={song.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                        <span>{song.title}</span>
-                      </FollowUpButton>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-          </div>
+          <SetlistSectionList sets={block.sets} onFollowUp={onFollowUp} />
         </section>
       );
     case "show_selection":

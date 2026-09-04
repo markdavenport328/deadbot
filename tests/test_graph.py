@@ -51,6 +51,18 @@ def test_prompt_names_the_finish_tool():
     assert "finish_response" in prompt
 
 
+def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
+    prompt = graph.SYSTEM_PROMPT
+    unwrapped = " ".join(prompt.split())
+    for unit in ("show_unit", "show_explorer", "performance_unit", "era_unit"):
+        assert unit in prompt
+    assert "Group by meaning and referent, not by tool, source or data type." in unwrapped
+    assert "Tool boundaries and database tables are not presentation boundaries." in unwrapped
+    # The research personality is preserved.
+    for heading in ("## RESEARCH WITH PURPOSE", "## FORM A WORKING INTERPRETATION", "## FIND THE ORGANIZING IDEA", "# PRESERVE DISCOVERY", "# TRUST"):
+        assert heading in prompt
+
+
 def _run_tool_node(node: ToolNode, ai_message: AIMessage) -> list:
     """Invoke a ToolNode the way the real graph does: through a compiled graph,
     since ToolNode.invoke on its own raises for missing LangGraph runtime config.

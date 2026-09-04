@@ -76,6 +76,12 @@ class StubComparisonStore:
             return self.shows.get(entity_id)
         return None
 
+    def rows_in(self, table, column, values):
+        wanted = set(values)
+        if table == "shows":
+            return [show for show in self.shows.values() if show.get(column) in wanted]
+        return []
+
     def rows(self, table):
         return []
 
@@ -136,6 +142,41 @@ def test_experience_endpoint_renders_the_finish_plan():
     assert body["title"] == "Veneta, 1972"
     assert body["blocks"][0]["type"] == "show_setlist" and body["blocks"][0]["title"] == "The whole night"
     assert body["conversation"][-1] == {"role": "assistant", "text": "Veneta opened with Promised Land."}
+
+
+def test_experience_endpoint_renders_a_nested_show_explorer():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    payload = store.show_context(show)
+    plan = {
+        "chat_answer": "One show, as a unit.",
+        "title": "Veneta as a unit",
+        "lead": None,
+        "mode": "show",
+        "body": [
+            {
+                "type": "show_explorer",
+                "title": "The show",
+                "organization": "curated",
+                "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "role": "anchor", "note": "One frame, everything about it."}],
+            }
+        ],
+    }
+    agent = FakeAgent([
+        HumanMessage(content="Tell me about Veneta"),
+        tool_message(payload),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ])
+    client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
+    body = client.post("/api/experience", json={"question": "Tell me about Veneta"}).json()
+    explorer = body["blocks"][0]
+    assert explorer["type"] == "show_explorer" and explorer["organization"] == "curated"
+    unit = explorer["items"][0]
+    assert unit["type"] == "show_unit" and unit["show_date"] == "1972-08-27" and unit["role"] == "anchor"
+    assert unit["sets"] and unit["listen"]
+    # The nested response still validates against the browser contract.
+    ExperienceResponse.model_validate(body)
 
 
 def test_api_returns_the_validated_experience_contract():

@@ -34,8 +34,19 @@ type FixedSongOverviewBlock = Require<
   "credits" | "source_ids"
 >;
 
+// Semantic units. Their hydrated lists are always present in a server
+// response (see the note on Require above).
+export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "sets" | "guests" | "listen" | "sources">;
+type FixedShowExplorerBlock = Omit<components["schemas"]["ShowExplorerBlock"], "items"> & { items: ShowUnitBlock[] };
+type FixedPerformanceUnitBlock = Require<components["schemas"]["PerformanceUnitBlock"], "listen" | "sources">;
+type FixedEraUnitBlock = Require<components["schemas"]["EraUnitBlock"], "sources">;
+
 export type ExperienceBlock =
   | FixedEntityCardBlock
+  | ShowUnitBlock
+  | FixedShowExplorerBlock
+  | FixedPerformanceUnitBlock
+  | FixedEraUnitBlock
   | components["schemas"]["ShowSetlistBlock"]
   | components["schemas"]["ShowSelectionBlock"]
   | components["schemas"]["RecordingListBlock"]

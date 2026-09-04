@@ -746,6 +746,170 @@
         "title": "EquipmentListBlock",
         "type": "object"
       },
+      "EraPerformanceItem": {
+        "additionalProperties": false,
+        "properties": {
+          "follow_up": {
+            "title": "Follow Up",
+            "type": "string"
+          },
+          "listen": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ListenAction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "show_label": {
+            "title": "Show Label",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "song_title": {
+            "title": "Song Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "song_id",
+          "song_title",
+          "show_id",
+          "show_label",
+          "follow_up"
+        ],
+        "title": "EraPerformanceItem",
+        "type": "object"
+      },
+      "EraUnitBlock": {
+        "additionalProperties": false,
+        "description": "A stage of a development the composer names, with representative listening.",
+        "properties": {
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "performances": {
+            "items": {
+              "$ref": "#/components/schemas/EraPerformanceItem"
+            },
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Performances",
+            "type": "array"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "anchor",
+                  "supporting",
+                  "contrast",
+                  "turning_point",
+                  "outlier",
+                  "culmination",
+                  "overlooked",
+                  "representative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSource"
+            },
+            "maxItems": 4,
+            "title": "Sources",
+            "type": "array"
+          },
+          "span": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Span"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "era_unit",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "performances"
+        ],
+        "title": "EraUnitBlock",
+        "type": "object"
+      },
       "ExperienceRequest": {
         "additionalProperties": false,
         "properties": {
@@ -802,18 +966,22 @@
                   "editorial": "#/components/schemas/EditorialBlock",
                   "entity_card": "#/components/schemas/EntityCardBlock",
                   "equipment_list": "#/components/schemas/EquipmentListBlock",
+                  "era_unit": "#/components/schemas/EraUnitBlock",
                   "gap_state": "#/components/schemas/GapStateBlock",
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
                   "performance_extremes": "#/components/schemas/PerformanceExtremesBlock",
                   "performance_list": "#/components/schemas/PerformanceListBlock",
                   "performance_spine": "#/components/schemas/PerformanceSpineBlock",
+                  "performance_unit": "#/components/schemas/PerformanceUnitBlock",
                   "performer_list": "#/components/schemas/PerformerListBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
                   "recording_list": "#/components/schemas/RecordingListBlock",
                   "resource_list": "#/components/schemas/ResourceListBlock",
+                  "show_explorer": "#/components/schemas/ShowExplorerBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_setlist": "#/components/schemas/ShowSetlistBlock",
+                  "show_unit": "#/components/schemas/ShowUnitBlock",
                   "song_overview": "#/components/schemas/SongOverviewBlock"
                 },
                 "propertyName": "type"
@@ -821,6 +989,18 @@
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/EntityCardBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ShowUnitBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ShowExplorerBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PerformanceUnitBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/EraUnitBlock"
                 },
                 {
                   "$ref": "#/components/schemas/ShowSetlistBlock"
@@ -1134,6 +1314,36 @@
         "title": "LayoutSection",
         "type": "object"
       },
+      "ListenAction": {
+        "additionalProperties": false,
+        "description": "A listening destination attached to the object it plays.",
+        "properties": {
+          "is_official": {
+            "default": false,
+            "title": "Is Official",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "url",
+          "provider"
+        ],
+        "title": "ListenAction",
+        "type": "object"
+      },
       "MediaLinkBlock": {
         "additionalProperties": false,
         "properties": {
@@ -1435,6 +1645,181 @@
           "follow_up"
         ],
         "title": "PerformanceSpineNeighbor",
+        "type": "object"
+      },
+      "PerformanceUnitBlock": {
+        "additionalProperties": false,
+        "description": "One rendition as a primary object, with its set context and listening actions.",
+        "properties": {
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "listen": {
+            "items": {
+              "$ref": "#/components/schemas/ListenAction"
+            },
+            "maxItems": 3,
+            "title": "Listen",
+            "type": "array"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceSpineNeighbor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "position_in_set": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position In Set"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PerformanceSpineNeighbor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "anchor",
+                  "supporting",
+                  "contrast",
+                  "turning_point",
+                  "outlier",
+                  "culmination",
+                  "overlooked",
+                  "representative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "show_label": {
+            "title": "Show Label",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "song_title": {
+            "title": "Song Title",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSource"
+            },
+            "maxItems": 4,
+            "title": "Sources",
+            "type": "array"
+          },
+          "type": {
+            "const": "performance_unit",
+            "title": "Type",
+            "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          }
+        },
+        "required": [
+          "type",
+          "performance_id",
+          "song_id",
+          "song_title",
+          "show_id",
+          "show_label"
+        ],
+        "title": "PerformanceUnitBlock",
         "type": "object"
       },
       "PerformerItem": {
@@ -1742,6 +2127,22 @@
             "title": "Follow Up",
             "type": "string"
           },
+          "highlighted": {
+            "default": false,
+            "title": "Highlighted",
+            "type": "boolean"
+          },
+          "listen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listen Url"
+          },
           "performance_id": {
             "title": "Performance Id",
             "type": "string"
@@ -1773,6 +2174,47 @@
           "follow_up"
         ],
         "title": "SetlistSong",
+        "type": "object"
+      },
+      "ShowExplorerBlock": {
+        "additionalProperties": false,
+        "description": "A collection-level experience for browsing several complete show units.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ShowUnitBlock"
+            },
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "organization": {
+            "default": "chronological",
+            "enum": [
+              "chronological",
+              "curated",
+              "comparative"
+            ],
+            "title": "Organization",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "show_explorer",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items"
+        ],
+        "title": "ShowExplorerBlock",
         "type": "object"
       },
       "ShowSelectionBlock": {
@@ -1901,6 +2343,151 @@
         "title": "ShowSetlistBlock",
         "type": "object"
       },
+      "ShowUnitBlock": {
+        "additionalProperties": false,
+        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (role, note, highlights,\npreferred recording, sources, follow-up); date, venue, setlist, guests and\nlistening actions come from canonical data.",
+        "properties": {
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "guests": {
+            "items": {
+              "$ref": "#/components/schemas/PerformerItem"
+            },
+            "maxItems": 8,
+            "title": "Guests",
+            "type": "array"
+          },
+          "listen": {
+            "items": {
+              "$ref": "#/components/schemas/ListenAction"
+            },
+            "maxItems": 4,
+            "title": "Listen",
+            "type": "array"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "anchor",
+                  "supporting",
+                  "contrast",
+                  "turning_point",
+                  "outlier",
+                  "culmination",
+                  "overlooked",
+                  "representative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "setlist_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Setlist Note"
+          },
+          "sets": {
+            "items": {
+              "$ref": "#/components/schemas/SetlistSection"
+            },
+            "maxItems": 4,
+            "title": "Sets",
+            "type": "array"
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSource"
+            },
+            "maxItems": 4,
+            "title": "Sources",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "show_unit",
+            "title": "Type",
+            "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          }
+        },
+        "required": [
+          "type",
+          "show_id",
+          "show_date"
+        ],
+        "title": "ShowUnitBlock",
+        "type": "object"
+      },
       "SongOverviewBlock": {
         "additionalProperties": false,
         "properties": {
@@ -1995,6 +2582,48 @@
           "label"
         ],
         "title": "SourceReference",
+        "type": "object"
+      },
+      "UnitSource": {
+        "additionalProperties": false,
+        "description": "Evidence the composer associated with one unit, resolved to a grounded URL.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "label"
+        ],
+        "title": "UnitSource",
         "type": "object"
       },
       "ValidationError": {

@@ -1,5 +1,14 @@
 # Working principles for agents
 
+## Pushing to GitHub
+
+The repository owner's administrator has blocked agents from pushing to
+GitHub. An agent may commit locally and open pull requests with `gh` once a
+branch exists on the remote, but it cannot push. When work is ready to push,
+give the owner the exact `git push` command to run from their terminal, on its
+own line in a shell code block, and wait for confirmation before opening or
+updating a pull request.
+
 ## Model-first product design
 
 Deadbot should first empower the model to reason over clear, useful context.

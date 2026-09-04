@@ -85,9 +85,37 @@ An illustrative response is:
 
 The illustration is a contract pattern, not an instruction to expose all database fields. The API should return only the display data necessary for the requested blocks.
 
+## Semantic units
+
+The model composes at the level of meaning, not of UI components. A
+semantic unit declares what the visitor should perceive as one object in
+this particular answer; the server hydrates the object's facts from the store
+and the renderer owns its anatomy. The model supplies only interpretation:
+the unit's role in the answer (a small closed vocabulary: anchor,
+supporting, contrast, turning_point, outlier, culmination, overlooked,
+representative), a note on why it matters here, which performances deserve
+attention, which recording to prefer, which sources speak about it (cited
+by a URL a tool returned this turn), and where curiosity might go next.
+
+| Unit | Declares | Hydrated by the server |
+| --- | --- | --- |
+| `show_unit` | One show is a primary object of the answer. | Date, venue, location, guests, the setlist with highlights marked and each song playable, listening actions (preferred recording, stream, official release, archive listing), sources. |
+| `show_explorer` | A collection of show units under one organization (chronological, curated, comparative). | Repeated show anatomy with consistent controls; ungrounded shows are dropped. |
+| `performance_unit` | One rendition is a primary object. | Song, show, venue, set placement, set neighbors, play actions (this track, the full show). |
+| `era_unit` | A stage of a development the model names. | Representative performances as listening paths. |
+
+The unit follows the shape of the answer, not the entity type of the
+retrieved data: a question about why a show matters is an argument with
+evidence, not a show unit. Page-level synthesis (patterns across units,
+disagreements, the organizing idea) stays in editorial blocks; everything
+needed to understand and act on one object stays inside its unit. Actions
+belong to the objects they act on, so a separate "listening links" section
+is the exception rather than the rule. See
+`docs/superpowers/specs/2026-09-04-semantic-experience-units-design.md`.
+
 ## Block catalog
 
-The catalog combines flexible editorial patterns with richer domain components. New visual patterns require a schema, renderer, accessibility review, and tests before the model can reference them in a plan; they are capabilities for the model, never routes tied to question wording.
+The catalog combines flexible editorial patterns with richer domain components. New visual patterns require a schema, renderer, accessibility review, and tests before the model can reference them in a plan; they are capabilities for the model, never routes tied to question wording. Several of the domain components below also serve as child renderers inside semantic units (the setlist, recording and set-context projections in particular).
 
 | Block | Purpose | Grounding and constraints |
 | --- | --- | --- |

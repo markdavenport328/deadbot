@@ -119,6 +119,18 @@ class CanonicalStore:
     def one(self, table: str, entity_id: str) -> dict[str, str] | None:
         return self.by_id.get(table, {}).get(entity_id)
 
+    def rows_in(self, table: str, column: str, values) -> list[dict[str, str]]:
+        """Rows whose ``column`` is one of ``values``.
+
+        PostgreSQL implements this as one ``IN`` query; the CSV store scans in
+        memory. Block builders use it instead of one ``one()`` call per row.
+        """
+
+        wanted = set(values)
+        if not wanted:
+            return []
+        return [row for row in self.rows(table) if row.get(column, "") in wanted]
+
     def matching_rows(self, table: str, query: str, fields: tuple[str, ...]) -> list[dict[str, str]]:
         needle = query.casefold().strip()
         if not needle:
@@ -503,6 +515,17 @@ class CanonicalStore:
             if "search-index" not in recording.get("notes", ""):
                 summary["archive_identifier"] = recording["archive_identifier"]
             recording_summaries.append(summary)
+        # Give each performance the same compact listening path the song
+        # payload carries, so a show answer can send the visitor straight to a
+        # song's track rather than to a whole-show listing.
+        listen_by_performance = self._listen_paths(performance_ids)
+        performance_summaries = []
+        for row in performances:
+            summary = self._performance_summary(row)
+            listen = listen_by_performance.get(row["performance_id"])
+            if listen:
+                summary["listen"] = listen
+            performance_summaries.append(summary)
         show_summary = {
             key: show.get(key, "")
             for key in ("show_id", "show_date", "venue_id", "tour_name", "event_name")
@@ -515,7 +538,7 @@ class CanonicalStore:
         return {
             "show": show_summary,
             "venue": venue,
-            "performances": [self._performance_summary(row) for row in performances],
+            "performances": performance_summaries,
             "performers": performers,
             "equipment": equipment,
             "resources": self.resources_for("resource_shows", "show_id", show_id),
@@ -533,12 +556,17 @@ class CanonicalStore:
             for row in self.rows("official_release_tracks")
             if row.get("performance_id") == performance_id
         }
-        return {
+        context: dict[str, Any] = {
             "performance": performance,
             "song": self.one("songs", performance["song_id"]),
             "show": self.one("shows", performance["show_id"]),
             "resources": self.resources_for("resource_performances", "performance_id", performance_id),
             "links": [row for row in self.rows("performance_links") if row["performance_id"] == performance_id],
+            "show_links": [row for row in self.rows("show_links") if row["show_id"] == performance["show_id"]],
             "recordings": [row for row in self.rows("performance_recordings") if row["performance_id"] == performance_id],
             "official_releases": self.official_release_summaries(release_ids),
         }
+        listen = self._listen_paths({performance_id}).get(performance_id)
+        if listen:
+            context["listen"] = listen
+        return context
