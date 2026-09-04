@@ -119,6 +119,18 @@ class CanonicalStore:
     def one(self, table: str, entity_id: str) -> dict[str, str] | None:
         return self.by_id.get(table, {}).get(entity_id)
 
+    def rows_in(self, table: str, column: str, values) -> list[dict[str, str]]:
+        """Rows whose ``column`` is one of ``values``.
+
+        PostgreSQL implements this as one ``IN`` query; the CSV store scans in
+        memory. Block builders use it instead of one ``one()`` call per row.
+        """
+
+        wanted = set(values)
+        if not wanted:
+            return []
+        return [row for row in self.rows(table) if row.get(column, "") in wanted]
+
     def matching_rows(self, table: str, query: str, fields: tuple[str, ...]) -> list[dict[str, str]]:
         needle = query.casefold().strip()
         if not needle:
