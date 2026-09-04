@@ -463,6 +463,188 @@ def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloa
     assert f"selection:{selection_id}" in {source.source_id for source in sources}
 
 
+def test_finish_plan_accepts_semantic_units():
+    plan = finish.FinishPlan.model_validate(
+        {
+            "chat_answer": "Five shows.",
+            "title": "Branford with the Dead",
+            "mode": "show",
+            "body": [
+                {"type": "editorial", "presentation": "narrative", "paragraphs": ["Across the appearances he grew more integrated."]},
+                {
+                    "type": "show_explorer",
+                    "organization": "chronological",
+                    "items": [
+                        {"type": "show_unit", "show_id": "gd-1990-03-29", "role": "anchor", "note": "The debut.", "highlighted_performance_ids": ["p1"]},
+                        {"type": "show_unit", "show_id": "gd-1990-12-31", "role": "contrast", "supporting_sources": [{"url": "https://example.org/x", "note": "A quote."}]},
+                    ],
+                },
+                {"type": "performance_unit", "performance_id": "p1", "role": "representative", "follow_up": "Another like this?"},
+                {"type": "era_unit", "title": "1973–74: spacious", "span": "1973–74", "representative_performance_ids": ["p2", "p3"]},
+            ],
+        }
+    )
+    assert [item.type for item in plan.body] == ["editorial", "show_explorer", "performance_unit", "era_unit"]
+    assert plan.body[1].items[0].role == "anchor"
+    assert plan.body[1].items[1].supporting_sources[0].url == "https://example.org/x"
+
+
+def test_finish_plan_rejects_an_unknown_role():
+    from pydantic import ValidationError
+
+    try:
+        finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1990-03-29", "role": "bold"})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("roles are a closed vocabulary")
+
+
+def test_show_context_carries_per_performance_listening_paths():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    with_listen = [performance for performance in payload["performances"] if "listen" in performance]
+    assert with_listen, "the Veneta show has archive track links"
+    assert all(performance["listen"]["archive_track_url"].startswith("https://archive.org/") for performance in with_listen)
+
+
+def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    payload = store.show_context(show)
+    grounded = finish.grounded_context([payload])
+    highlighted = payload["performances"][3]["performance_id"]
+    preferred = next(row["recording_id"] for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("source_url"))
+    good_url = payload["resources"][0]["source_url"]
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="show",
+        body=[
+            finish.ShowUnitRef(
+                type="show_unit",
+                show_id="gd-1972-08-27",
+                role="anchor",
+                note="The Sunshine Daydream show.",
+                highlighted_performance_ids=[highlighted, "gd-1977-05-08-not-this-show"],
+                preferred_recording_id=preferred,
+                supporting_sources=[
+                    finish.SupportingSource(url=good_url, note="A firsthand account."),
+                    finish.SupportingSource(url="https://example.com/not-returned"),
+                ],
+                follow_up="Why is Veneta so loved?",
+            )
+        ],
+    )
+    blocks, sources = finish.resolve_body(plan, grounded, [payload], store)
+    unit = blocks[0]
+    assert unit.type == "show_unit"
+    # Identity is hydrated, not retyped by the model.
+    assert unit.show_date == "1972-08-27"
+    assert unit.venue_name == "Old Renaissance Faire Grounds"
+    assert unit.location == "Veneta, OR"
+    assert unit.role == "anchor" and unit.note == "The Sunshine Daydream show." and unit.follow_up == "Why is Veneta so loved?"
+    # The setlist marks the composer's highlight and only performances of this show.
+    songs = [song for section in unit.sets for song in section.songs]
+    assert [song.performance_id for song in songs if song.highlighted] == [highlighted]
+    assert any(song.listen_url for song in songs)
+    # The preferred recording leads the listening actions; the release is offered too.
+    assert unit.listen[0].label.startswith("Listen to the show")
+    assert unit.listen[0].url == next(row["source_url"] for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row["recording_id"] == preferred)
+    assert any(action.is_official for action in unit.listen)
+    # Only the grounded source survives, named from the payload that returned it.
+    assert [source.url for source in unit.sources] == [good_url]
+    assert unit.sources[0].label == payload["resources"][0]["title"]
+    assert unit.sources[0].note == "A firsthand account."
+    assert {source.source_id for source in sources} >= {f"recording:{preferred}", f"url:{good_url}"}
+
+
+def test_resolve_body_nests_show_units_in_an_explorer_and_drops_unretrieved_shows():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="show",
+        body=[
+            finish.ShowExplorerRef(
+                type="show_explorer",
+                title="Two nights",
+                organization="chronological",
+                items=[
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08"),
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor"),
+                ],
+            ),
+            finish.ShowExplorerRef(type="show_explorer", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08")]),
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    assert [block.type for block in blocks] == ["show_explorer"]
+    explorer = blocks[0]
+    assert explorer.title == "Two nights" and explorer.organization == "chronological"
+    assert [unit.show_id for unit in explorer.items] == ["gd-1972-08-27"]
+    assert explorer.items[0].sets
+
+
+def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_action():
+    store = CanonicalStore()
+    show_payload = store.show_context(store.resolve_show("1972-08-27"))
+    performance_id = show_payload["performances"][2]["performance_id"]
+    context = store.performance_context(performance_id)
+    assert context["listen"]["archive_track_url"]
+    grounded = finish.grounded_context([show_payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="performance",
+        body=[finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id, role="representative", note="A relaxed version.")],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [show_payload], store)
+    unit = blocks[0]
+    assert unit.type == "performance_unit"
+    assert unit.song_title and unit.show_date == "1972-08-27" and unit.venue_name == "Old Renaissance Faire Grounds"
+    assert unit.previous and unit.next, "a mid-set rendition has neighbours on both sides"
+    assert unit.listen[0].label == f"Play {unit.song_title}"
+    assert unit.listen[0].url == context["listen"]["archive_track_url"]
+    assert any(action.label == "Hear the full show" for action in unit.listen)
+
+
+def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    payload = store.song_context(song)
+    grounded = finish.grounded_context([payload])
+    with_listen = [performance for performance in payload["performances"] if "listen" in performance][:2]
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="comparison",
+        body=[
+            finish.EraUnitRef(
+                type="era_unit",
+                title="Early Sugarees",
+                span="1971–72",
+                role="representative",
+                note="Loose and bluesy.",
+                representative_performance_ids=[*(performance["performance_id"] for performance in with_listen), "not-retrieved"],
+            ),
+            finish.EraUnitRef(type="era_unit", title="Nothing grounded", representative_performance_ids=["not-retrieved"]),
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    assert [block.type for block in blocks] == ["era_unit"]
+    era = blocks[0]
+    assert era.title == "Early Sugarees" and era.span == "1971–72" and era.role == "representative"
+    assert [item.performance_id for item in era.performances] == [performance["performance_id"] for performance in with_listen]
+    assert all(item.listen and item.listen.label == "Play Sugaree" for item in era.performances)
+    assert all(item.show_date and item.show_label for item in era.performances)
+
+
+def test_show_setlist_songs_carry_listen_links():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(chat_answer="x", title="t", lead=None, mode="show", body=[finish.ShowSetlistRef(type="show_setlist", show_id="gd-1972-08-27")])
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    songs = [song for section in blocks[0].sets for song in section.songs]
+    assert any(song.listen_url and song.listen_url.startswith("https://archive.org/") for song in songs)
+    assert not any(song.highlighted for song in songs)
+
+
 def finish_call(plan: dict):
     return AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": plan, "id": "finish-1", "type": "tool_call"}])
 

@@ -57,6 +57,10 @@ class SetlistSong(ExperienceModel):
     title: str
     position_in_set: str | None = None
     follow_up: str
+    # The composer marks a performance as important; the renderer decides how
+    # that looks. A listen URL is the library's per-performance track link.
+    highlighted: bool = False
+    listen_url: str | None = None
 
 
 class SetlistSection(ExperienceModel):
@@ -69,6 +73,44 @@ class ShowSetlistBlock(ExperienceModel):
     show_id: str
     title: str
     sets: list[SetlistSection] = Field(min_length=1, max_length=4)
+
+
+UnitRole = Literal[
+    "anchor",
+    "supporting",
+    "contrast",
+    "turning_point",
+    "outlier",
+    "culmination",
+    "overlooked",
+    "representative",
+]
+
+UnitOrganization = Literal["chronological", "curated", "comparative"]
+
+
+class ListenAction(ExperienceModel):
+    """A listening destination attached to the object it plays."""
+
+    label: str
+    url: str
+    provider: str
+    is_official: bool = False
+
+
+class UnitSource(ExperienceModel):
+    """Evidence the composer associated with one unit, resolved to a grounded URL."""
+
+    url: str
+    label: str
+    source_name: str | None = None
+    note: str | None = None
+
+
+class PerformanceSpineNeighbor(ExperienceModel):
+    performance_id: str
+    title: str
+    follow_up: str
 
 
 class ShowSelectionItem(ExperienceModel):
@@ -120,6 +162,87 @@ class PerformerListBlock(ExperienceModel):
     show_id: str
     title: str
     items: list[PerformerItem] = Field(min_length=1, max_length=24)
+
+
+class ShowUnitBlock(ExperienceModel):
+    """One show as a primary object of the answer, hydrated from the store.
+
+    The composer supplies the interpretive fields (role, note, highlights,
+    preferred recording, sources, follow-up); date, venue, setlist, guests and
+    listening actions come from canonical data.
+    """
+
+    type: Literal["show_unit"]
+    show_id: str
+    title: str | None = None
+    show_date: str
+    venue_name: str | None = None
+    location: str | None = None
+    role: UnitRole | None = None
+    note: str | None = None
+    sets: list[SetlistSection] = Field(default_factory=list, max_length=4)
+    setlist_note: str | None = None
+    guests: list[PerformerItem] = Field(default_factory=list, max_length=8)
+    listen: list[ListenAction] = Field(default_factory=list, max_length=4)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
+    follow_up: str | None = None
+
+
+class ShowExplorerBlock(ExperienceModel):
+    """A collection-level experience for browsing several complete show units."""
+
+    type: Literal["show_explorer"]
+    title: str
+    organization: UnitOrganization = "chronological"
+    items: list[ShowUnitBlock] = Field(min_length=1, max_length=8)
+
+
+class PerformanceUnitBlock(ExperienceModel):
+    """One rendition as a primary object, with its set context and listening actions."""
+
+    type: Literal["performance_unit"]
+    performance_id: str
+    song_id: str
+    song_title: str
+    show_id: str
+    show_date: str | None = None
+    show_label: str
+    venue_name: str | None = None
+    location: str | None = None
+    set_label: str | None = None
+    position_in_set: str | None = None
+    role: UnitRole | None = None
+    note: str | None = None
+    previous: PerformanceSpineNeighbor | None = None
+    next: PerformanceSpineNeighbor | None = None
+    listen: list[ListenAction] = Field(default_factory=list, max_length=3)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
+    follow_up: str | None = None
+
+
+class EraPerformanceItem(ExperienceModel):
+    performance_id: str
+    song_id: str
+    song_title: str
+    show_id: str
+    show_date: str | None = None
+    show_label: str
+    set_label: str | None = None
+    listen: ListenAction | None = None
+    follow_up: str
+
+
+class EraUnitBlock(ExperienceModel):
+    """A stage of a development the composer names, with representative listening."""
+
+    type: Literal["era_unit"]
+    title: str
+    span: str | None = None
+    role: UnitRole | None = None
+    note: str | None = None
+    performances: list[EraPerformanceItem] = Field(min_length=1, max_length=6)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
+    follow_up: str | None = None
 
 
 class GuestAppearanceItem(ExperienceModel):
@@ -265,12 +388,6 @@ class ComparisonStripBlock(ExperienceModel):
     items: list[ComparisonStripItem] = Field(min_length=2, max_length=12)
 
 
-class PerformanceSpineNeighbor(ExperienceModel):
-    performance_id: str
-    title: str
-    follow_up: str
-
-
 class PerformanceSpineBlock(ExperienceModel):
     """Place one rendition back into its documented set sequence."""
 
@@ -373,6 +490,10 @@ class EditorialBlock(ExperienceModel):
 
 ExperienceBlock = Annotated[
     EntityCardBlock
+    | ShowUnitBlock
+    | ShowExplorerBlock
+    | PerformanceUnitBlock
+    | EraUnitBlock
     | ShowSetlistBlock
     | ShowSelectionBlock
     | RecordingListBlock

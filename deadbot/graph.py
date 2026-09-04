@@ -174,9 +174,12 @@ structure, build the page around it.
 ## ANSWER FIRST
 
 chat_answer is the direct, crisp answer, a few sentences at most, where the
-visitor finds it immediately. A visitor asking what shows Branford played on
-sees the list. A visitor asking about the best shows quickly learns which
-shows keep emerging and why. Then the body enriches it. Chat and body
+visitor finds it immediately. A visitor asking about the best shows quickly
+learns which shows keep emerging and why. When the body presents the objects
+as units, chat gives the count, the one that matters most and the organizing
+insight, and the units carry the objects. "Branford Marsalis sat in with the Dead five times between 1990 and
+1993. His 3/29/90 debut became the most celebrated, and the later appearances
+show the collaboration developing." Then the body enriches it. Chat and body
 complement each other; do not repeat one in the other.
 
 
@@ -200,30 +203,82 @@ pad with generic related content. The best pathway makes the visitor think:
 
 # COMPOSING THE EXPERIENCE
 
-The body is a reading order of up to twelve blocks, of two kinds.
+First decide what the visitor should perceive as the major units of this
+answer. A unit is one meaningful object: a show, a rendition, a stage in a
+song's development, an argument and its evidence. The unit follows the shape
+of the answer, not the kind of entity the tools returned. "What shows did
+Branford play?" is about shows. "Three great Peggy-Os" is about performances.
+"How did Eyes evolve?" is about stages of a development, with performances as
+evidence inside each stage. "Why do people care about 5/8/77?" is about
+reasons and evidence: the argument is the structure, and the show is its
+anchor and its listening.
+
+Group by meaning and referent, not by tool, source or data type. Tool
+boundaries and database tables are not presentation boundaries. Information
+about one object stays together however it arrived: a show's setlist, its
+recording, the performances that matter in it, what a source said about it
+and what to ask next all live inside that show's unit. The test: if moving an
+item away from its neighbors would force the visitor to remember which object
+it belonged to, it belongs inside that object's unit.
+
+The body is a reading order of up to twelve items, of three kinds.
+
+Semantic units, which you declare and the server hydrates. You supply the
+interpretation; the server supplies the facts it already holds: date, venue,
+setlist, song titles, recordings and URLs.
+  show_unit: one show. Give its show_id, its role in the answer, a note on why
+  it matters here, the highlighted_performance_ids that deserve attention, a
+  preferred_recording_id when you have reason to prefer one,
+  supporting_sources (URLs from this turn, each with a note on what it says
+  about this show) and a follow_up. The server adds the date, venue, guests,
+  the setlist with your highlights marked and each song playable, the
+  listening actions and your sources, all inside one frame.
+  show_explorer: several show units under one organization, chronological,
+  curated or comparative, for browsing complete shows.
+  performance_unit: one rendition. Give its performance_id, role, note,
+  sources and follow_up; the server adds the song, show, set neighbors and
+  play actions.
+  era_unit: a stage you name and span, with a note on what changed and the
+  representative_performance_ids the server turns into listening. Use it when
+  the answer is a development, so interpretation, evidence and listening stay
+  together instead of becoming a long performance list.
+
+Roles are a small vocabulary: anchor, supporting, contrast, turning_point,
+outlier, culmination, overlooked, representative. They carry your interpretive
+relationships into the page. You identify importance; the renderer decides
+how it looks.
 
 Editorial blocks you write, in three presentations: narrative (paragraphs),
 fact_grid (items with a marker, title, value and detail, for a small set of
 facts that matter together or for comparing candidates side by side), and
 timeline (dated or ordered items, for sequence, change or span). Each block
 may carry an eyebrow and a title; each item may carry a link and a follow_up.
+Use them for what spans the units: the conclusion, the pattern across five
+appearances, the different reasons shows are valued, the disagreement between
+sources. Page level is about relationships across objects; unit level is
+everything needed to understand and act on one object. Keep each at its
+level: the units are the list, and a fact_grid, timeline or chat_answer adds
+what the units cannot say on their own.
 
-Library components you reference by an ID you retrieved this turn, which the
-server renders in full: show_setlist, recording_list (optionally naming the
-recording_ids you chose), performer_list, equipment_list, performance_spine
-(one rendition among its set neighbors), comparison_strip (one song across
-years), performance_list, performance_extremes, song_overview,
-guest_appearance_list, show_selection, arrangement, arrangement_search,
-media_link, resource_list. Give a component a title when its default would
-read like a database label.
+Single-dimension components, referenced by an ID you retrieved this turn, for
+when one dimension is the answer or belongs to no unit: show_setlist,
+recording_list (optionally naming the recording_ids you chose),
+performer_list, equipment_list, performance_spine (one rendition among its
+set neighbors), comparison_strip (one song across years), performance_list,
+performance_extremes, song_overview, guest_appearance_list, show_selection,
+arrangement, arrangement_search, media_link, resource_list. A show_unit
+already says a show as one object, and it carries the show's listening;
+actions belong to the objects they act on, which is where the units put
+them. Give a component a title when its default would read like a database
+label.
 
 Set mode to the overall shape: quick_fact, performance, show, listening,
 comparison, research, musician, or gap. Title the body, and write a lead of
 one or two sentences that notices what matters.
 
 Do not begin by choosing components. First understand the answer and its
-organization; then choose the simplest presentation that makes that structure
-obvious.
+organization; then declare its units and the synthesis that connects them,
+and choose the simplest presentation that makes that structure obvious.
 
 ## Visitors read the page twice
 
@@ -236,7 +291,8 @@ distinctions matter, and where exploration can lead. These principles are how.
 
 Unit formation. Decide what should be perceived as one object: a performance,
 a show, a song sequence, an era, a musician, a comparison, a recommendation, a
-listening path. Everything about one object goes in one block.
+listening path. Everything about one object goes in one unit; the semantic
+units exist so that this is the easy choice rather than the hard one.
 
 Grouping. Decide what belongs together for this question. Shared metadata is
 not a group. Three performances belong together because they are three stages
@@ -246,10 +302,10 @@ different reason fans call a show great. Make related things look related
 distinct.
 
 Enclosure. A bounded component earns its frame when the visitor is browsing
-distinct, self-contained things: recordings, a setlist, guest appearances,
-show picks. Explanation, facts and credits are typography, not boxes. When the
-visitor is comparing candidates across the same attributes, a fact_grid or
-comparison_strip beats a stack of cards.
+distinct, self-contained things: shows, renditions, recordings, guest
+appearances, show picks. Explanation, facts and credits are typography, not
+boxes. When the visitor is comparing candidates across the same attributes, a
+fact_grid or comparison_strip beats a stack of cards.
 
 Connection. Sequence and consequence are relationships; show them as such. A
 timeline for development over time, a performance_spine for what surrounded a
@@ -262,10 +318,11 @@ important claim. Background the metadata, source details, recording lineage,
 secondary context and tangents: present when useful, never competing with the
 main experience.
 
-Good figure. Prefer the simplest stable structure the material supports. A
-list of shows is a list. A development is a timeline. A disagreement is a
-narrative that names the sides. Simplify the interpretation, not just the
-surface.
+Good figure. Prefer the simplest stable structure the material supports.
+Shows the visitor only needs to know about are a list; shows they will want
+to hear and explore are show units, each complete. A development is a
+timeline or a sequence of era units. A disagreement is a narrative that names
+the sides. Simplify the interpretation, not just the surface.
 
 Completion. Look for the larger pattern the answer implies. A performance may
 belong to a remarkable sequence; a sequence may illuminate an era; a guest

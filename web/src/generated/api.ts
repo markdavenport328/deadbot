@@ -316,6 +316,51 @@ export interface components {
              */
             type: "equipment_list";
         };
+        /** EraPerformanceItem */
+        EraPerformanceItem: {
+            /** Follow Up */
+            follow_up: string;
+            listen?: components["schemas"]["ListenAction"] | null;
+            /** Performance Id */
+            performance_id: string;
+            /** Set Label */
+            set_label?: string | null;
+            /** Show Date */
+            show_date?: string | null;
+            /** Show Id */
+            show_id: string;
+            /** Show Label */
+            show_label: string;
+            /** Song Id */
+            song_id: string;
+            /** Song Title */
+            song_title: string;
+        };
+        /**
+         * EraUnitBlock
+         * @description A stage of a development the composer names, with representative listening.
+         */
+        EraUnitBlock: {
+            /** Follow Up */
+            follow_up?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Performances */
+            performances: components["schemas"]["EraPerformanceItem"][];
+            /** Role */
+            role?: ("anchor" | "supporting" | "contrast" | "turning_point" | "outlier" | "culmination" | "overlooked" | "representative") | null;
+            /** Sources */
+            sources?: components["schemas"]["UnitSource"][];
+            /** Span */
+            span?: string | null;
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "era_unit";
+        };
         /** ExperienceRequest */
         ExperienceRequest: {
             /** Conversation */
@@ -330,7 +375,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["ShowExplorerBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -419,6 +464,23 @@ export interface components {
              * @enum {string}
              */
             region: "primary" | "supporting" | "context" | "media";
+        };
+        /**
+         * ListenAction
+         * @description A listening destination attached to the object it plays.
+         */
+        ListenAction: {
+            /**
+             * Is Official
+             * @default false
+             */
+            is_official: boolean;
+            /** Label */
+            label: string;
+            /** Provider */
+            provider: string;
+            /** Url */
+            url: string;
         };
         /** MediaLinkBlock */
         MediaLinkBlock: {
@@ -522,6 +584,49 @@ export interface components {
             performance_id: string;
             /** Title */
             title: string;
+        };
+        /**
+         * PerformanceUnitBlock
+         * @description One rendition as a primary object, with its set context and listening actions.
+         */
+        PerformanceUnitBlock: {
+            /** Follow Up */
+            follow_up?: string | null;
+            /** Listen */
+            listen?: components["schemas"]["ListenAction"][];
+            /** Location */
+            location?: string | null;
+            next?: components["schemas"]["PerformanceSpineNeighbor"] | null;
+            /** Note */
+            note?: string | null;
+            /** Performance Id */
+            performance_id: string;
+            /** Position In Set */
+            position_in_set?: string | null;
+            previous?: components["schemas"]["PerformanceSpineNeighbor"] | null;
+            /** Role */
+            role?: ("anchor" | "supporting" | "contrast" | "turning_point" | "outlier" | "culmination" | "overlooked" | "representative") | null;
+            /** Set Label */
+            set_label?: string | null;
+            /** Show Date */
+            show_date?: string | null;
+            /** Show Id */
+            show_id: string;
+            /** Show Label */
+            show_label: string;
+            /** Song Id */
+            song_id: string;
+            /** Song Title */
+            song_title: string;
+            /** Sources */
+            sources?: components["schemas"]["UnitSource"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "performance_unit";
+            /** Venue Name */
+            venue_name?: string | null;
         };
         /** PerformerItem */
         PerformerItem: {
@@ -634,6 +739,13 @@ export interface components {
         SetlistSong: {
             /** Follow Up */
             follow_up: string;
+            /**
+             * Highlighted
+             * @default false
+             */
+            highlighted: boolean;
+            /** Listen Url */
+            listen_url?: string | null;
             /** Performance Id */
             performance_id: string;
             /** Position In Set */
@@ -642,6 +754,27 @@ export interface components {
             song_id: string;
             /** Title */
             title: string;
+        };
+        /**
+         * ShowExplorerBlock
+         * @description A collection-level experience for browsing several complete show units.
+         */
+        ShowExplorerBlock: {
+            /** Items */
+            items: components["schemas"]["ShowUnitBlock"][];
+            /**
+             * Organization
+             * @default chronological
+             * @enum {string}
+             */
+            organization: "chronological" | "curated" | "comparative";
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "show_explorer";
         };
         /**
          * ShowSelectionBlock
@@ -693,6 +826,47 @@ export interface components {
              */
             type: "show_setlist";
         };
+        /**
+         * ShowUnitBlock
+         * @description One show as a primary object of the answer, hydrated from the store.
+         *
+         *     The composer supplies the interpretive fields (role, note, highlights,
+         *     preferred recording, sources, follow-up); date, venue, setlist, guests and
+         *     listening actions come from canonical data.
+         */
+        ShowUnitBlock: {
+            /** Follow Up */
+            follow_up?: string | null;
+            /** Guests */
+            guests?: components["schemas"]["PerformerItem"][];
+            /** Listen */
+            listen?: components["schemas"]["ListenAction"][];
+            /** Location */
+            location?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Role */
+            role?: ("anchor" | "supporting" | "contrast" | "turning_point" | "outlier" | "culmination" | "overlooked" | "representative") | null;
+            /** Setlist Note */
+            setlist_note?: string | null;
+            /** Sets */
+            sets?: components["schemas"]["SetlistSection"][];
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+            /** Sources */
+            sources?: components["schemas"]["UnitSource"][];
+            /** Title */
+            title?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "show_unit";
+            /** Venue Name */
+            venue_name?: string | null;
+        };
         /** SongOverviewBlock */
         SongOverviewBlock: {
             /** Credits */
@@ -726,6 +900,20 @@ export interface components {
             source_id: string;
             /** Url */
             url?: string | null;
+        };
+        /**
+         * UnitSource
+         * @description Evidence the composer associated with one unit, resolved to a grounded URL.
+         */
+        UnitSource: {
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Source Name */
+            source_name?: string | null;
+            /** Url */
+            url: string;
         };
         /** ValidationError */
         ValidationError: {

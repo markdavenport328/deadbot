@@ -506,6 +506,9 @@ class PostgresCanonicalStore(CanonicalStore):
                 "equipment", "equipment_id", (row["equipment_id"] for row in equipment_assignments)
             ),
             "recordings": self._filtered_rows("recordings", show_id=show_id),
+            # Per-performance listening paths (CanonicalStore._listen_paths)
+            # read performance_links and official_release_tracks.
+            "performance_links": self._rows_in("performance_links", "performance_id", performance_ids),
             "resource_shows": resource_relationships,
             "resources": self._rows_in(
                 "resources", "resource_id", (row["resource_id"] for row in resource_relationships)
@@ -537,6 +540,7 @@ class PostgresCanonicalStore(CanonicalStore):
             "performance_links": self._filtered_rows(
                 "performance_links", performance_id=performance_id
             ),
+            "show_links": self._filtered_rows("show_links", show_id=performance["show_id"]),
             "performance_recordings": self._filtered_rows(
                 "performance_recordings", performance_id=performance_id
             ),

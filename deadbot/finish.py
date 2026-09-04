@@ -32,7 +32,11 @@ from deadbot.experience import (
     GapStateBlock,
     LayoutSection,
     ResourceListBlock,
+    ShowExplorerBlock,
+    ShowUnitBlock,
     SourceReference,
+    UnitOrganization,
+    UnitRole,
 )
 
 
@@ -168,8 +172,89 @@ class ResourceListRef(_Ref):
     resource_ids: list[str] = Field(min_length=1, max_length=8)
 
 
+# --- semantic units ---------------------------------------------------------
+#
+# A unit declares what the visitor should perceive as one meaningful object in
+# this answer. The model supplies interpretation (role, note, emphasis,
+# preferred listening, evidence, next question); the server hydrates the
+# object's own facts from the store.
+
+
+class SupportingSource(BaseModel):
+    """Evidence the composer attaches to a unit, cited by a URL a tool returned this turn."""
+
+    model_config = ConfigDict(extra="forbid")
+    url: str = Field(description="A URL that appeared in a tool result this turn: a resource, research record, search hit, read page or archive review.")
+    note: str | None = Field(default=None, description="What this source says about the unit, in a sentence, with attribution.")
+
+
+_ROLE_DESCRIPTION = (
+    "This unit's role in the answer: anchor (the primary object), supporting, contrast, "
+    "turning_point, outlier, culmination, overlooked or representative. Omit when no role applies."
+)
+_NOTE_DESCRIPTION = "Why this object matters here, in one to three sentences. Interpretation, not the facts the server already shows."
+_SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
+_FOLLOW_UP_DESCRIPTION = "A question the visitor might ask next about this object, in their voice."
+
+
+class ShowUnitRef(_Ref):
+    """One show as a primary object of the answer. The server supplies date, venue, setlist, guests and listening."""
+
+    type: Literal["show_unit"]
+    show_id: str
+    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    highlighted_performance_ids: list[str] = Field(
+        default_factory=list,
+        max_length=12,
+        description="Performances in this show that deserve attention; the setlist marks them and offers them first.",
+    )
+    preferred_recording_id: str | None = Field(default=None, description="The recording of this show to lead with, when you have a reason to prefer one.")
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
+    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+
+
+class ShowExplorerRef(_Ref):
+    """A collection for browsing several complete show units with one organization."""
+
+    type: Literal["show_explorer"]
+    organization: UnitOrganization = Field(
+        default="chronological",
+        description="chronological (in date order), curated (your order, for your reasons), or comparative (side by side on the same terms).",
+    )
+    items: list[ShowUnitRef] = Field(min_length=1, max_length=8)
+
+
+class PerformanceUnitRef(_Ref):
+    """One rendition as a primary object. The server supplies song, show, set context and listening."""
+
+    type: Literal["performance_unit"]
+    performance_id: str
+    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
+    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+
+
+class EraUnitRef(_Ref):
+    """A stage of a development you name, with representative performances as evidence and listening."""
+
+    type: Literal["era_unit"]
+    title: str = Field(description="The stage, in your words: '1973–74: spacious and exploratory'.")
+    span: str | None = Field(default=None, description="The years or dates this stage covers.")
+    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    note: str | None = Field(default=None, description="What changed in this stage and how you know.")
+    representative_performance_ids: list[str] = Field(min_length=1, max_length=6, description="Performances that show this stage; each becomes a listening path.")
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
+    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+
+
 BodyItem = Annotated[
     EditorialBlock
+    | ShowUnitRef
+    | ShowExplorerRef
+    | PerformanceUnitRef
+    | EraUnitRef
     | ShowSetlistRef
     | RecordingListRef
     | PerformerListRef
@@ -203,10 +288,13 @@ class FinishPlan(BaseModel):
         default_factory=list,
         max_length=12,
         description=(
-            "Reading order for the main body. Mix editorial blocks you write (narrative, fact_grid, timeline; items may carry a link or a follow_up question) "
-            "with library components referenced by the IDs you retrieved this turn: show_setlist, recording_list, performer_list, equipment_list, performance_spine, "
-            "comparison_strip, performance_list, performance_extremes, song_overview, guest_appearance_list, show_selection, arrangement, arrangement_search, "
-            "media_link, resource_list. Give a component a title when the default would read like a database label."
+            "Reading order for the main body. Semantic units declare the meaningful objects of this answer and the server hydrates them: "
+            "show_unit (one show with its setlist, guests, listening and your note), show_explorer (several show units, chronological, curated or comparative), "
+            "performance_unit (one rendition with its set context and listening), era_unit (a stage you name, with representative performances). "
+            "Editorial blocks you write (narrative, fact_grid, timeline) carry page-level synthesis: the conclusion, patterns across units, disagreements. "
+            "Single-dimension components, referenced by IDs you retrieved this turn, are for when one dimension is the answer: show_setlist, recording_list, "
+            "performer_list, equipment_list, performance_spine, comparison_strip, performance_list, performance_extremes, song_overview, guest_appearance_list, "
+            "show_selection, arrangement, arrangement_search, media_link, resource_list. Give a component a title when the default would read like a database label."
         ),
     )
 
@@ -265,6 +353,32 @@ def _find_research_resource(payloads: list[dict[str, Any]], resource_id: str) ->
     return None
 
 
+def _resolve_show_unit(
+    item: ShowUnitRef,
+    grounded: GroundedContext,
+    payloads: list[dict[str, Any]],
+    store: CanonicalStore,
+) -> tuple[ShowUnitBlock | None, list[SourceReference]]:
+    if item.show_id not in grounded.ids:
+        return None, []
+    show = store.resolve_show(item.show_id)
+    if not show:
+        return None, []
+    unit_sources, source_refs = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+    block, listen_sources = composition._show_unit(
+        store.show_context(show),
+        store,
+        role=item.role,
+        note=item.note,
+        title=item.title,
+        highlighted_performance_ids=item.highlighted_performance_ids,
+        preferred_recording_id=item.preferred_recording_id,
+        sources=unit_sources,
+        follow_up=item.follow_up,
+    )
+    return block, [*listen_sources, *source_refs]
+
+
 def _resolve_reference(
     item: Any,
     grounded: GroundedContext,
@@ -273,6 +387,48 @@ def _resolve_reference(
 ) -> tuple[ExperienceBlock | None, list[SourceReference]]:
     sources: list[SourceReference] = []
     kind = item.type
+
+    if kind == "show_unit":
+        return _resolve_show_unit(item, grounded, payloads, store)
+
+    if kind == "show_explorer":
+        units: list[ShowUnitBlock] = []
+        for child in item.items:
+            unit, unit_sources = _resolve_show_unit(child, grounded, payloads, store)
+            if unit is None:
+                logger.info("Dropped ungrounded or unresolvable show unit from explorer: %s", child.model_dump())
+                continue
+            units.append(unit)
+            sources.extend(unit_sources)
+        if not units:
+            return None, []
+        if item.organization == "chronological":
+            units.sort(key=lambda unit: unit.show_date)
+        return ShowExplorerBlock(type="show_explorer", title=(item.title or "The shows").strip(), organization=item.organization, items=units[:8]), sources
+
+    if kind == "performance_unit":
+        if item.performance_id not in grounded.ids:
+            return None, []
+        context = store.performance_context(item.performance_id)
+        if not context:
+            return None, []
+        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+        block = composition._performance_unit(context, store, role=item.role, note=item.note, sources=unit_sources, follow_up=item.follow_up)
+        return block, sources
+
+    if kind == "era_unit":
+        contexts = []
+        for performance_id in item.representative_performance_ids:
+            if performance_id not in grounded.ids:
+                continue
+            context = store.performance_context(performance_id)
+            if context:
+                contexts.append(context)
+        if not contexts:
+            return None, []
+        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+        block = composition._era_unit(contexts, store, title=item.title, span=item.span, role=item.role, note=item.note, sources=unit_sources, follow_up=item.follow_up)
+        return block, sources
 
     if kind in {"show_setlist", "recording_list", "performer_list", "equipment_list"}:
         if item.show_id not in grounded.ids:
@@ -438,8 +594,9 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer is the crisp direct answer; the body is the rewarding part: your own narrative, fact grids or timelines "
-            "mixed with library components referenced by the IDs you retrieved this turn. Links you write are kept only when their URL came from a tool result this turn."
+            "chat_answer is the crisp direct answer; the body is the rewarding part: the semantic units of the answer (show_unit, show_explorer, "
+            "performance_unit, era_unit) with your notes, roles, highlights and sources, plus your own narrative, fact grids or timelines for what "
+            "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,
     )
