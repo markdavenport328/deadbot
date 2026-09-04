@@ -34,13 +34,25 @@ Exhausting the round budget is not a graceful fallback: LangGraph raises a recur
 - `get_lore_source_trails` — a selective, source-controlled set of links and
   “why open” notes for the first song/show lore pilot. It supplies no source
   text and does not turn editorial context into canonical fact.
+- `get_research_source_directory` — the suggested research sites
+  (`data/research_sites.json`) with what each is good for and how it can be
+  searched, plus the stored link catalogs and reviewed metadata adapters.
+- `search_site` — search one site through its own mechanism (Blogger post
+  feeds, GDAO's Omeka API, archive.org advanced search, WordPress search, or a
+  sitemap match). Accepts a directory name or any host.
+- `read_page` — read any public page's text at request time: title, byline,
+  date and the article body with navigation, comments and footers removed.
+  Long pages page by offset; a focus phrase returns the relevant passages
+  first. Nothing is stored beyond a short in-process cache.
+- `get_recording_reviews` — archive.org listener reviews and star ratings for
+  a canonical recording, an archive identifier, or a show.
 - `get_media_links` — stored YouTube, Spotify, Archive, or other link-out metadata.
 - `get_historical_weather` — show-date weather for the venue area from Open-Meteo historical reanalysis, with the limitation clearly labeled. Use it when a question or a stored source makes weather material (for example heat, rain, lightning, or snow), not to infer an event context for every outdoor show.
 - `get_astronomy` — local Sun and Moon rise/set, twilight, transit, and lunar-phase context from the U.S. Naval Observatory.
 - `get_astrology` — date-based Western zodiac context, explicitly labeled as cultural/interpretive rather than scientific.
 - `finish_response` — the only way a turn ends: the model's chat answer and main-body plan, resolved by `deadbot/finish.py`.
 
-All tools are read only. The canonical-data tools do not fetch arbitrary web pages; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. They return the source URL and retrieval metadata, while a later, sandboxed source-reader tool can retrieve only resources that are already present in `resources.csv`.
+All tools are read only. The canonical-data tools never touch the network; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. The research tools (`search_site`, `read_page`, `get_recording_reviews`) read public web pages and public JSON endpoints at request time so the model can work from what a source actually says. They keep nothing: no page text is stored, and the site directory is a suggestion of where to look, not a boundary. See `docs/superpowers/specs/2026-09-03-source-reading-design.md`.
 
 Historical weather is nearby-grid-cell reanalysis, not an exact NWS station or
 concert-site measurement. Keep it distinct from direct weather observations and

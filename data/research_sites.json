@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "kind": "research_site_directory",
+  "purpose": "Places worth looking when a question needs history, criticism, listener opinion or musical character. A suggestion list, not a restriction: read_page accepts any public URL.",
+  "sites": [
+    {
+      "site_id": "lost-live-dead",
+      "name": "Lost Live Dead",
+      "host": "lostlivedead.blogspot.com",
+      "aliases": ["lostlivedead", "lost live dead", "corry arnold"],
+      "good_for": "Deep, sourced histories of individual shows, venues, tours and the band's business; strongest on 1965-1975 and on how a show came to happen.",
+      "search": {"method": "blogger_feed"},
+      "read_hints": ["Posts are long; use read_page with a focus phrase such as a date or venue."]
+    },
+    {
+      "site_id": "hooterollin",
+      "name": "Hooterollin' Around",
+      "host": "hooterollin.blogspot.com",
+      "aliases": ["hooterollin", "hooterollin around"],
+      "good_for": "Side projects, guests, the wider Bay Area scene, Garcia's and Lesh's other bands, gear and personnel questions.",
+      "search": {"method": "blogger_feed"}
+    },
+    {
+      "site_id": "dead-essays",
+      "name": "Grateful Dead Guide (Deadessays)",
+      "host": "deadessays.blogspot.com",
+      "aliases": ["deadessays", "dead essays", "grateful dead guide"],
+      "good_for": "Song-by-song and era-by-era musical analysis: how jams, arrangements and transitions developed, with dated examples.",
+      "search": {"method": "blogger_feed"}
+    },
+    {
+      "site_id": "dead-sources",
+      "name": "Dead Sources",
+      "host": "deadsources.blogspot.com",
+      "aliases": ["deadsources", "dead sources"],
+      "good_for": "Transcribed contemporary press: reviews, interviews and news items from the years the shows happened.",
+      "search": {"method": "blogger_feed"}
+    },
+    {
+      "site_id": "grateful-seconds",
+      "name": "Grateful Seconds",
+      "host": "gratefulseconds.blogspot.com",
+      "aliases": ["gratefulseconds", "grateful seconds"],
+      "good_for": "Statistics and lists: song counts, set placements, first and last performances, oddities and streaks.",
+      "search": {"method": "blogger_feed"}
+    },
+    {
+      "site_id": "deadhead-high",
+      "name": "Deadhead High",
+      "host": "deadheadhigh.com",
+      "aliases": ["deadheadhigh", "deadhead high"],
+      "good_for": "Listener-facing guides and listening paths: best first shows, how songs changed live, eras and lineups, AUD versus SBD.",
+      "search": {"method": "sitemap", "notes": "No site search; pages are matched by their URL slugs."},
+      "read_hints": ["Guides live under /guides/<slug>; song guides under /songs."]
+    },
+    {
+      "site_id": "gdao",
+      "name": "Grateful Dead Archive Online",
+      "host": "www.gdao.org",
+      "aliases": ["gdao", "grateful dead archive online", "ucsc archive"],
+      "good_for": "Primary artifacts and fan recollections: posters, tickets, photographs, letters and first-person show accounts contributed to the UC Santa Cruz archive.",
+      "search": {"method": "omeka_api", "item_url": "https://www.gdao.org/items/show/{id}"}
+    },
+    {
+      "site_id": "internet-archive",
+      "name": "Internet Archive Grateful Dead collection",
+      "host": "archive.org",
+      "aliases": ["archive.org", "internet archive", "archive"],
+      "good_for": "Recordings of nearly every show with listener reviews and star ratings. Use get_recording_reviews for a recording or show; use search_site for a date or free-text search of the collection.",
+      "search": {"method": "archive_search"}
+    },
+    {
+      "site_id": "dead-net",
+      "name": "Dead.net",
+      "host": "www.dead.net",
+      "aliases": ["dead.net", "deadnet"],
+      "good_for": "Official song histories, the Greatest Stories Ever Told essays, Deadcast episode pages, interviews and features.",
+      "search": {"method": "none", "notes": "Search is Google-powered in the browser and cannot be called. Use search_stored_resources, get_lore_source_trails and get_deadnet_song_context for URLs, then read_page."},
+      "read_hints": [
+        "Song pages: https://www.dead.net/song/<slug>",
+        "Greatest Stories Ever Told essays: https://www.dead.net/features/greatest-stories-ever-told/greatest-stories-ever-told-<song-slug>",
+        "Show pages: https://www.dead.net/show/<month-day-year>, for example may-8-1977",
+        "Comment threads on song and show pages are visitor recollections and are stripped by read_page; the essay body remains."
+      ]
+    },
+    {
+      "site_id": "whitegum",
+      "name": "Whitegum song and show finder",
+      "host": "whitegum.com",
+      "aliases": ["whitegum", "alex allan"],
+      "good_for": "Alex Allan's setlist and song databases, with per-song performance histories and per-show pages.",
+      "search": {"method": "none", "notes": "Static site with no search; start from https://whitegum.com/intro.htm and follow links with read_page."}
+    },
+    {
+      "site_id": "headyversion",
+      "name": "HeadyVersion",
+      "host": "headyversion.com",
+      "aliases": ["heady version", "headyversion"],
+      "good_for": "Fan votes on the best versions of each song.",
+      "search": {"method": "none", "notes": "The site refuses automated readers; treat it as a link to offer, not a page to read."}
+    }
+  ]
+}

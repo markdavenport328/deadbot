@@ -485,11 +485,7 @@
         },
         "required": [
           "type",
-          "presentation",
-          "eyebrow",
-          "title",
-          "paragraphs",
-          "items"
+          "presentation"
         ],
         "title": "EditorialBlock",
         "type": "object"
@@ -557,11 +553,7 @@
           }
         },
         "required": [
-          "marker",
-          "title",
-          "value",
-          "detail",
-          "follow_up"
+          "title"
         ],
         "title": "EditorialItem",
         "type": "object"
