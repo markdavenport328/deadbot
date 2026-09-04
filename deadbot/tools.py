@@ -610,47 +610,11 @@ def build_tools(
             }
         )
 
-    @tool
-    def search_deadnet_editorial(query: str, entity_type: str = "song") -> str:
-        """Search approved Dead.net editorial metadata for a Grateful Dead topic.
-
-        Use this when a question would benefit from an official story, oral
-        history, interview, feature, person, venue, album, show, or song link.
-        It searches the reviewed Dead.net source only and returns link metadata
-        rather than article text, transcripts, audio, or conclusions. Choose
-        the entity type that best fits the question: song, show, person, venue,
-        album, or deadcast.
-        """
-        try:
-            requested_type = EntityType(entity_type)
-        except ValueError:
-            return _json({"research": {"state": "invalid", "coverage": "metadata_only", "records": [], "message": "entity_type must be song, show, person, venue, album, or deadcast."}})
-        if deadnet_adapter is None:
-            return _json({"research": {"state": "unavailable", "coverage": "metadata_only", "source": "dead.net", "records": [], "message": "The reviewed Dead.net metadata adapter is not enabled."}})
-        result = deadnet_adapter.search(EntitySearchRequest(query=query, entity_type=requested_type))
-        return _json(
-            {
-                "research": {
-                    "state": result.state.value,
-                    "coverage": result.coverage,
-                    "source": result.source,
-                    "message": result.message,
-                    "requested": dict(result.requested),
-                    "records": [
-                        {
-                            "entity_type": record.entity_type,
-                            "identifier": record.identifier,
-                            "title": record.title,
-                            "url": record.url,
-                            "description": record.description,
-                            "published_at": record.published_at,
-                            "source": record.source,
-                        }
-                        for record in result.records
-                    ],
-                }
-            }
-        )
+    # Note: a search_deadnet_editorial tool used to live here. Dead.net's site
+    # search is Google-powered and runs in the browser, so the adapter only ever
+    # returned the "Search Results" page title. It was removed on 2026-09-04 so
+    # the model does not spend a research round on it; Dead.net pages are
+    # reached through stored links, get_deadnet_song_context, and read_page.
 
     @tool
     def get_deadcast_metadata(episode_id_or_slug: str) -> str:
@@ -861,6 +825,12 @@ def build_tools(
                         "num_reviews": rating.get("num_reviews"),
                     })
                 payload["rating"] = ratings.get(chosen["archive_identifier"])
+        if chosen and not chosen.get("archive_identifier"):
+            payload["recording"] = {"recording_id": chosen.get("recording_id"), "show_id": chosen.get("show_id"), "source_url": chosen.get("source_url") or None}
+            payload["state"] = "empty"
+            payload["reviews"] = []
+            payload["message"] = "This recording has no archive.org identifier in the library, so it has no listener reviews to fetch. Pass its show date to see the show's reviewed recordings instead."
+            return _json(payload)
         identifier = (chosen or {}).get("archive_identifier") or wanted
         if chosen:
             payload["recording"] = {
@@ -1137,7 +1107,6 @@ def build_tools(
         get_song,
         get_song_performance_profile,
         get_deadnet_song_context,
-        search_deadnet_editorial,
         get_deadcast_metadata,
         get_lore_source_trails,
         find_arrangements,
