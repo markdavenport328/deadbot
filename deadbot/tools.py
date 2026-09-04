@@ -31,6 +31,8 @@ from deadbot.selection_signals import (
     load_selection_signals,
     load_show_selections,
 )
+from deadbot.site_search import SiteSearcher
+from deadbot.source_reader import PageReader, default_reader
 
 
 OPEN_METEO_GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
@@ -284,11 +286,22 @@ def _reviewed_deadcast_adapter() -> DeadnetResearchAdapter | None:
     return _adapter_from_reviewed_source("deadcast-metadata")
 
 
-def build_tools(store: CanonicalStore) -> list[BaseTool]:
-    """Build read-only, grounded tools bound to one canonical store."""
+def build_tools(
+    store: CanonicalStore,
+    *,
+    page_reader: PageReader | None = None,
+    site_searcher: SiteSearcher | None = None,
+) -> list[BaseTool]:
+    """Build read-only, grounded tools bound to one canonical store.
+
+    ``page_reader`` and ``site_searcher`` are injectable so tests can drive the
+    research tools with fixture pages instead of the network.
+    """
 
     deadnet_adapter = _reviewed_deadnet_adapter()
     deadcast_adapter = _reviewed_deadcast_adapter()
+    reader = page_reader or default_reader()
+    searcher = site_searcher or SiteSearcher()
 
     @tool
     def search_entities(query: str) -> str:
@@ -770,19 +783,119 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
             return _json({"selection_signals": [], "show_selections": [], "error": str(error)})
 
     @tool
-    def get_research_source_directory() -> str:
-        """Describe every currently approved external research path and stored context-link catalog.
+    def search_site(site: str, query: str) -> str:
+        """Search one research site through its own search and get pages worth reading.
 
-        Use this to choose where to look for the story, anecdote, interview,
-        lore, reputation, or listening context behind a question. It states
-        which sources can be searched as metadata, which only have stored links,
-        and their coverage limits; it does not claim that any source has been
-        searched or that every topic has a stored context link.
+        site is a name from get_research_source_directory (for example
+        "Lost Live Dead", "Dead Essays", "Dead Sources", "gdao", "archive.org")
+        or any host such as example-blog.org. Each hit is a title, URL, snippet
+        and date; open the ones that matter with read_page. For archive.org a
+        date such as 1977-05-08 lists that show's recordings with ratings.
+        Dead.net, Whitegum and HeadyVersion have no callable search: reach
+        their pages through stored links and read_page instead.
+        """
+        return _json(searcher.search(site, query).as_payload())
+
+    @tool
+    def read_page(url: str, focus: str = "", offset: int = 0) -> str:
+        """Read a web page and get its text: title, byline, date and the article body.
+
+        Works on any URL: a search_site hit, a stored resource or lore-trail
+        link, a Dead.net song or essay page, an archive.org item, or one you
+        know. Navigation, comments and footers are stripped. Long pages come
+        back in chunks of about 12,000 characters: pass next_offset back as
+        offset to keep reading, or pass a focus phrase (a date, venue, song or
+        musician) to get the passages about it first.
+        """
+        try:
+            start = max(0, int(offset or 0))
+        except (TypeError, ValueError):
+            start = 0
+        return _json(reader.read(url, focus=focus or None, offset=start).as_payload())
+
+    @tool
+    def get_recording_reviews(recording: str, limit: int = 8) -> str:
+        """Get archive.org listeners' reviews and star ratings for a recording or a show.
+
+        recording may be a canonical recording_id, an archive.org identifier,
+        or a show ID or date such as 1977-05-08. For a show, the reviews come
+        from its most-reviewed recording and every other recording's rating is
+        listed too, so you can see which source listeners prefer and why.
+        Reviews are listener opinion, longest first, each trimmed to a
+        paragraph.
+        """
+        wanted = recording.strip()
+        if not wanted:
+            return _json({"error": "A recording id, archive identifier, show id or date is required."})
+        try:
+            review_limit = max(1, min(int(limit or 8), 20))
+        except (TypeError, ValueError):
+            review_limit = 8
+
+        payload: dict[str, Any] = {"query": wanted}
+        rows = [row for row in store.rows("recordings") if row.get("recording_id") == wanted]
+        chosen: dict[str, Any] | None = None
+        others: list[dict[str, Any]] = []
+        if rows:
+            chosen = rows[0]
+        else:
+            show = store.resolve_show(wanted)
+            if show:
+                payload["show"] = {"show_id": show["show_id"], "show_date": show.get("show_date"), "venue_id": show.get("venue_id")}
+                show_rows = [row for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("archive_identifier")]
+                if not show_rows:
+                    payload["message"] = "The library has no archive.org recording for this show."
+                    return _json(payload)
+                ratings = searcher.archive_ratings([row["archive_identifier"] for row in show_rows])
+                show_rows.sort(key=lambda row: -(ratings.get(row["archive_identifier"], {}).get("num_reviews") or 0))
+                chosen = show_rows[0]
+                for row in show_rows[1:8]:
+                    rating = ratings.get(row["archive_identifier"], {})
+                    others.append({
+                        "recording_id": row.get("recording_id"),
+                        "archive_identifier": row["archive_identifier"],
+                        "url": f"https://archive.org/details/{row['archive_identifier']}",
+                        "source_type": row.get("source_type") or None,
+                        "source": rating.get("source"),
+                        "avg_rating": rating.get("avg_rating"),
+                        "num_reviews": rating.get("num_reviews"),
+                    })
+                payload["rating"] = ratings.get(chosen["archive_identifier"])
+        identifier = (chosen or {}).get("archive_identifier") or wanted
+        if chosen:
+            payload["recording"] = {
+                "recording_id": chosen.get("recording_id"),
+                "show_id": chosen.get("show_id"),
+                "archive_identifier": identifier,
+                "source_type": chosen.get("source_type") or None,
+                "taper": chosen.get("taper") or None,
+                "transferer": chosen.get("transferer") or None,
+                "lineage": (chosen.get("lineage") or None),
+            }
+            if "rating" not in payload:
+                payload["rating"] = searcher.archive_ratings([identifier]).get(identifier)
+        else:
+            payload["rating"] = searcher.archive_ratings([identifier]).get(identifier)
+        payload.update(searcher.archive_reviews(identifier, review_limit))
+        if others:
+            payload["other_recordings"] = others
+        return _json(payload)
+
+    @tool
+    def get_research_source_directory() -> str:
+        """List the research sites worth searching and reading, with what each is good for.
+
+        Use this to choose where to look for the story, criticism, listener
+        opinion, history or musical character behind a question. Each site
+        says how it can be searched (search_site) or, when it has no search,
+        how to reach its pages with read_page. The list is a suggestion, not a
+        boundary: read_page opens any URL. Also describes the stored link
+        catalogs and reviewed metadata adapters.
         """
         try:
             registry = load_registry()
         except RegistryValidationError as error:
-            return _json({"research_sources": [], "error": str(error)})
+            registry = ()
         sources = [
             {
                 "source_id": source["source_id"],
@@ -795,9 +908,27 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
             }
             for source in registry
         ]
+        research_sites = [
+            {
+                "site_id": site.get("site_id"),
+                "name": site.get("name"),
+                "host": site.get("host"),
+                "good_for": site.get("good_for"),
+                "search_method": site.get("search", {}).get("method", "none"),
+                "search_notes": site.get("search", {}).get("notes"),
+                "read_hints": site.get("read_hints"),
+            }
+            for site in searcher.sites
+        ]
         return _json(
             {
-                "research_sources": sources,
+                "research_sites": research_sites,
+                "research_tools": {
+                    "search_site": "Search one site (by name or host) through its own search; returns titles, URLs, snippets.",
+                    "read_page": "Read any page's text; focus phrase and offset for long pages.",
+                    "get_recording_reviews": "archive.org listener reviews and star ratings for a recording or show.",
+                },
+                "reviewed_metadata_adapters": sources,
                 "stored_context_link_coverage": {
                     "entity_scope": "specific canonical songs and shows only",
                     "access": "metadata links only; source content is not in the library",
@@ -1015,6 +1146,9 @@ def build_tools(store: CanonicalStore) -> list[BaseTool]:
         get_show_selections,
         get_selection_signals,
         get_research_source_directory,
+        search_site,
+        read_page,
+        get_recording_reviews,
         get_performance,
         get_media_links,
         get_historical_weather,

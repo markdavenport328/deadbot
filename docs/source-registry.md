@@ -30,4 +30,8 @@ are bounded short metadata. The reviewed endpoints are `GET
 https://www.dead.net/search` for editorial entity search,
 `GET https://www.dead.net/song/<slug>` (plus other registry-approved entity
 paths), and `GET https://www.dead.net/deadcast/<slug>` for episode metadata.
-No generic URL fetch is provided.
+These two adapters remain metadata-only. Since 2026-09-03 the separate
+research tools (`read_page`, `search_site`, `get_recording_reviews`) read
+public pages at request time without storing them; they are governed by
+`data/research_sites.json` as a suggestion list, not by this registry. See
+`docs/superpowers/specs/2026-09-03-source-reading-design.md`.
