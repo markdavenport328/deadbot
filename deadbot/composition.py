@@ -411,11 +411,16 @@ def _setlist_sections(
     if not isinstance(show, dict) or not isinstance(performances, list):
         return []
 
+    # One query for every song title in the show; a show unit inside an
+    # explorer would otherwise cost one remote lookup per setlist entry.
+    song_ids = [performance.get("song_id", "") for performance in performances if isinstance(performance, dict) and performance.get("song_id")]
+    songs = {row["song_id"]: row for row in store.rows_in("songs", "song_id", song_ids)}
+
     grouped: dict[str, list[SetlistSong]] = {}
     for performance in performances:
         if not isinstance(performance, dict):
             continue
-        song = store.one("songs", performance.get("song_id", "")) or {}
+        song = songs.get(performance.get("song_id", ""), {})
         title = song.get("title")
         if not title or not performance.get("performance_id"):
             continue
