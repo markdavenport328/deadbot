@@ -70,6 +70,9 @@ class Settings:
     openai_model: str = "gpt-4o-mini"
     openai_base_url: str | None = None
     openai_api_key: str | None = None
+    # Reasoning effort for OpenAI reasoning models (minimal, low, medium, high).
+    # Unset means the model's default. Lower effort cuts latency per model call.
+    openai_reasoning_effort: str | None = None
     max_tool_rounds: int = 8
     rate_limit_per_minute: int = 10
     conversation_window: int = 12
@@ -99,6 +102,7 @@ class Settings:
             openai_model=value("DEADBOT_OPENAI_MODEL", "gpt-4o-mini") or "gpt-4o-mini",
             openai_base_url=value("DEADBOT_OPENAI_BASE_URL") or None,
             openai_api_key=value("OPENAI_API_KEY"),
+            openai_reasoning_effort=(value("DEADBOT_OPENAI_REASONING_EFFORT") or "").strip().lower() or None,
             max_tool_rounds=_as_int(value("DEADBOT_MAX_TOOL_ROUNDS"), 8),
             rate_limit_per_minute=_as_int(value("DEADBOT_RATE_LIMIT_PER_MINUTE"), 10),
             conversation_window=_as_int(value("DEADBOT_CONVERSATION_WINDOW"), 12),

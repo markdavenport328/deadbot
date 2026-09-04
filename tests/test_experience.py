@@ -76,6 +76,12 @@ class StubComparisonStore:
             return self.shows.get(entity_id)
         return None
 
+    def rows_in(self, table, column, values):
+        wanted = set(values)
+        if table == "shows":
+            return [show for show in self.shows.values() if show.get(column) in wanted]
+        return []
+
     def rows(self, table):
         return []
 

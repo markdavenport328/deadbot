@@ -206,8 +206,16 @@ def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
 
 
 def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore) -> list[PerformanceListItem]:
+    # Fetch every show and venue in two queries. A song like Eyes of the World
+    # has several hundred performances, and one lookup per row against the
+    # remote database cost about thirty seconds per block.
+    show_ids = [performance.get("show_id", "") for performance in performances if performance.get("show_id")]
+    shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", show_ids)}
+    venue_ids = [show.get("venue_id", "") for show in shows.values() if show.get("venue_id")]
+    venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", venue_ids)}
+
     def sort_key(performance: dict[str, Any]) -> tuple[str, int]:
-        show = store.one("shows", performance.get("show_id", "")) or {}
+        show = shows.get(performance.get("show_id", ""), {})
         try:
             position = int(performance.get("position_in_set") or 0)
         except (TypeError, ValueError):
@@ -216,8 +224,8 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
 
     items = []
     for performance in sorted(performances, key=sort_key):
-        show = store.one("shows", performance.get("show_id", "")) or {}
-        venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
+        show = shows.get(performance.get("show_id", ""), {})
+        venue = venues.get(show.get("venue_id", "")) if show.get("venue_id") else None
         show_date = show.get("show_date") or None
         venue_name = venue.get("name") if venue else None
         show_label = " — ".join(part for part in [show_date, venue_name] if part) or show.get("show_id") or "Unknown show"

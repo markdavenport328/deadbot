@@ -230,6 +230,11 @@ class PostgresCanonicalStore(CanonicalStore):
 
     _filtered_rows = filtered_rows
 
+    def rows_in(self, table: str, column: str, values: Iterable[str]) -> list[dict[str, str]]:
+        """Rows whose ``column`` is one of ``values``, in one query."""
+
+        return self._rows_in(table, column, values)
+
     def _rows_in(self, table: str, column: str, values: Iterable[str]) -> list[dict[str, str]]:
         unique_values = tuple(dict.fromkeys(values))
         if not unique_values:
