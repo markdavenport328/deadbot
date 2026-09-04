@@ -2673,6 +2673,42 @@
         "summary": "Experience"
       }
     },
+    "/api/experience/stream": {
+      "post": {
+        "operationId": "experience_stream_api_experience_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperienceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Experience Stream"
+      }
+    },
     "/api/health": {
       "get": {
         "operationId": "health_api_health_get",

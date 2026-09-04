@@ -777,11 +777,13 @@ export default function App() {
   const [activeThreadId, setActiveThreadId] = useState(createThreadId);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [pendingStartsFresh, setPendingStartsFresh] = useState(false);
+  // What Deadbot is doing right now, one line per tool call, newest last.
+  const [progress, setProgress] = useState<string[]>([]);
   const threadEnd = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     threadEnd.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [loading, pendingQuestion, response]);
+  }, [loading, pendingQuestion, response, progress]);
 
   useEffect(() => {
     void refreshIfServerChanged();
@@ -803,24 +805,73 @@ export default function App() {
     setQuestion("");
     setLoading(true);
     setError(null);
+    setProgress([]);
+    const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
-      const result = await fetch("/api/experience", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation })
-      });
-      if (!result.ok) {
-        const body = await result.json().catch(() => null) as { detail?: string } | null;
-        throw new Error(body?.detail ?? "Deadbot could not answer just now.");
-      }
-      setResponse(await result.json() as ExperienceResponse);
+      const streamed = await askStreaming(body, (status) => setProgress((lines) => [...lines, status]));
+      setResponse(streamed ?? await askPlain(body));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now.");
     } finally {
       setLoading(false);
       setPendingQuestion(null);
       setPendingStartsFresh(false);
+      setProgress([]);
     }
+  }
+
+  // The streaming endpoint sends one JSON object per line: statuses while the
+  // agent works, then the response. A null return means the stream was not
+  // available and the caller should fall back to the plain request.
+  async function askStreaming(body: string, onStatus: (status: string) => void): Promise<ExperienceResponse | null> {
+    const result = await fetch("/api/experience/stream", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body
+    });
+    if (result.status === 404 || result.status === 405) return null;
+    if (!result.ok) {
+      const detail = await result.json().catch(() => null) as { detail?: string } | null;
+      throw new Error(detail?.detail ?? "Deadbot could not answer just now.");
+    }
+    if (!result.body) return null;
+    const reader = result.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let answer: ExperienceResponse | null = null;
+    const consume = (line: string) => {
+      if (!line.trim()) return;
+      const event = JSON.parse(line) as { type: string; text?: string; response?: ExperienceResponse; detail?: string };
+      if (event.type === "status" && event.text) onStatus(event.text);
+      else if (event.type === "response" && event.response) answer = event.response;
+      else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let newline = buffer.indexOf("\n");
+      while (newline >= 0) {
+        consume(buffer.slice(0, newline));
+        buffer = buffer.slice(newline + 1);
+        newline = buffer.indexOf("\n");
+      }
+    }
+    consume(buffer);
+    return answer;
+  }
+
+  async function askPlain(body: string): Promise<ExperienceResponse> {
+    const result = await fetch("/api/experience", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body
+    });
+    if (!result.ok) {
+      const detail = await result.json().catch(() => null) as { detail?: string } | null;
+      throw new Error(detail?.detail ?? "Deadbot could not answer just now.");
+    }
+    return await result.json() as ExperienceResponse;
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -875,7 +926,22 @@ export default function App() {
                   <div>{renderInline(turn.text)}</div>
                 </article>
               ))}
-              {loading && <article className="message assistant pending"><p>Deadbot</p><div>Looking through the library…</div></article>}
+              {loading && (
+                <article className="message assistant pending" aria-live="polite">
+                  <p>Deadbot</p>
+                  {progress.length === 0 ? (
+                    <div>Looking through the library…</div>
+                  ) : (
+                    <ol className="progress-lines" aria-label="What Deadbot is doing">
+                      {progress.slice(-4).map((status, index, lines) => (
+                        <li key={`${index}-${status}`} className={index === lines.length - 1 ? "current" : undefined}>
+                          {status}{index === lines.length - 1 ? "…" : ""}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </article>
+              )}
             </div>
 
             {error && <p className="error" role="alert">{error}</p>}

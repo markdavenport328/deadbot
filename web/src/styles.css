@@ -33,6 +33,10 @@ h2 { margin: 0; font-size: 1.45rem; }
 .message.assistant { align-self: flex-start; border: 1px solid #435946; background: #1d3024; color: #d3dccf; }
 .message.assistant div { overflow-wrap: anywhere; }
 .message.pending { color: #adbbac; font-style: italic; }
+.progress-lines { margin: 0; padding: 0; list-style: none; font-style: normal; }
+.progress-lines li { color: #7f9582; font-size: 0.86rem; line-height: 1.5; }
+.progress-lines li.current { color: #d3dccf; }
+.progress-lines li.current::before { content: "▸ "; color: #e7b94e; }
 
 .composer { position: sticky; bottom: 0; flex-shrink: 0; border-top: 1px solid #405345; background: #122119; padding: 1rem 0; }
 .question-row { display: flex; align-items: center; gap: 0.6rem; }

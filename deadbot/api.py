@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
 import uuid
 from collections import deque
+from collections.abc import Iterator
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -21,10 +24,22 @@ from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import ExperienceRequest, ExperienceResponse
 from deadbot.finish import build_experience_response
 from deadbot.graph import build_agent, run_config
+from deadbot.progress import status_lines
 from deadbot.storage import create_canonical_store
 
 
 logger = logging.getLogger(__name__)
+
+UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
+
+
+@dataclass(frozen=True)
+class _Invocation:
+    """One agent run prepared from a browser request."""
+
+    thread_id: str
+    invocation_thread_id: str
+    messages: list[Any]
 
 
 def create_app(
@@ -103,9 +118,7 @@ def create_app(
             "show_equipment_links": str(store.row_count("show_equipment")),
         }
 
-    @app.post("/api/experience", response_model=ExperienceResponse)
-    def experience(request: ExperienceRequest, http_request: Request) -> ExperienceResponse:
-        _enforce_rate_limit(http_request)
+    def _prepare(request: ExperienceRequest) -> _Invocation:
         thread_id = request.thread_id or f"web-{uuid.uuid4()}"
         conversation = _trimmed_conversation(request.conversation, app.state.settings.conversation_window)
         messages = [
@@ -117,39 +130,92 @@ def create_app(
         # When the browser supplies its visible transcript, use an isolated
         # invocation thread so the transcript is authoritative and is not
         # duplicated with a warm instance's MemorySaver checkpoint.
-        invocation_thread_id = (
-            f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
+        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
+        return _Invocation(thread_id=thread_id, invocation_thread_id=invocation_thread_id, messages=messages)
+
+    def _release(invocation: _Invocation) -> None:
+        # The per-request thread is throwaway: it exists only so this
+        # invocation replays the browser's transcript in isolation. Without
+        # this, MemorySaver would keep its checkpoint forever and leak memory
+        # in a long-running `deadbot serve` process. Never delete the stable
+        # thread_id path used for warm, server-side follow-ups.
+        if invocation.invocation_thread_id != invocation.thread_id:
+            checkpointer = getattr(app.state.agent, "checkpointer", None)
+            if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
+                checkpointer.delete_thread(invocation.invocation_thread_id)
+
+    def _respond(request: ExperienceRequest, invocation: _Invocation, messages: list[Any]) -> ExperienceResponse:
+        return build_experience_response(
+            question=request.question,
+            thread_id=invocation.thread_id,
+            messages=messages,
+            store=app.state.store,
         )
+
+    @app.post("/api/experience", response_model=ExperienceResponse)
+    def experience(request: ExperienceRequest, http_request: Request) -> ExperienceResponse:
+        _enforce_rate_limit(http_request)
+        invocation = _prepare(request)
         try:
             result = app.state.agent.invoke(
-                {"messages": messages},
-                run_config(invocation_thread_id, app.state.settings),
+                {"messages": invocation.messages},
+                run_config(invocation.invocation_thread_id, app.state.settings),
             )
             # Assembling the response is inside the try so an unexpected raise
             # while resolving the plan reaches the visitor as the same friendly
             # 503 as an agent failure, not as a stack trace.
-            return build_experience_response(
-                question=request.question,
-                thread_id=thread_id,
-                messages=result.get("messages", []),
-                store=app.state.store,
-            )
+            return _respond(request, invocation, result.get("messages", []))
         except Exception as error:  # The browser receives no model/provider internals.
             logger.exception("Deadbot experience request failed")
-            raise HTTPException(
-                status_code=503,
-                detail="Deadbot is temporarily unavailable. Check that the configured model service is running.",
-            ) from error
+            raise HTTPException(status_code=503, detail=UNAVAILABLE) from error
         finally:
-            # The per-request thread above is throwaway: it exists only so this
-            # invocation replays the browser's transcript in isolation. Without
-            # this, MemorySaver would keep its checkpoint forever and leak
-            # memory in a long-running `deadbot serve` process. Never delete
-            # the stable thread_id path used for warm, server-side follow-ups.
-            if invocation_thread_id != thread_id:
-                checkpointer = getattr(app.state.agent, "checkpointer", None)
-                if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
-                    checkpointer.delete_thread(invocation_thread_id)
+            _release(invocation)
+
+    def _stream_events(request: ExperienceRequest, invocation: _Invocation) -> Iterator[str]:
+        """Newline-delimited JSON: status lines while the agent works, then the response.
+
+        LangGraph's ``stream`` with ``stream_mode="values"`` yields the whole
+        message list after every step; each new tool call the model makes
+        becomes one visitor-facing status. An agent without ``stream`` (the
+        test doubles, for one) is invoked whole and yields only the response.
+        """
+
+        def line(event: dict[str, Any]) -> str:
+            return json.dumps(event, ensure_ascii=False) + "\n"
+
+        try:
+            config = run_config(invocation.invocation_thread_id, app.state.settings)
+            payload = {"messages": invocation.messages}
+            stream = getattr(app.state.agent, "stream", None)
+            messages: list[Any] = []
+            if callable(stream):
+                seen = 0
+                for state in stream(payload, config, stream_mode="values"):
+                    messages = list(state.get("messages", [])) if isinstance(state, dict) else messages
+                    for status in status_lines(messages, seen):
+                        yield line({"type": "status", "text": status})
+                    seen = len(messages)
+            else:
+                yield line({"type": "status", "text": "Looking through the library"})
+                result = app.state.agent.invoke(payload, config)
+                messages = list(result.get("messages", []))
+            response = _respond(request, invocation, messages)
+            yield line({"type": "response", "response": response.model_dump(mode="json")})
+        except Exception:  # The browser receives no model/provider internals.
+            logger.exception("Deadbot streamed experience request failed")
+            yield line({"type": "error", "detail": UNAVAILABLE})
+        finally:
+            _release(invocation)
+
+    @app.post("/api/experience/stream")
+    def experience_stream(request: ExperienceRequest, http_request: Request) -> StreamingResponse:
+        _enforce_rate_limit(http_request)
+        invocation = _prepare(request)
+        return StreamingResponse(
+            _stream_events(request, invocation),
+            media_type="application/x-ndjson",
+            headers={"Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no"},
+        )
 
     if client_dist.is_dir():
         assets = client_dist / "assets"
