@@ -90,8 +90,6 @@ export interface components {
             arrangement_id: string;
             /** Arrangement Scope */
             arrangement_scope: string;
-            /** Follow Up */
-            follow_up: string;
             /** Key Signature */
             key_signature: string;
             /** Resource Id */
@@ -133,8 +131,8 @@ export interface components {
         };
         /** ComparisonStripItem */
         ComparisonStripItem: {
-            /** Follow Up */
-            follow_up: string;
+            /** Listen Url */
+            listen_url?: string | null;
             /** Performance Id */
             performance_id: string;
             /** Position In Set */
@@ -177,8 +175,6 @@ export interface components {
         };
         /** CreditItem */
         CreditItem: {
-            /** Follow Up */
-            follow_up?: string | null;
             /** Name */
             name: string;
             /** Person Id */
@@ -287,8 +283,6 @@ export interface components {
             equipment_id: string;
             /** Evidence */
             evidence: string;
-            /** Follow Up */
-            follow_up: string;
             /** Manufacturer */
             manufacturer: string;
             /** Model */
@@ -318,8 +312,6 @@ export interface components {
         };
         /** EraPerformanceItem */
         EraPerformanceItem: {
-            /** Follow Up */
-            follow_up: string;
             listen?: components["schemas"]["ListenAction"] | null;
             /** Performance Id */
             performance_id: string;
@@ -413,8 +405,6 @@ export interface components {
         };
         /** GuestAppearanceItem */
         GuestAppearanceItem: {
-            /** Follow Up */
-            follow_up: string;
             /** Instruments */
             instruments: string[];
             /** Location */
@@ -536,8 +526,8 @@ export interface components {
         };
         /** PerformanceListItem */
         PerformanceListItem: {
-            /** Follow Up */
-            follow_up: string;
+            /** Listen Url */
+            listen_url?: string | null;
             /** Performance Id */
             performance_id: string;
             /** Position In Set */
@@ -578,8 +568,6 @@ export interface components {
         };
         /** PerformanceSpineNeighbor */
         PerformanceSpineNeighbor: {
-            /** Follow Up */
-            follow_up: string;
             /** Performance Id */
             performance_id: string;
             /** Title */
@@ -630,8 +618,6 @@ export interface components {
         };
         /** PerformerItem */
         PerformerItem: {
-            /** Follow Up */
-            follow_up: string;
             /** Instruments */
             instruments: string[];
             /** Name */
@@ -737,8 +723,6 @@ export interface components {
         };
         /** SetlistSong */
         SetlistSong: {
-            /** Follow Up */
-            follow_up: string;
             /**
              * Highlighted
              * @default false
@@ -801,8 +785,6 @@ export interface components {
         };
         /** ShowSelectionItem */
         ShowSelectionItem: {
-            /** Follow Up */
-            follow_up: string;
             /** Location */
             location?: string | null;
             /** Show Date */

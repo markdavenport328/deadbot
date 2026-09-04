@@ -56,9 +56,9 @@ class SetlistSong(ExperienceModel):
     song_id: str
     title: str
     position_in_set: str | None = None
-    follow_up: str
     # The composer marks a performance as important; the renderer decides how
-    # that looks. A listen URL is the library's per-performance track link.
+    # that looks. A listen URL is the library's per-performance track link, and
+    # it is the song's link: a setlist entry leads to its recording.
     highlighted: bool = False
     listen_url: str | None = None
 
@@ -110,7 +110,6 @@ class UnitSource(ExperienceModel):
 class PerformanceSpineNeighbor(ExperienceModel):
     performance_id: str
     title: str
-    follow_up: str
 
 
 class ShowSelectionItem(ExperienceModel):
@@ -118,7 +117,6 @@ class ShowSelectionItem(ExperienceModel):
     show_date: str
     venue_name: str
     location: str | None = None
-    follow_up: str
 
 
 class ShowSelectionBlock(ExperienceModel):
@@ -154,7 +152,6 @@ class PerformerItem(ExperienceModel):
     name: str
     role: Literal["performer", "guest"]
     instruments: list[str] = Field(min_length=1, max_length=8)
-    follow_up: str
 
 
 class PerformerListBlock(ExperienceModel):
@@ -229,7 +226,6 @@ class EraPerformanceItem(ExperienceModel):
     show_label: str
     set_label: str | None = None
     listen: ListenAction | None = None
-    follow_up: str
 
 
 class EraUnitBlock(ExperienceModel):
@@ -252,7 +248,6 @@ class GuestAppearanceItem(ExperienceModel):
     location: str | None = None
     instruments: list[str] = Field(min_length=1, max_length=8)
     participation_scope: str | None = None
-    follow_up: str
 
 
 class GuestAppearanceListBlock(ExperienceModel):
@@ -275,7 +270,6 @@ class EquipmentItem(ExperienceModel):
     evidence: str
     source_id: str
     source_url: str
-    follow_up: str
 
 
 class EquipmentListBlock(ExperienceModel):
@@ -305,7 +299,6 @@ class CreditItem(ExperienceModel):
     person_id: str
     name: str
     role: str
-    follow_up: str | None = None
 
 
 class CreditListBlock(ExperienceModel):
@@ -343,7 +336,9 @@ class PerformanceListItem(ExperienceModel):
     show_label: str
     set_label: str | None = None
     position_in_set: str | None = None
-    follow_up: str
+    # The library's track link for this rendition, when it has one; the
+    # performance's label links there.
+    listen_url: str | None = None
 
 
 class PerformanceExtremesBlock(ExperienceModel):
@@ -370,7 +365,7 @@ class ComparisonStripItem(ExperienceModel):
     show_label: str
     set_label: str | None = None
     position_in_set: str | None = None
-    follow_up: str
+    listen_url: str | None = None
 
 
 class ComparisonStripBlock(ExperienceModel):
@@ -431,7 +426,6 @@ class ArrangementSearchItem(ExperienceModel):
     url: str
     key_signature: str
     arrangement_scope: str
-    follow_up: str
 
 
 class ArrangementSearchBlock(ExperienceModel):
@@ -473,6 +467,8 @@ class EditorialItem(ExperienceModel):
     title: str
     value: str | None = None
     detail: str | None = None
+    # A question in the visitor's voice, rendered as an "Ask" chip. Only the
+    # composer writes these; the server never generates one.
     follow_up: str | None = None
     link: EditorialLink | None = None
 

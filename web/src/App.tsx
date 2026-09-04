@@ -87,26 +87,54 @@ function dedupeSources(sources: SourceReference[]): SourceReference[] {
   return result;
 }
 
-function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+function ExternalLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
   return (
-    <a href={href} target="_blank" rel="noreferrer">
-      {children} <span aria-hidden="true">↗</span>
+    <a href={href} target="_blank" rel="noreferrer" className={className}>
+      {children}
+    </a>
+  );
+}
+
+// A song or performance label that plays its recording when the library has
+// one, and is plain text otherwise. The ▶ is the only cue that a link plays.
+function PlayableLabel({ title, url, className = "" }: { title: string; url?: string | null; className?: string }) {
+  if (!url) return <span className={className}>{title}</span>;
+  return (
+    <a className={`song-link ${className}`.trim()} href={url} target="_blank" rel="noreferrer" title={`Play ${title}`}>
+      <span className="play-mark" aria-hidden="true">▶</span> {title}
     </a>
   );
 }
 
 const inlineLink = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+const inlineEmphasis = /(\*\*|__)(.+?)\1|(\*|_)(?=\S)(.+?)(?<=\S)\3/g;
+
+// Bold and italic markers the model writes, so *Without a Net* reads as a
+// title rather than as asterisks.
+function renderEmphasis(text: string, keyPrefix: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(inlineEmphasis)) {
+    const index = match.index ?? 0;
+    if (index > last) nodes.push(text.slice(last, index));
+    if (match[2] !== undefined) nodes.push(<strong key={`${keyPrefix}-${index}`}>{match[2]}</strong>);
+    else nodes.push(<em key={`${keyPrefix}-${index}`}>{match[4]}</em>);
+    last = index + match[0].length;
+  }
+  if (last < text.length) nodes.push(text.slice(last));
+  return nodes;
+}
 
 function renderInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(inlineLink)) {
     const index = match.index ?? 0;
-    if (index > last) nodes.push(text.slice(last, index));
-    nodes.push(<ExternalLink key={`${index}-${match[2]}`} href={match[2]}>{match[1]}</ExternalLink>);
+    if (index > last) nodes.push(...renderEmphasis(text.slice(last, index), `t${last}`));
+    nodes.push(<ExternalLink key={`${index}-${match[2]}`} href={match[2]}>{renderEmphasis(match[1], `l${index}`)}</ExternalLink>);
     last = index + match[0].length;
   }
-  if (last < text.length) nodes.push(text.slice(last));
+  if (last < text.length) nodes.push(...renderEmphasis(text.slice(last), `t${last}`));
   return nodes;
 }
 
@@ -120,25 +148,14 @@ function Eyebrow({ label, title }: { label?: string | null; title?: string | nul
   return <p className="eyebrow">{label}</p>;
 }
 
-function FollowUpButton({
-  prompt,
-  onFollowUp,
-  children,
-  className = ""
-}: {
-  prompt: string;
-  onFollowUp: (prompt: string) => void;
-  children: ReactNode;
-  className?: string;
-}) {
+// The one control that speaks to the thread. Only questions the composer
+// wrote reach here, labeled as what they are, so a page carries a few of them
+// and each reads as a next question rather than as navigation.
+function AskChip({ prompt, onFollowUp }: { prompt: string; onFollowUp: (prompt: string) => void }) {
   return (
-    <button
-      type="button"
-      className={className ? `follow-up-button ${className}` : "follow-up-button"}
-      onClick={() => onFollowUp(prompt)}
-      title={`Ask Deadbot: ${prompt}`}
-    >
-      {children} <span aria-hidden="true">→</span>
+    <button type="button" className="ask-chip" onClick={() => onFollowUp(prompt)}>
+      <span className="ask-label">Ask</span>
+      <span>{prompt}</span>
     </button>
   );
 }
@@ -205,7 +222,7 @@ function UnitSourceList({ sources }: { sources: UnitSources }) {
   );
 }
 
-function SetlistSectionList({ sets, onFollowUp }: { sets: SetlistSections; onFollowUp: (prompt: string) => void }) {
+function SetlistSectionList({ sets }: { sets: SetlistSections }) {
   return (
     <div className="setlist-sections">
       {sets.map((set) => (
@@ -214,15 +231,8 @@ function SetlistSectionList({ sets, onFollowUp }: { sets: SetlistSections; onFol
           <ol>
             {set.songs.map((song) => (
               <li key={song.performance_id} className={song.highlighted ? "setlist-song highlighted" : "setlist-song"}>
-                <FollowUpButton prompt={song.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <span>{song.title}</span>
-                </FollowUpButton>
+                <PlayableLabel title={song.title} url={song.listen_url} />
                 {song.highlighted && <span className="highlight-mark" title="A performance worth your attention" aria-label="Highlighted">★</span>}
-                {song.listen_url && (
-                  <a className="song-play" href={song.listen_url} target="_blank" rel="noreferrer" aria-label={`Play ${song.title}`} title={`Play ${song.title}`}>
-                    ▶
-                  </a>
-                )}
               </li>
             ))}
           </ol>
@@ -242,19 +252,14 @@ function ShowUnit({
   collapsed?: boolean;
 }) {
   const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
-  const showPrompt = `Tell me about the Grateful Dead show on ${unit.show_date}.`;
   return (
     <article className={`card show-unit${unit.role ? ` role-${unit.role}` : ""}`}>
       <header className="unit-heading">
         <div>
           {unit.title && <Eyebrow label={unit.title} />}
           <h2>
-            <FollowUpButton prompt={showPrompt} onFollowUp={onFollowUp} className="card-title-link">
-              <span>
-                <time dateTime={unit.show_date}>{formatShowDate(unit.show_date)}</time>
-                {unit.venue_name ? ` · ${unit.venue_name}` : ""}
-              </span>
-            </FollowUpButton>
+            <time dateTime={unit.show_date}>{formatShowDate(unit.show_date)}</time>
+            {unit.venue_name ? ` · ${unit.venue_name}` : ""}
           </h2>
           {unit.location && <p className="subtitle">{unit.location}</p>}
         </div>
@@ -267,10 +272,7 @@ function ShowUnit({
           {unit.guests.map((guest, index) => (
             <span key={`${guest.person_id}-${index}`}>
               {index > 0 ? ", " : ""}
-              <FollowUpButton prompt={guest.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
-                <strong>{guest.name}</strong>
-              </FollowUpButton>
-              {" "}({guest.instruments.join(", ")})
+              <strong>{guest.name}</strong> ({guest.instruments.join(", ")})
             </span>
           ))}
         </p>
@@ -281,14 +283,7 @@ function ShowUnit({
           <ul>
             {highlights.map((song) => (
               <li key={song.performance_id}>
-                <FollowUpButton prompt={song.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <span>{song.title}</span>
-                </FollowUpButton>
-                {song.listen_url && (
-                  <a className="listen-action compact" href={song.listen_url} target="_blank" rel="noreferrer">
-                    <span aria-hidden="true">▶</span> Play
-                  </a>
-                )}
+                <PlayableLabel title={song.title} url={song.listen_url} className="list-item-label" />
               </li>
             ))}
           </ul>
@@ -298,12 +293,12 @@ function ShowUnit({
         collapsed ? (
           <details className="unit-setlist">
             <summary>Setlist</summary>
-            <SetlistSectionList sets={unit.sets} onFollowUp={onFollowUp} />
+            <SetlistSectionList sets={unit.sets} />
           </details>
         ) : (
           <div className="unit-setlist">
             <p className="fact-label">Setlist</p>
-            <SetlistSectionList sets={unit.sets} onFollowUp={onFollowUp} />
+            <SetlistSectionList sets={unit.sets} />
           </div>
         )
       ) : unit.setlist_note ? (
@@ -313,7 +308,7 @@ function ShowUnit({
       <UnitSourceList sources={unit.sources} />
       {unit.follow_up && (
         <p className="unit-follow-up">
-          <FollowUpButton prompt={unit.follow_up} onFollowUp={onFollowUp}>{unit.follow_up}</FollowUpButton>
+          <AskChip prompt={unit.follow_up} onFollowUp={onFollowUp} />
         </p>
       )}
     </article>
@@ -356,12 +351,8 @@ function Block({
             <div>
               <p className="eyebrow">{block.song_title}</p>
               <h2>
-                <FollowUpButton prompt={`Tell me about the Grateful Dead show on ${block.show_date ?? block.show_label}.`} onFollowUp={onFollowUp} className="card-title-link">
-                  <span>
-                    <time dateTime={block.show_date ?? undefined}>{formatShowDate(block.show_date)}</time>
-                    {block.venue_name ? ` · ${block.venue_name}` : ""}
-                  </span>
-                </FollowUpButton>
+                <time dateTime={block.show_date ?? undefined}>{formatShowDate(block.show_date)}</time>
+                {block.venue_name ? ` · ${block.venue_name}` : ""}
               </h2>
               <p className="subtitle">
                 {[block.location, block.set_label, block.position_in_set ? `#${block.position_in_set}` : null].filter(Boolean).join(" · ")}
@@ -374,20 +365,12 @@ function Block({
             <div className="set-thread" aria-label="Adjacent songs in the set">
               <div>
                 <p className="fact-label">Before</p>
-                {block.previous ? (
-                  <FollowUpButton prompt={block.previous.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                    {block.previous.title}
-                  </FollowUpButton>
-                ) : <span className="thread-boundary">Set opener</span>}
+                {block.previous ? <span className="list-item-label">{block.previous.title}</span> : <span className="thread-boundary">Set opener</span>}
               </div>
               <div className="current-performance" aria-label="Current performance">{block.song_title}</div>
               <div>
                 <p className="fact-label">After</p>
-                {block.next ? (
-                  <FollowUpButton prompt={block.next.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                    {block.next.title}
-                  </FollowUpButton>
-                ) : <span className="thread-boundary">Set closer</span>}
+                {block.next ? <span className="list-item-label">{block.next.title}</span> : <span className="thread-boundary">Set closer</span>}
               </div>
             </div>
           )}
@@ -395,7 +378,7 @@ function Block({
           <UnitSourceList sources={block.sources} />
           {block.follow_up && (
             <p className="unit-follow-up">
-              <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp}>{block.follow_up}</FollowUpButton>
+              <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
             </p>
           )}
         </article>
@@ -414,25 +397,19 @@ function Block({
           <ul className="era-performances">
             {block.performances.map((performance) => (
               <li key={performance.performance_id}>
-                <FollowUpButton prompt={performance.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <strong>
-                    <time dateTime={performance.show_date ?? undefined}>{formatShowDate(performance.show_date)}</time>
-                    {" · "}{performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}
-                  </strong>
-                </FollowUpButton>
+                <PlayableLabel
+                  title={`${formatShowDate(performance.show_date)} · ${performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}`}
+                  url={performance.listen?.url}
+                  className="list-item-label"
+                />
                 <span>{[performance.song_title, performance.set_label].filter(Boolean).join(" · ")}</span>
-                {performance.listen && (
-                  <a className="listen-action compact" href={performance.listen.url} target="_blank" rel="noreferrer">
-                    <span aria-hidden="true">▶</span> {performance.listen.label}
-                  </a>
-                )}
               </li>
             ))}
           </ul>
           <UnitSourceList sources={block.sources} />
           {block.follow_up && (
             <p className="unit-follow-up">
-              <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp}>{block.follow_up}</FollowUpButton>
+              <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
             </p>
           )}
         </section>
@@ -441,17 +418,14 @@ function Block({
       return (
         <article className="typography-block entity-block">
           <Eyebrow label={block.entity_type} title={block.title} />
-          {block.follow_up ? (
-            <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp} className="card-title-link">
-              <span>{block.title}</span>
-            </FollowUpButton>
-          ) : <h2>{block.title}</h2>}
+          <h2>{block.title}</h2>
           {block.subtitle && <p className="subtitle">{block.subtitle}</p>}
           {block.details.length > 0 && (
             <ul className="details">
               {block.details.map((detail) => <li key={detail}>{detail}</li>)}
             </ul>
           )}
+          {block.follow_up && <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />}
         </article>
       );
     }
@@ -460,7 +434,7 @@ function Block({
         <section className="card show-setlist">
           <Eyebrow label="Setlist" title={block.title} />
           <h2>{block.title}</h2>
-          <SetlistSectionList sets={block.sets} onFollowUp={onFollowUp} />
+          <SetlistSectionList sets={block.sets} />
         </section>
       );
     case "show_selection":
@@ -472,9 +446,7 @@ function Block({
           <ol className="show-selection-list">
             {block.items.map((item) => (
               <li key={item.show_id}>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <span>{item.show_date} · {item.venue_name}</span>
-                </FollowUpButton>
+                <span className="list-item-label">{formatShowDate(item.show_date)} · {item.venue_name}</span>
                 {item.location && <span>{item.location}</span>}
               </li>
             ))}
@@ -505,9 +477,7 @@ function Block({
           <ul>
             {block.items.map((item) => (
               <li key={`${item.person_id}-${item.role}`}>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
-                  <strong>{item.name}</strong>
-                </FollowUpButton>
+                <strong className="inline-label">{item.name}</strong>
                 <span className="performer-role">{item.role === "guest" ? "Guest" : "Performer"}</span>
                 <span>{item.instruments.join(", ")}</span>
               </li>
@@ -526,9 +496,7 @@ function Block({
           <ol>
             {block.items.map((item) => (
               <li key={item.show_id}>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <strong>{item.show_date}{item.venue_name ? ` · ${item.venue_name}` : ""}</strong>
-                </FollowUpButton>
+                <strong className="list-item-label">{formatShowDate(item.show_date)}{item.venue_name ? ` · ${item.venue_name}` : ""}</strong>
                 <span>{[item.location, item.instruments.join(", "), item.participation_scope].filter(Boolean).join(" · ")}</span>
               </li>
             ))}
@@ -543,9 +511,7 @@ function Block({
           <ul>
             {block.items.map((item) => (
               <li key={`${item.equipment_id}-${item.usage_context}-${item.evidence}`}>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
-                  <strong>{item.name}</strong>
-                </FollowUpButton>
+                <strong className="inline-label">{item.name}</strong>
                 <span>{[item.manufacturer, item.model].filter(Boolean).join(" · ")}</span>
                 <span>{item.usage_context}{item.claim_type === "show" ? " · specific show evidence" : " · dated range evidence"}</span>
                 <ExternalLink href={item.source_url}>Source note</ExternalLink>
@@ -577,11 +543,7 @@ function Block({
               <ul>
                 {block.credits.map((credit) => (
                   <li key={`${credit.person_id}-${credit.role}`}>
-                    {credit.follow_up ? (
-                      <FollowUpButton prompt={credit.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
-                        <strong>{credit.name}</strong>
-                      </FollowUpButton>
-                    ) : <strong>{credit.name}</strong>}
+                    <strong className="inline-label">{credit.name}</strong>
                     <span>{credit.role}</span>
                   </li>
                 ))}
@@ -614,11 +576,7 @@ function Block({
           <ul>
             {block.items.map((item) => (
               <li key={`${item.person_id}-${item.role}`}>
-                {item.follow_up ? (
-                  <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
-                    <strong>{item.name}</strong>
-                  </FollowUpButton>
-                ) : <strong>{item.name}</strong>}
+                <strong className="inline-label">{item.name}</strong>
                 <span>{item.role}</span>
               </li>
             ))}
@@ -643,9 +601,7 @@ function Block({
           <ul>
             {block.items.map((item) => (
               <li key={item.performance_id}>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <strong>{item.show_label}</strong>
-                </FollowUpButton>
+                <PlayableLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
                 {(item.set_label || item.position_in_set) && <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>}
               </li>
             ))}
@@ -656,9 +612,7 @@ function Block({
       const endpoint = (label: string, item: typeof block.first) => (
         <div className="performance-endpoint" key={label}>
           <p className="fact-label">{label}</p>
-          <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-            <strong>{item.show_label}</strong>
-          </FollowUpButton>
+          <PlayableLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
           {(item.set_label || item.position_in_set) && (
             <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>
           )}
@@ -687,9 +641,7 @@ function Block({
             {block.items.map((item) => (
               <li className="comparison-stop" key={item.performance_id}>
                 <p className="comparison-year">{item.year}</p>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  <strong>{item.show_label}</strong>
-                </FollowUpButton>
+                <PlayableLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
                 {(item.set_label || item.position_in_set) && (
                   <span className="comparison-placement">
                     {item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}
@@ -710,20 +662,12 @@ function Block({
           <div className="set-thread" aria-label="Adjacent songs in the set">
             <div>
               <p className="fact-label">Before</p>
-              {block.previous ? (
-                <FollowUpButton prompt={block.previous.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  {block.previous.title}
-                </FollowUpButton>
-              ) : <span className="thread-boundary">Set opener</span>}
+              {block.previous ? <span className="list-item-label">{block.previous.title}</span> : <span className="thread-boundary">Set opener</span>}
             </div>
             <div className="current-performance" aria-label="Current performance">This performance</div>
             <div>
               <p className="fact-label">After</p>
-              {block.next ? (
-                <FollowUpButton prompt={block.next.follow_up} onFollowUp={onFollowUp} className="list-item-follow-up">
-                  {block.next.title}
-                </FollowUpButton>
-              ) : <span className="thread-boundary">Set closer</span>}
+              {block.next ? <span className="list-item-label">{block.next.title}</span> : <span className="thread-boundary">Set closer</span>}
             </div>
           </div>
         </section>
@@ -755,9 +699,6 @@ function Block({
             </ul>
           )}
           {source?.url && <ExternalLink href={source.url}>Open the source</ExternalLink>}
-          <FollowUpButton prompt={`Tell me more about ${block.title}.`} onFollowUp={onFollowUp}>
-            Ask about this arrangement
-          </FollowUpButton>
         </section>
       );
     }
@@ -770,9 +711,7 @@ function Block({
           <ul>
             {block.items.map((item) => (
               <li key={item.arrangement_id}>
-                <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp} className="inline-follow-up">
-                  <strong>{item.title}</strong>
-                </FollowUpButton>
+                <strong className="inline-label">{item.title}</strong>
                 <span>{item.arrangement_scope.replaceAll("-", " ")} · documented key {item.key_signature}</span>
                 <ExternalLink href={item.url}>{item.resource_title}</ExternalLink>
                 <span>{item.source_name}</span>
@@ -797,13 +736,10 @@ function Block({
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
                 <dt>{item.marker ?? item.title}</dt>
-                <dd>
-                  {item.follow_up ? (
-                    <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.value ?? item.title}</FollowUpButton>
-                  ) : item.value ?? item.title}
-                </dd>
+                <dd>{renderInline(item.value ?? item.title)}</dd>
                 {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
                 {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
+                {item.follow_up && <dd className="fact-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></dd>}
               </div>
             ))}
           </dl>
@@ -817,13 +753,10 @@ function Block({
             {block.items.map((item, index) => (
               <li key={`${item.marker ?? item.title}-${index}`}>
                 {item.marker && <span className="timeline-marker">{item.marker}</span>}
-                <strong>
-                  {item.follow_up ? (
-                    <FollowUpButton prompt={item.follow_up} onFollowUp={onFollowUp}>{item.title}</FollowUpButton>
-                  ) : item.title}
-                </strong>
+                <strong>{renderInline(item.title)}</strong>
                 {item.detail && <span>{renderInline(item.detail)}</span>}
                 {item.link && <ExternalLink href={item.link.url}>{item.link.label}</ExternalLink>}
+                {item.follow_up && <span className="timeline-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></span>}
               </li>
             ))}
           </ol>
@@ -1018,7 +951,7 @@ export default function App() {
               <div className="starting-points">
                 {suggestions.map((suggestion) => (
                   <button key={suggestion} type="button" onClick={() => void askQuestion(suggestion, { fresh: true })} disabled={loading}>
-                    {suggestion} <span aria-hidden="true">↗</span>
+                    {suggestion}
                   </button>
                 ))}
               </div>
