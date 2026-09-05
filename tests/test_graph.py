@@ -58,6 +58,8 @@ def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
         assert unit in prompt
     assert "Group by meaning and referent, not by tool, source or data type." in unwrapped
     assert "Tool boundaries and database tables are not presentation boundaries." in unwrapped
+    assert '"Ask" chip' in unwrapped
+    assert "setlist songs and performances already link to their recordings" in unwrapped
     # The research personality is preserved.
     for heading in ("## RESEARCH WITH PURPOSE", "## FORM A WORKING INTERPRETATION", "## FIND THE ORGANIZING IDEA", "# PRESERVE DISCOVERY", "# TRUST"):
         assert heading in prompt

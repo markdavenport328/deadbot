@@ -179,6 +179,63 @@ def test_experience_endpoint_renders_a_nested_show_explorer():
     ExperienceResponse.model_validate(body)
 
 
+class StreamingFakeAgent(FakeAgent):
+    """Yields the growing message list the way LangGraph's ``stream`` does with stream_mode="values"."""
+
+    def stream(self, payload, config, stream_mode="values"):
+        self.calls.append((payload, config))
+        assert stream_mode == "values"
+        for end in range(1, len(self.messages) + 1):
+            yield {"messages": self.messages[:end]}
+
+
+def _ndjson(text):
+    return [json.loads(line) for line in text.splitlines() if line.strip()]
+
+
+def test_streaming_endpoint_reports_each_tool_call_then_the_response():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
+            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27"}]}
+    agent = StreamingFakeAgent([
+        HumanMessage(content="What opened Veneta?"),
+        AIMessage(content="", tool_calls=[{"name": "get_show", "args": {"show_id_or_date": "1972-08-27"}, "id": "t1", "type": "tool_call"}]),
+        ToolMessage(content=json.dumps(store.show_context(show)), tool_call_id="t1", name="get_show"),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ])
+    client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
+    result = client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "browser-1"})
+    assert result.status_code == 200
+    assert result.headers["content-type"].startswith("application/x-ndjson")
+    events = _ndjson(result.text)
+    assert [event["type"] for event in events] == ["status", "status", "response"]
+    assert [event["text"] for event in events[:2]] == ["Reading the show on 1972-08-27", "Composing the answer"]
+    response = ExperienceResponse.model_validate(events[-1]["response"])
+    assert response.title == "Veneta, 1972" and response.blocks[0].type == "show_setlist"
+    assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
+
+
+def test_streaming_endpoint_falls_back_to_invoke_for_an_agent_without_stream():
+    agent = FakeAgent(finish_call("A plain answer."))
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
+    events = _ndjson(client.post("/api/experience/stream", json={"question": "Hi"}).text)
+    assert [event["type"] for event in events] == ["status", "response"]
+    assert events[-1]["response"]["answer"] == "A plain answer."
+
+
+def test_streaming_endpoint_reports_a_failure_as_an_error_event():
+    class FailingAgent:
+        def invoke(self, payload, config):
+            raise RuntimeError("model down")
+
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=FailingAgent()))
+    events = _ndjson(client.post("/api/experience/stream", json={"question": "Hi"}).text)
+    assert events[-1]["type"] == "error" and "unavailable" in events[-1]["detail"]
+    assert "model down" not in json.dumps(events)
+
+
 def test_api_returns_the_validated_experience_contract():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
