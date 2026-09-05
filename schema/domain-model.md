@@ -31,6 +31,9 @@ erDiagram
     PERFORMANCE ||--o{ PERFORMANCE_LINK : has_external_link
     OFFICIAL_RELEASE ||--o{ OFFICIAL_RELEASE_TRACK : contains
     PERFORMANCE ||--o{ OFFICIAL_RELEASE_TRACK : released_as
+    SONG ||--o{ OFFICIAL_RELEASE_TRACK : recorded_as
+    OFFICIAL_RELEASE ||--o{ RELEASE_PERSONNEL : credits
+    PERSON ||--o{ RELEASE_PERSONNEL : credited_on
     SHOW ||--o{ RECORDING : has
     PERFORMANCE ||--o{ PERFORMANCE_RECORDING : appears_on
     RECORDING ||--o{ PERFORMANCE_RECORDING : locates
@@ -58,7 +61,8 @@ erDiagram
 | `show_links` | External links for a whole show, such as a full-show video or an official release page. |
 | `performance_links` | External links for a particular song performance, with optional verified timestamp information. |
 | `official_releases` | Commercial/official release metadata and its external album link. |
-| `official_release_tracks` | Release tracks that map to a canonical performance when applicable. |
+| `official_release_tracks` | Release tracks, mapped to a canonical performance for live releases and to a canonical song for studio releases. |
+| `release_personnel` | People credited on a release, one row per role-and-instrument assignment. |
 
 `performances` is deliberately ordered within a set. This makes normal song boundaries and continuous segues queryable from the canonical setlist without needing a separate transitions table at this stage.
 
@@ -68,7 +72,12 @@ Song documentation is also intentionally separated from the composition. A chord
 
 ## External links and official releases
 
-Audio and video remain externally hosted. `show_links` and `performance_links` provide resolvable links without copying media into the repository. An official release is more than a link: `official_release_tracks` makes its track-to-performance relationship queryable, while Spotify and other service URLs stay external. A release track can remain unmapped when it is an introduction, tuning, banter, or another non-song segment.
+Audio and video remain externally hosted. `show_links` and `performance_links` provide resolvable links without copying media into the repository. An official release is more than a link. The catalog holds both live releases
+and studio albums, distinguished by `release_type`.
+`official_release_tracks` makes a release's contents queryable: a live track
+identifies the canonical performance it captures, and a studio track
+identifies the composition it records. A track can remain unmapped when it is
+an introduction, tuning, banter, or another non-song segment.
 
 ## Show performers
 

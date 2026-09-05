@@ -309,3 +309,47 @@ def test_real_canonical_headers_match_explicit_specs():
     for spec in TABLE_SPECS:
         with (canonical / spec.csv_name).open(encoding="utf-8-sig", newline="") as handle:
             assert tuple(next(csv.reader(handle))) == spec.columns
+
+
+def test_release_track_spec_carries_a_nullable_song_id():
+    spec = next(spec for spec in TABLE_SPECS if spec.name == "official_release_tracks")
+    assert spec.columns == (
+        "release_id",
+        "track_number",
+        "performance_id",
+        "song_id",
+        "track_title",
+        "duration_seconds",
+        "spotify_track_url",
+        "notes",
+    )
+    assert "song_id" in spec.nullable
+
+
+def test_release_personnel_spec_follows_show_performers_and_loads_after_releases():
+    spec = next(spec for spec in TABLE_SPECS if spec.name == "release_personnel")
+    assert spec.columns == ("release_id", "person_id", "role", "instrument", "notes")
+    assert spec.nullable == frozenset({"notes"})
+    names = [spec.name for spec in TABLE_SPECS]
+    assert names.index("release_personnel") > names.index("official_releases")
+    assert names.index("release_personnel") > names.index("people")
+
+
+def test_schema_version_is_five_and_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 5
+    migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
+    migrations = sorted(migrations_dir.glob("005_*.sql"))
+    assert len(migrations) == 1
+    sql = migrations[0].read_text(encoding="utf-8")
+    assert "ALTER TABLE official_release_tracks" in sql
+    assert "CREATE TABLE release_personnel" in sql
+    assert "schema_version" in sql
+
+
+def test_every_spec_matches_its_canonical_csv_header():
+    canonical = Path(__file__).resolve().parents[1] / "data" / "canonical"
+    for spec in TABLE_SPECS:
+        path = canonical / spec.csv_name
+        with path.open(newline="", encoding="utf-8") as source:
+            header = tuple(next(csv.reader(source)))
+        assert header == spec.columns, spec.name

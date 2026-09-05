@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (4);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (5);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -266,13 +266,15 @@ CREATE TABLE official_releases (
     release_type TEXT,
     spotify_album_url TEXT,
     source_url TEXT NOT NULL,
-    notes TEXT
+    notes TEXT,
+    CHECK (release_type IN ('studio', 'live', 'compilation', 'single'))
 );
 
 CREATE TABLE official_release_tracks (
     release_id TEXT NOT NULL REFERENCES official_releases (release_id) ON DELETE CASCADE,
     track_number INTEGER NOT NULL,
     performance_id TEXT REFERENCES performances (performance_id) ON DELETE SET NULL,
+    song_id TEXT REFERENCES songs (song_id) ON DELETE SET NULL,
     track_title TEXT NOT NULL,
     duration_seconds INTEGER,
     spotify_track_url TEXT,
@@ -280,6 +282,18 @@ CREATE TABLE official_release_tracks (
     PRIMARY KEY (release_id, track_number),
     CHECK (track_number > 0),
     CHECK (duration_seconds IS NULL OR duration_seconds >= 0)
+);
+
+CREATE INDEX official_release_tracks_song_id_idx
+    ON official_release_tracks (song_id);
+
+CREATE TABLE release_personnel (
+    release_id TEXT NOT NULL REFERENCES official_releases (release_id) ON DELETE CASCADE,
+    person_id TEXT NOT NULL REFERENCES people (person_id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    notes TEXT,
+    PRIMARY KEY (release_id, person_id, role, instrument)
 );
 
 CREATE TABLE song_arrangements (

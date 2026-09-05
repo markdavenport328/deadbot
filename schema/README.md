@@ -25,6 +25,15 @@ results and an explicit mode: `bootstrap`, `rebuild`, or non-destructive
 events; a merge deliberately does not claim that the operational data exactly
 matches the named snapshot.
 
+Schema version 5 adds studio albums to the release catalog. `official_releases`
+now constrains `release_type` to `studio`, `live`, `compilation` or `single`,
+and `official_release_tracks` carries a nullable `song_id` so a track can name
+its composition. A live track identifies a performance; a studio track has no
+performance, because a performance is a song played at a show. A track may
+carry both, one, or neither — an intro, tuning or banter segment carries
+neither. `release_personnel` records one row per person's role-and-instrument
+credit on a release, shaped like `show_performers`.
+
 Load canonical files in foreign-key dependency order:
 
 1. `people.csv`
@@ -43,11 +52,12 @@ Load canonical files in foreign-key dependency order:
 14. `performance_links.csv`
 15. `official_releases.csv`
 16. `official_release_tracks.csv`
-17. `song_arrangements.csv`
-18. `arrangement_chord_sections.csv`
-19. `recordings.csv`
-20. `performance_recordings.csv`
-21. `show_equipment.csv`
+17. `release_personnel.csv`
+18. `song_arrangements.csv`
+19. `arrangement_chord_sections.csv`
+20. `recordings.csv`
+21. `performance_recordings.csv`
+22. `show_equipment.csv`
 
 `performance_recordings` is checked to ensure a performance is mapped only to
 a recording of the same show. The importer validates CSV formatting, required

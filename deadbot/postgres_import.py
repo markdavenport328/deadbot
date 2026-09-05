@@ -23,7 +23,7 @@ DEFAULT_CANONICAL_DIR = ROOT / "data" / "canonical"
 DEFAULT_SELECTION_EVIDENCE_PATH = ROOT / "data" / "editorial" / "selection-evidence-review.json"
 DEFAULT_SCHEMA_PATH = ROOT / "schema" / "postgres.sql"
 DEFAULT_MIGRATIONS_DIR = ROOT / "schema" / "migrations"
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 
 Converter = Callable[[str], Any]
@@ -105,7 +105,8 @@ TABLE_SPECS: tuple[TableSpec, ...] = (
     _spec("show_links", "show_link_id show_id platform link_type url title is_official notes", nullable=("title", "notes"), booleans=("is_official",)),
     _spec("performance_links", "performance_link_id performance_id platform link_type url title start_seconds duration_seconds is_official notes", nullable=("title", "start_seconds", "duration_seconds", "notes"), integers=("start_seconds", "duration_seconds"), booleans=("is_official",)),
     _spec("official_releases", "release_id title artist_name release_date release_type spotify_album_url source_url notes", nullable=("artist_name", "release_date", "release_type", "spotify_album_url", "notes"), dates=("release_date",)),
-    _spec("official_release_tracks", "release_id track_number performance_id track_title duration_seconds spotify_track_url notes", nullable=("performance_id", "duration_seconds", "spotify_track_url", "notes"), integers=("track_number", "duration_seconds")),
+    _spec("official_release_tracks", "release_id track_number performance_id song_id track_title duration_seconds spotify_track_url notes", nullable=("performance_id", "song_id", "duration_seconds", "spotify_track_url", "notes"), integers=("track_number", "duration_seconds")),
+    _spec("release_personnel", "release_id person_id role instrument notes", nullable=("notes",)),
     _spec("song_arrangements", "arrangement_id song_id performance_id resource_id arrangement_scope key_signature capo tuning notes", nullable=("performance_id", "key_signature", "capo", "tuning", "notes")),
     _spec("arrangement_chord_sections", "arrangement_id section_position section_label progression notes", nullable=("notes",), integers=("section_position",)),
     _spec("recordings", "recording_id show_id source_type taper transferer shnid archive_identifier source_description lineage source_url notes", nullable=("source_type", "taper", "transferer", "shnid", "archive_identifier", "source_description", "lineage", "source_url", "notes")),
