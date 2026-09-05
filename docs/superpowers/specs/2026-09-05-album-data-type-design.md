@@ -98,10 +98,13 @@ discography of other artists.
    for these records is uneven, so this table is expected to land partial.
    Partial personnel does not block the rest of the pass.
 
-6. **Studio-versus-live comparison is derived, not stored.** The release date
-   is on `official_releases` and every performance is dated. "Played live for
-   fourteen months before the record" is a computation in the store, not a new
-   column.
+6. **Studio-versus-live comparison is the model's to make, not the store's.**
+   The release date is on `official_releases` and every performance is dated,
+   and after this change `song_context` returns both in one payload. "Played
+   live for fourteen months before the record" therefore needs no new column
+   and no new store method — it needs the model to have the two dates
+   together, which it now does. Per `AGENTS.md`, giving the model the facts
+   comes before adding deterministic code to compute the observation for it.
 
 7. **One new semantic unit, `album_unit`**, alongside `show_unit`,
    `performance_unit` and `era_unit`. An album is a meaningful object a
