@@ -75,8 +75,12 @@ STUDIO_ARTISTS: tuple[str, ...] = (
 
 # Catalog scope is studio albums only.  A Live secondary type belongs to the
 # 2026-09-01 live pass; Compilation and Single are declared in the schema
-# vocabulary but deliberately not collected.
-_DISQUALIFYING_SECONDARY_TYPES = frozenset({"Live", "Compilation", "Soundtrack", "Interview", "Remix", "DJ-mix"})
+# vocabulary but deliberately not collected.  Demo disqualifies archival
+# outtake companions (e.g. the "...: The Angel's Share" release groups) that
+# are not themselves studio albums.
+_DISQUALIFYING_SECONDARY_TYPES = frozenset(
+    {"Live", "Compilation", "Soundtrack", "Interview", "Remix", "DJ-mix", "Demo"}
+)
 
 
 def is_studio_release_group(group: dict) -> bool:

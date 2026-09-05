@@ -34,3 +34,8 @@ def test_a_plain_album_qualifies():
 def test_a_compilation_or_single_is_out_of_scope():
     assert module.is_studio_release_group({"primary-type": "Single", "secondary-types": []}) is False
     assert module.is_studio_release_group({"primary-type": "Album", "secondary-types": ["Compilation"]}) is False
+
+
+def test_a_demo_secondary_type_disqualifies_a_release_group():
+    demo = {"primary-type": "Album", "secondary-types": ["Demo"]}
+    assert module.is_studio_release_group(demo) is False

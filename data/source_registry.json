@@ -67,7 +67,7 @@
       "review_state": "approved",
       "allowed_operations": ["search", "browse"],
       "operation_policies": {
-        "search": {"methods": ["GET"], "paths": ["/ws/2/artist", "/ws/2/work"]},
+        "search": {"methods": ["GET"], "paths": ["/ws/2/artist/"]},
         "browse": {"methods": ["GET"], "paths": ["/ws/2/release-group", "/ws/2/release"]}
       },
       "retention_policy": {
@@ -83,7 +83,7 @@
         "retry_after_seconds": 30
       },
       "adapter_version": "musicbrainz-api-v1",
-      "notes": "JSON web service only, one request per second, descriptive User-Agent required. Covers artist and work search plus release-group and release browse used by scripts/collect/fetch_musicbrainz_song_works.py, fetch_musicbrainz_live_releases.py, and fetch_musicbrainz_studio_releases.py. No cover art or annotation text is retrieved or stored."
+      "notes": "JSON web service only, one request per second, descriptive User-Agent required. Covers artist search plus release-group and release browse used by scripts/collect/fetch_musicbrainz_live_releases.py and fetch_musicbrainz_studio_releases.py. No cover art or annotation text is retrieved or stored. fetch_musicbrainz_song_works.py's /ws/2/work search is a separate, unverified gap tracked outside this entry."
     }
   ]
 }
