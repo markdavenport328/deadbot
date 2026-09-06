@@ -1,6 +1,234 @@
 {
   "components": {
     "schemas": {
+      "AlbumCreditItem": {
+        "additionalProperties": false,
+        "description": "One person's credit on a record, mirroring `release_personnel`.",
+        "properties": {
+          "instrument": {
+            "title": "Instrument",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "role",
+          "instrument"
+        ],
+        "title": "AlbumCreditItem",
+        "type": "object"
+      },
+      "AlbumTrackItem": {
+        "additionalProperties": false,
+        "properties": {
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "highlighted": {
+            "default": false,
+            "title": "Highlighted",
+            "type": "boolean"
+          },
+          "listen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listen Url"
+          },
+          "performance_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Performance Id"
+          },
+          "song_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "track_number": {
+            "minimum": 1.0,
+            "title": "Track Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "track_number",
+          "title"
+        ],
+        "title": "AlbumTrackItem",
+        "type": "object"
+      },
+      "AlbumUnitBlock": {
+        "additionalProperties": false,
+        "description": "One official record as a whole object: what is on it and who made it.",
+        "properties": {
+          "artist_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist Name"
+          },
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
+          "listen": {
+            "items": {
+              "$ref": "#/components/schemas/ListenAction"
+            },
+            "maxItems": 3,
+            "title": "Listen",
+            "type": "array"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "personnel": {
+            "items": {
+              "$ref": "#/components/schemas/AlbumCreditItem"
+            },
+            "maxItems": 20,
+            "title": "Personnel",
+            "type": "array"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "release_type": {
+            "title": "Release Type",
+            "type": "string"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "anchor",
+                  "supporting",
+                  "contrast",
+                  "turning_point",
+                  "outlier",
+                  "culmination",
+                  "overlooked",
+                  "representative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSource"
+            },
+            "maxItems": 4,
+            "title": "Sources",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/AlbumTrackItem"
+            },
+            "maxItems": 30,
+            "title": "Tracks",
+            "type": "array"
+          },
+          "type": {
+            "const": "album_unit",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "release_id",
+          "title",
+          "release_type"
+        ],
+        "title": "AlbumUnitBlock",
+        "type": "object"
+      },
       "ArrangementBlock": {
         "additionalProperties": false,
         "properties": {
@@ -958,6 +1186,7 @@
             "items": {
               "discriminator": {
                 "mapping": {
+                  "album_unit": "#/components/schemas/AlbumUnitBlock",
                   "arrangement": "#/components/schemas/ArrangementBlock",
                   "arrangement_search": "#/components/schemas/ArrangementSearchBlock",
                   "comparison_strip": "#/components/schemas/ComparisonStripBlock",
@@ -1001,6 +1230,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/EraUnitBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/AlbumUnitBlock"
                 },
                 {
                   "$ref": "#/components/schemas/ShowSetlistBlock"
@@ -2491,6 +2723,14 @@
       "SongOverviewBlock": {
         "additionalProperties": false,
         "properties": {
+          "albums": {
+            "items": {
+              "$ref": "#/components/schemas/SongReleaseItem"
+            },
+            "maxItems": 6,
+            "title": "Albums",
+            "type": "array"
+          },
           "credits": {
             "items": {
               "$ref": "#/components/schemas/CreditItem"
@@ -2543,6 +2783,41 @@
           "known_performance_count"
         ],
         "title": "SongOverviewBlock",
+        "type": "object"
+      },
+      "SongReleaseItem": {
+        "additionalProperties": false,
+        "properties": {
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "release_type": {
+            "title": "Release Type",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "release_id",
+          "title",
+          "release_type"
+        ],
+        "title": "SongReleaseItem",
         "type": "object"
       },
       "SourceReference": {

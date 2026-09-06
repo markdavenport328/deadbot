@@ -42,6 +42,75 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AlbumCreditItem
+         * @description One person's credit on a record, mirroring `release_personnel`.
+         */
+        AlbumCreditItem: {
+            /** Instrument */
+            instrument: string;
+            /** Name */
+            name: string;
+            /** Person Id */
+            person_id: string;
+            /** Role */
+            role: string;
+        };
+        /** AlbumTrackItem */
+        AlbumTrackItem: {
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /**
+             * Highlighted
+             * @default false
+             */
+            highlighted: boolean;
+            /** Listen Url */
+            listen_url?: string | null;
+            /** Performance Id */
+            performance_id?: string | null;
+            /** Song Id */
+            song_id?: string | null;
+            /** Title */
+            title: string;
+            /** Track Number */
+            track_number: number;
+        };
+        /**
+         * AlbumUnitBlock
+         * @description One official record as a whole object: what is on it and who made it.
+         */
+        AlbumUnitBlock: {
+            /** Artist Name */
+            artist_name?: string | null;
+            /** Follow Up */
+            follow_up?: string | null;
+            /** Listen */
+            listen?: components["schemas"]["ListenAction"][];
+            /** Note */
+            note?: string | null;
+            /** Personnel */
+            personnel?: components["schemas"]["AlbumCreditItem"][];
+            /** Release Date */
+            release_date?: string | null;
+            /** Release Id */
+            release_id: string;
+            /** Release Type */
+            release_type: string;
+            /** Role */
+            role?: ("anchor" | "supporting" | "contrast" | "turning_point" | "outlier" | "culmination" | "overlooked" | "representative") | null;
+            /** Sources */
+            sources?: components["schemas"]["UnitSource"][];
+            /** Title */
+            title: string;
+            /** Tracks */
+            tracks?: components["schemas"]["AlbumTrackItem"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "album_unit";
+        };
         /** ArrangementBlock */
         ArrangementBlock: {
             /** Arrangement Scope */
@@ -375,7 +444,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["ShowExplorerBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["ShowExplorerBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSetlistBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["RecordingListBlock"] | components["schemas"]["PerformerListBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["PerformanceListBlock"] | components["schemas"]["PerformanceExtremesBlock"] | components["schemas"]["PerformanceSpineBlock"] | components["schemas"]["ComparisonStripBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -869,6 +938,8 @@ export interface components {
         };
         /** SongOverviewBlock */
         SongOverviewBlock: {
+            /** Albums */
+            albums?: components["schemas"]["SongReleaseItem"][];
             /** Credits */
             credits?: components["schemas"]["CreditItem"][];
             /** Known Performance Count */
@@ -886,6 +957,17 @@ export interface components {
              * @enum {string}
              */
             type: "song_overview";
+        };
+        /** SongReleaseItem */
+        SongReleaseItem: {
+            /** Release Date */
+            release_date?: string | null;
+            /** Release Id */
+            release_id: string;
+            /** Release Type */
+            release_type: string;
+            /** Title */
+            title: string;
         };
         /** SourceReference */
         SourceReference: {

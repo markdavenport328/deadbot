@@ -31,7 +31,7 @@ type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], 
 type FixedEditorialBlock = Require<components["schemas"]["EditorialBlock"], "paragraphs" | "items">;
 type FixedSongOverviewBlock = Require<
   components["schemas"]["SongOverviewBlock"],
-  "credits" | "source_ids"
+  "credits" | "source_ids" | "albums"
 >;
 
 // Semantic units. Their hydrated lists are always present in a server
@@ -40,6 +40,10 @@ export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "set
 type FixedShowExplorerBlock = Omit<components["schemas"]["ShowExplorerBlock"], "items"> & { items: ShowUnitBlock[] };
 type FixedPerformanceUnitBlock = Require<components["schemas"]["PerformanceUnitBlock"], "listen" | "sources">;
 type FixedEraUnitBlock = Require<components["schemas"]["EraUnitBlock"], "sources">;
+export type AlbumUnitBlock = Require<
+  components["schemas"]["AlbumUnitBlock"],
+  "tracks" | "personnel" | "listen" | "sources"
+>;
 
 export type ExperienceBlock =
   | FixedEntityCardBlock
@@ -47,6 +51,7 @@ export type ExperienceBlock =
   | FixedShowExplorerBlock
   | FixedPerformanceUnitBlock
   | FixedEraUnitBlock
+  | AlbumUnitBlock
   | components["schemas"]["ShowSetlistBlock"]
   | components["schemas"]["ShowSelectionBlock"]
   | components["schemas"]["RecordingListBlock"]

@@ -1,5 +1,5 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
+import type { AlbumUnitBlock, ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 
 type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
@@ -320,6 +320,64 @@ function ShowUnit({
   );
 }
 
+function AlbumUnit({
+  block,
+  onFollowUp
+}: {
+  block: AlbumUnitBlock;
+  onFollowUp: (prompt: string) => void;
+}) {
+  const year = block.release_date?.slice(0, 4);
+  return (
+    <article className={`card album-unit${block.role ? ` role-${block.role}` : ""}`}>
+      <header className="unit-heading">
+        <div>
+          {block.artist_name && block.artist_name !== "Grateful Dead" && <Eyebrow label={block.artist_name} title={block.title} />}
+          <h2>
+            {block.title}
+            {year ? <span className="subtitle"> ({year})</span> : null}
+          </h2>
+        </div>
+        <RoleChip role={block.role} />
+      </header>
+      {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      <ol className="album-tracks">
+        {block.tracks.map((track) => (
+          <li
+            key={track.track_number}
+            className={track.highlighted ? "album-track is-highlighted" : "album-track"}
+            value={track.track_number}
+          >
+            {track.listen_url ? (
+              <a className="song-play" href={track.listen_url} target="_blank" rel="noreferrer" aria-label={`Play ${track.title}`}>
+                {track.title}
+              </a>
+            ) : (
+              track.title
+            )}
+          </li>
+        ))}
+      </ol>
+      {block.personnel.length > 0 && (
+        <ul className="album-personnel">
+          {block.personnel.map((credit) => (
+            <li key={`${credit.person_id}-${credit.instrument}`}>
+              <strong>{credit.name}</strong> — {credit.instrument}
+            </li>
+          ))}
+        </ul>
+      )}
+      <ListenActionList actions={block.listen} />
+      <UnitSourceList sources={block.sources} />
+      {block.follow_up && (
+        <p className="unit-follow-up">
+          <FollowUpButton prompt={block.follow_up} onFollowUp={onFollowUp}>{block.follow_up}</FollowUpButton>
+        </p>
+      )}
+    </article>
+  );
+}
+
 function Block({
   block,
   sources,
@@ -437,6 +495,8 @@ function Block({
           )}
         </section>
       );
+    case "album_unit":
+      return <AlbumUnit block={block} onFollowUp={onFollowUp} />;
     case "entity_card": {
       return (
         <article className="typography-block entity-block">
@@ -588,6 +648,16 @@ function Block({
               </ul>
             </div>
           )}
+          {block.albums.length > 0 ? (
+            <ul className="song-albums">
+              {block.albums.map((album) => (
+                <li key={album.release_id}>
+                  {album.title}
+                  {album.release_date ? ` (${album.release_date.slice(0, 4)})` : ""}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </section>
       );
     case "resource_list":
