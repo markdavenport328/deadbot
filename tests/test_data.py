@@ -535,3 +535,30 @@ def test_album_context_personnel_carry_resolved_names():
     for entry in payload["personnel"]:
         assert entry["name"]
         assert entry["instrument"]
+
+
+def test_song_context_lists_the_records_that_carried_the_song():
+    store = CanonicalStore()
+    payload = store.song_context(store.resolve_song("Truckin'"))
+
+    releases = payload["releases"]
+    assert releases, "Truckin' should appear on at least one record"
+
+    studio = next(r for r in releases if r["release_type"] == "studio")
+    assert studio["title"] == "American Beauty"
+    assert studio["track_number"] == 10
+
+
+def test_song_releases_are_ordered_by_date_with_studio_first_on_a_tie():
+    store = CanonicalStore()
+    releases = store.song_context(store.resolve_song("Truckin'"))["releases"]
+
+    dated = [r for r in releases if r["release_date"]]
+    assert [r["release_date"] for r in dated] == sorted(r["release_date"] for r in dated)
+    assert all(r["release_date"] for r in releases[: len(dated)])
+
+
+def test_a_song_never_released_has_an_empty_release_list():
+    store = CanonicalStore()
+    payload = store.song_context(store.resolve_song("song-a-mind-to-give-up-livin"))
+    assert payload["releases"] == []

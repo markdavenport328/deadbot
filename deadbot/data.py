@@ -258,6 +258,46 @@ class CanonicalStore:
             if row["release_id"] in release_ids
         ]
 
+    def song_releases(self, song_id: str, performance_ids: set[str]) -> list[dict[str, Any]]:
+        """Every official record carrying this song, earliest first.
+
+        A track reaches the song either by naming it directly or by naming one
+        of its performances.  Studio records sort ahead of live ones on an
+        equal date, and an undated record sorts last, because a missing date
+        is not a claim that it came first.
+        """
+
+        by_release: dict[str, dict[str, Any]] = {}
+        for row in self.rows("official_release_tracks"):
+            matches_song = row.get("song_id", "").strip() == song_id
+            matches_performance = row.get("performance_id", "").strip() in performance_ids
+            if not (matches_song or matches_performance):
+                continue
+            release = self.one("official_releases", row["release_id"])
+            if not release or row["release_id"] in by_release:
+                continue
+            track_number = row.get("track_number", "").strip()
+            by_release[row["release_id"]] = {
+                "release_id": release["release_id"],
+                "title": release.get("title") or "",
+                "artist_name": release.get("artist_name") or None,
+                "release_date": release.get("release_date") or None,
+                "release_type": release.get("release_type") or None,
+                "track_number": int(track_number) if track_number.isdigit() else None,
+                "spotify_album_url": release.get("spotify_album_url") or None,
+            }
+
+        def order(item: dict[str, Any]) -> tuple[int, str, int, str]:
+            date_value = item["release_date"] or ""
+            return (
+                0 if date_value else 1,
+                date_value,
+                0 if item["release_type"] == "studio" else 1,
+                item["title"],
+            )
+
+        return sorted(by_release.values(), key=order)
+
     def song_context(self, song: dict[str, str]) -> dict[str, Any]:
         song_id = song["song_id"]
         writers = [row for row in self.rows("song_writers") if row["song_id"] == song_id]
@@ -276,6 +316,7 @@ class CanonicalStore:
             "song": song,
             "writers": writers,
             "performances": performance_summaries,
+            "releases": self.song_releases(song_id, performance_ids),
             "resources": self.resources_for("resource_songs", "song_id", song_id),
             "arrangements": arrangements,
         }
