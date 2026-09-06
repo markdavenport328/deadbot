@@ -500,6 +500,43 @@ def test_finish_plan_rejects_an_unknown_role():
         raise AssertionError("roles are a closed vocabulary")
 
 
+def test_a_plan_may_declare_an_album_unit():
+    plan = finish.FinishPlan(
+        chat_answer="Truckin' closes American Beauty.",
+        title="American Beauty",
+        mode="listening",
+        body=[{"type": "album_unit", "release_id": "release-american-beauty", "highlighted_song_ids": ["song-truckin"]}],
+    )
+    assert plan.body[0].release_id == "release-american-beauty"
+
+
+def test_an_ungrounded_release_id_is_dropped():
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="x",
+        mode="listening",
+        body=[{"type": "album_unit", "release_id": "release-american-beauty"}],
+    )
+    blocks, _ = finish.resolve_body(
+        plan, finish.GroundedContext(ids=frozenset(), urls=frozenset()), [], CanonicalStore()
+    )
+    assert blocks == []
+
+
+def test_a_grounded_release_id_hydrates_into_an_album_unit():
+    store = CanonicalStore()
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="x",
+        mode="listening",
+        body=[{"type": "album_unit", "release_id": "release-american-beauty", "note": "The turn toward songs."}],
+    )
+    grounded = finish.GroundedContext(ids=frozenset({"release-american-beauty"}), urls=frozenset())
+    blocks, _ = finish.resolve_body(plan, grounded, [], store)
+    assert blocks[0].type == "album_unit"
+    assert blocks[0].note == "The turn toward songs."
+
+
 def test_show_context_carries_per_performance_listening_paths():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
