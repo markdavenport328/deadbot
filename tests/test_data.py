@@ -500,3 +500,38 @@ def test_show_payload_keeps_source_setlist_gap_note_without_raw_provenance():
     assert "no setlist entries" in result["show"]["setlist_note"]
     assert "notes" not in result["show"]
     assert "source_key" not in result["show"]
+
+
+def test_resolve_release_matches_on_id_and_on_title():
+    store = CanonicalStore()
+    by_id = store.resolve_release("release-american-beauty")
+    by_title = store.resolve_release("American Beauty")
+    assert by_id is not None
+    assert by_id == by_title
+    assert by_id["release_type"] == "studio"
+
+
+def test_resolve_release_returns_none_for_an_unknown_name():
+    assert CanonicalStore().resolve_release("Kind of Blue") is None
+
+
+def test_album_context_returns_an_ordered_tracklist_with_resolved_songs():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+
+    assert payload["release"]["title"] == "American Beauty"
+    numbers = [track["track_number"] for track in payload["tracks"]]
+    assert numbers == sorted(numbers)
+    assert numbers[0] == 1
+
+    truckin = next(track for track in payload["tracks"] if track["song_id"] == "song-truckin")
+    assert truckin["song_title"] == "Truckin'"
+    assert truckin["performance_id"] is None
+
+
+def test_album_context_personnel_carry_resolved_names():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    for entry in payload["personnel"]:
+        assert entry["name"]
+        assert entry["instrument"]

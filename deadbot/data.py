@@ -37,7 +37,9 @@ class CanonicalStore:
     def by_id(self) -> dict[str, dict[str, dict[str, str]]]:
         result: dict[str, dict[str, dict[str, str]]] = {}
         for table, rows in self.tables.items():
-            singular = {"people": "person"}.get(table, table[:-1] if table.endswith("s") else table)
+            singular = {"people": "person", "official_releases": "release"}.get(
+                table, table[:-1] if table.endswith("s") else table
+            )
             id_column = f"{singular}_id"
             if rows and id_column in rows[0]:
                 result[table] = {row[id_column]: row for row in rows}
@@ -187,6 +189,61 @@ class CanonicalStore:
             if resource:
                 result.append({**resource, "relationships": relationship_by_resource[resource_id]})
         return result
+
+    def resolve_release(self, identifier: str) -> dict[str, str] | None:
+        direct = self.one("official_releases", identifier)
+        if direct:
+            return direct
+        matches = self.matching_rows("official_releases", identifier, ("title",))
+        return matches[0] if len(matches) == 1 else None
+
+    def album_context(self, release: dict[str, str]) -> dict[str, Any]:
+        """One release as a whole object: its tracklist, credits and links.
+
+        A track names a performance for a live release and a song for a studio
+        release; either may be absent for an intro, tuning or banter segment.
+        """
+
+        release_id = release["release_id"]
+
+        def number(value: str) -> int:
+            return int(value) if value.strip().isdigit() else 10**9
+
+        tracks = []
+        for row in self.rows("official_release_tracks"):
+            if row["release_id"] != release_id:
+                continue
+            song_id = row.get("song_id", "").strip() or None
+            song = self.one("songs", song_id) if song_id else None
+            duration = row.get("duration_seconds", "").strip()
+            tracks.append(
+                {
+                    "track_number": number(row.get("track_number", "")),
+                    "title": row.get("track_title") or "",
+                    "song_id": song_id,
+                    "song_title": song.get("title") if song else None,
+                    "performance_id": row.get("performance_id", "").strip() or None,
+                    "duration_seconds": int(duration) if duration.isdigit() else None,
+                    "spotify_track_url": row.get("spotify_track_url", "").strip() or None,
+                }
+            )
+        tracks.sort(key=lambda track: track["track_number"])
+
+        personnel = []
+        for row in self.rows("release_personnel"):
+            if row["release_id"] != release_id:
+                continue
+            person = self.one("people", row["person_id"])
+            personnel.append(
+                {
+                    "person_id": row["person_id"],
+                    "name": person.get("name") if person else row["person_id"],
+                    "role": row.get("role") or "",
+                    "instrument": row.get("instrument") or "",
+                }
+            )
+
+        return {"release": release, "tracks": tracks, "personnel": personnel}
 
     def official_release_summaries(self, release_ids: set[str]) -> list[dict[str, str]]:
         """Return the small display subset needed by retrieval and the UI."""
