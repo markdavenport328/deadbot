@@ -2,7 +2,7 @@ import json
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from deadbot import finish
+from deadbot import composition, finish
 from deadbot.data import CanonicalStore
 
 
@@ -746,3 +746,37 @@ def test_build_experience_response_substitutes_the_lead_for_a_blank_chat_answer(
     messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
     response = finish.build_experience_response("Hi", "web-1", messages, store)
     assert response.answer == "A short lead."
+
+
+def test_album_unit_hydrates_from_the_release_payload():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, sources = composition._album_unit(payload, store, note="The record that made them a band people bought.")
+
+    assert block.type == "album_unit"
+    assert block.title == "American Beauty"
+    assert block.release_type == "studio"
+    assert [track.track_number for track in block.tracks] == sorted(t.track_number for t in block.tracks)
+
+
+def test_album_unit_keeps_only_highlights_that_are_on_the_record():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store, highlighted_song_ids=["song-truckin", "song-dark-star"])
+
+    highlighted = {track.song_id for track in block.tracks if track.highlighted}
+    assert highlighted == {"song-truckin"}
+
+
+def test_album_unit_offers_the_record_as_a_listening_action():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store)
+    assert all(action.is_official for action in block.listen)
+
+
+def test_song_overview_shows_the_records_that_held_the_song():
+    store = CanonicalStore()
+    context = store.song_context(store.resolve_song("Truckin'"))
+    block = composition._song_overview(context, store)
+    assert any(album.release_type == "studio" for album in block.albums)
