@@ -4,7 +4,10 @@
 Input: the compact raw records written by
 ``scripts/collect/fetch_musicbrainz_studio_releases.py``
 (``data/raw/releases/musicbrainz-studio-release-groups.jsonl`` and
-``musicbrainz-studio-releases.jsonl``).
+``musicbrainz-studio-releases.jsonl``), plus the optional
+``musicbrainz-studio-release-credits.jsonl`` written by the collector's
+``--artist-relations`` pass, which is the only source of per-person instrument
+credits.
 
 Output: ``studio`` rows in ``data/canonical/official_releases.csv``, their track
 rows in ``data/canonical/official_release_tracks.csv`` carrying ``song_id``,
@@ -65,6 +68,7 @@ CANONICAL = ROOT / "data" / "canonical"
 RAW_DIR = ROOT / "data" / "raw" / "releases"
 RELEASE_GROUPS_PATH = RAW_DIR / "musicbrainz-studio-release-groups.jsonl"
 RELEASES_PATH = RAW_DIR / "musicbrainz-studio-releases.jsonl"
+CREDITS_PATH = RAW_DIR / "musicbrainz-studio-release-credits.jsonl"
 REVIEW_PATH = RAW_DIR / "musicbrainz-studio-release-review.jsonl"
 RELEASES_CSV = CANONICAL / "official_releases.csv"
 TRACKS_CSV = CANONICAL / "official_release_tracks.csv"
@@ -76,6 +80,19 @@ PERSONNEL_FIELDS = ["release_id", "person_id", "role", "instrument", "notes"]
 RELEASE_TYPES = {"studio", "live", "compilation", "single"}
 RELEASE_TYPE = "studio"
 STUDIO_MARKER = "studio release-group pass"
+
+
+def owns_row(row: dict) -> bool:
+    """True when this pass wrote the row and a rerun may replace it.
+
+    The narrow marker is the whole point.  ``MusicBrainz release <mbid>`` also
+    appears in every live-pass row, so a filter built on it would make this pass
+    delete the live catalog; ``normalize_musicbrainz_live_releases.owns_row`` is
+    the mirror of this function and excludes ``STUDIO_MARKER`` for the same
+    reason.  Together they let the two passes run in either order, repeatedly.
+    """
+
+    return STUDIO_MARKER in row.get("notes", "")
 
 _PUNCTUATION = re.compile(r"[^a-z0-9]+")
 _APOSTROPHE = re.compile(r"['‘’ʼ]")
@@ -96,6 +113,12 @@ MIN_VENUE_NAME = 12
 # before the whole release group is held.
 LIVE_TRACK_SHARE = 1 / 3
 
+# MusicBrainz artist-relation types that describe someone playing on the record.
+# Everything else (producer, engineer, art direction) is a real credit with no
+# instrument, and release_personnel cannot store one: instrument is part of the
+# primary key.  Those are held, not invented.
+PERFORMER_RELATION_TYPES = frozenset({"instrument", "vocal", "performer", "performing orchestra"})
+
 # Release groups the automatic signals cannot see, held by hand with a reason.
 # Each entry is a MusicBrainz release-group MBID.  Add to this list rather than
 # loosening the regexes above, which would start holding real studio albums.
@@ -111,6 +134,21 @@ MANUAL_HOLDS = {
     "900cfb8d-cb66-34f0-8919-c8fdde86dccf": (
         "duplicate release group for Kingfish Double Dose (same track list, no date, no external "
         "identifiers) and held for the same reason as 3e9aef44"
+    ),
+    "1d0e909f-c764-3696-9002-946f5b0f14da": (
+        "The Pizza Tapes (2000) is an informally taped Garcia/Grisman/Rice jam session issued "
+        "archivally, not a studio album that first carried a song: it first carried nothing, five "
+        "of its tracks are fragments titled 'Appetizer', and promoting it attached song-so-what "
+        "and song-knockin-on-heaven-s-door to a jam tape"
+    ),
+    "1670f945-b182-385e-9766-52aef31bb304": (
+        "So What (1998) is a posthumous Garcia/Grisman compilation of alternate takes from earlier "
+        "sessions, not a record that first carried a song; its three tracks all titled 'So What' "
+        "all resolve to song-so-what, the only duplicate (release_id, song_id) pair in the set"
+    ),
+    "56568b68-084d-36fa-99b9-acc80d02d43a": (
+        "Blue Incantation is a Sanjay Mishra album that Jerry Garcia guests on; a guest appearance "
+        "is neither a solo record nor a side-project record, so it is outside the catalog's scope"
     ),
 }
 
@@ -323,61 +361,129 @@ def live_title_signals(title: str, venue_names: list[str]) -> list[str]:
 
 # --- personnel ----------------------------------------------------------------
 
-def personnel_credits(release: dict) -> list[dict]:
-    """Flatten MusicBrainz artist relations on a release into raw credits.
+def load_release_credits() -> dict[str, dict]:
+    """Releases re-fetched with ``artist-rels``, keyed by release MBID.
 
-    The studio collector requested ``inc=recordings+url-rels+release-groups+
-    artist-credits``, which carries no artist relations, so this returns nothing
-    for the current raw file.  It is written against the relation shape so that
-    re-running the collector with ``artist-rels`` fills the table without another
-    change here.
+    Written by ``fetch_musicbrainz_studio_releases.py --artist-relations``.  The
+    file is optional: without it this pass simply writes no personnel and says
+    so in the review log, because the browse used for the main raw file carries
+    ``artist-credits`` (the billed album artist) and no per-person relations.
     """
 
-    credits: list[dict] = []
-    for relation in release.get("artist_relations", []) or release.get("relations", []):
-        artist = relation.get("artist") or {}
-        name = artist.get("name") or relation.get("artist_name") or ""
-        attributes = [value for value in (relation.get("attributes") or []) if value]
-        credits.append(
-            {
-                "name": name,
-                "role": relation.get("type", "") or "",
-                "instruments": attributes,
-                "source": f"release {release['id']}",
-            }
-        )
+    if not CREDITS_PATH.exists():
+        return {}
+    return {record["source_record_id"]: record["raw_payload"]["release"] for record in read_jsonl(CREDITS_PATH)}
+
+
+def _credit(relation: dict, source: str) -> dict:
+    """One MusicBrainz artist relation as a candidate personnel credit.
+
+    ``role`` follows ``show_performers``' vocabulary so the two tables read
+    alike: an instrument or vocal relation is a ``performer``, and anything else
+    (producer, engineer, art direction) keeps MusicBrainz's own relation type.
+
+    Only a performing relation yields an instrument.  Attributes on the other
+    relation types are qualifiers, not instruments -- MusicBrainz gives
+    ``producer`` the attributes ``executive``, ``additional`` and ``assistant``,
+    and reading those as instruments would put "Bob Weir, producer, executive"
+    in a column that means what he played.  Those credits are real and are held
+    with reason ``no_instrument``, which is what the primary key forces.
+    """
+
+    performing = (relation.get("type", "") or "") in PERFORMER_RELATION_TYPES
+    return {
+        "name": relation.get("artist_name", "") or "",
+        "relation_type": relation.get("type", "") or "",
+        "role": "performer" if performing else (relation.get("type", "") or ""),
+        "instruments": [value for value in (relation.get("attributes") or []) if value] if performing else [],
+        "source": source,
+    }
+
+
+def personnel_credits(release: dict) -> list[dict]:
+    """Flatten a release's artist relations, release-level and recording-level.
+
+    MusicBrainz keeps most instrument credits on the recording rather than the
+    release, so both levels are read; ``release_personnel`` has no track column,
+    and a person credited on many tracks of one album is one row per instrument.
+    """
+
+    credits = [_credit(relation, f"release {release['id']}") for relation in release.get("artist_relations") or []]
+    for medium in release.get("media") or []:
+        for track in medium.get("tracks") or []:
+            recording = track.get("recording") or {}
+            credits.extend(
+                _credit(relation, f"recording {recording.get('id', '')}")
+                for relation in recording.get("artist_relations") or []
+            )
     return credits
 
 
 def resolve_personnel(release_id: str, release: dict, people: dict[str, str]) -> tuple[list[dict], list[dict]]:
     """Return (rows, held) for one release's credits.
 
-    A row needs a person resolvable in people.csv and an instrument, because
+    A row needs a person resolvable in people.csv *and* an instrument, because
     ``instrument`` is part of the ``release_personnel`` primary key and a credit
-    without one cannot be stored.
+    without one cannot be stored.  Rows and holds are both aggregated by their
+    key: a guitarist credited on twelve recordings is one row that says twelve,
+    not twelve rows the primary key would reject.
     """
 
-    rows: list[dict] = []
-    held: list[dict] = []
+    rows: dict[tuple[str, str, str], dict] = {}
+    held: dict[tuple[str, str, str], dict] = {}
+
+    def hold(key: tuple[str, str, str], credit: dict, reason: str) -> None:
+        record = held.setdefault(
+            key,
+            {
+                "release_id": release_id,
+                "name": credit["name"],
+                "relation_type": credit["relation_type"],
+                "role": credit["role"],
+                "reason": reason,
+                "credits": 0,
+                "sources": [],
+            },
+        )
+        record["credits"] += 1
+        if len(record["sources"]) < 3 and credit["source"] not in record["sources"]:
+            record["sources"].append(credit["source"])
+
     for credit in personnel_credits(release):
         person_id = people.get(_fold(credit["name"]))
         if not person_id:
-            held.append({**credit, "release_id": release_id, "reason": "person_not_in_people_csv"})
+            hold((credit["name"], credit["relation_type"], "person_not_in_people_csv"), credit, "person_not_in_people_csv")
             continue
         if not credit["instruments"]:
-            held.append({**credit, "release_id": release_id, "reason": "no_instrument"})
+            hold((credit["name"], credit["relation_type"], "no_instrument"), credit, "no_instrument")
             continue
         for instrument in credit["instruments"]:
-            rows.append(
+            key = (person_id, credit["role"], instrument)
+            row = rows.setdefault(
+                key,
                 {
                     "release_id": release_id,
                     "person_id": person_id,
                     "role": credit["role"],
                     "instrument": instrument,
-                    "notes": f"MusicBrainz {credit['source']}; {STUDIO_MARKER}.",
-                }
+                    "relation_types": set(),
+                    "credits": 0,
+                },
             )
-    return rows, held
+            row["relation_types"].add(credit["relation_type"])
+            row["credits"] += 1
+
+    ordered_rows = []
+    for key in sorted(rows):
+        row = rows[key]
+        credits = row.pop("credits")
+        types = ", ".join(sorted(row.pop("relation_types")))
+        row["notes"] = (
+            f"MusicBrainz artist relation ({types}) on {credits} "
+            f"{'credit' if credits == 1 else 'credits'} for release {release['id']}; {STUDIO_MARKER}."
+        )
+        ordered_rows.append(row)
+    return ordered_rows, [held[key] for key in sorted(held)]
 
 
 # --- per release-group processing ---------------------------------------------
@@ -576,7 +682,7 @@ def previous_studio_ids(rows: list[dict]) -> dict[str, str]:
 
     mapping: dict[str, str] = {}
     for row in rows:
-        if STUDIO_MARKER not in row.get("notes", ""):
+        if not owns_row(row):
             continue
         for mbid in re.findall(r"(?:MusicBrainz release|release group) ([0-9a-f-]{36})", row.get("notes", "")):
             mapping.setdefault(mbid, row["release_id"])
@@ -644,6 +750,7 @@ def main() -> None:
     people = load_people()
     people_ids = set(people.values())
     venue_names = load_venue_names()
+    credits_by_mbid = load_release_credits()
 
     groups: dict[str, dict] = {}
     artist_of_group: dict[str, str] = {}
@@ -670,7 +777,7 @@ def main() -> None:
 
     # Everything this script did not write stays exactly as it is: the 294 rows
     # from the live pass and the hand-curated Veneta release and its tracks.
-    kept_releases = [row for row in existing_releases if STUDIO_MARKER not in row.get("notes", "")]
+    kept_releases = [row for row in existing_releases if not owns_row(row)]
     kept_ids = {row["release_id"] for row in kept_releases}
     kept_tracks = [row for row in existing_tracks if row["release_id"] in kept_ids]
     kept_personnel = [row for row in existing_personnel if row["release_id"] in kept_ids]
@@ -693,7 +800,10 @@ def main() -> None:
         new_releases.append({"release_id": release_id, **decision.pop("release_row")})
         for track in decision.pop("track_rows"):
             new_tracks.append({"release_id": release_id, **track})
-        rows, held = resolve_personnel(release_id, decision.pop("_primary"), people)
+        primary = decision.pop("_primary")
+        # The credits file carries the same release re-fetched with artist-rels;
+        # the browse payload has no relations at all, so prefer it when present.
+        rows, held = resolve_personnel(release_id, credits_by_mbid.get(primary["id"], primary), people)
         new_personnel.extend(rows)
         held_credits.extend(held)
         decision["personnel_rows"] = len(rows)
@@ -714,15 +824,16 @@ def main() -> None:
 
     log: list[dict] = [{key: value for key, value in decision.items() if not key.startswith("_")} for decision in decisions]
     log.extend({"record": "held_credit", **credit} for credit in held_credits)
-    if not new_personnel and not held_credits:
+    if not credits_by_mbid:
         log.append(
             {
                 "record": "personnel_source_unavailable",
-                "reason": "no_artist_relations_in_raw_data",
+                "reason": "no_artist_relations_fetched",
                 "detail": (
-                    "the studio collector requested inc=recordings+url-rels+release-groups+artist-credits, "
-                    "which returns album-artist credits but no per-person instrument relations; re-run the "
-                    "collector with artist-rels to populate release_personnel.csv"
+                    f"{CREDITS_PATH.relative_to(ROOT)} does not exist, and the browse that produced "
+                    f"{RELEASES_PATH.relative_to(ROOT)} carries artist-credits (the billed album artist) but no "
+                    "per-person instrument relations; run scripts/collect/fetch_musicbrainz_studio_releases.py "
+                    "--artist-relations to populate release_personnel.csv"
                 ),
             }
         )

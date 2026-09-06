@@ -1,0 +1,331 @@
+{
+ "releases_requested": 46,
+ "releases_fetched_this_run": 46,
+ "releases_preserved": 46,
+ "inc": "recordings+artist-rels+recording-level-rels",
+ "completed_at": "2026-09-06T17:18:33Z",
+ "request_log": [
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "03a7627f-b1cd-41ea-af70-ef8fae9c357a",
+   "url": "https://musicbrainz.org/ws/2/release/03a7627f-b1cd-41ea-af70-ef8fae9c357a?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:08:57Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "07a686ff-a52b-4991-b0b5-14d819098dee",
+   "url": "https://musicbrainz.org/ws/2/release/07a686ff-a52b-4991-b0b5-14d819098dee?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:09:31Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "15c10195-596b-4f4f-b62e-552d5df60ca2",
+   "url": "https://musicbrainz.org/ws/2/release/15c10195-596b-4f4f-b62e-552d5df60ca2?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:09:49Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "15faf802-8bd9-4125-985b-778bced8ace5",
+   "url": "https://musicbrainz.org/ws/2/release/15faf802-8bd9-4125-985b-778bced8ace5?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:10:07Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "1b3d19a5-40c6-4830-a6a1-256ecd407e10",
+   "url": "https://musicbrainz.org/ws/2/release/1b3d19a5-40c6-4830-a6a1-256ecd407e10?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:10:15Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "210e6301-ba88-47c1-95f0-ae53d2773759",
+   "url": "https://musicbrainz.org/ws/2/release/210e6301-ba88-47c1-95f0-ae53d2773759?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:10:45Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "238a43ae-317b-42ca-9029-e75f8b97efe5",
+   "url": "https://musicbrainz.org/ws/2/release/238a43ae-317b-42ca-9029-e75f8b97efe5?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:10:49Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "384fe9c4-ce9f-4da9-8ab4-c7c6d0454d41",
+   "url": "https://musicbrainz.org/ws/2/release/384fe9c4-ce9f-4da9-8ab4-c7c6d0454d41?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:10:51Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "38770ad0-e77a-4fdb-a6b4-aca09b2ee816",
+   "url": "https://musicbrainz.org/ws/2/release/38770ad0-e77a-4fdb-a6b4-aca09b2ee816?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:11:23Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "4312b6ca-cf74-46cb-9bfb-d4472de3677c",
+   "url": "https://musicbrainz.org/ws/2/release/4312b6ca-cf74-46cb-9bfb-d4472de3677c?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:11:54Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "45acd1ad-994d-423a-b7b1-43f05f5e5a7a",
+   "url": "https://musicbrainz.org/ws/2/release/45acd1ad-994d-423a-b7b1-43f05f5e5a7a?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:11:55Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "47ee57c5-4463-403e-aaf2-f9af5011f490",
+   "url": "https://musicbrainz.org/ws/2/release/47ee57c5-4463-403e-aaf2-f9af5011f490?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:11:56Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "54fa9612-6c13-4823-be22-a26150dafc02",
+   "url": "https://musicbrainz.org/ws/2/release/54fa9612-6c13-4823-be22-a26150dafc02?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:11:57Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "5b895db7-1459-41da-939b-072d8bb36843",
+   "url": "https://musicbrainz.org/ws/2/release/5b895db7-1459-41da-939b-072d8bb36843?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:11:58Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "5f5f6866-23c2-44d4-a373-00feab868f36",
+   "url": "https://musicbrainz.org/ws/2/release/5f5f6866-23c2-44d4-a373-00feab868f36?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:12:26Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "620e340d-fdd1-430b-be0a-08df19bc4ac5",
+   "url": "https://musicbrainz.org/ws/2/release/620e340d-fdd1-430b-be0a-08df19bc4ac5?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:12:28Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "6411f47b-b595-4d47-a9cb-991e78339c9c",
+   "url": "https://musicbrainz.org/ws/2/release/6411f47b-b595-4d47-a9cb-991e78339c9c?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:13:12Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "65038610-0f20-4a55-bb61-c62094f1cdbb",
+   "url": "https://musicbrainz.org/ws/2/release/65038610-0f20-4a55-bb61-c62094f1cdbb?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:13:29Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "774cbe77-2c13-4a78-8a49-80e2779b12ea",
+   "url": "https://musicbrainz.org/ws/2/release/774cbe77-2c13-4a78-8a49-80e2779b12ea?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:13:29Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "7cfd4022-6ea4-4e1b-a2a8-e76767b4959a",
+   "url": "https://musicbrainz.org/ws/2/release/7cfd4022-6ea4-4e1b-a2a8-e76767b4959a?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:13:46Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "7f0f382f-2007-41da-8b73-fd88c5a4d14f",
+   "url": "https://musicbrainz.org/ws/2/release/7f0f382f-2007-41da-8b73-fd88c5a4d14f?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:14:14Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "82c165d2-4267-4cf8-895f-44f9b78f8456",
+   "url": "https://musicbrainz.org/ws/2/release/82c165d2-4267-4cf8-895f-44f9b78f8456?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:14:51Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "890b13c3-9422-4d78-b5a9-62451f43ebba",
+   "url": "https://musicbrainz.org/ws/2/release/890b13c3-9422-4d78-b5a9-62451f43ebba?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:15:20Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "895dddc2-186c-4cd1-bfb8-038111c83f2d",
+   "url": "https://musicbrainz.org/ws/2/release/895dddc2-186c-4cd1-bfb8-038111c83f2d?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:15:56Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "8a51745c-eeb3-35db-8c69-d77352249007",
+   "url": "https://musicbrainz.org/ws/2/release/8a51745c-eeb3-35db-8c69-d77352249007?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:19Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "96a0b5a0-a41b-4ec0-acff-33ae1e812cfe",
+   "url": "https://musicbrainz.org/ws/2/release/96a0b5a0-a41b-4ec0-acff-33ae1e812cfe?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:20Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "99ddd30f-bcdc-4274-891e-65b66d6eb77b",
+   "url": "https://musicbrainz.org/ws/2/release/99ddd30f-bcdc-4274-891e-65b66d6eb77b?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:21Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "9eddaf47-b286-4de5-b0c1-907bda8849d8",
+   "url": "https://musicbrainz.org/ws/2/release/9eddaf47-b286-4de5-b0c1-907bda8849d8?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:22Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "a0d1bd24-cc27-3a6d-b736-079876499ce3",
+   "url": "https://musicbrainz.org/ws/2/release/a0d1bd24-cc27-3a6d-b736-079876499ce3?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:53Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "a1ceb608-a29c-4f69-abae-4dddb288d066",
+   "url": "https://musicbrainz.org/ws/2/release/a1ceb608-a29c-4f69-abae-4dddb288d066?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:54Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "aa275632-0ac8-4ea8-932a-9a875100e3e3",
+   "url": "https://musicbrainz.org/ws/2/release/aa275632-0ac8-4ea8-932a-9a875100e3e3?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:16:56Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "b9fe29d9-1cb4-4976-a6ee-705ac0c84b5e",
+   "url": "https://musicbrainz.org/ws/2/release/b9fe29d9-1cb4-4976-a6ee-705ac0c84b5e?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:29Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "c8887b1f-e670-4600-b66b-fb3e4d2ff7bb",
+   "url": "https://musicbrainz.org/ws/2/release/c8887b1f-e670-4600-b66b-fb3e4d2ff7bb?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:30Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "caac09b3-14f4-4974-a797-da7c1ec49132",
+   "url": "https://musicbrainz.org/ws/2/release/caac09b3-14f4-4974-a797-da7c1ec49132?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:31Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "dcbc3c3b-4332-4788-9eca-d87ff3f89298",
+   "url": "https://musicbrainz.org/ws/2/release/dcbc3c3b-4332-4788-9eca-d87ff3f89298?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:32Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "e28744c9-83e7-4f8f-8fd8-022fc580cef6",
+   "url": "https://musicbrainz.org/ws/2/release/e28744c9-83e7-4f8f-8fd8-022fc580cef6?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:33Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "e5317817-1c5e-4250-8d11-47982ec09c46",
+   "url": "https://musicbrainz.org/ws/2/release/e5317817-1c5e-4250-8d11-47982ec09c46?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:58Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "e58f1f3b-41ca-4408-a671-5a7a118f9f13",
+   "url": "https://musicbrainz.org/ws/2/release/e58f1f3b-41ca-4408-a671-5a7a118f9f13?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:59Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "e60694a4-6a43-4734-a145-df0fd2247a44",
+   "url": "https://musicbrainz.org/ws/2/release/e60694a4-6a43-4734-a145-df0fd2247a44?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:17:59Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "e6996642-ae79-395a-af24-ddbf40d06fcc",
+   "url": "https://musicbrainz.org/ws/2/release/e6996642-ae79-395a-af24-ddbf40d06fcc?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:08Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "e780367d-9744-3958-9512-bcfea1db0bbe",
+   "url": "https://musicbrainz.org/ws/2/release/e780367d-9744-3958-9512-bcfea1db0bbe?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:09Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "f00cd37f-6227-4cbe-8569-ec622c05f0f8",
+   "url": "https://musicbrainz.org/ws/2/release/f00cd37f-6227-4cbe-8569-ec622c05f0f8?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:19Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "f6b867dc-4a38-4597-a0c0-ad744c958e17",
+   "url": "https://musicbrainz.org/ws/2/release/f6b867dc-4a38-4597-a0c0-ad744c958e17?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:30Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "f93fdc59-0ec7-4375-abd3-4015e43602bf",
+   "url": "https://musicbrainz.org/ws/2/release/f93fdc59-0ec7-4375-abd3-4015e43602bf?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:30Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "feb9cb7f-cf75-4bcc-a0bd-29ccadac931f",
+   "url": "https://musicbrainz.org/ws/2/release/feb9cb7f-cf75-4bcc-a0bd-29ccadac931f?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:32Z"
+  },
+  {
+   "step": "release-lookup-artist-rels",
+   "release_id": "ff1a2d46-5ab4-3d42-90bb-43176767a468",
+   "url": "https://musicbrainz.org/ws/2/release/ff1a2d46-5ab4-3d42-90bb-43176767a468?inc=recordings+artist-rels+recording-level-rels&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-06T17:18:33Z"
+  }
+ ]
+}

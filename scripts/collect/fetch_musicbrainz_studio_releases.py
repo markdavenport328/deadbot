@@ -24,21 +24,33 @@ Requests, per artist, in order:
    2026-09-01 live pass, and Compilation and Single are declared in the
    schema vocabulary but deliberately not collected here.
 3. Release browse for the artist filtered to official Album releases with
-   ``inc=recordings+url-rels+release-groups+artist-credits``.  Each release
-   embeds its release-group, so the same ``is_studio_release_group`` check
-   decides whether the release is written.  Browsing by artist covers the
+   ``inc=recordings+url-rels+release-groups+artist-credits+artist-rels``.  Each
+   release embeds its release-group, so the same ``is_studio_release_group``
+   check decides whether the release is written.  Browsing by artist covers the
    whole catalog in a handful of paged requests instead of one lookup per
    release group; a later normalizer chooses canonical rows.
 
+``--artist-relations`` runs a second, narrow pass instead of the browse above.
+``artist-credits`` yields only the album's billed artist ("Jerry Garcia & David
+Grisman"); per-instrument performer credits are *relations*, and on MusicBrainz
+they usually hang off the recording rather than the release.  This pass looks up
+each already-promoted studio release by MBID with
+``inc=recordings+artist-rels+recording-level-rels``, so it costs one request per
+promoted album rather than a whole re-browse, and writes
+``musicbrainz-studio-release-credits.jsonl`` alongside the files above.  It
+resumes from its ``.partial`` file, so an interrupted run repeats no request.
+
 Only compact fields are kept: MBIDs, titles, dates, disambiguations,
-statuses, medium and track titles and lengths, artist credits, and URL
-relationships. No cover art or annotation text is stored.
+statuses, medium and track titles and lengths, artist credits, artist
+relations, and URL relationships. No cover art or annotation text is stored.
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -52,12 +64,25 @@ ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = ROOT / "data" / "raw" / "releases"
 RELEASE_GROUPS_PATH = RAW_DIR / "musicbrainz-studio-release-groups.jsonl"
 RELEASES_PATH = RAW_DIR / "musicbrainz-studio-releases.jsonl"
+CREDITS_PATH = RAW_DIR / "musicbrainz-studio-release-credits.jsonl"
+CREDITS_RUN_SUMMARY_PATH = RAW_DIR / "musicbrainz-studio-release-credits.run.json"
 CHECKPOINT_PATH = RAW_DIR / "musicbrainz-studio-releases.checkpoint.json"
 RUN_SUMMARY_PATH = RAW_DIR / "musicbrainz-studio-releases.run.json"
+CANONICAL_RELEASES_CSV = ROOT / "data" / "canonical" / "official_releases.csv"
+# Kept in step with STUDIO_MARKER in scripts/normalize_musicbrainz_studio_releases.py.
+STUDIO_MARKER = "studio release-group pass"
 API = "https://musicbrainz.org/ws/2/"
 USER_AGENT = "DeadBot/0.1 (local studio-release collection; contact unavailable)"
 REQUEST_INTERVAL_SECONDS = 1.1
-RELEASE_INC = "recordings+url-rels+release-groups+artist-credits"
+# artist-rels carries the per-person relations that artist-credits does not:
+# artist-credits is the billed album artist, and a performer credit naming an
+# instrument is a relation.
+RELEASE_INC = "recordings+url-rels+release-groups+artist-credits+artist-rels"
+# The narrow --artist-relations lookup.  recording-level-rels needs recordings,
+# and is where MusicBrainz actually keeps most instrument credits for this
+# catalog; url-rels and release-groups are omitted because that data is already
+# in musicbrainz-studio-releases.jsonl and this pass only adds credits.
+CREDITS_INC = "recordings+artist-rels+recording-level-rels"
 RELEASE_GROUP_PAGE_SIZE = 100
 RELEASE_PAGE_SIZE = 25
 MIN_RELEASE_PAGE_SIZE = 5
@@ -240,6 +265,34 @@ def compact_url_relations(entity: dict) -> list[dict]:
     return relations
 
 
+def compact_artist_relations(entity: dict) -> list[dict]:
+    """Keep artist relations verbatim enough to become release_personnel rows.
+
+    ``attributes`` is where the instrument lives ("guitar", "pedal steel
+    guitar"), and ``release_personnel.instrument`` is part of that table's
+    primary key, so a relation with no attribute cannot be stored and the
+    normalizer holds it.  Nothing is inferred here: relation type, attributes
+    and artist identity are copied as MusicBrainz gives them.
+    """
+
+    relations = []
+    for relation in entity.get("relations", []):
+        if relation.get("target-type") != "artist":
+            continue
+        artist = relation.get("artist", {}) or {}
+        relations.append(
+            {
+                "type": relation.get("type", ""),
+                "direction": relation.get("direction", ""),
+                "attributes": [str(value) for value in relation.get("attributes", []) or []],
+                "artist_id": artist.get("id", ""),
+                "artist_name": artist.get("name", ""),
+                "artist_sort_name": artist.get("sort-name", ""),
+            }
+        )
+    return relations
+
+
 def compact_artist_credit(entity: dict) -> list[dict]:
     credits = []
     for item in entity.get("artist-credit", []) or []:
@@ -276,6 +329,7 @@ def compact_release(release: dict) -> dict:
                         "disambiguation": recording.get("disambiguation", ""),
                         "length_ms": recording.get("length"),
                         "url_relations": compact_url_relations(recording),
+                        "artist_relations": compact_artist_relations(recording),
                     },
                 }
             )
@@ -298,6 +352,7 @@ def compact_release(release: dict) -> dict:
         "barcode": release.get("barcode", ""),
         "release_group": compact_release_group(release.get("release-group", {}) or {}),
         "artist_credit": compact_artist_credit(release),
+        "artist_relations": compact_artist_relations(release),
         "url_relations": compact_url_relations(release),
         "media": media,
     }
@@ -423,13 +478,117 @@ def collect_releases(client: Client, artist: dict, name: str, state: dict, parti
     return used
 
 
+def promoted_release_mbids() -> list[str]:
+    """The MBIDs of the releases the studio normalizer actually promoted.
+
+    Read from ``official_releases.csv`` rather than from the raw file, so the
+    credits pass fetches one request per album in the catalog instead of one per
+    release MusicBrainz has for the family.  Only rows carrying the studio pass's
+    marker are read; live and hand-curated rows are none of this pass's business.
+    """
+
+    if not CANONICAL_RELEASES_CSV.exists():
+        raise SystemExit(
+            f"{CANONICAL_RELEASES_CSV.relative_to(ROOT)} does not exist; "
+            "run scripts/normalize_musicbrainz_studio_releases.py first"
+        )
+    mbids: list[str] = []
+    with CANONICAL_RELEASES_CSV.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            notes = row.get("notes", "") or ""
+            if STUDIO_MARKER not in notes:
+                continue
+            found = re.search(r"MusicBrainz release ([0-9a-f-]{36})", notes)
+            if found:
+                mbids.append(found.group(1))
+    return sorted(dict.fromkeys(mbids))
+
+
+def collect_artist_relations(client: Client, mbids: list[str], partial: Path) -> tuple[int, list[dict]]:
+    """Look each promoted release up with artist relations, resuming from partial."""
+
+    done = {record["source_record_id"] for record in read_records(partial)}
+    request_log: list[dict] = []
+    fetched = 0
+    for index, mbid in enumerate(mbids, start=1):
+        if mbid in done:
+            continue
+        params = {"inc": CREDITS_INC}
+        status, url, payload = client.get(f"release/{mbid}", params)
+        request_log.append({"step": "release-lookup-artist-rels", "release_id": mbid, "url": url, "http_status": status, "at": now_iso()})
+        if status != 200:
+            # Fail closed: keep what has been written, say what broke, and let a
+            # rerun resume rather than writing a half-known credit list.
+            raise SystemExit(f"release lookup failed for {mbid} with HTTP {status}: {payload}")
+        release = compact_release(payload)
+        append_records(
+            partial,
+            [
+                {
+                    "source": "musicbrainz",
+                    "source_record_id": mbid,
+                    "retrieved_at": now_iso(),
+                    "source_url": f"https://musicbrainz.org/release/{mbid}",
+                    "raw_payload": {
+                        "http_status": status,
+                        "query": {"entity": f"release/{mbid}", **params},
+                        "release": release,
+                    },
+                }
+            ],
+        )
+        fetched += 1
+        credits = len(release["artist_relations"]) + sum(
+            len(track["recording"]["artist_relations"]) for medium in release["media"] for track in medium["tracks"]
+        )
+        print(f"{index}/{len(mbids)} {release['title']}: {credits} artist relations")
+    return fetched, request_log
+
+
+def run_artist_relations() -> None:
+    RAW_DIR.mkdir(parents=True, exist_ok=True)
+    partial = CREDITS_PATH.with_name(CREDITS_PATH.name + ".partial")
+    mbids = promoted_release_mbids()
+    if not mbids:
+        raise SystemExit("no promoted studio releases found in official_releases.csv; nothing to fetch")
+    client = Client()
+    fetched, request_log = collect_artist_relations(client, mbids, partial)
+    total = finalize(partial, CREDITS_PATH)
+    CREDITS_RUN_SUMMARY_PATH.write_text(
+        json.dumps(
+            {
+                "releases_requested": len(mbids),
+                "releases_fetched_this_run": fetched,
+                "releases_preserved": total,
+                "inc": CREDITS_INC,
+                "completed_at": now_iso(),
+                "request_log": request_log,
+            },
+            indent=1,
+            ensure_ascii=False,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print(f"Preserved {total} releases with artist relations at {CREDITS_PATH.relative_to(ROOT)} using {fetched} requests.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--max-release-requests", type=int, default=300, help="cap on paged release requests across the whole run"
     )
     parser.add_argument("--force", action="store_true", help="refetch even when final raw files already exist")
+    parser.add_argument(
+        "--artist-relations",
+        action="store_true",
+        help="fetch artist relations for the already-promoted studio releases only, one lookup each",
+    )
     args = parser.parse_args()
+
+    if args.artist_relations:
+        run_artist_relations()
+        return
 
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     rg_partial = RELEASE_GROUPS_PATH.with_name(RELEASE_GROUPS_PATH.name + ".partial")
