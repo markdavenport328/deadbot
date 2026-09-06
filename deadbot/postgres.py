@@ -47,12 +47,12 @@ _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _ORDER_COLUMNS: dict[str, tuple[str, ...]] = {
     "arrangement_chord_sections": ("arrangement_id", "section_position"),
     "equipment": ("equipment_id",),
-    "official_release_tracks": ("release_id", "track_number", "performance_id"),
     "official_releases": ("release_id",),
     "people": ("person_id",),
     "performance_links": ("performance_link_id",),
     "performance_recordings": ("performance_id", "recording_id", "track_number"),
     "recordings": ("recording_id",),
+    "release_personnel": ("release_id", "person_id", "role", "instrument"),
     "resource_performances": ("resource_id", "performance_id", "relationship_type"),
     "resource_shows": ("resource_id", "show_id", "relationship_type"),
     "resource_songs": ("resource_id", "song_id", "relationship_type"),
@@ -191,6 +191,16 @@ class PostgresCanonicalStore(CanonicalStore):
                 ' ORDER BY "show_id", '
                 'CAST("set_number" AS INTEGER) NULLS LAST, '
                 'CAST("position_in_set" AS INTEGER) NULLS LAST, "performance_id"'
+            )
+        if table == "official_release_tracks":
+            # track_number is stored as text; a plain text sort would order
+            # "122" before "14" and pick the wrong row wherever a release's
+            # track count reaches double digits. NULLS FIRST matches the CSV
+            # store, which never assigns a track number to an untracked row
+            # and simply keeps whatever order the file happens to list it in.
+            return (
+                ' ORDER BY "release_id", '
+                'CAST(NULLIF("track_number", \'\') AS INTEGER) NULLS FIRST, "performance_id"'
             )
         columns = _ORDER_COLUMNS.get(table)
         if columns:
@@ -431,11 +441,62 @@ class PostgresCanonicalStore(CanonicalStore):
             self._projection({"official_releases": releases}), release_ids
         )
 
+    def resolve_release(self, identifier: str) -> dict[str, str] | None:
+        direct = self.one("official_releases", identifier)
+        if direct:
+            return direct
+        matches = self.matching_rows("official_releases", identifier, ("title",))
+        return matches[0] if len(matches) == 1 else None
+
+    def album_context(self, release: dict[str, str]) -> dict[str, Any]:
+        release_id = release["release_id"]
+        tracks = self.filtered_rows("official_release_tracks", release_id=release_id)
+        personnel = self.filtered_rows("release_personnel", release_id=release_id)
+        song_ids = {row["song_id"] for row in tracks if row.get("song_id", "").strip()}
+        person_ids = {row["person_id"] for row in personnel}
+        return CanonicalStore.album_context(
+            self._projection(
+                {
+                    "official_release_tracks": tracks,
+                    "release_personnel": personnel,
+                    "songs": self._rows_in("songs", "song_id", song_ids),
+                    "people": self._rows_in("people", "person_id", person_ids),
+                }
+            ),
+            release,
+        )
+
+    def _release_tracks_for_song(
+        self, song_id: str, performance_ids: list[str]
+    ) -> list[dict[str, str]]:
+        """official_release_tracks rows naming this song or one of its performances.
+
+        A studio release names the song directly on the track row; a live
+        release names one of its performances instead. ``song_releases`` needs
+        both, so this narrows to their union in one query rather than pulling
+        the whole table.
+        """
+
+        table = "official_release_tracks"
+        predicates = [f"{_identifier('song_id')} = %s"]
+        values: list[Any] = [song_id]
+        if performance_ids:
+            placeholders = ", ".join("%s" for _ in performance_ids)
+            predicates.append(f"{_identifier('performance_id')} IN ({placeholders})")
+            values.extend(performance_ids)
+        sql = (
+            f"SELECT * FROM {self._qualified_table(table)} "
+            f"WHERE {' OR '.join(predicates)}{self._order_clause(table)}"
+        )
+        return self._query(sql, tuple(values))
+
     def song_context(self, song: dict[str, str]) -> dict[str, Any]:
         song_id = song["song_id"]
         relationships = self._filtered_rows("resource_songs", song_id=song_id)
         performances = self._filtered_rows("performances", song_id=song_id)
         performance_ids = [row["performance_id"] for row in performances]
+        release_tracks = self._release_tracks_for_song(song_id, performance_ids)
+        release_ids = {row["release_id"] for row in release_tracks}
         tables = {
             "song_writers": self._filtered_rows("song_writers", song_id=song_id),
             "performances": performances,
@@ -447,9 +508,8 @@ class PostgresCanonicalStore(CanonicalStore):
             "performance_links": self._rows_in(
                 "performance_links", "performance_id", performance_ids
             ),
-            "official_release_tracks": self._rows_in(
-                "official_release_tracks", "performance_id", performance_ids
-            ),
+            "official_release_tracks": release_tracks,
+            "official_releases": self._rows_in("official_releases", "release_id", release_ids),
         }
         return CanonicalStore.song_context(self._projection(tables), song)
 
