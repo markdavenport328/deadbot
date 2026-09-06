@@ -63,6 +63,13 @@ def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
         assert heading in prompt
 
 
+def test_persona_tells_the_model_that_albums_are_held():
+    from deadbot.graph import SYSTEM_PROMPT  # use the module's actual prompt constant
+
+    assert "album" in SYSTEM_PROMPT.casefold()
+    assert "get_album" in SYSTEM_PROMPT
+
+
 def _run_tool_node(node: ToolNode, ai_message: AIMessage) -> list:
     """Invoke a ToolNode the way the real graph does: through a compiled graph,
     since ToolNode.invoke on its own raises for missing LangGraph runtime config.

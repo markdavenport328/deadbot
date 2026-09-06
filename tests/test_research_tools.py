@@ -5,6 +5,8 @@ from deadbot.site_search import SiteSearcher
 from deadbot.source_reader import FetchedPage, PageReader
 from deadbot.tools import build_tools
 
+from tests.test_data import tool_by_name
+
 
 class FakeTransport:
     def __init__(self, pages: dict[str, FetchedPage]) -> None:
@@ -88,3 +90,29 @@ def test_recording_reviews_accept_a_bare_archive_identifier():
     assert payload["state"] == "ok" and payload["review_count"] == 1
     assert payload["rating"]["avg_rating"] == 4.0
     assert "show" not in payload
+
+
+def test_search_entities_resolves_an_album_title():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "search_entities").invoke({"query": "American Beauty"}))
+    releases = [item for item in payload["matches"] if item["entity_type"] == "release"]
+    assert any(item["id"] == "release-american-beauty" for item in releases)
+
+
+def test_get_album_returns_the_tracklist():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "get_album").invoke({"release_id_or_title": "American Beauty"}))
+    assert payload["release"]["release_type"] == "studio"
+    assert any(track["song_id"] == "song-truckin" for track in payload["tracks"])
+
+
+def test_get_album_reports_an_unknown_release_rather_than_guessing():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "get_album").invoke({"release_id_or_title": "Kind of Blue"}))
+    assert payload["error"] == "Release not found or ambiguous"
+
+
+def test_get_song_carries_the_records_that_hold_it():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "get_song").invoke({"song_id_or_title": "Truckin'"}))
+    assert any(release["release_type"] == "studio" for release in payload["releases"])

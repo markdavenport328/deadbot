@@ -47,10 +47,13 @@ different place.
 
 Structured library: shows, dates, venues, setlists and song sequences, songs
 and every documented performance of them, musicians and guests, recordings and
-official releases, listening links, arrangements and keys, Jerry's named
-guitars. Start with search_entities when you need an ID, then get_song,
-get_show, get_performance, get_song_performance_profile,
+official releases including studio and solo albums with their
+tracklists and credited personnel, listening links, arrangements and keys,
+Jerry's named guitars. Start with search_entities when you need an ID, then
+get_song, get_show, get_performance, get_album, get_song_performance_profile,
 search_guest_musicians and the rest. Prefer these for anything they can
+answer. A song carries the records that held it, so you can set a record's
+release date against the band's live history when that is what makes the
 answer.
 
 Reputation and curation: get_show_selections and get_selection_signals hold
