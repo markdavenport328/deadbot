@@ -52,7 +52,10 @@ RELEASES_CSV = CANONICAL / "official_releases.csv"
 TRACKS_CSV = CANONICAL / "official_release_tracks.csv"
 
 RELEASE_FIELDS = ["release_id", "title", "artist_name", "release_date", "release_type", "spotify_album_url", "source_url", "notes"]
-TRACK_FIELDS = ["release_id", "track_number", "performance_id", "track_title", "duration_seconds", "spotify_track_url", "notes"]
+# song_id was added to official_release_tracks for the studio pass; a live track
+# names its performance and leaves the column blank, but the header check below
+# compares this list to the file, so it has to carry the column.
+TRACK_FIELDS = ["release_id", "track_number", "performance_id", "song_id", "track_title", "duration_seconds", "spotify_track_url", "notes"]
 ARTIST_NAME = "Grateful Dead"
 MANAGED_MARKER = "MusicBrainz release "
 

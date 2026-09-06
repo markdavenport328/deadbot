@@ -229,3 +229,187 @@ statement that the album is missing from Spotify.
    an alias of `Drums`. 33 of the 40 `Rhythm Devils` tracks map to a canonical
    `Drums` performance; the remaining 7 sit on releases whose show attribution
    or alignment is still held for the reasons above.
+
+---
+
+# Collection status: studio releases (MusicBrainz pass)
+
+Pass date: 2026-09-05 (collection), 2026-09-06 (normalization). Source: the same
+MusicBrainz web service, collected by
+`scripts/collect/fetch_musicbrainz_studio_releases.py` into
+`data/raw/releases/musicbrainz-studio-release-groups.jsonl` (62 release groups),
+`musicbrainz-studio-releases.jsonl` (482 official releases) and
+`musicbrainz-studio-releases.run.json`.
+`scripts/normalize_musicbrainz_studio_releases.py` promotes them, and logs every
+decision to `data/raw/releases/musicbrainz-studio-release-review.jsonl`.
+
+Scope, from the governing spec: the Grateful Dead studio albums plus the solo and
+side-project records that first carried songs the band played. The collector
+browsed the Dead, Jerry Garcia, Jerry Garcia Band, Bob Weir, New Riders of the
+Purple Sage, Old & In the Way and Kingfish.
+
+## Counts
+
+| Item | Count |
+| --- | --- |
+| Release groups enumerated (primary type Album, no Live secondary type) | 62 |
+| Release groups with at least one official release | 54 |
+| Official releases fetched (all editions) | 482 |
+| Release groups promoted to `official_releases.csv` as `studio` | 49 |
+| Release groups held for review | 13 |
+| Promoted albums by artist | Grateful Dead 13, New Riders 15, Jerry Garcia 12, Bob Weir 4, Kingfish 4, Jerry Garcia Band 1 |
+| Promoted albums with a full `release_date` | 23 of 49 (26 have only a year or month in MusicBrainz; noted in `notes`) |
+| Promoted albums with a `spotify_album_url` | 27 of 49 |
+| Track rows written | 485 (all with `duration_seconds`) |
+| Tracks resolved to a canonical `song_id` | 139 (28.7%) |
+| Tracks left unresolved | 346 |
+| Grateful Dead album tracks resolved | 92 of 102 (90.2%) |
+| Albums with every track resolved / no track resolved | 6 / 15 |
+| Distinct `songs.csv` songs linked to a studio album | 131 |
+| `release_personnel` rows written | 0 (see below) |
+| Live-pass and hand-curated rows left untouched | 294 releases, 10,045 tracks |
+
+Held release groups and reasons:
+
+| Reason | Count | Release groups |
+| --- | --- | --- |
+| `no_official_release_fetched` | 5 | `Mason's Children`, `Standing On The Corner`, `Playin' Acoustic`, `Pirates of the Deep South`, `50 Shades of Black & White With a Touch of Grey (Volume 2)` |
+| `suspected_live_material_in_title` | 4 | `1985-09-07 - Red Rocks Amphitheatre` (date and a `venues.csv` venue), `Pacific High Studio, San Francisco, CA 06-02-72` (date), `To The Sky: Jerry Garcia's Final Show` (`final show`), `Alive in Eighty Five` (`alive`) |
+| `manually_held_not_a_studio_album` | 3 | `Move Me Brightly` (the filmed Garcia tribute concert), `Double Dose` x2 (a Kingfish concert set of covers, entered twice in MusicBrainz) |
+| `suspected_compilation_in_title` | 1 | `The Very Best Of New Riders` (`very best`) |
+
+## Studio-album rule
+
+MusicBrainz never tagged the concert and bootleg material in this catalog with a
+`Live` secondary type, so the collector — which is fail-closed and will not
+reject on a title guess — passes it through. Filtering is the normalizer's job:
+
+- **Title signals.** A calendar date in the title (the live pass's
+  `extract_dates`), a `venues.csv` venue name of twelve characters or more
+  appearing in the title, an explicit live phrase (`live`, `alive`,
+  `in concert`, `unplugged`, `on stage`, `bootleg`, `final show`, `last show`,
+  `farewell show`, `recorded live`, `soundboard`), or a hits-package phrase
+  (`very best`, `best of`, `greatest hits`, `anthology`, `essential`,
+  `retrospective`, `collection`).
+- **Track signals.** A third or more of the chosen release's tracks carrying a
+  MusicBrainz `live` recording disambiguation or a `(live` track title.
+- **`MANUAL_HOLDS`.** A short list in the script, each entry a release-group
+  MBID with a written reason, for records the signals cannot see. Adding an
+  entry is preferred to loosening a regex, which would start holding real
+  albums.
+
+Holding errs deliberately toward exclusion: a studio album held by mistake is
+visible in the review log and cheap to promote by hand, while a bootleg shipped
+as `release_type='studio'` attaches a wrong record to real songs.
+
+Which release represents a group: single-disc editions first (anniversary boxes
+add live bonus discs), then the edition closest to the group's modal single-disc
+track count, then CD/digital before vinyl, then the earliest date, then the
+lowest MBID.
+
+`release_date` is the release group's first-release date when MusicBrainz gives a
+full one. When it gives only a year or a month, an edition's own full date is
+used only if it falls inside that partial value; otherwise the field is blank
+with the partial value in `notes`. Without that guard a 2005 remaster would be
+published as the release date of a 1972 album.
+
+`release_id` is `release-<kebab-case album title>`
+(`release-american-beauty`, `release-ace`, `release-workingmans-dead`). Two
+groups sharing a title are disambiguated by artist when the artists differ and
+by release-group year when they do not; the two Kingfish albums both titled
+`Kingfish` became `release-kingfish-1976` and `release-kingfish-1985`. An
+eight-character MBID suffix is the last resort. Reruns reuse the id already
+recorded for the same release or release-group MBID, so ids never renumber.
+
+## Song-resolution rule
+
+A track title is folded (apostrophes dropped, `&` read as `and`, every other run
+of punctuation collapsed to a space) and looked up against every `songs.csv`
+title and slug plus the alias table reviewed for the live pass, which is
+imported from `normalize_musicbrainz_live_releases.py` rather than copied. Two
+aliases were added in the same spirit: `The Golden Road (to Unlimited Devotion)`
+→ `Golden Road To Unlimited Devotion` (article variant) and
+`All New Minglewood Blues` → `Minglewood Blues` (a third documented variant of a
+title the table already carried twice).
+
+A title that does not match leaves `song_id` blank with the reason in `notes`.
+Nothing is inferred from track order, so the 346 unresolved tracks are honest
+gaps, not guesses. Most are songs the Dead never played, which is why
+`songs.csv` does not carry them: 15 of the 49 albums resolve no track at all and
+they are almost all New Riders, Kingfish and Garcia/Grisman records whose
+material never entered the Dead's repertoire. The Grateful Dead's own albums
+resolve 92 of 102 tracks; the ten that do not are suites and studio-only
+pieces (`That's It for the Other One`, `Weather Report Suite: Prelude / Part 1 /
+Part 2: Let It Grow`, `Blues for Allah / Sand Castles and Glass Camels /
+Unusual Occurrences in the Desert`, `Help on the Way / Slipknot!`,
+`King Solomon's Marbles`, `Terrapin Station, Part 1`, `Pride of Cucamonga`,
+`Antwerp's Placebo (The Plumber)`, `France`, `Serengetti`).
+
+`performance_id` is always blank on a studio track: a studio recording is not a
+live performance. No live-pass track gained a `song_id` in this pass.
+
+## Personnel
+
+`release_personnel.csv` is still header-only. The studio collector requested
+`inc=recordings+url-rels+release-groups+artist-credits`, which returns the album
+artist credit but no per-person instrument relations, so there is nothing to
+promote and nothing to hold; the review log records this as
+`personnel_source_unavailable`. `resolve_personnel` in the normalizer is written
+against the MusicBrainz artist-relation shape, so re-running the collector with
+`artist-rels` populates the table without another change here. A credit that
+names a person and a role but no instrument cannot be stored — `instrument` is
+part of the primary key, mirroring `show_performers` — and is logged with reason
+`no_instrument`.
+
+## Row ownership and reruns
+
+Rows written by this pass carry `MusicBrainz release <mbid>` for provenance and
+the phrase `studio release-group pass` in `notes`. The second marker is what
+identifies ownership: the 294 live-pass rows and the hand-curated Veneta rows
+carry MBIDs too, so filtering on the MBID marker alone would delete them. Two
+consecutive runs produce byte-identical `official_releases.csv`,
+`official_release_tracks.csv`, `release_personnel.csv` and review log.
+
+## Verification
+
+- The normalizer validates before writing: unique `release_id`; every
+  `release_type` in the `studio`/`live`/`compilation`/`single` vocabulary;
+  non-blank `title` and `source_url`; ISO `release_date`; unique positive
+  `(release_id, track_number)`; non-negative durations; non-blank `track_title`;
+  every `song_id` present in `songs.csv` and every `performance_id` present in
+  `performances.csv`; unique `release_personnel` keys with a non-blank
+  instrument and a `people.csv` person; CSV headers unchanged.
+- `deadbot.postgres_import.read_canonical_table` converts all three tables with
+  the importer's `TableSpec`s: 343 releases, 10,530 tracks, 0 personnel rows.
+- `python -m pytest`: 232 passed, 1 failed. The failure,
+  `tests/test_evaluations.py::test_evaluate_cli_exits_non_zero_when_a_case_fails`,
+  needs `DEADBOT_DATABASE_URL` and fails identically on a clean tree.
+
+## Open questions
+
+1. **Held groups worth a hand decision.** `Mason's Children` and
+   `Standing On The Corner` are early Dead studio material that MusicBrainz has
+   no official release for; if a real official issue exists they belong in the
+   catalog and can be added by hand.
+2. **`Move Me Brightly` and `Double Dose`** are held on a reading of the records
+   rather than on anything in the MusicBrainz metadata. Both are worth an
+   owner check, and `Double Dose` is entered twice upstream.
+3. **Suites need the segment bridge.** `Terrapin Station, Part 1`,
+   `Weather Report Suite`, `That's It for the Other One` and
+   `Help on the Way / Slipknot!` name more than one canonical song or a part of
+   one. A studio-side equivalent of `official_release_track_performances` would
+   let them carry several `song_id`s instead of none.
+4. **Songs that only ever existed in the studio.** `Pride of Cucamonga`,
+   `France`, `Serengetti` and `Antwerp's Placebo (The Plumber)` have no
+   `songs.csv` row. Each is either a genuine repertoire gap or a song the band
+   never performed; the distinction should come from the setlist baseline, not
+   from this pass.
+5. **New Riders, Kingfish and Garcia/Grisman repertoire.** 15 albums resolve no
+   track. Adding those compositions to `songs.csv` would connect the side-project
+   catalog, but `songs.csv` is currently the Dead's performed repertoire and
+   widening it is an owner decision.
+6. **Personnel.** Nothing can be promoted until the collector requests
+   `artist-rels`; that is a second HTTP pass over 49 releases.
+7. **Track-level Spotify URLs.** No studio track has one: MusicBrainz carries
+   recording-level streaming relationships for very little of this catalog,
+   though 27 of 49 albums do have an album URL.
