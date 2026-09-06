@@ -245,6 +245,43 @@ class EraUnitBlock(ExperienceModel):
     follow_up: str | None = None
 
 
+class AlbumTrackItem(ExperienceModel):
+    track_number: int = Field(ge=1)
+    title: str
+    song_id: str | None = None
+    performance_id: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
+    highlighted: bool = False
+    listen_url: str | None = None
+
+
+class AlbumCreditItem(ExperienceModel):
+    """One person's credit on a record, mirroring `release_personnel`."""
+
+    person_id: str
+    name: str
+    role: str
+    instrument: str
+
+
+class AlbumUnitBlock(ExperienceModel):
+    """One official record as a whole object: what is on it and who made it."""
+
+    type: Literal["album_unit"]
+    release_id: str
+    title: str
+    artist_name: str | None = None
+    release_date: str | None = None
+    release_type: str
+    role: UnitRole | None = None
+    note: str | None = None
+    tracks: list[AlbumTrackItem] = Field(default_factory=list, max_length=30)
+    personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=20)
+    listen: list[ListenAction] = Field(default_factory=list, max_length=3)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
+    follow_up: str | None = None
+
+
 class GuestAppearanceItem(ExperienceModel):
     show_id: str
     show_date: str
@@ -315,6 +352,13 @@ class CreditListBlock(ExperienceModel):
     source_ids: list[str] = Field(min_length=1, max_length=8)
 
 
+class SongReleaseItem(ExperienceModel):
+    release_id: str
+    title: str
+    release_date: str | None = None
+    release_type: str
+
+
 class SongOverviewBlock(ExperienceModel):
     type: Literal["song_overview"]
     song_id: str
@@ -323,6 +367,7 @@ class SongOverviewBlock(ExperienceModel):
     known_performance_count: int
     credits: list[CreditItem] = Field(default_factory=list, max_length=12)
     source_ids: list[str] = Field(default_factory=list, max_length=8)
+    albums: list[SongReleaseItem] = Field(default_factory=list, max_length=6)
 
 
 class MediaLinkBlock(ExperienceModel):
@@ -494,6 +539,7 @@ ExperienceBlock = Annotated[
     | ShowExplorerBlock
     | PerformanceUnitBlock
     | EraUnitBlock
+    | AlbumUnitBlock
     | ShowSetlistBlock
     | ShowSelectionBlock
     | RecordingListBlock

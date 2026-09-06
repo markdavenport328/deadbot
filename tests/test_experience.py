@@ -1,5 +1,6 @@
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from pydantic import ValidationError
@@ -377,6 +378,76 @@ def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):
     assert page.status_code == 200
     assert "Deadbot client" in page.text
     assert page.headers["cache-control"] == "no-cache, no-store, must-revalidate"
+
+
+def test_album_unit_block_validates_a_full_record():
+    block = experience.AlbumUnitBlock(
+        type="album_unit",
+        release_id="release-american-beauty",
+        title="American Beauty",
+        artist_name="Grateful Dead",
+        release_date="1970-11-01",
+        release_type="studio",
+        tracks=[
+            experience.AlbumTrackItem(
+                track_number=10,
+                title="Truckin'",
+                song_id="song-truckin",
+                performance_id=None,
+                duration_seconds=311,
+                highlighted=True,
+                listen_url=None,
+            )
+        ],
+    )
+    assert block.tracks[0].highlighted is True
+    assert block.personnel == []
+
+
+def test_album_credits_take_a_free_text_role_and_one_instrument():
+    credit = experience.AlbumCreditItem(
+        person_id="person-jerry-garcia", name="Jerry Garcia", role="performer", instrument="lead guitar"
+    )
+    assert credit.instrument == "lead guitar"
+
+
+def test_album_unit_caps_its_tracklist():
+    with pytest.raises(ValidationError):
+        experience.AlbumUnitBlock(
+            type="album_unit",
+            release_id="release-x",
+            title="X",
+            release_type="studio",
+            tracks=[
+                experience.AlbumTrackItem(track_number=n, title=f"t{n}", highlighted=False)
+                for n in range(1, 32)
+            ],
+        )
+
+
+def test_song_overview_carries_the_records_that_held_the_song():
+    block = experience.SongOverviewBlock(
+        type="song_overview",
+        song_id="song-truckin",
+        title="Truckin'",
+        known_performance_count=520,
+        albums=[
+            experience.SongReleaseItem(
+                release_id="release-american-beauty",
+                title="American Beauty",
+                release_date="1970-11-01",
+                release_type="studio",
+            )
+        ],
+    )
+    assert block.albums[0].release_type == "studio"
+
+
+def test_song_overview_albums_default_to_empty():
+    block = experience.SongOverviewBlock(
+        type="song_overview", song_id="s", title="S", known_performance_count=0
+    )
+    assert block.albums == []
 
 
 def test_editorial_items_can_carry_an_outbound_link():
