@@ -439,6 +439,27 @@ export interface components {
              */
             type: "era_unit";
         };
+        /**
+         * ExperienceGroup
+         * @description A model-selected relationship between one or more body blocks.
+         *
+         *     ``block_indexes`` preserves the composer's reading order after references
+         *     have been resolved. The browser only renders this supported presentation;
+         *     it never re-groups or re-orders the material.
+         */
+        ExperienceGroup: {
+            /** Block Indexes */
+            block_indexes: number[];
+            /** Lead */
+            lead?: string | null;
+            /**
+             * Presentation
+             * @enum {string}
+             */
+            presentation: "collection" | "sequence" | "comparison" | "argument";
+            /** Title */
+            title?: string | null;
+        };
         /** ExperienceRequest */
         ExperienceRequest: {
             /** Conversation */
@@ -458,6 +479,8 @@ export interface components {
             body_lead?: string | null;
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
+            /** Groups */
+            groups?: components["schemas"]["ExperienceGroup"][];
             /** Layout */
             layout?: components["schemas"]["LayoutSection"][];
             /**
@@ -915,6 +938,12 @@ export interface components {
             note?: string | null;
             /** Role */
             role?: ("anchor" | "supporting" | "contrast" | "turning_point" | "outlier" | "culmination" | "overlooked" | "representative") | null;
+            /**
+             * Setlist Disclosure
+             * @default expanded
+             * @enum {string}
+             */
+            setlist_disclosure: "expanded" | "collapsed" | "hidden";
             /** Setlist Note */
             setlist_note?: string | null;
             /** Sets */
@@ -934,6 +963,8 @@ export interface components {
             type: "show_unit";
             /** Venue Name */
             venue_name?: string | null;
+            /** Visible Facets */
+            visible_facets?: ("guests" | "listen" | "setlist" | "sources")[];
         };
         /** SongOverviewBlock */
         SongOverviewBlock: {

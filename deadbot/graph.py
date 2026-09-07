@@ -232,20 +232,33 @@ and what to ask next all live inside that show's unit. The test: if moving an
 item away from its neighbors would force the visitor to remember which object
 it belonged to, it belongs inside that object's unit.
 
-The body is a reading order of up to twelve items, of three kinds.
+Build the main body as one or more model-selected groups. A group has a title
+and optional lead, a presentation, and its items in the exact reading order
+you chose. Use collection for peers, sequence for development or a listening
+route, comparison for items considered on shared terms, and argument when the
+lead states a claim and the items are its evidence. The browser renders the
+relationship you choose; it never re-orders, re-groups, or infers a timeline
+from dates. A simple answer can use one unlabelled collection.
+
+Each group contains the following kinds of item.
 
 Semantic units, which you declare and the server hydrates. You supply the
 interpretation; the server supplies the facts it already holds: date, venue,
 setlist, song titles, recordings and URLs.
   show_unit: one show. Give its show_id, its role in the answer, a note on why
-  it matters here, the highlighted_performance_ids that deserve attention, a
+  it matters here, the visible_facets that actually help (guests, listen,
+  setlist, sources), and setlist_disclosure (expanded, collapsed or hidden),
+  the highlighted_performance_ids that deserve attention, a
   preferred_recording_id when you have reason to prefer one,
   supporting_sources (URLs from this turn, each with a note on what it says
   about this show) and a follow_up. The server adds the date, venue, guests,
-  the setlist with your highlights marked and each song playable, the
-  listening actions and your sources, all inside one frame.
-  show_explorer: several show units under one organization, chronological,
-  curated or comparative, for browsing complete shows.
+  only the facets you selected, all inside one frame. Do not show a full
+  setlist just because it exists; when a setlist is useful but secondary,
+  start it collapsed. Important qualifications belong in your note, not behind
+  a disclosure.
+  show_explorer: a legacy nested collection of complete shows. Prefer placing
+  show_unit items directly in a group, so the group controls the relationship
+  and reading order.
   performance_unit: one rendition. Give its performance_id, role, note,
   sources and follow_up; the server adds the song, show, set neighbors and
   play actions.
@@ -287,7 +300,7 @@ to a URL from this turn. Give a component a title when its default would
 read like a database label.
 
 Set mode to the overall shape: quick_fact, performance, show, listening,
-comparison, research, musician, or gap. Title the body, and write a lead of
+comparison, research, musician, or gap. Title the answer, and write a lead of
 one or two sentences that notices what matters.
 
 Do not begin by choosing components. First understand the answer and its

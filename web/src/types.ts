@@ -25,6 +25,7 @@ import type { components } from "./generated/api";
 type Require<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 export type SourceReference = components["schemas"]["SourceReference"];
+export type ExperienceGroup = components["schemas"]["ExperienceGroup"];
 
 type FixedEntityCardBlock = Require<components["schemas"]["EntityCardBlock"], "details">;
 type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], "progressions">;
@@ -36,7 +37,7 @@ type FixedSongOverviewBlock = Require<
 
 // Semantic units. Their hydrated lists are always present in a server
 // response (see the note on Require above).
-export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "sets" | "guests" | "listen" | "sources">;
+export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "sets" | "guests" | "listen" | "sources" | "visible_facets">;
 type FixedShowExplorerBlock = Omit<components["schemas"]["ShowExplorerBlock"], "items"> & { items: ShowUnitBlock[] };
 type FixedPerformanceUnitBlock = Require<components["schemas"]["PerformanceUnitBlock"], "listen" | "sources">;
 type FixedEraUnitBlock = Require<components["schemas"]["EraUnitBlock"], "sources">;
@@ -78,7 +79,7 @@ export type ExperienceResponse = Omit<
   "blocks" | "layout" | "sources" | "conversation"
 > &
   Required<
-    Pick<components["schemas"]["ExperienceResponse"], "layout" | "sources" | "conversation">
+    Pick<components["schemas"]["ExperienceResponse"], "groups" | "layout" | "sources" | "conversation">
   > & {
     blocks: ExperienceBlock[];
   };

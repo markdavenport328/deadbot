@@ -489,6 +489,31 @@ def test_finish_plan_accepts_semantic_units():
     assert plan.body[1].items[1].supporting_sources[0].url == "https://example.org/x"
 
 
+def test_resolve_groups_preserves_the_models_relationship_and_order():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="Veneta",
+        mode="research",
+        groups=[
+            finish.GroupPlan(
+                title="The case",
+                lead="The set and recording are the evidence.",
+                presentation="argument",
+                items=[
+                    finish.ShowSetlistRef(type="show_setlist", show_id="gd-1972-08-27", title="The set"),
+                    finish.RecordingListRef(type="recording_list", show_id="gd-1972-08-27", title="A recording"),
+                ],
+            )
+        ],
+    )
+    blocks, groups, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
+    assert [block.type for block in blocks] == ["show_setlist", "recording_list"]
+    assert groups[0].presentation == "argument"
+    assert groups[0].title == "The case" and groups[0].block_indexes == [0, 1]
+
+
 def test_finish_plan_rejects_an_unknown_role():
     from pydantic import ValidationError
 
@@ -601,6 +626,29 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     assert unit.sources[0].label == payload["resources"][0]["title"]
     assert unit.sources[0].note == "A firsthand account."
     assert {source.source_id for source in sources} >= {f"recording:{preferred}", f"url:{good_url}"}
+
+
+def test_show_unit_only_hydrates_the_facets_the_composer_selected():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="Veneta",
+        mode="show",
+        body=[
+            finish.ShowUnitRef(
+                type="show_unit",
+                show_id="gd-1972-08-27",
+                visible_facets=["setlist"],
+                setlist_disclosure="collapsed",
+            )
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, finish.grounded_context([payload]), [payload], store)
+    unit = blocks[0]
+    assert unit.type == "show_unit"
+    assert unit.visible_facets == ["setlist"] and unit.setlist_disclosure == "collapsed"
+    assert unit.sets and not unit.guests and not unit.listen and not unit.sources
 
 
 def test_resolve_body_nests_show_units_in_an_explorer_and_drops_unretrieved_shows():
@@ -774,6 +822,7 @@ def test_build_experience_response_uses_the_finish_plan():
     assert response.body_lead == "The Sunshine Daydream show."
     assert response.mode == "show"
     assert [block.type for block in response.blocks] == ["show_setlist"]
+    assert response.groups[0].presentation == "collection" and response.groups[0].block_indexes == [0]
     assert response.layout[0].block_indexes == [0]
     assert response.conversation[-1].role == "assistant" and response.conversation[-1].text == response.answer
     assert response.conversation[0].text == "What opened Veneta?"

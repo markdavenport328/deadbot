@@ -538,6 +538,8 @@ def _show_unit(
     role: UnitRole | None = None,
     note: str | None = None,
     title: str | None = None,
+    visible_facets: list[str] | None = None,
+    setlist_disclosure: str = "expanded",
     highlighted_performance_ids: list[str] | None = None,
     preferred_recording_id: str | None = None,
     sources: list[UnitSource] | None = None,
@@ -558,6 +560,7 @@ def _show_unit(
         for performance in payload.get("performances", [])
         if isinstance(performance, dict) and performance.get("performance_id")
     }
+    facets = frozenset(visible_facets or ("guests", "listen", "setlist", "sources"))
     highlighted = frozenset(pid for pid in (highlighted_performance_ids or []) if pid in own_performance_ids)
     listen, listen_sources = _show_listen_actions(payload, store, preferred_recording_id)
     venue = payload.get("venue")
@@ -570,14 +573,16 @@ def _show_unit(
         location=_venue_location(venue),
         role=role,
         note=(note or "").strip() or None,
-        sets=_setlist_sections(payload, store, highlighted),
-        setlist_note=show.get("setlist_note") or None,
-        guests=_guest_items(payload, store),
-        listen=listen,
-        sources=(sources or [])[:4],
+        visible_facets=list(facets),
+        setlist_disclosure=setlist_disclosure,
+        sets=_setlist_sections(payload, store, highlighted) if "setlist" in facets else [],
+        setlist_note=(show.get("setlist_note") or None) if "setlist" in facets else None,
+        guests=_guest_items(payload, store) if "guests" in facets else [],
+        listen=listen if "listen" in facets else [],
+        sources=(sources or [])[:4] if "sources" in facets else [],
         follow_up=(follow_up or "").strip() or None,
     )
-    return block, listen_sources
+    return block, listen_sources if "listen" in facets else []
 
 
 def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:

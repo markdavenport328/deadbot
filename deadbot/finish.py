@@ -26,6 +26,7 @@ from deadbot.data import CanonicalStore
 from deadbot.experience import (
     ConversationTurn,
     EditorialBlock,
+    ExperienceGroup,
     ExperienceBlock,
     ExperienceMode,
     ExperienceResponse,
@@ -209,6 +210,15 @@ class ShowUnitRef(_Ref):
     show_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    visible_facets: list[Literal["guests", "listen", "setlist", "sources"]] = Field(
+        default_factory=lambda: ["guests", "listen", "setlist", "sources"],
+        max_length=4,
+        description="The factual facets worth showing for this show. Choose only what helps this answer; identity and your note are always shown.",
+    )
+    setlist_disclosure: Literal["expanded", "collapsed", "hidden"] = Field(
+        default="expanded",
+        description="How the setlist starts: expanded, collapsed, or hidden. Choose this yourself; use collapsed only when the setlist is useful but not the immediate point.",
+    )
     highlighted_performance_ids: list[str] = Field(
         default_factory=list,
         max_length=12,
@@ -220,7 +230,7 @@ class ShowUnitRef(_Ref):
 
 
 class ShowExplorerRef(_Ref):
-    """A collection for browsing several complete show units with one organization."""
+    """Legacy nested collection of complete show units; prefer a top-level group."""
 
     type: Literal["show_explorer"]
     organization: UnitOrganization = Field(
@@ -292,6 +302,18 @@ BodyItem = Annotated[
 ]
 
 
+class GroupPlan(BaseModel):
+    """A model-selected editorial relationship among body items."""
+
+    model_config = ConfigDict(extra="forbid")
+    title: str | None = Field(default=None, description="A concise heading for this group, when it earns one.")
+    lead: str | None = Field(default=None, description="One or two sentences that explain the relationship, claim, or shared basis for this group.")
+    presentation: Literal["collection", "sequence", "comparison", "argument"] = Field(
+        description="collection for peers, sequence for a development or route, comparison for items judged on shared terms, argument for evidence supporting a claim."
+    )
+    items: list[BodyItem] = Field(min_length=1, max_length=12, description="The items in the exact reading order you chose.")
+
+
 class FinishPlan(BaseModel):
     """The model's finished response: chat answer plus the main-body plan."""
 
@@ -302,11 +324,19 @@ class FinishPlan(BaseModel):
     title: str = Field(description="Main-body title.")
     lead: str | None = Field(default=None, description="One or two sentences that notice what matters. Markdown links allowed.")
     mode: ExperienceMode = Field(description="Overall shape of the response.")
+    groups: list[GroupPlan] = Field(
+        default_factory=list,
+        max_length=8,
+        description=(
+            "The model-selected groups that make up the main body. Use these for any answer with more than one meaningful item: "
+            "choose collection, sequence, comparison, or argument; write the group title/lead; and put the items in their exact reading order."
+        ),
+    )
     body: list[BodyItem] = Field(
         default_factory=list,
         max_length=12,
         description=(
-            "Reading order for the main body. Semantic units declare the meaningful objects of this answer and the server hydrates them: "
+            "Legacy flat reading order. Prefer groups for a composed answer. Semantic units declare the meaningful objects of this answer and the server hydrates them: "
             "show_unit (one show with its setlist, guests, listening and your note), show_explorer (several show units, chronological, curated or comparative), "
             "performance_unit (one rendition with its set context and listening), era_unit (a stage you name, with representative performances), "
             "album_unit (one official record with its tracklist, personnel and listening), "
@@ -390,6 +420,8 @@ def _resolve_show_unit(
         role=item.role,
         note=item.note,
         title=item.title,
+        visible_facets=item.visible_facets,
+        setlist_disclosure=item.setlist_disclosure,
         highlighted_performance_ids=item.highlighted_performance_ids,
         preferred_recording_id=item.preferred_recording_id,
         sources=unit_sources,
@@ -421,8 +453,6 @@ def _resolve_reference(
             sources.extend(unit_sources)
         if not units:
             return None, []
-        if item.organization == "chronological":
-            units.sort(key=lambda unit: unit.show_date)
         return ShowExplorerBlock(type="show_explorer", title=(item.title or "The shows").strip(), organization=item.organization, items=units[:8]), sources
 
     if kind == "performance_unit":
@@ -620,6 +650,54 @@ def resolve_body(
     return blocks[:32], sources[:64]
 
 
+def resolve_groups(
+    plan: FinishPlan,
+    grounded: GroundedContext,
+    payloads: list[dict[str, Any]],
+    store: CanonicalStore,
+) -> tuple[list[ExperienceBlock], list[ExperienceGroup], list[SourceReference]]:
+    """Resolve model-selected groups while preserving their order and relationship.
+
+    The fallback keeps older finish calls readable as one unlabelled collection.
+    It is compatibility transport only; new plans should use ``groups``.
+    """
+
+    group_plans = plan.groups
+    if not group_plans and plan.body:
+        group_plans = [GroupPlan(presentation="collection", items=plan.body)]
+    blocks: list[ExperienceBlock] = []
+    groups: list[ExperienceGroup] = []
+    sources: list[SourceReference] = []
+
+    for group in group_plans:
+        group_blocks, group_sources = resolve_body(
+            FinishPlan(chat_answer="", title="", mode="quick_fact", body=group.items),
+            grounded,
+            payloads,
+            store,
+        )
+        if not group_blocks:
+            continue
+        remaining = 32 - len(blocks)
+        if remaining <= 0:
+            break
+        group_blocks = group_blocks[:remaining]
+        start = len(blocks)
+        blocks.extend(group_blocks)
+        groups.append(
+            ExperienceGroup(
+                title=(group.title or "").strip() or None,
+                lead=keep_grounded_links(group.lead.strip(), grounded.urls) if group.lead and group.lead.strip() else None,
+                presentation=group.presentation,
+                block_indexes=list(range(start, len(blocks))),
+            )
+        )
+        for source in group_sources:
+            if source.source_id not in {existing.source_id for existing in sources}:
+                sources.append(source)
+    return blocks, groups, sources[:64]
+
+
 def _deliver(**_: Any) -> str:
     return "Response delivered to the visitor."
 
@@ -632,8 +710,8 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer is the crisp direct answer; the body is the rewarding part: the semantic units of the answer (show_unit, show_explorer, "
-            "performance_unit, era_unit, album_unit) with your notes, roles, highlights and sources, plus your own narrative, fact grids or timelines for what "
+            "chat_answer is the crisp direct answer; groups are the rewarding main body: choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
+            "performance_unit, era_unit, album_unit) with your notes, roles, facets, highlights and sources, plus your own narrative, fact grids or timelines for what "
             "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,
@@ -698,7 +776,7 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
 
 def _layout(block_count: int) -> list[LayoutSection]:
     return [
-        LayoutSection(region="primary" if start == 0 else "supporting", block_indexes=list(range(start, min(start + 8, block_count))))
+        LayoutSection(region="primary", block_indexes=list(range(start, min(start + 8, block_count))))
         for start in range(0, block_count, 8)
     ][:4]
 
@@ -730,7 +808,7 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
         )
 
     grounded = grounded_context(payloads)
-    blocks, sources = resolve_body(plan, grounded, payloads, store)
+    blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
     chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
     lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None
     if not chat_answer.strip():
@@ -744,6 +822,7 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
         mode=plan.mode,
         conversation=_conversation(all_messages, chat_answer),
         blocks=blocks,
+        groups=groups,
         layout=_layout(len(blocks)),
         sources=sources,
     )
