@@ -67,12 +67,23 @@ def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
 
 def test_prompt_makes_chat_and_main_body_connected_independent_reading_paths():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "## TWO READING PATHS, ONE ANSWER" in graph.SYSTEM_PROMPT
+    assert "## ANSWER FIRST, THEN EARN THE REST" in graph.SYSTEM_PROMPT
     assert "chat_answer and the main body express one researched editorial judgment at different scales." in prompt
     assert "A visitor who begins with either reading path can understand the finding" in prompt
     assert "individual item level" in prompt
     assert "Sugar Magnolia: the album's biggest live life" in prompt
-    assert "A comparison of several songs usually deserves song_overview units" in prompt
+    assert "Do not create one for every related song merely because its metadata is available." in prompt
+
+
+def test_prompt_requires_scope_priority_and_an_omission_pass():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "## SET THE EDITORIAL SCOPE" in graph.SYSTEM_PROMPT
+    assert "simple fact usually needs a short chat answer" in prompt
+    assert "Build the factual spine first" in prompt
+    assert "perform an omission pass" in prompt
+    assert "Use no more than one or two across the whole page" in prompt
+    for job in ("unit formation", "grouping", "completion", "segregation", "global organization"):
+        assert job in prompt.casefold()
 
 
 def test_persona_tells_the_model_that_albums_are_held():

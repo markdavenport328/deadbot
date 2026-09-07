@@ -159,7 +159,13 @@ def test_experience_endpoint_renders_a_nested_show_explorer():
                 "type": "show_explorer",
                 "title": "The show",
                 "organization": "curated",
-                "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "role": "anchor", "note": "One frame, everything about it."}],
+                "items": [{
+                    "type": "show_unit",
+                    "show_id": "gd-1972-08-27",
+                    "role": "anchor",
+                    "note": "One frame, everything about it.",
+                    "visible_facets": ["setlist", "listen"],
+                }],
             }
         ],
     }

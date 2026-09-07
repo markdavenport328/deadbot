@@ -558,9 +558,15 @@ def test_a_plan_may_declare_an_album_unit():
         chat_answer="Truckin' closes American Beauty.",
         title="American Beauty",
         mode="listening",
-        body=[{"type": "album_unit", "release_id": "release-american-beauty", "highlighted_song_ids": ["song-truckin"]}],
+        body=[{
+            "type": "album_unit",
+            "release_id": "release-american-beauty",
+            "visible_facets": ["listen", "tracklist"],
+            "highlighted_song_ids": ["song-truckin"],
+        }],
     )
     assert plan.body[0].release_id == "release-american-beauty"
+    assert plan.body[0].visible_facets == ["listen", "tracklist"]
 
 
 def test_an_ungrounded_release_id_is_dropped():
@@ -588,6 +594,27 @@ def test_a_grounded_release_id_hydrates_into_an_album_unit():
     blocks, _ = finish.resolve_body(plan, grounded, [], store)
     assert blocks[0].type == "album_unit"
     assert blocks[0].note == "The turn toward songs."
+    assert blocks[0].tracks == [] and blocks[0].personnel == [] and blocks[0].listen == []
+
+
+def test_album_unit_hydrates_only_the_facets_selected_by_the_composer():
+    store = CanonicalStore()
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="x",
+        mode="listening",
+        body=[{
+            "type": "album_unit",
+            "release_id": "release-american-beauty",
+            "visible_facets": ["listen", "tracklist"],
+            "highlighted_song_ids": ["song-truckin"],
+        }],
+    )
+    grounded = finish.GroundedContext(ids=frozenset({"release-american-beauty"}), urls=frozenset())
+    blocks, _ = finish.resolve_body(plan, grounded, [], store)
+    block = blocks[0]
+    assert block.tracks and block.listen
+    assert block.personnel == [] and block.sources == []
 
 
 def test_show_context_carries_per_performance_listening_paths():
@@ -622,6 +649,8 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
                 show_id="gd-1972-08-27",
                 role="anchor",
                 note="The Sunshine Daydream show.",
+                visible_facets=["guests", "listen", "setlist", "sources"],
+                setlist_disclosure="expanded",
                 highlighted_performance_ids=[highlighted, "gd-1977-05-08-not-this-show"],
                 preferred_recording_id=preferred,
                 supporting_sources=[
@@ -679,6 +708,24 @@ def test_show_unit_only_hydrates_the_facets_the_composer_selected():
     assert unit.sets and not unit.guests and not unit.listen and not unit.sources
 
 
+def test_show_unit_with_no_selected_facets_stays_compact():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="Veneta",
+        mode="show",
+        body=[finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")],
+    )
+    blocks, sources = finish.resolve_body(
+        plan, finish.grounded_context([payload]), [payload], store
+    )
+    unit = blocks[0]
+    assert unit.visible_facets == []
+    assert not unit.sets and not unit.guests and not unit.listen and not unit.sources
+    assert sources == []
+
+
 def test_resolve_body_nests_show_units_in_an_explorer_and_drops_unretrieved_shows():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
@@ -692,7 +739,7 @@ def test_resolve_body_nests_show_units_in_an_explorer_and_drops_unretrieved_show
                 organization="chronological",
                 items=[
                     finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08"),
-                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor"),
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor", visible_facets=["setlist"]),
                 ],
             ),
             finish.ShowExplorerRef(type="show_explorer", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08")]),

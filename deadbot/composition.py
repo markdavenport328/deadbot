@@ -561,7 +561,11 @@ def _show_unit(
         for performance in payload.get("performances", [])
         if isinstance(performance, dict) and performance.get("performance_id")
     }
-    facets = frozenset(visible_facets or ("guests", "listen", "setlist", "sources"))
+    facets = frozenset(
+        ("guests", "listen", "setlist", "sources")
+        if visible_facets is None
+        else visible_facets
+    )
     highlighted = frozenset(pid for pid in (highlighted_performance_ids or []) if pid in own_performance_ids)
     listen, listen_sources = _show_listen_actions(payload, store, preferred_recording_id)
     venue = payload.get("venue")
@@ -716,6 +720,7 @@ def _album_unit(
     role: UnitRole | None = None,
     note: str | None = None,
     title: str | None = None,
+    visible_facets: list[str] | None = None,
     highlighted_song_ids: list[str] | None = None,
     sources: list[UnitSource] | None = None,
     follow_up: str | None = None,
@@ -723,7 +728,9 @@ def _album_unit(
     """Hydrate one album unit from its release payload.
 
     Highlights are kept only for songs actually on this record, so a slip in
-    the plan cannot mark a song that is not there.
+    the plan cannot mark a song that is not there. ``None`` preserves the full
+    legacy projection for internal callers; a composer-supplied facet list is
+    an explicit editorial selection, including an empty list.
     """
 
     release = payload.get("release")
@@ -733,6 +740,7 @@ def _album_unit(
     payload_tracks = payload.get("tracks") if isinstance(payload.get("tracks"), list) else []
     own_song_ids = {track.get("song_id") for track in payload_tracks if isinstance(track, dict) and track.get("song_id")}
     highlighted = frozenset(sid for sid in (highlighted_song_ids or []) if sid in own_song_ids)
+    facets = frozenset({"listen", "tracklist", "personnel", "sources"} if visible_facets is None else visible_facets)
 
     tracks = [
         AlbumTrackItem(
@@ -746,7 +754,7 @@ def _album_unit(
         )
         for track in payload_tracks
         if isinstance(track, dict) and isinstance(track.get("track_number"), int)
-    ][:30]
+    ][:30] if "tracklist" in facets else []
 
     personnel = [
         AlbumCreditItem(
@@ -757,11 +765,11 @@ def _album_unit(
         )
         for entry in (payload.get("personnel") or [])
         if isinstance(entry, dict) and entry.get("person_id")
-    ][:20]
+    ][:20] if "personnel" in facets else []
 
     listen: list[ListenAction] = []
     album_url = release.get("spotify_album_url") or release.get("source_url")
-    if isinstance(album_url, str) and album_url:
+    if "listen" in facets and isinstance(album_url, str) and album_url:
         listen.append(
             ListenAction(
                 label=f"Listen to {release.get('title') or 'the record'}",
@@ -783,7 +791,7 @@ def _album_unit(
         tracks=tracks,
         personnel=personnel,
         listen=listen,
-        sources=(sources or [])[:4],
+        sources=(sources or [])[:4] if "sources" in facets else [],
         follow_up=(follow_up or "").strip() or None,
     )
     return block, []

@@ -65,6 +65,31 @@ Main files: `web/src/App.tsx`, `web/src/styles.css`, `deadbot/composition.py`,
   action, tracklist, credits, and relationship labels use the same listening
   vocabulary.
 
+## Editorial scope and prioritization completed
+
+- The system prompt now makes orientation precede discovery: answer directly,
+  decide how much depth the question earns, build a factual spine, distinguish
+  sourced interpretation and synthesis, and perform an omission pass before
+  composing.
+- Chat, page, group and unit layers have distinct jobs instead of each restating
+  the thesis. One group is the default; more groups must introduce a genuinely
+  distinct movement.
+- The Five Jobs of Gestalt are explicit, including segregation and global
+  organization: the direct answer, support and optional exploration must be
+  recognizable at first glance.
+- Follow-ups are optional and limited to one or two unusually valuable paths.
+  Discovery is no longer a mandatory completion criterion.
+- `show_unit` no longer defaults to every facet or an expanded setlist.
+  `album_unit` now accepts model-selected listening, tracklist, personnel and
+  source facets; full album inventory appears only when the composer selects it.
+- `evals/editorial-scope-v1.json` adds manual model-review cases for a compact
+  fact, American Beauty's live legacy, an Eyes development, and subjective best
+  shows. These test meaningfully different earned depths without deterministic
+  question routing.
+
+Validation: 296 Python tests passed. No browser response schema or frontend
+source changed; generated API types therefore did not require regeneration.
+
 ## Remaining work, in priority order
 
 ### 1. Broaden visual acceptance coverage
