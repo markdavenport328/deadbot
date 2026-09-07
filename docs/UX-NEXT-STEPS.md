@@ -77,6 +77,15 @@ temporary local-only fixture entries with the actual App and mocked API; these
 were removed before delivery. A reusable development-only fixture harness would
 make subsequent review repeatable without adding product UI or calling an LLM.
 
+The reusable harness is now available in `web/src/visual-fixtures.ts`. Run
+`npm run dev --prefix web` and add `?fixture=branford`, `eyes`, `cornell`,
+`shakedown`, or `fact` to the local URL. It loads through the actual App
+renderers, skips server health and model requests, exposes no visitor-facing
+fixture control, and is excluded from production bundles. Initial review covered
+the fixture set at 1440px, 600px, 390px, and 320px, including a local expanded
+setlist disclosure. Keyboard navigation, enlarged text, coarse pointers,
+reduced motion, and loading-scroll behavior still need a dedicated pass.
+
 Check 1440px, 600px, 390px, and 320px widths, enlarged text, keyboard navigation,
 coarse pointer targets, and reduced motion. Verify loading doesn't move the main
 document, disclosures remain local, and Ask initiates research. Existing automated
@@ -88,6 +97,13 @@ Start with era units as open editorial chapters; use heading, date range, alignm
 and whitespace for boundaries. Keep show/performance identities, notes, listening,
 and evidence attached. Avoid nested boxes for era > show > performance. Existing
 semantic cards intentionally remain in the first batch to keep the change focused.
+
+Era units now render without the shared card frame. Consecutive stages use an
+open heading, their model-supplied span, and a restrained divider with generous
+whitespace; listening and evidence remain in their respective stage. Shows,
+performances, and records keep their identity frames because they are discrete
+objects rather than editorial chapters. Reviewed with the Eyes fixture at desktop
+and phone widths.
 
 Acceptance: chronology looks like progression and collections like peers before
 reading the prose. Do not infer a timeline from adjacent dates; render relationships
@@ -110,6 +126,22 @@ Remove `deadbot/finish.py`'s first-eight-primary/later-supporting assignment. Bl
 count is a transport concern and must not give content secondary editorial meaning.
 Avoid keyword routing, automatic duplicate suppression, forced coverage copy, or
 another model handoff. Diagnose weak choices through context/prompt/evaluation.
+
+Initial implementation: `finish_response` now accepts model-selected groups
+with collection, sequence, comparison, or argument presentation; a group owns
+its title, lead, membership, and reading order. Resolution validates references
+but preserves that ordering, and the browser renders the selected relationship
+without re-grouping it. Comparison groups use aligned peer cards at wide sizes;
+argument groups visually keep their lead with the evidence. The former automatic
+first-eight/later-supporting layout has been removed.
+
+Show units now accept `visible_facets` and `setlist_disclosure`. The composer
+can retain only guests, listening, setlist, and/or source evidence that help the
+answer, and chooses whether the selected setlist begins expanded, collapsed, or
+hidden. Native disclosure state stays with the visitor after they open it.
+`show_explorer` remains compatible for older calls, but new composition guidance
+uses groups with directly selected units so the model controls the relationship
+and ordering.
 
 Acceptance: one schema supports genuinely different collection, development, and
 argument compositions; reference resolution preserves model-selected order/grouping.

@@ -87,6 +87,9 @@ UnitRole = Literal[
 ]
 
 UnitOrganization = Literal["chronological", "curated", "comparative"]
+ShowFacet = Literal["guests", "listen", "setlist", "sources"]
+SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
+GroupPresentation = Literal["collection", "sequence", "comparison", "argument"]
 
 
 class ListenAction(ExperienceModel):
@@ -177,6 +180,8 @@ class ShowUnitBlock(ExperienceModel):
     location: str | None = None
     role: UnitRole | None = None
     note: str | None = None
+    visible_facets: list[ShowFacet] = Field(default_factory=list, max_length=4)
+    setlist_disclosure: SetlistDisclosure = "expanded"
     sets: list[SetlistSection] = Field(default_factory=list, max_length=4)
     setlist_note: str | None = None
     guests: list[PerformerItem] = Field(default_factory=list, max_length=8)
@@ -580,6 +585,20 @@ class LayoutSection(ExperienceModel):
     block_indexes: list[int] = Field(min_length=1, max_length=8)
 
 
+class ExperienceGroup(ExperienceModel):
+    """A model-selected relationship between one or more body blocks.
+
+    ``block_indexes`` preserves the composer's reading order after references
+    have been resolved. The browser only renders this supported presentation;
+    it never re-groups or re-orders the material.
+    """
+
+    title: str | None = None
+    lead: str | None = None
+    presentation: GroupPresentation
+    block_indexes: list[int] = Field(min_length=1, max_length=12)
+
+
 class ExperienceResponse(ExperienceModel):
     schema_version: Literal["1"] = "1"
     thread_id: str
@@ -592,6 +611,7 @@ class ExperienceResponse(ExperienceModel):
     # envelope aligned with that 32-block layout capacity so a deeply researched
     # candidate packet can be edited without a schema failure.
     blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=32)
+    groups: list[ExperienceGroup] = Field(default_factory=list, max_length=8)
     layout: list[LayoutSection] = Field(default_factory=list, max_length=4)
     # A 32-block exploratory response can legitimately reference more than one
     # source per block (for example, show identity plus a recording path).

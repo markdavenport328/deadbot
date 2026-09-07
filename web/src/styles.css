@@ -64,6 +64,16 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .layout-section + .layout-section { margin-top: 2rem; }
 .region-label { margin: 0 0 0.75rem; color: #9fb29f; font-size: 0.72rem; font-weight: 750; letter-spacing: 0.12em; text-transform: uppercase; }
 .block-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
+.experience-group + .experience-group { border-top: 1px solid #3e5544; margin-top: var(--space-section); padding-top: var(--space-section); }
+.group-heading { max-width: 65rem; margin: 0 0 var(--space-content); }
+.group-heading h2 { max-width: 30ch; margin: 0; }
+.group-heading p { max-width: 58rem; margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
+.group-sequence .group-blocks { gap: var(--space-unit); }
+.group-argument .group-heading { border-left: 3px solid #c49e48; padding-left: var(--space-part); }
+@media (min-width: 861px) {
+  .group-comparison .group-blocks > :is(.show-unit, .performance-unit, .album-unit) { grid-column: span 6; }
+  .group-comparison .group-blocks > .era-unit { max-width: none; }
+}
 .card { grid-column: span 6; border: 1px solid #465b4b; border-radius: 0.75rem; background: rgba(17, 32, 24, 0.76); padding: 1.35rem; }
 .typography-block { grid-column: 1 / -1; max-width: 58rem; }
 .typography-block h2 { max-width: 22ch; margin-bottom: 1rem; }
@@ -135,9 +145,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .coverage-note { margin: 1rem 0 0; color: #bdc9bb; font-size: 0.92rem; line-height: 1.55; }
 .show-setlist { grid-column: span 12; }
 
-/* Semantic units: one object, everything about it, inside one frame. */
-.show-unit, .performance-unit, .era-unit, .album-unit { grid-column: span 12; }
-.block-grid > :is(.show-unit, .performance-unit, .era-unit, .album-unit) + :is(.show-unit, .performance-unit, .era-unit, .album-unit) { margin-top: calc(var(--space-unit) - 1rem); }
+/* Shows, performances, and records are discrete objects. Eras are open
+   editorial chapters: their heading, span, and whitespace do the grouping. */
+.show-unit, .performance-unit, .album-unit { grid-column: span 12; }
+.era-unit { grid-column: 1 / -1; max-width: 65rem; padding: 0; }
+.block-grid > :is(.show-unit, .performance-unit, .album-unit) + :is(.show-unit, .performance-unit, .album-unit) { margin-top: calc(var(--space-unit) - 1rem); }
+.block-grid > .era-unit + .era-unit { border-top: 1px solid #3e5544; margin-top: calc(var(--space-section) - 1rem); padding-top: var(--space-unit); }
 .show-explorer { grid-column: 1 / -1; }
 .show-explorer > h2 { max-width: 30ch; margin-bottom: 1rem; }
 .explorer-units { display: grid; gap: var(--space-unit); }
@@ -149,7 +162,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .unit-heading .eyebrow { margin-bottom: var(--space-identity); }
 .role-chip { flex-shrink: 0; border: 1px solid #506757; border-radius: 999px; color: #d0b77a; font-size: 0.68rem; font-weight: 750; letter-spacing: 0.09em; padding: 0.35rem 0.65rem; text-transform: uppercase; white-space: nowrap; }
 .role-chip.role-anchor { border-color: #c49e48; background: rgba(231, 185, 78, 0.12); color: #f1d684; }
-.show-unit.role-anchor, .performance-unit.role-anchor, .era-unit.role-anchor, .album-unit.role-anchor { border-color: #7d6a35; }
+.show-unit.role-anchor, .performance-unit.role-anchor, .album-unit.role-anchor { border-color: #7d6a35; }
 .unit-note { max-width: 65ch; margin: var(--space-part) 0 0; color: #dfe4d8; font-size: 1.02rem; line-height: 1.6; }
 .unit-guests { margin: var(--space-identity) 0 0; color: #bdc9bb; font-size: 0.92rem; line-height: 1.5; }
 .unit-guests .fact-label { margin-right: 0.15rem; }

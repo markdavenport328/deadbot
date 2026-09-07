@@ -1,5 +1,6 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
+import { loadRequestedVisualFixture, requestedVisualFixture } from "./visual-fixture-loader";
 
 type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
@@ -26,6 +27,13 @@ const organizationLabels: Record<string, string> = {
   comparative: "Side by side"
 };
 
+const groupLabels: Record<string, string> = {
+  collection: "Collection",
+  sequence: "Listening path",
+  comparison: "Comparison",
+  argument: "The case"
+};
+
 function formatShowDate(iso: string | null | undefined): string {
   if (!iso) return "Undated";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -49,12 +57,6 @@ const modeLabels: Record<ExperienceResponse["mode"], string> = {
   research: "Research desk",
   musician: "Musician’s reference",
   gap: "Library note"
-};
-
-const regionLabels: Partial<Record<"primary" | "supporting" | "context" | "media", string>> = {
-  supporting: "Keep exploring",
-  context: "Details and context",
-  media: "Listen and watch"
 };
 
 function createThreadId(): string {
@@ -270,14 +272,13 @@ function SetlistSectionList({ sets }: { sets: SetlistSections }) {
 
 function ShowUnit({
   unit,
-  onFollowUp,
-  collapsed = false
+  onFollowUp
 }: {
   unit: ShowUnitBlock;
   onFollowUp: (prompt: string) => void;
-  collapsed?: boolean;
 }) {
   const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
+  const shows = (facet: ShowUnitBlock["visible_facets"][number]) => unit.visible_facets.includes(facet);
   return (
     <article className={`card show-unit${unit.role ? ` role-${unit.role}` : ""}`}>
       <header className="unit-heading">
@@ -292,7 +293,7 @@ function ShowUnit({
         <RoleChip role={unit.role} />
       </header>
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
-      {unit.guests.length > 0 && (
+      {shows("guests") && unit.guests.length > 0 && (
         <p className="unit-guests">
           <span className="fact-label">With </span>
           {unit.guests.map((guest, index) => (
@@ -303,8 +304,8 @@ function ShowUnit({
           ))}
         </p>
       )}
-      <ListenActionList actions={unit.listen} />
-      {collapsed && highlights.length > 0 && (
+      {shows("listen") && <ListenActionList actions={unit.listen} />}
+      {unit.setlist_disclosure === "collapsed" && highlights.length > 0 && (
         <div className="unit-highlights">
           <p className="fact-label">Listen for</p>
           <ul>
@@ -316,8 +317,8 @@ function ShowUnit({
           </ul>
         </div>
       )}
-      {unit.sets.length > 0 ? (
-        collapsed ? (
+      {shows("setlist") && unit.setlist_disclosure !== "hidden" && (unit.sets.length > 0 ? (
+        unit.setlist_disclosure === "collapsed" ? (
           <details className="unit-setlist">
             <summary>Setlist</summary>
             <SetlistSectionList sets={unit.sets} />
@@ -330,8 +331,8 @@ function ShowUnit({
         )
       ) : unit.setlist_note ? (
         <p className="coverage-note">{unit.setlist_note}</p>
-      ) : null}
-      <UnitSourceList sources={unit.sources} />
+      ) : null)}
+      {shows("sources") && <UnitSourceList sources={unit.sources} />}
       {unit.follow_up && (
         <p className="unit-follow-up">
           <AskChip prompt={unit.follow_up} onFollowUp={onFollowUp} />
@@ -426,7 +427,6 @@ function Block({
                 key={unit.show_id}
                 unit={unit}
                 onFollowUp={onFollowUp}
-                collapsed={block.items.length > 1 && unit.role !== "anchor"}
               />
             ))}
           </div>
@@ -473,7 +473,7 @@ function Block({
       );
     case "era_unit":
       return (
-        <section className={`card era-unit${block.role ? ` role-${block.role}` : ""}`}>
+        <section className={`era-unit${block.role ? ` role-${block.role}` : ""}`}>
           <header className="unit-heading">
             <div>
               {block.span && <Eyebrow label={block.span} title={block.title} />}
@@ -873,6 +873,10 @@ function Block({
 }
 
 export default function App() {
+  // A named `?fixture=` response is available only in Vite development. It
+  // gives visual reviewers the actual app chrome and renderers without a live
+  // model request or a testing-only control in the visitor experience.
+  const visualFixture = requestedVisualFixture;
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<ExperienceResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -896,12 +900,21 @@ export default function App() {
   }, [loading, pendingQuestion, response, progress]);
 
   useEffect(() => {
+    if (visualFixture) return;
     void refreshIfServerChanged();
     const check = window.setInterval(() => void refreshIfServerChanged(), 60_000);
     return () => window.clearInterval(check);
-  }, []);
+  }, [visualFixture]);
+
+  useEffect(() => {
+    if (!visualFixture) return;
+    void loadRequestedVisualFixture().then((fixture) => {
+      if (fixture) setResponse(fixture);
+    });
+  }, [visualFixture]);
 
   async function askQuestion(nextQuestion?: string, { fresh = false }: { fresh?: boolean } = {}) {
+    if (visualFixture) return;
     const trimmed = (nextQuestion ?? question).trim();
     if (!trimmed || loading) return;
     const requestThreadId = fresh ? createThreadId() : activeThreadId;
@@ -1085,11 +1098,17 @@ export default function App() {
                 <h1 id="answer-title" tabIndex={-1}>{response.title}</h1>
               </div>
               {response.body_lead && <p className="answer-lead">{renderInline(response.body_lead)}</p>}
-              {response.layout.map((section, sectionIndex) => (
-                <section className={`layout-section ${section.region}`} key={`${section.region}-${sectionIndex}`}>
-                  {regionLabels[section.region] && <p className="region-label">{regionLabels[section.region]}</p>}
-                  <div className="block-grid">
-                    {section.block_indexes.map((index) => {
+              {response.groups.map((group, groupIndex) => (
+                <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
+                  {(group.title || group.lead) && (
+                    <header className="group-heading">
+                      {group.title && <Eyebrow label={groupLabels[group.presentation]} title={group.title} />}
+                      {group.title && <h2>{group.title}</h2>}
+                      {group.lead && <p>{renderInline(group.lead)}</p>}
+                    </header>
+                  )}
+                  <div className="block-grid group-blocks">
+                    {group.block_indexes.map((index) => {
                       const block = response.blocks[index];
                       return block ? (
                         <Block

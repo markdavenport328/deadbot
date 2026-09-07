@@ -1118,6 +1118,59 @@
         "title": "EraUnitBlock",
         "type": "object"
       },
+      "ExperienceGroup": {
+        "additionalProperties": false,
+        "description": "A model-selected relationship between one or more body blocks.\n\n``block_indexes`` preserves the composer's reading order after references\nhave been resolved. The browser only renders this supported presentation;\nit never re-groups or re-orders the material.",
+        "properties": {
+          "block_indexes": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 12,
+            "minItems": 1,
+            "title": "Block Indexes",
+            "type": "array"
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead"
+          },
+          "presentation": {
+            "enum": [
+              "collection",
+              "sequence",
+              "comparison",
+              "argument"
+            ],
+            "title": "Presentation",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "presentation",
+          "block_indexes"
+        ],
+        "title": "ExperienceGroup",
+        "type": "object"
+      },
       "ExperienceRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1297,6 +1350,14 @@
             },
             "maxItems": 50,
             "title": "Conversation",
+            "type": "array"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/ExperienceGroup"
+            },
+            "maxItems": 8,
+            "title": "Groups",
             "type": "array"
           },
           "layout": {
@@ -2610,6 +2671,16 @@
             ],
             "title": "Role"
           },
+          "setlist_disclosure": {
+            "default": "expanded",
+            "enum": [
+              "expanded",
+              "collapsed",
+              "hidden"
+            ],
+            "title": "Setlist Disclosure",
+            "type": "string"
+          },
           "setlist_note": {
             "anyOf": [
               {
@@ -2671,6 +2742,20 @@
               }
             ],
             "title": "Venue Name"
+          },
+          "visible_facets": {
+            "items": {
+              "enum": [
+                "guests",
+                "listen",
+                "setlist",
+                "sources"
+              ],
+              "type": "string"
+            },
+            "maxItems": 4,
+            "title": "Visible Facets",
+            "type": "array"
           }
         },
         "required": [
