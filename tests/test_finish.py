@@ -270,6 +270,34 @@ def test_resolve_body_resolves_song_overview():
     assert block.credits and all(credit.name for credit in block.credits)
 
 
+def test_song_overview_keeps_model_chosen_representative_performance_links():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    payload = store.song_context(song)
+    chosen = next(performance for performance in payload["performances"] if performance.get("listen"))
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        lead=None,
+        mode="comparison",
+        body=[
+            finish.SongOverviewRef(
+                type="song_overview",
+                song_id=song["song_id"],
+                role="representative",
+                note="A song with a long onstage life.",
+                representative_performance_ids=[chosen["performance_id"]],
+            )
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, finish.grounded_context([payload]), [payload], store)
+    block = blocks[0]
+    assert block.type == "song_overview"
+    assert block.note == "A song with a long onstage life."
+    assert [performance.performance_id for performance in block.representative_performances] == [chosen["performance_id"]]
+    assert block.representative_performances[0].listen_url == chosen["listen"]["archive_track_url"]
+
+
 def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
     store = CanonicalStore()
     arrangement = next(iter(store.rows("song_arrangements")), None)

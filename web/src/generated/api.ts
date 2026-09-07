@@ -972,14 +972,24 @@ export interface components {
             albums?: components["schemas"]["SongReleaseItem"][];
             /** Credits */
             credits?: components["schemas"]["CreditItem"][];
+            /** Follow Up */
+            follow_up?: string | null;
             /** Known Performance Count */
             known_performance_count: number;
+            /** Note */
+            note?: string | null;
             /** Original Artist */
             original_artist?: string | null;
+            /** Representative Performances */
+            representative_performances?: components["schemas"]["SongRepresentativePerformance"][];
+            /** Role */
+            role?: ("anchor" | "supporting" | "contrast" | "turning_point" | "outlier" | "culmination" | "overlooked" | "representative") | null;
             /** Song Id */
             song_id: string;
             /** Source Ids */
             source_ids?: string[];
+            /** Sources */
+            sources?: components["schemas"]["UnitSource"][];
             /** Title */
             title: string;
             /**
@@ -998,6 +1008,24 @@ export interface components {
             release_type: string;
             /** Title */
             title: string;
+        };
+        /**
+         * SongRepresentativePerformance
+         * @description A model-chosen rendition that gives a song unit an immediate listening path.
+         */
+        SongRepresentativePerformance: {
+            /** Listen Url */
+            listen_url?: string | null;
+            /** Performance Id */
+            performance_id: string;
+            /** Set Label */
+            set_label?: string | null;
+            /** Show Date */
+            show_date?: string | null;
+            /** Show Id */
+            show_id: string;
+            /** Show Label */
+            show_label: string;
         };
         /** SourceReference */
         SourceReference: {

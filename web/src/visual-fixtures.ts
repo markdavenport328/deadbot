@@ -237,9 +237,44 @@ const fact: ExperienceResponse = fixture(
   }]
 );
 
-export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact"] as const;
+const albumSongs: ExperienceResponse = fixture(
+  "What was the live legacy of American Beauty?",
+  "American Beauty’s live afterlife",
+  "comparison",
+  "Four songs became durable but distinct parts of the touring vocabulary; each carries a different version of the album’s live legacy.",
+  [
+    {
+      type: "song_overview", song_id: "song-sugar-magnolia", title: "Sugar Magnolia", original_artist: null, known_performance_count: 606,
+      role: "anchor", note: "A compact studio song became one of the band’s recurring celebratory vehicles.",
+      representative_performances: [{ performance_id: "fixture-sugar", show_id: "fixture-1972-08-27", show_date: "1972-08-27", show_label: "1972-08-27 — Oregon Country Fair", set_label: "Second set", listen_url: `${archive}gd1972-08-27#sugar-magnolia` }],
+      credits: [], source_ids: ["canonical:song-sugar-magnolia"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [], follow_up: null
+    },
+    {
+      type: "song_overview", song_id: "song-truckin", title: "Truckin'", original_artist: null, known_performance_count: 538,
+      role: "representative", note: "Its travel narrative became a durable live setlist engine across the documented touring span.",
+      representative_performances: [{ performance_id: "fixture-truckin", show_id: "fixture-1970-11-08", show_date: "1970-11-08", show_label: "1970-11-08 — Capitol Theatre", set_label: "Second set", listen_url: `${archive}gd1970-11-08#truckin` }],
+      credits: [], source_ids: ["canonical:song-truckin"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [], follow_up: null
+    },
+    {
+      type: "song_overview", song_id: "song-friend-of-the-devil", title: "Friend of the Devil", original_artist: null, known_performance_count: 308,
+      role: "contrast", note: "It survived the acoustic period by repeatedly changing shape inside the band’s larger concert sound.",
+      representative_performances: [{ performance_id: "fixture-friend", show_id: "fixture-1978-04-16", show_date: "1978-04-16", show_label: "1978-04-16 — Huntington Civic Center", set_label: "First set", listen_url: `${archive}gd1978-04-16#friend-of-the-devil` }],
+      credits: [], source_ids: ["canonical:song-friend-of-the-devil"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [], follow_up: null
+    },
+    {
+      type: "song_overview", song_id: "song-brokedown-palace", title: "Brokedown Palace", original_artist: null, known_performance_count: 287,
+      role: "culmination", note: "Its theatrical emotional arc made it a recurring Garcia showcase rather than a fixed studio replica.",
+      representative_performances: [{ performance_id: "fixture-brokedown", show_id: "fixture-1989-10-09", show_date: "1989-10-09", show_label: "1989-10-09 — Hampton Coliseum", set_label: "Encore", listen_url: `${archive}gd1989-10-09#brokedown-palace` }],
+      credits: [], source_ids: ["canonical:song-brokedown-palace"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [], follow_up: null
+    }
+  ] as ExperienceBlock[],
+  "comparison",
+  { title: "The touring pillars", lead: "Each song is a different answer to how an album track could become part of the live repertoire." }
+);
 
-const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact };
+export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs"] as const;
+
+const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
