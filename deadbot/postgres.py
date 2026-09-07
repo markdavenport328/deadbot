@@ -193,14 +193,14 @@ class PostgresCanonicalStore(CanonicalStore):
                 'CAST("position_in_set" AS INTEGER) NULLS LAST, "performance_id"'
             )
         if table == "official_release_tracks":
-            # track_number is stored as text; a plain text sort would order
-            # "122" before "14" and pick the wrong row wherever a release's
-            # track count reaches double digits. NULLS FIRST matches the CSV
-            # store, which never assigns a track number to an untracked row
-            # and simply keeps whatever order the file happens to list it in.
+            # Production stores track_number as INTEGER, while the lightweight
+            # adapter used for CSV-parity tests stores it as TEXT. Convert the
+            # value to text before applying the empty-string compatibility
+            # guard; otherwise PostgreSQL attempts to cast that guard to an
+            # integer before NULLIF can run.
             return (
                 ' ORDER BY "release_id", '
-                'CAST(NULLIF("track_number", \'\') AS INTEGER) NULLS FIRST, "performance_id"'
+                'CAST(NULLIF(CAST("track_number" AS TEXT), \'\') AS INTEGER) NULLS FIRST, "performance_id"'
             )
         columns = _ORDER_COLUMNS.get(table)
         if columns:

@@ -330,6 +330,10 @@ def test_rows_one_matching_and_resolution_match_csv_behavior(store, csv_store):
     assert store.show_candidates("1966-10-08") == TABLES["shows"][1:]
 
 
+def test_release_track_order_normalizes_the_typed_column_before_empty_value_handling(store):
+    assert 'CAST("track_number" AS TEXT)' in store._order_clause("official_release_tracks")
+
+
 def test_context_methods_match_existing_domain_projection(store, csv_store):
     song = TABLES["songs"][0]
     show = TABLES["shows"][0]
