@@ -351,16 +351,16 @@ def build_tools(
             for item in store.matching_rows("equipment", phrase, ("name", "manufacturer", "model"))[:10]:
                 add("equipment", item["equipment_id"], item["name"])
 
+        for phrase in phrases:
+            for row in store.matching_rows("official_releases", phrase, ("title",))[:10]:
+                add("release", row["release_id"], row["title"])
+
         for show in store.search_shows(phrases, limit=20):
             add(
                 "show",
                 show["show_id"],
                 f'{show["show_date"]} — {show.get("venue_name", "Unknown venue")}',
             )
-
-        for phrase in phrases:
-            for row in store.matching_rows("official_releases", phrase, ("title",))[:10]:
-                add("release", row["release_id"], row["title"])
         return _json({"query": query, "matches": matches[:20]})
 
     @tool

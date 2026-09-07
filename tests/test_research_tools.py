@@ -99,6 +99,13 @@ def test_search_entities_resolves_an_album_title():
     assert any(item["id"] == "release-american-beauty" for item in releases)
 
 
+def test_search_entities_resolves_ace_despite_show_matches_crowding_the_cap():
+    store = CanonicalStore()
+    payload = json.loads(tool_by_name(store, "search_entities").invoke({"query": "Ace"}))
+    releases = [item for item in payload["matches"] if item["entity_type"] == "release"]
+    assert any(item["id"] == "release-ace" for item in releases)
+
+
 def test_get_album_returns_the_tracklist():
     store = CanonicalStore()
     payload = json.loads(tool_by_name(store, "get_album").invoke({"release_id_or_title": "American Beauty"}))
