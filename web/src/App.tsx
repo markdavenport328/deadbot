@@ -43,9 +43,9 @@ function formatShowDate(iso: string | null | undefined): string {
 }
 
 const suggestions = [
-  "Was Branford on the whole 1991-09-10 Madison Square Garden show, and where should I listen for him?",
-  "What are the chords to Sugaree?",
-  "What did they play after Dark Star on 1972-08-27?"
+  "What are the best versions of Franklin's Tower?",
+  "What shows did Branford play on?",
+  "What was the live legacy of American Beauty?"
 ];
 
 const modeLabels: Record<ExperienceResponse["mode"], string> = {
