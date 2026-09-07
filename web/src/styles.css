@@ -117,7 +117,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .show-setlist { grid-column: span 12; }
 
 /* Semantic units: one object, everything about it, inside one frame. */
-.show-unit, .performance-unit, .era-unit { grid-column: span 12; }
+.show-unit, .performance-unit, .era-unit, .album-unit { grid-column: span 12; }
 .show-explorer { grid-column: 1 / -1; }
 .show-explorer > h2 { max-width: 30ch; margin-bottom: 1rem; }
 .explorer-units { display: grid; gap: 1rem; }
@@ -128,7 +128,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .unit-heading .eyebrow { margin-bottom: 0.35rem; }
 .role-chip { flex-shrink: 0; border: 1px solid #506757; border-radius: 999px; color: #d0b77a; font-size: 0.68rem; font-weight: 750; letter-spacing: 0.09em; padding: 0.35rem 0.65rem; text-transform: uppercase; white-space: nowrap; }
 .role-chip.role-anchor { border-color: #c49e48; background: rgba(231, 185, 78, 0.12); color: #f1d684; }
-.show-unit.role-anchor, .performance-unit.role-anchor, .era-unit.role-anchor { border-color: #7d6a35; }
+.show-unit.role-anchor, .performance-unit.role-anchor, .era-unit.role-anchor, .album-unit.role-anchor { border-color: #7d6a35; }
 .unit-note { max-width: 46rem; margin: 1rem 0 0; color: #dfe4d8; font-size: 1.02rem; line-height: 1.6; }
 .unit-guests { margin: 0.8rem 0 0; color: #bdc9bb; font-size: 0.92rem; line-height: 1.5; }
 .unit-guests .fact-label { margin-right: 0.15rem; }
@@ -180,6 +180,15 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .setlist-section li { padding: 0.2rem 0 0.2rem 0.2rem; }
 .setlist-section li::marker { color: #7f9582; }
 .setlist-section li .list-item-follow-up { color: #f1efdf; font-size: 0.95rem; font-weight: 500; }
+.album-tracks { margin: 1.2rem 0 0; padding-left: 1.45rem; color: #aebbac; }
+.album-tracks li { padding: 0.2rem 0 0.2rem 0.2rem; }
+.album-tracks li::marker { color: #7f9582; }
+.album-track { display: flex; align-items: baseline; gap: 0.45rem; }
+.album-track.highlighted { color: #f7e7b5; font-weight: 700; }
+.album-personnel { margin: 1.2rem 0 0; padding: 0; list-style: none; }
+.album-personnel li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
+.song-albums { margin: 1.2rem 0 0; padding: 0; list-style: none; }
+.song-albums li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .media-card { grid-column: span 12; }
 .media-frame { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 0.45rem; margin: 1rem 0; }
 .spotify-frame { display: block; width: min(100%, 720px); height: 152px; border: 0; border-radius: 0.45rem; margin: 1rem 0; }

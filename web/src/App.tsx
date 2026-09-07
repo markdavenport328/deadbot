@@ -345,7 +345,7 @@ function AlbumUnit({
         {block.tracks.map((track) => (
           <li
             key={track.track_number}
-            className={track.highlighted ? "album-track is-highlighted" : "album-track"}
+            className={track.highlighted ? "album-track highlighted" : "album-track"}
             value={track.track_number}
           >
             {track.listen_url ? (
@@ -355,6 +355,7 @@ function AlbumUnit({
             ) : (
               track.title
             )}
+            {track.highlighted && <span className="highlight-mark" title="A performance worth your attention" aria-label="Highlighted">★</span>}
           </li>
         ))}
       </ol>
