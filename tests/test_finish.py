@@ -817,3 +817,14 @@ def test_song_overview_shows_the_records_that_held_the_song():
     context = store.song_context(store.resolve_song("Truckin'"))
     block = composition._song_overview(context, store)
     assert any(album.release_type == "studio" for album in block.albums)
+
+
+def test_song_overview_keeps_an_undated_studio_album_ahead_of_the_truncation():
+    """Ace has no release_date, so song_releases sorts it last among Cassidy's
+    releases. _song_overview truncates to 6 albums; without prioritizing
+    studio releases, Ace falls off the list entirely."""
+
+    store = CanonicalStore()
+    context = store.song_context(store.resolve_song("Cassidy"))
+    block = composition._song_overview(context, store)
+    assert any(album.title == "Ace" for album in block.albums)

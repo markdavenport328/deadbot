@@ -1086,7 +1086,7 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
         if person and role:
             credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=role, follow_up=None))
     performances = context.get("performances") if isinstance(context.get("performances"), list) else []
-    albums = [
+    all_albums = [
         SongReleaseItem(
             release_id=release["release_id"],
             title=release.get("title") or release["release_id"],
@@ -1095,7 +1095,15 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
         )
         for release in (context.get("releases") or [])
         if isinstance(release, dict) and release.get("release_id")
-    ][:6]
+    ]
+    # song_releases (data.py) orders releases earliest-first with undated
+    # releases last, which is correct on its own terms. But truncating that
+    # order to 6 can crowd a studio album out entirely behind live releases
+    # that happen to carry a date. Present studio releases first so the
+    # truncation never hides the studio record a user is most likely after.
+    studio_albums = [album for album in all_albums if album.release_type == "studio"]
+    other_albums = [album for album in all_albums if album.release_type != "studio"]
+    albums = (studio_albums + other_albums)[:6]
     return SongOverviewBlock(
         type="song_overview",
         song_id=song["song_id"],
