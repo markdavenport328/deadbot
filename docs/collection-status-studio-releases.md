@@ -28,7 +28,7 @@ Purple Sage, Old & In the Way and Kingfish.
 | Release groups promoted to `official_releases.csv` as `studio` | 46 |
 | Release groups held for review | 16 |
 | Promoted albums by artist | New Riders 15, Grateful Dead 13, Jerry Garcia 9, Bob Weir 4, Kingfish 4, Jerry Garcia Band 1 |
-| Promoted albums with a full `release_date` | 21 of 46 (25 have only a year or month in MusicBrainz; noted in `notes`) |
+| Promoted albums with a `release_date` | 46 of 46 (21 full dates, 6 year-month, 19 year only; precision noted in `notes`) |
 | Promoted albums with a `spotify_album_url` | 25 of 46 |
 | Track rows written | 447 (all with `duration_seconds`) |
 | Tracks resolved to a canonical `song_id` | 133 (29.8%) |
@@ -99,11 +99,15 @@ add live bonus discs), then the edition closest to the group's modal single-disc
 track count, then CD/digital before vinyl, then the earliest date, then the
 lowest MBID.
 
-`release_date` is the release group's first-release date when MusicBrainz gives a
-full one. When it gives only a year or a month, an edition's own full date is
-used only if it falls inside that partial value; otherwise the field is blank
-with the partial value in `notes`. Without that guard a 2005 remaster would be
-published as the release date of a 1972 album.
+`release_date` is the release group's first-release date, stored at whatever
+precision MusicBrainz gives it: a full ISO date, a year-month (`1972-05`), or a
+year alone (`1972`). `official_releases.release_date` is `TEXT`, not a SQL
+date, precisely so a partial value can be stored rather than blanked. An
+edition's own full date is used in place of a partial value only if it falls
+inside that partial value; otherwise a 2005 remaster would be published as the
+release date of a 1972 album. The field is left blank only when MusicBrainz
+gives no `first_release_date` that is a recognized year, year-month, or full
+date.
 
 `release_id` is `release-<kebab-case album title>`
 (`release-american-beauty`, `release-ace`, `release-workingmans-dead`). Two
@@ -215,14 +219,15 @@ the backfill runs again. See `schema/README.md` for the stated order.
 
 - The normalizer validates before writing: unique `release_id`; every
   `release_type` in the `studio`/`live`/`compilation`/`single` vocabulary;
-  non-blank `title` and `source_url`; ISO `release_date`; unique positive
+  non-blank `title` and `source_url`; `release_date` blank or a recognized
+  year, year-month, or full ISO date; unique positive
   `(release_id, track_number)`; non-negative durations; non-blank `track_title`;
   every `song_id` present in `songs.csv` and every `performance_id` present in
   `performances.csv`; unique `release_personnel` keys with a non-blank
   instrument and a `people.csv` person; CSV headers unchanged.
 - `deadbot.postgres_import.read_canonical_table` converts all three tables with
   the importer's `TableSpec`s: 340 releases, 10,492 tracks, 205 personnel rows.
-- `python -m pytest`: 235 passed, 1 failed. The failure,
+- `python -m pytest`: 272 passed, 1 failed. The failure,
   `tests/test_evaluations.py::test_evaluate_cli_exits_non_zero_when_a_case_fails`,
   needs `DEADBOT_DATABASE_URL` and fails identically on a clean tree.
 - `tests/test_normalize_musicbrainz_studio_releases.py` pins the two behaviours
