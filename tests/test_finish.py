@@ -853,6 +853,7 @@ def test_album_unit_offers_the_record_as_a_listening_action():
     payload = store.album_context(store.resolve_release("release-american-beauty"))
     block, _ = composition._album_unit(payload, store)
     assert all(action.is_official for action in block.listen)
+    assert block.listen[0].label == "Listen to American Beauty"
 
 
 def test_song_overview_shows_the_records_that_held_the_song():

@@ -761,7 +761,7 @@ def _album_unit(
     if isinstance(album_url, str) and album_url:
         listen.append(
             ListenAction(
-                label=f"Hear {release.get('title') or 'the record'}",
+                label=f"Listen to {release.get('title') or 'the record'}",
                 url=album_url,
                 provider=_provider_for(album_url),
                 is_official=True,

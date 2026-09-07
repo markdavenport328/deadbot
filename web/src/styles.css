@@ -202,15 +202,18 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .setlist-section li { padding: 0.2rem 0 0.2rem 0.2rem; }
 .setlist-section li::marker { color: #7f9582; }
 .setlist-section li .song-link, .setlist-section li > span:first-child { color: #f1efdf; font-size: 0.95rem; font-weight: 500; }
-.album-tracks { margin: var(--space-part) 0 0; padding-left: 1.45rem; color: #aebbac; }
+.album-tracks-section, .album-credits, .song-albums-section { margin-top: var(--space-part); }
+.album-tracks-section .fact-label, .album-credits .fact-label, .song-albums-section .fact-label { margin: 0 0 var(--space-identity); }
+.album-tracks { margin: 0; padding-left: 1.45rem; color: #aebbac; }
 .album-tracks li { padding: 0.2rem 0 0.2rem 0.2rem; }
 .album-tracks li::marker { color: #7f9582; }
 /* Tracks stay list items so the ol's own numbering survives, as setlist songs do. */
 .album-track { display: list-item; }
 .album-track.highlighted .listening-label > span:first-child, .album-track.highlighted > span:first-child { color: #f7e7b5; font-weight: 700; }
-.album-personnel { margin: var(--space-part) 0 0; padding: 0; list-style: none; }
+.album-personnel { margin: 0; padding: 0; list-style: none; }
 .album-personnel li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
-.song-albums { margin: var(--space-part) 0 0; padding: 0; list-style: none; }
+.album-personnel li span, .song-albums li span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
+.song-albums { margin: 0; padding: 0; list-style: none; }
 .song-albums li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .media-card { grid-column: span 12; }
 .media-frame { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: 0.45rem; margin: 1rem 0; }

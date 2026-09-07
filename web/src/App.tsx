@@ -355,28 +355,37 @@ function AlbumUnit({
         <RoleChip role={block.role} />
       </header>
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
-      <ol className="album-tracks">
-        {block.tracks.map((track) => (
-          <li
-            key={track.track_number}
-            className={track.highlighted ? "album-track highlighted" : "album-track"}
-            value={track.track_number}
-          >
-            <ListeningLabel title={track.title} url={track.listen_url} />
-            {track.highlighted && <span className="highlight-mark" title="A performance worth your attention" aria-label="Highlighted">★</span>}
-          </li>
-        ))}
-      </ol>
-      {block.personnel.length > 0 && (
-        <ul className="album-personnel">
-          {block.personnel.map((credit) => (
-            <li key={`${credit.person_id}-${credit.instrument}`}>
-              <strong>{credit.name}</strong> — {credit.instrument}
-            </li>
-          ))}
-        </ul>
-      )}
       <ListenActionList actions={block.listen} />
+      {block.tracks.length > 0 && (
+        <section className="album-tracks-section">
+          <p className="fact-label">Tracklist</p>
+          <ol className="album-tracks">
+            {block.tracks.map((track) => (
+              <li
+                key={track.track_number}
+                className={track.highlighted ? "album-track highlighted" : "album-track"}
+                value={track.track_number}
+              >
+                <ListeningLabel title={track.title} url={track.listen_url} />
+                {track.highlighted && <span className="highlight-mark" aria-label="Highlighted track">★</span>}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      {block.personnel.length > 0 && (
+        <section className="album-credits">
+          <p className="fact-label">Personnel and credits</p>
+          <ul className="album-personnel">
+            {block.personnel.map((credit) => (
+              <li key={`${credit.person_id}-${credit.role}-${credit.instrument}`}>
+                <strong>{credit.name}</strong>
+                <span>{[credit.role, credit.instrument].filter(Boolean).join(" · ")}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <UnitSourceList sources={block.sources} />
       {block.follow_up && (
         <p className="unit-follow-up">
@@ -625,14 +634,17 @@ function Block({
             </div>
           )}
           {block.albums.length > 0 ? (
-            <ul className="song-albums">
-              {block.albums.map((album) => (
-                <li key={album.release_id}>
-                  {album.title}
-                  {album.release_date ? ` (${album.release_date.slice(0, 4)})` : ""}
-                </li>
-              ))}
-            </ul>
+            <section className="song-albums-section">
+              <p className="fact-label">On record</p>
+              <ul className="song-albums">
+                {block.albums.map((album) => (
+                  <li key={album.release_id}>
+                    <strong>{album.title}</strong>
+                    <span>{[album.release_type, album.release_date?.slice(0, 4)].filter(Boolean).join(" · ")}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
         </section>
       );
