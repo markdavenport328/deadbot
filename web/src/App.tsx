@@ -95,14 +95,25 @@ function ExternalLink({ href, children, className }: { href: string; children: R
   );
 }
 
-// A song or performance label that plays its recording when the library has
-// one, and is plain text otherwise. The ▶ is the only cue that a link plays.
-function PlayableLabel({ title, url, className = "" }: { title: string; url?: string | null; className?: string }) {
-  if (!url) return <span className={className}>{title}</span>;
+// Listening links open supplied recordings externally; they do not start playback.
+function listeningDestination(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "the recording site";
+  }
+}
+
+function ListeningLabel({ title, url, className = "" }: { title: string; url?: string | null; className?: string }) {
+  if (!url) return <span className={`listening-label ${className}`.trim()}>{title}</span>;
+  const actionLabel = `Listen to ${title} on ${listeningDestination(url)} (opens in a new tab)`;
   return (
-    <a className={`song-link ${className}`.trim()} href={url} target="_blank" rel="noreferrer" title={`Play ${title}`}>
-      <span className="play-mark" aria-hidden="true">▶</span> {title}
-    </a>
+    <span className={`listening-label ${className}`.trim()}>
+      <span>{title}</span>{" "}
+      <a className="song-link listen-cue" href={url} target="_blank" rel="noreferrer" aria-label={actionLabel} title={actionLabel}>
+        Listen <span aria-hidden="true">↗</span>
+      </a>
+    </span>
   );
 }
 
@@ -198,8 +209,16 @@ function ListenActionList({ actions }: { actions: ListenActions }) {
     <ul className="listen-actions" aria-label="Listen">
       {actions.map((action) => (
         <li key={action.url}>
-          <a className={action.is_official ? "listen-action official" : "listen-action"} href={action.url} target="_blank" rel="noreferrer">
-            <span aria-hidden="true">▶</span> {action.label}
+          <a
+            className={action.is_official ? "listen-action official" : "listen-action"}
+            href={action.url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${action.label} on ${listeningDestination(action.url)} (opens in a new tab)`}
+            title={`Opens ${listeningDestination(action.url)} in a new tab`}
+          >
+            <span className="listen-action-label">{action.label}</span>
+            <span aria-hidden="true">↗</span>
           </a>
         </li>
       ))}
@@ -231,7 +250,7 @@ function SetlistSectionList({ sets }: { sets: SetlistSections }) {
           <ol>
             {set.songs.map((song) => (
               <li key={song.performance_id} className={song.highlighted ? "setlist-song highlighted" : "setlist-song"}>
-                <PlayableLabel title={song.title} url={song.listen_url} />
+                <ListeningLabel title={song.title} url={song.listen_url} />
                 {song.highlighted && <span className="highlight-mark" title="A performance worth your attention" aria-label="Highlighted">★</span>}
               </li>
             ))}
@@ -277,13 +296,14 @@ function ShowUnit({
           ))}
         </p>
       )}
+      <ListenActionList actions={unit.listen} />
       {collapsed && highlights.length > 0 && (
         <div className="unit-highlights">
           <p className="fact-label">Listen for</p>
           <ul>
             {highlights.map((song) => (
               <li key={song.performance_id}>
-                <PlayableLabel title={song.title} url={song.listen_url} className="list-item-label" />
+                <ListeningLabel title={song.title} url={song.listen_url} className="list-item-label" />
               </li>
             ))}
           </ul>
@@ -304,7 +324,6 @@ function ShowUnit({
       ) : unit.setlist_note ? (
         <p className="coverage-note">{unit.setlist_note}</p>
       ) : null}
-      <ListenActionList actions={unit.listen} />
       <UnitSourceList sources={unit.sources} />
       {unit.follow_up && (
         <p className="unit-follow-up">
@@ -397,7 +416,7 @@ function Block({
           <ul className="era-performances">
             {block.performances.map((performance) => (
               <li key={performance.performance_id}>
-                <PlayableLabel
+                <ListeningLabel
                   title={`${formatShowDate(performance.show_date)} · ${performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}`}
                   url={performance.listen?.url}
                   className="list-item-label"
@@ -601,7 +620,7 @@ function Block({
           <ul>
             {block.items.map((item) => (
               <li key={item.performance_id}>
-                <PlayableLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
+                <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
                 {(item.set_label || item.position_in_set) && <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>}
               </li>
             ))}
@@ -612,7 +631,7 @@ function Block({
       const endpoint = (label: string, item: typeof block.first) => (
         <div className="performance-endpoint" key={label}>
           <p className="fact-label">{label}</p>
-          <PlayableLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
+          <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
           {(item.set_label || item.position_in_set) && (
             <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>
           )}
@@ -641,7 +660,7 @@ function Block({
             {block.items.map((item) => (
               <li className="comparison-stop" key={item.performance_id}>
                 <p className="comparison-year">{item.year}</p>
-                <PlayableLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
+                <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
                 {(item.set_label || item.position_in_set) && (
                   <span className="comparison-placement">
                     {item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}
@@ -779,10 +798,17 @@ export default function App() {
   const [pendingStartsFresh, setPendingStartsFresh] = useState(false);
   // What Deadbot is doing right now, one line per tool call, newest last.
   const [progress, setProgress] = useState<string[]>([]);
-  const threadEnd = useRef<HTMLDivElement>(null);
+  const threadContainer = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    threadEnd.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    const thread = threadContainer.current;
+    if (!thread) return;
+    // Keep streaming updates inside the conversation's scroll area. Scrolling
+    // an end sentinel into view can move the entire page away from the guide.
+    thread.scrollTo({
+      top: thread.scrollHeight,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"
+    });
   }, [loading, pendingQuestion, response, progress]);
 
   useEffect(() => {
@@ -918,7 +944,7 @@ export default function App() {
             <p>Grateful Dead knowledge, listening, and context</p>
           </header>
 
-          <section className="thread" aria-label="Deadbot conversation">
+          <section className="thread" aria-label="Deadbot conversation" ref={threadContainer}>
             <div className="thread-messages" aria-live="polite">
               {visibleConversation.map((turn, index) => (
                 <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
@@ -960,8 +986,10 @@ export default function App() {
                 />
                 <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
               </div>
+              {response && !loading && (
+                <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
+              )}
             </form>
-            <div ref={threadEnd} />
           </section>
         </aside>
 
@@ -970,7 +998,7 @@ export default function App() {
             <>
               <div className="content-heading">
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
-                <h1>{response.title}</h1>
+                <h1 id="answer-title" tabIndex={-1}>{response.title}</h1>
               </div>
               {response.body_lead && <p className="answer-lead">{renderInline(response.body_lead)}</p>}
               {response.layout.map((section, sectionIndex) => (

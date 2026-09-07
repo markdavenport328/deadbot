@@ -580,7 +580,7 @@ def _show_unit(
 
 
 def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
-    """Play this performance, then hear the whole show."""
+    """Link to this performance, then to the whole show."""
 
     song = context.get("song") if isinstance(context.get("song"), dict) else {}
     title = song.get("title") or "this performance"
@@ -595,7 +595,7 @@ def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
     listen = context.get("listen") if isinstance(context.get("listen"), dict) else {}
     archive_track = listen.get("archive_track_url")
     if isinstance(archive_track, str) and archive_track:
-        add(ListenAction(label=f"Play {title}", url=archive_track, provider="archive"))
+        add(ListenAction(label=f"Listen to {title}", url=archive_track, provider="archive"))
     release_track = listen.get("release_track_url")
     if isinstance(release_track, str) and release_track:
         add(ListenAction(label=f"Hear {title} on the official release", url=release_track, provider=_provider_for(release_track), is_official=True))
@@ -663,7 +663,7 @@ def _era_performance_item(context: dict[str, Any], store: CanonicalStore) -> Era
     show_date = show.get("show_date") or None
     show_label = " — ".join(part for part in [show_date, venue.get("name") if venue else None] if part) or show["show_id"]
     actions = _performance_listen_actions(context)
-    play = next((action for action in actions if action.label.startswith(("Play ", "Hear "))), None)
+    play = next((action for action in actions if action.label.startswith(("Listen to ", "Hear "))), None)
     return EraPerformanceItem(
         performance_id=performance["performance_id"],
         song_id=song.get("song_id", ""),
