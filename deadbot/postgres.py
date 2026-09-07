@@ -161,6 +161,17 @@ class PostgresCanonicalStore(CanonicalStore):
         return connect
 
     def _connection(self) -> DBAPIConnection:
+        # Vercel may reuse the module-level application after FastAPI has run
+        # its lifespan shutdown hook for a prior invocation.  The store owns
+        # DSN/factory connections, so discard that closed connection and open a
+        # fresh one instead of retaining a poisoned warm instance.  An injected
+        # connection remains caller-owned and is never replaced implicitly.
+        if (
+            self._owns_connection
+            and self._connection_instance is not None
+            and bool(getattr(self._connection_instance, "closed", False))
+        ):
+            self._connection_instance = None
         if self._connection_instance is None:
             if self._connection_factory is None:  # defensive; constructor prevents this
                 raise RuntimeError("No PostgreSQL connection is configured")

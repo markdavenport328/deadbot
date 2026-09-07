@@ -445,6 +445,24 @@ def test_factory_is_lazy_and_store_owns_its_connection():
     assert connection.closed is True
 
 
+def test_factory_owned_store_reconnects_after_lifecycle_closure():
+    connections = []
+
+    def factory():
+        connection = Connection()
+        connections.append(connection)
+        return connection
+
+    store = PostgresCanonicalStore(connection_factory=factory, schema="canonical")
+    assert store.one("songs", "song-dark-star") == TABLES["songs"][0]
+    store.close()
+    assert connections[0].closed is True
+
+    assert store.one("songs", "song-ripple") == TABLES["songs"][1]
+    assert len(connections) == 2
+    assert connections[1].closed is False
+
+
 def test_from_dsn_is_lazy():
     store = PostgresStore.from_dsn("postgresql://unused.example/deadbot")
     assert store._connection_instance is None
