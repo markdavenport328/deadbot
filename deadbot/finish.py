@@ -194,6 +194,7 @@ _FOLLOW_UP_DESCRIPTION = (
     "An optional exploratory question the visitor might ask next, in their voice. "
     "Use a relationship or implication discovered in this research: explanation, comparison, history, lore or evidence. "
     "Never ask to hear, listen to, play or open material; the object's listening links already provide that action. "
+    "Use no more than one or two follow-ups across the whole page, and none when no unusually valuable next question emerged. "
     "Do not restate another follow-up on the page."
 )
 
@@ -206,13 +207,13 @@ class ShowUnitRef(_Ref):
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     visible_facets: list[Literal["guests", "listen", "setlist", "sources"]] = Field(
-        default_factory=lambda: ["guests", "listen", "setlist", "sources"],
+        default_factory=list,
         max_length=4,
-        description="The factual facets worth showing for this show. Choose only what helps this answer; identity and your note are always shown.",
+        description="The factual facets worth showing for this show. Select deliberately; related data is not a reason to display it. Identity and your note are always shown.",
     )
     setlist_disclosure: Literal["expanded", "collapsed", "hidden"] = Field(
-        default="expanded",
-        description="How the setlist starts: expanded, collapsed, or hidden. Choose this yourself; use collapsed only when the setlist is useful but not the immediate point.",
+        default="collapsed",
+        description="How a selected setlist starts: expanded only when it is the immediate point, otherwise collapsed or hidden.",
     )
     highlighted_performance_ids: list[str] = Field(
         default_factory=list,
@@ -260,12 +261,20 @@ class EraUnitRef(_Ref):
 
 
 class AlbumUnitRef(_Ref):
-    """One official record as a primary object of this answer."""
+    """One official record as a primary object, with model-selected facets."""
 
     type: Literal["album_unit"]
     release_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
+    visible_facets: list[Literal["listen", "tracklist", "personnel", "sources"]] = Field(
+        default_factory=list,
+        max_length=4,
+        description=(
+            "The record details that materially advance this answer. Select deliberately: tracklist and personnel hydrate the complete available lists, "
+            "so omit them when the record is only context. Identity and your note are always shown."
+        ),
+    )
     highlighted_song_ids: list[str] = Field(default_factory=list, max_length=12)
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
     follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
@@ -317,12 +326,16 @@ class GroupPlan(BaseModel):
     """A model-selected editorial relationship among body items."""
 
     model_config = ConfigDict(extra="forbid")
-    title: str | None = Field(default=None, description="A concise heading that names this group's subject, when it earns one.")
-    lead: str | None = Field(default=None, description="One or two sentences that explain this group's relationship, claim, or shared basis for a reader who starts here.")
+    title: str | None = Field(default=None, description="A concise heading that names this group's subject. Omit it when the page title already does that job.")
+    lead: str | None = Field(default=None, description="A brief relationship, claim, or shared basis that adds to the page lead. Omit it rather than restating the same framing.")
     presentation: Literal["collection", "sequence", "comparison", "argument"] = Field(
         description="collection for peers, sequence for a development or route, comparison for items judged on shared terms, argument for evidence supporting a claim."
     )
-    items: list[BodyItem] = Field(min_length=1, max_length=12, description="The items in the exact reading order you chose.")
+    items: list[BodyItem] = Field(
+        min_length=1,
+        max_length=12,
+        description="Only the items that earn a place in the answer, in exact reading order. Retrieved or related does not mean included.",
+    )
 
 
 class FinishPlan(BaseModel):
@@ -330,17 +343,17 @@ class FinishPlan(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     chat_answer: str = Field(
-        description="The concise standalone answer shown in the conversation. Short and specific; it shares the main body's thesis but does not carry context the body needs. May use markdown links to URLs the tools returned this turn."
+        description="The direct standalone answer shown in the conversation, normally one to three sentences. Lead with the conclusion; include only the qualification needed to make it accurate. May use markdown links to URLs the tools returned this turn."
     )
-    title: str = Field(description="Main-body title that names the central finding for a visitor arriving on the page.")
-    lead: str | None = Field(default=None, description="One or two sentences that establish the central finding for the main-body reader. Markdown links allowed.")
+    title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
+    lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
     mode: ExperienceMode = Field(description="Overall shape of the response.")
     groups: list[GroupPlan] = Field(
         default_factory=list,
         max_length=8,
         description=(
-            "The model-selected groups that make up the standalone expanded answer. Use these for any answer with more than one meaningful item: "
-            "choose collection, sequence, comparison, or argument; write the group title/lead; and put the items in their exact reading order."
+            "The model-selected groups that make up the edited main body. Prefer one group; add another only for a genuinely distinct second movement. "
+            "Choose collection, sequence, comparison, or argument, omit redundant headings/leads, and include only items that materially advance the answer."
         ),
     )
     body: list[BodyItem] = Field(
@@ -350,7 +363,7 @@ class FinishPlan(BaseModel):
             "Legacy flat reading order. Prefer groups for a composed answer. Semantic units declare the meaningful objects of this answer and the server hydrates them: "
             "show_unit (one show with its setlist, guests, listening and your note), show_explorer (several show units, chronological, curated or comparative), "
             "performance_unit (one rendition with its set context and listening), era_unit (a stage you name, with representative performances), "
-            "album_unit (one official record with its tracklist, personnel and listening), "
+            "album_unit (one official record with only the facets you select; full tracklist/personnel are costly and optional), "
             "Editorial blocks you write (narrative, fact_grid, timeline) carry page-level synthesis: the conclusion, patterns across units, disagreements. "
             "Single-dimension components, referenced by IDs you retrieved this turn, are for when one dimension is the answer: show_setlist, recording_list, "
             "performer_list, equipment_list, performance_spine, comparison_strip, performance_list, performance_extremes, song_overview, guest_appearance_list, "
@@ -424,7 +437,10 @@ def _resolve_show_unit(
     show = store.resolve_show(item.show_id)
     if not show:
         return None, []
-    unit_sources, source_refs = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+    selected_facets = frozenset(item.visible_facets)
+    unit_sources, source_refs = composition._unit_sources(
+        item.supporting_sources if "sources" in selected_facets else [], grounded.urls, payloads
+    )
     block, listen_sources = composition._show_unit(
         store.show_context(show),
         store,
@@ -496,13 +512,17 @@ def _resolve_reference(
         release = store.resolve_release(item.release_id)
         if not release:
             return None, []
-        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+        selected_facets = frozenset(item.visible_facets)
+        unit_sources, sources = composition._unit_sources(
+            item.supporting_sources if "sources" in selected_facets else [], grounded.urls, payloads
+        )
         block, listen_sources = composition._album_unit(
             store.album_context(release),
             store,
             role=item.role,
             note=item.note,
             title=item.title,
+            visible_facets=item.visible_facets,
             highlighted_song_ids=item.highlighted_song_ids,
             sources=unit_sources,
             follow_up=item.follow_up,
@@ -737,7 +757,7 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer and the main body are connected, independently understandable reading paths: chat is concise, while groups are the expanded answer. Choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
+            "chat_answer gives the conclusion immediately; the main body adds only the evidence, story, or listening paths needed to understand why it matters. Prefer one purposeful group and one or two exceptional next questions. Choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
             "performance_unit, era_unit, album_unit) with your notes, roles, facets, highlights and sources, plus your own narrative, fact grids or timelines for what "
             "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),

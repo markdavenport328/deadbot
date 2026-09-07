@@ -3,6 +3,7 @@ from pathlib import Path
 
 
 SUITE_PATH = Path(__file__).parents[1] / "evals" / "exploration-v1.json"
+EDITORIAL_SCOPE_PATH = Path(__file__).parents[1] / "evals" / "editorial-scope-v1.json"
 
 
 def test_exploration_evaluation_fixture_has_versioned_two_column_shape():
@@ -31,4 +32,24 @@ def test_exploration_evaluation_fixture_has_versioned_two_column_shape():
         assert case["question"]
         assert case["grounding"]["coverage"]
         assert case["expected"]["mode"]
+        assert case["failure_conditions"]
+
+
+def test_editorial_scope_suite_covers_different_earned_depths():
+    suite = json.loads(EDITORIAL_SCOPE_PATH.read_text(encoding="utf-8"))
+
+    assert suite["suite_id"] == "editorial-scope-and-priority"
+    assert suite["version"] == "v1"
+    cases = {case["id"]: case for case in suite["cases"]}
+    assert set(cases) == {
+        "compact-album-fact",
+        "american-beauty-live-legacy",
+        "eyes-development-earned-depth",
+        "best-shows-differentiated",
+    }
+    assert "complete album tracklist or personnel" in " ".join(cases["american-beauty-live-legacy"]["failure_conditions"])
+    for case in cases.values():
+        assert case["question"]
+        assert case["expected"]["scope"]
+        assert case["expected"]["priority"]
         assert case["failure_conditions"]

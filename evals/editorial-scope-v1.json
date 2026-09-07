@@ -1,0 +1,67 @@
+{
+  "suite_id": "editorial-scope-and-priority",
+  "version": "v1",
+  "mode": "model-response-review",
+  "description": "Representative questions for reviewing whether runtime page assembly answers first, matches scope to intent, distinguishes fact from interpretation, and limits optional exploration.",
+  "review_principle": "After reading the page, the visitor should have the answer, understand why it matters, and see at most one or two worthwhile directions to continue.",
+  "cases": [
+    {
+      "id": "compact-album-fact",
+      "question": "When was American Beauty released?",
+      "expected": {
+        "scope": "A short direct answer; a body item is optional.",
+        "priority": "The release date is the first useful fact.",
+        "optional_paths": "Zero or one only if unusually useful."
+      },
+      "failure_conditions": [
+        "Builds an album survey, tracklist, personnel list, or song history around a simple date question.",
+        "Makes the visitor read page framing before learning the date."
+      ]
+    },
+    {
+      "id": "american-beauty-live-legacy",
+      "question": "What was the live legacy of American Beauty?",
+      "expected": {
+        "scope": "A focused interpretation supported by a small number of decisive repertoire patterns or examples.",
+        "priority": "State the strongest takeaway before counts and examples.",
+        "fact_vs_interpretation": "Treat documented performance relationships as the factual spine and musical or cultural characterization as sourced commentary or synthesis.",
+        "optional_paths": "No more than two specific continuations arising from the answer."
+      },
+      "failure_conditions": [
+        "Displays the complete album tracklist or personnel merely because the album record was retrieved.",
+        "Profiles every track or repeats the thesis across chat, page lead, group lead, grid, and song cards.",
+        "Gives facts, interpretation, and optional exploration equal weight.",
+        "Offers more than two follow-up questions."
+      ]
+    },
+    {
+      "id": "eyes-development-earned-depth",
+      "question": "How did Eyes of the World evolve across the Dead's career?",
+      "expected": {
+        "scope": "A richer page is warranted, organized around a few meaningful stages rather than an exhaustive performance list.",
+        "priority": "Lead with the overall arc, then support it with differentiated stages and a short listening path.",
+        "optional_paths": "One or two deeper comparisons after the arc is clear."
+      },
+      "failure_conditions": [
+        "Treats chronology as an inventory of dates without an argued development.",
+        "Adds performances that do not introduce a distinct stage, contrast, or piece of evidence.",
+        "Opens outward before the development is coherently resolved."
+      ]
+    },
+    {
+      "id": "best-shows-differentiated",
+      "question": "What are considered the Grateful Dead's best shows, and why?",
+      "expected": {
+        "scope": "A selective recommendation page that explains criteria and acknowledged subjectivity.",
+        "priority": "Orient the visitor to the lack of one objective winner, then differentiate a small set of strong candidates.",
+        "fact_vs_interpretation": "Attribute critic, fan, official, and curator judgments rather than presenting reputation as canonical fact.",
+        "optional_paths": "Use listening or follow-up paths that sharpen the distinctions already made."
+      },
+      "failure_conditions": [
+        "Returns every retrieved selection or collapses different kinds of reputation into one ranking.",
+        "Uses component count as a substitute for explaining why the chosen shows differ.",
+        "Lets sources, setlists, or metadata compete visually with the recommendations."
+      ]
+    }
+  ]
+}
