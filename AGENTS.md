@@ -1,5 +1,10 @@
 # Working principles for agents
 
+## Continuing UX work
+
+Read [docs/UX-NEXT-STEPS.md](docs/UX-NEXT-STEPS.md) for the current implementation
+status, repository-folder reconciliation, prioritized remaining work, and validation.
+
 ## Pushing to GitHub
 
 The repository owner's administrator has blocked agents from pushing to

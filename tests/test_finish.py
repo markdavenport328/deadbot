@@ -600,7 +600,7 @@ def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_acti
     assert unit.type == "performance_unit"
     assert unit.song_title and unit.show_date == "1972-08-27" and unit.venue_name == "Old Renaissance Faire Grounds"
     assert unit.previous and unit.next, "a mid-set rendition has neighbours on both sides"
-    assert unit.listen[0].label == f"Play {unit.song_title}"
+    assert unit.listen[0].label == f"Listen to {unit.song_title}"
     assert unit.listen[0].url == context["listen"]["archive_track_url"]
     assert any(action.label == "Hear the full show" for action in unit.listen)
 
@@ -630,7 +630,7 @@ def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
     era = blocks[0]
     assert era.title == "Early Sugarees" and era.span == "1971–72" and era.role == "representative"
     assert [item.performance_id for item in era.performances] == [performance["performance_id"] for performance in with_listen]
-    assert all(item.listen and item.listen.label == "Play Sugaree" for item in era.performances)
+    assert all(item.listen and item.listen.label == "Listen to Sugaree" for item in era.performances)
     assert all(item.show_date and item.show_label for item in era.performances)
 
 
