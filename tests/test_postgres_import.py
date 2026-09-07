@@ -335,14 +335,14 @@ def test_release_personnel_spec_follows_show_performers_and_loads_after_releases
     assert names.index("release_personnel") > names.index("people")
 
 
-def test_schema_version_is_six_and_has_exactly_one_migration():
-    assert SCHEMA_VERSION == 6
+def test_schema_version_is_five_and_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 5
     migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
-    migrations = sorted(migrations_dir.glob("006_*.sql"))
+    migrations = sorted(migrations_dir.glob("005_*.sql"))
     assert len(migrations) == 1
     sql = migrations[0].read_text(encoding="utf-8")
-    assert "ALTER TABLE official_releases" in sql
-    assert "release_date_precision" in sql
+    assert "ALTER TABLE official_release_tracks" in sql
+    assert "CREATE TABLE release_personnel" in sql
     assert "schema_version" in sql
 
 
