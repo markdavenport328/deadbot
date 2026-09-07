@@ -65,6 +65,19 @@ values, dates, numbers, and booleans before opening the transaction; PostgreSQL
 then enforces ranges, uniqueness, foreign keys, and cross-show rules before
 commit. CSV empty fields become SQL `NULL` only for nullable columns.
 
+This is the load order for importing already-generated CSVs into PostgreSQL.
+Regenerating `official_release_tracks.csv` itself from raw sources has a
+separate, earlier ordering that this list does not cover: run
+`scripts/normalize_musicbrainz_live_releases.py`, then
+`scripts/normalize_musicbrainz_studio_releases.py`, then
+`scripts/normalize_release_track_songs.py` last. The live normalizer rewrites
+every row it owns from raw data on each run and never sets `song_id` itself, so
+if it runs after the song_id backfill, the backfilled column is silently wiped
+back to blank on every live track. The round trip is exact — rerunning the
+backfill restores the same values — so no data is lost, but the ordering is a
+real dependency, not a suggestion. See
+`docs/collection-status-studio-releases.md` for the counts this affects.
+
 ## Enrichment and observations
 
 The schema also provides normalized operational tables for the next collection layers. They do not yet have canonical CSV files:
