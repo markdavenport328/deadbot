@@ -468,12 +468,12 @@ def _show_listen_actions(
     store: CanonicalStore,
     preferred_recording_id: str | None,
 ) -> tuple[list[ListenAction], list[SourceReference]]:
-    """Listening actions that belong to a show: a chosen recording, a stream, a release.
+    """Relevant listening actions that belong to a show.
 
     The composer may name a preferred recording; when it belongs to the show it
-    leads. Otherwise the show's stored stream and archive listing lead, and an
-    official release closes the list. Nothing here is chosen by keyword: the
-    store's own link rows decide what exists.
+    leads. Otherwise the show's stored stream leads, and an official release
+    follows. A generic recording index is source inventory rather than an
+    editorial listening path, so it is not promoted here.
     """
 
     show = payload.get("show")
@@ -518,9 +518,6 @@ def _show_listen_actions(
         if isinstance(url, str) and url:
             add(ListenAction(label=f"Hear it on {release.get('title') or 'the official release'}", url=url, provider=_provider_for(url), is_official=True))
             break
-    listing = by_type.get("recording-index")
-    if listing:
-        add(ListenAction(label="All recordings on the Internet Archive", url=listing["url"], provider=_provider_for(listing["url"], listing.get("platform"))))
     video = by_type.get("full-show-video")
     if video:
         add(ListenAction(label="Watch the show", url=video["url"], provider=_provider_for(video["url"], video.get("platform"))))
@@ -604,7 +601,7 @@ def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
     if isinstance(release_track, str) and release_track:
         add(ListenAction(label=f"Hear {title} on the official release", url=release_track, provider=_provider_for(release_track), is_official=True))
     show_links = context.get("show_links") if isinstance(context.get("show_links"), list) else []
-    for link_type, label in (("streaming-show-page", "Hear the full show"), ("recording-index", "All recordings of the show")):
+    for link_type, label in (("streaming-show-page", "Hear the full show"),):
         for link in show_links:
             if isinstance(link, dict) and link.get("link_type") == link_type and link.get("url"):
                 add(ListenAction(label=label, url=link["url"], provider=_provider_for(link["url"], link.get("platform"))))

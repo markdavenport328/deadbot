@@ -87,10 +87,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* Listening navigates to a recording; asking starts a conversation turn. */
 .listening-label { min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
 .listening-label.list-item-label { display: inline; }
-.listen-cue { display: inline-block; margin-left: var(--space-identity); font-size: 0.82rem; font-weight: 500; white-space: nowrap; }
 .song-link { color: #f1efdf; text-decoration: none; }
 .song-link:hover, .song-link:focus-visible { color: #f7e7b5; text-decoration: underline; text-underline-offset: 0.16em; }
-.listen-cue.song-link { color: #f1c96a; }
+.play-mark { display: inline-block; margin-right: 0.4rem; color: #e7b94e; font-size: 0.62em; transform: translateY(-0.08em); }
 .view-answer-link { display: none; }
 #answer-title { scroll-margin-top: var(--space-content); }
 .details { margin: 1rem 0 0; padding: 0; color: #d6ddcf; list-style: none; }
@@ -167,7 +166,7 @@ details.unit-setlist > summary::-webkit-details-marker { display: none; }
 details.unit-setlist > summary::before { content: "▸"; display: inline-block; width: 1em; color: #7f9582; transition: transform 120ms ease; }
 details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .setlist-song { display: list-item; }
-.setlist-song.highlighted .listening-label > span:first-child, .setlist-song.highlighted > span:first-child { color: #f7e7b5; font-weight: 700; }
+.setlist-song.highlighted .listening-label, .setlist-song.highlighted > .listening-label { color: #f7e7b5; font-weight: 700; }
 .highlight-mark { color: #e7b94e; font-size: 0.78rem; }
 .listen-actions { display: flex; flex-wrap: wrap; gap: 0.5rem 0.6rem; margin: var(--space-part) 0 0; padding: 0; list-style: none; }
 .listen-action { display: inline-flex; align-items: center; gap: 0.4rem; border: 1px solid #506757; border-radius: 999px; background: rgba(29, 48, 36, 0.82); color: #f1efdf; font-size: 0.86rem; font-weight: 600; padding: 0.45rem 0.85rem; text-decoration: none; }
@@ -209,7 +208,7 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .album-tracks li::marker { color: #7f9582; }
 /* Tracks stay list items so the ol's own numbering survives, as setlist songs do. */
 .album-track { display: list-item; }
-.album-track.highlighted .listening-label > span:first-child, .album-track.highlighted > span:first-child { color: #f7e7b5; font-weight: 700; }
+.album-track.highlighted .listening-label, .album-track.highlighted > .listening-label { color: #f7e7b5; font-weight: 700; }
 .album-personnel { margin: 0; padding: 0; list-style: none; }
 .album-personnel li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .album-personnel li span, .song-albums li span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
@@ -268,7 +267,7 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 }
 
 @media (pointer: coarse) {
-  .listen-cue { padding: 0.65rem 0.25rem; }
+  .song-link { padding: 0.35rem 0; }
   .listen-action, .ask-chip, details.unit-setlist > summary, .view-answer-link { min-height: 44px; }
   details.unit-setlist > summary { padding: 0.75rem 0; }
 }

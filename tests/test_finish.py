@@ -545,6 +545,14 @@ def test_show_context_carries_per_performance_listening_paths():
     assert all(performance["listen"]["archive_track_url"].startswith("https://archive.org/") for performance in with_listen)
 
 
+def test_branford_debut_and_final_show_have_a_track_link_for_every_performance():
+    store = CanonicalStore()
+    for show_date in ("1990-03-29", "1994-12-16"):
+        payload = store.show_context(store.resolve_show(show_date))
+        assert len(payload["performances"]) == 17
+        assert all(performance.get("listen", {}).get("archive_track_url") for performance in payload["performances"])
+
+
 def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
@@ -587,6 +595,7 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     assert unit.listen[0].label.startswith("Listen to the show")
     assert unit.listen[0].url == next(row["source_url"] for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row["recording_id"] == preferred)
     assert any(action.is_official for action in unit.listen)
+    assert not any("all recordings" in action.label.casefold() for action in unit.listen)
     # Only the grounded source survives, named from the payload that returned it.
     assert [source.url for source in unit.sources] == [good_url]
     assert unit.sources[0].label == payload["resources"][0]["title"]
@@ -640,6 +649,13 @@ def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_acti
     assert unit.listen[0].label == f"Listen to {unit.song_title}"
     assert unit.listen[0].url == context["listen"]["archive_track_url"]
     assert any(action.label == "Hear the full show" for action in unit.listen)
+    assert not any("all recordings" in action.label.casefold() for action in unit.listen)
+
+
+def test_follow_up_contract_reserves_ask_for_exploration():
+    description = finish.ShowUnitRef.model_fields["follow_up"].description or ""
+    assert "Never ask to hear, listen to, play or open material" in description
+    assert "explanation, comparison, history, lore or evidence" in description
 
 
 def test_resolve_body_hydrates_an_era_unit_from_representative_performances():

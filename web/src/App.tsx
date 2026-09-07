@@ -8,15 +8,17 @@ type UnitSources = ShowUnitBlock["sources"];
 // Roles are the composer's interpretive relationships; these labels are how
 // the page names them. The composer never chooses styling.
 const roleLabels: Record<string, string> = {
-  anchor: "Start here",
   supporting: "Supporting",
   contrast: "Contrast",
   turning_point: "Turning point",
   outlier: "Outlier",
-  culmination: "Culmination",
   overlooked: "Overlooked",
   representative: "Representative"
 };
+
+// Anchor and culmination still guide emphasis and disclosure, but their
+// position already communicates their role. Naming them adds redundant UI.
+const silentRoles = new Set(["anchor", "culmination"]);
 
 const organizationLabels: Record<string, string> = {
   chronological: "In order",
@@ -108,12 +110,17 @@ function ListeningLabel({ title, url, className = "" }: { title: string; url?: s
   if (!url) return <span className={`listening-label ${className}`.trim()}>{title}</span>;
   const actionLabel = `Listen to ${title} on ${listeningDestination(url)} (opens in a new tab)`;
   return (
-    <span className={`listening-label ${className}`.trim()}>
-      <span>{title}</span>{" "}
-      <a className="song-link listen-cue" href={url} target="_blank" rel="noreferrer" aria-label={actionLabel} title={actionLabel}>
-        Listen <span aria-hidden="true">↗</span>
-      </a>
-    </span>
+    <a
+      className={`listening-label song-link ${className}`.trim()}
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={actionLabel}
+      title={actionLabel}
+    >
+      <span className="play-mark" aria-hidden="true">▶</span>
+      <span>{title}</span>
+    </a>
   );
 }
 
@@ -199,7 +206,7 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
 }
 
 function RoleChip({ role }: { role?: string | null }) {
-  if (!role) return null;
+  if (!role || silentRoles.has(role)) return null;
   return <span className={`role-chip role-${role}`}>{roleLabels[role] ?? role.replaceAll("_", " ")}</span>;
 }
 

@@ -562,14 +562,14 @@
         "performance_count": 17,
         "performer_assignment_count": 13,
         "recording_count": 29,
-        "recording_mapped_performance_count": 0,
+        "recording_mapped_performance_count": 17,
         "direct_context_resource_count": 3,
         "official_release_count": 3,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings"
+        "deep_slice_regression_control"
       ]
     },
     {
