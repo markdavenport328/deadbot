@@ -34,6 +34,13 @@ carry both, one, or neither — an intro, tuning or banter segment carries
 neither. `release_personnel` records one row per person's role-and-instrument
 credit on a release, shaped like `show_performers`.
 
+Schema version 6 widens `official_releases.release_date` from `DATE` to
+`TEXT`. MusicBrainz sometimes knows only a year (`"1972"`) or a year-month
+(`"1972-05"`) for a release, which a SQL date column cannot hold without
+inventing a day; `release_date` now stores exactly what is known, at whatever
+precision that is. ISO 8601 date strings of mixed precision still sort and
+compare correctly as plain text, so nothing else about the column changes.
+
 Load canonical files in foreign-key dependency order:
 
 1. `people.csv`

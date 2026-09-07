@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (5);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (6);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -262,7 +262,13 @@ CREATE TABLE official_releases (
     release_id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     artist_name TEXT,
-    release_date DATE,
+    -- Text, not DATE: MusicBrainz sometimes knows only a year ("1972") or a
+    -- year-month ("1972-05"), and a SQL date column cannot hold a partial
+    -- value without inventing a day. release_date stores exactly what is
+    -- known, at whatever precision that is; a full day is a plain ISO date
+    -- ("1970-11-01"). ISO 8601 strings of any of these precisions still sort
+    -- and compare correctly as plain text.
+    release_date TEXT,
     release_type TEXT,
     spotify_album_url TEXT,
     source_url TEXT NOT NULL,
