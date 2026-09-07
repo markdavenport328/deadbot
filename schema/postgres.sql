@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (5);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (6);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -263,11 +263,13 @@ CREATE TABLE official_releases (
     title TEXT NOT NULL,
     artist_name TEXT,
     release_date DATE,
+    release_date_precision TEXT,
     release_type TEXT,
     spotify_album_url TEXT,
     source_url TEXT NOT NULL,
     notes TEXT,
-    CHECK (release_type IN ('studio', 'live', 'compilation', 'single'))
+    CHECK (release_type IN ('studio', 'live', 'compilation', 'single')),
+    CHECK (release_date_precision IN ('day', 'month', 'year'))
 );
 
 CREATE TABLE official_release_tracks (

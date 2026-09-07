@@ -34,6 +34,14 @@ carry both, one, or neither — an intro, tuning or banter segment carries
 neither. `release_personnel` records one row per person's role-and-instrument
 credit on a release, shaped like `show_performers`.
 
+Schema version 6 adds `release_date_precision` to `official_releases`,
+constrained to `day`, `month` or `year` (nullable). `official_releases.release_date`
+is a SQL `date`, so a MusicBrainz release group that gives only a year or a
+year-month cannot be stored as-is; `release_date` now holds the earliest date
+consistent with what MusicBrainz knows (the first of the month, or January 1
+for a year alone) and `release_date_precision` records how much of that date
+is real. A release with no date at all leaves both columns null.
+
 Load canonical files in foreign-key dependency order:
 
 1. `people.csv`
