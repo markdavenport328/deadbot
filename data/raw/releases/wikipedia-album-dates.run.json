@@ -1,0 +1,385 @@
+{
+ "albums_in_scope": 25,
+ "fetched": [
+  "release-17-pine-avenue",
+  "release-ace",
+  "release-before-time-began",
+  "release-brujo",
+  "release-cats-under-the-stars",
+  "release-compliments-of-garcia",
+  "release-feelin-all-right",
+  "release-gypsy-cowboy",
+  "release-heaven-help-the-fool",
+  "release-hooteroll",
+  "release-jerry-garcia-david-grisman",
+  "release-keep-on-keepin-on",
+  "release-kingfish-1976",
+  "release-kingfish-1985",
+  "release-marin-county-line",
+  "release-midnight-moonlight",
+  "release-new-riders",
+  "release-new-riders-of-the-purple-sage",
+  "release-oh-what-a-mighty-time",
+  "release-powerglide",
+  "release-reflections",
+  "release-run-for-the-roses",
+  "release-the-adventures-of-panama-red",
+  "release-trident",
+  "release-who-are-those-guys"
+ ],
+ "held": [],
+ "total_requests": 50,
+ "completed_at": "2026-09-07T02:43:12Z",
+ "request_log": [
+  {
+   "step": "search",
+   "release_id": "release-17-pine-avenue",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=17+Pine+Avenue+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:00Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-17-pine-avenue",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=17+Pine+Avenue&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:01Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-ace",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Ace+Bob+Weir+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:02Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-ace",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Ace+%28Bob+Weir+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:04Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-before-time-began",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Before+Time+Began+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:06Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-before-time-began",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Before+Time+Began&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:07Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-brujo",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Brujo+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:09Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-brujo",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Brujo&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:10Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-cats-under-the-stars",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Cats+Under+the+Stars+Jerry+Garcia+Band+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:12Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-cats-under-the-stars",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Cats+Under+the+Stars&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:13Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-compliments-of-garcia",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Compliments+of+Garcia+Jerry+Garcia+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:39:15Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-compliments-of-garcia",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Garcia+%281974+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:00Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-feelin-all-right",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Feelin%27+All+Right+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:02Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-feelin-all-right",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Feelin%27+All+Right&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:03Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-gypsy-cowboy",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Gypsy+Cowboy+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:05Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-gypsy-cowboy",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Gypsy+Cowboy&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:06Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-heaven-help-the-fool",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Heaven+Help+the+Fool+Bob+Weir+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:08Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-heaven-help-the-fool",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Heaven+Help+the+Fool&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:09Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-hooteroll",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Hooteroll%3F+Jerry+Garcia+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:11Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-hooteroll",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Hooteroll%3F&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:12Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-jerry-garcia-david-grisman",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Jerry+Garcia+%2F+David+Grisman+Jerry+Garcia+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:40:14Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-jerry-garcia-david-grisman",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Jerry+Garcia+%2F+David+Grisman&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:00Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-keep-on-keepin-on",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Keep+On+Keepin%E2%80%99+On+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:02Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-keep-on-keepin-on",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Keep+On+Keepin%27+On+%28New+Riders+of+the+Purple+Sage+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:03Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-kingfish-1976",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Kingfish+Kingfish+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:05Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-kingfish-1976",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Kingfish+%281976+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:06Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-kingfish-1985",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Kingfish+Kingfish+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:08Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-kingfish-1985",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Kingfish+%281985+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:09Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-marin-county-line",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Marin+County+Line+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:11Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-marin-county-line",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Marin+County+Line&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:12Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-midnight-moonlight",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Midnight+Moonlight+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:41:14Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-midnight-moonlight",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Midnight+Moonlight&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:00Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-new-riders",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=New+Riders+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:02Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-new-riders",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=New+Riders+%28album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:03Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-new-riders-of-the-purple-sage",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=New+Riders+of+the+Purple+Sage+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:05Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-new-riders-of-the-purple-sage",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=New+Riders+of+the+Purple+Sage+%28album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:06Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-oh-what-a-mighty-time",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Oh%2C+What+a+Mighty+Time+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:08Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-oh-what-a-mighty-time",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Oh%2C+What+a+Mighty+Time&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:09Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-powerglide",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Powerglide+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:11Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-powerglide",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Powerglide+%28album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:12Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-reflections",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Reflections+Jerry+Garcia+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:42:14Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-reflections",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Reflections+%28Jerry+Garcia+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:00Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-run-for-the-roses",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Run+for+the+Roses+Jerry+Garcia+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:02Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-run-for-the-roses",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Run+for+the+Roses+%28album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:03Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-the-adventures-of-panama-red",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=The+Adventures+of+Panama+Red+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:05Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-the-adventures-of-panama-red",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=The+Adventures+of+Panama+Red&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:06Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-trident",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Trident+Kingfish+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:08Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-trident",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Trident+%28Kingfish+album%29&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:09Z"
+  },
+  {
+   "step": "search",
+   "release_id": "release-who-are-those-guys",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=Who+Are+Those+Guys%3F+New+Riders+of+the+Purple+Sage+album&srlimit=15&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:11Z"
+  },
+  {
+   "step": "revisions",
+   "release_id": "release-who-are-those-guys",
+   "url": "https://en.wikipedia.org/w/api.php?action=query&prop=revisions&titles=Who+Are+Those+Guys%3F&rvprop=content%7Cids&rvslots=main&format=json",
+   "http_status": 200,
+   "at": "2026-09-07T02:43:12Z"
+  }
+ ]
+}

@@ -229,3 +229,7 @@ statement that the album is missing from Spotify.
    an alias of `Drums`. 33 of the 40 `Rhythm Devils` tracks map to a canonical
    `Drums` performance; the remaining 7 sit on releases whose show attribution
    or alignment is still held for the reasons above.
+
+The studio-release MusicBrainz pass (release_type `studio`) is documented
+separately in `docs/collection-status-studio-releases.md`.
+

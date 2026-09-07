@@ -1,0 +1,753 @@
+{
+ "artists": [
+  {
+   "id": "6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6",
+   "name": "Grateful Dead",
+   "score": 100,
+   "type": "Group",
+   "disambiguation": "",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Grateful+Dead%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:19:39Z"
+  },
+  {
+   "id": "1ecff755-607d-4130-9a8a-8873f27e5de5",
+   "name": "Jerry Garcia",
+   "score": 100,
+   "type": "Person",
+   "disambiguation": "guitarist / vocalist in Grateful Dead",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Jerry+Garcia%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:31:13Z"
+  },
+  {
+   "id": "c8a63580-9e6b-4852-bf93-c09760035e76",
+   "name": "Bob Weir",
+   "score": 100,
+   "type": "Person",
+   "disambiguation": "",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Bob+Weir%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:31:50Z"
+  },
+  {
+   "id": "64c8fe79-1f93-483f-aace-b6a6e379e7d2",
+   "name": "New Riders of the Purple Sage",
+   "score": 100,
+   "type": "Group",
+   "disambiguation": "",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22New+Riders+of+the+Purple+Sage%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:32:18Z"
+  },
+  {
+   "id": "e3a2d328-2dbb-45d7-b9b5-548c7804f04f",
+   "name": "Old & In the Way",
+   "score": 100,
+   "type": "Group",
+   "disambiguation": "",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Old+%26+In+the+Way%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:32:30Z"
+  },
+  {
+   "id": "b6196f87-0c76-483a-b694-1243362e130e",
+   "name": "Kingfish",
+   "score": 100,
+   "type": "Group",
+   "disambiguation": "American rock band",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Kingfish%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:32:56Z"
+  },
+  {
+   "id": "3f7a73e5-cb7f-4488-bd7e-f5e26c87fe1b",
+   "name": "Jerry Garcia Band",
+   "score": 100,
+   "type": "Group",
+   "disambiguation": "",
+   "search_url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Jerry+Garcia+Band%22&limit=5&fmt=json",
+   "retrieved_at": "2026-09-05T20:32:59Z"
+  }
+ ],
+ "release_group_count": 62,
+ "release_count": 482,
+ "release_requests": 73,
+ "total_requests": 97,
+ "completed_at": "2026-09-05T20:33:21Z",
+ "request_log": [
+  {
+   "step": "artist-search",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Grateful+Dead%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:19:39Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:19:49Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=100&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:19:58Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=200&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:08Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=300&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:09Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=400&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:10Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=500&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:19Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=600&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:25Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=700&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:38Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=800&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:20:39Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=900&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:22:56Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&limit=100&offset=1000&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:22:58Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:22:59Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=25&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:00Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=50&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:21Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=75&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:22Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=100&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:23Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=125&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:25Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=150&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:26Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=175&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:27Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=200&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:23:48Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=225&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:24:11Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=250&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:24:12Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=275&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:24:34Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=300&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:24:51Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=317&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:24:56Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=342&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:25:30Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=367&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:25:33Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=378&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:25:34Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=394&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:25:35Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=416&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:19Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=439&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:23Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=458&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:24Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=477&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:25Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=499&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:26Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=500&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:28Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=501&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:29Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=522&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:31Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=541&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:32Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=566&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:26:33Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=583&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:27:18Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=600&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:27:20Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=615&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:12Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=622&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:24Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=633&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:26Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=653&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:38Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=654&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:39Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=667&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:52Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=668&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:53Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=669&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:55Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=685&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:28:56Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=701&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:11Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=721&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:12Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=733&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:13Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=754&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:15Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=771&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:23Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=780&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:36Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=805&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:47Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=820&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:29:49Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=835&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:09Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=850&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:34Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=863&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:36Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=877&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:37Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=887&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:38Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=895&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:39Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=897&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:30:43Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=900&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:03Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=922&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:07Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=947&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:08Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=972&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:09Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Grateful Dead",
+   "url": "https://musicbrainz.org/ws/2/release?artist=6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=997&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:13Z"
+  },
+  {
+   "step": "artist-search",
+   "artist_name": "Jerry Garcia",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Jerry+Garcia%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:13Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Jerry Garcia",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=1ecff755-607d-4130-9a8a-8873f27e5de5&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:15Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia",
+   "url": "https://musicbrainz.org/ws/2/release?artist=1ecff755-607d-4130-9a8a-8873f27e5de5&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:23Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia",
+   "url": "https://musicbrainz.org/ws/2/release?artist=1ecff755-607d-4130-9a8a-8873f27e5de5&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=25&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:31Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia",
+   "url": "https://musicbrainz.org/ws/2/release?artist=1ecff755-607d-4130-9a8a-8873f27e5de5&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=45&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:39Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia",
+   "url": "https://musicbrainz.org/ws/2/release?artist=1ecff755-607d-4130-9a8a-8873f27e5de5&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=68&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:47Z"
+  },
+  {
+   "step": "artist-search",
+   "artist_name": "Bob Weir",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Bob+Weir%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:31:50Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Bob Weir",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=c8a63580-9e6b-4852-bf93-c09760035e76&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:10Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Bob Weir",
+   "url": "https://musicbrainz.org/ws/2/release?artist=c8a63580-9e6b-4852-bf93-c09760035e76&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:11Z"
+  },
+  {
+   "step": "artist-search",
+   "artist_name": "New Riders of the Purple Sage",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22New+Riders+of+the+Purple+Sage%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:18Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "New Riders of the Purple Sage",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=64c8fe79-1f93-483f-aace-b6a6e379e7d2&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:19Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "New Riders of the Purple Sage",
+   "url": "https://musicbrainz.org/ws/2/release?artist=64c8fe79-1f93-483f-aace-b6a6e379e7d2&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:24Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "New Riders of the Purple Sage",
+   "url": "https://musicbrainz.org/ws/2/release?artist=64c8fe79-1f93-483f-aace-b6a6e379e7d2&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=25&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:26Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "New Riders of the Purple Sage",
+   "url": "https://musicbrainz.org/ws/2/release?artist=64c8fe79-1f93-483f-aace-b6a6e379e7d2&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=50&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:27Z"
+  },
+  {
+   "step": "artist-search",
+   "artist_name": "Old & In the Way",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Old+%26+In+the+Way%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:30Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Old & In the Way",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=e3a2d328-2dbb-45d7-b9b5-548c7804f04f&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:38Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Old & In the Way",
+   "url": "https://musicbrainz.org/ws/2/release?artist=e3a2d328-2dbb-45d7-b9b5-548c7804f04f&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:40Z"
+  },
+  {
+   "step": "artist-search",
+   "artist_name": "Kingfish",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Kingfish%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:56Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Kingfish",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=b6196f87-0c76-483a-b694-1243362e130e&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:57Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Kingfish",
+   "url": "https://musicbrainz.org/ws/2/release?artist=b6196f87-0c76-483a-b694-1243362e130e&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:59Z"
+  },
+  {
+   "step": "artist-search",
+   "artist_name": "Jerry Garcia Band",
+   "url": "https://musicbrainz.org/ws/2/artist/?query=artist%3A%22Jerry+Garcia+Band%22&limit=5&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:32:59Z"
+  },
+  {
+   "step": "release-group-browse",
+   "artist_name": "Jerry Garcia Band",
+   "url": "https://musicbrainz.org/ws/2/release-group?artist=3f7a73e5-cb7f-4488-bd7e-f5e26c87fe1b&type=album&limit=100&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:33:00Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia Band",
+   "url": "https://musicbrainz.org/ws/2/release?artist=3f7a73e5-cb7f-4488-bd7e-f5e26c87fe1b&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=0&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:33:09Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia Band",
+   "url": "https://musicbrainz.org/ws/2/release?artist=3f7a73e5-cb7f-4488-bd7e-f5e26c87fe1b&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=25&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:33:19Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia Band",
+   "url": "https://musicbrainz.org/ws/2/release?artist=3f7a73e5-cb7f-4488-bd7e-f5e26c87fe1b&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=47&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:33:20Z"
+  },
+  {
+   "step": "release-browse",
+   "artist_name": "Jerry Garcia Band",
+   "url": "https://musicbrainz.org/ws/2/release?artist=3f7a73e5-cb7f-4488-bd7e-f5e26c87fe1b&type=album&status=official&inc=recordings+url-rels+release-groups+artist-credits&limit=25&offset=72&fmt=json",
+   "http_status": 200,
+   "at": "2026-09-05T20:33:21Z"
+  }
+ ]
+}

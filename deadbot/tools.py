@@ -305,7 +305,7 @@ def build_tools(
 
     @tool
     def search_entities(query: str) -> str:
-        """Find canonical songs, shows, people, equipment, and venues matching a user phrase.
+        """Find canonical songs, shows, people, equipment, venues, and official releases matching a user phrase.
 
         Use this before other entity tools when an ID is unknown or ambiguous.
         The people search covers the whole canonical people table, including
@@ -352,6 +352,10 @@ def build_tools(
         for phrase in phrases:
             for item in store.matching_rows("equipment", phrase, ("name", "manufacturer", "model"))[:10]:
                 add("equipment", item["equipment_id"], item["name"])
+
+        for phrase in phrases:
+            for row in store.matching_rows("official_releases", phrase, ("title",))[:10]:
+                add("release", row["release_id"], row["title"])
 
         for show in store.search_shows(phrases, limit=20):
             add(
@@ -541,11 +545,28 @@ def build_tools(
         context. Treat source notes and interviews as attributed material. Each
         performance may carry a `listen` object with an archive track URL and,
         when mapped, a release track URL, ready to offer as a listening link.
+        The `releases` list names every official record carrying this song,
+        earliest first, with its date and track number.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
         return _json(store.song_context(song))
+
+    @tool
+    def get_album(release_id_or_title: str) -> str:
+        """Get one official release: its tracklist, credited personnel, and links.
+
+        Covers studio albums and official live releases alike. A track names a
+        canonical song for a studio release and a canonical performance for a
+        live one; an intro, tuning or banter segment names neither. Use the
+        release date against a song's performance history when the question is
+        about how a song lived on stage before or after the record.
+        """
+        release = store.resolve_release(release_id_or_title)
+        if not release:
+            return _json({"error": "Release not found or ambiguous", "query": release_id_or_title})
+        return _json(store.album_context(release))
 
     @tool
     def get_song_performance_profile(song_id_or_title: str) -> str:
@@ -1107,6 +1128,7 @@ def build_tools(
         search_guest_musicians,
         search_stored_resources,
         get_song,
+        get_album,
         get_song_performance_profile,
         get_deadnet_song_context,
         get_deadcast_metadata,

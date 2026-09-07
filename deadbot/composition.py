@@ -18,6 +18,9 @@ from urllib.parse import parse_qs, urlparse
 
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
+    AlbumCreditItem,
+    AlbumTrackItem,
+    AlbumUnitBlock,
     ArrangementBlock,
     ArrangementSearchBlock,
     ArrangementSearchItem,
@@ -50,6 +53,7 @@ from deadbot.experience import (
     ShowSetlistBlock,
     ShowUnitBlock,
     SongOverviewBlock,
+    SongReleaseItem,
     SourceReference,
     UnitRole,
     UnitSource,
@@ -702,6 +706,86 @@ def _era_unit(
     )
 
 
+def _album_unit(
+    payload: dict[str, Any],
+    store: CanonicalStore,
+    *,
+    role: UnitRole | None = None,
+    note: str | None = None,
+    title: str | None = None,
+    highlighted_song_ids: list[str] | None = None,
+    sources: list[UnitSource] | None = None,
+    follow_up: str | None = None,
+) -> tuple[AlbumUnitBlock | None, list[SourceReference]]:
+    """Hydrate one album unit from its release payload.
+
+    Highlights are kept only for songs actually on this record, so a slip in
+    the plan cannot mark a song that is not there.
+    """
+
+    release = payload.get("release")
+    if not isinstance(release, dict) or not release.get("release_id"):
+        return None, []
+
+    payload_tracks = payload.get("tracks") if isinstance(payload.get("tracks"), list) else []
+    own_song_ids = {track.get("song_id") for track in payload_tracks if isinstance(track, dict) and track.get("song_id")}
+    highlighted = frozenset(sid for sid in (highlighted_song_ids or []) if sid in own_song_ids)
+
+    tracks = [
+        AlbumTrackItem(
+            track_number=track["track_number"],
+            title=track.get("song_title") or track.get("title") or "",
+            song_id=track.get("song_id"),
+            performance_id=track.get("performance_id"),
+            duration_seconds=track.get("duration_seconds"),
+            highlighted=track.get("song_id") in highlighted,
+            listen_url=track.get("spotify_track_url"),
+        )
+        for track in payload_tracks
+        if isinstance(track, dict) and isinstance(track.get("track_number"), int)
+    ][:30]
+
+    personnel = [
+        AlbumCreditItem(
+            person_id=entry["person_id"],
+            name=entry.get("name") or entry["person_id"],
+            role=entry.get("role") or "performer",
+            instrument=entry.get("instrument") or "",
+        )
+        for entry in (payload.get("personnel") or [])
+        if isinstance(entry, dict) and entry.get("person_id")
+    ][:20]
+
+    listen: list[ListenAction] = []
+    album_url = release.get("spotify_album_url") or release.get("source_url")
+    if isinstance(album_url, str) and album_url:
+        listen.append(
+            ListenAction(
+                label=f"Listen to {release.get('title') or 'the record'}",
+                url=album_url,
+                provider=_provider_for(album_url),
+                is_official=True,
+            )
+        )
+
+    block = AlbumUnitBlock(
+        type="album_unit",
+        release_id=release["release_id"],
+        title=(title or "").strip() or release.get("title") or "Untitled release",
+        artist_name=release.get("artist_name") or None,
+        release_date=release.get("release_date") or None,
+        release_type=release.get("release_type") or "studio",
+        role=role,
+        note=(note or "").strip() or None,
+        tracks=tracks,
+        personnel=personnel,
+        listen=listen,
+        sources=(sources or [])[:4],
+        follow_up=(follow_up or "").strip() or None,
+    )
+    return block, []
+
+
 def _url_index(payloads: list[dict[str, Any]]) -> dict[str, dict[str, str | None]]:
     """Map every URL the tools returned to the best label and source name near it.
 
@@ -961,6 +1045,24 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
         if person and role:
             credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=role))
     performances = context.get("performances") if isinstance(context.get("performances"), list) else []
+    all_albums = [
+        SongReleaseItem(
+            release_id=release["release_id"],
+            title=release.get("title") or release["release_id"],
+            release_date=release.get("release_date"),
+            release_type=release.get("release_type") or "live",
+        )
+        for release in (context.get("releases") or [])
+        if isinstance(release, dict) and release.get("release_id")
+    ]
+    # song_releases (data.py) orders releases earliest-first with undated
+    # releases last, which is correct on its own terms. But truncating that
+    # order to 6 can crowd a studio album out entirely behind live releases
+    # that happen to carry a date. Present studio releases first so the
+    # truncation never hides the studio record a user is most likely after.
+    studio_albums = [album for album in all_albums if album.release_type == "studio"]
+    other_albums = [album for album in all_albums if album.release_type != "studio"]
+    albums = (studio_albums + other_albums)[:6]
     return SongOverviewBlock(
         type="song_overview",
         song_id=song["song_id"],
@@ -969,6 +1071,7 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
         known_performance_count=len(performances),
         credits=credits[:12],
         source_ids=[f"canonical:{song['song_id']}"],
+        albums=albums,
     )
 
 

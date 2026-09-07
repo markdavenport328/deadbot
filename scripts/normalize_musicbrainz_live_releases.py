@@ -28,6 +28,14 @@ Rules (also written up in ``docs/collection-status-official-releases.md``):
 * Rows produced by this script carry ``MusicBrainz release <mbid>`` in notes;
   reruns replace only those rows and reuse the release_id previously assigned
   to the same release or release-group MBID.  Hand-curated rows are preserved.
+* Row ownership is decided by ``owns_row`` below, which requires the MBID
+  marker *and* the absence of the studio pass's own marker.  The MBID marker
+  alone cannot say who owns a row: ``normalize_musicbrainz_studio_releases.py``
+  writes ``MusicBrainz release <mbid>`` for provenance too, so a filter that
+  looked only for the MBID would make whichever pass ran second delete every
+  row the other one wrote.  The two passes must be runnable in either order,
+  repeatedly, and each must leave the other's rows (and the hand-curated Veneta
+  rows) exactly as they are.
 """
 
 from __future__ import annotations
@@ -52,9 +60,31 @@ RELEASES_CSV = CANONICAL / "official_releases.csv"
 TRACKS_CSV = CANONICAL / "official_release_tracks.csv"
 
 RELEASE_FIELDS = ["release_id", "title", "artist_name", "release_date", "release_type", "spotify_album_url", "source_url", "notes"]
-TRACK_FIELDS = ["release_id", "track_number", "performance_id", "track_title", "duration_seconds", "spotify_track_url", "notes"]
+# song_id was added to official_release_tracks for the studio pass; a live track
+# names its performance and leaves the column blank, but the header check below
+# compares this list to the file, so it has to carry the column.
+TRACK_FIELDS = ["release_id", "track_number", "performance_id", "song_id", "track_title", "duration_seconds", "spotify_track_url", "notes"]
 ARTIST_NAME = "Grateful Dead"
+# Provenance, not ownership: the studio pass stamps this on its rows as well.
 MANAGED_MARKER = "MusicBrainz release "
+# The studio pass's own marker, kept in step with STUDIO_MARKER in
+# scripts/normalize_musicbrainz_studio_releases.py.  A row carrying it belongs
+# to that pass and is never rewritten or dropped here.
+STUDIO_MARKER = "studio release-group pass"
+
+
+def owns_row(row: dict) -> bool:
+    """True when this pass wrote the row and a rerun may replace it.
+
+    Ownership needs both halves: the MBID marker (so hand-curated rows such as
+    the Veneta release survive) and the absence of the studio marker (so the
+    studio pass's rows survive).  Track rows follow their release: a release row
+    kept here keeps its tracks, which is why the track filter downstream tests
+    release_id membership rather than notes.
+    """
+
+    notes = row.get("notes", "")
+    return MANAGED_MARKER in notes and STUDIO_MARKER not in notes
 
 MONTHS = "january|february|march|april|may|june|july|august|september|october|november|december"
 DASHES = dict.fromkeys(map(ord, "‐‑‒–—―−"), "-")
@@ -628,8 +658,16 @@ def base_release_id(group: dict, decision: dict) -> str:
 
 
 def previous_ids(rows: list[dict]) -> dict[str, str]:
+    """MBIDs this pass already assigned a release_id to, so ids never renumber.
+
+    Only rows this pass owns are read: a studio row's MBIDs belong to the studio
+    pass's id scheme and must not hand its id to a live release.
+    """
+
     mapping: dict[str, str] = {}
     for row in rows:
+        if not owns_row(row):
+            continue
         for mbid in re.findall(r"(?:MusicBrainz release|release group) ([0-9a-f-]{36})", row.get("notes", "")):
             mapping.setdefault(mbid, row["release_id"])
     return mapping
@@ -681,17 +719,22 @@ def main() -> None:
     track_header, existing_tracks = read_csv(TRACKS_CSV)
     if release_header != RELEASE_FIELDS or track_header != TRACK_FIELDS:
         raise SystemExit("canonical release CSV headers changed; refusing to write")
-    kept_releases = [row for row in existing_releases if MANAGED_MARKER not in row.get("notes", "")]
+    kept_releases = [row for row in existing_releases if not owns_row(row)]
     kept_ids = {row["release_id"] for row in kept_releases}
     kept_tracks = [row for row in existing_tracks if row["release_id"] in kept_ids]
-    curated_urls = {row[column] for row in kept_releases for column in ("spotify_album_url", "source_url") if row.get(column)}
+    # The duplicate-detection heuristics below are about hand-curated rows only.
+    # Studio rows are kept and their ids reserved, but a studio album is not a
+    # curated live release and must not make a live release look like a
+    # duplicate of one.
+    curated_releases = [row for row in kept_releases if STUDIO_MARKER not in row.get("notes", "")]
+    curated_urls = {row[column] for row in curated_releases for column in ("spotify_album_url", "source_url") if row.get(column)}
     # A hand-curated release covers the show(s) its mapped tracks belong to.  A
     # MusicBrainz single-show release for the same show issued in the same year
     # is almost certainly the same product under a different title, so it is
     # held for review instead of being written as a second row.
     performance_show = {row["performance_id"]: show_id for show_id, rows in performances_by_show.items() for row in rows}
     curated_show_years: dict[tuple[str, str], str] = {}
-    for row in kept_releases:
+    for row in curated_releases:
         shows = {performance_show[track["performance_id"]] for track in kept_tracks if track["release_id"] == row["release_id"] and track["performance_id"] in performance_show}
         if len(shows) == 1:
             curated_show_years[(shows.pop(), (row.get("release_date") or "")[:4])] = row["release_id"]
@@ -712,7 +755,7 @@ def main() -> None:
             url = decision["release_row"]["spotify_album_url"]
             if url and url in curated_urls:
                 decision["status"] = "skipped"
-                decision["reason"] = f"already_curated_release:{next(row['release_id'] for row in kept_releases if url in (row.get('spotify_album_url'), row.get('source_url')))}"
+                decision["reason"] = f"already_curated_release:{next(row['release_id'] for row in curated_releases if url in (row.get('spotify_album_url'), row.get('source_url')))}"
             elif not decision["spans_multiple_shows"] and (decision["shows"][0], (group.get("first_release_date") or "")[:4]) in curated_show_years:
                 decision["status"] = "skipped"
                 decision["reason"] = f"possible_duplicate_of_curated_release:{curated_show_years[(decision['shows'][0], (group.get('first_release_date') or '')[:4])]}"

@@ -2,7 +2,7 @@ import json
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from deadbot import finish
+from deadbot import composition, finish
 from deadbot.data import CanonicalStore
 
 
@@ -500,6 +500,43 @@ def test_finish_plan_rejects_an_unknown_role():
         raise AssertionError("roles are a closed vocabulary")
 
 
+def test_a_plan_may_declare_an_album_unit():
+    plan = finish.FinishPlan(
+        chat_answer="Truckin' closes American Beauty.",
+        title="American Beauty",
+        mode="listening",
+        body=[{"type": "album_unit", "release_id": "release-american-beauty", "highlighted_song_ids": ["song-truckin"]}],
+    )
+    assert plan.body[0].release_id == "release-american-beauty"
+
+
+def test_an_ungrounded_release_id_is_dropped():
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="x",
+        mode="listening",
+        body=[{"type": "album_unit", "release_id": "release-american-beauty"}],
+    )
+    blocks, _ = finish.resolve_body(
+        plan, finish.GroundedContext(ids=frozenset(), urls=frozenset()), [], CanonicalStore()
+    )
+    assert blocks == []
+
+
+def test_a_grounded_release_id_hydrates_into_an_album_unit():
+    store = CanonicalStore()
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="x",
+        mode="listening",
+        body=[{"type": "album_unit", "release_id": "release-american-beauty", "note": "The turn toward songs."}],
+    )
+    grounded = finish.GroundedContext(ids=frozenset({"release-american-beauty"}), urls=frozenset())
+    blocks, _ = finish.resolve_body(plan, grounded, [], store)
+    assert blocks[0].type == "album_unit"
+    assert blocks[0].note == "The turn toward songs."
+
+
 def test_show_context_carries_per_performance_listening_paths():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
@@ -789,3 +826,51 @@ def test_build_experience_response_substitutes_the_lead_for_a_blank_chat_answer(
     messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
     response = finish.build_experience_response("Hi", "web-1", messages, store)
     assert response.answer == "A short lead."
+
+
+def test_album_unit_hydrates_from_the_release_payload():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, sources = composition._album_unit(payload, store, note="The record that made them a band people bought.")
+
+    assert block.type == "album_unit"
+    assert block.title == "American Beauty"
+    assert block.release_type == "studio"
+    assert [track.track_number for track in block.tracks] == sorted(t.track_number for t in block.tracks)
+
+
+def test_album_unit_keeps_only_highlights_that_are_on_the_record():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store, highlighted_song_ids=["song-truckin", "song-dark-star"])
+
+    highlighted = {track.song_id for track in block.tracks if track.highlighted}
+    assert highlighted == {"song-truckin"}
+
+
+def test_album_unit_offers_the_record_as_a_listening_action():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store)
+    assert all(action.is_official for action in block.listen)
+    assert block.listen[0].label == "Listen to American Beauty"
+
+
+def test_song_overview_shows_the_records_that_held_the_song():
+    store = CanonicalStore()
+    context = store.song_context(store.resolve_song("Truckin'"))
+    block = composition._song_overview(context, store)
+    assert any(album.release_type == "studio" for album in block.albums)
+
+
+def test_song_overview_keeps_a_late_studio_album_ahead_of_the_truncation():
+    """"Where I Come From" (2009-06-02) is the studio album carrying "Let It
+    Grow", but six live releases dated earlier sort ahead of it in
+    song_releases' earliest-first order. _song_overview truncates to 6
+    albums; without prioritizing studio releases, "Where I Come From" falls
+    off the list entirely."""
+
+    store = CanonicalStore()
+    context = store.song_context(store.resolve_song("Let It Grow"))
+    block = composition._song_overview(context, store)
+    assert any(album.title == "Where I Come From" for album in block.albums)

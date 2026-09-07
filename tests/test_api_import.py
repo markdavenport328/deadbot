@@ -30,3 +30,21 @@ def test_app_attribute_is_built_lazily_and_cached(monkeypatch):
 
     assert first is second
     assert built == [1]
+
+
+def test_openapi_publishes_the_album_unit_block():
+    # Build via create_app with an injected store/agent rather than the
+    # module-level ``deadbot.api.app`` singleton: that lazy attribute builds
+    # the production app through ``create_canonical_store``, which requires
+    # DEADBOT_DATABASE_URL. This test only needs the schema, so it follows
+    # scripts/export_openapi.py's pattern (a CSV-backed store, a plain
+    # sentinel agent) to read the OpenAPI schema without a database.
+    from deadbot.api import create_app
+    from deadbot.config import Settings
+    from deadbot.data import CanonicalStore
+
+    app = create_app(settings=Settings(), store=CanonicalStore(), agent=object())
+    schemas = app.openapi()["components"]["schemas"]
+    assert "AlbumUnitBlock" in schemas
+    assert "AlbumTrackItem" in schemas
+    assert "albums" in schemas["SongOverviewBlock"]["properties"]

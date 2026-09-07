@@ -25,6 +25,22 @@ results and an explicit mode: `bootstrap`, `rebuild`, or non-destructive
 events; a merge deliberately does not claim that the operational data exactly
 matches the named snapshot.
 
+Schema version 5 adds studio albums to the release catalog. `official_releases`
+now constrains `release_type` to `studio`, `live`, `compilation` or `single`,
+and `official_release_tracks` carries a nullable `song_id` so a track can name
+its composition. A live track identifies a performance; a studio track has no
+performance, because a performance is a song played at a show. A track may
+carry both, one, or neither — an intro, tuning or banter segment carries
+neither. `release_personnel` records one row per person's role-and-instrument
+credit on a release, shaped like `show_performers`.
+
+Schema version 6 widens `official_releases.release_date` from `DATE` to
+`TEXT`. MusicBrainz sometimes knows only a year (`"1972"`) or a year-month
+(`"1972-05"`) for a release, which a SQL date column cannot hold without
+inventing a day; `release_date` now stores exactly what is known, at whatever
+precision that is. ISO 8601 date strings of mixed precision still sort and
+compare correctly as plain text, so nothing else about the column changes.
+
 Load canonical files in foreign-key dependency order:
 
 1. `people.csv`
@@ -43,17 +59,31 @@ Load canonical files in foreign-key dependency order:
 14. `performance_links.csv`
 15. `official_releases.csv`
 16. `official_release_tracks.csv`
-17. `song_arrangements.csv`
-18. `arrangement_chord_sections.csv`
-19. `recordings.csv`
-20. `performance_recordings.csv`
-21. `show_equipment.csv`
+17. `release_personnel.csv`
+18. `song_arrangements.csv`
+19. `arrangement_chord_sections.csv`
+20. `recordings.csv`
+21. `performance_recordings.csv`
+22. `show_equipment.csv`
 
 `performance_recordings` is checked to ensure a performance is mapped only to
 a recording of the same show. The importer validates CSV formatting, required
 values, dates, numbers, and booleans before opening the transaction; PostgreSQL
 then enforces ranges, uniqueness, foreign keys, and cross-show rules before
 commit. CSV empty fields become SQL `NULL` only for nullable columns.
+
+This is the load order for importing already-generated CSVs into PostgreSQL.
+Regenerating `official_release_tracks.csv` itself from raw sources has a
+separate, earlier ordering that this list does not cover: run
+`scripts/normalize_musicbrainz_live_releases.py`, then
+`scripts/normalize_musicbrainz_studio_releases.py`, then
+`scripts/normalize_release_track_songs.py` last. The live normalizer rewrites
+every row it owns from raw data on each run and never sets `song_id` itself, so
+if it runs after the song_id backfill, the backfilled column is silently wiped
+back to blank on every live track. The round trip is exact — rerunning the
+backfill restores the same values — so no data is lost, but the ordering is a
+real dependency, not a suggestion. See
+`docs/collection-status-studio-releases.md` for the counts this affects.
 
 ## Enrichment and observations
 

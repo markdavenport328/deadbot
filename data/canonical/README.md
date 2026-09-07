@@ -37,6 +37,11 @@ Files began header-only. Canonical rows are added only after a documented normal
 
 For `show_performers.csv`, enter one row per person's role-and-instrument assignment at a show. A performer with multiple instruments or vocal duties therefore has multiple rows with the same show and person IDs.
 
+`release_personnel.csv` follows the same one-row-per-assignment convention as
+`show_performers.csv`. `instrument` is part of the primary key and cannot be
+empty; a credit that names a person and a role but no instrument is held in
+the normalizer's review log rather than entered with a placeholder.
+
 Resources are generic, source-specific references. `resources.csv` holds a link and descriptive metadata; `resource_songs.csv`, `resource_shows.csv`, and `resource_performances.csv` attach it to the entities it addresses. This lets a future model find interviews, reviews, lessons, tabs, and videos for a song, show, or performance before opening the original link. `song_arrangements.csv` records the version, key, and scope that a music resource describes; `arrangement_chord_sections.csv` records its chord progression by section. Do not treat a chart for one recording or transposition as an authoritative chart for every performance.
 
 Lyrics and other protected works follow the same resource boundary: canonical

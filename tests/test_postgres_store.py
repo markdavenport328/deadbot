@@ -200,6 +200,7 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "official_release_track_id": "ort-1",
             "release_id": "release-sunshine-daydream",
             "performance_id": "performance-dark-star",
+            "song_id": "",
             "spotify_track_url": "https://open.spotify.test/track/1",
         },
         # Listed here in raw (non-alphabetical) release_id order on purpose: a
@@ -212,6 +213,7 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "release_id": "release-sunshine-daydream",
             "performance_id": "performance-dark-star-release-only",
             "track_number": "9",
+            "song_id": "",
             "spotify_track_url": "https://open.spotify.test/track/sunshine-dup",
         },
         {
@@ -219,6 +221,7 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "release_id": "release-alpha-sessions",
             "performance_id": "performance-dark-star-release-only",
             "track_number": "1",
+            "song_id": "",
             "spotify_track_url": "https://open.spotify.test/track/alpha",
         },
     ],
@@ -246,12 +249,12 @@ class Cursor:
 
 
 class Connection:
-    def __init__(self):
+    def __init__(self, tables: dict[str, list[dict[str, Any]]] | None = None):
         self.raw = sqlite3.connect(":memory:")
         self.raw.execute("ATTACH DATABASE ':memory:' AS canonical")
         self.statements: list[tuple[str, tuple[Any, ...]]] = []
         self.closed = False
-        for table, rows in TABLES.items():
+        for table, rows in (TABLES if tables is None else tables).items():
             columns = list(dict.fromkeys(key for row in rows for key in row))
             definitions = ", ".join(f'"{column}" TEXT' for column in columns)
             self.raw.execute(f'CREATE TABLE canonical."{table}" ({definitions})')
@@ -289,6 +292,24 @@ def csv_store():
     return result
 
 
+@pytest.fixture(scope="session")
+def real_tables() -> dict[str, list[dict[str, Any]]]:
+    """The actual production canonical CSVs, loaded once per test session.
+
+    Used only by the parity tests that compare against a real CanonicalStore
+    (which reads these same CSVs from disk): the toy ``TABLES`` fixture above
+    has no albums, so it cannot exercise real release/song data such as
+    "American Beauty" or "Truckin'".
+    """
+
+    return CanonicalStore().tables
+
+
+@pytest.fixture
+def real_connection(real_tables):
+    return Connection(real_tables)
+
+
 def test_rows_one_matching_and_resolution_match_csv_behavior(store, csv_store):
     assert store.rows("songs") == csv_store.rows("songs")
     assert store.one("songs", "song-dark-star") == csv_store.one("songs", "song-dark-star")
@@ -307,6 +328,10 @@ def test_rows_one_matching_and_resolution_match_csv_behavior(store, csv_store):
     assert store.resolve_show("show-1972-08-27") == TABLES["shows"][0]
     assert store.resolve_show("1966-10-08") is None
     assert store.show_candidates("1966-10-08") == TABLES["shows"][1:]
+
+
+def test_release_track_order_normalizes_the_typed_column_before_empty_value_handling(store):
+    assert 'CAST("track_number" AS TEXT)' in store._order_clause("official_release_tracks")
 
 
 def test_context_methods_match_existing_domain_projection(store, csv_store):
@@ -348,6 +373,29 @@ def test_context_methods_match_existing_domain_projection(store, csv_store):
     )
     assert store.row_count("shows") == csv_store.row_count("shows")
     assert store.coverage_summary() == csv_store.coverage_summary()
+
+
+def test_song_context_matches_the_csv_store(real_connection):
+    postgres_store = PostgresCanonicalStore(real_connection, schema="canonical")
+    csv_store = CanonicalStore()
+
+    song = csv_store.resolve_song("Truckin'")
+    assert postgres_store.song_context(song)["releases"] == csv_store.song_context(song)["releases"]
+
+
+def test_album_context_matches_the_csv_store(real_connection):
+    postgres_store = PostgresCanonicalStore(real_connection, schema="canonical")
+    csv_store = CanonicalStore()
+
+    release = csv_store.resolve_release("release-american-beauty")
+    assert postgres_store.album_context(release) == csv_store.album_context(release)
+
+
+def test_release_personnel_is_a_known_table_with_ordering(real_connection):
+    store = PostgresCanonicalStore(real_connection, schema="canonical")
+    rows = store.rows("release_personnel")
+    assert isinstance(rows, list)
+    assert rows
 
 
 def test_entity_search_uses_a_bounded_show_venue_query(store, connection):

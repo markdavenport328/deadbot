@@ -8,7 +8,7 @@
     "main_column": "direct answer followed by the most relevant grounded blocks",
     "exploration_column": "optional related blocks, sources, or next steps; may be empty",
     "allowed_regions": ["main", "exploration"],
-    "allowed_block_types": ["entity_card", "recording_list", "resource_list", "comparison_strip", "provenance_note", "gap_state"]
+    "allowed_block_types": ["entity_card", "recording_list", "resource_list", "comparison_strip", "provenance_note", "gap_state", "album_unit"]
   },
   "cases": [
     {
@@ -94,6 +94,54 @@
         "must_not": ["claim the source or recording does not exist", "substitute unrelated sources", "present partial coverage as complete"]
       },
       "failure_conditions": ["Hides a retrieval failure behind a confident answer.", "Treats partial results as a complete recording or history."]
+    },
+    {
+      "id": "sugaree-album-attribution-quick-fact",
+      "question": "What album is Sugaree on?",
+      "grounding": {
+        "canonical_facts": ["Sugaree is a track on Garcia, a Jerry Garcia solo studio album released 1972-01-20."],
+        "coverage": "The packet names the one studio release carrying this track; it is not a survey of every live release containing the song."
+      },
+      "expected": {
+        "mode": "quick_fact",
+        "main_must_include": ["album title and year", "solo attribution to Jerry Garcia, not a Grateful Dead album"],
+        "exploration_may_include": ["other releases or performances of Sugaree"],
+        "exploration_is_optional": true,
+        "must_not": ["credit the album to the Grateful Dead", "omit the release year"]
+      },
+      "failure_conditions": ["Names the wrong artist or album for Sugaree.", "Presents Sugaree's studio home as a Grateful Dead album."]
+    },
+    {
+      "id": "american-beauty-album-unit-tracklist",
+      "question": "Tell me about American Beauty",
+      "grounding": {
+        "canonical_facts": ["American Beauty is a Grateful Dead studio album released 1970-11-01 with a resolved tracklist of 10 songs."],
+        "coverage": "The packet includes the release's own tracklist and any collected personnel; it is not a review or sales history."
+      },
+      "expected": {
+        "mode": "listening",
+        "main_must_include": ["album_unit for American Beauty with its tracklist"],
+        "exploration_may_include": ["song or performance context for individual tracks"],
+        "coverage_note": "present the tracklist as the release's own track order, not a generic song list",
+        "must_not": ["render the album as a bare list of songs with no album_unit", "invent tracks not in the packet"]
+      },
+      "failure_conditions": ["The main body lacks an album_unit.", "Presents the tracklist as an unordered song list rather than the release's own track order."]
+    },
+    {
+      "id": "truckin-release-vs-first-performance",
+      "question": "How long had they been playing Truckin' before the record came out?",
+      "grounding": {
+        "canonical_facts": ["Truckin' first appears in the canonical performance record on 1970-08-17.", "Truckin' is a track on American Beauty, released 1970-11-01."],
+        "coverage": "The first documented performance reflects retained canonical records, not necessarily the song's true live debut."
+      },
+      "expected": {
+        "mode": "comparison",
+        "main_must_include": ["release date set against the first documented performance date"],
+        "exploration_may_include": ["the album's tracklist or other early performances"],
+        "coverage_note": "qualify the first performance as the earliest documented one, not a certain debut",
+        "must_not": ["state the gap as certain when the performance record is a documented floor, not a confirmed debut", "invent a performance date not in the packet"]
+      },
+      "failure_conditions": ["Does not compare the release date to a first performance date.", "Presents the documented first performance as the certain live debut."]
     }
   ]
 }

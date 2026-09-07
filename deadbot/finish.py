@@ -249,12 +249,25 @@ class EraUnitRef(_Ref):
     follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
 
 
+class AlbumUnitRef(_Ref):
+    """One official record as a primary object of this answer."""
+
+    type: Literal["album_unit"]
+    release_id: str
+    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
+    highlighted_song_ids: list[str] = Field(default_factory=list, max_length=12)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
+    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+
+
 BodyItem = Annotated[
     EditorialBlock
     | ShowUnitRef
     | ShowExplorerRef
     | PerformanceUnitRef
     | EraUnitRef
+    | AlbumUnitRef
     | ShowSetlistRef
     | RecordingListRef
     | PerformerListRef
@@ -290,7 +303,8 @@ class FinishPlan(BaseModel):
         description=(
             "Reading order for the main body. Semantic units declare the meaningful objects of this answer and the server hydrates them: "
             "show_unit (one show with its setlist, guests, listening and your note), show_explorer (several show units, chronological, curated or comparative), "
-            "performance_unit (one rendition with its set context and listening), era_unit (a stage you name, with representative performances). "
+            "performance_unit (one rendition with its set context and listening), era_unit (a stage you name, with representative performances), "
+            "album_unit (one official record with its tracklist, personnel and listening), "
             "Editorial blocks you write (narrative, fact_grid, timeline) carry page-level synthesis: the conclusion, patterns across units, disagreements. "
             "Single-dimension components, referenced by IDs you retrieved this turn, are for when one dimension is the answer: show_setlist, recording_list, "
             "performer_list, equipment_list, performance_spine, comparison_strip, performance_list, performance_extremes, song_overview, guest_appearance_list, "
@@ -429,6 +443,25 @@ def _resolve_reference(
         unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
         block = composition._era_unit(contexts, store, title=item.title, span=item.span, role=item.role, note=item.note, sources=unit_sources, follow_up=item.follow_up)
         return block, sources
+
+    if kind == "album_unit":
+        if item.release_id not in grounded.ids:
+            return None, []
+        release = store.resolve_release(item.release_id)
+        if not release:
+            return None, []
+        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+        block, listen_sources = composition._album_unit(
+            store.album_context(release),
+            store,
+            role=item.role,
+            note=item.note,
+            title=item.title,
+            highlighted_song_ids=item.highlighted_song_ids,
+            sources=unit_sources,
+            follow_up=item.follow_up,
+        )
+        return block, [*listen_sources, *sources]
 
     if kind in {"show_setlist", "recording_list", "performer_list", "equipment_list"}:
         if item.show_id not in grounded.ids:
@@ -595,7 +628,7 @@ def build_finish_tool() -> BaseTool:
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
             "chat_answer is the crisp direct answer; the body is the rewarding part: the semantic units of the answer (show_unit, show_explorer, "
-            "performance_unit, era_unit) with your notes, roles, highlights and sources, plus your own narrative, fact grids or timelines for what "
+            "performance_unit, era_unit, album_unit) with your notes, roles, highlights and sources, plus your own narrative, fact grids or timelines for what "
             "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,

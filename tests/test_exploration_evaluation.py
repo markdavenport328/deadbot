@@ -23,6 +23,9 @@ def test_exploration_evaluation_fixture_has_versioned_two_column_shape():
         "sugar-magnolia-recordings-main",
         "song-evolution-cross-era-candidates",
         "source-failure-partial-coverage",
+        "sugaree-album-attribution-quick-fact",
+        "american-beauty-album-unit-tracklist",
+        "truckin-release-vs-first-performance",
     }
     for case in suite["cases"]:
         assert case["question"]

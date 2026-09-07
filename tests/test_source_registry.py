@@ -7,9 +7,14 @@ import pytest
 from deadbot.source_registry import RegistryValidationError, load_registry, validate_registry
 
 
-def test_reviewed_seed_loads_with_two_metadata_adapters():
+def test_reviewed_seed_loads_with_four_metadata_adapters():
     sources = load_registry()
-    assert {source["source_id"] for source in sources} == {"deadnet-editorial", "deadcast-metadata"}
+    assert {source["source_id"] for source in sources} == {
+        "deadnet-editorial",
+        "deadcast-metadata",
+        "musicbrainz-api",
+        "wikipedia-api",
+    }
     for source in sources:
         assert source["review_state"] == "approved"
         assert source["retention_policy"]["mode"] == "metadata_only"
