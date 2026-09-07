@@ -125,3 +125,29 @@ def test_get_song_carries_the_records_that_hold_it():
     store = CanonicalStore()
     payload = json.loads(_tool_by_name(store, "get_song").invoke({"song_id_or_title": "Truckin'"}))
     assert any(release["release_type"] == "studio" for release in payload["releases"])
+    assert "performances" not in payload
+    assert payload["performance_summary"]["known_performance_count"] > 0
+
+
+def test_get_song_keeps_a_long_lived_song_compact():
+    store = CanonicalStore()
+    payload = _tool_by_name(store, "get_song").invoke({"song_id_or_title": "Eyes of the World"})
+    parsed = json.loads(payload)
+    assert parsed["performance_summary"]["known_performance_count"] == 382
+    assert len(payload) < 35_000
+
+
+def test_list_song_performances_pages_chronologically_with_listening_paths():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "list_song_performances").invoke(
+            {"song_id_or_title": "Eyes of the World", "offset": 1, "limit": 2}
+        )
+    )
+    assert payload["performance_count"] == 382
+    assert payload["offset"] == 1
+    assert len(payload["performances"]) == 2
+    assert [row["show_date"] for row in payload["performances"]] == sorted(
+        row["show_date"] for row in payload["performances"]
+    )
+    assert payload["next_offset"] == 3

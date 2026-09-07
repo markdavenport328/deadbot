@@ -539,19 +539,104 @@ def build_tools(
 
     @tool
     def get_song(song_id_or_title: str) -> str:
-        """Get one song's canonical data, resource links, arrangements, and known performances.
+        """Get one song's canonical overview, official-release appearances, resources, and arrangements.
 
         Use the returned resource URLs for interviews, articles, tabs, or other
-        context. Treat source notes and interviews as attributed material. Each
-        performance may carry a `listen` object with an archive track URL and,
-        when mapped, a release track URL, ready to offer as a listening link.
-        The `releases` list names every official record carrying this song,
-        earliest first, with its date and track number.
+        context. Treat source notes and interviews as attributed material. The
+        `releases` list names every official record carrying this song, earliest
+        first, with its date and track number. `performance_summary` gives the
+        song's documented span and count; call `list_song_performances` when
+        you need concrete rendition IDs and listening paths rather than loading
+        the full history into an otherwise album- or song-focused answer.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
-        return _json(store.song_context(song))
+        context = store.song_context(song)
+        profile = store.song_performance_profile(song)
+        return _json(
+            {
+                "song": context["song"],
+                "writers": context["writers"],
+                "releases": context["releases"],
+                "resources": context["resources"],
+                "arrangements": context["arrangements"],
+                "performance_summary": {
+                    key: profile[key]
+                    for key in (
+                        "known_performance_count",
+                        "first_known_performance",
+                        "last_known_performance",
+                        "immediate_predecessors",
+                        "immediate_successors",
+                    )
+                },
+            }
+        )
+
+    @tool
+    def list_song_performances(song_id_or_title: str, offset: int = 0, limit: int = 24) -> str:
+        """List a bounded chronological page of one song's documented performances.
+
+        Use after `get_song` when a question needs concrete renditions, dates,
+        or per-performance listening paths. Start with the first page unless a
+        prior result tells you to continue. Each performance carries its stable
+        ID, show date, set position, and any verified listening URLs. For rich
+        context on a particular result, call `get_performance` with its ID.
+        """
+        song = store.resolve_song(song_id_or_title)
+        if not song:
+            return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
+
+        start = max(0, offset)
+        page_size = min(max(1, limit), 48)
+        context = store.song_context(song)
+
+        def order_key(performance: dict[str, Any]) -> tuple[str, int, int, str]:
+            show = store.one("shows", performance.get("show_id", "")) or {}
+
+            def number(value: Any) -> int:
+                try:
+                    return int(str(value))
+                except (TypeError, ValueError):
+                    return 10**9
+
+            return (
+                show.get("show_date", "9999-99-99") or "9999-99-99",
+                number(performance.get("set_number")),
+                number(performance.get("position_in_set")),
+                performance.get("performance_id", ""),
+            )
+
+        performances = sorted(context["performances"], key=order_key)
+        page = []
+        for performance in performances[start : start + page_size]:
+            show = store.one("shows", performance.get("show_id", "")) or {}
+            item = {
+                "performance_id": performance["performance_id"],
+                "show_id": performance.get("show_id", ""),
+                "show_date": show.get("show_date", ""),
+                "set_number": performance.get("set_number", ""),
+                "set_label": performance.get("set_label", ""),
+                "position_in_set": performance.get("position_in_set", ""),
+                "encore": performance.get("encore", ""),
+                "segue_into_next": performance.get("segue_into_next", ""),
+            }
+            if performance.get("listen"):
+                item["listen"] = performance["listen"]
+            page.append(item)
+
+        next_offset = start + len(page)
+        return _json(
+            {
+                "song": context["song"],
+                "performance_count": len(performances),
+                "offset": start,
+                "limit": page_size,
+                "performances": page,
+                "next_offset": next_offset if next_offset < len(performances) else None,
+            }
+        )
 
     @tool
     def get_album(release_id_or_title: str) -> str:
@@ -1128,6 +1213,7 @@ def build_tools(
         search_guest_musicians,
         search_stored_resources,
         get_song,
+        list_song_performances,
         get_album,
         get_song_performance_profile,
         get_deadnet_song_context,

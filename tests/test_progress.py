@@ -6,6 +6,7 @@ from deadbot import progress
 def test_tool_calls_become_visitor_facing_status_lines():
     assert progress.describe_tool_call("search_entities", {"query": "Branford Marsalis"}) == "Searching the library for “Branford Marsalis”"
     assert progress.describe_tool_call("get_show", {"show_id_or_date": "1990-03-29"}) == "Reading the show on 1990-03-29"
+    assert progress.describe_tool_call("list_song_performances", {"song_id_or_title": "Eyes of the World"}) == "Tracing performances of “Eyes of the World”"
     assert progress.describe_tool_call("search_site", {"site": "Dead Essays", "query": "Branford"}) == "Searching Dead Essays for “Branford”"
     assert progress.describe_tool_call("read_page", {"url": "https://www.dead.net/features/x"}) == "Reading dead.net"
     assert progress.describe_tool_call("get_recording_reviews", {"recording": "1977-05-08"}) == "Checking listener reviews of the recordings"

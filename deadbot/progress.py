@@ -46,6 +46,8 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
         return f"Reading the show on {subject}" if _DATE.match(subject) else f"Reading a show ({subject})" if subject else "Reading a show"
     if name == "get_song":
         return f"Reading up on {_quote(args.get('song_id_or_title'))}".rstrip()
+    if name == "list_song_performances":
+        return f"Tracing performances of {_quote(args.get('song_id_or_title'))}".rstrip()
     if name == "get_song_performance_profile":
         return f"Charting performances of {_quote(args.get('song_id_or_title'))}".rstrip()
     if name == "get_performance":
