@@ -28,7 +28,7 @@ Purple Sage, Old & In the Way and Kingfish.
 | Release groups promoted to `official_releases.csv` as `studio` | 46 |
 | Release groups held for review | 16 |
 | Promoted albums by artist | New Riders 15, Grateful Dead 13, Jerry Garcia 9, Bob Weir 4, Kingfish 4, Jerry Garcia Band 1 |
-| Promoted albums with a `release_date` | 46 of 46 (21 full dates, 6 year-month, 19 year only; precision noted in `notes`) |
+| Promoted albums with a `release_date` | 46 of 46 (28 full dates, 7 year-month, 11 year only, after the 2026-09-06 Wikipedia sharpening pass below; MusicBrainz-only precision noted in `notes` was 21 full dates, 6 year-month, 19 year only) |
 | Promoted albums with a `spotify_album_url` | 25 of 46 |
 | Track rows written | 447 (all with `duration_seconds`) |
 | Tracks resolved to a canonical `song_id` | 133 (29.8%) |
@@ -108,6 +108,41 @@ inside that partial value; otherwise a 2005 remaster would be published as the
 release date of a 1972 album. The field is left blank only when MusicBrainz
 gives no `first_release_date` that is a recognized year, year-month, or full
 date.
+
+## Wikipedia sharpening pass (2026-09-06)
+
+The 25 studio rows above whose `release_date` was still year-only or
+year-month after the MusicBrainz pass were checked against Wikipedia's
+infobox `Released` field: `scripts/collect/fetch_wikipedia_album_dates.py`
+(`data/raw/releases/wikipedia-album-dates.jsonl`, one raw record per album with
+the chosen article, page id, revision id, and the raw `Released` string) and
+`scripts/normalize_wikipedia_album_dates.py`
+(`data/raw/releases/wikipedia-album-date-review.jsonl`). All 25 were matched to
+a confident article and yielded a parseable field.
+
+| Outcome | Count | Albums |
+| --- | --- | --- |
+| Upgraded (year → year-month or full; year-month → full) | 11 | `Ace` (1972-05→1972-05-01), `17 Pine Avenue` (2012-03→2012-03-06), `Reflections` (1976-02→1976-02-03), `Cats Under the Stars`, `Compliments of Garcia`, `Heaven Help the Fool`, `Jerry Garcia / David Grisman` (all year→full), `Gypsy Cowboy`, `New Riders of the Purple Sage`, `Powerglide`, `The Adventures of Panama Red` (all year→year-month) |
+| Conflict: Wikipedia's year disagrees with the existing year, left untouched | 4 | `Hooteroll?` (existing 1970 vs Wikipedia 1971-11-01), `Feelin' All Right` (1980 vs 1981), `Marin County Line` (1993 vs 1977), `Midnight Moonlight` (1993 vs 1992-05-12) |
+| Held: already at Wikipedia's own precision | 9 | `Before Time Began`, `Brujo`, `Keep On Keepin' On`, `Kingfish` (1976), `Kingfish` (1985), `New Riders`, `Oh, What a Mighty Time`, `Trident`, `Who Are Those Guys?` |
+| Held: Wikipedia is less precise than the existing value | 1 | `Run for the Roses` (existing 1982-11; Wikipedia infobox gives only `1982`) |
+
+A year conflict is logged as a review item and never resolved by picking a
+side: the four conflicts above disagree on the *year*, which the governing
+rule treats as more significant than any precision Wikipedia might otherwise
+add. Every decision — including the article chosen and why, and the raw
+`Released` string before parsing — is in the review log. Only the
+`release_date` column of these 11 rows changed: the 294 live rows, every other
+column, and row order were diffed field-for-field against the pre-pass commit
+and are unchanged.
+
+Two consecutive runs of `scripts/normalize_wikipedia_album_dates.py` produce a
+byte-identical `official_releases.csv`. The review log is not expected to
+match byte-for-byte across runs: it compares the raw Wikipedia record against
+`official_releases.csv` as it stands when each run starts, so a row upgraded
+by the first run reads `already_at_source_precision` on every run after,
+which is the correct comparison against the now-updated CSV rather than a
+sign of drift.
 
 `release_id` is `release-<kebab-case album title>`
 (`release-american-beauty`, `release-ace`, `release-workingmans-dead`). Two
