@@ -282,6 +282,7 @@ class CanonicalStore:
                 "title": release.get("title") or "",
                 "artist_name": release.get("artist_name") or None,
                 "release_date": release.get("release_date") or None,
+                "release_date_precision": release.get("release_date_precision") or None,
                 "release_type": release.get("release_type") or None,
                 "track_number": int(track_number) if track_number.isdigit() else None,
                 "spotify_album_url": release.get("spotify_album_url") or None,
