@@ -14,7 +14,7 @@ import type { components } from "./generated/api";
 
 // A handful of ExperienceResponse fields (`blocks`, `layout`, `sources`,
 // `conversation`) — and a few nested block fields (`details`, `progressions`,
-// `credits`, `source_ids`) — are declared in deadbot/experience.py with a
+// `credits`, `source_ids`, `representative_performances`, `sources`) — are declared in deadbot/experience.py with a
 // Pydantic default_factory (e.g. `Field(default_factory=list)`). FastAPI's
 // OpenAPI schema marks those as not required, because a *request* using this
 // same model could omit them. But every browser-facing response is built
@@ -32,7 +32,7 @@ type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], 
 type FixedEditorialBlock = Require<components["schemas"]["EditorialBlock"], "paragraphs" | "items">;
 type FixedSongOverviewBlock = Require<
   components["schemas"]["SongOverviewBlock"],
-  "credits" | "source_ids" | "albums"
+  "credits" | "source_ids" | "albums" | "representative_performances" | "sources"
 >;
 
 // Semantic units. Their hydrated lists are always present in a server

@@ -612,9 +612,15 @@ function Block({
       );
     case "song_overview":
       return (
-        <section className="typography-block song-overview">
-          <Eyebrow label="Song facts" title={block.title} />
-          <h2>{block.title}</h2>
+        <article className={`card song-overview${block.role ? ` role-${block.role}` : ""}`}>
+          <header className="unit-heading">
+            <div>
+              <p className="eyebrow">Song</p>
+              <h2>{block.title}</h2>
+            </div>
+            <RoleChip role={block.role} />
+          </header>
+          {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <dl className="song-facts">
             {block.original_artist && (
               <div>
@@ -627,6 +633,23 @@ function Block({
               <dd>{block.known_performance_count}</dd>
             </div>
           </dl>
+          {block.representative_performances.length > 0 && (
+            <section className="song-representatives">
+              <p className="fact-label">Representative performances</p>
+              <ul>
+                {block.representative_performances.map((performance) => (
+                  <li key={performance.performance_id}>
+                    <ListeningLabel
+                      title={`${formatShowDate(performance.show_date)} · ${performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}`}
+                      url={performance.listen_url}
+                      className="list-item-label"
+                    />
+                    {performance.set_label && <span>{performance.set_label}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
           {block.credits.length > 0 && (
             <div className="song-credits">
               <p className="fact-label">Credits</p>
@@ -653,7 +676,13 @@ function Block({
               </ul>
             </section>
           ) : null}
-        </section>
+          <UnitSourceList sources={block.sources} />
+          {block.follow_up && (
+            <p className="unit-follow-up">
+              <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
+            </p>
+          )}
+        </article>
       );
     case "resource_list":
       return (
@@ -1045,13 +1074,11 @@ export default function App() {
             <div className="thread-messages" aria-live="polite">
               {visibleConversation.map((turn, index) => (
                 <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
-                  <p>{turn.role === "user" ? "You" : "Deadbot"}</p>
                   <div>{renderInline(turn.text)}</div>
                 </article>
               ))}
               {loading && (
                 <article className="message assistant pending" aria-live="polite">
-                  <p>Deadbot</p>
                   {progress.length === 0 ? (
                     <div>Looking through the library…</div>
                   ) : (

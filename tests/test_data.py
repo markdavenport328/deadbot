@@ -283,6 +283,7 @@ def test_performance_tool_preserves_source_attribution():
     result = json.loads(tool_by_name(store, "get_performance").invoke({"performance_id": "gd-1972-08-27-playing-in-the-band"}))
     assert result["performance"]["show_id"] == "gd-1972-08-27"
     assert any(resource["resource_id"] == "resource-deadcast-veneta-part-2" for resource in result["resources"])
+    assert result["listen"]["archive_track_url"] in {link["url"] for link in result["links"]}
 
 
 def test_entity_search_finds_veneta_by_date():
@@ -527,6 +528,7 @@ def test_album_context_returns_an_ordered_tracklist_with_resolved_songs():
     truckin = next(track for track in payload["tracks"] if track["song_id"] == "song-truckin")
     assert truckin["song_title"] == "Truckin'"
     assert truckin["performance_id"] is None
+    assert "spotify_track_url" in truckin
 
 
 def test_album_context_personnel_carry_resolved_names():

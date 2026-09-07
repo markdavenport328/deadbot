@@ -357,15 +357,31 @@ class SongReleaseItem(ExperienceModel):
     release_type: str
 
 
+class SongRepresentativePerformance(ExperienceModel):
+    """A model-chosen rendition that gives a song unit an immediate listening path."""
+
+    performance_id: str
+    show_id: str
+    show_date: str | None = None
+    show_label: str
+    set_label: str | None = None
+    listen_url: str | None = None
+
+
 class SongOverviewBlock(ExperienceModel):
     type: Literal["song_overview"]
     song_id: str
     title: str
     original_artist: str | None = None
     known_performance_count: int
+    role: UnitRole | None = None
+    note: str | None = None
+    representative_performances: list[SongRepresentativePerformance] = Field(default_factory=list, max_length=3)
     credits: list[CreditItem] = Field(default_factory=list, max_length=12)
     source_ids: list[str] = Field(default_factory=list, max_length=8)
     albums: list[SongReleaseItem] = Field(default_factory=list, max_length=6)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
+    follow_up: str | None = None
 
 
 class MediaLinkBlock(ExperienceModel):

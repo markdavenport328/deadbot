@@ -53,6 +53,7 @@ from deadbot.experience import (
     ShowSetlistBlock,
     ShowUnitBlock,
     SongOverviewBlock,
+    SongRepresentativePerformance,
     SongReleaseItem,
     SourceReference,
     UnitRole,
@@ -1036,16 +1037,25 @@ def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> Recording
     )
 
 
-def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOverviewBlock | None:
+def _song_overview(
+    context: dict[str, Any],
+    store: CanonicalStore,
+    *,
+    role: UnitRole | None = None,
+    note: str | None = None,
+    representative_performance_ids: list[str] | None = None,
+    sources: list[UnitSource] | None = None,
+    follow_up: str | None = None,
+) -> SongOverviewBlock | None:
     song = context.get("song")
     if not isinstance(song, dict) or not song.get("song_id"):
         return None
     credits: list[CreditItem] = []
     for writer in context.get("writers", []) if isinstance(context.get("writers"), list) else []:
         person = store.one("people", writer.get("person_id", "")) if isinstance(writer, dict) else None
-        role = writer.get("writer_role", "") if isinstance(writer, dict) else ""
-        if person and role:
-            credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=role))
+        credit_role = writer.get("writer_role", "") if isinstance(writer, dict) else ""
+        if person and credit_role:
+            credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=credit_role))
     performances = context.get("performances") if isinstance(context.get("performances"), list) else []
     all_albums = [
         SongReleaseItem(
@@ -1065,15 +1075,36 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
     studio_albums = [album for album in all_albums if album.release_type == "studio"]
     other_albums = [album for album in all_albums if album.release_type != "studio"]
     albums = (studio_albums + other_albums)[:6]
+    performance_items = {
+        item.performance_id: item
+        for item in _performance_items(performances, store)
+    }
+    representatives = [
+        SongRepresentativePerformance(
+            performance_id=item.performance_id,
+            show_id=item.show_id,
+            show_date=item.show_date,
+            show_label=item.show_label,
+            set_label=item.set_label,
+            listen_url=item.listen_url,
+        )
+        for performance_id in (representative_performance_ids or [])
+        if (item := performance_items.get(performance_id)) is not None
+    ]
     return SongOverviewBlock(
         type="song_overview",
         song_id=song["song_id"],
         title=song.get("title") or "Untitled song",
         original_artist=song.get("original_artist") or None,
         known_performance_count=len(performances),
+        role=role,
+        note=(note or "").strip() or None,
+        representative_performances=representatives[:3],
         credits=credits[:12],
         source_ids=[f"canonical:{song['song_id']}"],
         albums=albums,
+        sources=(sources or [])[:4],
+        follow_up=(follow_up or "").strip() or None,
     )
 
 

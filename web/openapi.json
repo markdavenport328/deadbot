@@ -2785,9 +2785,31 @@
             "title": "Credits",
             "type": "array"
           },
+          "follow_up": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Follow Up"
+          },
           "known_performance_count": {
             "title": "Known Performance Count",
             "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
           },
           "original_artist": {
             "anyOf": [
@@ -2800,6 +2822,35 @@
             ],
             "title": "Original Artist"
           },
+          "representative_performances": {
+            "items": {
+              "$ref": "#/components/schemas/SongRepresentativePerformance"
+            },
+            "maxItems": 3,
+            "title": "Representative Performances",
+            "type": "array"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "anchor",
+                  "supporting",
+                  "contrast",
+                  "turning_point",
+                  "outlier",
+                  "culmination",
+                  "overlooked",
+                  "representative"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
           "song_id": {
             "title": "Song Id",
             "type": "string"
@@ -2810,6 +2861,14 @@
             },
             "maxItems": 8,
             "title": "Source Ids",
+            "type": "array"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/UnitSource"
+            },
+            "maxItems": 4,
+            "title": "Sources",
             "type": "array"
           },
           "title": {
@@ -2864,6 +2923,64 @@
           "release_type"
         ],
         "title": "SongReleaseItem",
+        "type": "object"
+      },
+      "SongRepresentativePerformance": {
+        "additionalProperties": false,
+        "description": "A model-chosen rendition that gives a song unit an immediate listening path.",
+        "properties": {
+          "listen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listen Url"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "show_label": {
+            "title": "Show Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_id",
+          "show_label"
+        ],
+        "title": "SongRepresentativePerformance",
         "type": "object"
       },
       "SourceReference": {

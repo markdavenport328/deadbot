@@ -138,11 +138,6 @@ class PerformanceExtremesRef(_Ref):
     song_id: str
 
 
-class SongOverviewRef(_Ref):
-    type: Literal["song_overview"]
-    song_id: str
-
-
 class GuestAppearancesRef(_Ref):
     type: Literal["guest_appearance_list"]
     person_id: str
@@ -276,6 +271,22 @@ class AlbumUnitRef(_Ref):
     follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
 
 
+class SongOverviewRef(_Ref):
+    """One song as a primary object, with model-chosen representative performances."""
+
+    type: Literal["song_overview"]
+    song_id: str
+    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    representative_performance_ids: list[str] = Field(
+        default_factory=list,
+        max_length=3,
+        description="Representative performances for this song, in the listening order you chose. Retrieve concrete rendition IDs first; each known direct recording link remains attached.",
+    )
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
+    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+
+
 BodyItem = Annotated[
     EditorialBlock
     | ShowUnitRef
@@ -306,8 +317,8 @@ class GroupPlan(BaseModel):
     """A model-selected editorial relationship among body items."""
 
     model_config = ConfigDict(extra="forbid")
-    title: str | None = Field(default=None, description="A concise heading for this group, when it earns one.")
-    lead: str | None = Field(default=None, description="One or two sentences that explain the relationship, claim, or shared basis for this group.")
+    title: str | None = Field(default=None, description="A concise heading that names this group's subject, when it earns one.")
+    lead: str | None = Field(default=None, description="One or two sentences that explain this group's relationship, claim, or shared basis for a reader who starts here.")
     presentation: Literal["collection", "sequence", "comparison", "argument"] = Field(
         description="collection for peers, sequence for a development or route, comparison for items judged on shared terms, argument for evidence supporting a claim."
     )
@@ -319,16 +330,16 @@ class FinishPlan(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     chat_answer: str = Field(
-        description="The direct answer shown in the conversation. Short, specific, may use markdown links to URLs the tools returned this turn."
+        description="The concise standalone answer shown in the conversation. Short and specific; it shares the main body's thesis but does not carry context the body needs. May use markdown links to URLs the tools returned this turn."
     )
-    title: str = Field(description="Main-body title.")
-    lead: str | None = Field(default=None, description="One or two sentences that notice what matters. Markdown links allowed.")
+    title: str = Field(description="Main-body title that names the central finding for a visitor arriving on the page.")
+    lead: str | None = Field(default=None, description="One or two sentences that establish the central finding for the main-body reader. Markdown links allowed.")
     mode: ExperienceMode = Field(description="Overall shape of the response.")
     groups: list[GroupPlan] = Field(
         default_factory=list,
         max_length=8,
         description=(
-            "The model-selected groups that make up the main body. Use these for any answer with more than one meaningful item: "
+            "The model-selected groups that make up the standalone expanded answer. Use these for any answer with more than one meaningful item: "
             "choose collection, sequence, comparison, or argument; write the group title/lead; and put the items in their exact reading order."
         ),
     )
@@ -546,7 +557,23 @@ def _resolve_reference(
             return _retitle(composition._performance_list(song, performances, store), item.title), []
         if kind == "performance_extremes":
             return _retitle(composition._performance_extremes(song, performances, store), item.title), []
-        return _retitle(composition._song_overview(context, store), item.title), []
+        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+        return _retitle(
+            composition._song_overview(
+                context,
+                store,
+                role=item.role,
+                note=item.note,
+                representative_performance_ids=[
+                    performance_id
+                    for performance_id in item.representative_performance_ids
+                    if performance_id in grounded.ids
+                ],
+                sources=unit_sources,
+                follow_up=item.follow_up,
+            ),
+            item.title,
+        ), sources
 
     if kind == "performance_spine":
         if item.performance_id not in grounded.ids:
@@ -710,7 +737,7 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer is the crisp direct answer; groups are the rewarding main body: choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
+            "chat_answer and the main body are connected, independently understandable reading paths: chat is concise, while groups are the expanded answer. Choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
             "performance_unit, era_unit, album_unit) with your notes, roles, facets, highlights and sources, plus your own narrative, fact grids or timelines for what "
             "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),

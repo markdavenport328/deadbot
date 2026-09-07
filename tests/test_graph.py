@@ -65,6 +65,16 @@ def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
         assert heading in prompt
 
 
+def test_prompt_makes_chat_and_main_body_connected_independent_reading_paths():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "## TWO READING PATHS, ONE ANSWER" in graph.SYSTEM_PROMPT
+    assert "chat_answer and the main body express one researched editorial judgment at different scales." in prompt
+    assert "A visitor who begins with either reading path can understand the finding" in prompt
+    assert "individual item level" in prompt
+    assert "Sugar Magnolia: the album's biggest live life" in prompt
+    assert "A comparison of several songs usually deserves song_overview units" in prompt
+
+
 def test_persona_tells_the_model_that_albums_are_held():
     from deadbot.graph import SYSTEM_PROMPT  # use the module's actual prompt constant
 

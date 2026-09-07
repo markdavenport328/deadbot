@@ -79,7 +79,7 @@ make subsequent review repeatable without adding product UI or calling an LLM.
 
 The reusable harness is now available in `web/src/visual-fixtures.ts`. Run
 `npm run dev --prefix web` and add `?fixture=branford`, `eyes`, `cornell`,
-`shakedown`, or `fact` to the local URL. It loads through the actual App
+`shakedown`, `fact`, or `songs` to the local URL. It loads through the actual App
 renderers, skips server health and model requests, exposes no visitor-facing
 fixture control, and is excluded from production bundles. Initial review covered
 the fixture set at 1440px, 600px, 390px, and 320px, including a local expanded
@@ -142,6 +142,12 @@ hidden. Native disclosure state stays with the visitor after they open it.
 `show_explorer` remains compatible for older calls, but new composition guidance
 uses groups with directly selected units so the model controls the relationship
 and ordering.
+
+Song overviews can now be primary units as well: the composer supplies each
+song's local interpretation and selected representative performance IDs, while
+the runtime preserves their ordering and attaches the verified direct recording
+path for each. This lets a song-centered comparison use distinct, explorable
+song units rather than compressing several live stories into one fact grid.
 
 Acceptance: one schema supports genuinely different collection, development, and
 argument compositions; reference resolution preserves model-selected order/grouping.
