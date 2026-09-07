@@ -551,28 +551,44 @@ def process_group(
             album_url_release = candidate["id"]
             break
 
-    # A studio album's release date is the release group's first release date.
-    # When MusicBrainz gives only a year or a month, an edition's own full date
-    # is used only if it corroborates that partial value; otherwise the field is
-    # left blank with the partial value in notes.  Without that guard a 2005
-    # remaster would be published as the release date of a 1972 album.
+    # A studio album's release date is the release group's first release date,
+    # stored at whatever precision MusicBrainz gives it -- a full day, a
+    # year-month, or a year alone -- because release_date is TEXT and ISO 8601
+    # date strings of mixed precision still sort and compare correctly as
+    # plain text.  An edition's own full date is used only if it corroborates
+    # that partial value; otherwise a 2005 remaster would be published as the
+    # release date of a 1972 album.  The field is left blank only when
+    # MusicBrainz gives no first_release_date that is a recognized year,
+    # year-month, or full date.
     partial = group.get("first_release_date", "") or ""
     release_date = _LIVE.full_date(partial)
     date_note = ""
-    if not release_date:
+    if not release_date and partial:
         dated = sorted(
             value
             for value in (_LIVE.full_date(release.get("date", "")) for release in releases)
-            if value and partial and value.startswith(partial)
+            if value and value.startswith(partial)
         )
         if dated:
             release_date = dated[0]
             date_note = f"release date from the earliest edition dated within '{partial}'"
+        elif re.fullmatch(r"\d{4}-\d{2}", partial) or re.fullmatch(r"\d{4}", partial):
+            release_date = partial
+            precision = "month" if len(partial) == 7 else "year"
+            date_note = (
+                f"release date is {precision} precision: MusicBrainz gives only '{partial}' for the release "
+                "group and no edition carries a full date inside it"
+            )
         else:
             date_note = (
-                f"release date left blank: MusicBrainz gives only '{partial}' for the release group and no "
-                "edition carries a full date inside it"
+                f"release date left blank: MusicBrainz's first_release_date '{partial}' for the release "
+                "group is not a recognized year, year-month, or full date"
             )
+    elif not release_date and not partial:
+        date_note = (
+            "release date left blank: the release group has no MusicBrainz first_release_date and no "
+            "edition provides one either"
+        )
 
     track_rows: list[dict] = []
     unresolved_titles: list[str] = []
@@ -691,6 +707,23 @@ def previous_studio_ids(rows: list[dict]) -> dict[str, str]:
 
 # --- validation ---------------------------------------------------------------
 
+def _valid_release_date(value: str) -> bool:
+    """True for a year, a year-month, or a full ISO date -- release_date's
+    only legal precisions now that it stores partial values verbatim."""
+
+    if re.fullmatch(r"\d{4}", value):
+        return True
+    if re.fullmatch(r"\d{4}-\d{2}", value):
+        return 1 <= int(value[5:7]) <= 12
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", value):
+        try:
+            date.fromisoformat(value)
+        except ValueError:
+            return False
+        return True
+    return False
+
+
 def validate(
     release_rows: list[dict],
     track_rows: list[dict],
@@ -709,8 +742,8 @@ def validate(
             raise SystemExit(f"release {row['release_id']} is missing title or source_url")
         if row["release_type"] not in RELEASE_TYPES:
             raise SystemExit(f"release {row['release_id']} has release_type {row['release_type']!r}")
-        if row["release_date"]:
-            date.fromisoformat(row["release_date"])
+        if row["release_date"] and not _valid_release_date(row["release_date"]):
+            raise SystemExit(f"release {row['release_id']} has an invalid release_date {row['release_date']!r}")
     seen: set[tuple[str, int]] = set()
     for row in track_rows:
         key = (row["release_id"], int(row["track_number"]))
