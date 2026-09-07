@@ -45,6 +45,29 @@ Main files: `web/src/App.tsx`, `web/src/styles.css`, `deadbot/composition.py`,
 
 ## Remaining work, in priority order
 
+### Immediate listening-link correction
+
+The September 7 review corrected the UI contract: when a song has a supplied
+recording URL, its title is the link and a small play mark communicates that it
+is listenable. Do not append repeated `Listen` words. Positional `Start here`
+and `Culmination` badges are now silent, and generic Internet Archive recording
+indexes are no longer promoted as show or performance actions. Follow-up
+questions should invite explanation, comparison, history, lore or evidence,
+not duplicate listening controls.
+
+The `1990-03-29` gap came from a conservative alignment bug: the two `Dark
+Star` performances created two candidate paths, and the mapper rejected the
+whole show when one path later contradicted `Drums`. The mapper now discards
+only the invalid candidate, and all 17 performances have verified Archive
+track links from the existing complete recording metadata.
+
+For `1994-12-16`, the original representative was a partial upload that stopped
+after `Eyes of the World`. Metadata from the existing complete SBD recording
+is now preserved as a targeted supplement. The mapper's established title and
+order checks verified all 17 performances; ten new mappings fill the prior
+gaps, including `Estimated Prophet` and `The Other One`. Never substitute a
+whole-show URL for a song link when future coverage is incomplete.
+
 ### 1. Broaden visual acceptance coverage
 
 Use fixed validated responses (not live model generation) for visual comparisons:

@@ -194,7 +194,12 @@ _ROLE_DESCRIPTION = (
 )
 _NOTE_DESCRIPTION = "Why this object matters here, in one to three sentences. Interpretation, not the facts the server already shows."
 _SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
-_FOLLOW_UP_DESCRIPTION = "A question the visitor might ask next about this object, in their voice."
+_FOLLOW_UP_DESCRIPTION = (
+    "An optional exploratory question the visitor might ask next, in their voice. "
+    "Use a relationship or implication discovered in this research: explanation, comparison, history, lore or evidence. "
+    "Never ask to hear, listen to, play or open material; the object's listening links already provide that action. "
+    "Do not restate another follow-up on the page."
+)
 
 
 class ShowUnitRef(_Ref):

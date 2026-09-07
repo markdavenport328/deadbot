@@ -45,6 +45,7 @@ def normalized_title(value: str) -> str:
         "dancing in the streets": "dancin in the streets",
         "dancin in the street": "dancin in the streets",
         "greatest story": "greatest story ever told",
+        "new minglewood blues": "minglewood blues",
         "playin": "playing in the band",
         "u s blues": "us blues",
     }
@@ -143,10 +144,12 @@ def align_tracks(source_tracks: list[tuple[int, dict]], performances: list[dict]
             if not candidate_indexes:
                 # A title that is not in the remaining canonical sequence is
                 # treated as banter/tuning/source-only material.  A title that
-                # exists in the setlist but occurs before the current alignment
-                # is a contradictory order and is held for review.
+                # exists in the setlist but occurs before this candidate
+                # alignment invalidates only this candidate. Another live
+                # candidate may have assigned an earlier occurrence of a
+                # repeated song and still align unambiguously.
                 if normalized_source in canonical_titles:
-                    return "held", [], f"source_order_conflict_at_track_{track_number}"
+                    continue
                 next_states[used_indexes] = matches
                 continue
             for index in candidate_indexes:
@@ -154,7 +157,12 @@ def align_tracks(source_tracks: list[tuple[int, dict]], performances: list[dict]
                 next_states[new_indexes] = matches + [(track_number, index, source_file)]
         states = next_states
         if not states:
-            return "held", [], f"no_monotonic_alignment_at_track_{track_number}"
+            reason = (
+                f"source_order_conflict_at_track_{track_number}"
+                if normalized_source in canonical_titles
+                else f"no_monotonic_alignment_at_track_{track_number}"
+            )
+            return "held", [], reason
 
     aligned = [(indexes, matches) for indexes, matches in states.items() if matches]
     if not aligned:
