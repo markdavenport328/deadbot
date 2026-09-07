@@ -74,7 +74,7 @@ RELEASES_CSV = CANONICAL / "official_releases.csv"
 TRACKS_CSV = CANONICAL / "official_release_tracks.csv"
 PERSONNEL_CSV = CANONICAL / "release_personnel.csv"
 
-RELEASE_FIELDS = ["release_id", "title", "artist_name", "release_date", "release_type", "spotify_album_url", "source_url", "notes"]
+RELEASE_FIELDS = ["release_id", "title", "artist_name", "release_date", "release_date_precision", "release_type", "spotify_album_url", "source_url", "notes"]
 TRACK_FIELDS = ["release_id", "track_number", "performance_id", "song_id", "track_title", "duration_seconds", "spotify_track_url", "notes"]
 PERSONNEL_FIELDS = ["release_id", "person_id", "role", "instrument", "notes"]
 RELEASE_TYPES = {"studio", "live", "compilation", "single"}
@@ -551,28 +551,53 @@ def process_group(
             album_url_release = candidate["id"]
             break
 
-    # A studio album's release date is the release group's first release date.
-    # When MusicBrainz gives only a year or a month, an edition's own full date
-    # is used only if it corroborates that partial value; otherwise the field is
-    # left blank with the partial value in notes.  Without that guard a 2005
-    # remaster would be published as the release date of a 1972 album.
+    # A studio album's release date is the release group's first release date,
+    # stored as the earliest date consistent with what MusicBrainz knows.
+    # release_date_precision records how much of it is real -- 'day' for a
+    # full date, 'month' when MusicBrainz gives only a year and month, 'year'
+    # when it gives only a year -- so nothing is fabricated even though
+    # release_date itself always names a full day.  An edition's own full date
+    # is used only if it corroborates the release group's partial value;
+    # otherwise a 2005 remaster would be published as the release date of a
+    # 1972 album.
     partial = group.get("first_release_date", "") or ""
     release_date = _LIVE.full_date(partial)
+    precision = "day" if release_date else ""
     date_note = ""
-    if not release_date:
+    if not release_date and partial:
         dated = sorted(
             value
             for value in (_LIVE.full_date(release.get("date", "")) for release in releases)
-            if value and partial and value.startswith(partial)
+            if value and value.startswith(partial)
         )
         if dated:
             release_date = dated[0]
+            precision = "day"
             date_note = f"release date from the earliest edition dated within '{partial}'"
+        elif re.fullmatch(r"\d{4}-\d{2}", partial):
+            release_date = f"{partial}-01"
+            precision = "month"
+            date_note = (
+                f"release date is the first of the month: MusicBrainz gives only '{partial}' for the "
+                "release group and no edition carries a full date inside it"
+            )
+        elif re.fullmatch(r"\d{4}", partial):
+            release_date = f"{partial}-01-01"
+            precision = "year"
+            date_note = (
+                f"release date is January 1: MusicBrainz gives only '{partial}' for the release group and "
+                "no edition carries a full date inside it"
+            )
         else:
             date_note = (
-                f"release date left blank: MusicBrainz gives only '{partial}' for the release group and no "
-                "edition carries a full date inside it"
+                f"release date left blank: MusicBrainz's first_release_date '{partial}' for the release "
+                "group is not a recognized year, year-month, or full date"
             )
+    elif not release_date and not partial:
+        date_note = (
+            "release date left blank: the release group has no MusicBrainz first_release_date and no "
+            "edition provides one either"
+        )
 
     track_rows: list[dict] = []
     unresolved_titles: list[str] = []
@@ -627,6 +652,7 @@ def process_group(
                 "title": group["title"],
                 "artist_name": artist_name,
                 "release_date": release_date,
+                "release_date_precision": precision,
                 "release_type": RELEASE_TYPE,
                 "spotify_album_url": album_url,
                 "source_url": f"https://musicbrainz.org/release/{primary['id']}",
@@ -711,6 +737,14 @@ def validate(
             raise SystemExit(f"release {row['release_id']} has release_type {row['release_type']!r}")
         if row["release_date"]:
             date.fromisoformat(row["release_date"])
+        precision = row.get("release_date_precision", "")
+        if precision and precision not in {"day", "month", "year"}:
+            raise SystemExit(f"release {row['release_id']} has release_date_precision {precision!r}")
+        if bool(row["release_date"]) != bool(precision):
+            raise SystemExit(
+                f"release {row['release_id']} has release_date {row['release_date']!r} but "
+                f"release_date_precision {precision!r}"
+            )
     seen: set[tuple[str, int]] = set()
     for row in track_rows:
         key = (row["release_id"], int(row["track_number"]))
