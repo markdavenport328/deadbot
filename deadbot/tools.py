@@ -343,9 +343,11 @@ def build_tools(
             ("people", ("name",), "person_id", "name"),
             ("venues", ("name", "city", "state_region"), "venue_id", "name"),
         ]:
+            # "people" singularizes to "person"; table[:-1] would say "peopl".
+            entity_type = {"people": "person"}.get(table, table[:-1])
             for phrase in phrases:
                 for row in store.matching_rows(table, phrase, fields)[:10]:
-                    add(table[:-1], row[id_field], row[label_field])
+                    add(entity_type, row[id_field], row[label_field])
 
         for phrase in phrases:
             for item in store.matching_rows("equipment", phrase, ("name", "manufacturer", "model"))[:10]:

@@ -233,7 +233,6 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
         show_date = show.get("show_date") or None
         venue_name = venue.get("name") if venue else None
         show_label = " — ".join(part for part in [show_date, venue_name] if part) or show.get("show_id") or "Unknown show"
-        follow_up = f"Tell me about the show on {show_date}." if show_date else f"Tell me about the show {show_label}."
         items.append(
             PerformanceListItem(
                 performance_id=performance["performance_id"],
@@ -242,7 +241,7 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
                 show_label=show_label,
                 set_label=performance.get("set_label") or None,
                 position_in_set=performance.get("position_in_set") or None,
-                follow_up=follow_up,
+                listen_url=_listen_url(performance),
             )
         )
     return items
@@ -297,7 +296,6 @@ def _comparison_strip(song: dict[str, Any], performances: list[dict[str, Any]], 
         selected_positions = {round(step * (len(years) - 1) / 11) for step in range(12)}
         years = [year for position, year in enumerate(years) if position in selected_positions]
 
-    title = song.get("title") or "this song"
     strip_items = [
         ComparisonStripItem(
             performance_id=first_per_year[year].performance_id,
@@ -307,7 +305,7 @@ def _comparison_strip(song: dict[str, Any], performances: list[dict[str, Any]], 
             show_label=first_per_year[year].show_label,
             set_label=first_per_year[year].set_label,
             position_in_set=first_per_year[year].position_in_set,
-            follow_up=f"Tell me about the performance of {title} on {first_per_year[year].show_date}.",
+            listen_url=first_per_year[year].listen_url,
         )
         for year in years
     ]
@@ -364,16 +362,7 @@ def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> Perfor
         if not item or not item.get("performance_id"):
             return None
         neighbor_song = store.one("songs", item.get("song_id", "")) or {}
-        title = neighbor_song.get("title") or "Unknown song"
-        return PerformanceSpineNeighbor(
-            performance_id=item["performance_id"],
-            title=title,
-            follow_up=(
-                f"Tell me about the performance of {title} on {show.get('show_date')}."
-                if show.get("show_date")
-                else f"Tell me about the performance of {title}."
-            ),
-        )
+        return PerformanceSpineNeighbor(performance_id=item["performance_id"], title=neighbor_song.get("title") or "Unknown song")
 
     venue = store.one("venues", show.get("venue_id", "")) or {}
     show_label = " — ".join(
@@ -429,18 +418,12 @@ def _setlist_sections(
         if not title or not performance.get("performance_id"):
             continue
         label = performance.get("set_label") or "Set"
-        show_date = show.get("show_date") or ""
         grouped.setdefault(label, []).append(
             SetlistSong(
                 performance_id=performance["performance_id"],
                 song_id=performance.get("song_id", ""),
                 title=title,
                 position_in_set=performance.get("position_in_set") or None,
-                follow_up=(
-                    f"Tell me about the performance of {title} on {show_date}."
-                    if show_date
-                    else f"Tell me about the performance of {title}."
-                ),
                 highlighted=performance["performance_id"] in highlighted,
                 listen_url=_listen_url(performance),
             )
@@ -601,7 +584,7 @@ def _show_unit(
 
 
 def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
-    """Play this performance, then hear the whole show."""
+    """Link to this performance, then to the whole show."""
 
     song = context.get("song") if isinstance(context.get("song"), dict) else {}
     title = song.get("title") or "this performance"
@@ -616,7 +599,7 @@ def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
     listen = context.get("listen") if isinstance(context.get("listen"), dict) else {}
     archive_track = listen.get("archive_track_url")
     if isinstance(archive_track, str) and archive_track:
-        add(ListenAction(label=f"Play {title}", url=archive_track, provider="archive"))
+        add(ListenAction(label=f"Listen to {title}", url=archive_track, provider="archive"))
     release_track = listen.get("release_track_url")
     if isinstance(release_track, str) and release_track:
         add(ListenAction(label=f"Hear {title} on the official release", url=release_track, provider=_provider_for(release_track), is_official=True))
@@ -684,7 +667,7 @@ def _era_performance_item(context: dict[str, Any], store: CanonicalStore) -> Era
     show_date = show.get("show_date") or None
     show_label = " — ".join(part for part in [show_date, venue.get("name") if venue else None] if part) or show["show_id"]
     actions = _performance_listen_actions(context)
-    play = next((action for action in actions if action.label.startswith(("Play ", "Hear "))), None)
+    play = next((action for action in actions if action.label.startswith(("Listen to ", "Hear "))), None)
     return EraPerformanceItem(
         performance_id=performance["performance_id"],
         song_id=song.get("song_id", ""),
@@ -694,11 +677,6 @@ def _era_performance_item(context: dict[str, Any], store: CanonicalStore) -> Era
         show_label=show_label,
         set_label=performance.get("set_label") or None,
         listen=play,
-        follow_up=(
-            f"Tell me about the performance of {song['title']} on {show_date}."
-            if show_date
-            else f"Tell me about this performance of {song['title']}."
-        ),
     )
 
 
@@ -900,7 +878,6 @@ def _show_selection_blocks(payload: dict[str, Any]) -> tuple[list[ShowSelectionB
                     show_date=show_date,
                     venue_name=venue_name,
                     location=item.get("location") if isinstance(item.get("location"), str) and item.get("location") else None,
-                    follow_up=f"Tell me about the Grateful Dead show on {show_date}.",
                 )
             )
         if not items:
@@ -940,19 +917,7 @@ def _show_performers(payload: dict[str, Any], store: CanonicalStore) -> Performe
         key = (person_id, role)
         item = grouped.get(key)
         if item is None:
-            name = person.get("name") or person_id
-            show_date = show.get("show_date") or ""
-            item = PerformerItem(
-                person_id=person_id,
-                name=name,
-                role=role,
-                instruments=[instrument],
-                follow_up=(
-                    f"Tell me more about {name} and their role at the {show_date} show."
-                    if show_date
-                    else f"Tell me more about {name} and their role at this show."
-                ),
-            )
+            item = PerformerItem(person_id=person_id, name=person.get("name") or person_id, role=role, instruments=[instrument])
             grouped[key] = item
         elif instrument not in item.instruments:
             item.instruments.append(instrument)
@@ -975,7 +940,6 @@ def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
 
     items: list[EquipmentItem] = []
     seen: set[tuple[str, str, str]] = set()
-    show_date = show.get("show_date") or ""
     for assignment in equipment:
         if not isinstance(assignment, dict):
             continue
@@ -1013,11 +977,6 @@ def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
                 ),
                 source_id=source_id,
                 source_url=source_url,
-                follow_up=(
-                    f"Tell me more about {name} at the {show_date} show."
-                    if show_date
-                    else f"Tell me more about {name}."
-                ),
             )
         )
     if not items:
@@ -1084,7 +1043,7 @@ def _song_overview(context: dict[str, Any], store: CanonicalStore) -> SongOvervi
         person = store.one("people", writer.get("person_id", "")) if isinstance(writer, dict) else None
         role = writer.get("writer_role", "") if isinstance(writer, dict) else ""
         if person and role:
-            credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=role, follow_up=None))
+            credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=role))
     performances = context.get("performances") if isinstance(context.get("performances"), list) else []
     all_albums = [
         SongReleaseItem(
@@ -1177,7 +1136,6 @@ def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) ->
                 url=source.url or "",
                 key_signature=arrangement.get("key_signature") or key_signature,
                 arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
-                follow_up=f"Show me the documented arrangement for {song['title']}.",
             )
         )
         sources.append(source)
@@ -1241,7 +1199,6 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
                     location=location if isinstance(location, str) and location else None,
                     instruments=instruments[:8],
                     participation_scope=scope if isinstance(scope, str) and scope else None,
-                    follow_up=f"Tell me about the Grateful Dead show on {show_date}.",
                 )
             )
         if not items:

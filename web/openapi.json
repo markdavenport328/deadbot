@@ -367,10 +367,6 @@
             "title": "Arrangement Scope",
             "type": "string"
           },
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "key_signature": {
             "title": "Key Signature",
             "type": "string"
@@ -409,8 +405,7 @@
           "source_name",
           "url",
           "key_signature",
-          "arrangement_scope",
-          "follow_up"
+          "arrangement_scope"
         ],
         "title": "ArrangementSearchItem",
         "type": "object"
@@ -464,9 +459,16 @@
       "ComparisonStripItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
+          "listen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listen Url"
           },
           "performance_id": {
             "title": "Performance Id",
@@ -522,8 +524,7 @@
           "performance_id",
           "show_id",
           "year",
-          "show_label",
-          "follow_up"
+          "show_label"
         ],
         "title": "ComparisonStripItem",
         "type": "object"
@@ -582,17 +583,6 @@
       "CreditItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Follow Up"
-          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -895,10 +885,6 @@
             "title": "Evidence",
             "type": "string"
           },
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "manufacturer": {
             "title": "Manufacturer",
             "type": "string"
@@ -933,8 +919,7 @@
           "claim_type",
           "evidence",
           "source_id",
-          "source_url",
-          "follow_up"
+          "source_url"
         ],
         "title": "EquipmentItem",
         "type": "object"
@@ -977,10 +962,6 @@
       "EraPerformanceItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "listen": {
             "anyOf": [
               {
@@ -1039,8 +1020,7 @@
           "song_id",
           "song_title",
           "show_id",
-          "show_label",
-          "follow_up"
+          "show_label"
         ],
         "title": "EraPerformanceItem",
         "type": "object"
@@ -1396,10 +1376,6 @@
       "GuestAppearanceItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "instruments": {
             "items": {
               "type": "string"
@@ -1454,8 +1430,7 @@
         "required": [
           "show_id",
           "show_date",
-          "instruments",
-          "follow_up"
+          "instruments"
         ],
         "title": "GuestAppearanceItem",
         "type": "object"
@@ -1718,9 +1693,16 @@
       "PerformanceListItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
+          "listen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listen Url"
           },
           "performance_id": {
             "title": "Performance Id",
@@ -1771,8 +1753,7 @@
         "required": [
           "performance_id",
           "show_id",
-          "show_label",
-          "follow_up"
+          "show_label"
         ],
         "title": "PerformanceListItem",
         "type": "object"
@@ -1858,10 +1839,6 @@
       "PerformanceSpineNeighbor": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "performance_id": {
             "title": "Performance Id",
             "type": "string"
@@ -1873,8 +1850,7 @@
         },
         "required": [
           "performance_id",
-          "title",
-          "follow_up"
+          "title"
         ],
         "title": "PerformanceSpineNeighbor",
         "type": "object"
@@ -2057,10 +2033,6 @@
       "PerformerItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "instruments": {
             "items": {
               "type": "string"
@@ -2091,8 +2063,7 @@
           "person_id",
           "name",
           "role",
-          "instruments",
-          "follow_up"
+          "instruments"
         ],
         "title": "PerformerItem",
         "type": "object"
@@ -2355,10 +2326,6 @@
       "SetlistSong": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "highlighted": {
             "default": false,
             "title": "Highlighted",
@@ -2402,8 +2369,7 @@
         "required": [
           "performance_id",
           "song_id",
-          "title",
-          "follow_up"
+          "title"
         ],
         "title": "SetlistSong",
         "type": "object"
@@ -2503,10 +2469,6 @@
       "ShowSelectionItem": {
         "additionalProperties": false,
         "properties": {
-          "follow_up": {
-            "title": "Follow Up",
-            "type": "string"
-          },
           "location": {
             "anyOf": [
               {
@@ -2534,8 +2496,7 @@
         "required": [
           "show_id",
           "show_date",
-          "venue_name",
-          "follow_up"
+          "venue_name"
         ],
         "title": "ShowSelectionItem",
         "type": "object"
@@ -2985,6 +2946,42 @@
           }
         },
         "summary": "Experience"
+      }
+    },
+    "/api/experience/stream": {
+      "post": {
+        "operationId": "experience_stream_api_experience_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExperienceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Experience Stream"
       }
     },
     "/api/health": {

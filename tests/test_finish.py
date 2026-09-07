@@ -637,7 +637,7 @@ def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_acti
     assert unit.type == "performance_unit"
     assert unit.song_title and unit.show_date == "1972-08-27" and unit.venue_name == "Old Renaissance Faire Grounds"
     assert unit.previous and unit.next, "a mid-set rendition has neighbours on both sides"
-    assert unit.listen[0].label == f"Play {unit.song_title}"
+    assert unit.listen[0].label == f"Listen to {unit.song_title}"
     assert unit.listen[0].url == context["listen"]["archive_track_url"]
     assert any(action.label == "Hear the full show" for action in unit.listen)
 
@@ -667,8 +667,51 @@ def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
     era = blocks[0]
     assert era.title == "Early Sugarees" and era.span == "1971–72" and era.role == "representative"
     assert [item.performance_id for item in era.performances] == [performance["performance_id"] for performance in with_listen]
-    assert all(item.listen and item.listen.label == "Play Sugaree" for item in era.performances)
+    assert all(item.listen and item.listen.label == "Listen to Sugaree" for item in era.performances)
     assert all(item.show_date and item.show_label for item in era.performances)
+
+
+def test_server_built_items_carry_no_generated_follow_ups():
+    """Only the composer writes follow-ups; server projections never invent one."""
+
+    from deadbot import experience
+
+    for model in (
+        experience.SetlistSong,
+        experience.PerformerItem,
+        experience.GuestAppearanceItem,
+        experience.EquipmentItem,
+        experience.PerformanceListItem,
+        experience.ComparisonStripItem,
+        experience.PerformanceSpineNeighbor,
+        experience.ShowSelectionItem,
+        experience.ArrangementSearchItem,
+        experience.EraPerformanceItem,
+        experience.CreditItem,
+    ):
+        assert "follow_up" not in model.model_fields, model.__name__
+    # The composer's own follow-ups survive on units and editorial items.
+    for model in (experience.ShowUnitBlock, experience.PerformanceUnitBlock, experience.EraUnitBlock, experience.EditorialItem):
+        assert "follow_up" in model.model_fields, model.__name__
+
+
+def test_performance_lists_and_comparison_strips_link_to_recordings():
+    store = CanonicalStore()
+    song = store.resolve_song("Sugaree")
+    payload = store.song_context(song)
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None, mode="comparison",
+        body=[
+            finish.PerformanceListRef(type="performance_list", song_id=song["song_id"]),
+            finish.ComparisonStripRef(type="comparison_strip", song_id=song["song_id"]),
+        ],
+    )
+    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    performance_list, strip = blocks
+    linked = [item for item in performance_list.items if item.listen_url]
+    assert linked and all(item.listen_url.startswith("https://") for item in linked)
+    assert any(item.listen_url for item in strip.items)
 
 
 def test_show_setlist_songs_carry_listen_links():
