@@ -208,7 +208,7 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .album-tracks li::marker { color: #7f9582; }
 /* Tracks stay list items so the ol's own numbering survives, as setlist songs do. */
 .album-track { display: list-item; }
-.album-track.highlighted .listening-label > span:first-child, .album-track.highlighted > span:first-child { color: #f7e7b5; font-weight: 700; }
+.album-track.highlighted .listening-label, .album-track.highlighted > .listening-label { color: #f7e7b5; font-weight: 700; }
 .album-personnel { margin: 0; padding: 0; list-style: none; }
 .album-personnel li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .album-personnel li span, .song-albums li span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; text-transform: capitalize; }
