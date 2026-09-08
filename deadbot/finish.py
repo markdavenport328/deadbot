@@ -188,14 +188,13 @@ _ROLE_DESCRIPTION = (
     "This unit's role in the answer: anchor (the primary object), supporting, contrast, "
     "turning_point, outlier, culmination, overlooked or representative. Omit when no role applies."
 )
-_NOTE_DESCRIPTION = "Why this object matters here, in one to three sentences. Interpretation, not the facts the server already shows."
+_NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
 _SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
 _FOLLOW_UP_DESCRIPTION = (
     "An optional exploratory question the visitor might ask next, in their voice. "
     "Use a relationship or implication discovered in this research: explanation, comparison, history, lore or evidence. "
     "Never ask to hear, listen to, play or open material; the object's listening links already provide that action. "
-    "Use no more than one or two follow-ups across the whole page, and none when no unusually valuable next question emerged. "
-    "Do not restate another follow-up on the page."
+    "Include it when it creates a specific, worthwhile continuation; omit generic or repetitive questions."
 )
 
 
@@ -343,7 +342,7 @@ class FinishPlan(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     chat_answer: str = Field(
-        description="The direct standalone answer shown in the conversation, normally one to three sentences. Lead with the conclusion; include only the qualification needed to make it accurate. May use markdown links to URLs the tools returned this turn."
+        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. May use markdown links to URLs the tools returned this turn."
     )
     title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
     lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
@@ -352,8 +351,8 @@ class FinishPlan(BaseModel):
         default_factory=list,
         max_length=8,
         description=(
-            "The model-selected groups that make up the edited main body. Prefer one group; add another only for a genuinely distinct second movement. "
-            "Choose collection, sequence, comparison, or argument, omit redundant headings/leads, and include only items that materially advance the answer."
+            "The model-selected groups that make up the edited main body. Use each group for a distinct idea or relationship. "
+            "Choose collection, sequence, comparison, or argument, and omit headings or leads that repeat the same framing."
         ),
     )
     body: list[BodyItem] = Field(
@@ -757,7 +756,7 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer gives the conclusion immediately; the main body adds only the evidence, story, or listening paths needed to understand why it matters. Prefer one purposeful group and one or two exceptional next questions. Choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
+            "chat_answer gives the conclusion immediately; the main body adds useful listening or source actions and the evidence, story or context that makes the answer meaningful. Choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
             "performance_unit, era_unit, album_unit) with your notes, roles, facets, highlights and sources, plus your own narrative, fact grids or timelines for what "
             "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
