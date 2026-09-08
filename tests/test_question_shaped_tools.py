@@ -84,6 +84,24 @@ def test_stored_resource_search_needs_the_phrase_or_every_meaningful_word():
     assert focused["match_count"] == len(focused["resources"]) > 0
 
 
+def test_stored_resource_search_ranks_fuller_matches_first():
+    # In the raw CSV, "resource-deadnet-community-1990-03-29" (matches 4 of
+    # the 6 meaningful words) sits ahead of
+    # "resource-deadnet-community-1991-09-10" (matches 5), and the one exact
+    # phrase match sits after both -- so an unranked result would surface
+    # them in that (wrong) order. Confirmed by inspecting data/canonical/resources.csv.
+    payload = json.loads(
+        _tools()["search_stored_resources"].invoke(
+            {"query": "Branford Marsalis's history with the Grateful Dead"}
+        )
+    )
+    resource_ids = [resource["resource_id"] for resource in payload["resources"]]
+    assert resource_ids[0] == "resource-branford-history-with-the-dead"
+    assert resource_ids.index("resource-deadnet-community-1991-09-10") < resource_ids.index(
+        "resource-deadnet-community-1990-03-29"
+    )
+
+
 def test_album_tracks_carry_their_live_legacy():
     payload = json.loads(_tools()["get_album"].invoke({"release_id_or_title": "American Beauty"}))
     truckin = next(track for track in payload["tracks"] if track["song_id"] == "song-truckin")

@@ -234,6 +234,35 @@ class AnswerStreamingFakeAgent(FakeAgent):
         yield ("values", {"messages": self.messages})
 
 
+class SurrogateStreamingFakeAgent(FakeAgent):
+    """Streams a ``finish_response`` tool-call-argument fragment carrying an
+    actual lone low surrogate character (not a ``\\u`` escape sequence, so
+    ``extract_chat_answer`` passes it straight through unmodified) so the
+    ``answer`` event reaching ``line()`` in ``api.py`` is the one holding
+    the unpaired surrogate -- this exercises that layer's own defense
+    (``.encode("utf-8", "replace")``) independent of the extractor's.
+    """
+
+    def stream(self, payload, config, stream_mode="values"):
+        self.calls.append((payload, config))
+        assert stream_mode == ["values", "messages"]
+        yield ("values", {"messages": self.messages[:1]})
+        chunk = AIMessageChunk(
+            content="",
+            tool_call_chunks=[
+                {
+                    "name": "finish_response",
+                    "args": '{"chat_answer": "Hi \udc00 there", "title": "Deadbot"}',
+                    "id": "f1",
+                    "index": 0,
+                    "type": "tool_call_chunk",
+                }
+            ],
+        )
+        yield ("messages", (chunk, {}))
+        yield ("values", {"messages": self.messages})
+
+
 def _ndjson(text):
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
@@ -287,6 +316,29 @@ def test_streaming_endpoint_streams_the_chat_answer_as_it_is_generated():
 
     response = ExperienceResponse.model_validate(events[response_index]["response"])
     assert answer_texts[-1] == response.answer
+
+
+def test_streaming_endpoint_delivers_a_lone_surrogate_answer_as_a_valid_line():
+    plan = {"chat_answer": "Hi there", "title": "Deadbot", "lead": None, "mode": "quick_fact", "body": []}
+    agent = SurrogateStreamingFakeAgent([
+        HumanMessage(content="Hi"),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ])
+    client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
+    result = client.post("/api/experience/stream", json={"question": "Hi"})
+    assert result.status_code == 200
+    # Before the api.py fix, line()'s json.dumps(..., ensure_ascii=False) left
+    # the lone surrogate embedded in the text, and Starlette's own UTF-8
+    # encode of that body -- outside this generator's try/except -- raised
+    # UnicodeEncodeError, so the stream produced no usable "answer" line at
+    # all; parsing every line here, with the surrogate gone, is the check.
+    events = _ndjson(result.text)
+    answer_events = [event for event in events if event["type"] == "answer"]
+    assert answer_events
+    assert any("Hi" in event["text"] and "there" in event["text"] for event in answer_events)
+    assert not any(0xD800 <= ord(char) <= 0xDFFF for event in answer_events for char in event["text"])
+    assert events[-1]["type"] == "response"
 
 
 def test_streaming_endpoint_falls_back_to_invoke_for_an_agent_without_stream():

@@ -72,25 +72,37 @@ def extract_chat_answer(partial_json: str) -> tuple[str, bool]:
                 break
             code_point = int(hex_digits, 16)
             if 0xD800 <= code_point <= 0xDBFF:
-                # High surrogate: look for a following low surrogate to form
-                # one character. If it is not there yet, hold everything
-                # back since more text may complete the pair.
+                # High surrogate: look for a following \uDC00-\uDFFF escape
+                # to form one character. Nothing at all past it yet is held
+                # back, since more text may still complete the pair; once
+                # something else has arrived and it is not a matching low
+                # surrogate, the pair will never complete, so the lone
+                # surrogate is replaced with U+FFFD (never emitted as-is --
+                # that would leave an unpaired surrogate in the Python
+                # string) and whatever follows is handled on the next pass.
                 low_start = index + 6
-                if body[low_start : low_start + 2] != "\\u":
+                if low_start >= length:
                     break
-                low_hex = body[low_start + 2 : low_start + 6]
-                if len(low_hex) < 4:
-                    break
-                low_point = int(low_hex, 16)
-                if not (0xDC00 <= low_point <= 0xDFFF):
-                    # Not a valid low surrogate; emit the high surrogate on
-                    # its own rather than lose it.
-                    chars.append(chr(code_point))
-                    index += 6
-                    continue
-                combined = 0x10000 + (code_point - 0xD800) * 0x400 + (low_point - 0xDC00)
-                chars.append(chr(combined))
-                index = low_start + 6
+                if body[low_start : low_start + 2] == "\\u":
+                    low_hex = body[low_start + 2 : low_start + 6]
+                    if len(low_hex) < 4:
+                        # Partial \uXXXX: hold back, more text may follow.
+                        break
+                    low_point = int(low_hex, 16)
+                    if 0xDC00 <= low_point <= 0xDFFF:
+                        combined = 0x10000 + (code_point - 0xD800) * 0x400 + (low_point - 0xDC00)
+                        chars.append(chr(combined))
+                        index = low_start + 6
+                        continue
+                chars.append("\ufffd")
+                index += 6
+                continue
+            if 0xDC00 <= code_point <= 0xDFFF:
+                # A low surrogate with no preceding high surrogate is
+                # unpaired; replace it rather than leave a lone surrogate
+                # in the decoded string.
+                chars.append("\ufffd")
+                index += 6
                 continue
             chars.append(chr(code_point))
             index += 6

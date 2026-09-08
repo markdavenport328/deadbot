@@ -215,7 +215,12 @@ def create_app(
         """
 
         def line(event: dict[str, Any]) -> str:
-            return json.dumps(event, ensure_ascii=False) + "\n"
+            # A lone surrogate that slipped through the model's JSON (see
+            # extract_chat_answer) cannot be UTF-8 encoded; Starlette encodes
+            # this text outside any try/except of ours, so it is made safe
+            # here rather than letting that raise and kill the stream.
+            serialized = json.dumps(event, ensure_ascii=False)
+            return serialized.encode("utf-8", "replace").decode("utf-8") + "\n"
 
         try:
             config = run_config(invocation.invocation_thread_id, app.state.settings)

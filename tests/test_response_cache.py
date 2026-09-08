@@ -17,8 +17,6 @@ def _postgres_cache(**kwargs) -> tuple[Connection, ResponseCache]:
     # The toy fixture has no metadata table; the fingerprint query needs it.
     connection.raw.execute('CREATE TABLE canonical."deadbot_schema_metadata" ("schema_version" TEXT)')
     connection.raw.execute('INSERT INTO canonical."deadbot_schema_metadata" VALUES (7)')
-    for table in ("official_release_tracks", "resources"):
-        pass
     connection.raw.execute('CREATE TABLE canonical."selection_evidence" ("selection_evidence_id" TEXT)')
     return connection, ResponseCache(store, **kwargs)
 

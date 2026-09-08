@@ -43,6 +43,22 @@ def test_trailing_partial_unicode_escape_is_held_back_then_completed():
     assert extract_chat_answer(completed) == ("Veneta é", True)
 
 
+def test_bare_low_surrogate_is_replaced_rather_than_left_unpaired():
+    raw = '{"chat_answer": "Hi \\udc00 there"'
+    answer, complete = extract_chat_answer(raw)
+    assert answer == "Hi � there"
+    assert complete is True
+    assert not any(0xD800 <= ord(char) <= 0xDFFF for char in answer)
+
+
+def test_high_surrogate_without_a_matching_low_surrogate_is_replaced():
+    raw = '{"chat_answer": "Hi \\ud83dA"'
+    answer, complete = extract_chat_answer(raw)
+    assert answer == "Hi �A"
+    assert complete is True
+    assert not any(0xD800 <= ord(char) <= 0xDFFF for char in answer)
+
+
 def test_completed_value_reports_complete_and_ignores_later_fields():
     raw = '{"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972"'
     assert extract_chat_answer(raw) == ("Veneta opened with Promised Land.", True)

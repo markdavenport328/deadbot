@@ -533,7 +533,7 @@ def build_tools(
                 resource_id, entity_id = row.get("resource_id"), row.get(id_field)
                 if resource_id and entity_id:
                     destination.setdefault(resource_id, []).append(entity_id)
-        resources = []
+        scored: list[tuple[bool, int, dict[str, Any]]] = []
         for resource in store.rows("resources"):
             searchable = " ".join(
                 resource.get(field, "")
@@ -544,26 +544,36 @@ def build_tools(
             # Tower best version performance review" because of "review";
             # a two-word name still matches on either word.
             matched_words = sum(1 for word in query_words if word in searchable)
-            if needle not in searchable and not (query_words and 2 * matched_words >= len(query_words)):
+            full_phrase_match = needle in searchable
+            if not full_phrase_match and not (query_words and 2 * matched_words >= len(query_words)):
                 continue
             parsed = urlparse(resource.get("source_url", ""))
             if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
                 continue
             resource_id = resource["resource_id"]
-            resources.append(
-                {
-                    "resource_id": resource_id,
-                    "title": resource.get("title"),
-                    "resource_type": resource.get("resource_type"),
-                    "creator": resource.get("creator") or None,
-                    "source_name": resource.get("source_name"),
-                    "url": resource["source_url"],
-                    "notes": resource.get("notes") or None,
-                    "song_ids": song_ids_by_resource.get(resource_id, []),
-                    "show_ids": show_ids_by_resource.get(resource_id, []),
-                    "performance_ids": performance_ids_by_resource.get(resource_id, []),
-                }
+            scored.append(
+                (
+                    full_phrase_match,
+                    matched_words,
+                    {
+                        "resource_id": resource_id,
+                        "title": resource.get("title"),
+                        "resource_type": resource.get("resource_type"),
+                        "creator": resource.get("creator") or None,
+                        "source_name": resource.get("source_name"),
+                        "url": resource["source_url"],
+                        "notes": resource.get("notes") or None,
+                        "song_ids": song_ids_by_resource.get(resource_id, []),
+                        "show_ids": show_ids_by_resource.get(resource_id, []),
+                        "performance_ids": performance_ids_by_resource.get(resource_id, []),
+                    },
+                )
             )
+        # Full-phrase matches first, then by how many meaningful words
+        # matched, and otherwise in the order they were found (a stable
+        # sort keeps that tie-breaking automatic).
+        scored.sort(key=lambda item: (not item[0], -item[1]))
+        resources = [item[2] for item in scored]
         payload = {
             "query": query,
             "coverage_note": "Matching cataloged resource metadata; source text is not retrieved.",
@@ -864,7 +874,7 @@ def build_tools(
         performances_by_show: dict[str, list[dict[str, Any]]] = {}
         for row in performances:
             performances_by_show.setdefault(row.get("show_id", ""), []).append(row)
-        fan_vote_versions = 0
+        fan_vote_performance_ids: set[str] = set()
         for entry in entries or []:
             if not isinstance(entry, dict):
                 continue
@@ -885,7 +895,7 @@ def build_tools(
             for pid in named:
                 version(by_id[pid])["selections"].append({**signal, "names": "this performance"})
                 if entry.get("signal_type") == "fan_ranked_version":
-                    fan_vote_versions += 1
+                    fan_vote_performance_ids.add(pid)
             if named:
                 continue
             for show_id in entry.get("candidate_show_ids") or []:
@@ -907,7 +917,7 @@ def build_tools(
                 "versions_with_any_source": len(ordered),
                 "official_release_versions": sum(1 for item in ordered if item["official_releases"]),
                 "selection_signal_versions": sum(1 for item in ordered if item["selections"]),
-                "fan_vote_versions": fan_vote_versions,
+                "fan_vote_versions": len(fan_vote_performance_ids),
                 "selection_evidence_available": entries is not None,
             },
         }
