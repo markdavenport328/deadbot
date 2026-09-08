@@ -90,9 +90,15 @@ To add a provider later, implement `create_chat_model()` and register it in `cre
 
 The default is `qwen3:8b`, selected because it is a reasonably sized local model with Ollama tool-calling and thinking support. The harness starts it in non-thinking mode so that its tool-routing loop stays responsive; set `DEADBOT_OLLAMA_THINKING=true` only after evaluating the slower reasoning loop on real Deadbot questions. Use `qwen3:14b` on a machine with sufficient memory if answer quality needs improvement. The provider is local through Ollama; neither model choice affects the harness.
 
-The initial graph uses non-streaming model requests because it waits for a full
-tool-call or final-answer message at each node. This is also the reliable request
-mode for the current local Ollama/LangChain combination.
+`DEADBOT_MODEL_STREAMING` (default: true for `DEADBOT_MODEL_PROVIDER=openai`, false
+otherwise) controls whether the model call at each node streams. Ollama tool-call
+streaming is not relied on, so the local provider stays non-streaming: the graph
+waits for a full tool-call or final-answer message at each node, which is also the
+reliable request mode for the current local Ollama/LangChain combination. OpenAI
+streams instead, and `/api/experience/stream` requests LangGraph's `messages` mode
+alongside `values` so it can decode the `chat_answer` field out of the
+`finish_response` tool call's arguments as they are generated and forward it to the
+browser as `answer` events, ahead of the rest of the plan.
 
 ```bash
 ollama pull qwen3:8b

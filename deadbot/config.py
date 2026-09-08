@@ -73,6 +73,10 @@ class Settings:
     # Reasoning effort for OpenAI reasoning models (minimal, low, medium, high).
     # Unset means the model's default. Lower effort cuts latency per model call.
     openai_reasoning_effort: str | None = None
+    # Stream model output so finish_response's chat_answer can reach the
+    # visitor before the whole turn finishes. Defaults to the openai provider
+    # since Ollama tool-call streaming is not relied on here.
+    model_streaming: bool = False
     max_tool_rounds: int = 8
     rate_limit_per_minute: int = 10
     conversation_window: int = 12
@@ -96,13 +100,16 @@ class Settings:
             or None
         )
 
+        model_provider = value("DEADBOT_MODEL_PROVIDER", "ollama") or "ollama"
+
         return cls(
             data_store=(value("DEADBOT_DATA_STORE", "postgres") or "postgres").strip().lower(),
             database_url=database_url,
-            model_provider=value("DEADBOT_MODEL_PROVIDER", "ollama") or "ollama",
+            model_provider=model_provider,
             ollama_model=value("DEADBOT_OLLAMA_MODEL", "qwen3:8b") or "qwen3:8b",
             ollama_base_url=value("DEADBOT_OLLAMA_BASE_URL", "http://127.0.0.1:11434") or "http://127.0.0.1:11434",
             ollama_thinking=_as_bool(value("DEADBOT_OLLAMA_THINKING"), False),
+            model_streaming=_as_bool(value("DEADBOT_MODEL_STREAMING"), model_provider == "openai"),
             openai_model=value("DEADBOT_OPENAI_MODEL", "gpt-4o-mini") or "gpt-4o-mini",
             openai_base_url=value("DEADBOT_OPENAI_BASE_URL") or None,
             openai_api_key=value("OPENAI_API_KEY"),

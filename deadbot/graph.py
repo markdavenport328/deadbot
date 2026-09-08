@@ -233,8 +233,12 @@ def build_agent(
     store = store or create_canonical_store(settings)
     provider = provider or create_model_provider(settings)
     tools = agent_tools(store)
-    # Non-streaming: the graph consumes whole messages at each node.
-    model = provider.create_chat_model().bind_tools(tools).bind(stream=False)
+    model = provider.create_chat_model().bind_tools(tools)
+    # Ollama tool-call streaming is not relied on here, so keep it
+    # non-streaming there; OpenAI streams so finish_response's chat_answer
+    # can reach the visitor before the whole turn finishes.
+    if not settings.model_streaming:
+        model = model.bind(stream=False)
 
     def call_model(state: MessagesState):
         response = model.invoke([SystemMessage(content=SYSTEM_PROMPT), *state["messages"]])

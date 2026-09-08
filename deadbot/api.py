@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
+from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import ExperienceRequest, ExperienceResponse
@@ -198,10 +199,19 @@ def create_app(
     def _stream_events(request: ExperienceRequest, invocation: _Invocation) -> Iterator[str]:
         """Newline-delimited JSON: status lines while the agent works, then the response.
 
-        LangGraph's ``stream`` with ``stream_mode="values"`` yields the whole
-        message list after every step; each new tool call the model makes
-        becomes one visitor-facing status. An agent without ``stream`` (the
-        test doubles, for one) is invoked whole and yields only the response.
+        LangGraph's ``stream`` with ``stream_mode=["values", "messages"]``
+        yields ``(mode, payload)`` tuples: a ``values`` payload is the whole
+        message list after each step, from which each new tool call the
+        model makes becomes one visitor-facing status; a ``messages``
+        payload is one ``(AIMessageChunk, metadata)`` pair from the model's
+        own token stream, from which an ``AnswerAccumulator`` pulls the
+        growing ``chat_answer`` text out of the ``finish_response`` call's
+        arguments as it is generated, so the visible answer can reach the
+        browser before the rest of the plan finishes. An agent whose
+        ``stream`` ignores the mode list and yields plain state dicts (the
+        test doubles, for one) is handled the same way ``values`` always
+        was. An agent without ``stream`` at all is invoked whole and yields
+        only the response.
         """
 
         def line(event: dict[str, Any]) -> str:
@@ -224,12 +234,24 @@ def create_app(
                 return
             if callable(stream):
                 seen = 0
-                steps = iter(stream(payload, config, stream_mode="values"))
+                answer_accumulator = AnswerAccumulator()
+                steps = iter(stream(payload, config, stream_mode=["values", "messages"]))
                 while True:
                     with query_cache_scope(cache):
-                        state = next(steps, None)
-                    if state is None:
+                        item = next(steps, None)
+                    if item is None:
                         break
+                    if isinstance(item, tuple) and len(item) == 2 and item[0] in ("values", "messages"):
+                        mode, chunk_payload = item
+                    else:
+                        mode, chunk_payload = "values", item
+                    if mode == "messages":
+                        message_chunk = chunk_payload[0] if isinstance(chunk_payload, tuple) else chunk_payload
+                        answer_text = answer_accumulator.feed(message_chunk)
+                        if answer_text:
+                            yield line({"type": "answer", "text": answer_text})
+                        continue
+                    state = chunk_payload
                     messages = list(state.get("messages", [])) if isinstance(state, dict) else messages
                     for status in status_lines(messages, seen):
                         yield line({"type": "status", "text": status})

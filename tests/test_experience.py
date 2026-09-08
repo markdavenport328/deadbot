@@ -2,7 +2,7 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
 from pydantic import ValidationError
 
 from deadbot import experience
@@ -187,13 +187,51 @@ def test_experience_endpoint_renders_a_nested_show_explorer():
 
 
 class StreamingFakeAgent(FakeAgent):
-    """Yields the growing message list the way LangGraph's ``stream`` does with stream_mode="values"."""
+    """Yields the growing message list the way LangGraph's ``stream`` does with
+    stream_mode="values", ignoring the ``["values", "messages"]`` mode list the
+    application now requests -- exactly like an agent with no ``messages``
+    support, which ``_stream_events`` must still treat as a stream of ``values``
+    states.
+    """
 
     def stream(self, payload, config, stream_mode="values"):
         self.calls.append((payload, config))
-        assert stream_mode == "values"
+        assert stream_mode == ["values", "messages"]
         for end in range(1, len(self.messages) + 1):
             yield {"messages": self.messages[:end]}
+
+
+class AnswerStreamingFakeAgent(FakeAgent):
+    """Interleaves ``("messages", (AIMessageChunk, metadata))`` tool-call-argument
+    fragments for ``finish_response`` with ``("values", state)`` steps, the way
+    LangGraph's ``stream`` does for ``stream_mode=["values", "messages"]``.
+    """
+
+    def stream(self, payload, config, stream_mode="values"):
+        self.calls.append((payload, config))
+        assert stream_mode == ["values", "messages"]
+        yield ("values", {"messages": self.messages[:2]})
+        fragments = [
+            '{"chat_answer": "Veneta ',
+            'opened with ',
+            'Promised Land."',
+            ', "title": "Veneta, 1972"}',
+        ]
+        for index, fragment in enumerate(fragments):
+            chunk = AIMessageChunk(
+                content="",
+                tool_call_chunks=[
+                    {
+                        "name": "finish_response" if index == 0 else None,
+                        "args": fragment,
+                        "id": "f1",
+                        "index": 0,
+                        "type": "tool_call_chunk",
+                    }
+                ],
+            )
+            yield ("messages", (chunk, {}))
+        yield ("values", {"messages": self.messages})
 
 
 def _ndjson(text):
@@ -222,6 +260,33 @@ def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     response = ExperienceResponse.model_validate(events[-1]["response"])
     assert response.title == "Veneta, 1972" and response.blocks[0].type == "show_setlist"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
+
+
+def test_streaming_endpoint_streams_the_chat_answer_as_it_is_generated():
+    store = CanonicalStore()
+    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
+            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27"}]}
+    agent = AnswerStreamingFakeAgent([
+        HumanMessage(content="What opened Veneta?"),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ])
+    client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
+    result = client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "browser-1"})
+    assert result.status_code == 200
+    events = _ndjson(result.text)
+
+    answer_events = [event for event in events if event["type"] == "answer"]
+    response_index = next(index for index, event in enumerate(events) if event["type"] == "response")
+    assert len(answer_events) >= 2
+    assert all(events.index(event) < response_index for event in answer_events)
+
+    answer_texts = [event["text"] for event in answer_events]
+    for earlier, later in zip(answer_texts, answer_texts[1:]):
+        assert later.startswith(earlier)
+
+    response = ExperienceResponse.model_validate(events[response_index]["response"])
+    assert answer_texts[-1] == response.answer
 
 
 def test_streaming_endpoint_falls_back_to_invoke_for_an_agent_without_stream():
