@@ -26,6 +26,15 @@ Exhausting the round budget is not a graceful fallback: LangGraph raises a recur
   endpoints, and frequent immediate set neighbors for one song. This describes
   only the current documented library (with explicit transition denominators),
   not complete band history, editorial lore, or a “best” score.
+- `get_song_notable_versions` — the renditions of one song that a source
+  singled out: official releases carrying the performance, reviewed critic,
+  curator and fan signals naming it or its show, and stored listening links.
+  Four batched reads regardless of performance count. `source_count` counts
+  distinct sources and is presented as separate voices, never a score.
+- `get_selections_for` — the reviewed selection inventory narrowed to one song
+  or show, each match saying whether it names a performance, the whole show,
+  or a show where the song was played. The full inventory
+  (`get_selection_signals`) remains for questions about the sources themselves.
 - `get_deadnet_song_context` — an optional reviewed Dead.net song-page title,
   short metadata, and link; it never returns page body or lyrics.
 - `get_deadcast_metadata` — an optional reviewed Deadcast episode title, short
@@ -52,11 +61,26 @@ Exhausting the round budget is not a graceful fallback: LangGraph raises a recur
 - `get_astrology` — date-based Western zodiac context, explicitly labeled as cultural/interpretive rather than scientific.
 - `finish_response` — the only way a turn ends: the model's chat answer and main-body plan, resolved by `deadbot/finish.py`.
 
+`search_entities`, `get_song`, `get_show`, `get_album`, and `search_guest_musicians` each attach a `pathways` object (`deadbot/pathways.py`) for every song, show, and release result: a compact, source-attributed inventory of the lore already cataloged for that entity — cataloged resources (excluding catalog/lyrics inventory rows), a reviewed source trail summary, and selection-signal counts by source — built from batched reads shared across the whole call, never a lookup per entity. When nothing is cataloged for an entity, its pathways object says so plainly (`"cataloged": false`) and instead lists the research sites suited to that entity type, so the model can offer a search route rather than imply coverage that does not exist.
+
 All tools are read only. The canonical-data tools never touch the network; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. The research tools (`search_site`, `read_page`, `get_recording_reviews`) read public web pages and public JSON endpoints at request time so the model can work from what a source actually says. They keep nothing: no page text is stored, and the site directory is a suggestion of where to look, not a boundary. See `docs/superpowers/specs/2026-09-03-source-reading-design.md`.
 
 Historical weather is nearby-grid-cell reanalysis, not an exact NWS station or
 concert-site measurement. Keep it distinct from direct weather observations and
 from attributed interview or memoir claims about conditions at a show.
+
+## Request-time caching
+
+Two caches keep the remote database from dominating a turn. A per-request
+query cache (`deadbot.postgres.query_cache_scope`) serves repeated canonical
+reads from memory for the life of one request, so plan resolution reuses what
+research already fetched. A response cache (`deadbot.response_cache`) stores
+the composed answer to a fresh question in `deadbot_response_cache`, keyed by
+the normalized question, the store's data version and the deployed commit; a
+repeat of an opening question is served in well under a second until an
+import or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
+`scripts/warm_answers.py <base-url>` asks a deployment its opening questions
+so the first visitor after a deploy does not wait.
 
 ## Provider contract
 
@@ -68,9 +92,15 @@ To add a provider later, implement `create_chat_model()` and register it in `cre
 
 The default is `qwen3:8b`, selected because it is a reasonably sized local model with Ollama tool-calling and thinking support. The harness starts it in non-thinking mode so that its tool-routing loop stays responsive; set `DEADBOT_OLLAMA_THINKING=true` only after evaluating the slower reasoning loop on real Deadbot questions. Use `qwen3:14b` on a machine with sufficient memory if answer quality needs improvement. The provider is local through Ollama; neither model choice affects the harness.
 
-The initial graph uses non-streaming model requests because it waits for a full
-tool-call or final-answer message at each node. This is also the reliable request
-mode for the current local Ollama/LangChain combination.
+`DEADBOT_MODEL_STREAMING` (default: true for `DEADBOT_MODEL_PROVIDER=openai`, false
+otherwise) controls whether the model call at each node streams. Ollama tool-call
+streaming is not relied on, so the local provider stays non-streaming: the graph
+waits for a full tool-call or final-answer message at each node, which is also the
+reliable request mode for the current local Ollama/LangChain combination. OpenAI
+streams instead, and `/api/experience/stream` requests LangGraph's `messages` mode
+alongside `values` so it can decode the `chat_answer` field out of the
+`finish_response` tool call's arguments as they are generated and forward it to the
+browser as `answer` events, ahead of the rest of the plan.
 
 ```bash
 ollama pull qwen3:8b

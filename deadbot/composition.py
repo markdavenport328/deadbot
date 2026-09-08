@@ -163,12 +163,27 @@ def _research_resource(resource: dict[str, Any]) -> dict[str, Any] | None:
     title = resource.get("title")
     url = resource.get("url")
     parsed_url = urlparse(url) if isinstance(url, str) else None
+    # Every host a pathway link (deadbot/pathways.py) can carry: dead.net
+    # research pages, the research-site blogs in data/research_sites.json,
+    # the Grateful Dead Archive Online, archive.org, and Relix, the source of
+    # cataloged interview resources. A pathway link the model cites must
+    # survive here to reach the visible response.
     approved_hosts = {
         "dead.net",
         "www.dead.net",
         "deadheadhigh.com",
         "www.deadheadhigh.com",
         "deadessays.blogspot.com",
+        "lostlivedead.blogspot.com",
+        "hooterollin.blogspot.com",
+        "deadsources.blogspot.com",
+        "gratefulseconds.blogspot.com",
+        "gdao.org",
+        "www.gdao.org",
+        "archive.org",
+        "www.archive.org",
+        "relix.com",
+        "www.relix.com",
     }
     if (
         not identifier

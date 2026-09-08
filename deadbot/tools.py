@@ -26,10 +26,12 @@ from deadbot.deadnet import (
 )
 from deadbot.source_registry import RegistryValidationError, load_registry
 from deadbot.lore_source_trails import source_trails_for_entity
+from deadbot.pathways import pathways_for
 from deadbot.selection_signals import (
     SelectionSignalError,
     load_selection_signals,
     load_show_selections,
+    stored_selection_entries,
 )
 from deadbot.site_search import SiteSearcher
 from deadbot.source_reader import PageReader, default_reader
@@ -286,6 +288,77 @@ def _reviewed_deadcast_adapter() -> DeadnetResearchAdapter | None:
     return _adapter_from_reviewed_source("deadcast-metadata")
 
 
+_RELEASE_INVENTORY_CAP = 20
+_RESOURCE_RESULT_CAP = 25
+_ERAS = (
+    ("1965–1970", "1965", "1970"),
+    ("1971–1975", "1971", "1975"),
+    ("1976–1979", "1976", "1979"),
+    ("1980–1986", "1980", "1986"),
+    ("1987–1990", "1987", "1990"),
+    ("1991–1995", "1991", "1995"),
+)
+
+
+def _era_label(show_date: str) -> str:
+    year = (show_date or "")[:4]
+    for label, first, last in _ERAS:
+        if first <= year <= last:
+            return label
+    return "undated"
+
+
+def _place(venue: dict[str, str] | None) -> str:
+    if not venue:
+        return ""
+    return ", ".join(value for value in (venue.get("city"), venue.get("state_region")) if value)
+
+
+def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
+    """Trim a show's recording list to a count and its IDs.
+
+    A show can carry dozens of recording rows whose metadata the model rarely
+    needs (get_performance and get_recording_reviews cover it), but grounding
+    is id-level: a recording the model names in a recording_list or as a
+    preferred recording must have appeared in this turn's tool output, so
+    every ID stays.
+    """
+
+    ids = [row["recording_id"] for row in recordings if row.get("recording_id")]
+    return {"count": len(recordings), "recording_ids": ids}
+
+
+def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge a show's per-instrument performer rows into one entry per person."""
+
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for assignment in performers:
+        person_id = assignment.get("person_id", "")
+        if person_id not in merged:
+            person = assignment.get("person") or {}
+            merged[person_id] = {
+                "person_id": person_id,
+                "name": person.get("name") or person_id,
+                "role": assignment.get("role", ""),
+                "instruments": [],
+            }
+            order.append(person_id)
+        instrument = assignment.get("instrument")
+        if instrument and instrument not in merged[person_id]["instruments"]:
+            merged[person_id]["instruments"].append(instrument)
+    return [merged[person_id] for person_id in order]
+
+
+def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
+    """The reviewed selection evidence, or None when this store cannot serve it."""
+
+    try:
+        return stored_selection_entries(store)
+    except SelectionSignalError:
+        return None
+
+
 def build_tools(
     store: CanonicalStore,
     *,
@@ -312,7 +385,9 @@ def build_tools(
         people who appear only in guest credits. Use search_guest_musicians
         when the distinction between a guest credit and the regular lineup is
         material. Returns stable IDs and display names only; it never searches
-        the web.
+        the web. pathways lists the cataloged lore for each result (resources,
+        source trail, selections) or the research sites to search when
+        nothing is cataloged.
         """
         words = query.casefold().split()
         stop_words = {"a", "an", "and", "at", "for", "in", "of", "on", "the", "to"}
@@ -338,24 +413,18 @@ def build_tools(
                 seen.add(key)
                 matches.append({"entity_type": entity_type, "id": entity_id, "label": label})
 
-        for table, fields, id_field, label_field in [
-            ("songs", ("title", "slug"), "song_id", "title"),
-            ("people", ("name",), "person_id", "name"),
-            ("venues", ("name", "city", "state_region"), "venue_id", "name"),
+        # One query per table for every phrase at once. Searching each phrase
+        # separately issued about 190 sequential remote queries for a
+        # full-sentence question.
+        for table, fields, id_field, label_field, entity_type in [
+            ("songs", ("title", "slug"), "song_id", "title", "song"),
+            ("people", ("name",), "person_id", "name", "person"),
+            ("venues", ("name", "city", "state_region"), "venue_id", "name", "venue"),
+            ("equipment", ("name", "manufacturer", "model"), "equipment_id", "name", "equipment"),
+            ("official_releases", ("title",), "release_id", "title", "release"),
         ]:
-            # "people" singularizes to "person"; table[:-1] would say "peopl".
-            entity_type = {"people": "person"}.get(table, table[:-1])
-            for phrase in phrases:
-                for row in store.matching_rows(table, phrase, fields)[:10]:
-                    add(entity_type, row[id_field], row[label_field])
-
-        for phrase in phrases:
-            for item in store.matching_rows("equipment", phrase, ("name", "manufacturer", "model"))[:10]:
-                add("equipment", item["equipment_id"], item["name"])
-
-        for phrase in phrases:
-            for row in store.matching_rows("official_releases", phrase, ("title",))[:10]:
-                add("release", row["release_id"], row["title"])
+            for row in store.matching_rows_any(table, phrases, fields):
+                add(entity_type, row[id_field], row[label_field])
 
         for show in store.search_shows(phrases, limit=20):
             add(
@@ -363,7 +432,16 @@ def build_tools(
                 show["show_id"],
                 f'{show["show_date"]} — {show.get("venue_name", "Unknown venue")}',
             )
-        return _json({"query": query, "matches": matches[:20]})
+        limited = matches[:20]
+        pathway_entities = [
+            (match["entity_type"], match["id"])
+            for match in limited
+            if match["entity_type"] in {"song", "show", "release"}
+        ][:6]
+        payload: dict[str, Any] = {"query": query, "matches": limited}
+        if pathway_entities:
+            payload["pathways"] = pathways_for(store, pathway_entities)
+        return _json(payload)
 
     @tool
     def search_guest_musicians(query: str = "") -> str:
@@ -371,6 +449,9 @@ def build_tools(
 
         A name or phrase narrows the results. Each appearance includes its show,
         venue, location, credited instruments, and any known participation scope.
+        pathways lists the cataloged lore for each result (resources, source
+        trail, selections) or the research sites to search when nothing is
+        cataloged.
         """
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
@@ -464,12 +545,16 @@ def build_tools(
                 }
             )
         guests.sort(key=lambda guest: guest["name"].casefold())
-        return _json(
-            {
-                "query": query,
-                "guests": guests,
-            }
-        )
+        show_ids = []
+        for guest in guests:
+            for appearance in guest["appearances"]:
+                if appearance["show_id"] not in show_ids:
+                    show_ids.append(appearance["show_id"])
+        pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
+        payload: dict[str, Any] = {"query": query, "guests": guests}
+        if pathway_entities:
+            payload["pathways"] = pathways_for(store, pathway_entities)
+        return _json(payload)
 
     @tool
     def search_stored_resources(query: str) -> str:
@@ -503,39 +588,56 @@ def build_tools(
                 resource_id, entity_id = row.get("resource_id"), row.get(id_field)
                 if resource_id and entity_id:
                     destination.setdefault(resource_id, []).append(entity_id)
-        resources = []
+        scored: list[tuple[bool, int, dict[str, Any]]] = []
         for resource in store.rows("resources"):
             searchable = " ".join(
                 resource.get(field, "")
                 for field in ("title", "creator", "source_name", "resource_type", "notes")
             ).casefold()
-            if needle not in searchable and not any(word in searchable for word in query_words):
+            # The phrase itself, or at least half of its meaningful words.
+            # Matching any one word returned 178 resources for "Franklin's
+            # Tower best version performance review" because of "review";
+            # a two-word name still matches on either word.
+            matched_words = sum(1 for word in query_words if word in searchable)
+            full_phrase_match = needle in searchable
+            if not full_phrase_match and not (query_words and 2 * matched_words >= len(query_words)):
                 continue
             parsed = urlparse(resource.get("source_url", ""))
             if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
                 continue
             resource_id = resource["resource_id"]
-            resources.append(
-                {
-                    "resource_id": resource_id,
-                    "title": resource.get("title"),
-                    "resource_type": resource.get("resource_type"),
-                    "creator": resource.get("creator") or None,
-                    "source_name": resource.get("source_name"),
-                    "url": resource["source_url"],
-                    "notes": resource.get("notes") or None,
-                    "song_ids": song_ids_by_resource.get(resource_id, []),
-                    "show_ids": show_ids_by_resource.get(resource_id, []),
-                    "performance_ids": performance_ids_by_resource.get(resource_id, []),
-                }
+            scored.append(
+                (
+                    full_phrase_match,
+                    matched_words,
+                    {
+                        "resource_id": resource_id,
+                        "title": resource.get("title"),
+                        "resource_type": resource.get("resource_type"),
+                        "creator": resource.get("creator") or None,
+                        "source_name": resource.get("source_name"),
+                        "url": resource["source_url"],
+                        "notes": resource.get("notes") or None,
+                        "song_ids": song_ids_by_resource.get(resource_id, []),
+                        "show_ids": show_ids_by_resource.get(resource_id, []),
+                        "performance_ids": performance_ids_by_resource.get(resource_id, []),
+                    },
+                )
             )
-        return _json(
-            {
-                "query": query,
-                "coverage_note": "All matching cataloged resource metadata; source text is not retrieved.",
-                "resources": resources,
-            }
-        )
+        # Full-phrase matches first, then by how many meaningful words
+        # matched, and otherwise in the order they were found (a stable
+        # sort keeps that tie-breaking automatic).
+        scored.sort(key=lambda item: (not item[0], -item[1]))
+        resources = [item[2] for item in scored]
+        payload = {
+            "query": query,
+            "coverage_note": "Matching cataloged resource metadata; source text is not retrieved.",
+            "match_count": len(resources),
+            "resources": resources[:_RESOURCE_RESULT_CAP],
+        }
+        if len(resources) > _RESOURCE_RESULT_CAP:
+            payload["note"] = f"Showing {_RESOURCE_RESULT_CAP} of {len(resources)} matches; narrow the query for the rest."
+        return _json(payload)
 
     @tool
     def get_song(song_id_or_title: str) -> str:
@@ -548,17 +650,32 @@ def build_tools(
         song's documented span and count; call `list_song_performances` when
         you need concrete rendition IDs and listening paths rather than loading
         the full history into an otherwise album- or song-focused answer.
+        pathways lists the cataloged lore for each result (resources, source
+        trail, selections) or the research sites to search when nothing is
+        cataloged.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
         context = store.song_context(song)
         profile = store.song_performance_profile(song)
-        return _json(
+        releases = context["releases"]
+        payload: dict[str, Any] = {
+            "song": context["song"],
+            "writers": context["writers"],
+            "release_count": len(releases),
+            # A widely released song (Sugar Magnolia: 135 records) turned this
+            # payload into 35,000 characters. The earliest records stay here;
+            # get_song_notable_versions lists live records by performance.
+            "releases": releases[:_RELEASE_INVENTORY_CAP],
+        }
+        if len(releases) > _RELEASE_INVENTORY_CAP:
+            payload["releases_note"] = (
+                f"Showing the earliest {_RELEASE_INVENTORY_CAP} of {len(releases)} records. "
+                "Call get_song_notable_versions for the live records that carry specific performances."
+            )
+        payload.update(
             {
-                "song": context["song"],
-                "writers": context["writers"],
-                "releases": context["releases"],
                 "resources": context["resources"],
                 "arrangements": context["arrangements"],
                 "performance_summary": {
@@ -573,6 +690,8 @@ def build_tools(
                 },
             }
         )
+        payload["pathways"] = pathways_for(store, [("song", song["song_id"])]).get(song["song_id"], {})
+        return _json(payload)
 
     @tool
     def list_song_performances(song_id_or_title: str, offset: int = 0, limit: int = 24) -> str:
@@ -591,9 +710,15 @@ def build_tools(
         start = max(0, offset)
         page_size = min(max(1, limit), 48)
         context = store.song_context(song)
+        # One batched show lookup: a per-performance ``store.one`` here cost a
+        # remote round trip per rendition (825 for Sugar Magnolia).
+        shows_by_id = {
+            row["show_id"]: row
+            for row in store.rows_in("shows", "show_id", {p.get("show_id", "") for p in context["performances"]})
+        }
 
         def order_key(performance: dict[str, Any]) -> tuple[str, int, int, str]:
-            show = store.one("shows", performance.get("show_id", "")) or {}
+            show = shows_by_id.get(performance.get("show_id", ""), {})
 
             def number(value: Any) -> int:
                 try:
@@ -611,7 +736,7 @@ def build_tools(
         performances = sorted(context["performances"], key=order_key)
         page = []
         for performance in performances[start : start + page_size]:
-            show = store.one("shows", performance.get("show_id", "")) or {}
+            show = shows_by_id.get(performance.get("show_id", ""), {})
             item = {
                 "performance_id": performance["performance_id"],
                 "show_id": performance.get("show_id", ""),
@@ -646,12 +771,88 @@ def build_tools(
         canonical song for a studio release and a canonical performance for a
         live one; an intro, tuning or banter segment names neither. Use the
         release date against a song's performance history when the question is
-        about how a song lived on stage before or after the record.
+        about how a song lived on stage before or after the record. pathways
+        lists the cataloged lore for each result (resources, source trail,
+        selections) or the research sites to search when nothing is cataloged.
         """
         release = store.resolve_release(release_id_or_title)
         if not release:
             return _json({"error": "Release not found or ambiguous", "query": release_id_or_title})
-        return _json(store.album_context(release))
+        payload = store.album_context(release)
+        legacy = _album_live_legacy([track.get("song_id") for track in payload.get("tracks", [])])
+        if legacy:
+            for track in payload["tracks"]:
+                if track.get("song_id") in legacy:
+                    track["live_legacy"] = legacy[track["song_id"]]
+            payload["live_legacy_note"] = (
+                "live_legacy per track: documented performance count, span, count by era and the "
+                "performances most often issued on official live records. Call get_song_notable_versions "
+                "for one song's versions with critic, curator and fan signals."
+            )
+        payload["pathways"] = pathways_for(store, [("release", release["release_id"])]).get(
+            release["release_id"], {}
+        )
+        return _json(payload)
+
+    def _album_live_legacy(song_ids: list[str | None]) -> dict[str, dict[str, Any]]:
+        """Per-song stage history for a record's tracks in three batched reads."""
+
+        wanted = {song_id for song_id in song_ids if song_id}
+        if not wanted:
+            return {}
+        performances = store.rows_in("performances", "song_id", wanted)
+        shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {p.get("show_id", "") for p in performances})}
+        performance_ids = {row["performance_id"] for row in performances}
+        release_tracks = [
+            row for row in store.rows_in("official_release_tracks", "performance_id", performance_ids)
+            if row.get("performance_id", "") in performance_ids
+        ]
+        releases = {
+            row["release_id"]: row
+            for row in store.rows_in("official_releases", "release_id", {row["release_id"] for row in release_tracks})
+        }
+        venues = {
+            row["venue_id"]: row
+            for row in store.rows_in("venues", "venue_id", {show.get("venue_id", "") for show in shows.values()})
+        }
+        releases_by_performance: dict[str, list[str]] = {}
+        for track in release_tracks:
+            title = releases.get(track["release_id"], {}).get("title", "")
+            if title and title not in releases_by_performance.setdefault(track["performance_id"], []):
+                releases_by_performance[track["performance_id"]].append(title)
+
+        legacy: dict[str, dict[str, Any]] = {}
+        for song_id in wanted:
+            rows = [row for row in performances if row.get("song_id") == song_id]
+            dated = sorted(
+                ((shows.get(row.get("show_id", ""), {}).get("show_date", ""), row) for row in rows),
+                key=lambda pair: (pair[0] or "9999", pair[1]["performance_id"]),
+            )
+            by_era: dict[str, int] = {}
+            for show_date, _ in dated:
+                label = _era_label(show_date)
+                by_era[label] = by_era.get(label, 0) + 1
+            most_released = sorted(
+                (row for row in rows if row["performance_id"] in releases_by_performance),
+                key=lambda row: (-len(releases_by_performance[row["performance_id"]]), shows.get(row.get("show_id", ""), {}).get("show_date", "")),
+            )[:3]
+            legacy[song_id] = {
+                "performance_count": len(rows),
+                "first_performance": dated[0][0] if dated else None,
+                "last_performance": dated[-1][0] if dated else None,
+                "by_era": by_era,
+                "official_live_release_count": len({title for pid in releases_by_performance if pid in {r["performance_id"] for r in rows} for title in releases_by_performance[pid]}),
+                "most_released_performances": [
+                    {
+                        "performance_id": row["performance_id"],
+                        "show_date": shows.get(row.get("show_id", ""), {}).get("show_date", ""),
+                        "venue_name": venues.get(shows.get(row.get("show_id", ""), {}).get("venue_id", ""), {}).get("name", ""),
+                        "release_titles": releases_by_performance[row["performance_id"]][:3],
+                    }
+                    for row in most_released
+                ],
+            }
+        return legacy
 
     @tool
     def get_song_performance_profile(song_id_or_title: str) -> str:
@@ -665,6 +866,212 @@ def build_tools(
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
         return _json(store.song_performance_profile(song))
+
+    def _versions_with_signals(song: dict[str, str]) -> dict[str, Any]:
+        """Every rendition of one song that a source singled out, with the sources.
+
+        Sources are official releases carrying the performance, reviewed
+        selection evidence (critic lists, curator picks, fan votes) naming the
+        performance or its show, and the listening links already stored.
+        Four batched reads, whatever the song's performance count.
+        """
+
+        context = store.song_context(song)
+        performances = context["performances"]
+        performance_ids = {row["performance_id"] for row in performances}
+        show_ids = {row.get("show_id", "") for row in performances}
+        shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", show_ids)}
+        venues = {
+            row["venue_id"]: row
+            for row in store.rows_in("venues", "venue_id", {show.get("venue_id", "") for show in shows.values()})
+        }
+        release_tracks = [
+            row for row in store.rows_in("official_release_tracks", "performance_id", performance_ids)
+            if row.get("performance_id", "") in performance_ids
+        ]
+        releases = {
+            row["release_id"]: row
+            for row in store.rows_in("official_releases", "release_id", {row["release_id"] for row in release_tracks})
+        }
+        entries = _selection_entries(store)
+
+        versions: dict[str, dict[str, Any]] = {}
+
+        def version(performance: dict[str, Any]) -> dict[str, Any]:
+            performance_id = performance["performance_id"]
+            if performance_id not in versions:
+                show = shows.get(performance.get("show_id", ""), {})
+                venue = venues.get(show.get("venue_id", ""))
+                item: dict[str, Any] = {
+                    "performance_id": performance_id,
+                    "show_id": performance.get("show_id", ""),
+                    "show_date": show.get("show_date", ""),
+                    "venue_name": venue.get("name", "") if venue else "",
+                    "location": _place(venue),
+                    "set_label": performance.get("set_label", ""),
+                    "position_in_set": performance.get("position_in_set", ""),
+                    "official_releases": [],
+                    "selections": [],
+                }
+                if performance.get("listen"):
+                    item["listen"] = performance["listen"]
+                versions[performance_id] = item
+            return versions[performance_id]
+
+        by_id = {row["performance_id"]: row for row in performances}
+        for track in sorted(release_tracks, key=lambda row: (row.get("release_id", ""), row.get("track_number", ""))):
+            release = releases.get(track["release_id"])
+            if not release:
+                continue
+            item = version(by_id[track["performance_id"]])
+            if any(existing["release_id"] == release["release_id"] for existing in item["official_releases"]):
+                continue
+            item["official_releases"].append(
+                {
+                    "release_id": release["release_id"],
+                    "title": release.get("title", ""),
+                    "release_date": release.get("release_date") or None,
+                    "spotify_album_url": release.get("spotify_album_url") or None,
+                }
+            )
+
+        performances_by_show: dict[str, list[dict[str, Any]]] = {}
+        for row in performances:
+            performances_by_show.setdefault(row.get("show_id", ""), []).append(row)
+        fan_vote_performance_ids: set[str] = set()
+        for entry in entries or []:
+            if not isinstance(entry, dict):
+                continue
+            signal = {
+                "source": entry.get("source"),
+                "signal_type": entry.get("signal_type"),
+                "resolution_state": entry.get("resolution_state"),
+                "label": entry.get("selection_label") or entry.get("source_label") or entry.get("title"),
+                "source_url": entry.get("source_url"),
+            }
+            for field in ("recommendation_rank", "fan_vote_count", "source_context"):
+                if entry.get(field) not in (None, ""):
+                    signal[field] = entry[field]
+            signal = {key: value for key, value in signal.items() if value not in (None, "")}
+            named = [
+                pid for pid in (entry.get("candidate_performance_ids") or []) if isinstance(pid, str) and pid in by_id
+            ]
+            for pid in named:
+                version(by_id[pid])["selections"].append({**signal, "names": "this performance"})
+                if entry.get("signal_type") == "fan_ranked_version":
+                    fan_vote_performance_ids.add(pid)
+            if named:
+                continue
+            for show_id in entry.get("candidate_show_ids") or []:
+                for row in performances_by_show.get(show_id, []) if isinstance(show_id, str) else []:
+                    version(row)["selections"].append({**signal, "names": "the whole show"})
+
+        def rank(item: dict[str, Any]) -> tuple[int, str]:
+            sources = len(item["official_releases"]) + len({s.get("source") for s in item["selections"]})
+            return (-sources, item["show_date"] or "9999")
+
+        ordered = sorted(versions.values(), key=rank)
+        for item in ordered:
+            item["source_count"] = len(item["official_releases"]) + len({s.get("source") for s in item["selections"]})
+        return {
+            "song": context["song"],
+            "performance_count": len(performances),
+            "versions": ordered,
+            "signal_summary": {
+                "versions_with_any_source": len(ordered),
+                "official_release_versions": sum(1 for item in ordered if item["official_releases"]),
+                "selection_signal_versions": sum(1 for item in ordered if item["selections"]),
+                "fan_vote_versions": len(fan_vote_performance_ids),
+                "selection_evidence_available": entries is not None,
+            },
+        }
+
+    @tool
+    def get_song_notable_versions(song_id_or_title: str, limit: int = 12) -> str:
+        """Get the renditions of one song that sources singled out, with who singled them out.
+
+        Use this first for "best", "notable", "essential" or "where do I start"
+        questions about a song. Each version carries the official releases that
+        include it (Dick's Picks, Dave's Picks, box sets), the reviewed critic,
+        curator and fan signals that name it or its show, and its direct
+        listening links. source_count counts distinct sources, never quality:
+        present them as separate voices. Versions no source singled out are
+        absent here and remain reachable through list_song_performances.
+        """
+        song = store.resolve_song(song_id_or_title)
+        if not song:
+            return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
+        payload = _versions_with_signals(song)
+        cap = min(max(1, limit), 30)
+        total = len(payload["versions"])
+        payload["versions"] = payload["versions"][:cap]
+        if total > cap:
+            payload["note"] = f"Showing {cap} of {total} versions with a source; raise limit for more."
+        payload["coverage_note"] = (
+            "Sources are the documented library's official releases and reviewed selection evidence, "
+            "not complete band history or a ranking."
+        )
+        return _json(payload)
+
+    @tool
+    def get_selections_for(entity_type: str, entity_id_or_name: str) -> str:
+        """Get only the reviewed critic, curator, official and fan selection signals about one song or show.
+
+        entity_type is "song" or "show". A song matches signals that name one
+        of its performances, plus show-level selections of a show where it was
+        played (each result says which). Use it instead of the full inventory
+        when the question is about one song or show. Signals stay
+        source-attributed: distinct voices, not a combined score.
+        """
+        kind = entity_type.strip().lower()
+        if kind not in {"song", "show"}:
+            return _json({"error": "entity_type must be 'song' or 'show'", "entity_type": entity_type})
+        try:
+            inventory = load_selection_signals(store)["selection_signals"]
+        except SelectionSignalError as error:
+            return _json({"selection_signals": [], "error": str(error)})
+        if kind == "song":
+            song = store.resolve_song(entity_id_or_name)
+            if not song:
+                return _json({"error": "Song not found or ambiguous", "query": entity_id_or_name})
+            song_shows = {row.get("show_id", "") for row in store.filtered_rows("performances", song_id=song["song_id"])}
+            subject: dict[str, Any] = {"entity_type": "song", "song_id": song["song_id"], "title": song.get("title", "")}
+
+            def match(signal: dict[str, Any]) -> str | None:
+                if any(p.get("song_id") == song["song_id"] for p in signal.get("candidate_performances", [])):
+                    return "a performance of this song"
+                if any(show.get("show_id") in song_shows for show in signal.get("candidate_shows", [])):
+                    return "a show where this song was played"
+                return None
+        else:
+            show = store.resolve_show(entity_id_or_name)
+            if not show:
+                return _json(_unresolved_show_payload(store, entity_id_or_name))
+            subject = {"entity_type": "show", "show_id": show["show_id"], "show_date": show.get("show_date", "")}
+
+            def match(signal: dict[str, Any]) -> str | None:
+                if any(item.get("show_id") == show["show_id"] for item in signal.get("candidate_shows", [])):
+                    return "this show"
+                if any(p.get("show_id") == show["show_id"] for p in signal.get("candidate_performances", [])):
+                    return "a performance at this show"
+                return None
+
+        matched = []
+        for signal in inventory:
+            reason = match(signal)
+            if reason:
+                matched.append({**signal, "matches": reason})
+        return _json(
+            {
+                "subject": subject,
+                "signal_count": len(matched),
+                "selection_signals": matched,
+                "coverage_note": (
+                    "Reviewed, source-attributed signals only; absence means no reviewed source in the "
+                    "library named it, not that it is unremarkable."
+                ),
+            }
+        )
 
     @tool
     def get_deadnet_song_context(song_id_or_title: str) -> str:
@@ -816,11 +1223,19 @@ def build_tools(
         from model memory. For follow-up questions about who played,
         instruments, guests, or Jerry Garcia's named guitars, reuse the most
         recent retrieved show ID/date and call this tool before answering.
+        pathways lists the cataloged lore for each result (resources, source
+        trail, selections) or the research sites to search when nothing is
+        cataloged.
         """
         show = store.resolve_show(show_id_or_date)
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
-        return _json(store.show_context(show))
+        payload = store.show_context(show)
+        payload["recordings"] = _compact_recordings(payload.get("recordings", []))
+        payload["recordings_note"] = "full recording metadata: get_performance or the recording_list component"
+        payload["performers"] = _compact_performers(payload.get("performers", []))
+        payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
+        return _json(payload)
 
     @tool
     def get_show_selections() -> str:
@@ -1216,6 +1631,8 @@ def build_tools(
         list_song_performances,
         get_album,
         get_song_performance_profile,
+        get_song_notable_versions,
+        get_selections_for,
         get_deadnet_song_context,
         get_deadcast_metadata,
         get_lore_source_trails,

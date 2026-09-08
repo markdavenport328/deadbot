@@ -19,12 +19,15 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
+from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import ExperienceRequest, ExperienceResponse
 from deadbot.finish import build_experience_response
 from deadbot.graph import build_agent, run_config
+from deadbot.postgres import query_cache_scope
 from deadbot.progress import status_lines
+from deadbot.response_cache import ResponseCache
 from deadbot.storage import create_canonical_store
 
 
@@ -74,6 +77,11 @@ def create_app(
     # is not a real cross-instance limit. A shared store (e.g. Redis) would be
     # needed for that; deferred as a later operational decision.
     app.state.rate_limit_hits = {}
+    app.state.response_cache = ResponseCache(
+        store,
+        enabled=settings.response_cache,
+        max_age_seconds=settings.response_cache_ttl_seconds,
+    )
 
     def _client_ip(http_request: Request) -> str:
         forwarded_for = http_request.headers.get("x-forwarded-for")
@@ -152,19 +160,36 @@ def create_app(
             store=app.state.store,
         )
 
+    def _cached(request: ExperienceRequest, invocation: _Invocation) -> ExperienceResponse | None:
+        """A stored answer for a fresh (no-conversation) repeat of a question."""
+
+        if request.conversation:
+            return None
+        return app.state.response_cache.lookup(request.question, thread_id=invocation.thread_id)
+
+    def _remember(request: ExperienceRequest, response: ExperienceResponse) -> None:
+        if not request.conversation:
+            app.state.response_cache.remember(request.question, response)
+
     @app.post("/api/experience", response_model=ExperienceResponse)
     def experience(request: ExperienceRequest, http_request: Request) -> ExperienceResponse:
         _enforce_rate_limit(http_request)
         invocation = _prepare(request)
         try:
-            result = app.state.agent.invoke(
-                {"messages": invocation.messages},
-                run_config(invocation.invocation_thread_id, app.state.settings),
-            )
-            # Assembling the response is inside the try so an unexpected raise
-            # while resolving the plan reaches the visitor as the same friendly
-            # 503 as an agent failure, not as a stack trace.
-            return _respond(request, invocation, result.get("messages", []))
+            with query_cache_scope():
+                cached = _cached(request, invocation)
+                if cached is not None:
+                    return cached
+                result = app.state.agent.invoke(
+                    {"messages": invocation.messages},
+                    run_config(invocation.invocation_thread_id, app.state.settings),
+                )
+                # Assembling the response is inside the try so an unexpected raise
+                # while resolving the plan reaches the visitor as the same friendly
+                # 503 as an agent failure, not as a stack trace.
+                response = _respond(request, invocation, result.get("messages", []))
+                _remember(request, response)
+                return response
         except Exception as error:  # The browser receives no model/provider internals.
             logger.exception("Deadbot experience request failed")
             raise HTTPException(status_code=503, detail=UNAVAILABLE) from error
@@ -174,32 +199,76 @@ def create_app(
     def _stream_events(request: ExperienceRequest, invocation: _Invocation) -> Iterator[str]:
         """Newline-delimited JSON: status lines while the agent works, then the response.
 
-        LangGraph's ``stream`` with ``stream_mode="values"`` yields the whole
-        message list after every step; each new tool call the model makes
-        becomes one visitor-facing status. An agent without ``stream`` (the
-        test doubles, for one) is invoked whole and yields only the response.
+        LangGraph's ``stream`` with ``stream_mode=["values", "messages"]``
+        yields ``(mode, payload)`` tuples: a ``values`` payload is the whole
+        message list after each step, from which each new tool call the
+        model makes becomes one visitor-facing status; a ``messages``
+        payload is one ``(AIMessageChunk, metadata)`` pair from the model's
+        own token stream, from which an ``AnswerAccumulator`` pulls the
+        growing ``chat_answer`` text out of the ``finish_response`` call's
+        arguments as it is generated, so the visible answer can reach the
+        browser before the rest of the plan finishes. An agent whose
+        ``stream`` ignores the mode list and yields plain state dicts (the
+        test doubles, for one) is handled the same way ``values`` always
+        was. An agent without ``stream`` at all is invoked whole and yields
+        only the response.
         """
 
         def line(event: dict[str, Any]) -> str:
-            return json.dumps(event, ensure_ascii=False) + "\n"
+            # A lone surrogate that slipped through the model's JSON (see
+            # extract_chat_answer) cannot be UTF-8 encoded; Starlette encodes
+            # this text outside any try/except of ours, so it is made safe
+            # here rather than letting that raise and kill the stream.
+            serialized = json.dumps(event, ensure_ascii=False)
+            return serialized.encode("utf-8", "replace").decode("utf-8") + "\n"
 
         try:
             config = run_config(invocation.invocation_thread_id, app.state.settings)
             payload = {"messages": invocation.messages}
             stream = getattr(app.state.agent, "stream", None)
             messages: list[Any] = []
+            # One query cache for the whole request. Each step of this
+            # generator may resume in a fresh context copy, so the same dict
+            # is re-entered around every graph step and the final resolution.
+            cache: dict = {}
+            with query_cache_scope(cache):
+                cached = _cached(request, invocation)
+            if cached is not None:
+                yield line({"type": "status", "text": "Found a recent answer"})
+                yield line({"type": "response", "response": cached.model_dump(mode="json")})
+                return
             if callable(stream):
                 seen = 0
-                for state in stream(payload, config, stream_mode="values"):
+                answer_accumulator = AnswerAccumulator()
+                steps = iter(stream(payload, config, stream_mode=["values", "messages"]))
+                while True:
+                    with query_cache_scope(cache):
+                        item = next(steps, None)
+                    if item is None:
+                        break
+                    if isinstance(item, tuple) and len(item) == 2 and item[0] in ("values", "messages"):
+                        mode, chunk_payload = item
+                    else:
+                        mode, chunk_payload = "values", item
+                    if mode == "messages":
+                        message_chunk = chunk_payload[0] if isinstance(chunk_payload, tuple) else chunk_payload
+                        answer_text = answer_accumulator.feed(message_chunk)
+                        if answer_text:
+                            yield line({"type": "answer", "text": answer_text})
+                        continue
+                    state = chunk_payload
                     messages = list(state.get("messages", [])) if isinstance(state, dict) else messages
                     for status in status_lines(messages, seen):
                         yield line({"type": "status", "text": status})
                     seen = len(messages)
             else:
                 yield line({"type": "status", "text": "Looking through the library"})
-                result = app.state.agent.invoke(payload, config)
+                with query_cache_scope(cache):
+                    result = app.state.agent.invoke(payload, config)
                 messages = list(result.get("messages", []))
-            response = _respond(request, invocation, messages)
+            with query_cache_scope(cache):
+                response = _respond(request, invocation, messages)
+                _remember(request, response)
             yield line({"type": "response", "response": response.model_dump(mode="json")})
         except Exception:  # The browser receives no model/provider internals.
             logger.exception("Deadbot streamed experience request failed")

@@ -113,5 +113,363 @@
       "adapter_version": "wikipedia-api-v1",
       "notes": "JSON MediaWiki action API only, one request per second, descriptive User-Agent required. 'search' is action=query&list=search to resolve an ambiguous album title to the confidently correct article; 'read' is action=query&prop=revisions with rvslots=main to fetch that article's current wikitext. Used by scripts/collect/fetch_wikipedia_album_dates.py to sharpen imprecise official_releases.release_date values. Only the infobox 'Released' field is extracted and stored, verbatim, alongside article title, page id, revision id and URL; no other article text, images, or full wikitext is retained."
     }
+,
+    {
+      "source_id": "lostlivedead-feed",
+      "name": "Lost Live Dead post feed",
+      "host_allowlist": [
+        "lostlivedead.blogspot.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/feeds/posts/summary",
+            "/feeds/posts/default"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_post_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "lostlivedead-feed-v1",
+      "notes": "Corry Arnold's show, venue and tour research, strongest on 1965-1975. Post title, URL, dates, labels and byline only; scripts/collect/collect_blog_post_index.py indexes the feed and the runtime research tools read a page at request time without storing it. Independent research and criticism: cite the site and its author, and do not treat a post as a canonical setlist or show authority."
+    },
+    {
+      "source_id": "hooterollin-feed",
+      "name": "Hooterollin' Around post feed",
+      "host_allowlist": [
+        "hooterollin.blogspot.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/feeds/posts/summary",
+            "/feeds/posts/default"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_post_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "hooterollin-feed-v1",
+      "notes": "Side projects, guests, personnel and the wider Bay Area scene. Post title, URL, dates, labels and byline only; no post text is retrieved into storage. Independent research and criticism: cite the site and its author, and do not treat a post as a canonical setlist or show authority."
+    },
+    {
+      "source_id": "deadessays-feed",
+      "name": "Grateful Dead Guide (Deadessays) post feed",
+      "host_allowlist": [
+        "deadessays.blogspot.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/feeds/posts/summary",
+            "/feeds/posts/default"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_post_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "deadessays-feed-v1",
+      "notes": "Song-by-song and era-by-era musical analysis. Post title, URL, dates, labels and byline only; no post text is retrieved into storage. Independent research and criticism: cite the site and its author, and do not treat a post as a canonical setlist or show authority."
+    },
+    {
+      "source_id": "deadsources-feed",
+      "name": "Dead Sources post feed",
+      "host_allowlist": [
+        "deadsources.blogspot.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/feeds/posts/summary",
+            "/feeds/posts/default"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_post_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "deadsources-feed-v1",
+      "notes": "Transcribed contemporary press from the years the shows happened. Post title, URL, dates, labels and byline only. The transcriptions themselves are the authors' work and are never copied into this repository. Independent research and criticism: cite the site and its author, and do not treat a post as a canonical setlist or show authority."
+    },
+    {
+      "source_id": "gratefulseconds-feed",
+      "name": "Grateful Seconds post feed",
+      "host_allowlist": [
+        "gratefulseconds.blogspot.com",
+        "www.gratefulseconds.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/feeds/posts/summary",
+            "/feeds/posts/default"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_post_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "gratefulseconds-feed-v1",
+      "notes": "Statistics, lists and a show diary. Post title, URL, dates, labels and byline only. The custom domain gratefulseconds.com serves no TLS, so stored links use the blog's own https address. Independent research and criticism: cite the site and its author, and do not treat a post as a canonical setlist or show authority."
+    },
+    {
+      "source_id": "deadheadhigh-guides",
+      "name": "Deadhead High song and listener guides",
+      "host_allowlist": [
+        "deadheadhigh.com",
+        "www.deadheadhigh.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/sitemap.xml"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/songs/",
+            "/shows/",
+            "/guides/",
+            "/paths/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_page_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "deadheadhigh-guides-v1",
+      "notes": "Listener-facing per-song and per-show guides with performance counts, first and last dates and listening links, plus editorial guides under /guides/ and /paths/. The site has no search, so scripts/collect/collect_deadheadhigh_index.py walks its sitemap. Page title, URL and at most 200 characters of the page's own meta description only. A secondary compilation of setlist data: cite the site and do not treat a guide page as a setlist or performance-count authority."
+    },
+    {
+      "source_id": "gdao-archive",
+      "name": "Grateful Dead Archive Online (UC Santa Cruz Library)",
+      "host_allowlist": [
+        "gdao.org",
+        "www.gdao.org"
+      ],
+      "authority_level": "curated",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/api/items",
+            "/api/item_sets",
+            "/api/resource_templates"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/api",
+            "/items/show/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_files": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "gdao-archive-v1",
+      "notes": "UC Santa Cruz Library's Omeka archive of posters, tickets, photographs, fan art and first-person recollections, queried through its public /api/items endpoint by date; scripts/collect/collect_gdao_show_items.py indexes item metadata only: item id, title, item type, item sets, date and coverage fields, creator, item page URL and at most 200 characters of the item description, never files, media or thumbnails. Contributed recollections are subjective testimony: cite the archive and the contributor and do not treat an item as a canonical show fact. Entry restored by the Task A agent after a file revert dropped it; Task B owns its content and should review the paths and notes."
+    }
   ]
 }

@@ -148,6 +148,30 @@ class CanonicalStore:
             if any(needle in row.get(field, "").casefold() for field in fields)
         ]
 
+    def matching_rows_any(
+        self, table: str, phrases: list[str], fields: tuple[str, ...], limit: int = 12
+    ) -> list[dict[str, str]]:
+        """Rows matching any of several phrases, exact matches first.
+
+        One pass over the table (one query in PostgreSQL) replaces a
+        ``matching_rows`` call per phrase: an entity search over a whole
+        question used to issue almost two hundred sequential queries.
+        """
+
+        needles = [phrase.casefold().strip() for phrase in phrases]
+        needles = [needle for needle in dict.fromkeys(needles) if needle]
+        if not needles or limit <= 0:
+            return []
+        exact: list[dict[str, str]] = []
+        fuzzy: list[dict[str, str]] = []
+        for row in self.rows(table):
+            values = [row.get(field, "").casefold() for field in fields]
+            if any(value == needle for value in values for needle in needles):
+                exact.append(row)
+            elif any(needle in value for value in values for needle in needles):
+                fuzzy.append(row)
+        return [*exact, *fuzzy][:limit]
+
     def resolve_song(self, identifier: str) -> dict[str, str] | None:
         direct = self.one("songs", identifier)
         if direct:

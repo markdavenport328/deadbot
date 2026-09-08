@@ -34,6 +34,12 @@ def _stored_entries(store: CanonicalStore) -> list[dict[str, Any]]:
     return entries
 
 
+def stored_selection_entries(store: CanonicalStore) -> list[dict[str, Any]]:
+    """The reviewed selection evidence rows; raises SelectionSignalError when unavailable."""
+
+    return _stored_entries(store)
+
+
 def selection_signal_summary(store: CanonicalStore) -> dict[str, Any]:
     """Return a compact factual summary from PostgreSQL, never a local file."""
 
@@ -62,6 +68,35 @@ def selection_signal_summary(store: CanonicalStore) -> dict[str, Any]:
     }
 
 
+def _lookup_tables(store: CanonicalStore, entries: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, str]]]:
+    """Fetch every show, venue, performance and song the entries name in four
+    batched reads instead of two remote round trips per entry."""
+
+    show_ids: set[str] = set()
+    performance_ids: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        ids = entry.get("candidate_show_ids")
+        if isinstance(ids, list):
+            show_ids.update(value for value in ids if isinstance(value, str))
+        ids = entry.get("candidate_performance_ids")
+        if isinstance(ids, list):
+            performance_ids.update(value for value in ids if isinstance(value, str))
+    performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", performance_ids)}
+    show_ids.update(row.get("show_id", "") for row in performances.values())
+    shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", show_ids)}
+    venues = {
+        row["venue_id"]: row
+        for row in store.rows_in("venues", "venue_id", {show.get("venue_id", "") for show in shows.values()})
+    }
+    songs = {
+        row["song_id"]: row
+        for row in store.rows_in("songs", "song_id", {row.get("song_id", "") for row in performances.values()})
+    }
+    return {"shows": shows, "venues": venues, "performances": performances, "songs": songs}
+
+
 def load_selection_signals(store: CanonicalStore) -> dict[str, Any]:
     """Return the complete reviewed signal inventory with canonical resolution state.
 
@@ -72,66 +107,12 @@ def load_selection_signals(store: CanonicalStore) -> dict[str, Any]:
     """
 
     entries = _stored_entries(store)
-    signals: list[dict[str, Any]] = []
-    for index, entry in enumerate(entries, start=1):
-        if not isinstance(entry, dict):
-            continue
-        source = entry.get("source")
-        signal_type = entry.get("signal_type")
-        resolution_state = entry.get("resolution_state")
-        if not all(isinstance(value, str) and value for value in (source, signal_type, resolution_state)):
-            continue
-        result: dict[str, Any] = {
-            "signal_id": str(entry.get("source_record_id") or f"{source}:{index}"),
-            "source": source,
-            "signal_type": signal_type,
-            "resolution_state": resolution_state,
-        }
-        for field in (
-            "selection_label", "source_label", "source_handle", "source_context",
-            "source_provenance", "identity_state", "collection_state", "recommendation_rank",
-            "fan_vote_count", "release_candidate_id", "release_status", "title", "era_label",
-        ):
-            value = entry.get(field)
-            if isinstance(value, (str, int)) and value != "":
-                result[field] = value
-        source_url = _https_url(entry.get("source_url"))
-        if source_url:
-            result["source_url"] = source_url
-        show_ids = entry.get("candidate_show_ids")
-        if isinstance(show_ids, list) and all(isinstance(value, str) for value in show_ids):
-            shows = []
-            for show_id in show_ids:
-                show = store.one("shows", show_id)
-                if not show:
-                    continue
-                venue = store.one("venues", show.get("venue_id", ""))
-                shows.append(
-                    {
-                        "show_id": show_id,
-                        "show_date": show.get("show_date"),
-                        "venue_name": venue.get("name") if venue else None,
-                    }
-                )
-            result["candidate_shows"] = shows
-        performance_ids = entry.get("candidate_performance_ids")
-        if isinstance(performance_ids, list) and all(isinstance(value, str) for value in performance_ids):
-            performances = []
-            for performance_id in performance_ids:
-                performance = store.one("performances", performance_id)
-                if not performance:
-                    continue
-                song = store.one("songs", performance.get("song_id", ""))
-                performances.append(
-                    {
-                        "performance_id": performance_id,
-                        "show_id": performance.get("show_id"),
-                        "song_id": performance.get("song_id"),
-                        "song_title": song.get("title") if song else None,
-                    }
-                )
-            result["candidate_performances"] = performances
-        signals.append(result)
+    lookup = _lookup_tables(store, entries)
+    signals = [
+        signal
+        for index, entry in enumerate(entries, start=1)
+        if (signal := _signal_payload(entry, index, lookup)) is not None
+    ]
     return {
         "selection_signals": signals,
         "source_constraints": selection_signal_summary(store)["source_constraints"],
@@ -142,6 +123,67 @@ def load_selection_signals(store: CanonicalStore) -> dict[str, Any]:
     }
 
 
+def _signal_payload(entry: Any, index: int, lookup: dict[str, dict[str, dict[str, str]]]) -> dict[str, Any] | None:
+    if not isinstance(entry, dict):
+        return None
+    source = entry.get("source")
+    signal_type = entry.get("signal_type")
+    resolution_state = entry.get("resolution_state")
+    if not all(isinstance(value, str) and value for value in (source, signal_type, resolution_state)):
+        return None
+    result: dict[str, Any] = {
+        "signal_id": str(entry.get("source_record_id") or f"{source}:{index}"),
+        "source": source,
+        "signal_type": signal_type,
+        "resolution_state": resolution_state,
+    }
+    for field in (
+        "selection_label", "source_label", "source_handle", "source_context",
+        "source_provenance", "identity_state", "collection_state", "recommendation_rank",
+        "fan_vote_count", "release_candidate_id", "release_status", "title", "era_label",
+    ):
+        value = entry.get(field)
+        if isinstance(value, (str, int)) and value != "":
+            result[field] = value
+    source_url = _https_url(entry.get("source_url"))
+    if source_url:
+        result["source_url"] = source_url
+    show_ids = entry.get("candidate_show_ids")
+    if isinstance(show_ids, list) and all(isinstance(value, str) for value in show_ids):
+        shows = []
+        for show_id in show_ids:
+            show = lookup["shows"].get(show_id)
+            if not show:
+                continue
+            venue = lookup["venues"].get(show.get("venue_id", ""))
+            shows.append(
+                {
+                    "show_id": show_id,
+                    "show_date": show.get("show_date"),
+                    "venue_name": venue.get("name") if venue else None,
+                }
+            )
+        result["candidate_shows"] = shows
+    performance_ids = entry.get("candidate_performance_ids")
+    if isinstance(performance_ids, list) and all(isinstance(value, str) for value in performance_ids):
+        performances = []
+        for performance_id in performance_ids:
+            performance = lookup["performances"].get(performance_id)
+            if not performance:
+                continue
+            song = lookup["songs"].get(performance.get("song_id", ""))
+            performances.append(
+                {
+                    "performance_id": performance_id,
+                    "show_id": performance.get("show_id"),
+                    "song_id": performance.get("song_id"),
+                    "song_title": song.get("title") if song else None,
+                }
+            )
+        result["candidate_performances"] = performances
+    return result
+
+
 def load_show_selections(store: CanonicalStore) -> list[dict[str, Any]]:
     """Return each fully resolved, source-attributed show selection.
 
@@ -150,6 +192,7 @@ def load_show_selections(store: CanonicalStore) -> list[dict[str, Any]]:
     """
 
     entries = _stored_entries(store)
+    lookup = _lookup_tables(store, entries)
 
     selections: dict[tuple[str, str], dict[str, Any]] = {}
     for entry in entries:
@@ -167,8 +210,8 @@ def load_show_selections(store: CanonicalStore) -> list[dict[str, Any]]:
             or len(show_ids) != 1
         ):
             continue
-        show = store.one("shows", show_ids[0])
-        venue = store.one("venues", show.get("venue_id", "")) if show else None
+        show = lookup["shows"].get(show_ids[0])
+        venue = lookup["venues"].get(show.get("venue_id", "")) if show else None
         if not show or not venue or show.get("show_date") != entry.get("show_date"):
             continue
         key = (label, source_url)

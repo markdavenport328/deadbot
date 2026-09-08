@@ -38,10 +38,25 @@ h2 { margin: 0; font-size: 1.45rem; }
 .message.assistant { align-self: flex-start; max-width: 100%; border-radius: 0; background: transparent; color: #d3dccf; padding: 0; }
 .message.assistant div { overflow-wrap: anywhere; }
 .message.pending { color: #adbbac; font-style: italic; }
+.message.pending .streaming-answer { color: #d3dccf; font-style: normal; }
 .progress-lines { margin: 0; padding: 0; list-style: none; font-style: normal; }
 .progress-lines li { color: #7f9582; font-size: 0.86rem; line-height: 1.5; }
 .progress-lines li.current { color: #d3dccf; }
 .progress-lines li.current::before { content: "▸ "; color: #e7b94e; }
+.message.pending .cursor {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 0.1em;
+  vertical-align: text-bottom;
+  background: currentColor;
+  animation: cursor-blink 1s step-end infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
 
 .composer { position: sticky; bottom: 0; flex-shrink: 0; border-top: 1px solid #405345; background: #122119; padding: 1rem 0; }
 .question-row { display: flex; align-items: center; gap: 0.6rem; }
@@ -291,6 +306,7 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 
 @media (prefers-reduced-motion: reduce) {
   details.unit-setlist > summary::before { transition: none; }
+  .message.pending .cursor { animation: none; }
 }
 
 .message a, .answer-lead a, .narrative-block a { color: #f1c96a; }

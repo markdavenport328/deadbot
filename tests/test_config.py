@@ -159,6 +159,27 @@ def test_openai_provider_uses_responses_api(monkeypatch):
     assert captured_options["use_responses_api"] is True
 
 
+def test_model_streaming_defaults_true_for_openai(monkeypatch):
+    monkeypatch.delenv("DEADBOT_MODEL_STREAMING", raising=False)
+    monkeypatch.setenv("DEADBOT_MODEL_PROVIDER", "openai")
+    settings = Settings.from_env()
+    assert settings.model_streaming is True
+
+
+def test_model_streaming_defaults_false_for_ollama(monkeypatch):
+    monkeypatch.delenv("DEADBOT_MODEL_STREAMING", raising=False)
+    monkeypatch.setenv("DEADBOT_MODEL_PROVIDER", "ollama")
+    settings = Settings.from_env()
+    assert settings.model_streaming is False
+
+
+def test_model_streaming_env_var_overrides_the_provider_default(monkeypatch):
+    monkeypatch.setenv("DEADBOT_MODEL_PROVIDER", "openai")
+    monkeypatch.setenv("DEADBOT_MODEL_STREAMING", "false")
+    settings = Settings.from_env()
+    assert settings.model_streaming is False
+
+
 def test_unknown_provider_fails_clearly():
     settings = Settings(model_provider="unknown")
     try:

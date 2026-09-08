@@ -91,6 +91,59 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Potential canonical entities populated: Show links today; recordings, performance recordings, and source cross-references later.
 - Known limitations: Relisten lists one show per date, so early and late shows on the same date share a URL (54 rows, noted on each row). Shows with no known tape (nearly all 1965–1970 gaps) do not appear.
 
+## Research blogs (Lost Live Dead, Hooterollin' Around, Grateful Dead Guide / Deadessays, Dead Sources, Grateful Seconds)
+
+- What it provides: Long-form independent research on the band. Lost Live Dead
+  reconstructs individual shows, venues, tours and the band's business,
+  strongest on 1965–1975. Hooterollin' Around covers side projects, guests,
+  personnel and the wider Bay Area scene. Grateful Dead Guide (Deadessays)
+  analyses songs, jams and arrangements era by era. Dead Sources transcribes
+  contemporary press — reviews, interviews and news items from the years the
+  shows happened. Grateful Seconds counts things: song placements, firsts and
+  lasts, streaks and oddities, plus one Deadhead's show diary.
+- Access method: Each site is a public Blogger blog with an Atom post feed.
+  `scripts/collect/collect_blog_post_index.py` reads `robots.txt` first, then
+  walks `/feeds/posts/summary?alt=json&max-results=150&start-index=N`, one
+  request at a time at least two seconds apart, with
+  `User-Agent: Deadbot/0.1 (metadata index; contact via repository)`. 29
+  requests indexed all five sites on 2026-09-08. Post pages themselves are not
+  fetched by the collector; the runtime research tools (`read_page`,
+  `search_site`) read them at request time without storing them.
+- Structured fields: Post title, post URL, published and updated timestamps,
+  post labels, and the feed's author byline. Nothing else.
+- Retention boundary: **Metadata only.** No post body, summary or excerpt is
+  stored in raw, canonical or editorial files, and none may be added. Canonical
+  `notes` carries the post's own labels plus the retention sentence. These are
+  independent authors' copyrighted essays: the catalog holds a link and a
+  title, which is what makes the post findable, and the reader goes to the
+  author's page for the writing.
+- Coverage (2026-09-08): 1,740 posts indexed — 298 Lost Live Dead, 133
+  Hooterollin', 184 Deadessays, 575 Dead Sources, 550 Grateful Seconds — each
+  host's count equal to the total its own feed reports. 133 `resource_songs`
+  rows cover 63 songs and 566 `resource_shows` rows cover 419 shows, all
+  `relationship_type` `about`; 896 posts are stored with no relationship and
+  211 are held for review. See `docs/collection-status-lore-blog-index.md`.
+- Authority / reliability: Independent research and criticism, cited as such.
+  Lost Live Dead and Dead Sources document their evidence carefully and are
+  strong review sources for show history, but none of the five is a setlist or
+  show authority for this project; gdshowsdb remains the canonical baseline. A
+  mapped row says a post's title names a song or a date, not that the post's
+  claims are canonical.
+- Licensing / usage considerations: Public blogs with no stated reuse licence.
+  Store links, titles and the sites' own labels only, name the site and its
+  author wherever a row is shown, and keep collection to the feed at low
+  volume. A pass that wanted post text would need the authors' permission
+  first.
+- Potential canonical entities populated: Generic resources and typed
+  resource-to-song / resource-to-show relationships. Never a show, song, date
+  or setlist value.
+- Known limitations: A title-based mapping is a pointer, not a reading. A date
+  in a title can belong to an interview or a side-project set on a Dead show
+  day; a run of shows or a date carrying two shows is held rather than guessed;
+  and these sites title posts by date and venue far more often than by song, so
+  song coverage stays thin. Grateful Seconds' custom domain is http-only, so
+  its rows store the blog's own https address for the same post.
+
 ## setlist.fm
 
 - What it provides: TBD

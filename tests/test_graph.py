@@ -97,6 +97,22 @@ def test_prompt_batches_independent_research_and_uses_positive_composition_guida
     assert "do not" not in prompt.casefold()
 
 
+def test_prompt_teaches_pathways_and_show_unit_hydration():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert (
+        "Every entity result carries pathways: the lore already cataloged for it, or the research sites "
+        "worth searching when nothing is. Answer the question directly, then offer the pathways that fit "
+        "as links or Ask chips. When a pathway looks likely to change the answer, open it; otherwise offer it."
+        in prompt
+    )
+    assert (
+        "A show_unit needs only a show_id that appeared in this turn's tool output; the server hydrates "
+        "its setlist, guests and listening. Call get_show when its setlist or guests inform what you write."
+        in prompt
+    )
+    assert "do not" not in prompt.casefold()
+
+
 def test_persona_tells_the_model_that_albums_are_held():
     from deadbot.graph import SYSTEM_PROMPT  # use the module's actual prompt constant
 
