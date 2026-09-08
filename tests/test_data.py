@@ -302,9 +302,31 @@ def test_show_tool_returns_performer_role_assignments():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"}))
     assert any(
-        assignment["person"]["name"] == "Jerry Garcia" and assignment["instrument"] == "lead guitar"
+        assignment["name"] == "Jerry Garcia" and "lead guitar" in assignment["instruments"]
         for assignment in result["performers"]
     )
+
+
+def test_show_tool_merges_one_performers_multiple_instrument_rows():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1990-03-29"}))
+    people = [assignment["person_id"] for assignment in result["performers"]]
+    assert len(people) == len(set(people)), "each person should appear once, with merged instruments"
+    kreutzmann = next(
+        assignment for assignment in result["performers"] if assignment["person_id"] == "person-bill-kreutzmann"
+    )
+    assert set(kreutzmann["instruments"]) >= {"drums", "percussion"}
+    assert set(kreutzmann) == {"person_id", "name", "role", "instruments"}
+
+
+def test_show_tool_compacts_recordings_to_a_count_and_a_few_ids():
+    store = CanonicalStore()
+    show = store.resolve_show("1990-03-29")
+    full_recording_count = len(store.show_context(show)["recordings"])
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1990-03-29"}))
+    assert result["recordings"]["count"] == full_recording_count
+    assert len(result["recordings"]["recording_ids"]) == 5
+    assert "recordings_note" in result
 
 
 def test_show_tool_returns_named_guitar_claims():

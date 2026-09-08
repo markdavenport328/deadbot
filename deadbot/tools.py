@@ -314,6 +314,40 @@ def _place(venue: dict[str, str] | None) -> str:
     return ", ".join(value for value in (venue.get("city"), venue.get("state_region")) if value)
 
 
+def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
+    """Trim a show's recording list to a count and its first few IDs.
+
+    Sugar Magnolia-scale shows can carry dozens of recording rows; the model
+    rarely needs more than a handful of IDs to reason about which recording to
+    reach for, and get_performance/get_recording_reviews cover the rest.
+    """
+
+    ids = [row["recording_id"] for row in recordings if row.get("recording_id")]
+    return {"count": len(recordings), "recording_ids": ids[:5]}
+
+
+def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Merge a show's per-instrument performer rows into one entry per person."""
+
+    merged: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for assignment in performers:
+        person_id = assignment.get("person_id", "")
+        if person_id not in merged:
+            person = assignment.get("person") or {}
+            merged[person_id] = {
+                "person_id": person_id,
+                "name": person.get("name") or person_id,
+                "role": assignment.get("role", ""),
+                "instruments": [],
+            }
+            order.append(person_id)
+        instrument = assignment.get("instrument")
+        if instrument and instrument not in merged[person_id]["instruments"]:
+            merged[person_id]["instruments"].append(instrument)
+    return [merged[person_id] for person_id in order]
+
+
 def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
     """The reviewed selection evidence, or None when this store cannot serve it."""
 
@@ -1195,6 +1229,9 @@ def build_tools(
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
         payload = store.show_context(show)
+        payload["recordings"] = _compact_recordings(payload.get("recordings", []))
+        payload["recordings_note"] = "full recording metadata: get_performance or the recording_list component"
+        payload["performers"] = _compact_performers(payload.get("performers", []))
         payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
         return _json(payload)
 
