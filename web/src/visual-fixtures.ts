@@ -332,9 +332,73 @@ const views: ExperienceResponse = {
   ]
 };
 
-export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs", "views"] as const;
+const workingmansDeadTracks: readonly [title: string, highlighted?: boolean][] = [
+  ["Uncle John's Band"],
+  ["High Time"],
+  ["Dire Wolf"],
+  ["New Speedway Boogie"],
+  ["Cumberland Blues", true],
+  ["Black Peter"],
+  ["Easy Wind"],
+  ["Casey Jones", true]
+];
 
-const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs, views };
+const album: ExperienceResponse = fixture(
+  "What made Workingman's Dead a turning point for the band?",
+  "Workingman's Dead brought songs back to the fore",
+  "listening",
+  "Workingman's Dead gave the band a second repertoire engine: concise, character-driven songs that could anchor a set without limiting the improvisation around them.",
+  [
+    {
+      type: "album_unit",
+      release_id: "workingmans-dead",
+      title: "Workingman's Dead",
+      release_date: "1970-06-14",
+      release_type: "studio",
+      artist_name: "Grateful Dead",
+      role: "anchor",
+      note: "Its eight songs collectively became a second repertoire engine for the band: concise, character-driven material that could anchor a set without limiting the surrounding improvisation.",
+      listen: [
+        { label: "Listen to Workingman's Dead", provider: "Spotify", url: "https://open.spotify.com/album/0Dx3ntxFk1ZzIWFp2mL6oN", is_official: true }
+      ],
+      tracks: workingmansDeadTracks.map(([title, highlighted = false], index) => ({
+        track_number: index + 1,
+        title,
+        highlighted,
+        duration_seconds: null,
+        listen_url: `${archive}workingmans-dead#track${index + 1}`,
+        performance_id: null,
+        song_id: null
+      })),
+      personnel: [
+        { person_id: "bill-kreutzmann", name: "Bill Kreutzmann", instrument: "Drums (Drum Set)", role: "performer" },
+        { person_id: "bill-kreutzmann", name: "Bill Kreutzmann", instrument: "Percussion", role: "performer" },
+        { person_id: "bob-weir", name: "Bob Weir", instrument: "Guitar", role: "performer" },
+        { person_id: "bob-weir", name: "Bob Weir", instrument: "Lead Vocals", role: "performer" },
+        { person_id: "david-nelson", name: "David Nelson", instrument: "Acoustic Guitar", role: "guest" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Banjo", role: "performer" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Guitar", role: "performer" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Lead Vocals", role: "performer" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Pedal Steel Guitar", role: "performer" },
+        { person_id: "mickey-hart", name: "Mickey Hart", instrument: "Drums (Drum Set)", role: "performer" },
+        { person_id: "mickey-hart", name: "Mickey Hart", instrument: "Percussion", role: "performer" },
+        { person_id: "phil-lesh", name: "Phil Lesh", instrument: "Bass", role: "performer" },
+        { person_id: "pigpen-mckernan", name: "Ron \"Pigpen\" McKernan", instrument: "Harmonica", role: "performer" },
+        { person_id: "pigpen-mckernan", name: "Ron \"Pigpen\" McKernan", instrument: "Keyboard", role: "performer" }
+      ],
+      sources: [
+        { label: "Album credits", url: "https://www.discogs.com/release/workingmans-dead", source_name: "Discogs", note: "Personnel and release details." }
+      ],
+      follow_up: "Why did the band turn toward acoustic material in 1970?"
+    }
+  ] as ExperienceBlock[],
+  "collection",
+  { title: "The record" }
+);
+
+export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs", "views", "album"] as const;
+
+const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs, views, album };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

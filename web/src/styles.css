@@ -178,6 +178,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .unit-heading .subtitle { margin: var(--space-identity) 0 0; line-height: 1.5; }
 .unit-heading .eyebrow { margin-bottom: var(--space-identity); }
 .show-unit.role-anchor, .performance-unit.role-anchor, .album-unit.role-anchor { border-color: #7d6a35; }
+.album-unit { container-type: inline-size; }
 .unit-note { max-width: 65ch; margin: var(--space-part) 0 0; color: #dfe4d8; font-size: 1.02rem; line-height: 1.6; }
 .unit-guests { margin: var(--space-identity) 0 0; color: #bdc9bb; font-size: 0.92rem; line-height: 1.5; }
 .unit-guests .fact-label { margin-right: 0.15rem; }
@@ -229,10 +230,12 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .setlist-section li { padding: 0.2rem 0 0.2rem 0.2rem; }
 .setlist-section li::marker { color: #7f9582; }
 .setlist-section li .song-link, .setlist-section li > span:first-child { color: #f1efdf; font-size: 0.95rem; font-weight: 500; }
-.album-tracks-section, .album-credits, .song-albums-section, .song-representatives { margin-top: var(--space-part); }
-.album-tracks-section .fact-label, .album-credits .fact-label, .song-albums-section .fact-label, .song-representatives .fact-label { margin: 0 0 var(--space-identity); }
-.album-tracks { margin: 0; padding-left: 1.45rem; color: #aebbac; }
-.album-tracks li { padding: 0.2rem 0 0.2rem 0.2rem; }
+.song-albums-section, .song-representatives { margin-top: var(--space-part); }
+.album-tracks-section .fact-label, .song-albums-section .fact-label, .song-representatives .fact-label { margin: 0 0 var(--space-identity); }
+.album-body { display: grid; gap: var(--space-content); margin-top: var(--space-part); }
+@container (min-width: 40rem) { .album-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.album-tracks { margin: 0; padding-left: 1.45rem; color: #aebbac; font-size: 0.92rem; }
+.album-tracks li { padding: 0.1rem 0 0.1rem 0.2rem; }
 .album-tracks li::marker { color: #7f9582; }
 /* Tracks stay list items so the ol's own numbering survives, as setlist songs do. */
 .album-track { display: list-item; }

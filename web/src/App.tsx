@@ -313,6 +313,37 @@ function ShowUnit({
   );
 }
 
+function capitalize(text: string): string {
+  return text.length > 0 ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+type PersonnelGroup = {
+  person_id: string;
+  name: string;
+  instruments: string[];
+  extraRole: string | null;
+};
+
+function groupPersonnel(personnel: AlbumUnitBlock["personnel"]): PersonnelGroup[] {
+  const order: string[] = [];
+  const groups = new Map<string, PersonnelGroup>();
+  for (const credit of personnel) {
+    let group = groups.get(credit.person_id);
+    if (!group) {
+      group = { person_id: credit.person_id, name: credit.name, instruments: [], extraRole: null };
+      groups.set(credit.person_id, group);
+      order.push(credit.person_id);
+    }
+    if (credit.instrument && !group.instruments.includes(credit.instrument)) {
+      group.instruments.push(credit.instrument);
+    }
+    if (credit.role && credit.role !== "performer" && !group.extraRole) {
+      group.extraRole = credit.role;
+    }
+  }
+  return order.map((personId) => groups.get(personId)!);
+}
+
 function AlbumUnit({
   block,
   onFollowUp
@@ -321,6 +352,8 @@ function AlbumUnit({
   onFollowUp: (prompt: string) => void;
 }) {
   const year = block.release_date?.slice(0, 4);
+  const highlightedTracks = block.tracks.filter((track) => track.highlighted);
+  const personnel = groupPersonnel(block.personnel);
   return (
     <article className={`card album-unit${block.role ? ` role-${block.role}` : ""}`}>
       <header className="unit-heading">
@@ -334,36 +367,53 @@ function AlbumUnit({
       </header>
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <ListenActionList actions={block.listen} />
-      {block.tracks.length > 0 && (
-        <section className="album-tracks-section">
-          <p className="fact-label">Tracklist</p>
-          <ol className="album-tracks">
-            {block.tracks.map((track) => (
-              <li
-                key={track.track_number}
-                className={track.highlighted ? "album-track highlighted" : "album-track"}
-                value={track.track_number}
-              >
-                <ListeningLabel title={track.title} url={track.listen_url} />
-                {track.highlighted && <span className="highlight-mark" aria-label="Highlighted track">★</span>}
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-      {block.personnel.length > 0 && (
-        <section className="album-credits">
-          <p className="fact-label">Personnel and credits</p>
-          <ul className="album-personnel">
-            {block.personnel.map((credit) => (
-              <li key={`${credit.person_id}-${credit.role}-${credit.instrument}`}>
-                <strong>{credit.name}</strong>
-                <span>{[credit.role, credit.instrument].filter(Boolean).join(" · ")}</span>
+      {highlightedTracks.length > 0 && (
+        <div className="unit-highlights">
+          <p className="fact-label">Listen for</p>
+          <ul>
+            {highlightedTracks.map((track) => (
+              <li key={track.track_number}>
+                <ListeningLabel title={track.title} url={track.listen_url} className="list-item-label" />
               </li>
             ))}
           </ul>
-        </section>
+        </div>
       )}
+      <div className="album-body">
+        {block.tracks.length > 0 && (
+          <section className="album-tracks-section">
+            <p className="fact-label">Tracklist</p>
+            <ol className="album-tracks">
+              {block.tracks.map((track) => (
+                <li
+                  key={track.track_number}
+                  className={track.highlighted ? "album-track highlighted" : "album-track"}
+                  value={track.track_number}
+                >
+                  <ListeningLabel title={track.title} url={track.listen_url} />
+                  {track.highlighted && <span className="highlight-mark" aria-label="Highlighted track">★</span>}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+        {personnel.length > 0 && (
+          <details className="album-credits unit-setlist">
+            <summary>Personnel and credits</summary>
+            <ul className="album-personnel">
+              {personnel.map((person) => (
+                <li key={person.person_id}>
+                  <strong>{person.name}</strong>
+                  <span>
+                    {person.instruments.join(", ")}
+                    {person.extraRole ? ` · ${capitalize(person.extraRole)}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
       <UnitSourceList sources={block.sources} />
       {block.follow_up && (
         <p className="unit-follow-up">
