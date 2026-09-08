@@ -315,15 +315,17 @@ def _place(venue: dict[str, str] | None) -> str:
 
 
 def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
-    """Trim a show's recording list to a count and its first few IDs.
+    """Trim a show's recording list to a count and its IDs.
 
-    Sugar Magnolia-scale shows can carry dozens of recording rows; the model
-    rarely needs more than a handful of IDs to reason about which recording to
-    reach for, and get_performance/get_recording_reviews cover the rest.
+    A show can carry dozens of recording rows whose metadata the model rarely
+    needs (get_performance and get_recording_reviews cover it), but grounding
+    is id-level: a recording the model names in a recording_list or as a
+    preferred recording must have appeared in this turn's tool output, so
+    every ID stays.
     """
 
     ids = [row["recording_id"] for row in recordings if row.get("recording_id")]
-    return {"count": len(recordings), "recording_ids": ids[:5]}
+    return {"count": len(recordings), "recording_ids": ids}
 
 
 def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -325,7 +325,8 @@ def test_show_tool_compacts_recordings_to_a_count_and_a_few_ids():
     full_recording_count = len(store.show_context(show)["recordings"])
     result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1990-03-29"}))
     assert result["recordings"]["count"] == full_recording_count
-    assert len(result["recordings"]["recording_ids"]) == 5
+    # Every id stays (grounding is id-level); only per-recording metadata goes.
+    assert len(result["recordings"]["recording_ids"]) == full_recording_count
     assert "recordings_note" in result
 
 
