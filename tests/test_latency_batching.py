@@ -20,8 +20,13 @@ def test_entity_search_over_a_whole_question_issues_one_query_per_table():
     before = len(connection.statements)
     payload = json.loads(tools["search_entities"].invoke({"query": "What are the best versions of Dark Star?"}))
     issued = connection.statements[before:]
-    # songs, people, venues, equipment, official_releases, shows: one each.
-    assert len(issued) == 6
+    # songs, people, venues, equipment, official_releases, shows: one each,
+    # plus one rows_in per table pathways_for reads to attach pathways for
+    # the matched song (performances, resource_songs, resource_performances,
+    # official_release_tracks, resources) and one attempt at selection rows.
+    # Every added query is one batched read for the whole matched set, never
+    # one per matched row.
+    assert len(issued) == 12
     assert any(match["id"] == "song-dark-star" for match in payload["matches"])
 
 

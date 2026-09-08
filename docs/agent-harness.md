@@ -61,6 +61,8 @@ Exhausting the round budget is not a graceful fallback: LangGraph raises a recur
 - `get_astrology` — date-based Western zodiac context, explicitly labeled as cultural/interpretive rather than scientific.
 - `finish_response` — the only way a turn ends: the model's chat answer and main-body plan, resolved by `deadbot/finish.py`.
 
+`search_entities`, `get_song`, `get_show`, `get_album`, and `search_guest_musicians` each attach a `pathways` object (`deadbot/pathways.py`) for every song, show, and release result: a compact, source-attributed inventory of the lore already cataloged for that entity — cataloged resources (excluding catalog/lyrics inventory rows), a reviewed source trail summary, and selection-signal counts by source — built from batched reads shared across the whole call, never a lookup per entity. When nothing is cataloged for an entity, its pathways object says so plainly (`"cataloged": false`) and instead lists the research sites suited to that entity type, so the model can offer a search route rather than imply coverage that does not exist.
+
 All tools are read only. The canonical-data tools never touch the network; the three contextual tools make narrowly scoped API calls for the requested show date and venue area. The research tools (`search_site`, `read_page`, `get_recording_reviews`) read public web pages and public JSON endpoints at request time so the model can work from what a source actually says. They keep nothing: no page text is stored, and the site directory is a suggestion of where to look, not a boundary. See `docs/superpowers/specs/2026-09-03-source-reading-design.md`.
 
 Historical weather is nearby-grid-cell reanalysis, not an exact NWS station or

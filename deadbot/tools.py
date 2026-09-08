@@ -26,6 +26,7 @@ from deadbot.deadnet import (
 )
 from deadbot.source_registry import RegistryValidationError, load_registry
 from deadbot.lore_source_trails import source_trails_for_entity
+from deadbot.pathways import pathways_for
 from deadbot.selection_signals import (
     SelectionSignalError,
     load_selection_signals,
@@ -348,7 +349,9 @@ def build_tools(
         people who appear only in guest credits. Use search_guest_musicians
         when the distinction between a guest credit and the regular lineup is
         material. Returns stable IDs and display names only; it never searches
-        the web.
+        the web. pathways lists the cataloged lore for each result (resources,
+        source trail, selections) or the research sites to search when
+        nothing is cataloged.
         """
         words = query.casefold().split()
         stop_words = {"a", "an", "and", "at", "for", "in", "of", "on", "the", "to"}
@@ -393,7 +396,16 @@ def build_tools(
                 show["show_id"],
                 f'{show["show_date"]} — {show.get("venue_name", "Unknown venue")}',
             )
-        return _json({"query": query, "matches": matches[:20]})
+        limited = matches[:20]
+        pathway_entities = [
+            (match["entity_type"], match["id"])
+            for match in limited
+            if match["entity_type"] in {"song", "show", "release"}
+        ][:6]
+        payload: dict[str, Any] = {"query": query, "matches": limited}
+        if pathway_entities:
+            payload["pathways"] = pathways_for(store, pathway_entities)
+        return _json(payload)
 
     @tool
     def search_guest_musicians(query: str = "") -> str:
@@ -401,6 +413,9 @@ def build_tools(
 
         A name or phrase narrows the results. Each appearance includes its show,
         venue, location, credited instruments, and any known participation scope.
+        pathways lists the cataloged lore for each result (resources, source
+        trail, selections) or the research sites to search when nothing is
+        cataloged.
         """
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
@@ -494,12 +509,16 @@ def build_tools(
                 }
             )
         guests.sort(key=lambda guest: guest["name"].casefold())
-        return _json(
-            {
-                "query": query,
-                "guests": guests,
-            }
-        )
+        show_ids = []
+        for guest in guests:
+            for appearance in guest["appearances"]:
+                if appearance["show_id"] not in show_ids:
+                    show_ids.append(appearance["show_id"])
+        pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
+        payload: dict[str, Any] = {"query": query, "guests": guests}
+        if pathway_entities:
+            payload["pathways"] = pathways_for(store, pathway_entities)
+        return _json(payload)
 
     @tool
     def search_stored_resources(query: str) -> str:
@@ -595,6 +614,9 @@ def build_tools(
         song's documented span and count; call `list_song_performances` when
         you need concrete rendition IDs and listening paths rather than loading
         the full history into an otherwise album- or song-focused answer.
+        pathways lists the cataloged lore for each result (resources, source
+        trail, selections) or the research sites to search when nothing is
+        cataloged.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
@@ -632,6 +654,7 @@ def build_tools(
                 },
             }
         )
+        payload["pathways"] = pathways_for(store, [("song", song["song_id"])]).get(song["song_id"], {})
         return _json(payload)
 
     @tool
@@ -712,7 +735,9 @@ def build_tools(
         canonical song for a studio release and a canonical performance for a
         live one; an intro, tuning or banter segment names neither. Use the
         release date against a song's performance history when the question is
-        about how a song lived on stage before or after the record.
+        about how a song lived on stage before or after the record. pathways
+        lists the cataloged lore for each result (resources, source trail,
+        selections) or the research sites to search when nothing is cataloged.
         """
         release = store.resolve_release(release_id_or_title)
         if not release:
@@ -728,6 +753,9 @@ def build_tools(
                 "performances most often issued on official live records. Call get_song_notable_versions "
                 "for one song's versions with critic, curator and fan signals."
             )
+        payload["pathways"] = pathways_for(store, [("release", release["release_id"])]).get(
+            release["release_id"], {}
+        )
         return _json(payload)
 
     def _album_live_legacy(song_ids: list[str | None]) -> dict[str, dict[str, Any]]:
@@ -1159,11 +1187,16 @@ def build_tools(
         from model memory. For follow-up questions about who played,
         instruments, guests, or Jerry Garcia's named guitars, reuse the most
         recent retrieved show ID/date and call this tool before answering.
+        pathways lists the cataloged lore for each result (resources, source
+        trail, selections) or the research sites to search when nothing is
+        cataloged.
         """
         show = store.resolve_show(show_id_or_date)
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
-        return _json(store.show_context(show))
+        payload = store.show_context(show)
+        payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
+        return _json(payload)
 
     @tool
     def get_show_selections() -> str:
