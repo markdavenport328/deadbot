@@ -272,9 +272,69 @@ const albumSongs: ExperienceResponse = fixture(
   { title: "The touring pillars", lead: "Each song is a different answer to how an album track could become part of the live repertoire." }
 );
 
-export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs"] as const;
+// Two fact_grid blocks in two differently-presented groups, so a review can
+// compare a short-value display treatment against a sentence-length one
+// without scrolling between unrelated fixtures.
+const viewsBlocks: ExperienceBlock[] = [
+  {
+    type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
+    items: [
+      {
+        marker: "The skeptical view",
+        title: "The band sounds worn down, and the show mostly reveals how far its health had slipped.",
+        detail: "Some listeners hear strained vocals and shortened jams as a sign the tour ran past where it should have stopped.",
+        link: { url: "https://archive.org/details/gd1995-07-09.sbd.miller.97483.flac16", label: "Listener reviews" }
+      },
+      {
+        marker: "The sympathetic view",
+        title: "The show still delivers real moments of connection despite the circumstances.",
+        detail: "Others point to a warm Stella Blue and a full, generous setlist as evidence the band was still giving what it had."
+      },
+      {
+        marker: "The lasting consensus",
+        title: "It endures mainly as the final Grateful Dead concert, not for its performance quality.",
+        detail: "Most retrospective accounts frame the night by its historical weight rather than by how the individual songs were played."
+      }
+    ]
+  },
+  {
+    type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
+    items: [
+      { title: "Mississippi Half-Step Uptown Toodeloo", value: "237 performances", detail: "It became a durable early-set standard across most of the touring era." },
+      { title: "Row Jimmy", value: "277 performances", detail: "The song settled into occasional but steady use rather than heavy rotation." },
+      { title: "Stella Blue", value: "330", detail: "It remained a signature late-set ballad through the band's final years." },
+      { title: "Let Me Sing Your Blues Away", value: "6 performances, all in 1973", detail: "The Pigpen-era song largely left the setlist after 1973." }
+    ]
+  }
+];
 
-const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs };
+const views: ExperienceResponse = {
+  schema_version: "1",
+  thread_id: "visual-views",
+  title: "Soldier Field 1995 and the album songs that stayed",
+  answer: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  body_lead: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  mode: "research",
+  conversation: [
+    { role: "user", text: "What do people think of the 1995-07-09 Soldier Field show, and which Wake of the Flood songs stuck around live?" },
+    { role: "assistant", text: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire." }
+  ],
+  blocks: viewsBlocks,
+  groups: [
+    { presentation: "comparison", title: "What listeners agree and argue about", block_indexes: [0] },
+    { presentation: "collection", title: "The album songs in the live repertoire", block_indexes: [1] }
+  ],
+  layout: [{ region: "primary", block_indexes: [0, 1] }],
+  sources: [
+    { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" },
+    { source_id: "fixture-deadnet", label: "Grateful Dead of the Day", url: "https://gratefuldeadoftheday.com", kind: "contextual_resource" },
+    { source_id: "fixture-soldier-field-reviews", label: "Listener reviews", url: "https://archive.org/details/gd1995-07-09.sbd.miller.97483.flac16", kind: "contextual_resource" }
+  ]
+};
+
+export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs", "views"] as const;
+
+const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs, views };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

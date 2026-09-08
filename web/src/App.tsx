@@ -6,34 +6,6 @@ type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
 type UnitSources = ShowUnitBlock["sources"];
 
-// Roles are the composer's interpretive relationships; these labels are how
-// the page names them. The composer never chooses styling.
-const roleLabels: Record<string, string> = {
-  supporting: "Supporting",
-  contrast: "Contrast",
-  turning_point: "Turning point",
-  outlier: "Outlier",
-  overlooked: "Overlooked",
-  representative: "Representative"
-};
-
-// Anchor and culmination still guide emphasis and disclosure, but their
-// position already communicates their role. Naming them adds redundant UI.
-const silentRoles = new Set(["anchor", "culmination"]);
-
-const organizationLabels: Record<string, string> = {
-  chronological: "In order",
-  curated: "A selection",
-  comparative: "Side by side"
-};
-
-const groupLabels: Record<string, string> = {
-  collection: "Collection",
-  sequence: "Listening path",
-  comparison: "Comparison",
-  argument: "The case"
-};
-
 function formatShowDate(iso: string | null | undefined): string {
   if (!iso) return "Undated";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -215,11 +187,6 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
   return null;
 }
 
-function RoleChip({ role }: { role?: string | null }) {
-  if (!role || silentRoles.has(role)) return null;
-  return <span className={`role-chip role-${role}`}>{roleLabels[role] ?? role.replaceAll("_", " ")}</span>;
-}
-
 function ListenActionList({ actions }: { actions: ListenActions }) {
   if (actions.length === 0) return null;
   return (
@@ -295,7 +262,6 @@ function ShowUnit({
           <h2>{unit.venue_name || formatShowDate(unit.show_date)}{unit.venue_name && <span className="subtitle"> ({formatShowDate(unit.show_date)})</span>}</h2>
           {unit.location && <p className="subtitle">{unit.location}</p>}
         </div>
-        <RoleChip role={unit.role} />
       </header>
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
       {shows("guests") && unit.guests.length > 0 && (
@@ -365,7 +331,6 @@ function AlbumUnit({
             {year ? <span className="subtitle"> ({year})</span> : null}
           </h2>
         </div>
-        <RoleChip role={block.role} />
       </header>
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <ListenActionList actions={block.listen} />
@@ -424,7 +389,6 @@ function Block({
     case "show_explorer":
       return (
         <section className="show-explorer">
-          <Eyebrow label={organizationLabels[block.organization] ?? block.organization} title={block.title} />
           <h2>{block.title}</h2>
           <div className="explorer-units">
             {block.items.map((unit) => (
@@ -448,7 +412,6 @@ function Block({
                 {[block.location, block.set_label, block.position_in_set ? `#${block.position_in_set}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <RoleChip role={block.role} />
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           {(block.previous || block.next) && (
@@ -481,7 +444,6 @@ function Block({
               {block.span && <Eyebrow label={block.span} title={block.title} />}
               <h2>{block.title}</h2>
             </div>
-            <RoleChip role={block.role} />
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <ul className="era-performances">
@@ -620,7 +582,6 @@ function Block({
               <p className="eyebrow">Song</p>
               <h2>{block.title}</h2>
             </div>
-            <RoleChip role={block.role} />
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <dl className="song-facts">
@@ -871,7 +832,11 @@ function Block({
               <div key={`${item.marker ?? item.title}-${index}`}>
                 {item.marker ? <dt>{item.marker}</dt> : <dt>{item.title}</dt>}
                 {item.marker && <dd className="fact-subject">{renderInline(item.title)}</dd>}
-                {item.value && <dd className={item.marker ? "fact-value" : undefined}>{renderInline(item.value)}</dd>}
+                {item.value && (
+                  <dd className={item.value.trim().length <= 20 ? "fact-value display" : "fact-value"}>
+                    {renderInline(item.value)}
+                  </dd>
+                )}
                 {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
                 {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
                 {item.follow_up && <dd className="fact-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></dd>}
@@ -1150,7 +1115,6 @@ export default function App() {
                 <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
                   {(group.title || group.lead) && (
                     <header className="group-heading">
-                      {group.title && <Eyebrow label={groupLabels[group.presentation]} title={group.title} />}
                       {group.title && <h2>{group.title}</h2>}
                       {group.lead && <p>{renderInline(group.lead)}</p>}
                     </header>
