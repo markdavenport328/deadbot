@@ -23,7 +23,7 @@ DEFAULT_CANONICAL_DIR = ROOT / "data" / "canonical"
 DEFAULT_SELECTION_EVIDENCE_PATH = ROOT / "data" / "editorial" / "selection-evidence-review.json"
 DEFAULT_SCHEMA_PATH = ROOT / "schema" / "postgres.sql"
 DEFAULT_MIGRATIONS_DIR = ROOT / "schema" / "migrations"
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 Converter = Callable[[str], Any]

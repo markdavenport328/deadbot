@@ -76,6 +76,10 @@ class Settings:
     max_tool_rounds: int = 8
     rate_limit_per_minute: int = 10
     conversation_window: int = 12
+    # Serve a stored answer for a repeated fresh question (the opening chips
+    # above all) while the data version and deployed commit are unchanged.
+    response_cache: bool = True
+    response_cache_ttl_seconds: int = 7 * 24 * 60 * 60
 
     @classmethod
     def from_env(cls, env_path: Path = DEFAULT_ENV_PATH) -> "Settings":
@@ -106,4 +110,6 @@ class Settings:
             max_tool_rounds=_as_int(value("DEADBOT_MAX_TOOL_ROUNDS"), 8),
             rate_limit_per_minute=_as_int(value("DEADBOT_RATE_LIMIT_PER_MINUTE"), 10),
             conversation_window=_as_int(value("DEADBOT_CONVERSATION_WINDOW"), 12),
+            response_cache=_as_bool(value("DEADBOT_RESPONSE_CACHE"), True),
+            response_cache_ttl_seconds=_as_int(value("DEADBOT_RESPONSE_CACHE_TTL_SECONDS"), 7 * 24 * 60 * 60),
         )

@@ -12,13 +12,43 @@ loading whole relationship tables for a single entity lookup.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
-from datetime import date, datetime
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
+from datetime import date, datetime, timezone
 import json
 import re
 from typing import Any, Protocol
 
 from deadbot.data import CanonicalStore
+
+
+# A per-request read-through cache of query results, keyed by SQL and
+# parameters. The canonical data is read only, so within one request the same
+# query always returns the same rows; without this, plan resolution re-fetched
+# every show and song the research phase had already read. The cache lives in
+# a context variable so parallel tool threads, which copy the context, share
+# the same dict, and requests never see each other's entries.
+_QUERY_CACHE: ContextVar[dict[tuple[str, tuple[Any, ...]], list[dict[str, str]]] | None] = ContextVar(
+    "deadbot_query_cache", default=None
+)
+
+
+@contextmanager
+def query_cache_scope(cache: dict | None = None) -> Iterator[dict]:
+    """Serve repeated canonical queries from memory while the block runs.
+
+    Pass the same ``cache`` dict to successive scopes to carry one request's
+    cache across the steps of a streamed agent run, each of which may resume
+    in a fresh copy of the context.
+    """
+
+    cache = {} if cache is None else cache
+    token = _QUERY_CACHE.set(cache)
+    try:
+        yield cache
+    finally:
+        _QUERY_CACHE.reset(token)
 
 
 REQUIRED_SCHEMA_VERSION = 4
@@ -71,6 +101,21 @@ _ORDER_COLUMNS: dict[str, tuple[str, ...]] = {
     "songs": ("song_id",),
     "venues": ("venue_id",),
 }
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    """A DB-API timestamp: a datetime from psycopg, ISO text from lighter drivers."""
+
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace(" ", "T"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 def _identifier(value: str) -> str:
@@ -221,6 +266,16 @@ class PostgresCanonicalStore(CanonicalStore):
         return " ORDER BY 1"
 
     def _query(self, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
+        cache = _QUERY_CACHE.get()
+        key = (sql, tuple(parameters))
+        if cache is not None and key in cache:
+            return [dict(row) for row in cache[key]]
+        rows = self._execute(sql, parameters)
+        if cache is not None:
+            cache[key] = [dict(row) for row in rows]
+        return rows
+
+    def _execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
         cursor = self._connection().cursor()
         try:
             cursor.execute(sql, parameters)
@@ -316,6 +371,68 @@ class PostgresCanonicalStore(CanonicalStore):
             raise RuntimeError(
                 "PostgreSQL is not ready to serve Deadbot; missing " + ", ".join(missing) + "."
             )
+
+    # ---- response cache -------------------------------------------------
+    # Composed answers for repeated questions. Writes go through the same
+    # connection; this is the only place the read store issues DDL or DML.
+
+    def data_version(self) -> str:
+        """A fingerprint that changes whenever an import changes what answers rest on."""
+
+        rows = self._query(
+            "SELECT "
+            f"(SELECT MAX(schema_version) FROM {self._qualified_table('deadbot_schema_metadata')}) AS schema_version, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('shows')}) AS shows, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('performances')}) AS performances, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('official_release_tracks')}) AS release_tracks, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('resources')}) AS resources, "
+            f"(SELECT COUNT(*) FROM {self._qualified_table('selection_evidence')}) AS selection_evidence"
+        )
+        row = rows[0] if rows else {}
+        return "|".join(f"{key}={row.get(key, '')}" for key in sorted(row))
+
+    def ensure_response_cache(self) -> None:
+        self._statement(
+            f"CREATE TABLE IF NOT EXISTS {self._qualified_table('deadbot_response_cache')} ("
+            "question_key TEXT PRIMARY KEY, data_version TEXT NOT NULL, question TEXT NOT NULL, "
+            "response TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        )
+
+    def cached_response(self, question_key: str, data_version: str, max_age_seconds: int) -> dict[str, Any] | None:
+        rows = self._execute(
+            f"SELECT response, created_at FROM {self._qualified_table('deadbot_response_cache')} "
+            "WHERE question_key = %s AND data_version = %s",
+            (question_key, data_version),
+        )
+        if not rows:
+            return None
+        created = _parse_timestamp(rows[0].get("created_at", ""))
+        if created is None or (datetime.now(created.tzinfo) - created).total_seconds() > max_age_seconds:
+            return None
+        try:
+            payload = json.loads(rows[0]["response"])
+        except (KeyError, TypeError, json.JSONDecodeError):
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    def store_response(self, question_key: str, data_version: str, question: str, response: dict[str, Any]) -> None:
+        self._statement(
+            f"INSERT INTO {self._qualified_table('deadbot_response_cache')} "
+            "(question_key, data_version, question, response, created_at) VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP) "
+            "ON CONFLICT (question_key) DO UPDATE SET data_version = EXCLUDED.data_version, "
+            "question = EXCLUDED.question, response = EXCLUDED.response, created_at = CURRENT_TIMESTAMP",
+            (question_key, data_version, question, json.dumps(response, ensure_ascii=False)),
+        )
+
+    def _statement(self, sql: str, parameters: tuple[Any, ...] = ()) -> None:
+        cursor = self._connection().cursor()
+        try:
+            cursor.execute(sql, parameters)
+        finally:
+            cursor.close()
+        commit = getattr(self._connection(), "commit", None)
+        if callable(commit) and not getattr(self._connection(), "autocommit", False):
+            commit()
 
     def selection_signal_rows(self) -> list[dict[str, Any]]:
         """Read the complete reviewed source-attributed evidence packet."""
@@ -434,6 +551,42 @@ class PostgresCanonicalStore(CanonicalStore):
             f"{self._order_clause(table)}",
             tuple(f"%{escaped}%" for _ in fields),
         )
+
+    def matching_rows_any(
+        self, table: str, phrases: list[str], fields: tuple[str, ...], limit: int = 12
+    ) -> list[dict[str, str]]:
+        """One query for every phrase: exact matches rank ahead of substring matches."""
+
+        needles = [phrase.casefold().strip() for phrase in phrases]
+        needles = [needle for needle in dict.fromkeys(needles) if needle]
+        if not needles or not fields or limit <= 0:
+            return []
+        qualified = self._qualified_table(table)
+        exact = " OR ".join(
+            f"LOWER(COALESCE(CAST({_identifier(field)} AS TEXT), '')) = LOWER(%s)"
+            for field in fields
+            for _ in needles
+        )
+        fuzzy = " OR ".join(
+            f"LOWER(COALESCE(CAST({_identifier(field)} AS TEXT), '')) LIKE LOWER(%s) ESCAPE '\\'"
+            for field in fields
+            for _ in needles
+        )
+        exact_values = [needle for _ in fields for needle in needles]
+        fuzzy_values = [
+            "%" + needle.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            for _ in fields
+            for needle in needles
+        ]
+        order = self._order_clause(table).replace(" ORDER BY ", ", ", 1)
+        sql = (
+            f"SELECT *, CASE WHEN {exact} THEN 0 ELSE 1 END AS _match_rank FROM {qualified} "
+            f"WHERE {exact} OR {fuzzy} ORDER BY _match_rank{order} LIMIT %s"
+        )
+        rows = self._query(sql, tuple([*exact_values, *exact_values, *fuzzy_values, limit]))
+        for row in rows:
+            row.pop("_match_rank", None)
+        return rows
 
     # resolve_song, show_candidates, resolve_show, and resolve_equipment are
     # inherited: they compose the optimized ``one`` and ``matching_rows`` calls.

@@ -26,6 +26,15 @@ Exhausting the round budget is not a graceful fallback: LangGraph raises a recur
   endpoints, and frequent immediate set neighbors for one song. This describes
   only the current documented library (with explicit transition denominators),
   not complete band history, editorial lore, or a “best” score.
+- `get_song_notable_versions` — the renditions of one song that a source
+  singled out: official releases carrying the performance, reviewed critic,
+  curator and fan signals naming it or its show, and stored listening links.
+  Four batched reads regardless of performance count. `source_count` counts
+  distinct sources and is presented as separate voices, never a score.
+- `get_selections_for` — the reviewed selection inventory narrowed to one song
+  or show, each match saying whether it names a performance, the whole show,
+  or a show where the song was played. The full inventory
+  (`get_selection_signals`) remains for questions about the sources themselves.
 - `get_deadnet_song_context` — an optional reviewed Dead.net song-page title,
   short metadata, and link; it never returns page body or lyrics.
 - `get_deadcast_metadata` — an optional reviewed Deadcast episode title, short
@@ -57,6 +66,19 @@ All tools are read only. The canonical-data tools never touch the network; the t
 Historical weather is nearby-grid-cell reanalysis, not an exact NWS station or
 concert-site measurement. Keep it distinct from direct weather observations and
 from attributed interview or memoir claims about conditions at a show.
+
+## Request-time caching
+
+Two caches keep the remote database from dominating a turn. A per-request
+query cache (`deadbot.postgres.query_cache_scope`) serves repeated canonical
+reads from memory for the life of one request, so plan resolution reuses what
+research already fetched. A response cache (`deadbot.response_cache`) stores
+the composed answer to a fresh question in `deadbot_response_cache`, keyed by
+the normalized question, the store's data version and the deployed commit; a
+repeat of an opening question is served in well under a second until an
+import or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
+`scripts/warm_answers.py <base-url>` asks a deployment its opening questions
+so the first visitor after a deploy does not wait.
 
 ## Provider contract
 

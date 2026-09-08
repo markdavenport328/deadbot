@@ -335,15 +335,21 @@ def test_release_personnel_spec_follows_show_performers_and_loads_after_releases
     assert names.index("release_personnel") > names.index("people")
 
 
-def test_schema_version_is_six_and_has_exactly_one_migration():
-    assert SCHEMA_VERSION == 6
+def test_schema_version_is_seven_and_each_version_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 7
     migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
-    migrations = sorted(migrations_dir.glob("006_*.sql"))
-    assert len(migrations) == 1
-    sql = migrations[0].read_text(encoding="utf-8")
-    assert "ALTER TABLE official_releases" in sql
-    assert "ALTER COLUMN release_date TYPE TEXT" in sql
-    assert "schema_version" in sql
+    for version in range(2, SCHEMA_VERSION + 1):
+        assert len(sorted(migrations_dir.glob(f"{version:03d}_*.sql"))) == 1
+    release_dates = sorted(migrations_dir.glob("006_*.sql"))[0].read_text(encoding="utf-8")
+    assert "ALTER TABLE official_releases" in release_dates
+    assert "ALTER COLUMN release_date TYPE TEXT" in release_dates
+    assert "schema_version" in release_dates
+    response_cache = sorted(migrations_dir.glob("007_*.sql"))[0].read_text(encoding="utf-8")
+    assert "CREATE TABLE IF NOT EXISTS deadbot_response_cache" in response_cache
+    assert "UPDATE deadbot_schema_metadata SET schema_version = 7" in response_cache
+    bootstrap = (Path(__file__).resolve().parents[1] / "schema" / "postgres.sql").read_text(encoding="utf-8")
+    assert "CREATE TABLE deadbot_response_cache" in bootstrap
+    assert "VALUES (7)" in bootstrap
 
 
 def test_every_spec_matches_its_canonical_csv_header():

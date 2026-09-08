@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (6);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (7);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -778,5 +778,14 @@ CREATE INDEX canonical_imports_snapshot_id_idx ON canonical_imports (snapshot_id
 CREATE INDEX source_snapshots_source_id_idx ON source_snapshots (source_id);
 CREATE INDEX source_snapshots_url_retrieved_idx
     ON source_snapshots (normalized_url, retrieved_at DESC);
+
+-- Cached composed answers for repeated questions; see migrations/007.
+CREATE TABLE deadbot_response_cache (
+    question_key TEXT PRIMARY KEY,
+    data_version TEXT NOT NULL,
+    question TEXT NOT NULL,
+    response TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 
 COMMIT;
