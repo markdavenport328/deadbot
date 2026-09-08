@@ -1096,7 +1096,7 @@ export default function App() {
               {loading && (
                 <article className="message assistant pending" aria-live="polite">
                   {streamingAnswer ? (
-                    <div>
+                    <div className="streaming-answer">
                       {renderInline(streamingAnswer)}
                       <span className="cursor" aria-hidden="true" />
                     </div>
