@@ -234,6 +234,7 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .album-tracks-section .fact-label, .song-albums-section .fact-label, .song-representatives .fact-label { margin: 0 0 var(--space-identity); }
 .album-body { display: grid; gap: var(--space-content); margin-top: var(--space-part); }
 @container (min-width: 40rem) { .album-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.album-body .unit-setlist { margin-top: 0; }
 .album-tracks { margin: 0; padding-left: 1.45rem; color: #aebbac; font-size: 0.92rem; }
 .album-tracks li { padding: 0.1rem 0 0.1rem 0.2rem; }
 .album-tracks li::marker { color: #7f9582; }
