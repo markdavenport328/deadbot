@@ -74,7 +74,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .answer-lead { max-width: 65ch; margin: 0 0 var(--space-content); color: #d6ddcf; font-size: 1.125rem; line-height: 1.6; }
 .content-empty { max-width: 760px; padding: clamp(3rem, 12vh, 10rem) 0; }
 .content-working { max-width: 780px; padding-top: 2rem; }
-.content-working h1 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); color: #c3cec3; font-weight: 400; }
+.content-working h1 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); color: #c3cec3; font-weight: 400; line-height: 1.2; overflow-wrap: anywhere; }
 .starting-points { display: grid; gap: 0.75rem; max-width: 46rem; margin-top: 1.5rem; }
 .starting-points button { border: 1px solid #506757; border-radius: 0.7rem; background: rgba(29, 48, 36, 0.82); color: #f1efdf; padding: 1rem 1.1rem; text-align: left; line-height: 1.45; }
 .starting-points button:hover, .starting-points button:focus-visible { border-color: #c49e48; background: #284332; }

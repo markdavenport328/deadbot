@@ -325,14 +325,12 @@ type PersonnelGroup = {
 };
 
 function groupPersonnel(personnel: AlbumUnitBlock["personnel"]): PersonnelGroup[] {
-  const order: string[] = [];
   const groups = new Map<string, PersonnelGroup>();
   for (const credit of personnel) {
     let group = groups.get(credit.person_id);
     if (!group) {
       group = { person_id: credit.person_id, name: credit.name, instruments: [], extraRole: null };
       groups.set(credit.person_id, group);
-      order.push(credit.person_id);
     }
     if (credit.instrument && !group.instruments.includes(credit.instrument)) {
       group.instruments.push(credit.instrument);
@@ -341,7 +339,7 @@ function groupPersonnel(personnel: AlbumUnitBlock["personnel"]): PersonnelGroup[
       group.extraRole = credit.role;
     }
   }
-  return order.map((personId) => groups.get(personId)!);
+  return [...groups.values()];
 }
 
 function AlbumUnit({
@@ -379,6 +377,7 @@ function AlbumUnit({
           </ul>
         </div>
       )}
+      {(block.tracks.length > 0 || personnel.length > 0) && (
       <div className="album-body">
         {block.tracks.length > 0 && (
           <section className="album-tracks-section">
@@ -414,6 +413,7 @@ function AlbumUnit({
           </details>
         )}
       </div>
+      )}
       <UnitSourceList sources={block.sources} />
       {block.follow_up && (
         <p className="unit-follow-up">
@@ -940,8 +940,7 @@ export default function App() {
   const [answerProgressStart, setAnswerProgressStart] = useState<number | null>(null);
   const threadContainer = useRef<HTMLElement>(null);
   // Callbacks passed into askStreaming close over stale render state, so track
-  // the live progress length and whether the answer has already started in refs.
-  const progressLengthRef = useRef(0);
+  // whether the answer has already started in a ref.
   const answerStartedRef = useRef(false);
 
   useEffect(() => {
@@ -986,21 +985,20 @@ export default function App() {
     setError(null);
     setProgress([]);
     setStreamingAnswer(null);
-    progressLengthRef.current = 0;
     answerStartedRef.current = false;
     const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
+      let statusCount = 0;
       const streamed = await askStreaming(
         body,
-        (status) => setProgress((lines) => {
-          const next = [...lines, status];
-          progressLengthRef.current = next.length;
-          return next;
-        }),
+        (status) => {
+          statusCount += 1;
+          setProgress((lines) => [...lines, status]);
+        },
         (text) => {
           if (!answerStartedRef.current) {
             answerStartedRef.current = true;
-            setAnswerProgressStart(progressLengthRef.current);
+            setAnswerProgressStart(statusCount);
           }
           setStreamingAnswer(text);
         }
@@ -1191,7 +1189,7 @@ export default function App() {
             <div className="content-working">
               <p className="eyebrow">Working</p>
               <h1>{pendingQuestion}</h1>
-              <ol className="progress-lines">
+              <ol className="progress-lines" aria-hidden="true">
                 {workingLines.map((line, index, lines) => (
                   <li key={`${index}-${line}`} className={index === lines.length - 1 ? "current" : undefined}>
                     {line}{index === lines.length - 1 && progress.length > 0 ? "…" : ""}
