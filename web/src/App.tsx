@@ -935,7 +935,14 @@ export default function App() {
   const [progress, setProgress] = useState<string[]>([]);
   // The final answer's text as it streams in, replaced wholesale per event.
   const [streamingAnswer, setStreamingAnswer] = useState<string | null>(null);
+  // How many progress lines existed when the answer started, so the chat can
+  // show only the statuses that arrived after the answer, not the whole run.
+  const [answerProgressStart, setAnswerProgressStart] = useState<number | null>(null);
   const threadContainer = useRef<HTMLElement>(null);
+  // Callbacks passed into askStreaming close over stale render state, so track
+  // the live progress length and whether the answer has already started in refs.
+  const progressLengthRef = useRef(0);
+  const answerStartedRef = useRef(false);
 
   useEffect(() => {
     const thread = threadContainer.current;
@@ -979,12 +986,24 @@ export default function App() {
     setError(null);
     setProgress([]);
     setStreamingAnswer(null);
+    progressLengthRef.current = 0;
+    answerStartedRef.current = false;
     const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
       const streamed = await askStreaming(
         body,
-        (status) => setProgress((lines) => [...lines, status]),
-        setStreamingAnswer
+        (status) => setProgress((lines) => {
+          const next = [...lines, status];
+          progressLengthRef.current = next.length;
+          return next;
+        }),
+        (text) => {
+          if (!answerStartedRef.current) {
+            answerStartedRef.current = true;
+            setAnswerProgressStart(progressLengthRef.current);
+          }
+          setStreamingAnswer(text);
+        }
       );
       setResponse(streamed ?? await askPlain(body));
     } catch (requestError) {
@@ -995,6 +1014,7 @@ export default function App() {
       setPendingStartsFresh(false);
       setProgress([]);
       setStreamingAnswer(null);
+      setAnswerProgressStart(null);
     }
   }
 
@@ -1081,6 +1101,15 @@ export default function App() {
       ]
     : response?.conversation ?? [];
 
+  // Statuses that arrived after the chat answer started, so the chat can show
+  // Deadbot is still composing the page instead of just a blinking cursor.
+  const postAnswerLines = answerProgressStart !== null ? progress.slice(answerProgressStart) : [];
+  const postAnswerStatus = postAnswerLines.length > 0 ? postAnswerLines[postAnswerLines.length - 1] : null;
+
+  // The last four progress lines for a working display, falling back to a
+  // single placeholder line before the first tool call reports in.
+  const workingLines = progress.length > 0 ? progress.slice(-4) : ["Looking through the library"];
+
   function submitOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
@@ -1113,7 +1142,11 @@ export default function App() {
                   {streamingAnswer ? (
                     <div className="streaming-answer">
                       {renderInline(streamingAnswer)}
-                      <span className="cursor" aria-hidden="true" />
+                      {postAnswerStatus ? (
+                        <p className="post-answer-status">{postAnswerStatus}…</p>
+                      ) : (
+                        <span className="cursor" aria-hidden="true" />
+                      )}
                     </div>
                   ) : progress.length === 0 ? (
                     <div>Looking through the library…</div>
@@ -1154,7 +1187,19 @@ export default function App() {
         </aside>
 
         <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
-          {response ? (
+          {loading ? (
+            <div className="content-working" aria-live="polite">
+              <p className="eyebrow">Working</p>
+              <h1>{pendingQuestion}</h1>
+              <ol className="progress-lines">
+                {workingLines.map((line, index, lines) => (
+                  <li key={`${index}-${line}`} className={index === lines.length - 1 ? "current" : undefined}>
+                    {line}{index === lines.length - 1 && progress.length > 0 ? "…" : ""}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : response ? (
             <>
               <div className="content-heading">
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
