@@ -530,7 +530,7 @@ class EditorialItem(ExperienceModel):
     # required-but-nullable, the model's first finish call regularly omitted one
     # and had to be retried, costing a research round on every rich answer.
     marker: str | None = None
-    title: str
+    title: str = Field(description="The specific subject of this item—a song, show, person, place, or fact—not an abstract assessment. Put the assessment in value or detail.")
     value: str | None = None
     detail: str | None = None
     # A question in the visitor's voice, rendered as an "Ask" chip. Only the

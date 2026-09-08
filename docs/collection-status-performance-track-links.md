@@ -1,6 +1,13 @@
 # Performance track-link status (Internet Archive)
 
-Updated 2026-09-01.
+Updated 2026-09-07.
+
+The September 7 recovery reran the existing normalization against all preserved
+representative metadata and taught title normalization to ignore source-track
+number prefixes such as `14 Franklin's Tower`. Canonical coverage is now 26,471
+direct Archive track links across 39,774 documented performances (66.6%), up
+from 16,506. The remaining gaps require alternate-source review or new track
+metadata; whole-show pages are not presented as song links.
 
 This pass gives every mapped song performance a resolvable per-track playback
 URL on archive.org, so Deadbot can point a listener at "this version of this

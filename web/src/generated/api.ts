@@ -315,7 +315,10 @@ export interface components {
             link?: components["schemas"]["EditorialLink"] | null;
             /** Marker */
             marker?: string | null;
-            /** Title */
+            /**
+             * Title
+             * @description The specific subject of this item—a song, show, person, place, or fact—not an abstract assessment. Put the assessment in value or detail.
+             */
             title: string;
             /** Value */
             value?: string | null;

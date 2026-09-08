@@ -82,6 +82,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .fact-grid-block dl > div { border-top: 1px solid #506757; padding-top: 0.75rem; }
 .fact-grid-block dt { color: #aebdaf; font-size: 0.76rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .fact-grid-block dd { margin: 0.3rem 0 0; color: #f1efdf; font-family: Georgia, serif; font-size: 1.35rem; font-weight: 700; }
+.fact-grid-block .fact-value { color: #bdc9bb; font-family: inherit; font-size: 0.92rem; font-weight: 400; line-height: 1.45; }
 .fact-grid-block .fact-detail { color: #bdc9bb; font-family: inherit; font-size: 0.92rem; font-weight: 400; line-height: 1.45; }
 .timeline-block ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid #506757; }
 .timeline-block li { display: grid; grid-template-columns: minmax(6rem, auto) 1fr; gap: 0.15rem 1rem; padding: 0 0 1.2rem 1.2rem; }

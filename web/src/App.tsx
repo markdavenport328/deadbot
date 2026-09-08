@@ -110,7 +110,8 @@ function listeningDestination(url: string): string {
 
 function ListeningLabel({ title, url, className = "" }: { title: string; url?: string | null; className?: string }) {
   if (!url) return <span className={`listening-label ${className}`.trim()}>{title}</span>;
-  const actionLabel = `Listen to ${title} on ${listeningDestination(url)} (opens in a new tab)`;
+  const destination = listeningDestination(url);
+  const actionLabel = `${destination.includes("youtube") ? "Watch" : "Listen to"} ${title} on ${destination} (opens in a new tab)`;
   return (
     <a
       className={`listening-label song-link ${className}`.trim()}
@@ -124,6 +125,13 @@ function ListeningLabel({ title, url, className = "" }: { title: string; url?: s
       <span>{title}</span>
     </a>
   );
+}
+
+function venueFirstShowLabel(showDate?: string | null, venueName?: string | null, existingLabel?: string | null): string {
+  const date = formatShowDate(showDate);
+  const venue = venueName || existingLabel?.replace(/^\d{4}-\d{2}-\d{2} — /, "") || "";
+  if (venue && date) return `${venue} (${date})`;
+  return venue || date || existingLabel || "Unknown show";
 }
 
 const inlineLink = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
@@ -284,10 +292,7 @@ function ShowUnit({
       <header className="unit-heading">
         <div>
           {unit.title && <Eyebrow label={unit.title} />}
-          <h2>
-            <time dateTime={unit.show_date}>{formatShowDate(unit.show_date)}</time>
-            {unit.venue_name ? ` · ${unit.venue_name}` : ""}
-          </h2>
+          <h2>{unit.venue_name || formatShowDate(unit.show_date)}{unit.venue_name && <span className="subtitle"> ({formatShowDate(unit.show_date)})</span>}</h2>
           {unit.location && <p className="subtitle">{unit.location}</p>}
         </div>
         <RoleChip role={unit.role} />
@@ -438,10 +443,7 @@ function Block({
           <header className="unit-heading">
             <div>
               <p className="eyebrow">{block.song_title}</p>
-              <h2>
-                <time dateTime={block.show_date ?? undefined}>{formatShowDate(block.show_date)}</time>
-                {block.venue_name ? ` · ${block.venue_name}` : ""}
-              </h2>
+              <h2>{venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}</h2>
               <p className="subtitle">
                 {[block.location, block.set_label, block.position_in_set ? `#${block.position_in_set}` : null].filter(Boolean).join(" · ")}
               </p>
@@ -486,7 +488,7 @@ function Block({
             {block.performances.map((performance) => (
               <li key={performance.performance_id}>
                 <ListeningLabel
-                  title={`${formatShowDate(performance.show_date)} · ${performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}`}
+                  title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
                   url={performance.listen?.url}
                   className="list-item-label"
                 />
@@ -640,7 +642,7 @@ function Block({
                 {block.representative_performances.map((performance) => (
                   <li key={performance.performance_id}>
                     <ListeningLabel
-                      title={`${formatShowDate(performance.show_date)} · ${performance.show_label.replace(/^\d{4}-\d{2}-\d{2} — /, "")}`}
+                      title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
                       url={performance.listen_url}
                       className="list-item-label"
                     />
@@ -651,8 +653,8 @@ function Block({
             </section>
           )}
           {block.credits.length > 0 && (
-            <div className="song-credits">
-              <p className="fact-label">Credits</p>
+            <details className="song-credits unit-setlist">
+              <summary>Credits</summary>
               <ul>
                 {block.credits.map((credit) => (
                   <li key={`${credit.person_id}-${credit.role}`}>
@@ -661,7 +663,7 @@ function Block({
                   </li>
                 ))}
               </ul>
-            </div>
+            </details>
           )}
           {block.albums.length > 0 ? (
             <section className="song-albums-section">
@@ -867,8 +869,9 @@ function Block({
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
-                <dt>{item.marker ?? item.title}</dt>
-                <dd>{renderInline(item.value ?? item.title)}</dd>
+                {item.marker ? <dt>{item.marker}</dt> : <dt>{item.title}</dt>}
+                {item.marker && <dd className="fact-subject">{renderInline(item.title)}</dd>}
+                {item.value && <dd className={item.marker ? "fact-value" : undefined}>{renderInline(item.value)}</dd>}
                 {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
                 {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
                 {item.follow_up && <dd className="fact-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></dd>}

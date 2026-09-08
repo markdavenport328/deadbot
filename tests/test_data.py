@@ -376,6 +376,15 @@ def test_show_media_lookup_resolves_a_date_to_the_canonical_show():
     assert video["platform"] == "youtube"
 
 
+def test_branford_debut_has_verified_show_and_performance_video_links():
+    store = CanonicalStore()
+    show = store.show_context(store.resolve_show("1990-03-29"))
+    assert any(link["platform"] == "youtube" and link["link_type"] == "full-show-video" for link in show["show_links"])
+
+    eyes = next(item for item in show["performances"] if item["song_id"] == "song-eyes-of-the-world")
+    assert eyes["listen"]["video_url"] == "https://www.youtube.com/watch?v=LEu6gCv8UPc"
+
+
 def test_historical_weather_resolves_show_venue_and_returns_reanalysis(monkeypatch):
     store = CanonicalStore()
     tools_module._geocode.cache_clear()

@@ -37,3 +37,11 @@ def test_repeated_song_is_disambiguated_by_the_following_track():
 
 def test_common_minglewood_source_title_matches_the_canonical_title():
     assert ia_tracks.normalized_title("New Minglewood Blues") == ia_tracks.normalized_title("Minglewood Blues")
+
+
+def test_source_track_number_prefix_does_not_hide_the_song_title():
+    assert ia_tracks.normalized_title("14 Franklin's Tower") == ia_tracks.normalized_title("Franklin's Tower")
+
+
+def test_franklins_tower_without_an_apostrophe_matches_the_canonical_title():
+    assert ia_tracks.normalized_title("Franklins Tower") == ia_tracks.normalized_title("Franklin's Tower")

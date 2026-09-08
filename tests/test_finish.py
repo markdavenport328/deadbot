@@ -633,6 +633,22 @@ def test_branford_debut_and_final_show_have_a_track_link_for_every_performance()
         assert all(performance.get("listen", {}).get("archive_track_url") for performance in payload["performances"])
 
 
+def test_franklins_tower_shortlist_hydrates_direct_song_links_from_archive_metadata():
+    store = CanonicalStore()
+    for show_date in ("1975-08-13", "1976-09-24", "1977-02-26", "1977-05-22", "1983-09-02"):
+        payload = store.show_context(store.resolve_show(show_date))
+        performance = next(item for item in payload["performances"] if item["song_id"] == "song-franklin-s-tower")
+        assert performance.get("listen", {}).get("archive_track_url"), show_date
+
+
+def test_performance_unit_offers_a_verified_youtube_video_alongside_audio():
+    store = CanonicalStore()
+    context = store.performance_context("gd-1990-03-29-eyes-of-the-world-2-1")
+    assert context and context["listen"]["video_url"] == "https://www.youtube.com/watch?v=LEu6gCv8UPc"
+    actions = composition._performance_listen_actions(context)
+    assert any(action.provider == "youtube" and action.label == "Watch Eyes Of The World" for action in actions)
+
+
 def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
