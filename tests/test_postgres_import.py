@@ -359,3 +359,52 @@ def test_every_spec_matches_its_canonical_csv_header():
         with path.open(newline="", encoding="utf-8") as source:
             header = tuple(next(csv.reader(source)))
         assert header == spec.columns, spec.name
+
+
+def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_path):
+    from deadbot.postgres_import import check_import
+
+    class CountingConnection(FakeConnection):
+        def __init__(self):
+            super().__init__(initialized=True, schema_version=SCHEMA_VERSION - 1)
+            self.counts = {"shows": 5, "resources": 1}
+            self.writes = []
+
+        def cursor(self):
+            connection = self
+
+            class Cursor(FakeCursor):
+                def execute(self, sql, params=None):
+                    upper = sql.strip().upper()
+                    if upper.startswith(("INSERT", "DELETE", "UPDATE", "CREATE", "ALTER")):
+                        connection.writes.append(sql)
+                    if upper.startswith("SELECT COUNT(*) FROM PUBLIC."):
+                        table = sql.rsplit(".", 1)[1]
+                        self._fetchone = (connection.counts.get(table, 0),)
+                        return
+                    if "FROM public.canonical_imports" in sql:
+                        self._rows = [("rebuild", "2026-09-08 02:35:50", "sha256:abc")]
+                        return
+                    return super().execute(sql, params)
+
+                def fetchall(self):
+                    rows = getattr(self, "_rows", None)
+                    self._rows = None
+                    return rows or []
+
+            return Cursor(connection)
+
+    connection = CountingConnection()
+    # The database holds one resource and the files hold one: nothing to lose
+    # there. It holds five shows and the files hold none: a rebuild would
+    # delete those five.
+    write_fixture(tmp_path, {"resources": [["r1", "article", "T", "", "S", "https://example.org/t", "", ""]]})
+    report = check_import(connection, canonical_dir=tmp_path)
+    assert connection.writes == []
+    assert report["installed_schema_version"] == SCHEMA_VERSION - 1
+    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_response_cache.sql"]
+    assert report["recent_imports"][0]["mode"] == "rebuild"
+    assert report["tables"]["shows"]["database_rows"] == 5
+    assert "shows" in report["rebuild_would_delete_rows_in"]
+    assert "resources" not in report["rebuild_would_delete_rows_in"]
+    assert report["merge_deletes_nothing"] is True

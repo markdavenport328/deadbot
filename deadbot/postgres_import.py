@@ -598,6 +598,78 @@ def import_canonical(
         cursor.close()
 
 
+def check_import(
+    connection: Any,
+    *,
+    canonical_dir: Path | str = DEFAULT_CANONICAL_DIR,
+    specs: Sequence[TableSpec] = TABLE_SPECS,
+) -> dict[str, Any]:
+    """Read-only preflight: what an import from this checkout would meet.
+
+    Validates the CSVs exactly as an import would, then reads (never writes)
+    the schema version, the newest ledger rows and per-table row counts, and
+    names the tables where the database holds more rows than the files: those
+    are the rows a ``--rebuild`` would delete. A merge deletes nothing.
+    """
+
+    rows_by_table = read_canonical_tables(canonical_dir, specs)
+    snapshot = canonical_snapshot(canonical_dir, rows_by_table, specs)
+    cursor = connection.cursor()
+    try:
+        cursor.execute("SET LOCAL search_path TO public")
+        installed = _schema_version(cursor)
+        pending = [
+            candidate.name
+            for version in range((installed or 0) + 1, SCHEMA_VERSION + 1)
+            for candidate in sorted(DEFAULT_MIGRATIONS_DIR.glob(f"{version:03d}_*.sql"))
+        ] if installed is not None else []
+        ledger: list[dict[str, Any]] = []
+        if installed is not None:
+            cursor.execute(
+                "SELECT import_mode, imported_at, snapshot_id FROM public.canonical_imports "
+                "ORDER BY imported_at DESC LIMIT 5"
+            )
+            ledger = [
+                {"mode": mode, "imported_at": str(imported_at), "snapshot_id": snapshot_id}
+                for mode, imported_at, snapshot_id in cursor.fetchall()
+            ]
+        tables: dict[str, dict[str, Any]] = {}
+        rebuild_would_delete: list[str] = []
+        for spec in specs:
+            database_rows: int | None = None
+            if installed is not None:
+                cursor.execute(f"SELECT COUNT(*) FROM public.{spec.name}")
+                fetched = cursor.fetchone()
+                database_rows = int(fetched[0]) if fetched else 0
+            csv_rows = len(rows_by_table[spec.name])
+            tables[spec.name] = {"database_rows": database_rows, "csv_rows": csv_rows}
+            if database_rows is not None and database_rows > csv_rows:
+                rebuild_would_delete.append(spec.name)
+    finally:
+        cursor.close()
+        rollback = getattr(connection, "rollback", None)
+        if callable(rollback):
+            rollback()
+    return {
+        "checkout_snapshot": snapshot.snapshot_id,
+        "installed_schema_version": installed,
+        "importer_schema_version": SCHEMA_VERSION,
+        "pending_migrations": pending,
+        "recent_imports": ledger,
+        "tables": tables,
+        "rebuild_would_delete_rows_in": rebuild_would_delete,
+        "merge_deletes_nothing": True,
+    }
+
+
+def check_from_dsn(dsn: str, *, canonical_dir: Path | str = DEFAULT_CANONICAL_DIR, **connect_kwargs: Any) -> dict[str, Any]:
+    connection = connect_postgres(dsn, **connect_kwargs)
+    try:
+        return check_import(connection, canonical_dir=canonical_dir)
+    finally:
+        connection.close()
+
+
 def connect_postgres(dsn: str, **kwargs: Any) -> Any:
     """Create a connection while keeping PostgreSQL drivers optional.
 

@@ -38,6 +38,11 @@ def main() -> None:
         help="PostgreSQL URL for db-import; defaults to DEADBOT_DATABASE_URL or DATABASE_URL.",
     )
     parser.add_argument(
+        "--check",
+        action="store_true",
+        help="For db-import, read-only preflight: schema version, pending migrations, ledger, and row counts.",
+    )
+    parser.add_argument(
         "--rebuild",
         action="store_true",
         help="For db-import, delete and reload only known canonical tables.",
@@ -54,6 +59,11 @@ def main() -> None:
             parser.error(
                 "db-import requires --database-url, DEADBOT_DATABASE_URL, or DATABASE_URL"
             )
+        if args.check:
+            from deadbot.postgres_import import check_from_dsn
+
+            print(json.dumps(check_from_dsn(database_url), indent=2))
+            return
         report = import_from_dsn(database_url, rebuild=args.rebuild)
         total_rows = sum(report.row_counts.values())
         table_results = {
