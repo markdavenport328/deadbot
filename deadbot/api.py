@@ -240,6 +240,7 @@ def create_app(
             if callable(stream):
                 seen = 0
                 answer_accumulator = AnswerAccumulator()
+                composing_page_announced = False
                 steps = iter(stream(payload, config, stream_mode=["values", "messages"]))
                 while True:
                     with query_cache_scope(cache):
@@ -255,6 +256,9 @@ def create_app(
                         answer_text = answer_accumulator.feed(message_chunk)
                         if answer_text:
                             yield line({"type": "answer", "text": answer_text})
+                        if answer_accumulator.complete and not composing_page_announced:
+                            composing_page_announced = True
+                            yield line({"type": "status", "text": "Composing the page"})
                         continue
                     state = chunk_payload
                     messages = list(state.get("messages", [])) if isinstance(state, dict) else messages

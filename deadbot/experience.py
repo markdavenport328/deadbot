@@ -529,21 +529,40 @@ class EditorialItem(ExperienceModel):
     # doubles as the finish_response tool schema: when the optional fields were
     # required-but-nullable, the model's first finish call regularly omitted one
     # and had to be retried, costing a research round on every rich answer.
-    marker: str | None = None
-    title: str = Field(description="The specific subject of this item—a song, show, person, place, or fact—not an abstract assessment. Put the assessment in value or detail.")
-    value: str | None = None
-    detail: str | None = None
+    marker: str | None = Field(
+        default=None,
+        description="A short label that classifies or indexes this item and renders as small type above the subject: a year, a date, a set position, or a category such as 'The skeptical view'. Never the subject itself.",
+    )
+    title: str = Field(
+        description="The specific subject of this item, rendered as its heading: a song, show, person, place, fact, or claim. Put measurements and assessments in value or detail."
+    )
+    value: str | None = Field(
+        default=None,
+        description="The concise measurement or assessment for the subject, such as '330 performances, 1972–1995' or 'Track six'. A short value renders as display type; a sentence renders as text.",
+    )
+    detail: str | None = Field(
+        default=None,
+        description="One or two sentences of context or evidence for this item.",
+    )
     # A question in the visitor's voice, rendered as an "Ask" chip. Only the
     # composer writes these; the server never generates one.
-    follow_up: str | None = None
-    link: EditorialLink | None = None
+    follow_up: str | None = Field(
+        default=None,
+        description="A question in the visitor's voice, rendered as an Ask chip that starts a new turn. Only the composer writes these.",
+    )
+    link: EditorialLink | None = Field(
+        default=None,
+        description="An outbound link for this item; kept only when its URL appeared in a tool result this turn.",
+    )
 
 
 class EditorialBlock(ExperienceModel):
     """Flexible model-shaped material rendered in one of several visual forms."""
 
     type: Literal["editorial"]
-    presentation: Literal["narrative", "fact_grid", "timeline"]
+    presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
+        description="narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence."
+    )
     eyebrow: str | None = None
     title: str | None = None
     paragraphs: list[str] = Field(default_factory=list, max_length=4)

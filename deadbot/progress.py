@@ -36,7 +36,7 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
 
     args = args or {}
     if name == FINISH_TOOL_NAME:
-        return "Composing the answer"
+        return "Assembling the page"
     if name == "search_entities":
         return f"Searching the library for {_quote(args.get('query'))}".rstrip()
     if name == "search_guest_musicians":
