@@ -35,14 +35,13 @@
         "performer_assignment_count": 13,
         "recording_count": 9,
         "recording_mapped_performance_count": 7,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 4,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -123,14 +122,13 @@
         "performer_assignment_count": 12,
         "recording_count": 4,
         "recording_mapped_performance_count": 28,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 6,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -152,7 +150,7 @@
         "performer_assignment_count": 10,
         "recording_count": 7,
         "recording_mapped_performance_count": 20,
-        "direct_context_resource_count": 6,
+        "direct_context_resource_count": 8,
         "official_release_count": 4,
         "setlist_status": "available",
         "performer_status": "available"
@@ -180,15 +178,14 @@
         "performer_assignment_count": 10,
         "recording_count": 5,
         "recording_mapped_performance_count": 25,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 2,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
         "recording_to_performance_track_mappings",
-        "official_release_track_review",
-        "direct_show_or_performance_context"
+        "official_release_track_review"
       ]
     },
     {
@@ -210,15 +207,14 @@
         "performer_assignment_count": 10,
         "recording_count": 8,
         "recording_mapped_performance_count": 26,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
         "recording_to_performance_track_mappings",
-        "official_release_track_review",
-        "direct_show_or_performance_context"
+        "official_release_track_review"
       ]
     },
     {
@@ -269,14 +265,13 @@
         "performer_assignment_count": 10,
         "recording_count": 15,
         "recording_mapped_performance_count": 24,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 1,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -328,14 +323,13 @@
         "performer_assignment_count": 11,
         "recording_count": 23,
         "recording_mapped_performance_count": 19,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 2,
         "official_release_count": 9,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -589,7 +583,7 @@
         "performer_assignment_count": 15,
         "recording_count": 26,
         "recording_mapped_performance_count": 18,
-        "direct_context_resource_count": 2,
+        "direct_context_resource_count": 3,
         "official_release_count": 1,
         "setlist_status": "available",
         "performer_status": "available"
