@@ -19,6 +19,8 @@ def test_reviewed_seed_loads_with_every_metadata_adapter():
         "deadessays-feed",
         "deadsources-feed",
         "gratefulseconds-feed",
+        "deadheadhigh-guides",
+        "gdao-archive",
     }
     for source in sources:
         assert source["review_state"] == "approved"

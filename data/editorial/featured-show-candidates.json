@@ -35,7 +35,7 @@
         "performer_assignment_count": 13,
         "recording_count": 9,
         "recording_mapped_performance_count": 7,
-        "direct_context_resource_count": 1,
+        "direct_context_resource_count": 20,
         "official_release_count": 4,
         "setlist_status": "available",
         "performer_status": "available"
@@ -93,14 +93,13 @@
         "performer_assignment_count": 13,
         "recording_count": 4,
         "recording_mapped_performance_count": 19,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 3,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -122,7 +121,7 @@
         "performer_assignment_count": 12,
         "recording_count": 4,
         "recording_mapped_performance_count": 28,
-        "direct_context_resource_count": 1,
+        "direct_context_resource_count": 2,
         "official_release_count": 6,
         "setlist_status": "available",
         "performer_status": "available"
@@ -150,7 +149,7 @@
         "performer_assignment_count": 10,
         "recording_count": 7,
         "recording_mapped_performance_count": 20,
-        "direct_context_resource_count": 8,
+        "direct_context_resource_count": 10,
         "official_release_count": 4,
         "setlist_status": "available",
         "performer_status": "available"
@@ -178,7 +177,7 @@
         "performer_assignment_count": 10,
         "recording_count": 5,
         "recording_mapped_performance_count": 25,
-        "direct_context_resource_count": 2,
+        "direct_context_resource_count": 4,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
@@ -207,7 +206,7 @@
         "performer_assignment_count": 10,
         "recording_count": 8,
         "recording_mapped_performance_count": 26,
-        "direct_context_resource_count": 1,
+        "direct_context_resource_count": 2,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
@@ -236,14 +235,13 @@
         "performer_assignment_count": 10,
         "recording_count": 7,
         "recording_mapped_performance_count": 24,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 2,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -265,7 +263,7 @@
         "performer_assignment_count": 10,
         "recording_count": 15,
         "recording_mapped_performance_count": 24,
-        "direct_context_resource_count": 1,
+        "direct_context_resource_count": 2,
         "official_release_count": 1,
         "setlist_status": "available",
         "performer_status": "available"
@@ -293,15 +291,14 @@
         "performer_assignment_count": 10,
         "recording_count": 4,
         "recording_mapped_performance_count": 19,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
         "recording_to_performance_track_mappings",
-        "official_release_track_review",
-        "direct_show_or_performance_context"
+        "official_release_track_review"
       ]
     },
     {
@@ -323,7 +320,7 @@
         "performer_assignment_count": 11,
         "recording_count": 23,
         "recording_mapped_performance_count": 19,
-        "direct_context_resource_count": 2,
+        "direct_context_resource_count": 4,
         "official_release_count": 9,
         "setlist_status": "available",
         "performer_status": "available"
@@ -351,13 +348,13 @@
         "performer_assignment_count": 11,
         "recording_count": 8,
         "recording_mapped_performance_count": 23,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 1,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "direct_show_or_performance_context"
+        "deep_slice_regression_control"
       ]
     },
     {
@@ -379,14 +376,13 @@
         "performer_assignment_count": 13,
         "recording_count": 17,
         "recording_mapped_performance_count": 20,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 2,
         "official_release_count": 2,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -408,14 +404,13 @@
         "performer_assignment_count": 11,
         "recording_count": 10,
         "recording_mapped_performance_count": 20,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 2,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "recording_to_performance_track_mappings",
-        "direct_show_or_performance_context"
+        "recording_to_performance_track_mappings"
       ]
     },
     {
@@ -437,13 +432,13 @@
         "performer_assignment_count": 11,
         "recording_count": 13,
         "recording_mapped_performance_count": 21,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 2,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
-        "direct_show_or_performance_context"
+        "deep_slice_regression_control"
       ]
     },
     {
@@ -465,15 +460,14 @@
         "performer_assignment_count": 11,
         "recording_count": 17,
         "recording_mapped_performance_count": 0,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 1,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
         "recording_to_performance_track_mappings",
-        "official_release_track_review",
-        "direct_show_or_performance_context"
+        "official_release_track_review"
       ]
     },
     {
@@ -495,15 +489,14 @@
         "performer_assignment_count": 12,
         "recording_count": 24,
         "recording_mapped_performance_count": 15,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 4,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
         "recording_to_performance_track_mappings",
-        "official_release_track_review",
-        "direct_show_or_performance_context"
+        "official_release_track_review"
       ]
     },
     {
@@ -525,15 +518,14 @@
         "performer_assignment_count": 12,
         "recording_count": 17,
         "recording_mapped_performance_count": 21,
-        "direct_context_resource_count": 0,
+        "direct_context_resource_count": 3,
         "official_release_count": 0,
         "setlist_status": "available",
         "performer_status": "available"
       },
       "enhancement_targets": [
         "recording_to_performance_track_mappings",
-        "official_release_track_review",
-        "direct_show_or_performance_context"
+        "official_release_track_review"
       ]
     },
     {
@@ -555,7 +547,7 @@
         "performer_assignment_count": 13,
         "recording_count": 29,
         "recording_mapped_performance_count": 17,
-        "direct_context_resource_count": 3,
+        "direct_context_resource_count": 4,
         "official_release_count": 3,
         "setlist_status": "available",
         "performer_status": "available"
@@ -583,7 +575,7 @@
         "performer_assignment_count": 15,
         "recording_count": 26,
         "recording_mapped_performance_count": 18,
-        "direct_context_resource_count": 3,
+        "direct_context_resource_count": 5,
         "official_release_count": 1,
         "setlist_status": "available",
         "performer_status": "available"

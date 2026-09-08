@@ -80,14 +80,12 @@ def test_stored_resource_search_needs_the_phrase_or_every_meaningful_word():
     tools = _tools()
     broad = json.loads(tools["search_stored_resources"].invoke({"query": "Franklin's Tower best version performance review"}))
     # Half of the six meaningful words is the bar, so a six-word question
-    # returns only resources that really share three of them: of 2,040
-    # cataloged resources exactly one does, a post about the best
-    # Franklin's Tower of 1980.
-    assert broad["match_count"] <= 3
-    assert all(
-        "franklin" in resource["title"].casefold() or "best" in resource["title"].casefold()
-        for resource in broad["resources"]
-    )
+    # returns only resources that really share three of them (the Franklin's
+    # Tower listening guide, a post about the best Franklin's of 1980, and a
+    # per-song guide whose notes name performances and versions), ranked with
+    # the phrase and word-count matches first.
+    assert 0 < broad["match_count"] <= 6
+    assert "franklin" in broad["resources"][0]["title"].casefold()
     focused = json.loads(tools["search_stored_resources"].invoke({"query": "Veneta"}))
     assert focused["match_count"] == len(focused["resources"]) > 0
 

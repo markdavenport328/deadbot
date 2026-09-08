@@ -115,11 +115,11 @@ Run from a checkout of `main` at the commit that is deployed (Vercel deploys
   creates that table lazily on its first request, so deploy order does not
   matter.
 - Canonical changes on the branch are **insertions only**: `resources.csv`
-  +1,740, `resource_shows.csv` +566, `resource_songs.csv` +133. The importer's
-  reader validates the branch CSVs (snapshot `sha256:dd00005f…`), and the
-  selection-evidence file is unchanged. **Use merge.** Expected result:
-  resources 311 → 2,051 (the 11 extra rows in production are the
+  +2,397, `resource_shows.csv` +613, `resource_songs.csv` +580 (the blog
+  index plus the targeted Dead.net, Deadhead High and GDAO passes). The
+  importer's reader validates the branch CSVs (snapshot `sha256:f5a0efe2…`),
+  and the selection-evidence file is unchanged. **Use merge.** Expected
+  result: resources 311 → 2,708 (the 11 extra rows in production are the
   selection-evidence source rows the importer creates), resource_shows 17 →
-  583, resource_songs 299 → 432.
-- After the targeted lore pass lands, the same reasoning applies: additions
-  only, merge again.
+  630, resource_songs 299 → 879. Confirm with `db-import --check` before and
+  after.

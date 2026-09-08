@@ -22,7 +22,10 @@ def test_sugaree_is_cataloged_with_a_source_trail_and_a_non_catalog_resource():
 
 def test_a_song_with_only_catalog_resources_is_not_cataloged():
     store = CanonicalStore()
-    song = store.resolve_song("A Voice From On High")
+    # A song whose only resources are catalog rows (MusicBrainz work, lyric
+    # page). The targeted lore passes reach most of the repertoire now, so the
+    # example is a one-off cover rather than a repertoire staple.
+    song = store.resolve_song("Ballad Of Casey Jones")
     assert song is not None
     pathways = pathways_for(store, [("song", song["song_id"])])[song["song_id"]]
 

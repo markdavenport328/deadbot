@@ -364,6 +364,112 @@
       },
       "adapter_version": "gratefulseconds-feed-v1",
       "notes": "Statistics, lists and a show diary. Post title, URL, dates, labels and byline only. The custom domain gratefulseconds.com serves no TLS, so stored links use the blog's own https address. Independent research and criticism: cite the site and its author, and do not treat a post as a canonical setlist or show authority."
+    },
+    {
+      "source_id": "deadheadhigh-guides",
+      "name": "Deadhead High song and listener guides",
+      "host_allowlist": [
+        "deadheadhigh.com",
+        "www.deadheadhigh.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/sitemap.xml"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/songs/",
+            "/shows/",
+            "/guides/",
+            "/paths/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_page_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "deadheadhigh-guides-v1",
+      "notes": "Listener-facing per-song and per-show guides with performance counts, first and last dates and listening links, plus editorial guides under /guides/ and /paths/. The site has no search, so scripts/collect/collect_deadheadhigh_index.py walks its sitemap. Page title, URL and at most 200 characters of the page's own meta description only. A secondary compilation of setlist data: cite the site and do not treat a guide page as a setlist or performance-count authority."
+    },
+    {
+      "source_id": "gdao-archive",
+      "name": "Grateful Dead Archive Online (UC Santa Cruz Library)",
+      "host_allowlist": [
+        "gdao.org",
+        "www.gdao.org"
+      ],
+      "authority_level": "curated",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/api/items",
+            "/api/item_sets",
+            "/api/resource_templates"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/api",
+            "/items/show/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_files": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "gdao-archive-v1",
+      "notes": "UC Santa Cruz Library's Omeka archive of posters, tickets, photographs, fan art and first-person recollections, queried through its public /api/items endpoint by date; scripts/collect/collect_gdao_show_items.py indexes item metadata only: item id, title, item type, item sets, date and coverage fields, creator, item page URL and at most 200 characters of the item description, never files, media or thumbnails. Contributed recollections are subjective testimony: cite the archive and the contributor and do not treat an item as a canonical show fact. Entry restored by the Task A agent after a file revert dropped it; Task B owns its content and should review the paths and notes."
     }
   ]
 }
