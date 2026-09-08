@@ -918,6 +918,8 @@ export default function App() {
   const [pendingStartsFresh, setPendingStartsFresh] = useState(false);
   // What Deadbot is doing right now, one line per tool call, newest last.
   const [progress, setProgress] = useState<string[]>([]);
+  // The final answer's text as it streams in, replaced wholesale per event.
+  const [streamingAnswer, setStreamingAnswer] = useState<string | null>(null);
   const threadContainer = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -929,7 +931,7 @@ export default function App() {
       top: thread.scrollHeight,
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"
     });
-  }, [loading, pendingQuestion, response, progress]);
+  }, [loading, pendingQuestion, response, progress, streamingAnswer]);
 
   useEffect(() => {
     if (visualFixture) return;
@@ -961,9 +963,14 @@ export default function App() {
     setLoading(true);
     setError(null);
     setProgress([]);
+    setStreamingAnswer(null);
     const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
-      const streamed = await askStreaming(body, (status) => setProgress((lines) => [...lines, status]));
+      const streamed = await askStreaming(
+        body,
+        (status) => setProgress((lines) => [...lines, status]),
+        setStreamingAnswer
+      );
       setResponse(streamed ?? await askPlain(body));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now.");
@@ -972,13 +979,18 @@ export default function App() {
       setPendingQuestion(null);
       setPendingStartsFresh(false);
       setProgress([]);
+      setStreamingAnswer(null);
     }
   }
 
   // The streaming endpoint sends one JSON object per line: statuses while the
   // agent works, then the response. A null return means the stream was not
   // available and the caller should fall back to the plain request.
-  async function askStreaming(body: string, onStatus: (status: string) => void): Promise<ExperienceResponse | null> {
+  async function askStreaming(
+    body: string,
+    onStatus: (status: string) => void,
+    onAnswer: (text: string) => void
+  ): Promise<ExperienceResponse | null> {
     const result = await fetch("/api/experience/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -998,6 +1010,7 @@ export default function App() {
       if (!line.trim()) return;
       const event = JSON.parse(line) as { type: string; text?: string; response?: ExperienceResponse; detail?: string };
       if (event.type === "status" && event.text) onStatus(event.text);
+      else if (event.type === "answer" && event.text !== undefined) onAnswer(event.text);
       else if (event.type === "response" && event.response) answer = event.response;
       else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
     };
@@ -1082,7 +1095,12 @@ export default function App() {
               ))}
               {loading && (
                 <article className="message assistant pending" aria-live="polite">
-                  {progress.length === 0 ? (
+                  {streamingAnswer ? (
+                    <div>
+                      {renderInline(streamingAnswer)}
+                      <span className="cursor" aria-hidden="true" />
+                    </div>
+                  ) : progress.length === 0 ? (
                     <div>Looking through the library…</div>
                   ) : (
                     <ol className="progress-lines" aria-label="What Deadbot is doing">
