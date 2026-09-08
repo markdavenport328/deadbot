@@ -39,12 +39,16 @@ def normalized_title(value: str) -> str:
     value = unicodedata.normalize("NFKD", value or "").casefold()
     value = value.replace("&", " and ").replace("->", " ")
     value = re.sub(r"[^a-z0-9]+", " ", value)
+    # Some Archive sources prefix every title with its source-track number
+    # ("14 Franklin's Tower"). The number describes the file, not the song.
+    value = re.sub(r"^\d+\s+", "", value)
     value = " ".join(value.split())
     aliases = {
         "dancing in the street": "dancin in the streets",
         "dancing in the streets": "dancin in the streets",
         "dancin in the street": "dancin in the streets",
         "greatest story": "greatest story ever told",
+        "franklins tower": "franklin s tower",
         "new minglewood blues": "minglewood blues",
         "playin": "playing in the band",
         "u s blues": "us blues",

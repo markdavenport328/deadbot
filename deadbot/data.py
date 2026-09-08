@@ -324,10 +324,9 @@ class CanonicalStore:
     def _listen_paths(self, performance_ids: set[str]) -> dict[str, dict[str, str]]:
         """Build a compact per-performance listening path: URLs only.
 
-        An archive track link comes from ``performance_links`` rows tagged as
-        an Internet Archive recording track; a release track link comes from
-        an ``official_release_tracks`` row for that performance with a
-        resolvable streaming URL. When a performance has more than one
+        An archive track or performance video comes from ``performance_links``;
+        a release track link comes from an ``official_release_tracks`` row for
+        that performance with a resolvable streaming URL. When a performance has more than one
         candidate row, the selection is sorted deterministically (by the
         link's own identifying columns, never by source row order) so the
         CSV and PostgreSQL stores agree regardless of how their underlying
@@ -336,15 +335,18 @@ class CanonicalStore:
         """
 
         archive_candidates: dict[str, list[tuple[str, str]]] = defaultdict(list)
+        video_candidates: dict[str, list[tuple[str, str]]] = defaultdict(list)
         for row in self.rows("performance_links"):
             performance_id = row.get("performance_id", "")
             if performance_id not in performance_ids:
                 continue
-            if row.get("platform") != "archive" or row.get("link_type") != "recording-track":
-                continue
             url = row.get("url", "")
-            if url:
+            if not url:
+                continue
+            if row.get("platform") == "archive" and row.get("link_type") == "recording-track":
                 archive_candidates[performance_id].append((row.get("performance_link_id", ""), url))
+            elif row.get("platform") == "youtube" and row.get("link_type") == "performance-video":
+                video_candidates[performance_id].append((row.get("performance_link_id", ""), url))
 
         release_candidates: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
         for row in self.rows("official_release_tracks"):
@@ -366,6 +368,9 @@ class CanonicalStore:
             release_options = release_candidates.get(performance_id)
             if release_options:
                 paths["release_track_url"] = min(release_options)[2]
+            video_options = video_candidates.get(performance_id)
+            if video_options:
+                paths["video_url"] = min(video_options)[1]
             if paths:
                 listen[performance_id] = paths
         return listen

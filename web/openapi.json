@@ -755,6 +755,7 @@
             "title": "Marker"
           },
           "title": {
+            "description": "The specific subject of this item\u2014a song, show, person, place, or fact\u2014not an abstract assessment. Put the assessment in value or detail.",
             "title": "Title",
             "type": "string"
           },

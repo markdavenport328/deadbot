@@ -383,12 +383,12 @@ def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> Perfor
 
 
 def _listen_url(performance: dict[str, Any]) -> str | None:
-    """The per-performance track link the store attached, archive first."""
+    """The best direct performance link the store attached, audio first."""
 
     listen = performance.get("listen")
     if not isinstance(listen, dict):
         return None
-    for key in ("archive_track_url", "release_track_url"):
+    for key in ("archive_track_url", "release_track_url", "video_url"):
         url = listen.get(key)
         if isinstance(url, str) and url:
             return url
@@ -610,6 +610,9 @@ def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
     release_track = listen.get("release_track_url")
     if isinstance(release_track, str) and release_track:
         add(ListenAction(label=f"Hear {title} on the official release", url=release_track, provider=_provider_for(release_track), is_official=True))
+    video = listen.get("video_url")
+    if isinstance(video, str) and video:
+        add(ListenAction(label=f"Watch {title}", url=video, provider="youtube"))
     show_links = context.get("show_links") if isinstance(context.get("show_links"), list) else []
     for link_type, label in (("streaming-show-page", "Hear the full show"),):
         for link in show_links:

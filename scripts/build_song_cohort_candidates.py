@@ -118,7 +118,7 @@ def main() -> None:
               "recording_linked_performance_ratio", "resource_count", "writer_count",
               "coverage_risk"]
     with OUTPUT.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fields)
+        writer = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(candidates)
     print(f"wrote {len(candidates)} candidates to {OUTPUT}")

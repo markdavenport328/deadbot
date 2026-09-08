@@ -84,6 +84,8 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "prefer the venue or place name people recognize" in prompt
     assert "one or two across the whole page" not in prompt
     assert "perform an omission pass" not in prompt
+    assert "avoid first-person singular" in prompt
+    assert "each item title names its subject" in prompt
     for job in ("unit formation", "grouping", "completion", "segregation", "global organization"):
         assert job in prompt.casefold()
 
