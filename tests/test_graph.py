@@ -70,9 +70,8 @@ def test_prompt_makes_chat_and_main_body_connected_independent_reading_paths():
     assert "## ANSWER FIRST, THEN EARN THE REST" in graph.SYSTEM_PROMPT
     assert "chat_answer and the main body express one researched editorial judgment at different scales." in prompt
     assert "A visitor who begins with either reading path can understand the finding" in prompt
-    assert "When you recommend or name a specific performance, provide its listening path" in prompt
-    assert "Sugar Magnolia: the album's biggest live life" in prompt
-    assert "Do not create one for every related song merely because its metadata is available." in prompt
+    assert "Give each idea one clear home and each layer a distinct job." in prompt
+    assert "When you recommend or discuss a specific performance, retrieve and preserve its direct listening path." in prompt
 
 
 def test_prompt_requires_priority_actions_and_proportionate_scope():
@@ -80,14 +79,22 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "## EDIT FOR THIS QUESTION" in graph.SYSTEM_PROMPT
     assert "A factual question can still deserve commentary and rich actions" in prompt
     assert "Build on a factual spine" in prompt
-    assert "When you recommend or name a specific performance, provide its listening path" in prompt
-    assert "prefer the venue or place name people recognize" in prompt
+    assert "When you recommend or discuss a specific performance, retrieve and preserve its direct listening path." in prompt
+    assert '"Nassau Coliseum (March 29, 1990)"' in prompt
     assert "one or two across the whole page" not in prompt
     assert "perform an omission pass" not in prompt
     assert "avoid first-person singular" in prompt
     assert "each item title names its subject" in prompt
+    assert "Song_overview units are the home for individual song stories and listening actions.".casefold() in prompt.casefold()
     for job in ("unit formation", "grouping", "completion", "segregation", "global organization"):
         assert job in prompt.casefold()
+
+
+def test_prompt_batches_independent_research_and_uses_positive_composition_guidance():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "Request independent lookups together in the same turn so they run in parallel." in prompt
+    assert "Give each idea one clear home." in prompt
+    assert "do not" not in prompt.casefold()
 
 
 def test_persona_tells_the_model_that_albums_are_held():

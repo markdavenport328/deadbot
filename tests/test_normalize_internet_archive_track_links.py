@@ -33,6 +33,12 @@ def link_row(performance_id: str, url: str, platform: str = "archive", link_type
     }
 
 
+def test_track_url_targets_the_audio_file_not_the_full_show_page():
+    assert ia_links.track_url("gd1975-08-13.example", "02 Franklin's Tower.mp3") == (
+        "https://archive.org/download/gd1975-08-13.example/02%20Franklin%27s%20Tower.mp3"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Important 4 — merge_links replaces a regenerated managed row instead of
 # holding the corrected candidate forever.

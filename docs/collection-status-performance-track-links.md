@@ -1,6 +1,10 @@
 # Performance track-link status (Internet Archive)
 
-Updated 2026-09-07.
+Updated 2026-09-08.
+
+The September 8 playback correction changed every generated track URL from
+Archive's `/details/` route, which opens the full-show page, to the direct
+`/download/` file route. The preserved item and file selection are unchanged.
 
 The September 7 recovery reran the existing normalization against all preserved
 representative metadata and taught title normalization to ignore source-track
@@ -29,8 +33,9 @@ rate-limited sample before the canonical file was written.
   alias rules used by `normalize_internet_archive_tracks.py`. A derivative
   file that carries no title of its own inherits title and track number from
   the lossless original named in its `original` field. The URL is
-  `https://archive.org/details/{identifier}/{file_name}` (file name
-  percent-encoded), which opens the archive.org web player on that track.
+  `https://archive.org/download/{identifier}/{file_name}` (file name
+  percent-encoded), which opens the selected audio file rather than the
+  full-show details page.
 - File preference: a single `VBR MP3` file for the track, because the web
   player streams MP3. When more than one MP3 exists for the track and every
   candidate derives from the same lossless original (the `d1t03.mp3` /
@@ -135,7 +140,7 @@ retrieved.
   (retrieved 2026-08-24/25). This pass stores file names, track numbers,
   titles, durations, and resolvable URLs only. No audio, artwork, or
   long-form text was copied.
-- The links point at archive.org's own player pages for community-uploaded
+- The links point at archive.org's own audio files for community-uploaded
   Grateful Dead recordings held in the `GratefulDead`/`etree` collections
   under the band's taping and stream-only policies. Rows are
   `is_official = false`; the note attributes each link to its item and file.

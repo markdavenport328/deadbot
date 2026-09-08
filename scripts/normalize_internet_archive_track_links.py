@@ -5,9 +5,9 @@
 canonical performance.  This script only turns each of those accepted
 decisions into a resolvable URL of the form
 
-    https://archive.org/details/{identifier}/{file_name}
+    https://archive.org/download/{identifier}/{file_name}
 
-which opens the archive.org web player positioned on that track.  It works
+which opens the selected audio file rather than the full-show details page.  It works
 entirely from the preserved representative item metadata in
 ``data/raw/recordings/internet-archive-*-representatives.jsonl``; it does not
 re-fetch item metadata and never retrieves audio.
@@ -97,7 +97,7 @@ def effective_title_and_track(file_record: dict, files_by_name: dict[str, dict])
 
 
 def track_url(identifier: str, file_name: str) -> str:
-    return f"https://archive.org/details/{identifier}/{urllib.parse.quote(file_name, safe='/')}"
+    return f"https://archive.org/download/{identifier}/{urllib.parse.quote(file_name, safe='/')}"
 
 
 def select_track_file(
