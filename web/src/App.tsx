@@ -880,7 +880,7 @@ function Block({
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
-                {item.marker ? <dt>{item.marker}</dt> : <dt>{item.title}</dt>}
+                {item.marker ? <dt>{item.marker}</dt> : <dt className="fact-subject">{renderInline(item.title)}</dt>}
                 {item.marker && <dd className="fact-subject">{renderInline(item.title)}</dd>}
                 {item.value && (
                   <dd className={item.value.trim().length <= 20 ? "fact-value display" : "fact-value"}>
