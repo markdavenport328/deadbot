@@ -1108,7 +1108,7 @@ export default function App() {
 
   // The last four progress lines for a working display, falling back to a
   // single placeholder line before the first tool call reports in.
-  const workingLines = progress.length > 0 ? progress.slice(-4) : ["Looking through the library"];
+  const workingLines = progress.length > 0 ? progress.slice(-4) : ["Looking through the library…"];
 
   function submitOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
@@ -1188,7 +1188,7 @@ export default function App() {
 
         <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
           {loading ? (
-            <div className="content-working" aria-live="polite">
+            <div className="content-working">
               <p className="eyebrow">Working</p>
               <h1>{pendingQuestion}</h1>
               <ol className="progress-lines">
