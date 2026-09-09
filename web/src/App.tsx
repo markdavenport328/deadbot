@@ -1,5 +1,5 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
-import type { AlbumUnitBlock, ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
+import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import { loadRequestedVisualFixture, requestedVisualFixture } from "./visual-fixture-loader";
 
 type SetlistSections = ShowUnitBlock["sets"];
@@ -280,6 +280,53 @@ function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
     }
   }
   return out;
+}
+
+type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
+type Draft = { title: string; lead: string | null; groups: RenderGroup[] };
+
+type PageEvent =
+  | { type: "page_head"; title: string; lead: string | null }
+  | { type: "group_open" | "group_close"; index: number; title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[] }
+  | { type: "block"; group_index: number; block: ExperienceBlock }
+  | { type: "page_reset" };
+
+type StreamEvent =
+  | { type: "status"; text: string }
+  | { type: "answer"; text: string }
+  | { type: "response"; response: ExperienceResponse }
+  | { type: "error"; detail?: string }
+  | PageEvent;
+
+function emptyGroup(): RenderGroup {
+  return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [] };
+}
+
+// The draft page grows in reading order. A block for a group we have not
+// heard of yet gets a provisional group; group_close fills the heading in.
+function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
+  if (event.type === "page_reset") return null;
+  if (event.type === "page_head") return { title: event.title, lead: event.lead, groups: draft?.groups ?? [] };
+  const current: Draft = draft ?? { title: "", lead: null, groups: [] };
+  const groups = current.groups.slice();
+  const index = event.type === "block" ? event.group_index : event.index;
+  while (groups.length <= index) groups.push(emptyGroup());
+  if (event.type === "block") {
+    groups[index] = { ...groups[index], blocks: [...groups[index].blocks, event.block] };
+  } else {
+    groups[index] = { ...groups[index], title: event.title, lead: event.lead, presentation: event.presentation, criteria: event.criteria };
+  }
+  return { ...current, groups };
+}
+
+function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
+  return response.groups.map((group) => ({
+    title: group.title ?? null,
+    lead: group.lead ?? null,
+    presentation: group.presentation,
+    criteria: group.criteria ?? [],
+    blocks: group.block_indexes.map((index) => response.blocks[index]).filter((block): block is ExperienceBlock => Boolean(block)),
+  }));
 }
 
 function SetlistSectionList({ sets }: { sets: SetlistSections }) {
@@ -929,6 +976,89 @@ function Block({
   }
 }
 
+function ComposedPage({
+  title,
+  lead,
+  groups,
+  sources,
+  composing,
+  onFollowUp
+}: {
+  title: string;
+  lead: string | null;
+  groups: RenderGroup[];
+  sources: SourceReference[];
+  composing: boolean;
+  onFollowUp: (prompt: string) => void;
+}) {
+  // A primary unit's facets start open only when it is the page's sole unit;
+  // typography blocks (era_unit, editorial, and the rest) do not count.
+  const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
+  return (
+    <>
+      <div className="content-heading">
+        <h1 id="answer-title" tabIndex={-1}>{title}</h1>
+      </div>
+      {lead && <p className="answer-lead">{renderInline(lead)}</p>}
+      {groups.map((group, groupIndex) => (
+        <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
+          {(group.title || group.lead) && (
+            group.presentation === "argument" ? (
+              <header className="group-heading claim">
+                {group.title && <h2>{group.title}</h2>}
+                {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
+              </header>
+            ) : (
+              <header className="group-heading">
+                {group.title && <h2>{group.title}</h2>}
+                {group.lead && <p>{renderInline(group.lead)}</p>}
+              </header>
+            )
+          )}
+          <div className="block-grid group-blocks">
+            {chunkMentions(group.blocks).map((entry, position) =>
+              entry.kind === "mentions" ? (
+                <ul className="mention-list" key={`mentions-${groupIndex}-${position}`}>
+                  {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
+                </ul>
+              ) : (
+                <Block
+                  key={`${entry.block.type}-${position}`}
+                  block={entry.block}
+                  sources={sources}
+                  criteria={group.presentation === "comparison" ? group.criteria : []}
+                  soleUnit={unitCount === 1}
+                  onFollowUp={onFollowUp}
+                />
+              )
+            )}
+          </div>
+        </section>
+      ))}
+      {composing && <p className="composing-note" aria-live="polite">Composing the page…</p>}
+      {!composing && sources.length > 0 && (
+        <footer className="sources-footer">
+          <p className="sources-footer-label">Sources</p>
+          <ul>
+            {dedupeSources(sources).map((source) => (
+              <li key={`${source.label}-${source.url ?? source.source_id}`}>
+                <span className="source-kind-chip">
+                  {source.kind === "canonical" ? "Canonical" : "External source"}
+                </span>
+                {source.url ? (
+                  <ExternalLink href={source.url}>{source.label}</ExternalLink>
+                ) : (
+                  <span>{source.label}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </footer>
+      )}
+    </>
+  );
+}
+
 export default function App() {
   // A named `?fixture=` response is available only in Vite development. It
   // gives visual reviewers the actual app chrome and renderers without a live
@@ -936,6 +1066,7 @@ export default function App() {
   const visualFixture = requestedVisualFixture;
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<ExperienceResponse | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeThreadId, setActiveThreadId] = useState(createThreadId);
@@ -995,24 +1126,25 @@ export default function App() {
     setError(null);
     setProgress([]);
     setStreamingAnswer(null);
+    setDraft(null);
     answerStartedRef.current = false;
     const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
       let statusCount = 0;
-      const streamed = await askStreaming(
-        body,
-        (status) => {
+      const streamed = await askStreaming(body, {
+        onStatus: (status) => {
           statusCount += 1;
           setProgress((lines) => [...lines, status]);
         },
-        (text) => {
+        onAnswer: (text) => {
           if (!answerStartedRef.current) {
             answerStartedRef.current = true;
             setAnswerProgressStart(statusCount);
           }
           setStreamingAnswer(text);
-        }
-      );
+        },
+        onPage: (event) => setDraft((current) => applyPageEvent(current, event))
+      });
       setResponse(streamed ?? await askPlain(body));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now.");
@@ -1023,16 +1155,21 @@ export default function App() {
       setProgress([]);
       setStreamingAnswer(null);
       setAnswerProgressStart(null);
+      setDraft(null);
     }
   }
 
   // The streaming endpoint sends one JSON object per line: statuses while the
-  // agent works, then the response. A null return means the stream was not
-  // available and the caller should fall back to the plain request.
+  // agent works, page events as the page is composed, then the response. A
+  // null return means the stream was not available and the caller should
+  // fall back to the plain request.
   async function askStreaming(
     body: string,
-    onStatus: (status: string) => void,
-    onAnswer: (text: string) => void
+    handlers: {
+      onStatus: (status: string) => void;
+      onAnswer: (text: string) => void;
+      onPage: (event: PageEvent) => void;
+    }
   ): Promise<ExperienceResponse | null> {
     const result = await fetch("/api/experience/stream", {
       method: "POST",
@@ -1051,11 +1188,12 @@ export default function App() {
     let answer: ExperienceResponse | null = null;
     const consume = (line: string) => {
       if (!line.trim()) return;
-      const event = JSON.parse(line) as { type: string; text?: string; response?: ExperienceResponse; detail?: string };
-      if (event.type === "status" && event.text) onStatus(event.text);
-      else if (event.type === "answer" && event.text !== undefined) onAnswer(event.text);
-      else if (event.type === "response" && event.response) answer = event.response;
+      const event = JSON.parse(line) as StreamEvent;
+      if (event.type === "status") handlers.onStatus(event.text);
+      else if (event.type === "answer") handlers.onAnswer(event.text);
+      else if (event.type === "response") answer = event.response;
       else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
+      else handlers.onPage(event);
     };
     for (;;) {
       const { value, done } = await reader.read();
@@ -1117,10 +1255,6 @@ export default function App() {
   // The last four progress lines for a working display, falling back to a
   // single placeholder line before the first tool call reports in.
   const workingLines = progress.length > 0 ? progress.slice(-4) : ["Looking through the library…"];
-
-  // A primary unit's facets start open only when it is the page's sole unit;
-  // typography blocks (era_unit, editorial, and the rest) do not count.
-  const unitCount = response ? response.blocks.filter(isUnit).length : 0;
 
   function submitOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
@@ -1199,7 +1333,16 @@ export default function App() {
         </aside>
 
         <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
-          {loading ? (
+          {loading && draft ? (
+            <ComposedPage
+              title={draft.title || pendingQuestion || ""}
+              lead={draft.lead}
+              groups={draft.groups}
+              sources={[]}
+              composing
+              onFollowUp={chooseFollowUp}
+            />
+          ) : loading ? (
             <div className="content-working">
               <p className="eyebrow">Working</p>
               <h1>{pendingQuestion}</h1>
@@ -1212,66 +1355,14 @@ export default function App() {
               </ol>
             </div>
           ) : response ? (
-            <>
-              <div className="content-heading">
-                <h1 id="answer-title" tabIndex={-1}>{response.title}</h1>
-              </div>
-              {response.body_lead && <p className="answer-lead">{renderInline(response.body_lead)}</p>}
-              {response.groups.map((group, groupIndex) => (
-                <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
-                  {(group.title || group.lead) && (
-                    group.presentation === "argument" ? (
-                      <header className="group-heading claim">
-                        {group.title && <h2>{group.title}</h2>}
-                        {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
-                      </header>
-                    ) : (
-                      <header className="group-heading">
-                        {group.title && <h2>{group.title}</h2>}
-                        {group.lead && <p>{renderInline(group.lead)}</p>}
-                      </header>
-                    )
-                  )}
-                  <div className="block-grid group-blocks">
-                    {chunkMentions(group.block_indexes.map((index) => response.blocks[index])).map((entry, position) =>
-                      entry.kind === "mentions" ? (
-                        <ul className="mention-list" key={`mentions-${groupIndex}-${position}`}>
-                          {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
-                        </ul>
-                      ) : (
-                        <Block
-                          key={`${entry.block.type}-${position}`}
-                          block={entry.block}
-                          sources={response.sources}
-                          criteria={group.presentation === "comparison" ? group.criteria ?? [] : []}
-                          soleUnit={unitCount === 1}
-                          onFollowUp={chooseFollowUp}
-                        />
-                      )
-                    )}
-                  </div>
-                </section>
-              ))}
-              {response.sources.length > 0 && (
-                <footer className="sources-footer">
-                  <p className="sources-footer-label">Sources</p>
-                  <ul>
-                    {dedupeSources(response.sources).map((source) => (
-                      <li key={`${source.label}-${source.url ?? source.source_id}`}>
-                        <span className="source-kind-chip">
-                          {source.kind === "canonical" ? "Canonical" : "External source"}
-                        </span>
-                        {source.url ? (
-                          <ExternalLink href={source.url}>{source.label}</ExternalLink>
-                        ) : (
-                          <span>{source.label}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </footer>
-              )}
-            </>
+            <ComposedPage
+              title={response.title}
+              lead={response.body_lead ?? null}
+              groups={groupsOfResponse(response)}
+              sources={response.sources}
+              composing={false}
+              onFollowUp={chooseFollowUp}
+            />
           ) : (
             <div className="content-empty">
               <p className="eyebrow">Starting points</p>
