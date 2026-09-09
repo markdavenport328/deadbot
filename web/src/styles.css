@@ -289,6 +289,9 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .sources-footer a:hover, .sources-footer a:focus-visible { color: #d0b77a; }
 .source-kind-chip { border: 1px solid #3e5544; border-radius: 999px; color: #7f9582; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.12rem 0.45rem; white-space: nowrap; }
 
+.composing-note { margin: var(--space-unit) 0 0; color: #7f9582; font-size: 0.86rem; }
+.composing-note::before { content: "▸ "; color: #e7b94e; }
+
 @media (max-width: 860px) {
   :root { --space-unit: 2rem; --space-section: 3rem; }
   .app-shell { width: min(100% - 1.25rem, 1440px); }

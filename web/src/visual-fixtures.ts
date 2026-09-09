@@ -3,6 +3,7 @@
 // Open a fixture with `npm run dev --prefix web` and, for example,
 // `/?fixture=branford`. The available names are exported below.
 import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock } from "./types";
+import type { StreamEvent } from "./stream-events";
 
 type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean];
 
@@ -518,10 +519,39 @@ const album: ExperienceResponse = fixture(
 
 export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album"] as const;
 
-const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album };
+export type VisualFixtureName = (typeof visualFixtureNames)[number];
+
+const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
   const name = new URLSearchParams(window.location.search).get("fixture");
   return name && name in fixtures ? fixtures[name as keyof typeof fixtures] : null;
+}
+
+// A fixture replayed as the same event sequence the server streams: statuses,
+// the answer growing word by word, the page head, then each group opening,
+// its blocks, and closing, finishing with the full response. Used only by the
+// development `?stream=` replay in App.tsx.
+export function streamEventsFor(name: VisualFixtureName): StreamEvent[] {
+  const response = fixtures[name];
+  const events: StreamEvent[] = [
+    { type: "status", text: "Looking through the library" },
+    { type: "status", text: "Reading the show" }
+  ];
+  const words = response.answer.split(" ");
+  words.forEach((_, index) => events.push({ type: "answer", text: words.slice(0, index + 1).join(" ") }));
+  events.push({ type: "status", text: "Composing the page" });
+  events.push({ type: "page_head", title: response.title, lead: response.body_lead ?? null });
+  response.groups.forEach((group, index) => {
+    const meta = { index, title: group.title ?? null, lead: group.lead ?? null, presentation: group.presentation, criteria: group.criteria ?? [] };
+    events.push({ type: "group_open", ...meta });
+    group.block_indexes.forEach((blockIndex) => {
+      const block = response.blocks[blockIndex];
+      if (block) events.push({ type: "block", group_index: index, block });
+    });
+    events.push({ type: "group_close", ...meta });
+  });
+  events.push({ type: "response", response });
+  return events;
 }

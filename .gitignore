@@ -21,6 +21,9 @@ build/
 .coverage
 htmlcov/
 
+# Local harness config
+.claude/launch.json
+
 # Editor and operating-system files
 .DS_Store
 Thumbs.db

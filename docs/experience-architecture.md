@@ -216,7 +216,7 @@ multi-process session store. Persistent conversation history is a later
 operational feature and must include retention, privacy, and authentication
 decisions before it replaces this boundary.
 
-Streaming is a follow-on capability. When added, it should emit typed progress events such as retrieval started, tool completed, plan resolution completed, and final response. Tool payloads, model reasoning, and internal prompts should not be exposed to the browser by default.
+`/api/experience/stream` emits newline-delimited JSON events as the agent works. A `status` event names each tool call while the agent researches. Once the model starts its `finish_response` call, the chat answer streams as growing `answer` events, then a `status` of "Composing the page" marks the answer complete. From there the same call is parsed incrementally into page events: one `page_head` (title and lead), then per group a `group_open`, that group's `block` events (each hydrated with resolved show, song, or performance data as it resolves), and a `group_close`. A final `response` event carries the complete, validated `ExperienceResponse`, identical to what the non-streaming endpoint returns. Tool payloads, model reasoning, and internal prompts are not exposed to the browser. Progressive events depend on a provider that streams tool arguments; with the default Ollama provider the plan arrives whole and the page appears with the response.
 
 Authentication, rate limits, persistent conversation storage, and deployment configuration are separate product decisions. Their eventual addition must not weaken the read-only tool boundary or make the client a direct data-store or model client.
 

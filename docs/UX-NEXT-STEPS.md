@@ -280,9 +280,30 @@ relationship layouts; the prompt was rewritten around emphasis and facets;
 releases gained `song_lore` pathways.
 
 What remains: removing `role` from the plan entirely after one release now that
-callers have had a chance to move to `emphasis`; progressive page streaming so
-later units do not block the first read; a manual rerun of
+callers have had a chance to move to `emphasis`; a manual rerun of
 `evals/editorial-scope-v1.json` judged against the experience brief.
+
+## Batch: progressive page streaming (September 9, 2026)
+
+- `/api/experience/stream` now scans the model's `finish_response` call as it
+  is written and emits `page_head`, then per group `group_open`, hydrated
+  `block` events (each resolved through `finish.resolve_items` as it streams),
+  and `group_close`, ahead of the final `response` event.
+- The browser builds the page from these events instead of waiting for
+  `response`; a development-only `?stream=<fixture>` mode replays a visual
+  fixture as a timed event sequence for review without a model call.
+- `scripts/trace_stream.py` times a live request: seconds to first answer
+  text, answer complete, first block, last block, and final response.
+
+Live trace run: conditions are local API against the production database, OpenAI gpt-5.6-luna, 12 tool rounds, response cache off, one run per question on 2026-09-09. Seconds from request start.
+
+| Question | First answer text | Answer complete | First block | Last block | Response |
+| --- | --- | --- | --- | --- | --- |
+| Branford | 10.1 | 10.8 | 11.7 | 13.6 | 14.2 |
+| Franklin's Tower best versions | 20.9 | 22.6 | 25.8 | 33.5 | 33.9 |
+| American Beauty live legacy | 15.4 | 36.8 | 19.5 | 42.7 | 42.9 |
+
+The first block reaches the browser 1 to 4 seconds after the chat answer completes, and the page fills over the following 2 to 23 seconds instead of appearing all at once when the response lands. In the American Beauty run the answer-complete mark was recorded after the first block, which is consistent with a finish retry resetting the draft partway through.
 
 ## Measurements
 

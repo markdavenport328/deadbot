@@ -330,6 +330,120 @@ def test_streaming_endpoint_delivers_a_lone_surrogate_answer_as_a_valid_line():
     assert events[-1]["type"] == "response"
 
 
+class PlanStreamingFakeAgent(FakeAgent):
+    """Streams a complete finish_response plan with one group in fragments, after a tool step."""
+
+    def __init__(self, messages, plan):
+        super().__init__(messages)
+        self.plan_text = json.dumps(plan)
+
+    def stream(self, payload, config, stream_mode="values"):
+        self.calls.append((payload, config))
+        yield ("values", {"messages": self.messages[:3]})  # human, tool-calling ai, tool result
+        size = 7
+        for offset in range(0, len(self.plan_text), size):
+            chunk = AIMessageChunk(
+                content="",
+                tool_call_chunks=[{"name": "finish_response" if offset == 0 else None, "args": self.plan_text[offset : offset + size], "id": "f1", "index": 0, "type": "tool_call_chunk"}],
+            )
+            yield ("messages", (chunk, {}))
+        yield ("values", {"messages": self.messages})
+
+
+def test_streaming_endpoint_builds_the_page_progressively_then_delivers_the_response():
+    store = CanonicalStore()
+    show_payload = store.show_context(store.resolve_show("1972-08-27"))
+    plan = {
+        "chat_answer": "Veneta opened with Promised Land.",
+        "title": "Veneta, 1972",
+        "lead": None,
+        "groups": [{"title": "The show", "presentation": "collection", "items": [
+            {"type": "show_unit", "show_id": "gd-1972-08-27", "emphasis": "primary", "visible_facets": ["setlist"]},
+            {"type": "editorial", "presentation": "narrative", "paragraphs": ["A benefit in the heat."], "items": []},
+        ]}],
+    }
+    messages = [
+        HumanMessage(content="What opened Veneta?"),
+        AIMessage(content="", tool_calls=[{"name": "get_show", "args": {"show_id_or_date": "1972-08-27"}, "id": "t1", "type": "tool_call"}]),
+        ToolMessage(content=json.dumps(show_payload), tool_call_id="t1", name="get_show"),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ]
+    client = TestClient(create_app(settings=Settings(), store=store, agent=PlanStreamingFakeAgent(messages, plan)))
+    events = _ndjson(client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "b1"}).text)
+    types = [event["type"] for event in events]
+    last_answer = max(index for index, event in enumerate(events) if event["type"] == "answer")
+    assert types.index("page_head") > last_answer
+    assert types[types.index("page_head") :] == ["page_head", "group_open", "block", "block", "group_close", "response"]
+    head = events[types.index("page_head")]
+    assert head["title"] == "Veneta, 1972" and head["lead"] is None
+    streamed_blocks = [event["block"] for event in events if event["type"] == "block"]
+    final = events[-1]["response"]
+    assert [block["type"] for block in streamed_blocks] == [block["type"] for block in final["blocks"]] == ["show_unit", "editorial"]
+    assert streamed_blocks[0]["show_id"] == final["blocks"][0]["show_id"] == "gd-1972-08-27"
+    assert all(event["group_index"] == 0 for event in events if event["type"] == "block")
+
+
+class _CachingStore(CanonicalStore):
+    """An in-memory response cache for testing the cached-answer path.
+
+    ``CanonicalStore`` (the in-memory test double) does not implement the
+    response cache interface at all, so ``ResponseCache`` disables itself
+    for it (see ``test_a_store_without_cache_methods_disables_the_cache_quietly``
+    in tests/test_response_cache.py). This subclass adds a tiny in-memory
+    implementation of that interface, the same way ``CloseableStore`` above
+    adds a ``close`` method, so the cached-answer path can be exercised here.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._cached: dict[tuple[str, str], dict] = {}
+
+    def data_version(self) -> str:
+        return "test-version"
+
+    def ensure_response_cache(self) -> None:
+        pass
+
+    def cached_response(self, question_key, data_version, max_age_seconds):
+        return self._cached.get((question_key, data_version))
+
+    def store_response(self, question_key, data_version, question, response) -> None:
+        self._cached[(question_key, data_version)] = response
+
+
+def test_streaming_endpoint_sends_no_page_events_for_a_cached_answer():
+    # CanonicalStore() (used elsewhere in this file) has no cache methods, so
+    # ResponseCache disables itself for it; _CachingStore above adds a tiny
+    # in-memory implementation of that interface so the same fresh question
+    # asked twice hits the cache the second time.
+    store = _CachingStore()
+    plan = {
+        "chat_answer": "Veneta opened with Promised Land.",
+        "title": "Veneta, 1972",
+        "lead": None,
+        "groups": [{"title": "The show", "presentation": "collection", "items": [
+            {"type": "show_unit", "show_id": "gd-1972-08-27", "emphasis": "primary", "visible_facets": ["setlist"]},
+        ]}],
+    }
+    show_payload = store.show_context(store.resolve_show("1972-08-27"))
+    messages = [
+        HumanMessage(content="What opened Veneta?"),
+        AIMessage(content="", tool_calls=[{"name": "get_show", "args": {"show_id_or_date": "1972-08-27"}, "id": "t1", "type": "tool_call"}]),
+        ToolMessage(content=json.dumps(show_payload), tool_call_id="t1", name="get_show"),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ]
+    client = TestClient(create_app(settings=Settings(), store=store, agent=PlanStreamingFakeAgent(messages, plan)))
+    first = client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "b1"})
+    assert first.status_code == 200
+    _ndjson(first.text)  # drain the first (live) stream so the answer is remembered
+
+    second = client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "b2"})
+    events = _ndjson(second.text)
+    assert [event["type"] for event in events] == ["status", "response"]
+
+
 def test_streaming_endpoint_falls_back_to_invoke_for_an_agent_without_stream():
     agent = FakeAgent(finish_call("A plain answer."))
     client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
