@@ -154,28 +154,58 @@ const branford: ExperienceResponse = fixture(
   ]
 );
 
-const eyes: ExperienceResponse = fixture(
-  "How did Eyes of the World develop?",
-  "How Eyes of the World kept changing",
-  "These three performances make a useful route through the song’s changing rhythmic center: fluid 1973, muscular 1974, and the roomier late-period return.",
+const evolution: ExperienceResponse = fixture(
+  "How did Eyes of the World evolve?",
+  "Eyes of the World kept changing shape across two decades",
+  "The song moved from a floating, conversational groove in 1973 to a tighter, more propulsive vehicle by 1974, then opened back up in 1990 to make room for a guest voice.",
   [
     {
       type: "era_unit", title: "1973: the open road", span: "1973",
       note: "The song is newly expansive here, with the vocal and instrumental sections still trading places freely.",
-      performances: [{ performance_id: "eyes-73", song_id: "eyes", song_title: "Eyes of the World", show_id: "fixture-1973-11-11", show_date: "1973-11-11", show_label: "1973-11-11 — Winterland Arena", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1973-11-11#eyes`, is_official: false } }],
+      performances: [
+        { performance_id: "eyes-73-winterland", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1973-11-11", show_date: "1973-11-11", show_label: "1973-11-11 — Winterland Arena", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1973-11-11#eyes`, is_official: false } },
+        { performance_id: "eyes-73-roosevelt", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1973-08-04", show_date: "1973-08-04", show_label: "1973-08-04 — Roosevelt Stadium", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1973-08-04#eyes`, is_official: false } }
+      ],
       sources: [{ label: "Performance notes", url: "https://jerrybase.com", source_name: "Jerrybase", note: "Context for the early arrangement." }], follow_up: "What does Phil’s bass do differently in the 1973 versions?"
     },
     {
       type: "era_unit", title: "1974: leaner and more percussive", span: "1974",
-      note: "The groove becomes more insistent; this is a good place to hear the band turn a floating form into propulsion.",
-      performances: [{ performance_id: "eyes-74", song_id: "eyes", song_title: "Eyes of the World", show_id: "fixture-1974-06-18", show_date: "1974-06-18", show_label: "1974-06-18 — Freedom Hall", set_label: "Second set", listen: null }],
+      note: "The groove becomes more insistent here; this is a good place to hear the band turn a floating form into propulsion.",
+      performances: [
+        { performance_id: "eyes-74-freedom", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1974-06-18", show_date: "1974-06-18", show_label: "1974-06-18 — Freedom Hall", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1974-06-18#eyes`, is_official: false } },
+        { performance_id: "eyes-74-providence", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1974-06-23", show_date: "1974-06-23", show_label: "1974-06-23 — Providence Civic Center", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1974-06-23#eyes`, is_official: false } }
+      ],
       sources: [], follow_up: null
     },
     {
       type: "era_unit", title: "1990: a new kind of space", span: "1990",
       note: "By 1990 the song can welcome a guest voice without surrendering its internal conversation.",
-      performances: [{ performance_id: "eyes-90", song_id: "eyes", song_title: "Eyes of the World", show_id: "fixture-1990-03-29", show_date: "1990-03-29", show_label: "1990-03-29 — Nassau Veterans Memorial Coliseum", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1990-03-29#eyes`, is_official: false } }],
+      performances: [
+        { performance_id: "eyes-90-nassau", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1990-03-29", show_date: "1990-03-29", show_label: "1990-03-29 — Nassau Veterans Memorial Coliseum", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1990-03-29#eyes`, is_official: false } },
+        { performance_id: "eyes-90-msg", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1990-09-16", show_date: "1990-09-16", show_label: "1990-09-16 — Madison Square Garden", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1990-09-16#eyes`, is_official: false } }
+      ],
       sources: [], follow_up: "What should I listen for when Branford enters this version?"
+    },
+    {
+      type: "song_overview", song_id: "song-eyes-of-the-world", title: "Eyes of the World", original_artist: null, known_performance_count: 384,
+      emphasis: "primary",
+      note: "Across two decades the song moved from a floating, conversational groove to a tighter, more propulsive vehicle, then opened up again to welcome guest voices.",
+      representative_performances: [], credits: [], source_ids: ["canonical:song-eyes-of-the-world"],
+      albums: [{ release_id: "release-wake-of-the-flood", title: "Wake of the Flood", release_date: "1973-11-15", release_type: "studio" }],
+      sources: [],
+      visible_facets: ["history"], judgments: [],
+      history: {
+        known_count: 384,
+        first: { performance_id: "eyes-history-first", show_id: "fixture-1973-02-09", show_date: "1973-02-09", show_label: "1973-02-09 — Maples Pavilion", set_label: "Second set", position_in_set: null, listen_url: null },
+        last: { performance_id: "eyes-history-last", show_id: "fixture-1994-06-25", show_date: "1994-06-25", show_label: "1994-06-25 — Sam Boyd Silver Bowl", set_label: "Second set", position_in_set: null, listen_url: null },
+        by_year: [
+          { performance_id: "eyes-1973-sample", show_id: "fixture-1973-11-11", show_date: "1973-11-11", show_label: "1973-11-11 — Winterland Arena", set_label: "Second set", position_in_set: null, year: 1973, listen_url: `${archive}gd1973-11-11#eyes` },
+          { performance_id: "eyes-1978-sample", show_id: "fixture-1978-05-07", show_date: "1978-05-07", show_label: "1978-05-07 — Boston Garden", set_label: "Second set", position_in_set: null, year: 1978, listen_url: `${archive}gd1978-05-07#eyes` },
+          { performance_id: "eyes-1985-sample", show_id: "fixture-1985-06-18", show_date: "1985-06-18", show_label: "1985-06-18 — Greek Theatre", set_label: "Second set", position_in_set: null, year: 1985, listen_url: null },
+          { performance_id: "eyes-1990-sample", show_id: "fixture-1990-09-16", show_date: "1990-09-16", show_label: "1990-09-16 — Madison Square Garden", set_label: "Second set", position_in_set: null, year: 1990, listen_url: `${archive}gd1990-09-16#eyes` }
+        ]
+      },
+      follow_up: "Which other songs show a similarly gradual rhythmic shift?"
     }
   ] as ExperienceBlock[],
   "sequence"
@@ -215,27 +245,57 @@ const shakedown: ExperienceResponse = fixture(
   "comparison"
 );
 
-const fact: ExperienceResponse = fixture(
-  "What opened Veneta?",
-  "Veneta opened with The Promised Land",
-  "The Grateful Dead opened the August 27, 1972 Veneta show with **The Promised Land**.",
-  [{
-    type: "editorial", presentation: "fact_grid", eyebrow: "Quick answer", title: null, paragraphs: [],
-    items: [
-      { marker: "Opener", title: "Opener", value: "The Promised Land", detail: "It led the first set at the Oregon Country Fair benefit." },
-      { marker: "Next", title: "Next song", value: "Sugaree", detail: "The early set continues without a break in pace.", follow_up: "What did they play after Dark Star at Veneta?" }
-    ]
-  }]
-);
+const fact: ExperienceResponse = {
+  schema_version: "2",
+  thread_id: "visual-fact",
+  title: "American Beauty came out in November 1970",
+  answer: "American Beauty was released on November 1, 1970.",
+  body_lead: null,
+  mode: "answer",
+  conversation: [
+    { role: "user", text: "When was American Beauty released?" },
+    { role: "assistant", text: "American Beauty was released on November 1, 1970." }
+  ],
+  blocks: [
+    {
+      type: "album_unit",
+      release_id: "release-american-beauty",
+      title: "American Beauty",
+      release_date: "1970-11-01",
+      release_type: "studio",
+      artist_name: "Grateful Dead",
+      emphasis: "primary",
+      note: "It is the band's second studio album of 1970, following Workingman's Dead by about five months.",
+      listen: [{ label: "Listen to American Beauty", provider: "Spotify", url: "https://open.spotify.com/album/1CBhqfy4uwiWhPMZ2sqjRc", is_official: true }],
+      tracks: [],
+      personnel: [],
+      sources: [],
+      judgments: [],
+      follow_up: "How did these songs settle into the live repertoire?"
+    }
+  ] as ExperienceBlock[],
+  groups: [{ presentation: "collection", criteria: [], block_indexes: [0] }],
+  sources: [
+    { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" },
+    { source_id: "fixture-deadnet", label: "Grateful Dead of the Day", url: "https://gratefuldeadoftheday.com", kind: "contextual_resource" }
+  ]
+};
 
-const albumSongs: ExperienceResponse = fixture(
-  "What was the live legacy of American Beauty?",
-  "American Beauty’s live afterlife",
-  "Four songs became durable but distinct parts of the touring vocabulary; each carries a different version of the album’s live legacy.",
-  [
+const legacy: ExperienceResponse = {
+  schema_version: "2",
+  thread_id: "visual-legacy",
+  title: "American Beauty split into durable staples and forgotten songs",
+  answer: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
+  body_lead: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
+  mode: "answer",
+  conversation: [
+    { role: "user", text: "What was the live legacy of American Beauty?" },
+    { role: "assistant", text: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours." }
+  ],
+  blocks: [
     {
       type: "song_overview", song_id: "song-sugar-magnolia", title: "Sugar Magnolia", original_artist: null, known_performance_count: 606,
-      emphasis: "primary", note: "A compact studio song became one of the band’s recurring celebratory vehicles.",
+      emphasis: "supporting", note: "A compact studio song became one of the band's recurring celebratory vehicles.",
       representative_performances: [{ performance_id: "fixture-sugar", show_id: "fixture-1972-08-27", show_date: "1972-08-27", show_label: "1972-08-27 — Oregon Country Fair", set_label: "Second set", listen_url: `${archive}gd1972-08-27#sugar-magnolia` }],
       credits: [], source_ids: ["canonical:song-sugar-magnolia"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
@@ -249,7 +309,7 @@ const albumSongs: ExperienceResponse = fixture(
     },
     {
       type: "song_overview", song_id: "song-friend-of-the-devil", title: "Friend of the Devil", original_artist: null, known_performance_count: 308,
-      emphasis: "supporting", note: "It survived the acoustic period by repeatedly changing shape inside the band’s larger concert sound.",
+      emphasis: "supporting", note: "It survived the acoustic period by repeatedly changing shape inside the band's larger concert sound.",
       representative_performances: [{ performance_id: "fixture-friend", show_id: "fixture-1978-04-16", show_date: "1978-04-16", show_label: "1978-04-16 — Huntington Civic Center", set_label: "First set", listen_url: `${archive}gd1978-04-16#friend-of-the-devil` }],
       credits: [], source_ids: ["canonical:song-friend-of-the-devil"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
@@ -260,36 +320,85 @@ const albumSongs: ExperienceResponse = fixture(
       representative_performances: [{ performance_id: "fixture-brokedown", show_id: "fixture-1989-10-09", show_date: "1989-10-09", show_label: "1989-10-09 — Hampton Coliseum", set_label: "Encore", listen_url: `${archive}gd1989-10-09#brokedown-palace` }],
       credits: [], source_ids: ["canonical:song-brokedown-palace"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
+    },
+    {
+      type: "song_overview", song_id: "song-candyman", title: "Candyman", original_artist: null, known_performance_count: 114,
+      emphasis: "mention", note: "Candyman found only occasional space in the sets after the mid-1970s, well below the album's other songs.",
+      representative_performances: [], credits: [], source_ids: ["canonical:song-candyman"],
+      albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
+      visible_facets: [], judgments: [], history: null, follow_up: null
+    },
+    {
+      type: "song_overview", song_id: "song-attics-of-my-life", title: "Attics of My Life", original_artist: null, known_performance_count: 24,
+      emphasis: "mention", note: "Attics of My Life stopped appearing for most of the 1970s and 1980s, returning only briefly late in the band's touring history.",
+      representative_performances: [], credits: [], source_ids: ["canonical:song-attics-of-my-life"],
+      albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
+      visible_facets: [], judgments: [], history: null, follow_up: null
+    },
+    {
+      type: "editorial", presentation: "narrative", eyebrow: "The pattern", title: null,
+      paragraphs: [
+        "The four durable songs share open, flexible structures that let the band reinterpret them for two decades, while **Candyman** and **Attics of My Life** kept tighter, more fixed arrangements that left less room to grow alongside the rest of the live show."
+      ],
+      items: []
     }
   ] as ExperienceBlock[],
-  "comparison",
-  { title: "The touring pillars", lead: "Each song is a different answer to how an album track could become part of the live repertoire." }
-);
+  groups: [
+    { presentation: "collection", title: "The durable songs", criteria: [], block_indexes: [0, 1, 2, 3] },
+    { presentation: "collection", title: "The ones that faded", criteria: [], block_indexes: [4, 5] },
+    { presentation: "argument", lead: "American Beauty split into songs the band kept reinventing and songs it mostly left behind.", criteria: [], block_indexes: [6] }
+  ],
+  sources: [
+    { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" },
+    { source_id: "fixture-deadnet", label: "Grateful Dead of the Day", url: "https://gratefuldeadoftheday.com", kind: "contextual_resource" }
+  ]
+};
 
-// Two fact_grid blocks in two differently-presented groups, so a review can
-// compare a short-value display treatment against a sentence-length one
-// without scrolling between unrelated fixtures.
+// A comparison group of three judged performance_unit blocks, next to a
+// fact_grid group, so a review can compare both presentations without
+// scrolling between unrelated fixtures.
 const viewsBlocks: ExperienceBlock[] = [
   {
-    type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
-    items: [
-      {
-        marker: "The skeptical view",
-        title: "The band sounds worn down, and the show mostly reveals how far its health had slipped.",
-        detail: "Some listeners hear strained vocals and shortened jams as a sign the tour ran past where it should have stopped.",
-        link: { url: "https://archive.org/details/gd1995-07-09.sbd.miller.97483.flac16", label: "Listener reviews" }
-      },
-      {
-        marker: "The sympathetic view",
-        title: "The show still delivers real moments of connection despite the circumstances.",
-        detail: "Others point to a warm Stella Blue and a full, generous setlist as evidence the band was still giving what it had."
-      },
-      {
-        marker: "The lasting consensus",
-        title: "It endures mainly as the final Grateful Dead concert, not for its performance quality.",
-        detail: "Most retrospective accounts frame the night by its historical weight rather than by how the individual songs were played."
-      }
-    ]
+    type: "performance_unit", performance_id: "fixture-1995-07-09-so-many-roads", song_id: "song-so-many-roads", song_title: "So Many Roads",
+    show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
+    set_label: "Second set", position_in_set: "3", emphasis: "supporting",
+    note: "Garcia's voice is worn, but the song's slow build still lands as a real emotional high point of the second set.",
+    judgments: [
+      "A vocal high point despite Garcia's declining range",
+      "One of the last times the song's climb fully pays off",
+      "Divides listeners who hear strain and listeners who hear feeling"
+    ],
+    listen: [{ label: "Listen to So Many Roads", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#somanyroads`, is_official: false }],
+    sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19950709-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
+    follow_up: null
+  },
+  {
+    type: "performance_unit", performance_id: "fixture-1995-07-09-black-muddy-river", song_id: "song-black-muddy-river", song_title: "Black Muddy River",
+    show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
+    set_label: "Encore", position_in_set: "1", emphasis: "supporting",
+    note: "A warm, unhurried reading that many listeners point to as evidence the band still had something to give.",
+    judgments: [
+      "A gentle, well-sung encore choice",
+      "One of the night's clearest moments of connection",
+      "Reads as a quiet farewell in hindsight"
+    ],
+    listen: [{ label: "Listen to Black Muddy River", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#blackmuddyriver`, is_official: false }],
+    sources: [],
+    follow_up: null
+  },
+  {
+    type: "performance_unit", performance_id: "fixture-1995-07-09-box-of-rain", song_id: "song-box-of-rain", song_title: "Box of Rain",
+    show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
+    set_label: "Encore", position_in_set: "2", emphasis: "supporting",
+    note: "The closing song of the band's final show, delivered without much fanfare at the time.",
+    judgments: [
+      "Gains its weight only in retrospect",
+      "A modest performance on its own musical terms",
+      "The detail most retrospective accounts lead with"
+    ],
+    listen: [{ label: "Listen to Box of Rain", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#boxofrain`, is_official: false }],
+    sources: [],
+    follow_up: null
   },
   {
     type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
@@ -305,23 +414,22 @@ const viewsBlocks: ExperienceBlock[] = [
 const views: ExperienceResponse = {
   schema_version: "2",
   thread_id: "visual-views",
-  title: "Soldier Field 1995 and the album songs that stayed",
-  answer: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
-  body_lead: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  title: "Soldier Field 1995 through three performances, and the songs that stayed",
+  answer: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  body_lead: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
   mode: "answer",
   conversation: [
-    { role: "user", text: "What do people think of the 1995-07-09 Soldier Field show, and which Wake of the Flood songs stuck around live?" },
-    { role: "assistant", text: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire." }
+    { role: "user", text: "How do Soldier Field 1995-07-09's key performances hold up, and which Wake of the Flood songs stuck around live?" },
+    { role: "assistant", text: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire." }
   ],
   blocks: viewsBlocks,
   groups: [
-    { presentation: "comparison", title: "What listeners agree and argue about", criteria: [], block_indexes: [0] },
-    { presentation: "collection", title: "The album songs in the live repertoire", criteria: [], block_indexes: [1] }
+    { presentation: "comparison", title: "How three of the night's performances land", criteria: ["Musical quality", "Emotional weight", "Worth hearing"], block_indexes: [0, 1, 2] },
+    { presentation: "collection", title: "The album songs in the live repertoire", criteria: [], block_indexes: [3] }
   ],
   sources: [
     { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" },
-    { source_id: "fixture-deadnet", label: "Grateful Dead of the Day", url: "https://gratefuldeadoftheday.com", kind: "contextual_resource" },
-    { source_id: "fixture-soldier-field-reviews", label: "Listener reviews", url: "https://archive.org/details/gd1995-07-09.sbd.miller.97483.flac16", kind: "contextual_resource" }
+    { source_id: "fixture-deadnet", label: "Grateful Dead of the Day", url: "https://gratefuldeadoftheday.com", kind: "contextual_resource" }
   ]
 };
 
@@ -389,9 +497,9 @@ const album: ExperienceResponse = fixture(
   { title: "The record" }
 );
 
-export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs", "views", "album"] as const;
+export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album"] as const;
 
-const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs, views, album };
+const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
