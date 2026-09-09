@@ -92,7 +92,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .group-sequence .group-blocks > * { position: relative; grid-column: 1 / -1; }
 .group-sequence .group-blocks > *::before { counter-increment: step; content: counter(step); position: absolute; left: -3.25rem; top: 0; width: 2rem; height: 2rem; border: 1px solid #c49e48; border-radius: 999px; color: #f1d684; font-family: Georgia, "Times New Roman", serif; font-size: 0.95rem; font-weight: 700; line-height: 2rem; text-align: center; background: #14221b; }
 @media (min-width: 861px) {
-  .group-comparison .group-blocks { grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); }
+  .group-comparison .group-blocks { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
   .group-comparison .group-blocks > .card { grid-column: auto; }
   .group-comparison .group-blocks > .typography-block, .group-comparison .group-blocks > .mention-list { grid-column: 1 / -1; }
 }
@@ -333,6 +333,11 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .card.emphasis-supporting { grid-column: span 12; padding: var(--space-part) 1.1rem; }
 .card.emphasis-supporting .unit-note { font-size: 0.96rem; }
 @media (min-width: 861px) { .card.emphasis-supporting { grid-column: span 6; } }
+
+/* Cards that share a row must not inherit the stacked-unit spacing. */
+.block-grid > .card.emphasis-supporting { margin-top: 0; }
+.group-comparison .group-blocks > .card { margin-top: 0; }
+
 .mention-list { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; }
 .mention { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.75rem; border-top: 1px solid #3e5544; padding: 0.6rem 0; }
 .mention:last-child { border-bottom: 1px solid #3e5544; }
