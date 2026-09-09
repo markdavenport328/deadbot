@@ -19,8 +19,9 @@ There are two separate clones of the same GitHub repository:
   was used.
 
 The earlier reviews saying semantic units were absent described the stale mirror.
-They DO exist in current main: show_unit, performance_unit, era_unit, show_explorer,
-attached listening, highlighted songs, Ask chips, and peer-show setlist disclosure.
+They DO exist in current main: show_unit, performance_unit, era_unit, show_explorer
+(retired in the palette cut), attached listening, highlighted songs, Ask chips, and
+peer-show setlist disclosure.
 Do not rebuild these. Check branch/status in the exact working folder first;
 changes to one clone do not update the other automatically.
 
@@ -141,7 +142,7 @@ anchor role. Extend the contract to let the model choose relevant facets and ini
 disclosure. Keep user expansion state stable and important qualifications visible.
 Do not hydrate every known fact into a mandatory visible panel.
 
-`show_explorer.organization` currently changes a label, not the spatial arrangement.
+`show_explorer.organization` (retired in the palette cut) currently changes a label, not the spatial arrangement.
 Add a small group grammar for collection, sequence, comparison, and argument/evidence.
 Model controls group title, membership, reading order, emphasis and presentation;
 runtime validates references and renders supported layouts. Comparison should align
@@ -164,7 +165,7 @@ Show units now accept `visible_facets` and `setlist_disclosure`. The composer
 can retain only guests, listening, setlist, and/or source evidence that help the
 answer, and chooses whether the selected setlist begins expanded, collapsed, or
 hidden. Native disclosure state stays with the visitor after they open it.
-`show_explorer` remains compatible for older calls, but new composition guidance
+`show_explorer` (retired in the palette cut) remains compatible for older calls, but new composition guidance
 uses groups with directly selected units so the model controls the relationship
 and ordering.
 
@@ -280,7 +281,8 @@ releases gained `song_lore` pathways.
 
 What remains: removing `role` from the plan entirely after one release now that
 callers have had a chance to move to `emphasis`; progressive page streaming so
-later units do not block the first read.
+later units do not block the first read; a manual rerun of
+`evals/editorial-scope-v1.json` judged against the experience brief.
 
 ## Measurements
 
@@ -299,3 +301,7 @@ on its own).
 | Was Branford on the whole 1991-09-10 Madison Square Garden show, and where should I listen for him? | 16.93 | 1514 | 37.43 |
 | What are the best versions of Franklin's Tower? | 20.47 | 1697 | 53.70 |
 | What was the live legacy of American Beauty? | 19.21 | 1871 | 36.50 |
+
+The finish-call time did not fall with the smaller schema; plan output length
+(about 1500 to 1900 tokens per call) is the dominant cost, so the next latency
+lever is shorter plans or progressive page streaming.

@@ -1,9 +1,9 @@
 """Contract-version tests for `deadbot.experience` in isolation.
 
-These import only `deadbot.experience`, not `deadbot.composition` or
-`deadbot.finish`. Those two modules still reference names this task deletes
-(`role`, `UnitRole`, etc.) and are fixed in Task 3; importing them here would
-make these tests fail to collect for a reason unrelated to what they check.
+These are the contract's standalone tests: they import only
+`deadbot.experience`, not `deadbot.composition` or `deadbot.finish`, so a
+change in those two modules cannot make these tests fail to collect for a
+reason unrelated to what they check.
 """
 
 from deadbot import experience

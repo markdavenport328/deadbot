@@ -491,20 +491,15 @@ function AlbumUnit({
               ))}
             </ol>
           );
-          return compact ? (
-            <details className="unit-facet unit-setlist">
+          return (
+            <details className={compact ? "unit-facet unit-setlist" : "album-tracks-section unit-setlist"} open={compact ? undefined : openFacets}>
               <summary>Tracklist</summary>
               {trackList}
             </details>
-          ) : (
-            <section className="album-tracks-section">
-              <p className="fact-label">Tracklist</p>
-              {trackList}
-            </section>
           );
         })()}
         {personnel.length > 0 && (
-          <details className="album-credits unit-setlist" open={openFacets}>
+          <details className={compact ? "unit-facet unit-setlist" : "album-credits unit-setlist"} open={compact ? undefined : openFacets}>
             <summary>Personnel and credits</summary>
             <ul className="album-personnel">
               {personnel.map((person) => (
@@ -684,6 +679,7 @@ function Block({
       );
     case "song_overview": {
       const compact = block.emphasis === "supporting";
+      const openFacets = block.emphasis === "primary" && soleUnit;
       return (
         <article className={`card song-overview emphasis-${block.emphasis}`}>
           <header className="unit-heading">
@@ -717,7 +713,7 @@ function Block({
                 ) : null;
               case "credits":
                 return block.credits.length > 0 ? (
-                  <details className={compact ? "unit-facet unit-setlist" : "song-credits unit-setlist"} key="credits">
+                  <details className={compact ? "unit-facet unit-setlist" : "song-credits unit-setlist"} key="credits" open={compact ? undefined : openFacets}>
                     <summary>Credits</summary>
                     <ul>
                       {block.credits.map((credit) => (
@@ -741,16 +737,11 @@ function Block({
                     ))}
                   </ul>
                 );
-                return compact ? (
-                  <details className="unit-facet unit-setlist" key="albums">
+                return (
+                  <details className={compact ? "unit-facet unit-setlist" : "song-albums-section unit-setlist"} key="albums" open={compact ? undefined : openFacets}>
                     <summary>On record</summary>
                     {albumsList}
                   </details>
-                ) : (
-                  <section className="song-albums-section" key="albums">
-                    <p className="fact-label">On record</p>
-                    {albumsList}
-                  </section>
                 );
               }
               case "history": {
@@ -776,16 +767,11 @@ function Block({
                     )}
                   </>
                 );
-                return compact ? (
-                  <details className="unit-facet unit-setlist" key="history">
+                return (
+                  <details className={compact ? "unit-facet unit-setlist" : "song-history unit-setlist"} key="history" open={compact ? undefined : openFacets}>
                     <summary>Performance history</summary>
                     {historyBody}
                   </details>
-                ) : (
-                  <section className="song-history" key="history">
-                    <p className="fact-label">Performance history</p>
-                    {historyBody}
-                  </section>
                 );
               }
               default:

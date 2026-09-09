@@ -136,7 +136,7 @@ class ResourceListRef(_Ref):
 # --- semantic units ---------------------------------------------------------
 #
 # A unit declares what the visitor should perceive as one meaningful object in
-# this answer. The model supplies interpretation (role, note, emphasis,
+# this answer. The model supplies interpretation (emphasis, note,
 # preferred listening, evidence, next question); the server hydrates the
 # object's own facts from the store.
 

@@ -51,7 +51,7 @@
         "coverage": "The list is limited to recordings returned by retrieval; it is not a complete discography."
       },
       "expected": {
-        "main_must_include": ["recording_list for Sugar Magnolia"],
+        "main_must_include": ["show_unit with the recordings facet for the Sugar Magnolia show"],
         "exploration_may_include": ["song or performance context"],
         "coverage_note": "state that returned recordings are a bounded selection when relevant",
         "must_not": ["put recordings only in the exploration column", "claim the list is complete"]
@@ -67,7 +67,7 @@
         "coverage": "Available candidates are examples from covered dates, not a complete musical history; no audio analysis is supplied."
       },
       "expected": {
-        "main_must_include": ["comparison_strip of dated canonical performances"],
+        "main_must_include": ["song_overview with the history facet of dated canonical performances"],
         "exploration_may_include": ["performance cards or listening links for selected candidates"],
         "coverage_note": "make partial era/date coverage explicit",
         "must_not": ["invent musical evolution claims without grounded analysis", "present candidates as a complete timeline"]

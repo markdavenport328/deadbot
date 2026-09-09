@@ -33,6 +33,8 @@ function show({
   guests = [],
   listen = [],
   sources = [],
+  lineup = [],
+  recordings = [],
   follow_up
 }: {
   id: string;
@@ -48,6 +50,8 @@ function show({
   guests?: ShowUnitBlock["guests"];
   listen?: ShowUnitBlock["listen"];
   sources?: ShowUnitBlock["sources"];
+  lineup?: ShowUnitBlock["lineup"];
+  recordings?: ShowUnitBlock["recordings"];
   follow_up?: string;
 }): ShowUnitBlock {
   return {
@@ -66,8 +70,8 @@ function show({
     guests,
     listen,
     sources,
-    lineup: [],
-    recordings: [],
+    lineup,
+    recordings,
     judgments: [],
     follow_up: follow_up ?? null
   };
@@ -114,12 +118,27 @@ const branford: ExperienceResponse = fixture(
       title: "The full guest set",
       emphasis: "primary",
       note: "Marsalis is present for the complete second set—not just its famous opener. The guest appearance changes the way the jams breathe without making the set feel like a sit-in showcase.",
+      visible_facets: ["guests", "listen", "setlist", "sources", "lineup", "recordings"],
       guests: [{ person_id: "branford", name: "Branford Marsalis", role: "guest", instruments: ["saxophone"] }],
       listen: [
         { label: "Listen to the complete audience recording", provider: "Internet Archive", url: `${archive}gd1991-09-10.sbd`, is_official: false },
         { label: "Listen to the soundboard transfer", provider: "Internet Archive", url: `${archive}gd1991-09-10.sbd.miller`, is_official: false }
       ],
       sources: [{ label: "Guest appearance notes", url: "https://jerrybase.com/events/19910910-01", source_name: "Jerrybase", note: "Documents Marsalis on the second set." }],
+      lineup: [
+        { person_id: "jerry-garcia", name: "Jerry Garcia", role: "performer", instruments: ["guitar", "vocals"] },
+        { person_id: "bob-weir", name: "Bob Weir", role: "performer", instruments: ["guitar", "vocals"] },
+        { person_id: "phil-lesh", name: "Phil Lesh", role: "performer", instruments: ["bass"] },
+        { person_id: "bill-kreutzmann", name: "Bill Kreutzmann", role: "performer", instruments: ["drums"] },
+        { person_id: "mickey-hart", name: "Mickey Hart", role: "performer", instruments: ["drums"] },
+        { person_id: "vince-welnick", name: "Vince Welnick", role: "performer", instruments: ["keyboards"] },
+        { person_id: "bruce-hornsby", name: "Bruce Hornsby", role: "performer", instruments: ["piano"] },
+        { person_id: "branford-marsalis", name: "Branford Marsalis", role: "guest", instruments: ["saxophone"] }
+      ],
+      recordings: [
+        { recording_id: "fixture-1991-09-10-sbd", title: "Soundboard recording", source_type: "Soundboard", archive_identifier: "gd1991-09-10.sbd.miller", url: `${archive}gd1991-09-10.sbd.miller`, source_id: "recording:fixture-1991-09-10-sbd" },
+        { recording_id: "fixture-1991-09-10-aud", title: "Audience recording", source_type: "Audience", archive_identifier: "gd1991-09-10.aud", url: `${archive}gd1991-09-10.aud`, source_id: "recording:fixture-1991-09-10-aud" }
+      ],
       sets: [
         { label: "Set 1", songs: songs([["910-01", "Hell in a Bucket", null], ["910-02", "Loser", null], ["910-03", "Stuck Inside of Mobile with the Memphis Blues Again", null]]) },
         { label: "Set 2", songs: songs([["910-11", "Eyes of the World", `${archive}gd1991-09-10.sbd#track11`, true], ["910-12", "Estimated Prophet", `${archive}gd1991-09-10.sbd#track12`, true], ["910-13", "Dark Star", `${archive}gd1991-09-10.sbd#track13`, true], ["910-14", "Drums", null], ["910-15", "Space", null], ["910-16", "Dark Star", `${archive}gd1991-09-10.sbd#track16`, true], ["910-17", "The Other One", null], ["910-18", "Wharf Rat", null], ["910-19", "Turn On Your Love Light", null]]) }

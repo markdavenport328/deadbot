@@ -284,7 +284,10 @@ def _song_history(performances: list[dict[str, Any]], store: CanonicalStore) -> 
         )
         for year in years
     ]
-    return SongHistory(known_count=len(items), first=items[0], last=items[-1], by_year=by_year)
+    dated = [item for item in items if item.show_date]
+    first = dated[0] if dated else items[0]
+    last = dated[-1] if dated else items[-1]
+    return SongHistory(known_count=len(items), first=first, last=last, by_year=by_year)
 
 
 def _set_neighbors(
@@ -521,7 +524,7 @@ def _show_unit(
         emphasis=emphasis,
         judgments=list(judgments or [])[:5],
         note=(note or "").strip() or None,
-        visible_facets=list(facets),
+        visible_facets=sorted(facets, key=["guests", "listen", "setlist", "sources", "lineup", "recordings"].index),
         setlist_disclosure=setlist_disclosure,
         sets=_setlist_sections(payload, store, highlighted) if "setlist" in facets else [],
         setlist_note=(show.get("setlist_note") or None) if "setlist" in facets else None,

@@ -31,7 +31,7 @@ def test_exploration_evaluation_fixture_has_versioned_two_column_shape():
     for case in suite["cases"]:
         assert case["question"]
         assert case["grounding"]["coverage"]
-        assert case["expected"].get("mode", "answer") in {"answer", "gap"}
+        assert "mode" not in case["expected"] or case["expected"]["mode"] == "gap"
         assert case["failure_conditions"]
 
 
