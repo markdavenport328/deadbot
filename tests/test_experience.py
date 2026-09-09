@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from deadbot import experience
 from deadbot.api import create_app
-from deadbot.composition import _comparison_strip, _embed_details
+from deadbot.composition import _embed_details
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse
@@ -64,45 +64,6 @@ class FakeCheckpointer:
 
 def tool_message(payload):
     return ToolMessage(content=json.dumps(payload), tool_call_id="tool-call")
-
-
-class StubComparisonStore:
-    """Minimal store stand-in so comparison-strip selection can be exercised directly."""
-
-    def __init__(self, shows):
-        self.shows = shows
-
-    def one(self, table, entity_id):
-        if table == "shows":
-            return self.shows.get(entity_id)
-        return None
-
-    def rows_in(self, table, column, values):
-        wanted = set(values)
-        if table == "shows":
-            return [show for show in self.shows.values() if show.get(column) in wanted]
-        return []
-
-    def rows(self, table):
-        return []
-
-
-def _stub_performances(dates):
-    shows = {}
-    performances = []
-    for index, date in enumerate(dates):
-        show_id = f"show-{index}"
-        shows[show_id] = {"show_id": show_id, "show_date": date}
-        performances.append(
-            {"performance_id": f"perf-{index}", "show_id": show_id, "song_id": "song:1", "set_label": "Set 1", "position_in_set": "1"}
-        )
-    return StubComparisonStore(shows), performances
-
-
-def test_single_year_song_produces_no_comparison_strip():
-    stub_store, performances = _stub_performances(["1972-08-27", "1972-08-21", "1972-11-13"])
-    strip = _comparison_strip({"song_id": "song:1", "title": "Sugaree"}, performances, stub_store)
-    assert strip is None
 
 
 def test_only_recognized_provider_urls_receive_embed_identifiers():

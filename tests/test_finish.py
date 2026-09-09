@@ -255,7 +255,7 @@ def test_resolve_body_resolves_song_overview():
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
         chat_answer="x", title="t", lead=None,
-        groups=[finish.GroupPlan(presentation="collection", items=[finish.SongOverviewRef(type="song_overview", song_id=song["song_id"])])],
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.SongOverviewRef(type="song_overview", song_id=song["song_id"], visible_facets=["credits"])])],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     block = blocks[0]
@@ -955,7 +955,7 @@ def test_album_unit_offers_the_record_as_a_listening_action():
 def test_song_overview_shows_the_records_that_held_the_song():
     store = CanonicalStore()
     context = store.song_context(store.resolve_song("Truckin'"))
-    block = composition._song_overview(context, store)
+    block = composition._song_overview(context, store, visible_facets=["albums"])
     assert any(album.release_type == "studio" for album in block.albums)
 
 
@@ -968,5 +968,44 @@ def test_song_overview_keeps_a_late_studio_album_ahead_of_the_truncation():
 
     store = CanonicalStore()
     context = store.song_context(store.resolve_song("Let It Grow"))
-    block = composition._song_overview(context, store)
+    block = composition._song_overview(context, store, visible_facets=["albums"])
     assert any(album.title == "Where I Come From" for album in block.albums)
+
+
+def test_show_unit_hydrates_lineup_and_recordings_only_when_selected():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    grounded = finish.grounded_context([payload])
+    full = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", visible_facets=["lineup", "recordings"])
+    bare = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", visible_facets=["setlist"])
+    blocks, sources = finish.resolve_items([full, bare], grounded, [payload], store)
+    assert blocks[0].lineup and all(item.role in {"performer", "guest"} for item in blocks[0].lineup)
+    assert blocks[0].recordings and all(item.url.startswith("http") for item in blocks[0].recordings)
+    assert any(source.url and "archive.org" in source.url for source in sources)
+    assert blocks[1].lineup == [] and blocks[1].recordings == [] and blocks[1].sets
+
+
+def test_song_overview_hydrates_history_and_omits_unselected_facets():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    grounded = finish.grounded_context(payloads)
+    ref = finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", visible_facets=["history"])
+    blocks, _ = finish.resolve_items([ref], grounded, payloads, store)
+    song = blocks[0]
+    assert song.visible_facets == ["history"]
+    assert song.history is not None
+    assert song.history.first.show_date <= song.history.last.show_date
+    assert song.history.known_count == song.known_performance_count
+    assert len({item.year for item in song.history.by_year}) == len(song.history.by_year)
+    assert song.credits == [] and song.albums == [] and song.representative_performances == []
+
+
+def test_performance_unit_still_carries_set_neighbors():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    grounded = finish.grounded_context(payloads)
+    performance_id = next(p["performance_id"] for p in payloads[0]["performances"] if p.get("performance_id"))
+    blocks, _ = finish.resolve_items([finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id)], grounded, payloads, store)
+    unit = blocks[0]
+    assert unit.type == "performance_unit"
+    assert unit.previous is not None or unit.next is not None
