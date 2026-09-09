@@ -125,10 +125,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 #answer-title { scroll-margin-top: var(--space-content); }
 .details { margin: 1rem 0 0; padding: 0; color: #d6ddcf; list-style: none; }
 .details li + li { margin-top: 0.35rem; }
-.song-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 1.2rem 0 0; }
-.song-facts div { border-top: 1px solid #3e5544; padding-top: 0.65rem; }
-.song-facts dt, .fact-label { color: #aebbac; font-size: 0.78rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
-.song-facts dd { margin: 0.35rem 0 0; color: #f1efdf; font-size: 1.1rem; font-weight: 700; }
+.fact-label { color: #aebbac; font-size: 0.78rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
 .song-credits { margin-top: 1.2rem; }
 .song-credits .fact-label { margin: 0 0 0.55rem; }
 .song-credits ul { margin: 0; padding: 0; list-style: none; }
@@ -181,7 +178,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .unit-heading h2 { max-width: none; margin-bottom: 0; line-height: 1.2; overflow-wrap: anywhere; }
 .unit-heading .subtitle { margin: var(--space-identity) 0 0; line-height: 1.5; }
 .unit-heading .eyebrow { margin-bottom: var(--space-identity); }
-.show-unit.role-anchor, .performance-unit.role-anchor, .album-unit.role-anchor { border-color: #7d6a35; }
 .album-unit { container-type: inline-size; }
 .unit-note { max-width: 65ch; margin: var(--space-part) 0 0; color: #dfe4d8; font-size: 1.02rem; line-height: 1.6; }
 .unit-guests { margin: var(--space-identity) 0 0; color: #bdc9bb; font-size: 0.92rem; line-height: 1.5; }
@@ -292,7 +288,7 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
   .question-row { flex-direction: column; align-items: stretch; }
   button[type="submit"] { width: 100%; }
   .card { grid-column: span 12; }
-  .song-facts, .performance-endpoints { grid-template-columns: 1fr; }
+  .performance-endpoints { grid-template-columns: 1fr; }
   .arrangement-facts { grid-template-columns: 1fr; }
   .set-thread { grid-template-columns: 1fr; gap: 0.8rem; }
   .set-thread > div:first-child, .set-thread > div:last-child { text-align: left; }
@@ -320,3 +316,23 @@ details.unit-setlist[open] > summary::before { transform: rotate(90deg); }
 .message a, .answer-lead a, .narrative-block a { color: #f1c96a; }
 .fact-grid-block .fact-link { margin-top: 0.35rem; font-size: 0.9rem; }
 .timeline-block li > a { grid-column: 2; font-size: 0.9rem; }
+
+/* Emphasis: how much of the page one object earns. */
+.card.emphasis-primary { grid-column: 1 / -1; border-color: #7d6a35; }
+.card.emphasis-supporting { grid-column: span 12; padding: var(--space-part) 1.1rem; }
+.card.emphasis-supporting .unit-note { font-size: 0.96rem; }
+@media (min-width: 861px) { .card.emphasis-supporting { grid-column: span 6; } }
+.mention-list { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; }
+.mention { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.75rem; border-top: 1px solid #3e5544; padding: 0.6rem 0; }
+.mention:last-child { border-bottom: 1px solid #3e5544; }
+.mention-note { color: #bdc9bb; font-size: 0.92rem; line-height: 1.45; }
+.mention-note::before { content: "· "; color: #7f9582; }
+.criteria { display: grid; gap: var(--space-identity); margin: var(--space-part) 0 0; border-top: 1px solid #3e5544; padding-top: var(--space-identity); }
+.criteria > div { display: grid; grid-template-columns: minmax(6rem, 9rem) 1fr; gap: 0.5rem; }
+.criteria dt { color: #aebbac; font-size: 0.76rem; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
+.criteria dd { margin: 0; color: #f1efdf; font-size: 0.95rem; line-height: 1.45; min-height: 1.45em; }
+.unit-facet { margin-top: var(--space-part); }
+.facet-list { margin: var(--space-identity) 0 0; padding: 0; list-style: none; }
+.facet-list li + li { border-top: 1px solid #3e5544; margin-top: 0.5rem; padding-top: 0.5rem; }
+.facet-list li span { display: block; margin-top: 0.2rem; color: #aebbac; font-size: 0.86rem; }
+.song-history .performance-endpoints { margin-top: var(--space-identity); }
