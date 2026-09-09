@@ -1001,7 +1001,7 @@ function ComposedPage({
       </div>
       {lead && <p className="answer-lead">{renderInline(lead)}</p>}
       {groups.map((group, groupIndex) => (
-        <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
+        <section className={`experience-group group-${group.presentation}`} key={groupIndex}>
           {(group.title || group.lead) && (
             group.presentation === "argument" ? (
               <header className="group-heading claim">
