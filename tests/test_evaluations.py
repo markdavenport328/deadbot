@@ -64,7 +64,6 @@ def test_required_source_urls_counted_when_cited_in_the_body_not_the_chat_answer
         "chat_answer": "Yes — the Deadcast covered the Creamery benefit.",
         "title": "Oral history of Veneta",
         "lead": None,
-        "mode": "research",
         "body": [{"type": "resource_list", "resource_ids": [resource_id], "title": "Listen and read"}],
     }
 

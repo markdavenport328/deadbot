@@ -20,17 +20,6 @@ const suggestions = [
   "What was the live legacy of American Beauty?"
 ];
 
-const modeLabels: Record<ExperienceResponse["mode"], string> = {
-  quick_fact: "Answer",
-  performance: "Performance guide",
-  show: "Show guide",
-  listening: "Listening guide",
-  comparison: "Comparison",
-  research: "Research desk",
-  musician: "Musician’s reference",
-  gap: "Library note"
-};
-
 function createThreadId(): string {
   return `web-${crypto.randomUUID()}`;
 }
@@ -255,7 +244,7 @@ function ShowUnit({
   const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
   const shows = (facet: ShowUnitBlock["visible_facets"][number]) => unit.visible_facets.includes(facet);
   return (
-    <article className={`card show-unit${unit.role ? ` role-${unit.role}` : ""}`}>
+    <article className={`card show-unit emphasis-${unit.emphasis}`}>
       <header className="unit-heading">
         <div>
           {unit.title && <Eyebrow label={unit.title} />}
@@ -353,7 +342,7 @@ function AlbumUnit({
   const highlightedTracks = block.tracks.filter((track) => track.highlighted);
   const personnel = groupPersonnel(block.personnel);
   return (
-    <article className={`card album-unit${block.role ? ` role-${block.role}` : ""}`}>
+    <article className={`card album-unit emphasis-${block.emphasis}`}>
       <header className="unit-heading">
         <div>
           {block.artist_name && block.artist_name !== "Grateful Dead" && <Eyebrow label={block.artist_name} title={block.title} />}
@@ -436,24 +425,9 @@ function Block({
   switch (block.type) {
     case "show_unit":
       return <ShowUnit unit={block} onFollowUp={onFollowUp} />;
-    case "show_explorer":
-      return (
-        <section className="show-explorer">
-          <h2>{block.title}</h2>
-          <div className="explorer-units">
-            {block.items.map((unit) => (
-              <ShowUnit
-                key={unit.show_id}
-                unit={unit}
-                onFollowUp={onFollowUp}
-              />
-            ))}
-          </div>
-        </section>
-      );
     case "performance_unit":
       return (
-        <article className={`card performance-unit${block.role ? ` role-${block.role}` : ""}`}>
+        <article className={`card performance-unit emphasis-${block.emphasis}`}>
           <header className="unit-heading">
             <div>
               <p className="eyebrow">{block.song_title}</p>
@@ -488,7 +462,7 @@ function Block({
       );
     case "era_unit":
       return (
-        <section className={`era-unit${block.role ? ` role-${block.role}` : ""}`}>
+        <section className="era-unit">
           <header className="unit-heading">
             <div>
               {block.span && <Eyebrow label={block.span} title={block.title} />}
@@ -533,14 +507,6 @@ function Block({
         </article>
       );
     }
-    case "show_setlist":
-      return (
-        <section className="card show-setlist">
-          <Eyebrow label="Setlist" title={block.title} />
-          <h2>{block.title}</h2>
-          <SetlistSectionList sets={block.sets} />
-        </section>
-      );
     case "show_selection":
       return (
         <section className="typography-block show-selection">
@@ -556,37 +522,6 @@ function Block({
             ))}
           </ol>
           <p className="coverage-note">{block.coverage_note}</p>
-        </section>
-      );
-    case "recording_list":
-      return (
-        <section className="card recording-list">
-          <Eyebrow label="Listening" title={block.title} />
-          <h2>{block.title}</h2>
-          <ul>
-            {block.items.map((item) => (
-              <li key={item.recording_id}>
-                <ExternalLink href={item.url}>{item.title}</ExternalLink>
-                <span>{item.source_type}{item.archive_identifier ? ` · ${item.archive_identifier}` : ""}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      );
-    case "performer_list":
-      return (
-        <section className="typography-block performer-list">
-          <Eyebrow label="Lineup" title={block.title} />
-          <h2>{block.title}</h2>
-          <ul>
-            {block.items.map((item) => (
-              <li key={`${item.person_id}-${item.role}`}>
-                <strong className="inline-label">{item.name}</strong>
-                <span className="performer-role">{item.role === "guest" ? "Guest" : "Performer"}</span>
-                <span>{item.instruments.join(", ")}</span>
-              </li>
-            ))}
-          </ul>
         </section>
       );
     case "guest_appearance_list":
@@ -626,7 +561,7 @@ function Block({
       );
     case "song_overview":
       return (
-        <article className={`card song-overview${block.role ? ` role-${block.role}` : ""}`}>
+        <article className={`card song-overview emphasis-${block.emphasis}`}>
           <header className="unit-heading">
             <div>
               <p className="eyebrow">Song</p>
@@ -735,86 +670,6 @@ function Block({
           <h2>{block.title}</h2>
           <MediaEmbed block={block} />
           <ExternalLink href={block.url}>Open on {block.provider}</ExternalLink>
-        </section>
-      );
-    case "performance_list":
-      return (
-        <section className="typography-block performance-list">
-          <Eyebrow label="Canonical performance evidence" title={block.title} />
-          <h2>{block.title}</h2>
-          <p className="subtitle">{block.known_count} known performance{block.known_count === 1 ? "" : "s"}</p>
-          <ul>
-            {block.items.map((item) => (
-              <li key={item.performance_id}>
-                <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-                {(item.set_label || item.position_in_set) && <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      );
-    case "performance_extremes": {
-      const endpoint = (label: string, item: typeof block.first) => (
-        <div className="performance-endpoint" key={label}>
-          <p className="fact-label">{label}</p>
-          <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-          {(item.set_label || item.position_in_set) && (
-            <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>
-          )}
-        </div>
-      );
-      return (
-        <section className="typography-block performance-extremes">
-          <Eyebrow label="Performance history" title={block.title} />
-          <h2>{block.title}</h2>
-          <div className="performance-endpoints">
-            {endpoint("First", block.first)}
-            {endpoint("Last", block.last)}
-          </div>
-        </section>
-      );
-    }
-    case "comparison_strip":
-      return (
-        <section className="typography-block comparison-strip">
-          <Eyebrow label="Performance history" title={block.title} />
-          <h2>{block.title}</h2>
-          <p className="subtitle">
-            {block.known_count} known performance{block.known_count === 1 ? "" : "s"} · one representative per year
-          </p>
-          <ol className="comparison-track" aria-label="Selected performances by year">
-            {block.items.map((item) => (
-              <li className="comparison-stop" key={item.performance_id}>
-                <p className="comparison-year">{item.year}</p>
-                <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-                {(item.set_label || item.position_in_set) && (
-                  <span className="comparison-placement">
-                    {item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-          <p className="coverage-note">{block.coverage_note}</p>
-        </section>
-      );
-    case "performance_spine":
-      return (
-        <section className="typography-block performance-spine">
-          <Eyebrow label="Performance context" title={block.title} />
-          <h2>{block.title}</h2>
-          <p className="subtitle">{block.show_label}{block.set_label ? ` · ${block.set_label}` : ""}{block.position_in_set ? ` · #${block.position_in_set}` : ""}</p>
-          <div className="set-thread" aria-label="Adjacent songs in the set">
-            <div>
-              <p className="fact-label">Before</p>
-              {block.previous ? <span className="list-item-label">{block.previous.title}</span> : <span className="thread-boundary">Set opener</span>}
-            </div>
-            <div className="current-performance" aria-label="Current performance">This performance</div>
-            <div>
-              <p className="fact-label">After</p>
-              {block.next ? <span className="list-item-label">{block.next.title}</span> : <span className="thread-boundary">Set closer</span>}
-            </div>
-          </div>
         </section>
       );
     case "coverage":
@@ -1200,7 +1055,6 @@ export default function App() {
           ) : response ? (
             <>
               <div className="content-heading">
-                <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1 id="answer-title" tabIndex={-1}>{response.title}</h1>
               </div>
               {response.body_lead && <p className="answer-lead">{renderInline(response.body_lead)}</p>}

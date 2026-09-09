@@ -7,7 +7,7 @@ from deadbot.experience import ExperienceResponse
 from test_postgres_store import Connection
 
 
-def _response(answer: str = "Five shows.", mode: str = "quick_fact") -> ExperienceResponse:
+def _response(answer: str = "Five shows.", mode: str = "answer") -> ExperienceResponse:
     return ExperienceResponse(thread_id="original", title="Branford", answer=answer, mode=mode)
 
 
