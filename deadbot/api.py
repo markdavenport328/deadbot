@@ -19,14 +19,16 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
+from deadbot import composition, finish
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import ExperienceRequest, ExperienceResponse
-from deadbot.finish import build_experience_response
+from deadbot.finish import FINISH_TOOL_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
+from deadbot.plan_stream import PlanStreamer
 from deadbot.postgres import query_cache_scope
-from deadbot.progress import status_lines
+from deadbot.progress import describe_tool_call, status_lines
 from deadbot.response_cache import ResponseCache
 from deadbot.storage import create_canonical_store
 
@@ -34,6 +36,10 @@ from deadbot.storage import create_canonical_store
 logger = logging.getLogger(__name__)
 
 UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
+
+
+def _names_finish_call(message_chunk: Any) -> bool:
+    return any(chunk.get("name") == FINISH_TOOL_NAME for chunk in getattr(message_chunk, "tool_call_chunks", None) or [])
 
 
 @dataclass(frozen=True)
@@ -241,6 +247,7 @@ def create_app(
                 seen = 0
                 answer_accumulator = AnswerAccumulator()
                 composing_page_announced = False
+                plan_streamer: PlanStreamer | None = None
                 steps = iter(stream(payload, config, stream_mode=["values", "messages"]))
                 while True:
                     with query_cache_scope(cache):
@@ -259,10 +266,37 @@ def create_app(
                         if answer_accumulator.complete and not composing_page_announced:
                             composing_page_announced = True
                             yield line({"type": "status", "text": "Composing the page"})
+                        if plan_streamer is None and _names_finish_call(message_chunk):
+                            # Research is done by the time the plan starts; ground once.
+                            payloads = composition._tool_payloads(composition._latest_turn(messages))
+                            grounded = finish.grounded_context(payloads)
+                            plan_streamer = PlanStreamer(
+                                lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0]
+                            )
+                        if plan_streamer is not None:
+                            with query_cache_scope(cache):
+                                page_events = plan_streamer.feed(message_chunk)
+                            for event in page_events:
+                                if event.type == "page_reset":
+                                    # The model is retrying finish_response; the previous
+                                    # draft's answer text is void, so the fresh accumulator
+                                    # must still see the current chunk's own answer text.
+                                    answer_accumulator = AnswerAccumulator()
+                                    composing_page_announced = False
+                                    reset_answer = answer_accumulator.feed(message_chunk)
+                                    if reset_answer:
+                                        yield line({"type": "answer", "text": reset_answer})
+                                yield line({"type": event.type, **event.payload})
                         continue
                     state = chunk_payload
                     messages = list(state.get("messages", [])) if isinstance(state, dict) else messages
                     for status in status_lines(messages, seen):
+                        # Once the messages-mode stream has already told the visitor
+                        # the page is being composed, the values-mode status for the
+                        # same finish_response tool call becoming visible would just
+                        # repeat that announcement.
+                        if composing_page_announced and status == describe_tool_call(FINISH_TOOL_NAME, None):
+                            continue
                         yield line({"type": "status", "text": status})
                     seen = len(messages)
             else:
