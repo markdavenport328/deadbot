@@ -294,11 +294,15 @@ callers have had a chance to move to `emphasis`; a manual rerun of
   fixture as a timed event sequence for review without a model call.
 - `scripts/trace_stream.py` times a live request: seconds to first answer
   text, answer complete, first block, last block, and final response.
-- Live trace run: not run. Loading `/Users/markdavenport/Development/DeadBot/.env`
-  with `set -a; source ...; set +a` failed with a shell parse error at line 5
-  (near `&`), so `OPENAI_API_KEY` and `DEADBOT_DATABASE_URL` were not
-  available and the server could not be started. No question was traced;
-  no numbers below are invented.
+Live trace run: conditions are local API against the production database, OpenAI gpt-5.6-luna, 12 tool rounds, response cache off, one run per question on 2026-09-09. Seconds from request start.
+
+| Question | First answer text | Answer complete | First block | Last block | Response |
+| --- | --- | --- | --- | --- | --- |
+| Branford | 10.1 | 10.8 | 11.7 | 13.6 | 14.2 |
+| Franklin's Tower best versions | 20.9 | 22.6 | 25.8 | 33.5 | 33.9 |
+| American Beauty live legacy | 15.4 | 36.8 | 19.5 | 42.7 | 42.9 |
+
+The first block reaches the browser 1 to 4 seconds after the chat answer completes, and the page fills over the following 2 to 23 seconds instead of appearing all at once when the response lands. In the American Beauty run the answer-complete mark was recorded after the first block, which is consistent with a finish retry resetting the draft partway through.
 
 ## Measurements
 
