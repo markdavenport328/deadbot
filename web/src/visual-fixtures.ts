@@ -272,9 +272,133 @@ const albumSongs: ExperienceResponse = fixture(
   { title: "The touring pillars", lead: "Each song is a different answer to how an album track could become part of the live repertoire." }
 );
 
-export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs"] as const;
+// Two fact_grid blocks in two differently-presented groups, so a review can
+// compare a short-value display treatment against a sentence-length one
+// without scrolling between unrelated fixtures.
+const viewsBlocks: ExperienceBlock[] = [
+  {
+    type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
+    items: [
+      {
+        marker: "The skeptical view",
+        title: "The band sounds worn down, and the show mostly reveals how far its health had slipped.",
+        detail: "Some listeners hear strained vocals and shortened jams as a sign the tour ran past where it should have stopped.",
+        link: { url: "https://archive.org/details/gd1995-07-09.sbd.miller.97483.flac16", label: "Listener reviews" }
+      },
+      {
+        marker: "The sympathetic view",
+        title: "The show still delivers real moments of connection despite the circumstances.",
+        detail: "Others point to a warm Stella Blue and a full, generous setlist as evidence the band was still giving what it had."
+      },
+      {
+        marker: "The lasting consensus",
+        title: "It endures mainly as the final Grateful Dead concert, not for its performance quality.",
+        detail: "Most retrospective accounts frame the night by its historical weight rather than by how the individual songs were played."
+      }
+    ]
+  },
+  {
+    type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
+    items: [
+      { title: "Mississippi Half-Step Uptown Toodeloo", value: "237 performances", detail: "It became a durable early-set standard across most of the touring era." },
+      { title: "Row Jimmy", value: "277 performances", detail: "The song settled into occasional but steady use rather than heavy rotation." },
+      { title: "Stella Blue", value: "330", detail: "It remained a signature late-set ballad through the band's final years." },
+      { title: "Let Me Sing Your Blues Away", value: "6 performances, all in 1973", detail: "The Pigpen-era song largely left the setlist after 1973." }
+    ]
+  }
+];
 
-const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs };
+const views: ExperienceResponse = {
+  schema_version: "1",
+  thread_id: "visual-views",
+  title: "Soldier Field 1995 and the album songs that stayed",
+  answer: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  body_lead: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  mode: "research",
+  conversation: [
+    { role: "user", text: "What do people think of the 1995-07-09 Soldier Field show, and which Wake of the Flood songs stuck around live?" },
+    { role: "assistant", text: "Listeners split on Soldier Field 1995's quality, and four Wake of the Flood songs kept very different footholds in the live repertoire." }
+  ],
+  blocks: viewsBlocks,
+  groups: [
+    { presentation: "comparison", title: "What listeners agree and argue about", block_indexes: [0] },
+    { presentation: "collection", title: "The album songs in the live repertoire", block_indexes: [1] }
+  ],
+  layout: [{ region: "primary", block_indexes: [0, 1] }],
+  sources: [
+    { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" },
+    { source_id: "fixture-deadnet", label: "Grateful Dead of the Day", url: "https://gratefuldeadoftheday.com", kind: "contextual_resource" },
+    { source_id: "fixture-soldier-field-reviews", label: "Listener reviews", url: "https://archive.org/details/gd1995-07-09.sbd.miller.97483.flac16", kind: "contextual_resource" }
+  ]
+};
+
+const workingmansDeadTracks: readonly [title: string, highlighted?: boolean][] = [
+  ["Uncle John's Band"],
+  ["High Time"],
+  ["Dire Wolf"],
+  ["New Speedway Boogie"],
+  ["Cumberland Blues", true],
+  ["Black Peter"],
+  ["Easy Wind"],
+  ["Casey Jones", true]
+];
+
+const album: ExperienceResponse = fixture(
+  "What made Workingman's Dead a turning point for the band?",
+  "Workingman's Dead brought songs back to the fore",
+  "listening",
+  "Workingman's Dead gave the band a second repertoire engine: concise, character-driven songs that could anchor a set without limiting the improvisation around them.",
+  [
+    {
+      type: "album_unit",
+      release_id: "workingmans-dead",
+      title: "Workingman's Dead",
+      release_date: "1970-06-14",
+      release_type: "studio",
+      artist_name: "Grateful Dead",
+      role: "anchor",
+      note: "Its eight songs collectively became a second repertoire engine for the band: concise, character-driven material that could anchor a set without limiting the surrounding improvisation.",
+      listen: [
+        { label: "Listen to Workingman's Dead", provider: "Spotify", url: "https://open.spotify.com/album/0Dx3ntxFk1ZzIWFp2mL6oN", is_official: true }
+      ],
+      tracks: workingmansDeadTracks.map(([title, highlighted = false], index) => ({
+        track_number: index + 1,
+        title,
+        highlighted,
+        duration_seconds: null,
+        listen_url: `${archive}workingmans-dead#track${index + 1}`,
+        performance_id: null,
+        song_id: null
+      })),
+      personnel: [
+        { person_id: "bill-kreutzmann", name: "Bill Kreutzmann", instrument: "Drums (Drum Set)", role: "performer" },
+        { person_id: "bill-kreutzmann", name: "Bill Kreutzmann", instrument: "Percussion", role: "performer" },
+        { person_id: "bob-weir", name: "Bob Weir", instrument: "Guitar", role: "performer" },
+        { person_id: "bob-weir", name: "Bob Weir", instrument: "Lead Vocals", role: "performer" },
+        { person_id: "david-nelson", name: "David Nelson", instrument: "Acoustic Guitar", role: "guest" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Banjo", role: "performer" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Guitar", role: "performer" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Lead Vocals", role: "performer" },
+        { person_id: "jerry-garcia", name: "Jerry Garcia", instrument: "Pedal Steel Guitar", role: "performer" },
+        { person_id: "mickey-hart", name: "Mickey Hart", instrument: "Drums (Drum Set)", role: "performer" },
+        { person_id: "mickey-hart", name: "Mickey Hart", instrument: "Percussion", role: "performer" },
+        { person_id: "phil-lesh", name: "Phil Lesh", instrument: "Bass", role: "performer" },
+        { person_id: "pigpen-mckernan", name: "Ron \"Pigpen\" McKernan", instrument: "Harmonica", role: "performer" },
+        { person_id: "pigpen-mckernan", name: "Ron \"Pigpen\" McKernan", instrument: "Keyboard", role: "performer" }
+      ],
+      sources: [
+        { label: "Album credits", url: "https://www.discogs.com/release/workingmans-dead", source_name: "Discogs", note: "Personnel and release details." }
+      ],
+      follow_up: "Why did the band turn toward acoustic material in 1970?"
+    }
+  ] as ExperienceBlock[],
+  "collection",
+  { title: "The record" }
+);
+
+export const visualFixtureNames = ["branford", "eyes", "cornell", "shakedown", "fact", "songs", "views", "album"] as const;
+
+const fixtures: Record<(typeof visualFixtureNames)[number], ExperienceResponse> = { branford, eyes, cornell, shakedown, fact, songs: albumSongs, views, album };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

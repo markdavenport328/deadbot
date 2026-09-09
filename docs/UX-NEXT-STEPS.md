@@ -229,3 +229,42 @@ subsequent delivery. Avoid overwriting modifications in the separate Development
 - GitHub CI passed Python (including database import and `deadbot evaluate`), web,
   and preview checks before PR #17 merged. The Dark Star coverage snapshot now
   reflects 71 distinct recordings and 72 linked performances.
+
+## Batch: answer card fixes (September 8, 2026)
+
+- Role badges and group presentation eyebrows are no longer rendered; a visitor
+  sees the content, not an internal label naming its role.
+- `EditorialItem` slots in `deadbot/experience.py` are named and documented by
+  what the visitor sees on the page, not by internal composition mechanics.
+- The fact grid renders the subject as a serif heading in both the marker and
+  no-marker case, and gives a value display type only when that value is 20
+  characters or fewer.
+- The album unit leads with the model's own note, then listen actions and
+  "Listen for" highlights, with a compact two-column body: tracklist on the
+  left, personnel grouped per person in one collapsed disclosure on the right.
+- The content pane shows a working panel while a question is pending, and the
+  API now emits a "Composing the page" status the moment the chat answer
+  completes; the finish tool's own status changed to "Assembling the page" so
+  the two no longer collide.
+
+## Next: knob audit and emphasis
+
+Diagnosis (Wake of the Flood, local canonical store, no database): `get_album`
+attaches a `pathways` object to every release, but a release can only ever
+report `cataloged: false` plus two generic `research_routes` ("Dead.net",
+"Dead Sources"). No `resource_releases.csv` exists in `data/canonical`, and
+`pathways_for` never builds a `source_trail` or `selections` summary for
+releases the way it does for songs and shows. Separately, `search_entities`
+caps pathway attachment at the first six matches overall, and songs from the
+record's own tracklist filled that cap before the release match got a
+`pathways` key at all. So a release can lose its pathway entirely in search,
+and even read directly through `get_album` it only ever offers the same two
+research routes, never a cataloged one. The prompt says a research-routes-only
+pathway should still become a follow_up; nothing enforces that if skipped.
+
+Agreed direction: every field in `FinishPlan` must change what the visitor sees
+or be removed. Roles become an emphasis axis (lead, supporting, mention) instead
+of a labeled badge. Group presentations gain distinct layouts instead of one
+shared list style. Add progressive page streaming so later units arrive without
+blocking the first read. Design fixtures first for four question shapes (song,
+show, album, person) before touching the schema again.

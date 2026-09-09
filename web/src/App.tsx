@@ -6,34 +6,6 @@ type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
 type UnitSources = ShowUnitBlock["sources"];
 
-// Roles are the composer's interpretive relationships; these labels are how
-// the page names them. The composer never chooses styling.
-const roleLabels: Record<string, string> = {
-  supporting: "Supporting",
-  contrast: "Contrast",
-  turning_point: "Turning point",
-  outlier: "Outlier",
-  overlooked: "Overlooked",
-  representative: "Representative"
-};
-
-// Anchor and culmination still guide emphasis and disclosure, but their
-// position already communicates their role. Naming them adds redundant UI.
-const silentRoles = new Set(["anchor", "culmination"]);
-
-const organizationLabels: Record<string, string> = {
-  chronological: "In order",
-  curated: "A selection",
-  comparative: "Side by side"
-};
-
-const groupLabels: Record<string, string> = {
-  collection: "Collection",
-  sequence: "Listening path",
-  comparison: "Comparison",
-  argument: "The case"
-};
-
 function formatShowDate(iso: string | null | undefined): string {
   if (!iso) return "Undated";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -215,11 +187,6 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
   return null;
 }
 
-function RoleChip({ role }: { role?: string | null }) {
-  if (!role || silentRoles.has(role)) return null;
-  return <span className={`role-chip role-${role}`}>{roleLabels[role] ?? role.replaceAll("_", " ")}</span>;
-}
-
 function ListenActionList({ actions }: { actions: ListenActions }) {
   if (actions.length === 0) return null;
   return (
@@ -295,7 +262,6 @@ function ShowUnit({
           <h2>{unit.venue_name || formatShowDate(unit.show_date)}{unit.venue_name && <span className="subtitle"> ({formatShowDate(unit.show_date)})</span>}</h2>
           {unit.location && <p className="subtitle">{unit.location}</p>}
         </div>
-        <RoleChip role={unit.role} />
       </header>
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
       {shows("guests") && unit.guests.length > 0 && (
@@ -347,6 +313,35 @@ function ShowUnit({
   );
 }
 
+function capitalize(text: string): string {
+  return text.length > 0 ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+}
+
+type PersonnelGroup = {
+  person_id: string;
+  name: string;
+  instruments: string[];
+  extraRole: string | null;
+};
+
+function groupPersonnel(personnel: AlbumUnitBlock["personnel"]): PersonnelGroup[] {
+  const groups = new Map<string, PersonnelGroup>();
+  for (const credit of personnel) {
+    let group = groups.get(credit.person_id);
+    if (!group) {
+      group = { person_id: credit.person_id, name: credit.name, instruments: [], extraRole: null };
+      groups.set(credit.person_id, group);
+    }
+    if (credit.instrument && !group.instruments.includes(credit.instrument)) {
+      group.instruments.push(credit.instrument);
+    }
+    if (credit.role && credit.role !== "performer" && !group.extraRole) {
+      group.extraRole = credit.role;
+    }
+  }
+  return [...groups.values()];
+}
+
 function AlbumUnit({
   block,
   onFollowUp
@@ -355,6 +350,8 @@ function AlbumUnit({
   onFollowUp: (prompt: string) => void;
 }) {
   const year = block.release_date?.slice(0, 4);
+  const highlightedTracks = block.tracks.filter((track) => track.highlighted);
+  const personnel = groupPersonnel(block.personnel);
   return (
     <article className={`card album-unit${block.role ? ` role-${block.role}` : ""}`}>
       <header className="unit-heading">
@@ -365,39 +362,57 @@ function AlbumUnit({
             {year ? <span className="subtitle"> ({year})</span> : null}
           </h2>
         </div>
-        <RoleChip role={block.role} />
       </header>
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <ListenActionList actions={block.listen} />
-      {block.tracks.length > 0 && (
-        <section className="album-tracks-section">
-          <p className="fact-label">Tracklist</p>
-          <ol className="album-tracks">
-            {block.tracks.map((track) => (
-              <li
-                key={track.track_number}
-                className={track.highlighted ? "album-track highlighted" : "album-track"}
-                value={track.track_number}
-              >
-                <ListeningLabel title={track.title} url={track.listen_url} />
-                {track.highlighted && <span className="highlight-mark" aria-label="Highlighted track">★</span>}
-              </li>
-            ))}
-          </ol>
-        </section>
-      )}
-      {block.personnel.length > 0 && (
-        <section className="album-credits">
-          <p className="fact-label">Personnel and credits</p>
-          <ul className="album-personnel">
-            {block.personnel.map((credit) => (
-              <li key={`${credit.person_id}-${credit.role}-${credit.instrument}`}>
-                <strong>{credit.name}</strong>
-                <span>{[credit.role, credit.instrument].filter(Boolean).join(" · ")}</span>
+      {highlightedTracks.length > 0 && (
+        <div className="unit-highlights">
+          <p className="fact-label">Listen for</p>
+          <ul>
+            {highlightedTracks.map((track) => (
+              <li key={track.track_number}>
+                <ListeningLabel title={track.title} url={track.listen_url} className="list-item-label" />
               </li>
             ))}
           </ul>
-        </section>
+        </div>
+      )}
+      {(block.tracks.length > 0 || personnel.length > 0) && (
+      <div className="album-body">
+        {block.tracks.length > 0 && (
+          <section className="album-tracks-section">
+            <p className="fact-label">Tracklist</p>
+            <ol className="album-tracks">
+              {block.tracks.map((track) => (
+                <li
+                  key={track.track_number}
+                  className={track.highlighted ? "album-track highlighted" : "album-track"}
+                  value={track.track_number}
+                >
+                  <ListeningLabel title={track.title} url={track.listen_url} />
+                  {track.highlighted && <span className="highlight-mark" aria-label="Highlighted track">★</span>}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+        {personnel.length > 0 && (
+          <details className="album-credits unit-setlist">
+            <summary>Personnel and credits</summary>
+            <ul className="album-personnel">
+              {personnel.map((person) => (
+                <li key={person.person_id}>
+                  <strong>{person.name}</strong>
+                  <span>
+                    {person.instruments.join(", ")}
+                    {person.extraRole ? ` · ${capitalize(person.extraRole)}` : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
       )}
       <UnitSourceList sources={block.sources} />
       {block.follow_up && (
@@ -424,7 +439,6 @@ function Block({
     case "show_explorer":
       return (
         <section className="show-explorer">
-          <Eyebrow label={organizationLabels[block.organization] ?? block.organization} title={block.title} />
           <h2>{block.title}</h2>
           <div className="explorer-units">
             {block.items.map((unit) => (
@@ -448,7 +462,6 @@ function Block({
                 {[block.location, block.set_label, block.position_in_set ? `#${block.position_in_set}` : null].filter(Boolean).join(" · ")}
               </p>
             </div>
-            <RoleChip role={block.role} />
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           {(block.previous || block.next) && (
@@ -481,7 +494,6 @@ function Block({
               {block.span && <Eyebrow label={block.span} title={block.title} />}
               <h2>{block.title}</h2>
             </div>
-            <RoleChip role={block.role} />
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <ul className="era-performances">
@@ -620,7 +632,6 @@ function Block({
               <p className="eyebrow">Song</p>
               <h2>{block.title}</h2>
             </div>
-            <RoleChip role={block.role} />
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <dl className="song-facts">
@@ -869,9 +880,13 @@ function Block({
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
-                {item.marker ? <dt>{item.marker}</dt> : <dt>{item.title}</dt>}
+                {item.marker ? <dt>{item.marker}</dt> : <dt className="fact-subject">{renderInline(item.title)}</dt>}
                 {item.marker && <dd className="fact-subject">{renderInline(item.title)}</dd>}
-                {item.value && <dd className={item.marker ? "fact-value" : undefined}>{renderInline(item.value)}</dd>}
+                {item.value && (
+                  <dd className={item.value.trim().length <= 20 ? "fact-value display" : "fact-value"}>
+                    {renderInline(item.value)}
+                  </dd>
+                )}
                 {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
                 {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
                 {item.follow_up && <dd className="fact-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></dd>}
@@ -920,7 +935,13 @@ export default function App() {
   const [progress, setProgress] = useState<string[]>([]);
   // The final answer's text as it streams in, replaced wholesale per event.
   const [streamingAnswer, setStreamingAnswer] = useState<string | null>(null);
+  // How many progress lines existed when the answer started, so the chat can
+  // show only the statuses that arrived after the answer, not the whole run.
+  const [answerProgressStart, setAnswerProgressStart] = useState<number | null>(null);
   const threadContainer = useRef<HTMLElement>(null);
+  // Callbacks passed into askStreaming close over stale render state, so track
+  // whether the answer has already started in a ref.
+  const answerStartedRef = useRef(false);
 
   useEffect(() => {
     const thread = threadContainer.current;
@@ -964,12 +985,23 @@ export default function App() {
     setError(null);
     setProgress([]);
     setStreamingAnswer(null);
+    answerStartedRef.current = false;
     const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
+      let statusCount = 0;
       const streamed = await askStreaming(
         body,
-        (status) => setProgress((lines) => [...lines, status]),
-        setStreamingAnswer
+        (status) => {
+          statusCount += 1;
+          setProgress((lines) => [...lines, status]);
+        },
+        (text) => {
+          if (!answerStartedRef.current) {
+            answerStartedRef.current = true;
+            setAnswerProgressStart(statusCount);
+          }
+          setStreamingAnswer(text);
+        }
       );
       setResponse(streamed ?? await askPlain(body));
     } catch (requestError) {
@@ -980,6 +1012,7 @@ export default function App() {
       setPendingStartsFresh(false);
       setProgress([]);
       setStreamingAnswer(null);
+      setAnswerProgressStart(null);
     }
   }
 
@@ -1066,6 +1099,15 @@ export default function App() {
       ]
     : response?.conversation ?? [];
 
+  // Statuses that arrived after the chat answer started, so the chat can show
+  // Deadbot is still composing the page instead of just a blinking cursor.
+  const postAnswerLines = answerProgressStart !== null ? progress.slice(answerProgressStart) : [];
+  const postAnswerStatus = postAnswerLines.length > 0 ? postAnswerLines[postAnswerLines.length - 1] : null;
+
+  // The last four progress lines for a working display, falling back to a
+  // single placeholder line before the first tool call reports in.
+  const workingLines = progress.length > 0 ? progress.slice(-4) : ["Looking through the library…"];
+
   function submitOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
@@ -1098,7 +1140,11 @@ export default function App() {
                   {streamingAnswer ? (
                     <div className="streaming-answer">
                       {renderInline(streamingAnswer)}
-                      <span className="cursor" aria-hidden="true" />
+                      {postAnswerStatus ? (
+                        <p className="post-answer-status">{postAnswerStatus}…</p>
+                      ) : (
+                        <span className="cursor" aria-hidden="true" />
+                      )}
                     </div>
                   ) : progress.length === 0 ? (
                     <div>Looking through the library…</div>
@@ -1139,7 +1185,19 @@ export default function App() {
         </aside>
 
         <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
-          {response ? (
+          {loading ? (
+            <div className="content-working">
+              <p className="eyebrow">Working</p>
+              <h1>{pendingQuestion}</h1>
+              <ol className="progress-lines" aria-hidden="true">
+                {workingLines.map((line, index, lines) => (
+                  <li key={`${index}-${line}`} className={index === lines.length - 1 ? "current" : undefined}>
+                    {line}{index === lines.length - 1 && progress.length > 0 ? "…" : ""}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : response ? (
             <>
               <div className="content-heading">
                 <p className="eyebrow">{modeLabels[response.mode]}</p>
@@ -1150,7 +1208,6 @@ export default function App() {
                 <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
                   {(group.title || group.lead) && (
                     <header className="group-heading">
-                      {group.title && <Eyebrow label={groupLabels[group.presentation]} title={group.title} />}
                       {group.title && <h2>{group.title}</h2>}
                       {group.lead && <p>{renderInline(group.lead)}</p>}
                     </header>

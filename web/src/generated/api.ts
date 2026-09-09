@@ -295,6 +295,7 @@ export interface components {
             paragraphs?: string[];
             /**
              * Presentation
+             * @description narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.
              * @enum {string}
              */
             presentation: "narrative" | "fact_grid" | "timeline";
@@ -308,19 +309,32 @@ export interface components {
         };
         /** EditorialItem */
         EditorialItem: {
-            /** Detail */
+            /**
+             * Detail
+             * @description One or two sentences of context or evidence for this item.
+             */
             detail?: string | null;
-            /** Follow Up */
+            /**
+             * Follow Up
+             * @description A question in the visitor's voice, rendered as an Ask chip that starts a new turn. Only the composer writes these.
+             */
             follow_up?: string | null;
+            /** @description An outbound link for this item; kept only when its URL appeared in a tool result this turn. */
             link?: components["schemas"]["EditorialLink"] | null;
-            /** Marker */
+            /**
+             * Marker
+             * @description A short label that classifies or indexes this item and renders as small type above the subject: a year, a date, a set position, or a category such as 'The skeptical view'. Never the subject itself.
+             */
             marker?: string | null;
             /**
              * Title
-             * @description The specific subject of this item—a song, show, person, place, or fact—not an abstract assessment. Put the assessment in value or detail.
+             * @description The specific subject of this item, rendered as its heading: a song, show, person, place, fact, or claim. Put measurements and assessments in value or detail.
              */
             title: string;
-            /** Value */
+            /**
+             * Value
+             * @description The concise measurement or assessment for the subject, such as '330 performances, 1972–1995' or 'Track six'. A short value renders as display type; a sentence renders as text.
+             */
             value?: string | null;
         };
         /**

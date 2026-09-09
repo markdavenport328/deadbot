@@ -285,7 +285,7 @@ def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     assert result.headers["content-type"].startswith("application/x-ndjson")
     events = _ndjson(result.text)
     assert [event["type"] for event in events] == ["status", "status", "response"]
-    assert [event["text"] for event in events[:2]] == ["Reading the show on 1972-08-27", "Composing the answer"]
+    assert [event["text"] for event in events[:2]] == ["Reading the show on 1972-08-27", "Assembling the page"]
     response = ExperienceResponse.model_validate(events[-1]["response"])
     assert response.title == "Veneta, 1972" and response.blocks[0].type == "show_setlist"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
@@ -316,6 +316,33 @@ def test_streaming_endpoint_streams_the_chat_answer_as_it_is_generated():
 
     response = ExperienceResponse.model_validate(events[response_index]["response"])
     assert answer_texts[-1] == response.answer
+
+
+def test_streaming_endpoint_announces_page_composition_once_the_chat_answer_completes():
+    """Once the chat answer has fully streamed, the browser should learn the
+    rest of the page (blocks, links, etc.) is still being put together, once
+    and only once, before the final response arrives.
+    """
+    store = CanonicalStore()
+    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
+            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27"}]}
+    agent = AnswerStreamingFakeAgent([
+        HumanMessage(content="What opened Veneta?"),
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+        ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
+    ])
+    client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
+    result = client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "browser-1"})
+    assert result.status_code == 200
+    events = _ndjson(result.text)
+
+    composing_page_events = [event for event in events if event == {"type": "status", "text": "Composing the page"}]
+    assert len(composing_page_events) == 1
+
+    last_answer_index = max(index for index, event in enumerate(events) if event["type"] == "answer")
+    composing_index = next(index for index, event in enumerate(events) if event == {"type": "status", "text": "Composing the page"})
+    response_index = next(index for index, event in enumerate(events) if event["type"] == "response")
+    assert last_answer_index < composing_index < response_index
 
 
 def test_streaming_endpoint_delivers_a_lone_surrogate_answer_as_a_valid_line():
