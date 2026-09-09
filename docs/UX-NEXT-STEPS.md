@@ -268,3 +268,9 @@ of a labeled badge. Group presentations gain distinct layouts instead of one
 shared list style. Add progressive page streaming so later units arrive without
 blocking the first read. Design fixtures first for four question shapes (song,
 show, album, person) before touching the schema again.
+
+## Measurements
+
+| Date | Change | finish_response schema (chars / approx tokens) |
+| --- | --- | --- |
+| 2026-09-09 | baseline before the emphasis and palette cut | 28022 / 7005 |
