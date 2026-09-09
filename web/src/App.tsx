@@ -20,17 +20,6 @@ const suggestions = [
   "What was the live legacy of American Beauty?"
 ];
 
-const modeLabels: Record<ExperienceResponse["mode"], string> = {
-  quick_fact: "Answer",
-  performance: "Performance guide",
-  show: "Show guide",
-  listening: "Listening guide",
-  comparison: "Comparison",
-  research: "Research desk",
-  musician: "Musician’s reference",
-  gap: "Library note"
-};
-
 function createThreadId(): string {
   return `web-${crypto.randomUUID()}`;
 }
@@ -225,6 +214,74 @@ function UnitSourceList({ sources }: { sources: UnitSources }) {
   );
 }
 
+type UnitBlock = Extract<ExperienceBlock, { type: "show_unit" | "performance_unit" | "album_unit" | "song_overview" }>;
+
+function isUnit(block: ExperienceBlock): block is UnitBlock {
+  return block.type === "show_unit" || block.type === "performance_unit" || block.type === "album_unit" || block.type === "song_overview";
+}
+
+function unitIdentity(block: UnitBlock): { title: string; url?: string | null } {
+  switch (block.type) {
+    case "show_unit":
+      return { title: block.venue_name ? `${block.venue_name} (${formatShowDate(block.show_date)})` : formatShowDate(block.show_date), url: block.listen[0]?.url };
+    case "performance_unit":
+      return { title: `${block.song_title}, ${venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}`, url: block.listen[0]?.url };
+    case "album_unit":
+      return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
+    case "song_overview":
+      return { title: block.title, url: block.representative_performances[0]?.listen_url };
+  }
+}
+
+// A mention is one line: the object, the model's note, a way to hear it.
+function MentionRow({ block }: { block: UnitBlock }) {
+  const identity = unitIdentity(block);
+  return (
+    <li className={`mention emphasis-mention ${block.type}`}>
+      <ListeningLabel title={identity.title} url={identity.url} className="list-item-label" />
+      {block.note && <span className="mention-note">{renderInline(block.note)}</span>}
+    </li>
+  );
+}
+
+function CriteriaTable({ criteria, judgments }: { criteria: string[]; judgments: string[] }) {
+  if (criteria.length === 0) return null;
+  return (
+    <dl className="criteria">
+      {criteria.map((criterion, index) => (
+        <div key={criterion}>
+          <dt>{criterion}</dt>
+          <dd>{judgments[index] ? renderInline(judgments[index]) : null}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function unitKey(block: UnitBlock): string {
+  switch (block.type) {
+    case "show_unit": return block.show_id;
+    case "performance_unit": return block.performance_id;
+    case "album_unit": return block.release_id;
+    case "song_overview": return block.song_id;
+  }
+}
+
+function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
+  const out: Array<{ kind: "mentions"; blocks: UnitBlock[] } | { kind: "block"; block: ExperienceBlock }> = [];
+  for (const block of blocks) {
+    if (!block) continue;
+    if (isUnit(block) && block.emphasis === "mention") {
+      const last = out[out.length - 1];
+      if (last && last.kind === "mentions") last.blocks.push(block);
+      else out.push({ kind: "mentions", blocks: [block] });
+    } else {
+      out.push({ kind: "block", block });
+    }
+  }
+  return out;
+}
+
 function SetlistSectionList({ sets }: { sets: SetlistSections }) {
   return (
     <div className="setlist-sections">
@@ -247,15 +304,21 @@ function SetlistSectionList({ sets }: { sets: SetlistSections }) {
 
 function ShowUnit({
   unit,
+  criteria,
+  soleUnit,
   onFollowUp
 }: {
   unit: ShowUnitBlock;
+  criteria: string[];
+  soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
 }) {
   const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
   const shows = (facet: ShowUnitBlock["visible_facets"][number]) => unit.visible_facets.includes(facet);
+  const compact = unit.emphasis === "supporting";
+  const openFacets = unit.emphasis === "primary" && soleUnit;
   return (
-    <article className={`card show-unit${unit.role ? ` role-${unit.role}` : ""}`}>
+    <article className={`card show-unit emphasis-${unit.emphasis}`}>
       <header className="unit-heading">
         <div>
           {unit.title && <Eyebrow label={unit.title} />}
@@ -264,6 +327,7 @@ function ShowUnit({
         </div>
       </header>
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
+      <CriteriaTable criteria={criteria} judgments={unit.judgments} />
       {shows("guests") && unit.guests.length > 0 && (
         <p className="unit-guests">
           <span className="fact-label">With </span>
@@ -289,7 +353,7 @@ function ShowUnit({
         </div>
       )}
       {shows("setlist") && unit.setlist_disclosure !== "hidden" && (unit.sets.length > 0 ? (
-        unit.setlist_disclosure === "collapsed" ? (
+        unit.setlist_disclosure === "collapsed" || compact ? (
           <details className="unit-setlist">
             <summary>Setlist</summary>
             <SetlistSectionList sets={unit.sets} />
@@ -303,6 +367,32 @@ function ShowUnit({
       ) : unit.setlist_note ? (
         <p className="coverage-note">{unit.setlist_note}</p>
       ) : null)}
+      {shows("lineup") && unit.lineup.length > 0 && (
+        <details className="unit-facet unit-setlist" open={openFacets}>
+          <summary>Lineup</summary>
+          <ul className="facet-list">
+            {unit.lineup.map((person) => (
+              <li key={`${person.person_id}-${person.role}`}>
+                <strong>{person.name}</strong>
+                <span>{person.instruments.join(", ")}{person.role === "guest" ? " · Guest" : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      {shows("recordings") && unit.recordings.length > 0 && (
+        <details className="unit-facet unit-setlist" open={openFacets}>
+          <summary>Recordings</summary>
+          <ul className="facet-list">
+            {unit.recordings.map((recording) => (
+              <li key={recording.recording_id}>
+                <ExternalLink href={recording.url}>{recording.title}</ExternalLink>
+                <span>{recording.source_type}{recording.archive_identifier ? ` · ${recording.archive_identifier}` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {shows("sources") && <UnitSourceList sources={unit.sources} />}
       {unit.follow_up && (
         <p className="unit-follow-up">
@@ -344,16 +434,22 @@ function groupPersonnel(personnel: AlbumUnitBlock["personnel"]): PersonnelGroup[
 
 function AlbumUnit({
   block,
+  criteria,
+  soleUnit,
   onFollowUp
 }: {
   block: AlbumUnitBlock;
+  criteria: string[];
+  soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
 }) {
   const year = block.release_date?.slice(0, 4);
   const highlightedTracks = block.tracks.filter((track) => track.highlighted);
   const personnel = groupPersonnel(block.personnel);
+  const compact = block.emphasis === "supporting";
+  const openFacets = block.emphasis === "primary" && soleUnit;
   return (
-    <article className={`card album-unit${block.role ? ` role-${block.role}` : ""}`}>
+    <article className={`card album-unit emphasis-${block.emphasis}`}>
       <header className="unit-heading">
         <div>
           {block.artist_name && block.artist_name !== "Grateful Dead" && <Eyebrow label={block.artist_name} title={block.title} />}
@@ -364,6 +460,7 @@ function AlbumUnit({
         </div>
       </header>
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      <CriteriaTable criteria={criteria} judgments={block.judgments} />
       <ListenActionList actions={block.listen} />
       {highlightedTracks.length > 0 && (
         <div className="unit-highlights">
@@ -379,9 +476,8 @@ function AlbumUnit({
       )}
       {(block.tracks.length > 0 || personnel.length > 0) && (
       <div className="album-body">
-        {block.tracks.length > 0 && (
-          <section className="album-tracks-section">
-            <p className="fact-label">Tracklist</p>
+        {block.tracks.length > 0 && (() => {
+          const trackList = (
             <ol className="album-tracks">
               {block.tracks.map((track) => (
                 <li
@@ -394,10 +490,16 @@ function AlbumUnit({
                 </li>
               ))}
             </ol>
-          </section>
-        )}
+          );
+          return (
+            <details className={compact ? "unit-facet unit-setlist" : "album-tracks-section unit-setlist"} open={compact ? undefined : openFacets}>
+              <summary>Tracklist</summary>
+              {trackList}
+            </details>
+          );
+        })()}
         {personnel.length > 0 && (
-          <details className="album-credits unit-setlist">
+          <details className={compact ? "unit-facet unit-setlist" : "album-credits unit-setlist"} open={compact ? undefined : openFacets}>
             <summary>Personnel and credits</summary>
             <ul className="album-personnel">
               {personnel.map((person) => (
@@ -427,33 +529,22 @@ function AlbumUnit({
 function Block({
   block,
   sources,
+  criteria,
+  soleUnit,
   onFollowUp
 }: {
   block: ExperienceBlock;
   sources: SourceReference[];
+  criteria: string[];
+  soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
 }) {
   switch (block.type) {
     case "show_unit":
-      return <ShowUnit unit={block} onFollowUp={onFollowUp} />;
-    case "show_explorer":
-      return (
-        <section className="show-explorer">
-          <h2>{block.title}</h2>
-          <div className="explorer-units">
-            {block.items.map((unit) => (
-              <ShowUnit
-                key={unit.show_id}
-                unit={unit}
-                onFollowUp={onFollowUp}
-              />
-            ))}
-          </div>
-        </section>
-      );
+      return <ShowUnit unit={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
     case "performance_unit":
       return (
-        <article className={`card performance-unit${block.role ? ` role-${block.role}` : ""}`}>
+        <article className={`card performance-unit emphasis-${block.emphasis}`}>
           <header className="unit-heading">
             <div>
               <p className="eyebrow">{block.song_title}</p>
@@ -464,6 +555,7 @@ function Block({
             </div>
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+          <CriteriaTable criteria={criteria} judgments={block.judgments} />
           {(block.previous || block.next) && (
             <div className="set-thread" aria-label="Adjacent songs in the set">
               <div>
@@ -488,7 +580,7 @@ function Block({
       );
     case "era_unit":
       return (
-        <section className={`era-unit${block.role ? ` role-${block.role}` : ""}`}>
+        <section className="era-unit">
           <header className="unit-heading">
             <div>
               {block.span && <Eyebrow label={block.span} title={block.title} />}
@@ -517,7 +609,7 @@ function Block({
         </section>
       );
     case "album_unit":
-      return <AlbumUnit block={block} onFollowUp={onFollowUp} />;
+      return <AlbumUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
     case "entity_card": {
       return (
         <article className="typography-block entity-block">
@@ -533,14 +625,6 @@ function Block({
         </article>
       );
     }
-    case "show_setlist":
-      return (
-        <section className="card show-setlist">
-          <Eyebrow label="Setlist" title={block.title} />
-          <h2>{block.title}</h2>
-          <SetlistSectionList sets={block.sets} />
-        </section>
-      );
     case "show_selection":
       return (
         <section className="typography-block show-selection">
@@ -556,37 +640,6 @@ function Block({
             ))}
           </ol>
           <p className="coverage-note">{block.coverage_note}</p>
-        </section>
-      );
-    case "recording_list":
-      return (
-        <section className="card recording-list">
-          <Eyebrow label="Listening" title={block.title} />
-          <h2>{block.title}</h2>
-          <ul>
-            {block.items.map((item) => (
-              <li key={item.recording_id}>
-                <ExternalLink href={item.url}>{item.title}</ExternalLink>
-                <span>{item.source_type}{item.archive_identifier ? ` · ${item.archive_identifier}` : ""}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      );
-    case "performer_list":
-      return (
-        <section className="typography-block performer-list">
-          <Eyebrow label="Lineup" title={block.title} />
-          <h2>{block.title}</h2>
-          <ul>
-            {block.items.map((item) => (
-              <li key={`${item.person_id}-${item.role}`}>
-                <strong className="inline-label">{item.name}</strong>
-                <span className="performer-role">{item.role === "guest" ? "Guest" : "Performer"}</span>
-                <span>{item.instruments.join(", ")}</span>
-              </li>
-            ))}
-          </ul>
         </section>
       );
     case "guest_appearance_list":
@@ -624,71 +677,107 @@ function Block({
           </ul>
         </section>
       );
-    case "song_overview":
+    case "song_overview": {
+      const compact = block.emphasis === "supporting";
+      const openFacets = block.emphasis === "primary" && soleUnit;
       return (
-        <article className={`card song-overview${block.role ? ` role-${block.role}` : ""}`}>
+        <article className={`card song-overview emphasis-${block.emphasis}`}>
           <header className="unit-heading">
             <div>
               <p className="eyebrow">Song</p>
               <h2>{block.title}</h2>
+              {block.original_artist && <p className="subtitle">Originally by {block.original_artist}</p>}
             </div>
           </header>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
-          <dl className="song-facts">
-            {block.original_artist && (
-              <div>
-                <dt>Original artist</dt>
-                <dd>{block.original_artist}</dd>
-              </div>
-            )}
-            <div>
-              <dt>Known performances</dt>
-              <dd>{block.known_performance_count}</dd>
-            </div>
-          </dl>
-          {block.representative_performances.length > 0 && (
-            <section className="song-representatives">
-              <p className="fact-label">Representative performances</p>
-              <ul>
-                {block.representative_performances.map((performance) => (
-                  <li key={performance.performance_id}>
-                    <ListeningLabel
-                      title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
-                      url={performance.listen_url}
-                      className="list-item-label"
-                    />
-                    {performance.set_label && <span>{performance.set_label}</span>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {block.credits.length > 0 && (
-            <details className="song-credits unit-setlist">
-              <summary>Credits</summary>
-              <ul>
-                {block.credits.map((credit) => (
-                  <li key={`${credit.person_id}-${credit.role}`}>
-                    <strong className="inline-label">{credit.name}</strong>
-                    <span>{credit.role}</span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {block.albums.length > 0 ? (
-            <section className="song-albums-section">
-              <p className="fact-label">On record</p>
-              <ul className="song-albums">
-                {block.albums.map((album) => (
-                  <li key={album.release_id}>
-                    <strong>{album.title}</strong>
-                    <span>{[album.release_type, album.release_date?.slice(0, 4)].filter(Boolean).join(" · ")}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+          <CriteriaTable criteria={criteria} judgments={block.judgments} />
+          {block.visible_facets.map((facet) => {
+            switch (facet) {
+              case "representatives":
+                return block.representative_performances.length > 0 ? (
+                  <section className="song-representatives" key="representatives">
+                    <p className="fact-label">Representative performances</p>
+                    <ul>
+                      {block.representative_performances.map((performance) => (
+                        <li key={performance.performance_id}>
+                          <ListeningLabel
+                            title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
+                            url={performance.listen_url}
+                            className="list-item-label"
+                          />
+                          {performance.set_label && <span>{performance.set_label}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ) : null;
+              case "credits":
+                return block.credits.length > 0 ? (
+                  <details className={compact ? "unit-facet unit-setlist" : "song-credits unit-setlist"} key="credits" open={compact ? undefined : openFacets}>
+                    <summary>Credits</summary>
+                    <ul>
+                      {block.credits.map((credit) => (
+                        <li key={`${credit.person_id}-${credit.role}`}>
+                          <strong className="inline-label">{credit.name}</strong>
+                          <span>{credit.role}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null;
+              case "albums": {
+                if (block.albums.length === 0) return null;
+                const albumsList = (
+                  <ul className="song-albums">
+                    {block.albums.map((album) => (
+                      <li key={album.release_id}>
+                        <strong>{album.title}</strong>
+                        <span>{[album.release_type, album.release_date?.slice(0, 4)].filter(Boolean).join(" · ")}</span>
+                      </li>
+                    ))}
+                  </ul>
+                );
+                return (
+                  <details className={compact ? "unit-facet unit-setlist" : "song-albums-section unit-setlist"} key="albums" open={compact ? undefined : openFacets}>
+                    <summary>On record</summary>
+                    {albumsList}
+                  </details>
+                );
+              }
+              case "history": {
+                const history = block.history;
+                if (!history) return null;
+                const byYear = history.by_year ?? [];
+                const historyBody = (
+                  <>
+                    <p className="subtitle">{history.known_count} documented performance{history.known_count === 1 ? "" : "s"}</p>
+                    <div className="performance-endpoints">
+                      <div className="performance-endpoint"><p className="fact-label">First</p><ListeningLabel title={history.first.show_label} url={history.first.listen_url} className="list-item-label" /></div>
+                      <div className="performance-endpoint"><p className="fact-label">Last</p><ListeningLabel title={history.last.show_label} url={history.last.listen_url} className="list-item-label" /></div>
+                    </div>
+                    {byYear.length > 1 && (
+                      <ol className="comparison-track" aria-label="One performance per year">
+                        {byYear.map((item) => (
+                          <li className="comparison-stop" key={item.performance_id}>
+                            <p className="comparison-year">{item.year}</p>
+                            <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
+                          </li>
+                        ))}
+                      </ol>
+                    )}
+                  </>
+                );
+                return (
+                  <details className={compact ? "unit-facet unit-setlist" : "song-history unit-setlist"} key="history" open={compact ? undefined : openFacets}>
+                    <summary>Performance history</summary>
+                    {historyBody}
+                  </details>
+                );
+              }
+              default:
+                return null;
+            }
+          })}
           <UnitSourceList sources={block.sources} />
           {block.follow_up && (
             <p className="unit-follow-up">
@@ -697,6 +786,7 @@ function Block({
           )}
         </article>
       );
+    }
     case "resource_list":
       return (
         <section className="typography-block resource-list">
@@ -735,86 +825,6 @@ function Block({
           <h2>{block.title}</h2>
           <MediaEmbed block={block} />
           <ExternalLink href={block.url}>Open on {block.provider}</ExternalLink>
-        </section>
-      );
-    case "performance_list":
-      return (
-        <section className="typography-block performance-list">
-          <Eyebrow label="Canonical performance evidence" title={block.title} />
-          <h2>{block.title}</h2>
-          <p className="subtitle">{block.known_count} known performance{block.known_count === 1 ? "" : "s"}</p>
-          <ul>
-            {block.items.map((item) => (
-              <li key={item.performance_id}>
-                <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-                {(item.set_label || item.position_in_set) && <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      );
-    case "performance_extremes": {
-      const endpoint = (label: string, item: typeof block.first) => (
-        <div className="performance-endpoint" key={label}>
-          <p className="fact-label">{label}</p>
-          <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-          {(item.set_label || item.position_in_set) && (
-            <span>{item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}</span>
-          )}
-        </div>
-      );
-      return (
-        <section className="typography-block performance-extremes">
-          <Eyebrow label="Performance history" title={block.title} />
-          <h2>{block.title}</h2>
-          <div className="performance-endpoints">
-            {endpoint("First", block.first)}
-            {endpoint("Last", block.last)}
-          </div>
-        </section>
-      );
-    }
-    case "comparison_strip":
-      return (
-        <section className="typography-block comparison-strip">
-          <Eyebrow label="Performance history" title={block.title} />
-          <h2>{block.title}</h2>
-          <p className="subtitle">
-            {block.known_count} known performance{block.known_count === 1 ? "" : "s"} · one representative per year
-          </p>
-          <ol className="comparison-track" aria-label="Selected performances by year">
-            {block.items.map((item) => (
-              <li className="comparison-stop" key={item.performance_id}>
-                <p className="comparison-year">{item.year}</p>
-                <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-                {(item.set_label || item.position_in_set) && (
-                  <span className="comparison-placement">
-                    {item.set_label}{item.position_in_set ? ` · #${item.position_in_set}` : ""}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-          <p className="coverage-note">{block.coverage_note}</p>
-        </section>
-      );
-    case "performance_spine":
-      return (
-        <section className="typography-block performance-spine">
-          <Eyebrow label="Performance context" title={block.title} />
-          <h2>{block.title}</h2>
-          <p className="subtitle">{block.show_label}{block.set_label ? ` · ${block.set_label}` : ""}{block.position_in_set ? ` · #${block.position_in_set}` : ""}</p>
-          <div className="set-thread" aria-label="Adjacent songs in the set">
-            <div>
-              <p className="fact-label">Before</p>
-              {block.previous ? <span className="list-item-label">{block.previous.title}</span> : <span className="thread-boundary">Set opener</span>}
-            </div>
-            <div className="current-performance" aria-label="Current performance">This performance</div>
-            <div>
-              <p className="fact-label">After</p>
-              {block.next ? <span className="list-item-label">{block.next.title}</span> : <span className="thread-boundary">Set closer</span>}
-            </div>
-          </div>
         </section>
       );
     case "coverage":
@@ -1108,6 +1118,10 @@ export default function App() {
   // single placeholder line before the first tool call reports in.
   const workingLines = progress.length > 0 ? progress.slice(-4) : ["Looking through the library…"];
 
+  // A primary unit's facets start open only when it is the page's sole unit;
+  // typography blocks (era_unit, editorial, and the rest) do not count.
+  const unitCount = response ? response.blocks.filter(isUnit).length : 0;
+
   function submitOnEnter(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
@@ -1200,30 +1214,41 @@ export default function App() {
           ) : response ? (
             <>
               <div className="content-heading">
-                <p className="eyebrow">{modeLabels[response.mode]}</p>
                 <h1 id="answer-title" tabIndex={-1}>{response.title}</h1>
               </div>
               {response.body_lead && <p className="answer-lead">{renderInline(response.body_lead)}</p>}
               {response.groups.map((group, groupIndex) => (
                 <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
                   {(group.title || group.lead) && (
-                    <header className="group-heading">
-                      {group.title && <h2>{group.title}</h2>}
-                      {group.lead && <p>{renderInline(group.lead)}</p>}
-                    </header>
+                    group.presentation === "argument" ? (
+                      <header className="group-heading claim">
+                        {group.title && <h2>{group.title}</h2>}
+                        {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
+                      </header>
+                    ) : (
+                      <header className="group-heading">
+                        {group.title && <h2>{group.title}</h2>}
+                        {group.lead && <p>{renderInline(group.lead)}</p>}
+                      </header>
+                    )
                   )}
                   <div className="block-grid group-blocks">
-                    {group.block_indexes.map((index) => {
-                      const block = response.blocks[index];
-                      return block ? (
+                    {chunkMentions(group.block_indexes.map((index) => response.blocks[index])).map((entry, position) =>
+                      entry.kind === "mentions" ? (
+                        <ul className="mention-list" key={`mentions-${groupIndex}-${position}`}>
+                          {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
+                        </ul>
+                      ) : (
                         <Block
-                          key={`${block.type}-${index}`}
-                          block={block}
+                          key={`${entry.block.type}-${position}`}
+                          block={entry.block}
                           sources={response.sources}
+                          criteria={group.presentation === "comparison" ? group.criteria ?? [] : []}
+                          soleUnit={unitCount === 1}
                           onFollowUp={chooseFollowUp}
                         />
-                      ) : null;
-                    })}
+                      )
+                    )}
                   </div>
                 </section>
               ))}

@@ -8,7 +8,7 @@
     "main_column": "direct answer followed by the most relevant grounded blocks",
     "exploration_column": "optional related blocks, sources, or next steps; may be empty",
     "allowed_regions": ["main", "exploration"],
-    "allowed_block_types": ["entity_card", "recording_list", "resource_list", "comparison_strip", "provenance_note", "gap_state", "album_unit"]
+    "allowed_block_types": ["entity_card", "resource_list", "provenance_note", "gap_state", "album_unit", "show_unit", "song_overview"]
   },
   "cases": [
     {
@@ -19,7 +19,6 @@
         "coverage": "The packet contains the show identity and selected related records, not a complete account of why the show is famous."
       },
       "expected": {
-        "mode": "quick_fact",
         "main_must_include": ["direct venue and date fact"],
         "exploration_may_include": ["one or more grounded show, recording, or source blocks"],
         "exploration_is_optional": true,
@@ -36,7 +35,6 @@
         "coverage": "The sources are attributed perspectives, not a complete or neutral event history."
       },
       "expected": {
-        "mode": "show",
         "main_must_include": ["canonical show fact"],
         "exploration_should_include": ["attributed source/resource block"],
         "source_scope": "label memoir and oral history as contextual sources",
@@ -53,8 +51,7 @@
         "coverage": "The list is limited to recordings returned by retrieval; it is not a complete discography."
       },
       "expected": {
-        "mode": "listening",
-        "main_must_include": ["recording_list for Sugar Magnolia"],
+        "main_must_include": ["show_unit with the recordings facet for the Sugar Magnolia show"],
         "exploration_may_include": ["song or performance context"],
         "coverage_note": "state that returned recordings are a bounded selection when relevant",
         "must_not": ["put recordings only in the exploration column", "claim the list is complete"]
@@ -70,8 +67,7 @@
         "coverage": "Available candidates are examples from covered dates, not a complete musical history; no audio analysis is supplied."
       },
       "expected": {
-        "mode": "comparison",
-        "main_must_include": ["comparison_strip of dated canonical performances"],
+        "main_must_include": ["song_overview with the history facet of dated canonical performances"],
         "exploration_may_include": ["performance cards or listening links for selected candidates"],
         "coverage_note": "make partial era/date coverage explicit",
         "must_not": ["invent musical evolution claims without grounded analysis", "present candidates as a complete timeline"]
@@ -103,7 +99,6 @@
         "coverage": "The packet names the one studio release carrying this track; it is not a survey of every live release containing the song."
       },
       "expected": {
-        "mode": "quick_fact",
         "main_must_include": ["album title and year", "solo attribution to Jerry Garcia, not a Grateful Dead album"],
         "exploration_may_include": ["other releases or performances of Sugaree"],
         "exploration_is_optional": true,
@@ -119,7 +114,6 @@
         "coverage": "The packet includes the release's own tracklist and any collected personnel; it is not a review or sales history."
       },
       "expected": {
-        "mode": "listening",
         "main_must_include": ["album_unit for American Beauty with its tracklist"],
         "exploration_may_include": ["song or performance context for individual tracks"],
         "coverage_note": "present the tracklist as the release's own track order, not a generic song list",
@@ -135,7 +129,6 @@
         "coverage": "The first documented performance reflects retained canonical records, not necessarily the song's true live debut."
       },
       "expected": {
-        "mode": "comparison",
         "main_must_include": ["release date set against the first documented performance date"],
         "exploration_may_include": ["the album's tracklist or other early performances"],
         "coverage_note": "qualify the first performance as the earliest documented one, not a certain debut",

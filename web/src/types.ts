@@ -25,48 +25,39 @@ import type { components } from "./generated/api";
 type Require<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 export type SourceReference = components["schemas"]["SourceReference"];
-export type ExperienceGroup = components["schemas"]["ExperienceGroup"];
+export type ExperienceGroup = Require<components["schemas"]["ExperienceGroup"], "criteria">;
 
 type FixedEntityCardBlock = Require<components["schemas"]["EntityCardBlock"], "details">;
 type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], "progressions">;
 type FixedEditorialBlock = Require<components["schemas"]["EditorialBlock"], "paragraphs" | "items">;
 type FixedSongOverviewBlock = Require<
   components["schemas"]["SongOverviewBlock"],
-  "credits" | "source_ids" | "albums" | "representative_performances" | "sources"
+  "credits" | "source_ids" | "albums" | "representative_performances" | "sources" | "visible_facets" | "judgments"
 >;
 
 // Semantic units. Their hydrated lists are always present in a server
 // response (see the note on Require above).
-export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "sets" | "guests" | "listen" | "sources" | "visible_facets">;
-type FixedShowExplorerBlock = Omit<components["schemas"]["ShowExplorerBlock"], "items"> & { items: ShowUnitBlock[] };
-type FixedPerformanceUnitBlock = Require<components["schemas"]["PerformanceUnitBlock"], "listen" | "sources">;
+export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "sets" | "guests" | "listen" | "sources" | "visible_facets" | "lineup" | "recordings" | "judgments">;
+type FixedPerformanceUnitBlock = Require<components["schemas"]["PerformanceUnitBlock"], "listen" | "sources" | "judgments">;
 type FixedEraUnitBlock = Require<components["schemas"]["EraUnitBlock"], "sources">;
 export type AlbumUnitBlock = Require<
   components["schemas"]["AlbumUnitBlock"],
-  "tracks" | "personnel" | "listen" | "sources"
+  "tracks" | "personnel" | "listen" | "sources" | "judgments"
 >;
 
 export type ExperienceBlock =
   | FixedEntityCardBlock
   | ShowUnitBlock
-  | FixedShowExplorerBlock
   | FixedPerformanceUnitBlock
   | FixedEraUnitBlock
   | AlbumUnitBlock
-  | components["schemas"]["ShowSetlistBlock"]
   | components["schemas"]["ShowSelectionBlock"]
-  | components["schemas"]["RecordingListBlock"]
-  | components["schemas"]["PerformerListBlock"]
   | components["schemas"]["GuestAppearanceListBlock"]
   | components["schemas"]["EquipmentListBlock"]
   | components["schemas"]["ResourceListBlock"]
   | components["schemas"]["CreditListBlock"]
   | FixedSongOverviewBlock
   | components["schemas"]["MediaLinkBlock"]
-  | components["schemas"]["PerformanceListBlock"]
-  | components["schemas"]["PerformanceExtremesBlock"]
-  | components["schemas"]["PerformanceSpineBlock"]
-  | components["schemas"]["ComparisonStripBlock"]
   | components["schemas"]["CoverageBlock"]
   | FixedArrangementBlock
   | components["schemas"]["ArrangementSearchBlock"]
@@ -76,10 +67,10 @@ export type ExperienceBlock =
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],
-  "blocks" | "layout" | "sources" | "conversation"
+  "blocks" | "sources" | "conversation"
 > &
   Required<
-    Pick<components["schemas"]["ExperienceResponse"], "groups" | "layout" | "sources" | "conversation">
+    Pick<components["schemas"]["ExperienceResponse"], "groups" | "sources" | "conversation">
   > & {
     blocks: ExperienceBlock[];
   };

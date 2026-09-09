@@ -116,6 +116,16 @@
             ],
             "title": "Artist Name"
           },
+          "emphasis": {
+            "default": "supporting",
+            "enum": [
+              "primary",
+              "supporting",
+              "mention"
+            ],
+            "title": "Emphasis",
+            "type": "string"
+          },
           "follow_up": {
             "anyOf": [
               {
@@ -126,6 +136,14 @@
               }
             ],
             "title": "Follow Up"
+          },
+          "judgments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Judgments",
+            "type": "array"
           },
           "listen": {
             "items": {
@@ -172,27 +190,6 @@
           "release_type": {
             "title": "Release Type",
             "type": "string"
-          },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "anchor",
-                  "supporting",
-                  "contrast",
-                  "turning_point",
-                  "outlier",
-                  "culmination",
-                  "overlooked",
-                  "representative"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
           },
           "sources": {
             "items": {
@@ -408,52 +405,6 @@
           "arrangement_scope"
         ],
         "title": "ArrangementSearchItem",
-        "type": "object"
-      },
-      "ComparisonStripBlock": {
-        "additionalProperties": false,
-        "description": "Selected grounded performances of one song over time.\n\nEntries are representative selections from current library coverage \u2014\ncanonical dates and set placement only, never musical analysis.",
-        "properties": {
-          "coverage_note": {
-            "title": "Coverage Note",
-            "type": "string"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ComparisonStripItem"
-            },
-            "maxItems": 12,
-            "minItems": 2,
-            "title": "Items",
-            "type": "array"
-          },
-          "known_count": {
-            "title": "Known Count",
-            "type": "integer"
-          },
-          "song_id": {
-            "title": "Song Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "comparison_strip",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "song_id",
-          "title",
-          "known_count",
-          "coverage_note",
-          "items"
-        ],
-        "title": "ComparisonStripBlock",
         "type": "object"
       },
       "ComparisonStripItem": {
@@ -1067,27 +1018,6 @@
             "title": "Performances",
             "type": "array"
           },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "anchor",
-                  "supporting",
-                  "contrast",
-                  "turning_point",
-                  "outlier",
-                  "culmination",
-                  "overlooked",
-                  "representative"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
-          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/UnitSource"
@@ -1136,6 +1066,14 @@
             "maxItems": 12,
             "minItems": 1,
             "title": "Block Indexes",
+            "type": "array"
+          },
+          "criteria": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Criteria",
             "type": "array"
           },
           "lead": {
@@ -1229,7 +1167,6 @@
                   "album_unit": "#/components/schemas/AlbumUnitBlock",
                   "arrangement": "#/components/schemas/ArrangementBlock",
                   "arrangement_search": "#/components/schemas/ArrangementSearchBlock",
-                  "comparison_strip": "#/components/schemas/ComparisonStripBlock",
                   "coverage": "#/components/schemas/CoverageBlock",
                   "credit_list": "#/components/schemas/CreditListBlock",
                   "editorial": "#/components/schemas/EditorialBlock",
@@ -1239,17 +1176,10 @@
                   "gap_state": "#/components/schemas/GapStateBlock",
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
-                  "performance_extremes": "#/components/schemas/PerformanceExtremesBlock",
-                  "performance_list": "#/components/schemas/PerformanceListBlock",
-                  "performance_spine": "#/components/schemas/PerformanceSpineBlock",
                   "performance_unit": "#/components/schemas/PerformanceUnitBlock",
-                  "performer_list": "#/components/schemas/PerformerListBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
-                  "recording_list": "#/components/schemas/RecordingListBlock",
                   "resource_list": "#/components/schemas/ResourceListBlock",
-                  "show_explorer": "#/components/schemas/ShowExplorerBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
-                  "show_setlist": "#/components/schemas/ShowSetlistBlock",
                   "show_unit": "#/components/schemas/ShowUnitBlock",
                   "song_overview": "#/components/schemas/SongOverviewBlock"
                 },
@@ -1263,9 +1193,6 @@
                   "$ref": "#/components/schemas/ShowUnitBlock"
                 },
                 {
-                  "$ref": "#/components/schemas/ShowExplorerBlock"
-                },
-                {
                   "$ref": "#/components/schemas/PerformanceUnitBlock"
                 },
                 {
@@ -1275,16 +1202,7 @@
                   "$ref": "#/components/schemas/AlbumUnitBlock"
                 },
                 {
-                  "$ref": "#/components/schemas/ShowSetlistBlock"
-                },
-                {
                   "$ref": "#/components/schemas/ShowSelectionBlock"
-                },
-                {
-                  "$ref": "#/components/schemas/RecordingListBlock"
-                },
-                {
-                  "$ref": "#/components/schemas/PerformerListBlock"
                 },
                 {
                   "$ref": "#/components/schemas/GuestAppearanceListBlock"
@@ -1303,18 +1221,6 @@
                 },
                 {
                   "$ref": "#/components/schemas/MediaLinkBlock"
-                },
-                {
-                  "$ref": "#/components/schemas/PerformanceListBlock"
-                },
-                {
-                  "$ref": "#/components/schemas/PerformanceExtremesBlock"
-                },
-                {
-                  "$ref": "#/components/schemas/PerformanceSpineBlock"
-                },
-                {
-                  "$ref": "#/components/schemas/ComparisonStripBlock"
                 },
                 {
                   "$ref": "#/components/schemas/CoverageBlock"
@@ -1367,32 +1273,18 @@
             "title": "Groups",
             "type": "array"
           },
-          "layout": {
-            "items": {
-              "$ref": "#/components/schemas/LayoutSection"
-            },
-            "maxItems": 4,
-            "title": "Layout",
-            "type": "array"
-          },
           "mode": {
-            "default": "quick_fact",
+            "default": "answer",
             "enum": [
-              "quick_fact",
-              "performance",
-              "show",
-              "listening",
-              "comparison",
-              "research",
-              "musician",
+              "answer",
               "gap"
             ],
             "title": "Mode",
             "type": "string"
           },
           "schema_version": {
-            "const": "1",
-            "default": "1",
+            "const": "2",
+            "default": "2",
             "title": "Schema Version",
             "type": "string"
           },
@@ -1558,37 +1450,6 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
-      "LayoutSection": {
-        "additionalProperties": false,
-        "description": "A server-validated region in the composed main column.",
-        "properties": {
-          "block_indexes": {
-            "items": {
-              "type": "integer"
-            },
-            "maxItems": 8,
-            "minItems": 1,
-            "title": "Block Indexes",
-            "type": "array"
-          },
-          "region": {
-            "enum": [
-              "primary",
-              "supporting",
-              "context",
-              "media"
-            ],
-            "title": "Region",
-            "type": "string"
-          }
-        },
-        "required": [
-          "region",
-          "block_indexes"
-        ],
-        "title": "LayoutSection",
-        "type": "object"
-      },
       "ListenAction": {
         "additionalProperties": false,
         "description": "A listening destination attached to the object it plays.",
@@ -1685,79 +1546,6 @@
         "title": "MediaLinkBlock",
         "type": "object"
       },
-      "PerformanceExtremesBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "first": {
-            "$ref": "#/components/schemas/PerformanceListItem"
-          },
-          "last": {
-            "$ref": "#/components/schemas/PerformanceListItem"
-          },
-          "song_id": {
-            "title": "Song Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "performance_extremes",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "song_id",
-          "title",
-          "first",
-          "last"
-        ],
-        "title": "PerformanceExtremesBlock",
-        "type": "object"
-      },
-      "PerformanceListBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PerformanceListItem"
-            },
-            "maxItems": 20,
-            "minItems": 1,
-            "title": "Items",
-            "type": "array"
-          },
-          "known_count": {
-            "title": "Known Count",
-            "type": "integer"
-          },
-          "song_id": {
-            "title": "Song Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "performance_list",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "title",
-          "song_id",
-          "known_count",
-          "items"
-        ],
-        "title": "PerformanceListBlock",
-        "type": "object"
-      },
       "PerformanceListItem": {
         "additionalProperties": false,
         "properties": {
@@ -1826,84 +1614,6 @@
         "title": "PerformanceListItem",
         "type": "object"
       },
-      "PerformanceSpineBlock": {
-        "additionalProperties": false,
-        "description": "Place one rendition back into its documented set sequence.",
-        "properties": {
-          "next": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PerformanceSpineNeighbor"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "performance_id": {
-            "title": "Performance Id",
-            "type": "string"
-          },
-          "position_in_set": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position In Set"
-          },
-          "previous": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PerformanceSpineNeighbor"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "set_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Label"
-          },
-          "show_label": {
-            "title": "Show Label",
-            "type": "string"
-          },
-          "song_id": {
-            "title": "Song Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "performance_spine",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "performance_id",
-          "song_id",
-          "title",
-          "show_label"
-        ],
-        "title": "PerformanceSpineBlock",
-        "type": "object"
-      },
       "PerformanceSpineNeighbor": {
         "additionalProperties": false,
         "properties": {
@@ -1927,6 +1637,16 @@
         "additionalProperties": false,
         "description": "One rendition as a primary object, with its set context and listening actions.",
         "properties": {
+          "emphasis": {
+            "default": "supporting",
+            "enum": [
+              "primary",
+              "supporting",
+              "mention"
+            ],
+            "title": "Emphasis",
+            "type": "string"
+          },
           "follow_up": {
             "anyOf": [
               {
@@ -1937,6 +1657,14 @@
               }
             ],
             "title": "Follow Up"
+          },
+          "judgments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Judgments",
+            "type": "array"
           },
           "listen": {
             "items": {
@@ -2002,27 +1730,6 @@
                 "type": "null"
               }
             ]
-          },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "anchor",
-                  "supporting",
-                  "contrast",
-                  "turning_point",
-                  "outlier",
-                  "culmination",
-                  "overlooked",
-                  "representative"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
           },
           "set_label": {
             "anyOf": [
@@ -2136,41 +1843,6 @@
         "title": "PerformerItem",
         "type": "object"
       },
-      "PerformerListBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/PerformerItem"
-            },
-            "maxItems": 24,
-            "minItems": 1,
-            "title": "Items",
-            "type": "array"
-          },
-          "show_id": {
-            "title": "Show Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "performer_list",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "show_id",
-          "title",
-          "items"
-        ],
-        "title": "PerformerListBlock",
-        "type": "object"
-      },
       "ProvenanceNoteBlock": {
         "additionalProperties": false,
         "properties": {
@@ -2244,47 +1916,6 @@
           "source_id"
         ],
         "title": "RecordingItem",
-        "type": "object"
-      },
-      "RecordingListBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/RecordingItem"
-            },
-            "maxItems": 8,
-            "minItems": 1,
-            "title": "Items",
-            "type": "array"
-          },
-          "show_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Id"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "recording_list",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "title",
-          "items"
-        ],
-        "title": "RecordingListBlock",
         "type": "object"
       },
       "ResourceItem": {
@@ -2442,47 +2073,6 @@
         "title": "SetlistSong",
         "type": "object"
       },
-      "ShowExplorerBlock": {
-        "additionalProperties": false,
-        "description": "A collection-level experience for browsing several complete show units.",
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/ShowUnitBlock"
-            },
-            "maxItems": 8,
-            "minItems": 1,
-            "title": "Items",
-            "type": "array"
-          },
-          "organization": {
-            "default": "chronological",
-            "enum": [
-              "chronological",
-              "curated",
-              "comparative"
-            ],
-            "title": "Organization",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "show_explorer",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "title",
-          "items"
-        ],
-        "title": "ShowExplorerBlock",
-        "type": "object"
-      },
       "ShowSelectionBlock": {
         "additionalProperties": false,
         "description": "A clearly attributed selection of shows from one reviewed source.",
@@ -2569,45 +2159,20 @@
         "title": "ShowSelectionItem",
         "type": "object"
       },
-      "ShowSetlistBlock": {
-        "additionalProperties": false,
-        "properties": {
-          "sets": {
-            "items": {
-              "$ref": "#/components/schemas/SetlistSection"
-            },
-            "maxItems": 4,
-            "minItems": 1,
-            "title": "Sets",
-            "type": "array"
-          },
-          "show_id": {
-            "title": "Show Id",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "type": {
-            "const": "show_setlist",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "show_id",
-          "title",
-          "sets"
-        ],
-        "title": "ShowSetlistBlock",
-        "type": "object"
-      },
       "ShowUnitBlock": {
         "additionalProperties": false,
-        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (role, note, highlights,\npreferred recording, sources, follow-up); date, venue, setlist, guests and\nlistening actions come from canonical data.",
+        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (emphasis, note, highlights,\npreferred recording, sources, follow-up); date, venue, setlist, guests and\nlistening actions come from canonical data.",
         "properties": {
+          "emphasis": {
+            "default": "supporting",
+            "enum": [
+              "primary",
+              "supporting",
+              "mention"
+            ],
+            "title": "Emphasis",
+            "type": "string"
+          },
           "follow_up": {
             "anyOf": [
               {
@@ -2625,6 +2190,22 @@
             },
             "maxItems": 8,
             "title": "Guests",
+            "type": "array"
+          },
+          "judgments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Judgments",
+            "type": "array"
+          },
+          "lineup": {
+            "items": {
+              "$ref": "#/components/schemas/PerformerItem"
+            },
+            "maxItems": 24,
+            "title": "Lineup",
             "type": "array"
           },
           "listen": {
@@ -2657,26 +2238,13 @@
             ],
             "title": "Note"
           },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "anchor",
-                  "supporting",
-                  "contrast",
-                  "turning_point",
-                  "outlier",
-                  "culmination",
-                  "overlooked",
-                  "representative"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
+          "recordings": {
+            "items": {
+              "$ref": "#/components/schemas/RecordingItem"
+            },
+            "maxItems": 8,
+            "title": "Recordings",
+            "type": "array"
           },
           "setlist_disclosure": {
             "default": "expanded",
@@ -2756,11 +2324,13 @@
                 "guests",
                 "listen",
                 "setlist",
-                "sources"
+                "sources",
+                "lineup",
+                "recordings"
               ],
               "type": "string"
             },
-            "maxItems": 4,
+            "maxItems": 6,
             "title": "Visible Facets",
             "type": "array"
           }
@@ -2771,6 +2341,38 @@
           "show_date"
         ],
         "title": "ShowUnitBlock",
+        "type": "object"
+      },
+      "SongHistory": {
+        "additionalProperties": false,
+        "description": "A song's documented stage life: first, last, and one performance per year.",
+        "properties": {
+          "by_year": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonStripItem"
+            },
+            "maxItems": 12,
+            "title": "By Year",
+            "type": "array"
+          },
+          "first": {
+            "$ref": "#/components/schemas/PerformanceListItem"
+          },
+          "known_count": {
+            "minimum": 1.0,
+            "title": "Known Count",
+            "type": "integer"
+          },
+          "last": {
+            "$ref": "#/components/schemas/PerformanceListItem"
+          }
+        },
+        "required": [
+          "known_count",
+          "first",
+          "last"
+        ],
+        "title": "SongHistory",
         "type": "object"
       },
       "SongOverviewBlock": {
@@ -2792,6 +2394,16 @@
             "title": "Credits",
             "type": "array"
           },
+          "emphasis": {
+            "default": "supporting",
+            "enum": [
+              "primary",
+              "supporting",
+              "mention"
+            ],
+            "title": "Emphasis",
+            "type": "string"
+          },
           "follow_up": {
             "anyOf": [
               {
@@ -2802,6 +2414,24 @@
               }
             ],
             "title": "Follow Up"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongHistory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "judgments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Judgments",
+            "type": "array"
           },
           "known_performance_count": {
             "title": "Known Performance Count",
@@ -2837,27 +2467,6 @@
             "title": "Representative Performances",
             "type": "array"
           },
-          "role": {
-            "anyOf": [
-              {
-                "enum": [
-                  "anchor",
-                  "supporting",
-                  "contrast",
-                  "turning_point",
-                  "outlier",
-                  "culmination",
-                  "overlooked",
-                  "representative"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Role"
-          },
           "song_id": {
             "title": "Song Id",
             "type": "string"
@@ -2886,6 +2495,20 @@
             "const": "song_overview",
             "title": "Type",
             "type": "string"
+          },
+          "visible_facets": {
+            "items": {
+              "enum": [
+                "credits",
+                "albums",
+                "history",
+                "representatives"
+              ],
+              "type": "string"
+            },
+            "maxItems": 4,
+            "title": "Visible Facets",
+            "type": "array"
           }
         },
         "required": [

@@ -24,39 +24,33 @@ from deadbot.experience import (
     ArrangementBlock,
     ArrangementSearchBlock,
     ArrangementSearchItem,
-    ComparisonStripBlock,
-    ComparisonStripItem,
     CreditItem,
+    Emphasis,
     EquipmentItem,
     EquipmentListBlock,
     EraPerformanceItem,
     EraUnitBlock,
     GuestAppearanceItem,
     GuestAppearanceListBlock,
+    ComparisonStripItem,
     ListenAction,
     MediaLinkBlock,
-    PerformanceExtremesBlock,
-    PerformanceListBlock,
     PerformanceListItem,
-    PerformanceSpineBlock,
     PerformanceSpineNeighbor,
     PerformanceUnitBlock,
     PerformerItem,
-    PerformerListBlock,
     RecordingItem,
-    RecordingListBlock,
     ResourceItem,
     SetlistSection,
     SetlistSong,
     ShowSelectionBlock,
     ShowSelectionItem,
-    ShowSetlistBlock,
     ShowUnitBlock,
+    SongHistory,
     SongOverviewBlock,
     SongRepresentativePerformance,
     SongReleaseItem,
     SourceReference,
-    UnitRole,
     UnitSource,
 )
 
@@ -263,56 +257,21 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
     return items
 
 
-def _performance_list(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> PerformanceListBlock | None:
+def _song_history(performances: list[dict[str, Any]], store: CanonicalStore) -> SongHistory | None:
+    """First and last documented renditions plus one representative per year, canonical dates only."""
+
     items = _performance_items(performances, store)
     if not items:
         return None
-    return PerformanceListBlock(
-        type="performance_list",
-        title="Known performances",
-        song_id=song["song_id"],
-        known_count=len(items),
-        items=items[:20],
-    )
-
-
-def _performance_extremes(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> PerformanceExtremesBlock | None:
-    items = _performance_items(performances, store)
-    if not items:
-        return None
-    return PerformanceExtremesBlock(
-        type="performance_extremes",
-        song_id=song["song_id"],
-        title="First and last performances",
-        first=items[0],
-        last=items[-1],
-    )
-
-
-def _comparison_strip(song: dict[str, Any], performances: list[dict[str, Any]], store: CanonicalStore) -> ComparisonStripBlock | None:
-    """Place one representative rendition per known year on a chronological strip.
-
-    The strip is a comparison-mode candidate built only from canonical dates and
-    set placement. It is skipped entirely when the library's coverage of the
-    song does not span at least two distinct years.
-    """
-
-    items = _performance_items(performances, store)
     first_per_year: dict[int, PerformanceListItem] = {}
     for item in items:
-        if not item.show_date or not item.show_date[:4].isdigit():
-            continue
-        year = int(item.show_date[:4])
-        first_per_year.setdefault(year, item)
+        if item.show_date and item.show_date[:4].isdigit():
+            first_per_year.setdefault(int(item.show_date[:4]), item)
     years = sorted(first_per_year)
-    if len(years) < 2:
-        return None
     if len(years) > 12:
-        # An evenly spread selection that always keeps the first and last year.
         selected_positions = {round(step * (len(years) - 1) / 11) for step in range(12)}
         years = [year for position, year in enumerate(years) if position in selected_positions]
-
-    strip_items = [
+    by_year = [
         ComparisonStripItem(
             performance_id=first_per_year[year].performance_id,
             show_id=first_per_year[year].show_id,
@@ -325,39 +284,29 @@ def _comparison_strip(song: dict[str, Any], performances: list[dict[str, Any]], 
         )
         for year in years
     ]
-    return ComparisonStripBlock(
-        type="comparison_strip",
-        song_id=song["song_id"],
-        title="Performances over time",
-        known_count=len(items),
-        coverage_note=(
-            "Each stop is one representative performance from that year, selected "
-            "from current library coverage. This strip is not a complete "
-            "performance history of the song."
-        ),
-        items=strip_items,
-    )
+    dated = [item for item in items if item.show_date]
+    first = dated[0] if dated else items[0]
+    last = dated[-1] if dated else items[-1]
+    return SongHistory(known_count=len(items), first=first, last=last, by_year=by_year)
 
 
-def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> PerformanceSpineBlock | None:
-    """Return only the directly adjacent, canonical set context for a rendition."""
+def _set_neighbors(
+    payload: dict[str, Any], store: CanonicalStore
+) -> tuple[PerformanceSpineNeighbor | None, PerformanceSpineNeighbor | None]:
+    """Return only the directly adjacent, canonical set neighbors for a rendition."""
 
     performance = payload.get("performance")
     song = payload.get("song")
     show = payload.get("show")
     if not isinstance(performance, dict) or not isinstance(song, dict) or not isinstance(show, dict):
-        return None
+        return None, None
     performance_id = performance.get("performance_id")
     song_id = song.get("song_id")
     show_id = show.get("show_id")
     if not performance_id or not song_id or not show_id:
-        return None
+        return None, None
 
     set_label = performance.get("set_label") or None
-    try:
-        current_position = int(performance.get("position_in_set") or 0)
-    except (TypeError, ValueError):
-        current_position = 0
     same_set = [
         item
         for item in store.filtered_rows("performances", show_id=show_id)
@@ -372,7 +321,7 @@ def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> Perfor
     same_set.sort(key=position)
     current_index = next((index for index, item in enumerate(same_set) if item.get("performance_id") == performance_id), None)
     if current_index is None:
-        return None
+        return None, None
 
     def neighbor(item: dict[str, str] | None) -> PerformanceSpineNeighbor | None:
         if not item or not item.get("performance_id"):
@@ -380,20 +329,9 @@ def _performance_spine(payload: dict[str, Any], store: CanonicalStore) -> Perfor
         neighbor_song = store.one("songs", item.get("song_id", "")) or {}
         return PerformanceSpineNeighbor(performance_id=item["performance_id"], title=neighbor_song.get("title") or "Unknown song")
 
-    venue = store.one("venues", show.get("venue_id", "")) or {}
-    show_label = " — ".join(
-        part for part in [show.get("show_date"), venue.get("name")] if part
-    ) or show_id
-    return PerformanceSpineBlock(
-        type="performance_spine",
-        performance_id=performance_id,
-        song_id=song_id,
-        title="Set context",
-        show_label=show_label,
-        set_label=set_label,
-        position_in_set=str(current_position) if current_position else performance.get("position_in_set") or None,
-        previous=neighbor(same_set[current_index - 1] if current_index > 0 else None),
-        next=neighbor(same_set[current_index + 1] if current_index + 1 < len(same_set) else None),
+    return (
+        neighbor(same_set[current_index - 1] if current_index > 0 else None),
+        neighbor(same_set[current_index + 1] if current_index + 1 < len(same_set) else None),
     )
 
 
@@ -445,14 +383,6 @@ def _setlist_sections(
             )
         )
     return [SetlistSection(label=label, songs=songs[:40]) for label, songs in list(grouped.items())[:4]]
-
-
-def _show_setlist(payload: dict[str, Any], store: CanonicalStore) -> ShowSetlistBlock | None:
-    show = payload.get("show")
-    sets = _setlist_sections(payload, store)
-    if not isinstance(show, dict) or not sets:
-        return None
-    return ShowSetlistBlock(type="show_setlist", show_id=show["show_id"], title="Setlist", sets=sets)
 
 
 # --- semantic units ---------------------------------------------------------
@@ -541,17 +471,16 @@ def _show_listen_actions(
 
 
 def _guest_items(payload: dict[str, Any], store: CanonicalStore) -> list[PerformerItem]:
-    performers = _show_performers(payload, store)
-    if not performers:
-        return []
-    return [item for item in performers.items if item.role == "guest"][:8]
+    performers = _show_lineup(payload, store)
+    return [item for item in performers if item.role == "guest"][:8]
 
 
 def _show_unit(
     payload: dict[str, Any],
     store: CanonicalStore,
     *,
-    role: UnitRole | None = None,
+    emphasis: Emphasis = "supporting",
+    judgments: list[str] | None = None,
     note: str | None = None,
     title: str | None = None,
     visible_facets: list[str] | None = None,
@@ -583,6 +512,7 @@ def _show_unit(
     )
     highlighted = frozenset(pid for pid in (highlighted_performance_ids or []) if pid in own_performance_ids)
     listen, listen_sources = _show_listen_actions(payload, store, preferred_recording_id)
+    recordings = _show_recordings(payload, store) if "recordings" in facets else []
     venue = payload.get("venue")
     block = ShowUnitBlock(
         type="show_unit",
@@ -591,18 +521,26 @@ def _show_unit(
         show_date=show["show_date"],
         venue_name=venue.get("name") if isinstance(venue, dict) else None,
         location=_venue_location(venue),
-        role=role,
+        emphasis=emphasis,
+        judgments=list(judgments or [])[:5],
         note=(note or "").strip() or None,
-        visible_facets=list(facets),
+        visible_facets=sorted(facets, key=["guests", "listen", "setlist", "sources", "lineup", "recordings"].index),
         setlist_disclosure=setlist_disclosure,
         sets=_setlist_sections(payload, store, highlighted) if "setlist" in facets else [],
         setlist_note=(show.get("setlist_note") or None) if "setlist" in facets else None,
         guests=_guest_items(payload, store) if "guests" in facets else [],
+        lineup=_show_lineup(payload, store) if "lineup" in facets else [],
+        recordings=recordings,
         listen=listen if "listen" in facets else [],
         sources=(sources or [])[:4] if "sources" in facets else [],
         follow_up=(follow_up or "").strip() or None,
     )
-    return block, listen_sources if "listen" in facets else []
+    result_sources = list(listen_sources) if "listen" in facets else []
+    result_sources.extend(
+        SourceReference(source_id=item.source_id, kind="contextual_resource", label=item.source_type, url=item.url)
+        for item in recordings
+    )
+    return block, result_sources
 
 
 def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
@@ -643,7 +581,8 @@ def _performance_unit(
     context: dict[str, Any],
     store: CanonicalStore,
     *,
-    role: UnitRole | None = None,
+    emphasis: Emphasis = "supporting",
+    judgments: list[str] | None = None,
     note: str | None = None,
     sources: list[UnitSource] | None = None,
     follow_up: str | None = None,
@@ -655,7 +594,7 @@ def _performance_unit(
         return None
     if not performance.get("performance_id") or not song.get("song_id") or not show.get("show_id") or not song.get("title"):
         return None
-    spine = _performance_spine(context, store)
+    previous, next_ = _set_neighbors(context, store)
     venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
     show_label = " — ".join(part for part in [show.get("show_date"), venue.get("name") if venue else None] if part) or show["show_id"]
     return PerformanceUnitBlock(
@@ -670,10 +609,11 @@ def _performance_unit(
         location=_venue_location(venue),
         set_label=performance.get("set_label") or None,
         position_in_set=performance.get("position_in_set") or None,
-        role=role,
+        emphasis=emphasis,
+        judgments=list(judgments or [])[:5],
         note=(note or "").strip() or None,
-        previous=spine.previous if spine else None,
-        next=spine.next if spine else None,
+        previous=previous,
+        next=next_,
         listen=_performance_listen_actions(context),
         sources=(sources or [])[:4],
         follow_up=(follow_up or "").strip() or None,
@@ -711,7 +651,6 @@ def _era_unit(
     *,
     title: str,
     span: str | None = None,
-    role: UnitRole | None = None,
     note: str | None = None,
     sources: list[UnitSource] | None = None,
     follow_up: str | None = None,
@@ -723,7 +662,6 @@ def _era_unit(
         type="era_unit",
         title=title.strip(),
         span=(span or "").strip() or None,
-        role=role,
         note=(note or "").strip() or None,
         performances=items[:6],
         sources=(sources or [])[:4],
@@ -735,7 +673,8 @@ def _album_unit(
     payload: dict[str, Any],
     store: CanonicalStore,
     *,
-    role: UnitRole | None = None,
+    emphasis: Emphasis = "supporting",
+    judgments: list[str] | None = None,
     note: str | None = None,
     title: str | None = None,
     visible_facets: list[str] | None = None,
@@ -804,7 +743,8 @@ def _album_unit(
         artist_name=release.get("artist_name") or None,
         release_date=release.get("release_date") or None,
         release_type=release.get("release_type") or "studio",
-        role=role,
+        emphasis=emphasis,
+        judgments=list(judgments or [])[:5],
         note=(note or "").strip() or None,
         tracks=tracks,
         personnel=personnel,
@@ -927,11 +867,11 @@ def _show_selection_blocks(payload: dict[str, Any]) -> tuple[list[ShowSelectionB
     return blocks, sources
 
 
-def _show_performers(payload: dict[str, Any], store: CanonicalStore) -> PerformerListBlock | None:
+def _show_lineup(payload: dict[str, Any], store: CanonicalStore) -> list[PerformerItem]:
     show = payload.get("show")
     assignments = payload.get("performers")
     if not isinstance(show, dict) or not isinstance(assignments, list):
-        return None
+        return []
 
     grouped: dict[tuple[str, str], PerformerItem] = {}
     for assignment in assignments:
@@ -951,14 +891,7 @@ def _show_performers(payload: dict[str, Any], store: CanonicalStore) -> Performe
         elif instrument not in item.instruments:
             item.instruments.append(instrument)
 
-    if not grouped:
-        return None
-    return PerformerListBlock(
-        type="performer_list",
-        show_id=show["show_id"],
-        title="Performers",
-        items=list(grouped.values())[:24],
-    )
+    return list(grouped.values())[:24]
 
 
 def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
@@ -1018,7 +951,7 @@ def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
     )
 
 
-def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> RecordingListBlock | None:
+def _show_recordings(payload: dict[str, Any], store: CanonicalStore) -> list[RecordingItem]:
     show = payload.get("show")
     recordings = (
         store.filtered_rows("recordings", show_id=show.get("show_id"))
@@ -1026,7 +959,7 @@ def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> Recording
         else payload.get("recordings")
     )
     if not isinstance(recordings, list):
-        return None
+        return []
 
     items: list[RecordingItem] = []
     seen_ids: set[str] = set()
@@ -1053,22 +986,17 @@ def _recording_list(payload: dict[str, Any], store: CanonicalStore) -> Recording
                 source_id=f"recording:{recording_id}",
             )
         )
-    if not items:
-        return None
-    return RecordingListBlock(
-        type="recording_list",
-        show_id=show.get("show_id") if isinstance(show, dict) else None,
-        title="Recordings",
-        items=items[:8],
-    )
+    return items[:8]
 
 
 def _song_overview(
     context: dict[str, Any],
     store: CanonicalStore,
     *,
-    role: UnitRole | None = None,
+    emphasis: Emphasis = "supporting",
+    judgments: list[str] | None = None,
     note: str | None = None,
+    visible_facets: list[str] | None = None,
     representative_performance_ids: list[str] | None = None,
     sources: list[UnitSource] | None = None,
     follow_up: str | None = None,
@@ -1076,54 +1004,69 @@ def _song_overview(
     song = context.get("song")
     if not isinstance(song, dict) or not song.get("song_id"):
         return None
-    credits: list[CreditItem] = []
-    for writer in context.get("writers", []) if isinstance(context.get("writers"), list) else []:
-        person = store.one("people", writer.get("person_id", "")) if isinstance(writer, dict) else None
-        credit_role = writer.get("writer_role", "") if isinstance(writer, dict) else ""
-        if person and credit_role:
-            credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=credit_role))
+    facets = frozenset(visible_facets) if visible_facets is not None else frozenset({"representatives"})
     performances = context.get("performances") if isinstance(context.get("performances"), list) else []
-    all_albums = [
-        SongReleaseItem(
-            release_id=release["release_id"],
-            title=release.get("title") or release["release_id"],
-            release_date=release.get("release_date"),
-            release_type=release.get("release_type") or "live",
-        )
-        for release in (context.get("releases") or [])
-        if isinstance(release, dict) and release.get("release_id")
-    ]
-    # song_releases (data.py) orders releases earliest-first with undated
-    # releases last, which is correct on its own terms. But truncating that
-    # order to 6 can crowd a studio album out entirely behind live releases
-    # that happen to carry a date. Present studio releases first so the
-    # truncation never hides the studio record a user is most likely after.
-    studio_albums = [album for album in all_albums if album.release_type == "studio"]
-    other_albums = [album for album in all_albums if album.release_type != "studio"]
-    albums = (studio_albums + other_albums)[:6]
-    performance_items = {
-        item.performance_id: item
-        for item in _performance_items(performances, store)
-    }
-    representatives = [
-        SongRepresentativePerformance(
-            performance_id=item.performance_id,
-            show_id=item.show_id,
-            show_date=item.show_date,
-            show_label=item.show_label,
-            set_label=item.set_label,
-            listen_url=item.listen_url,
-        )
-        for performance_id in (representative_performance_ids or [])
-        if (item := performance_items.get(performance_id)) is not None
-    ]
+
+    credits: list[CreditItem] = []
+    if "credits" in facets:
+        for writer in context.get("writers", []) if isinstance(context.get("writers"), list) else []:
+            person = store.one("people", writer.get("person_id", "")) if isinstance(writer, dict) else None
+            credit_role = writer.get("writer_role", "") if isinstance(writer, dict) else ""
+            if person and credit_role:
+                credits.append(CreditItem(person_id=writer["person_id"], name=person.get("name") or writer["person_id"], role=credit_role))
+
+    albums: list[SongReleaseItem] = []
+    if "albums" in facets:
+        all_albums = [
+            SongReleaseItem(
+                release_id=release["release_id"],
+                title=release.get("title") or release["release_id"],
+                release_date=release.get("release_date"),
+                release_type=release.get("release_type") or "live",
+            )
+            for release in (context.get("releases") or [])
+            if isinstance(release, dict) and release.get("release_id")
+        ]
+        # song_releases (data.py) orders releases earliest-first with undated
+        # releases last, which is correct on its own terms. But truncating that
+        # order to 6 can crowd a studio album out entirely behind live releases
+        # that happen to carry a date. Present studio releases first so the
+        # truncation never hides the studio record a user is most likely after.
+        studio_albums = [album for album in all_albums if album.release_type == "studio"]
+        other_albums = [album for album in all_albums if album.release_type != "studio"]
+        albums = (studio_albums + other_albums)[:6]
+
+    representatives: list[SongRepresentativePerformance] = []
+    if "representatives" in facets:
+        performance_items = {
+            item.performance_id: item
+            for item in _performance_items(performances, store)
+        }
+        representatives = [
+            SongRepresentativePerformance(
+                performance_id=item.performance_id,
+                show_id=item.show_id,
+                show_date=item.show_date,
+                show_label=item.show_label,
+                set_label=item.set_label,
+                listen_url=item.listen_url,
+            )
+            for performance_id in (representative_performance_ids or [])
+            if (item := performance_items.get(performance_id)) is not None
+        ]
+
+    history = _song_history(performances, store) if "history" in facets else None
+
     return SongOverviewBlock(
         type="song_overview",
         song_id=song["song_id"],
         title=song.get("title") or "Untitled song",
         original_artist=song.get("original_artist") or None,
         known_performance_count=len(performances),
-        role=role,
+        emphasis=emphasis,
+        judgments=list(judgments or [])[:5],
+        visible_facets=sorted(facets, key=["representatives", "history", "credits", "albums"].index),
+        history=history,
         note=(note or "").strip() or None,
         representative_performances=representatives[:3],
         credits=credits[:12],

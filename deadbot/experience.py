@@ -15,16 +15,7 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
-ExperienceMode = Literal[
-    "quick_fact",
-    "performance",
-    "show",
-    "listening",
-    "comparison",
-    "research",
-    "musician",
-    "gap",
-]
+ExperienceMode = Literal["answer", "gap"]
 
 
 class ExperienceModel(BaseModel):
@@ -68,26 +59,9 @@ class SetlistSection(ExperienceModel):
     songs: list[SetlistSong] = Field(min_length=1, max_length=40)
 
 
-class ShowSetlistBlock(ExperienceModel):
-    type: Literal["show_setlist"]
-    show_id: str
-    title: str
-    sets: list[SetlistSection] = Field(min_length=1, max_length=4)
-
-
-UnitRole = Literal[
-    "anchor",
-    "supporting",
-    "contrast",
-    "turning_point",
-    "outlier",
-    "culmination",
-    "overlooked",
-    "representative",
-]
-
-UnitOrganization = Literal["chronological", "curated", "comparative"]
-ShowFacet = Literal["guests", "listen", "setlist", "sources"]
+Emphasis = Literal["primary", "supporting", "mention"]
+ShowFacet = Literal["guests", "listen", "setlist", "sources", "lineup", "recordings"]
+SongFacet = Literal["credits", "albums", "history", "representatives"]
 SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
 GroupPresentation = Literal["collection", "sequence", "comparison", "argument"]
 
@@ -143,13 +117,6 @@ class RecordingItem(ExperienceModel):
     source_id: str
 
 
-class RecordingListBlock(ExperienceModel):
-    type: Literal["recording_list"]
-    show_id: str | None = None
-    title: str
-    items: list[RecordingItem] = Field(min_length=1, max_length=8)
-
-
 class PerformerItem(ExperienceModel):
     person_id: str
     name: str
@@ -157,17 +124,42 @@ class PerformerItem(ExperienceModel):
     instruments: list[str] = Field(min_length=1, max_length=8)
 
 
-class PerformerListBlock(ExperienceModel):
-    type: Literal["performer_list"]
+class PerformanceListItem(ExperienceModel):
+    performance_id: str
     show_id: str
-    title: str
-    items: list[PerformerItem] = Field(min_length=1, max_length=24)
+    show_date: str | None = None
+    show_label: str
+    set_label: str | None = None
+    position_in_set: str | None = None
+    # The library's track link for this rendition, when it has one; the
+    # performance's label links there.
+    listen_url: str | None = None
+
+
+class ComparisonStripItem(ExperienceModel):
+    performance_id: str
+    show_id: str
+    year: int
+    show_date: str | None = None
+    show_label: str
+    set_label: str | None = None
+    position_in_set: str | None = None
+    listen_url: str | None = None
+
+
+class SongHistory(ExperienceModel):
+    """A song's documented stage life: first, last, and one performance per year."""
+
+    known_count: int = Field(ge=1)
+    first: PerformanceListItem
+    last: PerformanceListItem
+    by_year: list[ComparisonStripItem] = Field(default_factory=list, max_length=12)
 
 
 class ShowUnitBlock(ExperienceModel):
     """One show as a primary object of the answer, hydrated from the store.
 
-    The composer supplies the interpretive fields (role, note, highlights,
+    The composer supplies the interpretive fields (emphasis, note, highlights,
     preferred recording, sources, follow-up); date, venue, setlist, guests and
     listening actions come from canonical data.
     """
@@ -178,25 +170,19 @@ class ShowUnitBlock(ExperienceModel):
     show_date: str
     venue_name: str | None = None
     location: str | None = None
-    role: UnitRole | None = None
+    emphasis: Emphasis = "supporting"
     note: str | None = None
-    visible_facets: list[ShowFacet] = Field(default_factory=list, max_length=4)
+    visible_facets: list[ShowFacet] = Field(default_factory=list, max_length=6)
     setlist_disclosure: SetlistDisclosure = "expanded"
     sets: list[SetlistSection] = Field(default_factory=list, max_length=4)
     setlist_note: str | None = None
     guests: list[PerformerItem] = Field(default_factory=list, max_length=8)
+    lineup: list[PerformerItem] = Field(default_factory=list, max_length=24)
+    recordings: list[RecordingItem] = Field(default_factory=list, max_length=8)
+    judgments: list[str] = Field(default_factory=list, max_length=5)
     listen: list[ListenAction] = Field(default_factory=list, max_length=4)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
     follow_up: str | None = None
-
-
-class ShowExplorerBlock(ExperienceModel):
-    """A collection-level experience for browsing several complete show units."""
-
-    type: Literal["show_explorer"]
-    title: str
-    organization: UnitOrganization = "chronological"
-    items: list[ShowUnitBlock] = Field(min_length=1, max_length=8)
 
 
 class PerformanceUnitBlock(ExperienceModel):
@@ -213,7 +199,8 @@ class PerformanceUnitBlock(ExperienceModel):
     location: str | None = None
     set_label: str | None = None
     position_in_set: str | None = None
-    role: UnitRole | None = None
+    emphasis: Emphasis = "supporting"
+    judgments: list[str] = Field(default_factory=list, max_length=5)
     note: str | None = None
     previous: PerformanceSpineNeighbor | None = None
     next: PerformanceSpineNeighbor | None = None
@@ -239,7 +226,6 @@ class EraUnitBlock(ExperienceModel):
     type: Literal["era_unit"]
     title: str
     span: str | None = None
-    role: UnitRole | None = None
     note: str | None = None
     performances: list[EraPerformanceItem] = Field(min_length=1, max_length=6)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
@@ -274,7 +260,8 @@ class AlbumUnitBlock(ExperienceModel):
     artist_name: str | None = None
     release_date: str | None = None
     release_type: str
-    role: UnitRole | None = None
+    emphasis: Emphasis = "supporting"
+    judgments: list[str] = Field(default_factory=list, max_length=5)
     note: str | None = None
     tracks: list[AlbumTrackItem] = Field(default_factory=list, max_length=30)
     personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=20)
@@ -374,7 +361,10 @@ class SongOverviewBlock(ExperienceModel):
     title: str
     original_artist: str | None = None
     known_performance_count: int
-    role: UnitRole | None = None
+    emphasis: Emphasis = "supporting"
+    judgments: list[str] = Field(default_factory=list, max_length=5)
+    visible_facets: list[SongFacet] = Field(default_factory=lambda: ["representatives"], max_length=4)
+    history: SongHistory | None = None
     note: str | None = None
     representative_performances: list[SongRepresentativePerformance] = Field(default_factory=list, max_length=3)
     credits: list[CreditItem] = Field(default_factory=list, max_length=12)
@@ -393,74 +383,6 @@ class MediaLinkBlock(ExperienceModel):
     is_official: bool
     embed_kind: Literal["spotify", "youtube"] | None = None
     embed_id: str | None = None
-
-
-class PerformanceListItem(ExperienceModel):
-    performance_id: str
-    show_id: str
-    show_date: str | None = None
-    show_label: str
-    set_label: str | None = None
-    position_in_set: str | None = None
-    # The library's track link for this rendition, when it has one; the
-    # performance's label links there.
-    listen_url: str | None = None
-
-
-class PerformanceExtremesBlock(ExperienceModel):
-    type: Literal["performance_extremes"]
-    song_id: str
-    title: str
-    first: PerformanceListItem
-    last: PerformanceListItem
-
-
-class PerformanceListBlock(ExperienceModel):
-    type: Literal["performance_list"]
-    title: str
-    song_id: str
-    known_count: int
-    items: list[PerformanceListItem] = Field(min_length=1, max_length=20)
-
-
-class ComparisonStripItem(ExperienceModel):
-    performance_id: str
-    show_id: str
-    year: int
-    show_date: str | None = None
-    show_label: str
-    set_label: str | None = None
-    position_in_set: str | None = None
-    listen_url: str | None = None
-
-
-class ComparisonStripBlock(ExperienceModel):
-    """Selected grounded performances of one song over time.
-
-    Entries are representative selections from current library coverage —
-    canonical dates and set placement only, never musical analysis.
-    """
-
-    type: Literal["comparison_strip"]
-    song_id: str
-    title: str
-    known_count: int
-    coverage_note: str
-    items: list[ComparisonStripItem] = Field(min_length=2, max_length=12)
-
-
-class PerformanceSpineBlock(ExperienceModel):
-    """Place one rendition back into its documented set sequence."""
-
-    type: Literal["performance_spine"]
-    performance_id: str
-    song_id: str
-    title: str
-    show_label: str
-    set_label: str | None = None
-    position_in_set: str | None = None
-    previous: PerformanceSpineNeighbor | None = None
-    next: PerformanceSpineNeighbor | None = None
 
 
 class CoverageBlock(ExperienceModel):
@@ -572,24 +494,16 @@ class EditorialBlock(ExperienceModel):
 ExperienceBlock = Annotated[
     EntityCardBlock
     | ShowUnitBlock
-    | ShowExplorerBlock
     | PerformanceUnitBlock
     | EraUnitBlock
     | AlbumUnitBlock
-    | ShowSetlistBlock
     | ShowSelectionBlock
-    | RecordingListBlock
-    | PerformerListBlock
     | GuestAppearanceListBlock
     | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock
     | SongOverviewBlock
     | MediaLinkBlock
-    | PerformanceListBlock
-    | PerformanceExtremesBlock
-    | PerformanceSpineBlock
-    | ComparisonStripBlock
     | CoverageBlock
     | ArrangementBlock
     | ArrangementSearchBlock
@@ -613,13 +527,6 @@ class ExperienceRequest(ExperienceModel):
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
 
 
-class LayoutSection(ExperienceModel):
-    """A server-validated region in the composed main column."""
-
-    region: Literal["primary", "supporting", "context", "media"]
-    block_indexes: list[int] = Field(min_length=1, max_length=8)
-
-
 class ExperienceGroup(ExperienceModel):
     """A model-selected relationship between one or more body blocks.
 
@@ -631,23 +538,20 @@ class ExperienceGroup(ExperienceModel):
     title: str | None = None
     lead: str | None = None
     presentation: GroupPresentation
+    criteria: list[str] = Field(default_factory=list, max_length=5)
     block_indexes: list[int] = Field(min_length=1, max_length=12)
 
 
 class ExperienceResponse(ExperienceModel):
-    schema_version: Literal["1"] = "1"
+    schema_version: Literal["2"] = "2"
     thread_id: str
     title: str
     answer: str
     body_lead: str | None = None
-    mode: ExperienceMode = "quick_fact"
+    mode: ExperienceMode = "answer"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
-    # Four layout regions can each carry up to eight blocks. Keep the response
-    # envelope aligned with that 32-block layout capacity so a deeply researched
-    # candidate packet can be edited without a schema failure.
     blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=32)
     groups: list[ExperienceGroup] = Field(default_factory=list, max_length=8)
-    layout: list[LayoutSection] = Field(default_factory=list, max_length=4)
     # A 32-block exploratory response can legitimately reference more than one
     # source per block (for example, show identity plus a recording path).
     sources: list[SourceReference] = Field(default_factory=list, max_length=64)

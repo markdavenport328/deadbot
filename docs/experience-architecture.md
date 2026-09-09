@@ -100,8 +100,9 @@ by a URL a tool returned this turn), and where curiosity might go next.
 | Unit | Declares | Hydrated by the server |
 | --- | --- | --- |
 | `show_unit` | One show is a primary object of the answer. | Date, venue, location, guests, the setlist with highlights marked and each song playable, listening actions (preferred recording, stream, official release, archive listing), sources. |
-| `show_explorer` | A collection of show units under one organization (chronological, curated, comparative). | Repeated show anatomy with consistent controls; ungrounded shows are dropped. |
 | `performance_unit` | One rendition is a primary object. | Song, show, venue, set placement, set neighbors, play actions (this track, the full show). |
+| `album_unit` | One official record is a primary object. | Title, release date and type, model-selected facets (listen, tracklist, personnel, sources), highlighted songs, sources. |
+| `song_overview` | One song is a primary object. | Identity, model-selected facets (representative performances, credits, albums, history of first and last documented performances with one rendition per year), sources. |
 | `era_unit` | A stage of a development the model names. | Representative performances as listening paths. |
 
 The unit follows the shape of the answer, not the entity type of the
@@ -124,9 +125,6 @@ The catalog combines flexible editorial patterns with richer domain components. 
 | Fact grid | Emphasize a small set of details that matter together. | Model selects labels, values, and optional context from grounded material. |
 | Timeline | Show sequence, change, or span when it clarifies the material. | Model shapes grounded markers and details; chronology is not forced for every date-bearing result. |
 | Entity header | Identify a song, show, performance, person, or venue. | Uses a canonical entity reference. |
-| Song, show, or performance card | Present core identity, ordering, personnel, recording, or release context. | Uses canonical data; show performance-specific facts only for the referenced rendition. |
-| Performance spine | Place one rendition among its directly adjacent songs in a documented set. | Uses only canonical set order; it must not imply musical analysis or a segue beyond what is stored. |
-| Comparison strip | Place selected renditions of one song across years. | Canonical performances only; one representative rendition per known year, with an explicit coverage note; never musical analysis. |
 | Resource list | Group relevant interviews, articles, lessons, chord charts, or videos. | Links use stored resource metadata and retain source labels. |
 | Composition credit list | Show known lyric, music, and writer roles for a song. | Uses canonical person/role rows and source-resource IDs; never presents unresolved candidates as confirmed credits. |
 | Media player | Offer approved playback or video. | Uses a server-validated provider link; never model-authored iframe markup. |
@@ -136,6 +134,8 @@ The catalog combines flexible editorial patterns with richer domain components. 
 | Quote card | Present a short, attributed excerpt. | Available only from a permitted source-reader result with attribution, URL, and excerpt limits. It is contextual material, never canonical fact. |
 | Provenance note | Explain the distinction between canonical data and an outside source. | Uses the corresponding source registry entries. |
 | Gap state | Explain a library limit or missing result. | Must not substitute a partial entity match or unrelated material. |
+
+Facets of a unit (setlist, lineup, recordings, performance history, credits, albums) render inside the unit; they are not separate blocks.
 
 Cards and lists are presentation patterns, not new domain entities. The canonical graph remains the source of truth for the relationships they expose.
 

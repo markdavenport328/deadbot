@@ -176,6 +176,10 @@ def _fit_budget(payload: dict[str, Any]) -> dict[str, Any]:
             top.pop()
         if not top:
             resources.pop("top", None)
+    song_lore = payload.get("song_lore")
+    if isinstance(song_lore, list):
+        while len(song_lore) > 1 and _size(payload) > _CHAR_BUDGET:
+            song_lore.pop()
     trail = payload.get("source_trail")
     if isinstance(trail, dict) and isinstance(trail.get("why_open"), str) and _size(payload) > _CHAR_BUDGET:
         why_open = trail["why_open"]
@@ -266,6 +270,24 @@ def pathways_for(store: CanonicalStore, entities: list[tuple[str, str]]) -> dict
                 resource_releases_by_release.setdefault(release_id, []).append(resource_id)
                 resource_ids_needed.add(resource_id)
 
+    lore_songs_by_release: dict[str, list[tuple[str, str]]] = {}
+    track_resources_by_song: dict[str, list[str]] = {}
+    if release_ids:
+        track_song_ids_by_release: dict[str, list[str]] = {}
+        for row in store.rows_in("official_release_tracks", "release_id", release_ids):
+            release_id, song_id = row.get("release_id", ""), row.get("song_id", "")
+            if release_id and song_id:
+                track_song_ids_by_release.setdefault(release_id, []).append(song_id)
+        track_song_ids = {song_id for song_ids in track_song_ids_by_release.values() for song_id in song_ids}
+        for row in store.rows_in("resource_songs", "song_id", track_song_ids):
+            song_id, resource_id = row.get("song_id", ""), row.get("resource_id", "")
+            if song_id and resource_id:
+                track_resources_by_song.setdefault(song_id, []).append(resource_id)
+                resource_ids_needed.add(resource_id)
+        titles = {row["song_id"]: row.get("title") or row["song_id"] for row in store.rows_in("songs", "song_id", track_song_ids)}
+        for release_id, song_ids in track_song_ids_by_release.items():
+            lore_songs_by_release[release_id] = [(song_id, titles.get(song_id, song_id)) for song_id in _dedupe(song_ids) if song_id in track_resources_by_song]
+
     resources_by_id: dict[str, dict[str, str]] = {}
     if resource_ids_needed:
         resources_by_id = {
@@ -343,6 +365,14 @@ def pathways_for(store: CanonicalStore, entities: list[tuple[str, str]]) -> dict
             if resources:
                 payload["resources"] = resources
                 cataloged = True
+
+            song_lore = [
+                {"song_id": song_id, "title": title}
+                for song_id, title in lore_songs_by_release.get(entity_id, [])
+                if _resource_summary([resources_by_id[rid] for rid in track_resources_by_song.get(song_id, []) if rid in resources_by_id])
+            ][:6]
+            if song_lore:
+                payload["song_lore"] = song_lore
 
         entity_payload = {"cataloged": cataloged, **payload, "research_routes": list(_RESEARCH_ROUTES[kind])}
         result[entity_id] = _fit_budget(entity_payload)

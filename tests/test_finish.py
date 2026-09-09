@@ -28,29 +28,48 @@ def test_keep_grounded_links_strips_urls_the_tools_did_not_return():
     assert finish.keep_grounded_links(text, urls) == "Hear it on [Archive.org](https://archive.org/details/gd1972-08-27) or elsewhere."
 
 
-def test_finish_plan_accepts_editorial_blocks_and_library_references():
+def test_finish_plan_accepts_editorial_blocks_and_unit_references_in_groups():
     plan = finish.FinishPlan.model_validate(
         {
             "chat_answer": "Sugaree opened the second set.",
             "title": "Sugaree at Veneta",
             "lead": "A relaxed early version.",
-            "mode": "performance",
-            "body": [
+            "groups": [
                 {
-                    "type": "editorial",
-                    "presentation": "narrative",
-                    "eyebrow": None,
-                    "title": "Why this one",
-                    "paragraphs": ["Garcia stretches the solo."],
-                    "items": [],
-                },
-                {"type": "show_setlist", "show_id": "gd-1972-08-27", "title": "The whole night"},
-                {"type": "recording_list", "show_id": "gd-1972-08-27", "recording_ids": ["recording-gd-1972-08-27-sbd-4682"], "title": None},
+                    "presentation": "collection",
+                    "items": [
+                        {"type": "editorial", "presentation": "narrative", "title": "Why this one", "paragraphs": ["Garcia stretches the solo."], "items": []},
+                        {"type": "show_unit", "show_id": "gd-1972-08-27", "emphasis": "primary", "visible_facets": ["setlist", "recordings"]},
+                    ],
+                }
             ],
         }
     )
-    assert [item.type for item in plan.body] == ["editorial", "show_setlist", "recording_list"]
-    assert plan.body[1].title == "The whole night"
+    assert [item.type for item in plan.groups[0].items] == ["editorial", "show_unit"]
+    assert plan.groups[0].items[1].emphasis == "primary"
+    for field in ("mode", "body"):
+        assert field not in finish.FinishPlan.model_fields
+
+
+def test_finish_plan_rejects_removed_single_dimension_references():
+    from pydantic import ValidationError
+
+    for kind in ("show_setlist", "performer_list", "recording_list", "performance_list", "performance_extremes", "comparison_strip", "performance_spine", "show_explorer"):
+        try:
+            finish.GroupPlan.model_validate({"presentation": "collection", "items": [{"type": kind, "show_id": "x", "song_id": "y", "performance_id": "z", "items": []}]})
+        except ValidationError:
+            continue
+        raise AssertionError(f"{kind} should no longer be accepted")
+
+
+def test_role_maps_to_emphasis_when_emphasis_is_omitted():
+    anchor = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor")
+    contrast = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="contrast")
+    explicit = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor", emphasis="mention")
+    assert finish._emphasis_for(anchor) == "primary"
+    assert finish._emphasis_for(contrast) == "supporting"
+    assert finish._emphasis_for(explicit) == "mention"
+    assert finish._emphasis_for(finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")) == "supporting"
 
 
 def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
@@ -59,7 +78,7 @@ def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
     assert tool.args_schema is finish.FinishPlan
     assert "finished" in tool.description.casefold() or "deliver" in tool.description.casefold()
     result = tool.invoke(
-        {"chat_answer": "Hi", "title": "Deadbot", "lead": None, "mode": "quick_fact", "body": []}
+        {"chat_answer": "Hi", "title": "Deadbot", "lead": None, "groups": []}
     )
     assert "delivered" in result.casefold()
 
@@ -70,46 +89,6 @@ def _veneta_payloads(store):
     return [store.show_context(show), store.song_context(song)]
 
 
-def test_resolve_body_builds_referenced_components_with_model_titles():
-    store = CanonicalStore()
-    payloads = _veneta_payloads(store)
-    grounded = finish.grounded_context(payloads)
-    plan = finish.FinishPlan(
-        chat_answer="x",
-        title="Veneta",
-        lead=None,
-        mode="show",
-        body=[
-            finish.ShowSetlistRef(type="show_setlist", show_id="gd-1972-08-27", title="The whole night"),
-            finish.RecordingListRef(type="recording_list", show_id="gd-1972-08-27", recording_ids=["recording-gd-1972-08-27-sbd-4682"]),
-            finish.ComparisonStripRef(type="comparison_strip", song_id="song-sugaree"),
-        ],
-    )
-    blocks, sources = finish.resolve_body(plan, grounded, payloads, store)
-    assert [block.type for block in blocks] == ["show_setlist", "recording_list", "comparison_strip"]
-    assert blocks[0].title == "The whole night"
-    assert [item.recording_id for item in blocks[1].items] == ["recording-gd-1972-08-27-sbd-4682"]
-    assert any(source.url and "archive.org" in source.url for source in sources)
-
-
-def test_resolve_body_builds_the_default_recording_list_when_no_recordings_are_named():
-    store = CanonicalStore()
-    payloads = _veneta_payloads(store)
-    grounded = finish.grounded_context(payloads)
-    plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
-        mode="show",
-        body=[finish.RecordingListRef(type="recording_list", show_id="gd-1972-08-27")],
-    )
-    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
-    block = blocks[0]
-    assert block.type == "recording_list"
-    assert block.show_id == "gd-1972-08-27"
-    assert block.items
-
-
 def test_resolve_body_drops_references_the_tools_did_not_return():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
@@ -118,15 +97,19 @@ def test_resolve_body_drops_references_the_tools_did_not_return():
         chat_answer="x",
         title="t",
         lead=None,
-        mode="show",
-        body=[
-            finish.ShowSetlistRef(type="show_setlist", show_id="gd-1977-05-08"),
-            finish.MediaLinkRef(type="media_link", url="https://www.youtube.com/watch?v=notretrieved"),
-            finish.ShowSetlistRef(type="show_setlist", show_id="gd-1972-08-27"),
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08", visible_facets=["setlist"]),
+                    finish.MediaLinkRef(type="media_link", url="https://www.youtube.com/watch?v=notretrieved"),
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", visible_facets=["setlist"]),
+                ],
+            )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
-    assert [block.type for block in blocks] == ["show_setlist"]
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
+    assert [block.type for block in blocks] == ["show_unit"]
     assert blocks[0].show_id == "gd-1972-08-27"
 
 
@@ -139,22 +122,26 @@ def test_resolve_body_keeps_editorial_blocks_and_strips_ungrounded_links():
         chat_answer="x",
         title="t",
         lead=None,
-        mode="show",
-        body=[
-            {
-                "type": "editorial",
-                "presentation": "fact_grid",
-                "eyebrow": None,
-                "title": "Ways in",
-                "paragraphs": [f"Start with the [soundboard]({good_url}) or [this](https://example.com/no)."],
-                "items": [
-                    {"marker": "SBD", "title": "Soundboard", "value": None, "detail": None, "follow_up": None, "link": {"url": good_url, "label": "Archive"}},
-                    {"marker": "Bad", "title": "Nope", "value": None, "detail": None, "follow_up": None, "link": {"url": "https://example.com/no", "label": "x"}},
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    {
+                        "type": "editorial",
+                        "presentation": "fact_grid",
+                        "eyebrow": None,
+                        "title": "Ways in",
+                        "paragraphs": [f"Start with the [soundboard]({good_url}) or [this](https://example.com/no)."],
+                        "items": [
+                            {"marker": "SBD", "title": "Soundboard", "value": None, "detail": None, "follow_up": None, "link": {"url": good_url, "label": "Archive"}},
+                            {"marker": "Bad", "title": "Nope", "value": None, "detail": None, "follow_up": None, "link": {"url": "https://example.com/no", "label": "x"}},
+                        ],
+                    }
                 ],
-            }
+            )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
     block = blocks[0]
     assert block.paragraphs[0] == f"Start with the [soundboard]({good_url}) or this."
     assert block.items[0].link is not None and block.items[1].link is None
@@ -175,19 +162,23 @@ def test_resolve_body_keeps_a_song_payload_listening_link_and_strips_an_unreturn
         chat_answer="x",
         title="t",
         lead=None,
-        mode="performance",
-        body=[
-            {
-                "type": "editorial",
-                "presentation": "narrative",
-                "eyebrow": None,
-                "title": "Hear it",
-                "paragraphs": [f"Listen on [Archive.org]({archive_url}) or [elsewhere](https://example.com/not-returned)."],
-                "items": [],
-            }
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    {
+                        "type": "editorial",
+                        "presentation": "narrative",
+                        "eyebrow": None,
+                        "title": "Hear it",
+                        "paragraphs": [f"Listen on [Archive.org]({archive_url}) or [elsewhere](https://example.com/not-returned)."],
+                        "items": [],
+                    }
+                ],
+            )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     assert blocks[0].paragraphs[0] == f"Listen on [Archive.org]({archive_url}) or elsewhere."
 
 
@@ -200,10 +191,10 @@ def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
     person_id = payload["guests"][0]["person_id"]
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="musician",
-        body=[finish.GuestAppearancesRef(type="guest_appearance_list", person_id=person_id)],
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.GuestAppearancesRef(type="guest_appearance_list", person_id=person_id)])],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     assert blocks[0].type == "guest_appearance_list" and blocks[0].person_id == person_id
 
 
@@ -236,15 +227,19 @@ def test_resolve_body_resolves_research_and_canonical_resources_together():
         chat_answer="x",
         title="t",
         lead=None,
-        mode="research",
-        body=[
-            finish.ResourceListRef(
-                type="resource_list",
-                resource_ids=[canonical_resource_id, "research:dead.net:sugaree", "research:dead.net:missing"],
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ResourceListRef(
+                        type="resource_list",
+                        resource_ids=[canonical_resource_id, "research:dead.net:sugaree", "research:dead.net:missing"],
+                    )
+                ],
             )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
     block = blocks[0]
     assert block.type == "resource_list"
     titles = [item.title for item in block.items]
@@ -259,10 +254,10 @@ def test_resolve_body_resolves_song_overview():
     payload = store.song_context(song)
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="quick_fact",
-        body=[finish.SongOverviewRef(type="song_overview", song_id=song["song_id"])],
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.SongOverviewRef(type="song_overview", song_id=song["song_id"], visible_facets=["credits"])])],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     block = blocks[0]
     assert block.type == "song_overview"
     assert block.title == song["title"]
@@ -279,18 +274,21 @@ def test_song_overview_keeps_model_chosen_representative_performance_links():
         chat_answer="x",
         title="t",
         lead=None,
-        mode="comparison",
-        body=[
-            finish.SongOverviewRef(
-                type="song_overview",
-                song_id=song["song_id"],
-                role="representative",
-                note="A song with a long onstage life.",
-                representative_performance_ids=[chosen["performance_id"]],
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.SongOverviewRef(
+                        type="song_overview",
+                        song_id=song["song_id"],
+                        note="A song with a long onstage life.",
+                        representative_performance_ids=[chosen["performance_id"]],
+                    )
+                ],
             )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, finish.grounded_context([payload]), [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
     block = blocks[0]
     assert block.type == "song_overview"
     assert block.note == "A song with a long onstage life."
@@ -306,10 +304,10 @@ def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
     payload = store.song_context(song)
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="musician",
-        body=[finish.ArrangementRef(type="arrangement", arrangement_id=arrangement["arrangement_id"])],
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.ArrangementRef(type="arrangement", arrangement_id=arrangement["arrangement_id"])])],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     block = blocks[0]
     assert block.type == "arrangement"
     assert block.resource_id == arrangement["resource_id"]
@@ -335,22 +333,27 @@ def test_resolve_body_rejects_research_resources_from_unapproved_hosts():
     }
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="research",
-        body=[
-            finish.ResourceListRef(
-                type="resource_list",
-                resource_ids=[
-                    "research:dead.net:evil",
-                    "research:dead.net:insecure",
-                    "research:dead.net:fragment",
-                    "research:dead.net:sugaree",
-                    "research:editorial:essay",
-                    "research:editorial:trail",
+        chat_answer="x", title="t", lead=None,
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ResourceListRef(
+                        type="resource_list",
+                        resource_ids=[
+                            "research:dead.net:evil",
+                            "research:dead.net:insecure",
+                            "research:dead.net:fragment",
+                            "research:dead.net:sugaree",
+                            "research:editorial:essay",
+                            "research:editorial:trail",
+                        ],
+                    )
                 ],
             )
         ],
     )
-    blocks, sources = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, sources = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     block = blocks[0]
     assert block.type == "resource_list"
     # The unapproved host, the http URL, and the fragmented URL are all dropped.
@@ -375,48 +378,15 @@ def test_resolve_body_resolves_performer_and_equipment_lists_for_a_show():
     payload = store.show_context(store.resolve_show("1972-08-27"))
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="show",
-        body=[
-            finish.PerformerListRef(type="performer_list", show_id="gd-1972-08-27", title="Who was on stage"),
-            finish.EquipmentListRef(type="equipment_list", show_id="gd-1972-08-27"),
-        ],
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.EquipmentListRef(type="equipment_list", show_id="gd-1972-08-27")])],
     )
-    blocks, sources = finish.resolve_body(plan, grounded, [payload], store)
-    performers, equipment = blocks
-    assert [block.type for block in blocks] == ["performer_list", "equipment_list"]
-    assert performers.title == "Who was on stage"
-    assert performers.items and all(item.name and item.instruments for item in performers.items)
-    assert any(item.name == "Jerry Garcia" for item in performers.items)
+    blocks, sources = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
+    (equipment,) = blocks
+    assert [block.type for block in blocks] == ["equipment_list"]
     assert equipment.items and all(item.source_url.startswith("https://") for item in equipment.items)
     assert all(item.claim_type in {"show", "date_range"} for item in equipment.items)
     assert {item.source_id for item in equipment.items} <= {source.source_id for source in sources}
-
-
-def test_resolve_body_resolves_performance_extremes_and_spine():
-    store = CanonicalStore()
-    show_payload = store.show_context(store.resolve_show("1972-08-27"))
-    # A mid-set rendition, so the spine has canonical neighbours on both sides.
-    performance_id = show_payload["performances"][2]["performance_id"]
-    performance_payload = store.performance_context(performance_id)
-    payloads = [show_payload, performance_payload]
-    grounded = finish.grounded_context(payloads)
-    plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="performance",
-        body=[
-            finish.PerformanceExtremesRef(type="performance_extremes", song_id="song-sugaree"),
-            finish.PerformanceSpineRef(type="performance_spine", performance_id=performance_id),
-        ],
-    )
-    blocks, _ = finish.resolve_body(plan, grounded, payloads, store)
-    extremes, spine = blocks
-    assert [block.type for block in blocks] == ["performance_extremes", "performance_spine"]
-    assert extremes.song_id == "song-sugaree"
-    assert extremes.first.show_label and extremes.last.show_label
-    assert extremes.first.show_date <= extremes.last.show_date
-    assert spine.performance_id == performance_id
-    assert "1972-08-27" in spine.show_label
-    neighbours = [neighbour for neighbour in (spine.previous, spine.next) if neighbour]
-    assert neighbours and all(neighbour.title for neighbour in neighbours)
 
 
 def _store_with_selection_evidence() -> CanonicalStore:
@@ -454,11 +424,8 @@ def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloa
         next(tool for tool in build_tools(plain_store) if tool.name == "get_show_selections").invoke({})
     )
     assert empty_selection_payload["show_selections"] == []
-    dropped, _ = finish.resolve_body(
-        finish.FinishPlan(
-            chat_answer="x", title="t", lead=None, mode="research",
-            body=[finish.ShowSelectionRef(type="show_selection", selection_id="critic-show-selection-1")],
-        ),
+    dropped, _ = finish.resolve_items(
+        [finish.ShowSelectionRef(type="show_selection", selection_id="critic-show-selection-1")],
         finish.grounded_context([empty_selection_payload]),
         [empty_selection_payload],
         plain_store,
@@ -473,14 +440,11 @@ def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloa
     selection_id = selection_payload["show_selections"][0]["selection_id"]
     payloads = [arrangement_payload, selection_payload]
     grounded = finish.grounded_context(payloads)
-    plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="musician",
-        body=[
-            finish.ArrangementSearchRef(type="arrangement_search", key_signature="B", title="Documented in B"),
-            finish.ShowSelectionRef(type="show_selection", selection_id=selection_id),
-        ],
-    )
-    blocks, sources = finish.resolve_body(plan, grounded, payloads, store)
+    items = [
+        finish.ArrangementSearchRef(type="arrangement_search", key_signature="B", title="Documented in B"),
+        finish.ShowSelectionRef(type="show_selection", selection_id=selection_id),
+    ]
+    blocks, sources = finish.resolve_items(items, grounded, payloads, store)
     search, selection = blocks
     assert [block.type for block in blocks] == ["arrangement_search", "show_selection"]
     assert search.title == "Documented in B"
@@ -496,50 +460,49 @@ def test_finish_plan_accepts_semantic_units():
         {
             "chat_answer": "Five shows.",
             "title": "Branford with the Dead",
-            "mode": "show",
-            "body": [
-                {"type": "editorial", "presentation": "narrative", "paragraphs": ["Across the appearances he grew more integrated."]},
+            "groups": [
                 {
-                    "type": "show_explorer",
-                    "organization": "chronological",
+                    "presentation": "collection",
                     "items": [
-                        {"type": "show_unit", "show_id": "gd-1990-03-29", "role": "anchor", "note": "The debut.", "highlighted_performance_ids": ["p1"]},
-                        {"type": "show_unit", "show_id": "gd-1990-12-31", "role": "contrast", "supporting_sources": [{"url": "https://example.org/x", "note": "A quote."}]},
+                        {"type": "editorial", "presentation": "narrative", "paragraphs": ["Across the appearances he grew more integrated."]},
+                        {"type": "show_unit", "show_id": "gd-1990-03-29", "emphasis": "primary", "note": "The debut.", "highlighted_performance_ids": ["p1"]},
+                        {"type": "show_unit", "show_id": "gd-1990-12-31", "supporting_sources": [{"url": "https://example.org/x", "note": "A quote."}]},
+                        {"type": "performance_unit", "performance_id": "p1", "follow_up": "Another like this?"},
+                        {"type": "era_unit", "title": "1973–74: spacious", "span": "1973–74", "representative_performance_ids": ["p2", "p3"]},
                     ],
-                },
-                {"type": "performance_unit", "performance_id": "p1", "role": "representative", "follow_up": "Another like this?"},
-                {"type": "era_unit", "title": "1973–74: spacious", "span": "1973–74", "representative_performance_ids": ["p2", "p3"]},
+                }
             ],
         }
     )
-    assert [item.type for item in plan.body] == ["editorial", "show_explorer", "performance_unit", "era_unit"]
-    assert plan.body[1].items[0].role == "anchor"
-    assert plan.body[1].items[1].supporting_sources[0].url == "https://example.org/x"
+    assert [item.type for item in plan.groups[0].items] == ["editorial", "show_unit", "show_unit", "performance_unit", "era_unit"]
+    assert plan.groups[0].items[1].emphasis == "primary"
+    assert plan.groups[0].items[2].supporting_sources[0].url == "https://example.org/x"
 
 
-def test_resolve_groups_preserves_the_models_relationship_and_order():
+def test_resolve_groups_preserves_order_criteria_and_truncates_judgments():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
     plan = finish.FinishPlan(
         chat_answer="x",
         title="Veneta",
-        mode="research",
         groups=[
             finish.GroupPlan(
-                title="The case",
-                lead="The set and recording are the evidence.",
-                presentation="argument",
+                title="Two readings",
+                lead="Judged on the same terms.",
+                presentation="comparison",
+                criteria=["Pace", "Jam"],
                 items=[
-                    finish.ShowSetlistRef(type="show_setlist", show_id="gd-1972-08-27", title="The set"),
-                    finish.RecordingListRef(type="recording_list", show_id="gd-1972-08-27", title="A recording"),
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", emphasis="primary", judgments=["Relaxed", "Long", "Extra"]),
+                    finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", judgments=["Steady"]),
                 ],
             )
         ],
     )
     blocks, groups, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
-    assert [block.type for block in blocks] == ["show_setlist", "recording_list"]
-    assert groups[0].presentation == "argument"
-    assert groups[0].title == "The case" and groups[0].block_indexes == [0, 1]
+    assert [block.type for block in blocks] == ["show_unit", "song_overview"]
+    assert groups[0].presentation == "comparison" and groups[0].criteria == ["Pace", "Jam"]
+    assert blocks[0].emphasis == "primary" and blocks[0].judgments == ["Relaxed", "Long"]
+    assert blocks[1].emphasis == "supporting" and blocks[1].judgments == ["Steady"]
 
 
 def test_finish_plan_rejects_an_unknown_role():
@@ -557,27 +520,33 @@ def test_a_plan_may_declare_an_album_unit():
     plan = finish.FinishPlan(
         chat_answer="Truckin' closes American Beauty.",
         title="American Beauty",
-        mode="listening",
-        body=[{
-            "type": "album_unit",
-            "release_id": "release-american-beauty",
-            "visible_facets": ["listen", "tracklist"],
-            "highlighted_song_ids": ["song-truckin"],
-        }],
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[{
+                    "type": "album_unit",
+                    "release_id": "release-american-beauty",
+                    "visible_facets": ["listen", "tracklist"],
+                    "highlighted_song_ids": ["song-truckin"],
+                }],
+            )
+        ],
     )
-    assert plan.body[0].release_id == "release-american-beauty"
-    assert plan.body[0].visible_facets == ["listen", "tracklist"]
+    item = plan.groups[0].items[0]
+    assert item.release_id == "release-american-beauty"
+    assert item.visible_facets == ["listen", "tracklist"]
 
 
 def test_an_ungrounded_release_id_is_dropped():
+    items = [{"type": "album_unit", "release_id": "release-american-beauty"}]
+
     plan = finish.FinishPlan(
         chat_answer="x",
         title="x",
-        mode="listening",
-        body=[{"type": "album_unit", "release_id": "release-american-beauty"}],
+        groups=[finish.GroupPlan(presentation="collection", items=items)],
     )
-    blocks, _ = finish.resolve_body(
-        plan, finish.GroundedContext(ids=frozenset(), urls=frozenset()), [], CanonicalStore()
+    blocks, _ = finish.resolve_items(
+        plan.groups[0].items, finish.GroundedContext(ids=frozenset(), urls=frozenset()), [], CanonicalStore()
     )
     assert blocks == []
 
@@ -587,11 +556,15 @@ def test_a_grounded_release_id_hydrates_into_an_album_unit():
     plan = finish.FinishPlan(
         chat_answer="x",
         title="x",
-        mode="listening",
-        body=[{"type": "album_unit", "release_id": "release-american-beauty", "note": "The turn toward songs."}],
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[{"type": "album_unit", "release_id": "release-american-beauty", "note": "The turn toward songs."}],
+            )
+        ],
     )
     grounded = finish.GroundedContext(ids=frozenset({"release-american-beauty"}), urls=frozenset())
-    blocks, _ = finish.resolve_body(plan, grounded, [], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [], store)
     assert blocks[0].type == "album_unit"
     assert blocks[0].note == "The turn toward songs."
     assert blocks[0].tracks == [] and blocks[0].personnel == [] and blocks[0].listen == []
@@ -602,16 +575,20 @@ def test_album_unit_hydrates_only_the_facets_selected_by_the_composer():
     plan = finish.FinishPlan(
         chat_answer="x",
         title="x",
-        mode="listening",
-        body=[{
-            "type": "album_unit",
-            "release_id": "release-american-beauty",
-            "visible_facets": ["listen", "tracklist"],
-            "highlighted_song_ids": ["song-truckin"],
-        }],
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[{
+                    "type": "album_unit",
+                    "release_id": "release-american-beauty",
+                    "visible_facets": ["listen", "tracklist"],
+                    "highlighted_song_ids": ["song-truckin"],
+                }],
+            )
+        ],
     )
     grounded = finish.GroundedContext(ids=frozenset({"release-american-beauty"}), urls=frozenset())
-    blocks, _ = finish.resolve_body(plan, grounded, [], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [], store)
     block = blocks[0]
     assert block.tracks and block.listen
     assert block.personnel == [] and block.sources == []
@@ -658,33 +635,38 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     preferred = next(row["recording_id"] for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("source_url"))
     good_url = payload["resources"][0]["source_url"]
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="show",
-        body=[
-            finish.ShowUnitRef(
-                type="show_unit",
-                show_id="gd-1972-08-27",
-                role="anchor",
-                note="The Sunshine Daydream show.",
-                visible_facets=["guests", "listen", "setlist", "sources"],
-                setlist_disclosure="expanded",
-                highlighted_performance_ids=[highlighted, "gd-1977-05-08-not-this-show"],
-                preferred_recording_id=preferred,
-                supporting_sources=[
-                    finish.SupportingSource(url=good_url, note="A firsthand account."),
-                    finish.SupportingSource(url="https://example.com/not-returned"),
+        chat_answer="x", title="t", lead=None,
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ShowUnitRef(
+                        type="show_unit",
+                        show_id="gd-1972-08-27",
+                        emphasis="primary",
+                        note="The Sunshine Daydream show.",
+                        visible_facets=["guests", "listen", "setlist", "sources"],
+                        setlist_disclosure="expanded",
+                        highlighted_performance_ids=[highlighted, "gd-1977-05-08-not-this-show"],
+                        preferred_recording_id=preferred,
+                        supporting_sources=[
+                            finish.SupportingSource(url=good_url, note="A firsthand account."),
+                            finish.SupportingSource(url="https://example.com/not-returned"),
+                        ],
+                        follow_up="Why is Veneta so loved?",
+                    )
                 ],
-                follow_up="Why is Veneta so loved?",
             )
         ],
     )
-    blocks, sources = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, sources = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     unit = blocks[0]
     assert unit.type == "show_unit"
     # Identity is hydrated, not retyped by the model.
     assert unit.show_date == "1972-08-27"
     assert unit.venue_name == "Old Renaissance Faire Grounds"
     assert unit.location == "Veneta, OR"
-    assert unit.role == "anchor" and unit.note == "The Sunshine Daydream show." and unit.follow_up == "Why is Veneta so loved?"
+    assert unit.emphasis == "primary" and unit.note == "The Sunshine Daydream show." and unit.follow_up == "Why is Veneta so loved?"
     # The setlist marks the composer's highlight and only performances of this show.
     songs = [song for section in unit.sets for song in section.songs]
     assert [song.performance_id for song in songs if song.highlighted] == [highlighted]
@@ -707,17 +689,21 @@ def test_show_unit_only_hydrates_the_facets_the_composer_selected():
     plan = finish.FinishPlan(
         chat_answer="x",
         title="Veneta",
-        mode="show",
-        body=[
-            finish.ShowUnitRef(
-                type="show_unit",
-                show_id="gd-1972-08-27",
-                visible_facets=["setlist"],
-                setlist_disclosure="collapsed",
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ShowUnitRef(
+                        type="show_unit",
+                        show_id="gd-1972-08-27",
+                        visible_facets=["setlist"],
+                        setlist_disclosure="collapsed",
+                    )
+                ],
             )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, finish.grounded_context([payload]), [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
     unit = blocks[0]
     assert unit.type == "show_unit"
     assert unit.visible_facets == ["setlist"] and unit.setlist_disclosure == "collapsed"
@@ -730,43 +716,15 @@ def test_show_unit_with_no_selected_facets_stays_compact():
     plan = finish.FinishPlan(
         chat_answer="x",
         title="Veneta",
-        mode="show",
-        body=[finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")],
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")])],
     )
-    blocks, sources = finish.resolve_body(
-        plan, finish.grounded_context([payload]), [payload], store
+    blocks, sources = finish.resolve_items(
+        plan.groups[0].items, finish.grounded_context([payload]), [payload], store
     )
     unit = blocks[0]
     assert unit.visible_facets == []
     assert not unit.sets and not unit.guests and not unit.listen and not unit.sources
     assert sources == []
-
-
-def test_resolve_body_nests_show_units_in_an_explorer_and_drops_unretrieved_shows():
-    store = CanonicalStore()
-    payload = store.show_context(store.resolve_show("1972-08-27"))
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="show",
-        body=[
-            finish.ShowExplorerRef(
-                type="show_explorer",
-                title="Two nights",
-                organization="chronological",
-                items=[
-                    finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08"),
-                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor", visible_facets=["setlist"]),
-                ],
-            ),
-            finish.ShowExplorerRef(type="show_explorer", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08")]),
-        ],
-    )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
-    assert [block.type for block in blocks] == ["show_explorer"]
-    explorer = blocks[0]
-    assert explorer.title == "Two nights" and explorer.organization == "chronological"
-    assert [unit.show_id for unit in explorer.items] == ["gd-1972-08-27"]
-    assert explorer.items[0].sets
 
 
 def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_action():
@@ -777,10 +735,15 @@ def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_acti
     assert context["listen"]["archive_track_url"]
     grounded = finish.grounded_context([show_payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="performance",
-        body=[finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id, role="representative", note="A relaxed version.")],
+        chat_answer="x", title="t", lead=None,
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id, note="A relaxed version.")],
+            )
+        ],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, [show_payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [show_payload], store)
     unit = blocks[0]
     assert unit.type == "performance_unit"
     assert unit.song_title and unit.show_date == "1972-08-27" and unit.venue_name == "Old Renaissance Faire Grounds"
@@ -804,23 +767,27 @@ def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
     grounded = finish.grounded_context([payload])
     with_listen = [performance for performance in payload["performances"] if "listen" in performance][:2]
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="comparison",
-        body=[
-            finish.EraUnitRef(
-                type="era_unit",
-                title="Early Sugarees",
-                span="1971–72",
-                role="representative",
-                note="Loose and bluesy.",
-                representative_performance_ids=[*(performance["performance_id"] for performance in with_listen), "not-retrieved"],
-            ),
-            finish.EraUnitRef(type="era_unit", title="Nothing grounded", representative_performance_ids=["not-retrieved"]),
+        chat_answer="x", title="t", lead=None,
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.EraUnitRef(
+                        type="era_unit",
+                        title="Early Sugarees",
+                        span="1971–72",
+                        note="Loose and bluesy.",
+                        representative_performance_ids=[*(performance["performance_id"] for performance in with_listen), "not-retrieved"],
+                    ),
+                    finish.EraUnitRef(type="era_unit", title="Nothing grounded", representative_performance_ids=["not-retrieved"]),
+                ],
+            )
         ],
     )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     assert [block.type for block in blocks] == ["era_unit"]
     era = blocks[0]
-    assert era.title == "Early Sugarees" and era.span == "1971–72" and era.role == "representative"
+    assert era.title == "Early Sugarees" and era.span == "1971–72"
     assert [item.performance_id for item in era.performances] == [performance["performance_id"] for performance in with_listen]
     assert all(item.listen and item.listen.label == "Listen to Sugaree" for item in era.performances)
     assert all(item.show_date and item.show_label for item in era.performances)
@@ -850,36 +817,6 @@ def test_server_built_items_carry_no_generated_follow_ups():
         assert "follow_up" in model.model_fields, model.__name__
 
 
-def test_performance_lists_and_comparison_strips_link_to_recordings():
-    store = CanonicalStore()
-    song = store.resolve_song("Sugaree")
-    payload = store.song_context(song)
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None, mode="comparison",
-        body=[
-            finish.PerformanceListRef(type="performance_list", song_id=song["song_id"]),
-            finish.ComparisonStripRef(type="comparison_strip", song_id=song["song_id"]),
-        ],
-    )
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
-    performance_list, strip = blocks
-    linked = [item for item in performance_list.items if item.listen_url]
-    assert linked and all(item.listen_url.startswith("https://") for item in linked)
-    assert any(item.listen_url for item in strip.items)
-
-
-def test_show_setlist_songs_carry_listen_links():
-    store = CanonicalStore()
-    payload = store.show_context(store.resolve_show("1972-08-27"))
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(chat_answer="x", title="t", lead=None, mode="show", body=[finish.ShowSetlistRef(type="show_setlist", show_id="gd-1972-08-27")])
-    blocks, _ = finish.resolve_body(plan, grounded, [payload], store)
-    songs = [song for section in blocks[0].sets for song in section.songs]
-    assert any(song.listen_url and song.listen_url.startswith("https://archive.org/") for song in songs)
-    assert not any(song.highlighted for song in songs)
-
-
 def finish_call(plan: dict):
     return AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": plan, "id": "finish-1", "type": "tool_call"}])
 
@@ -897,8 +834,7 @@ def test_build_experience_response_uses_the_finish_plan():
         "chat_answer": f"They opened with [Promised Land]({good_url}).",
         "title": "Veneta, 1972",
         "lead": "The Sunshine Daydream show.",
-        "mode": "show",
-        "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27", "title": None}],
+        "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
     }
     messages = [
         HumanMessage(content="What opened Veneta?"),
@@ -911,10 +847,9 @@ def test_build_experience_response_uses_the_finish_plan():
     assert response.title == "Veneta, 1972"
     assert response.answer == f"They opened with [Promised Land]({good_url})."
     assert response.body_lead == "The Sunshine Daydream show."
-    assert response.mode == "show"
-    assert [block.type for block in response.blocks] == ["show_setlist"]
+    assert response.mode == "answer"
+    assert [block.type for block in response.blocks] == ["show_unit"]
     assert response.groups[0].presentation == "collection" and response.groups[0].block_indexes == [0]
-    assert response.layout[0].block_indexes == [0]
     assert response.conversation[-1].role == "assistant" and response.conversation[-1].text == response.answer
     assert response.conversation[0].text == "What opened Veneta?"
 
@@ -933,8 +868,13 @@ def test_build_experience_response_falls_back_when_no_plan_was_delivered(caplog)
 def test_build_experience_response_only_uses_the_latest_turn():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
-    earlier_plan = {"chat_answer": "Earlier.", "title": "Earlier", "lead": None, "mode": "show", "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27", "title": None}]}
-    later_plan = {"chat_answer": "Later.", "title": "Later", "lead": None, "mode": "quick_fact", "body": []}
+    earlier_plan = {
+        "chat_answer": "Earlier.",
+        "title": "Earlier",
+        "lead": None,
+        "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
+    }
+    later_plan = {"chat_answer": "Later.", "title": "Later", "lead": None, "groups": []}
     messages = [
         HumanMessage(content="First"), tool_message(store.show_context(show)), finish_call(earlier_plan), delivered(),
         HumanMessage(content="Second"), finish_call(later_plan), delivered(),
@@ -948,8 +888,8 @@ def test_build_experience_response_shows_one_assistant_turn_when_a_finish_call_i
     """A rejected finish call plus its retry is still one answer to the visitor."""
 
     store = CanonicalStore()
-    partial_plan = {"chat_answer": "A first draft answer.", "lead": None, "mode": "quick_fact", "body": []}
-    retry_plan = {"chat_answer": "The corrected answer.", "title": "Corrected", "lead": None, "mode": "quick_fact", "body": []}
+    partial_plan = {"chat_answer": "A first draft answer.", "lead": None, "groups": []}
+    retry_plan = {"chat_answer": "The corrected answer.", "title": "Corrected", "lead": None, "groups": []}
     messages = [
         HumanMessage(content="Hi"),
         AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": partial_plan, "id": "finish-0", "type": "tool_call"}]),
@@ -967,7 +907,7 @@ def test_build_experience_response_shows_one_assistant_turn_when_a_finish_call_i
 
 def test_build_experience_response_substitutes_a_placeholder_for_a_blank_chat_answer(caplog):
     store = CanonicalStore()
-    plan = {"chat_answer": "   ", "title": "t", "lead": None, "mode": "quick_fact", "body": []}
+    plan = {"chat_answer": "   ", "title": "t", "lead": None, "groups": []}
     messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
     with caplog.at_level("WARNING"):
         response = finish.build_experience_response("Hi", "web-1", messages, store)
@@ -978,7 +918,7 @@ def test_build_experience_response_substitutes_a_placeholder_for_a_blank_chat_an
 
 def test_build_experience_response_substitutes_the_lead_for_a_blank_chat_answer():
     store = CanonicalStore()
-    plan = {"chat_answer": "   ", "title": "t", "lead": "A short lead.", "mode": "quick_fact", "body": []}
+    plan = {"chat_answer": "   ", "title": "t", "lead": "A short lead.", "groups": []}
     messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
     response = finish.build_experience_response("Hi", "web-1", messages, store)
     assert response.answer == "A short lead."
@@ -1015,7 +955,7 @@ def test_album_unit_offers_the_record_as_a_listening_action():
 def test_song_overview_shows_the_records_that_held_the_song():
     store = CanonicalStore()
     context = store.song_context(store.resolve_song("Truckin'"))
-    block = composition._song_overview(context, store)
+    block = composition._song_overview(context, store, visible_facets=["albums"])
     assert any(album.release_type == "studio" for album in block.albums)
 
 
@@ -1028,5 +968,44 @@ def test_song_overview_keeps_a_late_studio_album_ahead_of_the_truncation():
 
     store = CanonicalStore()
     context = store.song_context(store.resolve_song("Let It Grow"))
-    block = composition._song_overview(context, store)
+    block = composition._song_overview(context, store, visible_facets=["albums"])
     assert any(album.title == "Where I Come From" for album in block.albums)
+
+
+def test_show_unit_hydrates_lineup_and_recordings_only_when_selected():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    grounded = finish.grounded_context([payload])
+    full = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", visible_facets=["lineup", "recordings"])
+    bare = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", visible_facets=["setlist"])
+    blocks, sources = finish.resolve_items([full, bare], grounded, [payload], store)
+    assert blocks[0].lineup and all(item.role in {"performer", "guest"} for item in blocks[0].lineup)
+    assert blocks[0].recordings and all(item.url.startswith("http") for item in blocks[0].recordings)
+    assert any(source.url and "archive.org" in source.url for source in sources)
+    assert blocks[1].lineup == [] and blocks[1].recordings == [] and blocks[1].sets
+
+
+def test_song_overview_hydrates_history_and_omits_unselected_facets():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    grounded = finish.grounded_context(payloads)
+    ref = finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", visible_facets=["history"])
+    blocks, _ = finish.resolve_items([ref], grounded, payloads, store)
+    song = blocks[0]
+    assert song.visible_facets == ["history"]
+    assert song.history is not None
+    assert song.history.first.show_date <= song.history.last.show_date
+    assert song.history.known_count == song.known_performance_count
+    assert len({item.year for item in song.history.by_year}) == len(song.history.by_year)
+    assert song.credits == [] and song.albums == [] and song.representative_performances == []
+
+
+def test_performance_unit_still_carries_set_neighbors():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    grounded = finish.grounded_context(payloads)
+    performance_id = next(p["performance_id"] for p in payloads[0]["performances"] if p.get("performance_id"))
+    blocks, _ = finish.resolve_items([finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id)], grounded, payloads, store)
+    unit = blocks[0]
+    assert unit.type == "performance_unit"
+    assert unit.previous is not None or unit.next is not None

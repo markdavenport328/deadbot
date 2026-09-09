@@ -7,16 +7,16 @@ from pydantic import ValidationError
 
 from deadbot import experience
 from deadbot.api import create_app
-from deadbot.composition import _comparison_strip, _embed_details
+from deadbot.composition import _embed_details
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse
 
 
-def finish_call(chat_answer, *, title="Deadbot", lead=None, mode="quick_fact", body=None):
+def finish_call(chat_answer, *, title="Deadbot", lead=None, groups=None):
     """The two messages a finished agent turn ends with: the call and its result."""
 
-    plan = {"chat_answer": chat_answer, "title": title, "lead": lead, "mode": mode, "body": body or []}
+    plan = {"chat_answer": chat_answer, "title": title, "lead": lead, "groups": groups or []}
     return [
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
         ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
@@ -43,7 +43,7 @@ class ConversationFakeAgent:
     def invoke(self, payload, config):
         self.calls.append((payload, config))
         question = payload["messages"][-1].content
-        plan = {"chat_answer": f"Reply to: {question}", "title": "Deadbot", "lead": None, "mode": "quick_fact", "body": []}
+        plan = {"chat_answer": f"Reply to: {question}", "title": "Deadbot", "lead": None, "groups": []}
         self.messages.extend([
             HumanMessage(content=question),
             AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
@@ -64,45 +64,6 @@ class FakeCheckpointer:
 
 def tool_message(payload):
     return ToolMessage(content=json.dumps(payload), tool_call_id="tool-call")
-
-
-class StubComparisonStore:
-    """Minimal store stand-in so comparison-strip selection can be exercised directly."""
-
-    def __init__(self, shows):
-        self.shows = shows
-
-    def one(self, table, entity_id):
-        if table == "shows":
-            return self.shows.get(entity_id)
-        return None
-
-    def rows_in(self, table, column, values):
-        wanted = set(values)
-        if table == "shows":
-            return [show for show in self.shows.values() if show.get(column) in wanted]
-        return []
-
-    def rows(self, table):
-        return []
-
-
-def _stub_performances(dates):
-    shows = {}
-    performances = []
-    for index, date in enumerate(dates):
-        show_id = f"show-{index}"
-        shows[show_id] = {"show_id": show_id, "show_date": date}
-        performances.append(
-            {"performance_id": f"perf-{index}", "show_id": show_id, "song_id": "song:1", "set_label": "Set 1", "position_in_set": "1"}
-        )
-    return StubComparisonStore(shows), performances
-
-
-def test_single_year_song_produces_no_comparison_strip():
-    stub_store, performances = _stub_performances(["1972-08-27", "1972-08-21", "1972-11-13"])
-    strip = _comparison_strip({"song_id": "song:1", "title": "Sugaree"}, performances, stub_store)
-    assert strip is None
 
 
 def test_only_recognized_provider_urls_receive_embed_identifiers():
@@ -130,8 +91,12 @@ def test_schema_rejects_an_unrecognized_browser_block():
 def test_experience_endpoint_renders_the_finish_plan():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
-            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27", "title": "The whole night"}]}
+    plan = {
+        "chat_answer": "Veneta opened with Promised Land.",
+        "title": "Veneta, 1972",
+        "lead": None,
+        "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "title": "The whole night", "visible_facets": ["setlist"]}]}],
+    }
     agent = FakeAgent([
         HumanMessage(content="What opened Veneta?"),
         tool_message(store.show_context(show)),
@@ -141,11 +106,11 @@ def test_experience_endpoint_renders_the_finish_plan():
     client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
     body = client.post("/api/experience", json={"question": "What opened Veneta?"}).json()
     assert body["title"] == "Veneta, 1972"
-    assert body["blocks"][0]["type"] == "show_setlist" and body["blocks"][0]["title"] == "The whole night"
+    assert body["blocks"][0]["type"] == "show_unit" and body["blocks"][0]["title"] == "The whole night"
     assert body["conversation"][-1] == {"role": "assistant", "text": "Veneta opened with Promised Land."}
 
 
-def test_experience_endpoint_renders_a_nested_show_explorer():
+def test_experience_endpoint_renders_a_show_unit_through_a_group():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
     payload = store.show_context(show)
@@ -153,16 +118,14 @@ def test_experience_endpoint_renders_a_nested_show_explorer():
         "chat_answer": "One show, as a unit.",
         "title": "Veneta as a unit",
         "lead": None,
-        "mode": "show",
-        "body": [
+        "groups": [
             {
-                "type": "show_explorer",
+                "presentation": "collection",
                 "title": "The show",
-                "organization": "curated",
                 "items": [{
                     "type": "show_unit",
                     "show_id": "gd-1972-08-27",
-                    "role": "anchor",
+                    "emphasis": "primary",
                     "note": "One frame, everything about it.",
                     "visible_facets": ["setlist", "listen"],
                 }],
@@ -177,12 +140,11 @@ def test_experience_endpoint_renders_a_nested_show_explorer():
     ])
     client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
     body = client.post("/api/experience", json={"question": "Tell me about Veneta"}).json()
-    explorer = body["blocks"][0]
-    assert explorer["type"] == "show_explorer" and explorer["organization"] == "curated"
-    unit = explorer["items"][0]
-    assert unit["type"] == "show_unit" and unit["show_date"] == "1972-08-27" and unit["role"] == "anchor"
+    unit = body["blocks"][0]
+    assert unit["type"] == "show_unit" and unit["show_date"] == "1972-08-27" and unit["emphasis"] == "primary"
     assert unit["sets"] and unit["listen"]
-    # The nested response still validates against the browser contract.
+    assert body["groups"][0]["title"] == "The show"
+    # The response still validates against the browser contract.
     ExperienceResponse.model_validate(body)
 
 
@@ -270,8 +232,8 @@ def _ndjson(text):
 def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
-            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27"}]}
+    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None,
+            "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}]}
     agent = StreamingFakeAgent([
         HumanMessage(content="What opened Veneta?"),
         AIMessage(content="", tool_calls=[{"name": "get_show", "args": {"show_id_or_date": "1972-08-27"}, "id": "t1", "type": "tool_call"}]),
@@ -287,14 +249,14 @@ def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     assert [event["type"] for event in events] == ["status", "status", "response"]
     assert [event["text"] for event in events[:2]] == ["Reading the show on 1972-08-27", "Assembling the page"]
     response = ExperienceResponse.model_validate(events[-1]["response"])
-    assert response.title == "Veneta, 1972" and response.blocks[0].type == "show_setlist"
+    assert response.title == "Veneta, 1972" and response.blocks[0].type == "show_unit"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
 
 
 def test_streaming_endpoint_streams_the_chat_answer_as_it_is_generated():
     store = CanonicalStore()
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
-            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27"}]}
+    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None,
+            "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}]}
     agent = AnswerStreamingFakeAgent([
         HumanMessage(content="What opened Veneta?"),
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
@@ -324,8 +286,8 @@ def test_streaming_endpoint_announces_page_composition_once_the_chat_answer_comp
     and only once, before the final response arrives.
     """
     store = CanonicalStore()
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None, "mode": "show",
-            "body": [{"type": "show_setlist", "show_id": "gd-1972-08-27"}]}
+    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None,
+            "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}]}
     agent = AnswerStreamingFakeAgent([
         HumanMessage(content="What opened Veneta?"),
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
@@ -346,7 +308,7 @@ def test_streaming_endpoint_announces_page_composition_once_the_chat_answer_comp
 
 
 def test_streaming_endpoint_delivers_a_lone_surrogate_answer_as_a_valid_line():
-    plan = {"chat_answer": "Hi there", "title": "Deadbot", "lead": None, "mode": "quick_fact", "body": []}
+    plan = {"chat_answer": "Hi there", "title": "Deadbot", "lead": None, "groups": []}
     agent = SurrogateStreamingFakeAgent([
         HumanMessage(content="Hi"),
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
@@ -398,8 +360,7 @@ def test_api_returns_the_validated_experience_contract():
             *finish_call(
                 "The Veneta show was held on August 27, 1972.",
                 title="Veneta, 1972",
-                mode="show",
-                body=[{"type": "show_setlist", "show_id": "gd-1972-08-27"}],
+                groups=[{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
             ),
         ]
     )
@@ -413,9 +374,9 @@ def test_api_returns_the_validated_experience_contract():
     assert set(health.json()) == {"status", "git_commit", "canonical_shows", "performer_assignments", "show_equipment_links"}
     assert result.status_code == 200
     body = result.json()
-    assert body["schema_version"] == "1"
+    assert body["schema_version"] == "2"
     assert body["thread_id"] == "browser-1"
-    assert body["blocks"][0]["type"] == "show_setlist"
+    assert body["blocks"][0]["type"] == "show_unit"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
 
 
@@ -482,7 +443,7 @@ def test_requests_beyond_the_per_minute_limit_get_429_while_earlier_ones_succeed
         [
             HumanMessage(content="Tell me about Veneta"),
             tool_message(store.show_context(show)),
-            *finish_call("The Veneta show was held on August 27, 1972.", title="Veneta, 1972", mode="show"),
+            *finish_call("The Veneta show was held on August 27, 1972.", title="Veneta, 1972"),
         ]
     )
     settings = Settings(rate_limit_per_minute=2)
