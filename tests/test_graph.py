@@ -54,12 +54,17 @@ def test_prompt_names_the_finish_tool():
 def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
     prompt = graph.SYSTEM_PROMPT
     unwrapped = " ".join(prompt.split())
-    for unit in ("show_unit", "show_explorer", "performance_unit", "era_unit"):
+    for unit in ("show_unit", "performance_unit", "era_unit", "album_unit", "song_overview"):
         assert unit in prompt
     assert "Group by meaning and referent, not by tool, source or data type." in unwrapped
     assert "Tool boundaries and database tables are not presentation boundaries." in unwrapped
     assert '"Ask" chip' in unwrapped
     assert "Setlist songs, performances and semantic units retain the verified actions attached to them" in unwrapped
+    assert "show_explorer" not in prompt
+    assert "quick_fact" not in prompt
+    for word in ("primary", "supporting", "mention"):
+        assert word in unwrapped
+    assert "criteria" in unwrapped
     # The research personality is preserved.
     for heading in ("## RESEARCH THE ACTUAL QUESTION", "# PRESERVE DISCOVERY", "# TRUST"):
         assert heading in prompt
@@ -106,8 +111,8 @@ def test_prompt_teaches_pathways_and_show_unit_hydration():
         in prompt
     )
     assert (
-        "A show_unit needs only a show_id that appeared in this turn's tool output; the server hydrates "
-        "its setlist, guests and listening. Call get_show when its setlist or guests inform what you write."
+        "A show_unit needs only a show_id that appeared in this turn's tool output; "
+        "call get_show when its setlist or guests inform what you write."
         in prompt
     )
     assert "do not" not in prompt.casefold()
@@ -138,7 +143,7 @@ def test_tool_node_finish_results_drive_the_router():
 
     valid_call = AIMessage(content="", tool_calls=[{
         "name": FINISH_TOOL_NAME,
-        "args": {"chat_answer": "Hi", "title": "T", "lead": None, "mode": "quick_fact", "body": []},
+        "args": {"chat_answer": "Hi", "title": "T", "lead": None, "groups": []},
         "id": "f1",
         "type": "tool_call",
     }])
