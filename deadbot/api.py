@@ -248,6 +248,7 @@ def create_app(
                 answer_accumulator = AnswerAccumulator()
                 composing_page_announced = False
                 plan_streamer: PlanStreamer | None = None
+                plan_streaming_off = False
                 steps = iter(stream(payload, config, stream_mode=["values", "messages"]))
                 while True:
                     with query_cache_scope(cache):
@@ -266,23 +267,31 @@ def create_app(
                         if answer_accumulator.complete and not composing_page_announced:
                             composing_page_announced = True
                             yield line({"type": "status", "text": "Composing the page"})
-                        if plan_streamer is None and _names_finish_call(message_chunk):
-                            # Research is done by the time the plan starts; ground once.
-                            payloads = composition._tool_payloads(composition._latest_turn(messages))
-                            grounded = finish.grounded_context(payloads)
-                            plan_streamer = PlanStreamer(
-                                lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0]
-                            )
+                        if plan_streamer is None and not plan_streaming_off and _names_finish_call(message_chunk):
+                            try:
+                                # Research is done by the time the plan starts; ground once.
+                                payloads = composition._tool_payloads(composition._latest_turn(messages))
+                                grounded = finish.grounded_context(payloads)
+                                plan_streamer = PlanStreamer(
+                                    lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0],
+                                    grounded_urls=grounded.urls,
+                                )
+                            except Exception:
+                                logger.exception("Progressive page streaming disabled for this turn")
+                                plan_streaming_off = True
                         if plan_streamer is not None:
                             with query_cache_scope(cache):
                                 page_events = plan_streamer.feed(message_chunk)
                             for event in page_events:
+                                # The fresh accumulator's partial answer (below) is yielded
+                                # before the page_reset event; this ordering is harmless only
+                                # because the browser's page_reset handling clears the draft
+                                # page, not the chat answer already on screen.
                                 if event.type == "page_reset":
                                     # The model is retrying finish_response; the previous
                                     # draft's answer text is void, so the fresh accumulator
                                     # must still see the current chunk's own answer text.
                                     answer_accumulator = AnswerAccumulator()
-                                    composing_page_announced = False
                                     reset_answer = answer_accumulator.feed(message_chunk)
                                     if reset_answer:
                                         yield line({"type": "answer", "text": reset_answer})

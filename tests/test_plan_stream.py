@@ -115,3 +115,61 @@ def test_invalid_items_are_skipped_and_judgments_are_truncated_to_criteria():
     blocks = [event for event in events if event.type == "block"]
     assert len(blocks) == 1
     assert blocks[0].payload["block"] == {"judgments": ["one"]}
+
+
+def test_group_leads_run_through_link_grounding():
+    plan = {
+        "chat_answer": "x",
+        "title": "T",
+        "lead": None,
+        "groups": [
+            {"presentation": "collection", "lead": "See [x](https://example.com/not-returned) for more.", "items": []},
+            {"presentation": "collection", "lead": "See [ok](https://archive.org/ok) for more.", "items": []},
+        ],
+    }
+    streamer = PlanStreamer(fake_resolve, grounded_urls=frozenset({"https://archive.org/ok"}))
+    events = streamer.feed(chunk(json.dumps(plan), name="finish_response"))
+    opens = [event for event in events if event.type == "group_open"]
+    assert len(opens) == 2
+    assert opens[0].payload["lead"] == "See x for more."
+    assert opens[1].payload["lead"] == "See [ok](https://archive.org/ok) for more."
+
+
+def test_a_failing_item_is_skipped_without_disabling_the_streamer():
+    plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": [
+        {"type": "song_overview", "song_id": "bad-song"},
+        {"type": "song_overview", "song_id": "good-song"},
+    ]}]}
+
+    def resolve(items):
+        item = items[0]
+        if item.song_id == "bad-song":
+            raise RuntimeError("boom")
+        return fake_resolve(items)
+
+    streamer = PlanStreamer(resolve)
+    events = streamer.feed(chunk(json.dumps(plan), name="finish_response"))
+    blocks = [event for event in events if event.type == "block"]
+    assert len(blocks) == 1
+    assert blocks[0].payload["block"]["id"] == "good-song"
+    assert streamer.disabled is False
+
+
+def test_indented_json_gives_identical_events_to_compact_json():
+    indented = json.dumps(PLAN, indent=2)
+    compact_events = drive(PLAN_TEXT, 1)
+    indented_events = drive(indented, 1)
+    assert [(event.type, event.payload) for event in indented_events] == [(event.type, event.payload) for event in compact_events]
+
+
+def test_criteria_listed_after_items_still_reach_group_close():
+    plan = {"chat_answer": "x", "title": "T", "groups": [
+        {"presentation": "comparison", "items": [
+            {"type": "show_unit", "show_id": "gd-1972-08-27", "judgments": ["one"]},
+        ], "criteria": ["Pace"]},
+    ]}
+    events = drive(json.dumps(plan), 1)
+    opens = [event for event in events if event.type == "group_open"]
+    closes = [event for event in events if event.type == "group_close"]
+    assert opens[0].payload["criteria"] == []
+    assert closes[0].payload["criteria"] == ["Pace"]

@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from pydantic import TypeAdapter, ValidationError
 
-from deadbot.finish import FINISH_TOOL_NAME, BodyItem
+from deadbot.finish import FINISH_TOOL_NAME, BodyItem, keep_grounded_links
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,13 @@ class _Frame:
 class PlanStreamer:
     """Feed every ``AIMessageChunk`` from a ``messages`` stream; collect the events."""
 
-    def __init__(self, resolve: Callable[[list[Any]], list[Any]]) -> None:
+    def __init__(
+        self,
+        resolve: Callable[[list[Any]], list[Any]],
+        grounded_urls: frozenset[str] = frozenset(),
+    ) -> None:
         self._resolve = resolve
+        self._grounded_urls = grounded_urls
         self._call_id: str | None = None
         self._call_index: int | None = None
         self._reset_state()
@@ -116,21 +121,27 @@ class PlanStreamer:
     def _group(self, index: int) -> dict[str, Any]:
         return self._groups.setdefault(index, {})
 
+    def _grounded(self, lead: str | None) -> str | None:
+        if not lead:
+            return lead
+        return keep_grounded_links(lead, self._grounded_urls)
+
     def _group_payload(self, index: int) -> dict[str, Any]:
         group = self._group(index)
+        criteria = [c.strip() for c in (group.get("criteria") or []) if c.strip()][:5]
         return {
             "index": index,
             "title": group.get("title"),
-            "lead": group.get("lead"),
+            "lead": self._grounded(group.get("lead")),
             "presentation": group.get("presentation") or "collection",
-            "criteria": list(group.get("criteria") or []),
+            "criteria": criteria,
         }
 
     def _emit_head(self) -> list[PlanEvent]:
         if self._head_sent:
             return []
         self._head_sent = True
-        return [PlanEvent("page_head", {"title": self._title or "", "lead": self._lead})]
+        return [PlanEvent("page_head", {"title": self._title or "", "lead": self._grounded(self._lead)})]
 
     def _begin_value(self) -> None:
         top = self._top()
@@ -244,7 +255,12 @@ class PlanStreamer:
             return []
         criteria = self._group(group_index).get("criteria")
         events: list[PlanEvent] = []
-        for block in self._resolve([item]):
+        try:
+            resolved = self._resolve([item])
+        except Exception:  # One bad item must not disable the whole streamer.
+            logger.exception("Skipped a streamed item that failed to hydrate")
+            return []
+        for block in resolved:
             if criteria is not None and hasattr(block, "judgments") and hasattr(block, "model_copy"):
                 block = block.model_copy(update={"judgments": list(block.judgments)[: len(criteria)]})
             payload = block.model_dump(mode="json") if hasattr(block, "model_dump") else block

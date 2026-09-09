@@ -294,6 +294,7 @@ callers have had a chance to move to `emphasis`; a manual rerun of
   fixture as a timed event sequence for review without a model call.
 - `scripts/trace_stream.py` times a live request: seconds to first answer
   text, answer complete, first block, last block, and final response.
+
 Live trace run: conditions are local API against the production database, OpenAI gpt-5.6-luna, 12 tool rounds, response cache off, one run per question on 2026-09-09. Seconds from request start.
 
 | Question | First answer text | Answer complete | First block | Last block | Response |

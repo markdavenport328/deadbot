@@ -298,6 +298,7 @@ function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
   const current: Draft = draft ?? { title: "", lead: null, groups: [] };
   const groups = current.groups.slice();
   const index = event.type === "block" ? event.group_index : event.index;
+  if (!Number.isInteger(index) || index < 0) return draft;
   while (groups.length <= index) groups.push(emptyGroup());
   if (event.type === "block") {
     groups[index] = { ...groups[index], blocks: [...groups[index].blocks, event.block] };
@@ -322,12 +323,14 @@ type StreamHandlers = {
 // event into the matching handler call. Error throws; everything else is
 // handed to the caller's handlers, including the response, which the network
 // reader captures and the replay applies immediately.
+const PAGE_EVENT_TYPES = new Set(["page_head", "group_open", "group_close", "block", "page_reset"]);
+
 function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void {
   if (event.type === "status") handlers.onStatus(event.text);
   else if (event.type === "answer") handlers.onAnswer(event.text);
   else if (event.type === "response") handlers.onResponse(event.response);
   else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
-  else handlers.onPage(event);
+  else if (PAGE_EVENT_TYPES.has(event.type)) handlers.onPage(event);
 }
 
 function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
@@ -1038,7 +1041,7 @@ function ComposedPage({
                   block={entry.block}
                   sources={sources}
                   criteria={group.presentation === "comparison" ? group.criteria : []}
-                  soleUnit={unitCount === 1}
+                  soleUnit={composing ? false : unitCount === 1}
                   onFollowUp={onFollowUp}
                 />
               )
@@ -1046,7 +1049,7 @@ function ComposedPage({
           </div>
         </section>
       ))}
-      {composing && <p className="composing-note" aria-live="polite">Composing the page…</p>}
+      {composing && <p className="composing-note">Composing the page…</p>}
       {!composing && sources.length > 0 && (
         <footer className="sources-footer">
           <p className="sources-footer-label">Sources</p>
@@ -1396,7 +1399,7 @@ export default function App() {
           </section>
         </aside>
 
-        <section className="content-pane" aria-live="polite" aria-label="Deadbot guide">
+        <section className="content-pane" aria-live={loading && draft ? "off" : "polite"} aria-label="Deadbot guide">
           {loading && draft ? (
             <ComposedPage
               title={draft.title || pendingQuestion || ""}
