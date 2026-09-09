@@ -95,6 +95,8 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .group-comparison .group-blocks { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
   .group-comparison .group-blocks > .card { grid-column: auto; }
   .group-comparison .group-blocks > .typography-block, .group-comparison .group-blocks > .mention-list { grid-column: 1 / -1; }
+  .group-comparison .group-blocks > .card .criteria > div { grid-template-columns: 1fr; gap: 0.15rem; }
+  .group-comparison .group-blocks > .card .criteria dd { font-size: 0.92rem; }
 }
 .group-argument .group-heading.claim { border-left: 3px solid #c49e48; padding-left: var(--space-part); }
 .group-argument .claim-text { max-width: 58rem; margin: var(--space-identity) 0 0; color: #f1efdf; font-family: Georgia, "Times New Roman", serif; font-size: 1.25rem; line-height: 1.45; }
