@@ -26,24 +26,25 @@ from deadbot.data import CanonicalStore
 from deadbot.experience import (
     ConversationTurn,
     EditorialBlock,
+    Emphasis,
     ExperienceGroup,
     ExperienceBlock,
-    ExperienceMode,
     ExperienceResponse,
     GapStateBlock,
-    LayoutSection,
     ResourceListBlock,
-    ShowExplorerBlock,
+    ShowFacet,
     ShowUnitBlock,
+    SongFacet,
     SourceReference,
-    UnitOrganization,
-    UnitRole,
 )
 
 
 logger = logging.getLogger(__name__)
 
 FINISH_TOOL_NAME = "finish_response"
+
+# Deprecated plan vocabulary, accepted for one release and mapped to emphasis.
+UnitRole = Literal["anchor", "supporting", "contrast", "turning_point", "outlier", "culmination", "overlooked", "representative"]
 
 _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
 
@@ -97,45 +98,9 @@ class _Ref(BaseModel):
     title: str | None = None
 
 
-class ShowSetlistRef(_Ref):
-    type: Literal["show_setlist"]
-    show_id: str
-
-
-class RecordingListRef(_Ref):
-    type: Literal["recording_list"]
-    show_id: str
-    recording_ids: list[str] = Field(default_factory=list, max_length=8)
-
-
-class PerformerListRef(_Ref):
-    type: Literal["performer_list"]
-    show_id: str
-
-
 class EquipmentListRef(_Ref):
     type: Literal["equipment_list"]
     show_id: str
-
-
-class PerformanceSpineRef(_Ref):
-    type: Literal["performance_spine"]
-    performance_id: str
-
-
-class ComparisonStripRef(_Ref):
-    type: Literal["comparison_strip"]
-    song_id: str
-
-
-class PerformanceListRef(_Ref):
-    type: Literal["performance_list"]
-    song_id: str
-
-
-class PerformanceExtremesRef(_Ref):
-    type: Literal["performance_extremes"]
-    song_id: str
 
 
 class GuestAppearancesRef(_Ref):
@@ -184,9 +149,15 @@ class SupportingSource(BaseModel):
     note: str | None = Field(default=None, description="What this source says about the unit, in a sentence, with attribution.")
 
 
-_ROLE_DESCRIPTION = (
-    "This unit's role in the answer: anchor (the primary object), supporting, contrast, "
-    "turning_point, outlier, culmination, overlooked or representative. Omit when no role applies."
+_EMPHASIS_DESCRIPTION = (
+    "How much of the page this object earns. primary: the object the answer is about; renders full width with its "
+    "selected facets open. supporting: a peer or piece of evidence; renders as a compact card with its note, listening "
+    "and highlights. mention: a name the visitor may want to follow; renders as one line with a listen link."
+)
+_ROLE_DESCRIPTION = "Deprecated. Use emphasis. anchor maps to primary; every other value maps to supporting."
+_JUDGMENTS_DESCRIPTION = (
+    "For a unit inside a comparison group: your one-line judgment for each of the group's criteria, in the same order. "
+    "Leave an entry empty when you have nothing grounded to say."
 )
 _NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
 _SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
@@ -204,11 +175,16 @@ class ShowUnitRef(_Ref):
     type: Literal["show_unit"]
     show_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
-    visible_facets: list[Literal["guests", "listen", "setlist", "sources"]] = Field(
+    visible_facets: list[ShowFacet] = Field(
         default_factory=list,
-        max_length=4,
-        description="The factual facets worth showing for this show. Select deliberately; related data is not a reason to display it. Identity and your note are always shown.",
+        max_length=6,
+        description=(
+            "The facets worth showing for this show. guests, listen, setlist and sources as before; lineup is the full "
+            "performer list; recordings is the complete recording inventory. Identity and your note are always shown."
+        ),
     )
     setlist_disclosure: Literal["expanded", "collapsed", "hidden"] = Field(
         default="collapsed",
@@ -224,23 +200,14 @@ class ShowUnitRef(_Ref):
     follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
 
 
-class ShowExplorerRef(_Ref):
-    """Legacy nested collection of complete show units; prefer a top-level group."""
-
-    type: Literal["show_explorer"]
-    organization: UnitOrganization = Field(
-        default="chronological",
-        description="chronological (in date order), curated (your order, for your reasons), or comparative (side by side on the same terms).",
-    )
-    items: list[ShowUnitRef] = Field(min_length=1, max_length=8)
-
-
 class PerformanceUnitRef(_Ref):
     """One rendition as a primary object. The server supplies song, show, set context and listening."""
 
     type: Literal["performance_unit"]
     performance_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
     follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
@@ -252,7 +219,6 @@ class EraUnitRef(_Ref):
     type: Literal["era_unit"]
     title: str = Field(description="The stage, in your words: '1973–74: spacious and exploratory'.")
     span: str | None = Field(default=None, description="The years or dates this stage covers.")
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     note: str | None = Field(default=None, description="What changed in this stage and how you know.")
     representative_performance_ids: list[str] = Field(min_length=1, max_length=6, description="Performances that show this stage; each becomes a listening path.")
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
@@ -265,6 +231,8 @@ class AlbumUnitRef(_Ref):
     type: Literal["album_unit"]
     release_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
     visible_facets: list[Literal["listen", "tracklist", "personnel", "sources"]] = Field(
         default_factory=list,
@@ -285,7 +253,17 @@ class SongOverviewRef(_Ref):
     type: Literal["song_overview"]
     song_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
+    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    visible_facets: list[SongFacet] = Field(
+        default_factory=lambda: ["representatives"],
+        max_length=4,
+        description=(
+            "The song facets worth showing: representatives (your chosen renditions), credits, albums, history (first "
+            "and last documented performances, the count, and one rendition per year with listening links)."
+        ),
+    )
     representative_performance_ids: list[str] = Field(
         default_factory=list,
         max_length=3,
@@ -295,22 +273,23 @@ class SongOverviewRef(_Ref):
     follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
 
 
+def _emphasis_for(ref: Any) -> Emphasis:
+    """The rendered emphasis for a unit ref: explicit emphasis, else the deprecated role mapped."""
+
+    explicit = getattr(ref, "emphasis", None)
+    if explicit:
+        return explicit
+    return "primary" if getattr(ref, "role", None) == "anchor" else "supporting"
+
+
 BodyItem = Annotated[
     EditorialBlock
     | ShowUnitRef
-    | ShowExplorerRef
     | PerformanceUnitRef
     | EraUnitRef
     | AlbumUnitRef
-    | ShowSetlistRef
-    | RecordingListRef
-    | PerformerListRef
-    | EquipmentListRef
-    | PerformanceSpineRef
-    | ComparisonStripRef
-    | PerformanceListRef
-    | PerformanceExtremesRef
     | SongOverviewRef
+    | EquipmentListRef
     | GuestAppearancesRef
     | ShowSelectionRef
     | ArrangementRef
@@ -330,6 +309,11 @@ class GroupPlan(BaseModel):
     presentation: Literal["collection", "sequence", "comparison", "argument"] = Field(
         description="collection for peers, sequence for a development or route, comparison for items judged on shared terms, argument for evidence supporting a claim."
     )
+    criteria: list[str] = Field(
+        default_factory=list,
+        max_length=5,
+        description="For a comparison only: the shared terms the items are judged on, in order, as short labels such as 'Tempo' or 'Second-set jam'.",
+    )
     items: list[BodyItem] = Field(
         min_length=1,
         max_length=12,
@@ -346,27 +330,16 @@ class FinishPlan(BaseModel):
     )
     title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
     lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
-    mode: ExperienceMode = Field(description="Overall shape of the response.")
     groups: list[GroupPlan] = Field(
         default_factory=list,
         max_length=8,
         description=(
-            "The model-selected groups that make up the edited main body. Use each group for a distinct idea or relationship. "
-            "Choose collection, sequence, comparison, or argument, and omit headings or leads that repeat the same framing."
-        ),
-    )
-    body: list[BodyItem] = Field(
-        default_factory=list,
-        max_length=12,
-        description=(
-            "Legacy flat reading order. Prefer groups for a composed answer. Semantic units declare the meaningful objects of this answer and the server hydrates them: "
-            "show_unit (one show with its setlist, guests, listening and your note), show_explorer (several show units, chronological, curated or comparative), "
-            "performance_unit (one rendition with its set context and listening), era_unit (a stage you name, with representative performances), "
-            "album_unit (one official record with only the facets you select; full tracklist/personnel are costly and optional), "
-            "Editorial blocks you write (narrative, fact_grid, timeline) carry page-level synthesis: the conclusion, patterns across units, disagreements. "
-            "Single-dimension components, referenced by IDs you retrieved this turn, are for when one dimension is the answer: show_setlist, recording_list, "
-            "performer_list, equipment_list, performance_spine, comparison_strip, performance_list, performance_extremes, song_overview, guest_appearance_list, "
-            "show_selection, arrangement, arrangement_search, media_link, resource_list. Give a component a title when the default would read like a database label."
+            "The edited main body as groups, each one a distinct relationship: collection for peers, sequence for a development or route, "
+            "comparison for items judged on shared criteria, argument for evidence under a claim. Inside a group, semantic units declare the "
+            "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
+            "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
+            "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, show_selection, arrangement, "
+            "arrangement_search, media_link, resource_list. An answer that needs no main body leaves groups empty."
         ),
     )
 
@@ -443,7 +416,8 @@ def _resolve_show_unit(
     block, listen_sources = composition._show_unit(
         store.show_context(show),
         store,
-        role=item.role,
+        emphasis=_emphasis_for(item),
+        judgments=item.judgments,
         note=item.note,
         title=item.title,
         visible_facets=item.visible_facets,
@@ -468,19 +442,6 @@ def _resolve_reference(
     if kind == "show_unit":
         return _resolve_show_unit(item, grounded, payloads, store)
 
-    if kind == "show_explorer":
-        units: list[ShowUnitBlock] = []
-        for child in item.items:
-            unit, unit_sources = _resolve_show_unit(child, grounded, payloads, store)
-            if unit is None:
-                logger.info("Dropped ungrounded or unresolvable show unit from explorer: %s", child.model_dump())
-                continue
-            units.append(unit)
-            sources.extend(unit_sources)
-        if not units:
-            return None, []
-        return ShowExplorerBlock(type="show_explorer", title=(item.title or "The shows").strip(), organization=item.organization, items=units[:8]), sources
-
     if kind == "performance_unit":
         if item.performance_id not in grounded.ids:
             return None, []
@@ -488,7 +449,9 @@ def _resolve_reference(
         if not context:
             return None, []
         unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
-        block = composition._performance_unit(context, store, role=item.role, note=item.note, sources=unit_sources, follow_up=item.follow_up)
+        block = composition._performance_unit(
+            context, store, emphasis=_emphasis_for(item), judgments=item.judgments, note=item.note, sources=unit_sources, follow_up=item.follow_up
+        )
         return block, sources
 
     if kind == "era_unit":
@@ -502,7 +465,7 @@ def _resolve_reference(
         if not contexts:
             return None, []
         unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
-        block = composition._era_unit(contexts, store, title=item.title, span=item.span, role=item.role, note=item.note, sources=unit_sources, follow_up=item.follow_up)
+        block = composition._era_unit(contexts, store, title=item.title, span=item.span, note=item.note, sources=unit_sources, follow_up=item.follow_up)
         return block, sources
 
     if kind == "album_unit":
@@ -518,7 +481,8 @@ def _resolve_reference(
         block, listen_sources = composition._album_unit(
             store.album_context(release),
             store,
-            role=item.role,
+            emphasis=_emphasis_for(item),
+            judgments=item.judgments,
             note=item.note,
             title=item.title,
             visible_facets=item.visible_facets,
@@ -528,61 +492,37 @@ def _resolve_reference(
         )
         return block, [*listen_sources, *sources]
 
-    if kind in {"show_setlist", "recording_list", "performer_list", "equipment_list"}:
+    if kind == "equipment_list":
         if item.show_id not in grounded.ids:
             return None, []
         show = store.resolve_show(item.show_id)
         if not show:
             return None, []
         payload = store.show_context(show)
-        if kind == "show_setlist":
-            return _retitle(composition._show_setlist(payload, store), item.title), []
-        if kind == "performer_list":
-            return _retitle(composition._show_performers(payload, store), item.title), []
-        if kind == "equipment_list":
-            block = composition._show_equipment(payload)
-            if block:
-                sources = [
-                    SourceReference(source_id=entry.source_id, kind="contextual_resource", label="Jerry Garcia Instrument History", url=entry.source_url)
-                    for entry in block.items
-                ]
-            return _retitle(block, item.title), sources
-        if item.recording_ids:
-            # The model chose specific recordings (for example a source it saw
-            # rated highly). Build from those rows rather than the default
-            # first-eight projection, so its choice is not silently truncated.
-            wanted = {recording_id for recording_id in item.recording_ids if recording_id in grounded.ids}
-            rows = [row for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("recording_id") in wanted]
-            block = composition._recording_list({"recordings": rows}, store)
-            if block:
-                block = block.model_copy(update={"show_id": show["show_id"]})
-        else:
-            block = composition._recording_list(payload, store)
+        block = composition._show_equipment(payload)
         if block:
-            sources = [SourceReference(source_id=entry.source_id, kind="contextual_resource", label=entry.source_type, url=entry.url) for entry in block.items]
+            sources = [
+                SourceReference(source_id=entry.source_id, kind="contextual_resource", label="Jerry Garcia Instrument History", url=entry.source_url)
+                for entry in block.items
+            ]
         return _retitle(block, item.title), sources
 
-    if kind in {"comparison_strip", "performance_list", "performance_extremes", "song_overview"}:
+    if kind == "song_overview":
         if item.song_id not in grounded.ids:
             return None, []
         song = store.one("songs", item.song_id)
         if not song:
             return None, []
         context = store.song_context(song)
-        performances = [row for row in context["performances"] if isinstance(row, dict)]
-        if kind == "comparison_strip":
-            return _retitle(composition._comparison_strip(song, performances, store), item.title), []
-        if kind == "performance_list":
-            return _retitle(composition._performance_list(song, performances, store), item.title), []
-        if kind == "performance_extremes":
-            return _retitle(composition._performance_extremes(song, performances, store), item.title), []
         unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
         return _retitle(
             composition._song_overview(
                 context,
                 store,
-                role=item.role,
+                emphasis=_emphasis_for(item),
+                judgments=item.judgments,
                 note=item.note,
+                visible_facets=item.visible_facets,
                 representative_performance_ids=[
                     performance_id
                     for performance_id in item.representative_performance_ids
@@ -593,12 +533,6 @@ def _resolve_reference(
             ),
             item.title,
         ), sources
-
-    if kind == "performance_spine":
-        if item.performance_id not in grounded.ids:
-            return None, []
-        context = store.performance_context(item.performance_id)
-        return (_retitle(composition._performance_spine(context, store), item.title), []) if context else (None, [])
 
     if kind == "guest_appearance_list":
         guest = _find_in_payloads(payloads, "guests", "person_id", item.person_id)
@@ -671,17 +605,17 @@ def _resolve_reference(
     return None, []
 
 
-def resolve_body(
-    plan: FinishPlan,
+def resolve_items(
+    items: list[Any],
     grounded: GroundedContext,
     payloads: list[dict[str, Any]],
     store: CanonicalStore,
 ) -> tuple[list[ExperienceBlock], list[SourceReference]]:
-    """Resolve the plan's body into validated blocks, dropping what was not retrieved."""
+    """Resolve a list of body items into validated blocks, dropping what was not retrieved."""
 
     blocks: list[ExperienceBlock] = []
     sources: list[SourceReference] = []
-    for item in plan.body:
+    for item in items:
         if isinstance(item, EditorialBlock):
             blocks.append(_sanitize_editorial(item, grounded.urls))
             continue
@@ -702,32 +636,26 @@ def resolve_groups(
     payloads: list[dict[str, Any]],
     store: CanonicalStore,
 ) -> tuple[list[ExperienceBlock], list[ExperienceGroup], list[SourceReference]]:
-    """Resolve model-selected groups while preserving their order and relationship.
+    """Resolve model-selected groups while preserving their order and relationship."""
 
-    The fallback keeps older finish calls readable as one unlabelled collection.
-    It is compatibility transport only; new plans should use ``groups``.
-    """
-
-    group_plans = plan.groups
-    if not group_plans and plan.body:
-        group_plans = [GroupPlan(presentation="collection", items=plan.body)]
     blocks: list[ExperienceBlock] = []
     groups: list[ExperienceGroup] = []
     sources: list[SourceReference] = []
 
-    for group in group_plans:
-        group_blocks, group_sources = resolve_body(
-            FinishPlan(chat_answer="", title="", mode="quick_fact", body=group.items),
-            grounded,
-            payloads,
-            store,
-        )
+    for group in plan.groups:
+        group_blocks, group_sources = resolve_items(group.items, grounded, payloads, store)
         if not group_blocks:
             continue
         remaining = 32 - len(blocks)
         if remaining <= 0:
             break
         group_blocks = group_blocks[:remaining]
+        criteria = [c.strip() for c in group.criteria if c.strip()][:5]
+        criteria_count = len(criteria)
+        group_blocks = [
+            block.model_copy(update={"judgments": list(block.judgments)[:criteria_count]}) if hasattr(block, "judgments") else block
+            for block in group_blocks
+        ]
         start = len(blocks)
         blocks.extend(group_blocks)
         groups.append(
@@ -735,6 +663,7 @@ def resolve_groups(
                 title=(group.title or "").strip() or None,
                 lead=keep_grounded_links(group.lead.strip(), grounded.urls) if group.lead and group.lead.strip() else None,
                 presentation=group.presentation,
+                criteria=criteria,
                 block_indexes=list(range(start, len(blocks))),
             )
         )
@@ -756,9 +685,10 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer gives the conclusion immediately; the main body adds useful listening or source actions and the evidence, story or context that makes the answer meaningful. Choose collection, sequence, comparison or argument and order its semantic units (show_unit, show_explorer, "
-            "performance_unit, era_unit, album_unit) with your notes, roles, facets, highlights and sources, plus your own narrative, fact grids or timelines for what "
-            "spans the units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
+            "chat_answer gives the conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, with "
+            "listening and source actions attached to the objects they belong to. Compose groups (collection, sequence, comparison, argument) of semantic "
+            "units with an emphasis, a note, selected facets, highlights and sources, plus your own narrative, fact grids or timelines for what spans the "
+            "units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,
     )
@@ -820,13 +750,6 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     return turns[-50:]
 
 
-def _layout(block_count: int) -> list[LayoutSection]:
-    return [
-        LayoutSection(region="primary", block_indexes=list(range(start, min(start + 8, block_count))))
-        for start in range(0, block_count, 8)
-    ][:4]
-
-
 def build_experience_response(question: str, thread_id: str, messages: Iterable[Any], store: CanonicalStore) -> ExperienceResponse:
     """Assemble the browser response from the agent's latest turn."""
 
@@ -849,7 +772,6 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
             mode="gap",
             conversation=_conversation(all_messages, answer),
             blocks=[GapStateBlock(type="gap_state", message="The main body was not delivered for this answer.")],
-            layout=_layout(1),
             sources=[],
         )
 
@@ -865,10 +787,9 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
         title=plan.title.strip() or "Deadbot",
         answer=chat_answer,
         body_lead=lead,
-        mode=plan.mode,
+        mode="answer",
         conversation=_conversation(all_messages, chat_answer),
         blocks=blocks,
         groups=groups,
-        layout=_layout(len(blocks)),
         sources=sources,
     )
