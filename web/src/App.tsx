@@ -1,6 +1,7 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
-import { loadRequestedVisualFixture, requestedVisualFixture } from "./visual-fixture-loader";
+import type { PageEvent, StreamEvent } from "./stream-events";
+import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
 
 type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
@@ -285,19 +286,6 @@ function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
 type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
 type Draft = { title: string; lead: string | null; groups: RenderGroup[] };
 
-type PageEvent =
-  | { type: "page_head"; title: string; lead: string | null }
-  | { type: "group_open" | "group_close"; index: number; title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[] }
-  | { type: "block"; group_index: number; block: ExperienceBlock }
-  | { type: "page_reset" };
-
-type StreamEvent =
-  | { type: "status"; text: string }
-  | { type: "answer"; text: string }
-  | { type: "response"; response: ExperienceResponse }
-  | { type: "error"; detail?: string }
-  | PageEvent;
-
 function emptyGroup(): RenderGroup {
   return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [] };
 }
@@ -317,6 +305,29 @@ function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
     groups[index] = { ...groups[index], title: event.title, lead: event.lead, presentation: event.presentation, criteria: event.criteria };
   }
   return { ...current, groups };
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+type StreamHandlers = {
+  onStatus: (status: string) => void;
+  onAnswer: (text: string) => void;
+  onPage: (event: PageEvent) => void;
+  onResponse: (response: ExperienceResponse) => void;
+};
+
+// Shared between the network reader and the fixture replay: turn one parsed
+// event into the matching handler call. Error throws; everything else is
+// handed to the caller's handlers, including the response, which the network
+// reader captures and the replay applies immediately.
+function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void {
+  if (event.type === "status") handlers.onStatus(event.text);
+  else if (event.type === "answer") handlers.onAnswer(event.text);
+  else if (event.type === "response") handlers.onResponse(event.response);
+  else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
+  else handlers.onPage(event);
 }
 
 function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
@@ -1096,7 +1107,7 @@ export default function App() {
   }, [loading, pendingQuestion, response, progress, streamingAnswer]);
 
   useEffect(() => {
-    if (visualFixture) return;
+    if (visualFixture || requestedStreamFixture) return;
     void refreshIfServerChanged();
     const check = window.setInterval(() => void refreshIfServerChanged(), 60_000);
     return () => window.clearInterval(check);
@@ -1109,8 +1120,60 @@ export default function App() {
     });
   }, [visualFixture]);
 
+  // A named `?stream=` fixture replays as a timed event sequence through the
+  // same dispatch the network path uses, so progressive rendering can be
+  // reviewed without a model. Development only, like `?fixture=`.
+  useEffect(() => {
+    if (!import.meta.env.DEV || !requestedStreamFixture) return;
+    let cancelled = false;
+    void loadRequestedStreamEvents().then(async (events) => {
+      if (!events || cancelled) return;
+      const responseEvent = events.find((event): event is Extract<StreamEvent, { type: "response" }> => event.type === "response");
+      const firstTurn = responseEvent?.response.conversation.find((turn) => turn.role === "user")?.text ?? null;
+      setPendingQuestion(firstTurn);
+      setPendingStartsFresh(true);
+      setLoading(true);
+      setError(null);
+      setProgress([]);
+      setStreamingAnswer(null);
+      setDraft(null);
+      answerStartedRef.current = false;
+      let statusCount = 0;
+      for (const event of events) {
+        if (cancelled) return;
+        await delay(event.type === "block" ? 600 : event.type === "answer" ? 40 : 300);
+        if (cancelled) return;
+        dispatchStreamEvent(event, {
+          onStatus: (status) => {
+            statusCount += 1;
+            setProgress((lines) => [...lines, status]);
+          },
+          onAnswer: (text) => {
+            if (!answerStartedRef.current) {
+              answerStartedRef.current = true;
+              setAnswerProgressStart(statusCount);
+            }
+            setStreamingAnswer(text);
+          },
+          onPage: (pageEvent) => setDraft((current) => applyPageEvent(current, pageEvent)),
+          onResponse: (nextResponse) => {
+            setResponse(nextResponse);
+            setLoading(false);
+            setPendingQuestion(null);
+            setPendingStartsFresh(false);
+            setProgress([]);
+            setStreamingAnswer(null);
+            setAnswerProgressStart(null);
+            setDraft(null);
+          }
+        });
+      }
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   async function askQuestion(nextQuestion?: string, { fresh = false }: { fresh?: boolean } = {}) {
-    if (visualFixture) return;
+    if (visualFixture || requestedStreamFixture) return;
     const trimmed = (nextQuestion ?? question).trim();
     if (!trimmed || loading) return;
     const requestThreadId = fresh ? createThreadId() : activeThreadId;
@@ -1189,11 +1252,12 @@ export default function App() {
     const consume = (line: string) => {
       if (!line.trim()) return;
       const event = JSON.parse(line) as StreamEvent;
-      if (event.type === "status") handlers.onStatus(event.text);
-      else if (event.type === "answer") handlers.onAnswer(event.text);
-      else if (event.type === "response") answer = event.response;
-      else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
-      else handlers.onPage(event);
+      dispatchStreamEvent(event, {
+        onStatus: handlers.onStatus,
+        onAnswer: handlers.onAnswer,
+        onPage: handlers.onPage,
+        onResponse: (response) => { answer = response; }
+      });
     };
     for (;;) {
       const { value, done } = await reader.read();
