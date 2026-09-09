@@ -98,3 +98,27 @@ def test_get_show_issues_a_bounded_number_of_statements_on_the_postgres_toy_fixt
     assert len(issued) < 25
     assert "pathways" in payload
     assert isinstance(payload["pathways"], dict)
+
+
+def test_search_entities_gives_a_release_pathways_even_when_its_tracks_match_first():
+    store = CanonicalStore()
+    release = store.resolve_release("Wake of the Flood")
+    result = json.loads(tool_by_name(store, "search_entities").invoke({"query": "Wake of the Flood"}))
+    pathways = result["pathways"]
+    assert release["release_id"] in pathways
+    by_type = {}
+    for match in result["matches"]:
+        if match["id"] in pathways:
+            by_type[match["entity_type"]] = by_type.get(match["entity_type"], 0) + 1
+    assert all(count <= 2 for count in by_type.values())
+    assert len(pathways) <= 6
+
+
+def test_release_pathways_point_to_tracks_with_cataloged_lore():
+    store = CanonicalStore()
+    sugaree = store.resolve_song("Sugaree")["song_id"]
+    release_id = next(row["release_id"] for row in store.rows("official_release_tracks") if row.get("song_id") == sugaree)
+    pathways = pathways_for(store, [("release", release_id)])[release_id]
+    assert any(entry["song_id"] == sugaree for entry in pathways["song_lore"])
+    assert all(set(entry) == {"song_id", "title"} for entry in pathways["song_lore"])
+    assert len(pathways["song_lore"]) <= 6

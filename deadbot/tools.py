@@ -433,11 +433,18 @@ def build_tools(
                 f'{show["show_date"]} — {show.get("venue_name", "Unknown venue")}',
             )
         limited = matches[:20]
-        pathway_entities = [
-            (match["entity_type"], match["id"])
-            for match in limited
-            if match["entity_type"] in {"song", "show", "release"}
-        ][:6]
+        # At most two entities per type so a record's own tracks do not crowd
+        # the record (or a show) out of the six pathway slots.
+        pathway_entities: list[tuple[str, str]] = []
+        per_type: dict[str, int] = {}
+        for match in limited:
+            kind = match["entity_type"]
+            if kind not in {"song", "show", "release"} or per_type.get(kind, 0) >= 2:
+                continue
+            per_type[kind] = per_type.get(kind, 0) + 1
+            pathway_entities.append((kind, match["id"]))
+            if len(pathway_entities) == 6:
+                break
         payload: dict[str, Any] = {"query": query, "matches": limited}
         if pathway_entities:
             payload["pathways"] = pathways_for(store, pathway_entities)
