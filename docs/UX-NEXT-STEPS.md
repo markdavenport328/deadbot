@@ -280,9 +280,25 @@ relationship layouts; the prompt was rewritten around emphasis and facets;
 releases gained `song_lore` pathways.
 
 What remains: removing `role` from the plan entirely after one release now that
-callers have had a chance to move to `emphasis`; progressive page streaming so
-later units do not block the first read; a manual rerun of
+callers have had a chance to move to `emphasis`; a manual rerun of
 `evals/editorial-scope-v1.json` judged against the experience brief.
+
+## Batch: progressive page streaming (September 9, 2026)
+
+- `/api/experience/stream` now scans the model's `finish_response` call as it
+  is written and emits `page_head`, then per group `group_open`, hydrated
+  `block` events (each resolved through `finish.resolve_items` as it streams),
+  and `group_close`, ahead of the final `response` event.
+- The browser builds the page from these events instead of waiting for
+  `response`; a development-only `?stream=<fixture>` mode replays a visual
+  fixture as a timed event sequence for review without a model call.
+- `scripts/trace_stream.py` times a live request: seconds to first answer
+  text, answer complete, first block, last block, and final response.
+- Live trace run: not run. Loading `/Users/markdavenport/Development/DeadBot/.env`
+  with `set -a; source ...; set +a` failed with a shell parse error at line 5
+  (near `&`), so `OPENAI_API_KEY` and `DEADBOT_DATABASE_URL` were not
+  available and the server could not be started. No question was traced;
+  no numbers below are invented.
 
 ## Measurements
 
