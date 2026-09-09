@@ -269,8 +269,33 @@ shared list style. Add progressive page streaming so later units arrive without
 blocking the first read. Design fixtures first for four question shapes (song,
 show, album, person) before touching the schema again.
 
+Completed by the emphasis and palette cut batch: `role` on a unit is deprecated
+in favor of a three-level `emphasis` (primary, supporting, mention); comparison
+groups carry `criteria` and units carry per-criterion `judgments`; `mode`,
+`body`, `layout` and `show_explorer` are removed, and seven former
+single-dimension components are folded into unit facets instead (show:
+lineup, recordings; song: history); the renderer has emphasis anatomy and
+relationship layouts; the prompt was rewritten around emphasis and facets;
+releases gained `song_lore` pathways.
+
+What remains: removing `role` from the plan entirely after one release now that
+callers have had a chance to move to `emphasis`; progressive page streaming so
+later units do not block the first read.
+
 ## Measurements
 
 | Date | Change | finish_response schema (chars / approx tokens) |
 | --- | --- | --- |
 | 2026-09-09 | baseline before the emphasis and palette cut | 28022 / 7005 |
+| 2026-09-09 | after the emphasis and palette cut | 24418 / 6104 |
+
+Live finish-call timing, 2026-09-09: three questions run once each against this
+worktree's code, provider openai, model gpt-5.6-luna, using the main checkout's
+`.env` for `OPENAI_API_KEY` and `DEADBOT_DATABASE_URL` (this shell has neither
+on its own).
+
+| Question | Finish call wall time since the last tool result (s) | Finish call output tokens | Total wall time (s) |
+| --- | --- | --- | --- |
+| Was Branford on the whole 1991-09-10 Madison Square Garden show, and where should I listen for him? | 16.93 | 1514 | 37.43 |
+| What are the best versions of Franklin's Tower? | 20.47 | 1697 | 53.70 |
+| What was the live legacy of American Beauty? | 19.21 | 1871 | 36.50 |
