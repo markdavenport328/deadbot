@@ -1234,10 +1234,17 @@ export default function App() {
               {response.groups.map((group, groupIndex) => (
                 <section className={`experience-group group-${group.presentation}`} key={`${group.presentation}-${groupIndex}-${group.title ?? ""}`}>
                   {(group.title || group.lead) && (
-                    <header className="group-heading">
-                      {group.title && <h2>{group.title}</h2>}
-                      {group.lead && <p>{renderInline(group.lead)}</p>}
-                    </header>
+                    group.presentation === "argument" ? (
+                      <header className="group-heading claim">
+                        {group.title && <h2>{group.title}</h2>}
+                        {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
+                      </header>
+                    ) : (
+                      <header className="group-heading">
+                        {group.title && <h2>{group.title}</h2>}
+                        {group.lead && <p>{renderInline(group.lead)}</p>}
+                      </header>
+                    )
                   )}
                   <div className="block-grid group-blocks">
                     {chunkMentions(group.block_indexes.map((index) => response.blocks[index])).map((entry, position) =>
