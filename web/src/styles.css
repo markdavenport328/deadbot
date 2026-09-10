@@ -1,3 +1,11 @@
+/* Self-hosted variable fonts, preloaded. font-display: optional means the page
+   never re-lays itself out after first paint: the fonts are used when they are
+   ready in time, and the fallback stands for that visit otherwise. */
+@font-face { font-family: Fraunces; font-style: normal; font-weight: 400 700; font-display: optional; src: url(/fonts/fraunces-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: Fraunces; font-style: normal; font-weight: 400 700; font-display: optional; src: url(/fonts/fraunces-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: Inter; font-style: normal; font-weight: 400 700; font-display: optional; src: url(/fonts/inter-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: Inter; font-style: normal; font-weight: 400 700; font-display: optional; src: url(/fonts/inter-latin-ext.woff2) format("woff2"); unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
 :root {
   color: #e9e6d9;
   background: #14221b;
@@ -21,8 +29,8 @@
   --listen-ink: #1c1a10;
   --read: #e8779a;
   --ask: #3f95dc;
-  --ask-deep: #2b63d6;
-  --ask-teal: #1f8fc0;
+  --ask-deep: #2c4f86;
+  --ask-deep-hover: #36609f;
   --violet: #8b5cf6;
   --serif: Fraunces, Georgia, "Times New Roman", serif;
   --r: 2px;
@@ -90,8 +98,8 @@ textarea { display: block; width: 100%; min-width: 0; resize: none; border: 1px 
 textarea::placeholder { color: #9fb29f; }
 textarea:focus { outline: 2px solid #c49e48; outline-offset: 2px; border-color: #c49e48; }
 /* The one filled blue on the page: cobalt into teal, like the cover's sky, with a hairline of light along the top. */
-.question-field button[type="submit"] { position: absolute; right: 0.6rem; bottom: 0.6rem; border: 0; border-radius: var(--r); background: linear-gradient(135deg, var(--ask-deep) 0%, var(--ask-teal) 100%); color: var(--cream); font-weight: 600; letter-spacing: 0.01em; padding: 0.6rem 1.1rem; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.35); transition: filter 120ms ease; }
-.question-field button[type="submit"]:hover:not(:disabled), .question-field button[type="submit"]:focus-visible { filter: brightness(1.1); }
+.question-field button[type="submit"] { position: absolute; right: 0.6rem; bottom: 0.6rem; border: 0; border-radius: var(--r); background: var(--ask-deep); color: var(--cream); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; padding: 0.8rem 1.05rem; transition: background 120ms ease; }
+.question-field button[type="submit"]:hover:not(:disabled), .question-field button[type="submit"]:focus-visible { background: var(--ask-deep-hover); }
 button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68; }
 .error { margin: 0 0 0.8rem; border-radius: var(--r); border-left: 4px solid #e17e64; background: #3d2923; color: #f0d6ca; padding: 0.8rem; font-size: 0.86rem; }
 
@@ -155,7 +163,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .subtitle { color: #bdc9bb; }
 /* The one control that speaks to the thread. Blue asks: every path back into
    the conversation shares this border and hover color. */
-.ask-chip { display: inline-flex; align-items: baseline; max-width: 100%; border: 1px solid rgba(63, 149, 220, 0.55); border-radius: var(--r); background: transparent; color: var(--cream); font-size: 0.86rem; font-weight: 500; line-height: 1.4; padding: 0.55rem 0.85rem; text-align: left; transition: border-color 120ms ease, background 120ms ease; }
+.ask-chip { display: inline-flex; align-items: baseline; max-width: 100%; border: 1px solid rgba(88, 148, 214, 0.55); border-radius: var(--r); background: transparent; color: var(--cream); font-size: 0.86rem; font-weight: 500; line-height: 1.4; padding: 0.55rem 0.85rem; text-align: left; transition: border-color 120ms ease, background 120ms ease; }
 .ask-chip:hover, .ask-chip:focus-visible { border-color: var(--ask); background: rgba(63, 149, 220, 0.12); }
 /* Listening navigates to a recording; asking starts a conversation turn. */
 .listening-label { min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
@@ -190,19 +198,19 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .performance-list ul { margin: 1rem 0 0; padding: 0; list-style: none; }
 .performance-list li + li { border-top: 1px solid #3e5544; margin-top: 0.65rem; padding-top: 0.65rem; }
 .performance-list li > span:not(.listening-label) { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
-.list-item-label { display: inline-flex; gap: 0.35rem; color: #f1efdf; font-size: 1rem; font-weight: 700; }
+.list-item-label { display: inline-flex; gap: 0.35rem; color: var(--cream); font-size: 0.95rem; font-weight: 600; }
 /* First/Last, in a song's History tab. */
 .endpoints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .endpoints .k { display: block; margin-bottom: 0.15rem; }
 /* Zone 3: the set thread, performances only. One line of text, wrapping like a sentence. */
 /* Where a performance sits: three consecutive setlist lines, this one lit. */
-.set-excerpt { margin: 1.1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.1rem; max-width: 34rem; }
-.set-excerpt li { display: grid; grid-template-columns: 2rem 1fr; align-items: baseline; padding: 0.3rem 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
-.set-excerpt .n { color: var(--quiet); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-.set-excerpt li.here { position: relative; color: var(--cream); font-weight: 600; }
-.set-excerpt li.here .n { color: var(--listen); }
-.set-excerpt li.here::before { content: ""; position: absolute; left: -0.9rem; top: 0.4rem; bottom: 0.4rem; width: 2px; background: var(--listen); }
-.set-excerpt li.edge { color: var(--quiet); font-style: italic; }
+.set-excerpt { margin: 1rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.8; }
+.set-excerpt .stop { white-space: nowrap; }
+.set-excerpt .n { color: var(--quiet); font-size: 0.8rem; font-variant-numeric: tabular-nums; margin-right: 0.4rem; }
+.set-excerpt .here { color: var(--cream); font-weight: 600; border-left: 2px solid var(--listen); padding-left: 0.5rem; }
+.set-excerpt .here .n { color: var(--listen); }
+.set-excerpt .arrow { color: var(--quiet); margin: 0 0.55rem; }
+.set-excerpt .edge { font-style: italic; color: var(--quiet); }
 .topics { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .fact-ask .topics, .timeline-ask .topics { display: inline-flex; margin-top: 0.35rem; }
 .comparison-track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(12rem, 1fr); gap: 1rem; margin: 1.2rem 0 0; padding: 0 0 0.5rem; list-style: none; overflow-x: auto; }
@@ -218,7 +226,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .show-unit, .performance-unit, .album-unit { grid-column: span 12; }
 .era-unit { grid-column: 1 / -1; max-width: 65rem; padding: 0; }
 .block-grid > :is(.show-unit, .performance-unit, .album-unit) + :is(.show-unit, .performance-unit, .album-unit) { margin-top: calc(var(--space-unit) - 1rem); }
-.block-grid > .era-unit + .era-unit { border-top: 1px solid #3e5544; margin-top: calc(var(--space-section) - 1rem); padding-top: var(--space-unit); }
+.block-grid > .era-unit + .era-unit { margin-top: var(--space-section); }
 .show-explorer { grid-column: 1 / -1; }
 .show-explorer > h2 { max-width: 30ch; margin-bottom: 1rem; }
 .explorer-units { display: grid; gap: var(--space-unit); }
@@ -255,9 +263,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .listen-action { display: inline-flex; align-items: center; gap: 0.55rem; border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--text); font-size: 0.88rem; font-weight: 500; padding: 0.55rem 0.95rem 0.55rem 0.8rem; text-decoration: none; transition: border-color 120ms ease, color 120ms ease; }
 .listen-action:hover, .listen-action:focus-visible { border-color: var(--listen); color: var(--cream); }
 .listen-action svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--listen); }
-.listen-action.primary { background: var(--listen); border-color: var(--listen); color: var(--listen-ink); font-weight: 600; }
-.listen-action.primary svg { color: var(--listen-ink); }
-.listen-action.primary:hover, .listen-action.primary:focus-visible { background: #f1c96a; }
+.listen-action.primary { background: rgba(231, 185, 78, 0.12); border-color: rgba(231, 185, 78, 0.6); color: var(--cream); font-weight: 600; }
+.listen-action.primary svg { color: var(--listen); }
+.listen-action.primary:hover, .listen-action.primary:focus-visible { background: rgba(231, 185, 78, 0.2); border-color: var(--listen); }
 .listen-action-label { font-size: inherit; color: inherit; overflow-wrap: anywhere; }
 /* "Listen for" is a sentence, not a labeled row. */
 .listen-for { margin: 0.9rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.6; }
@@ -267,12 +275,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 
 /* Zone 5: the tabbed drawer. */
 .drawer { margin: var(--zone) 0 0; }
-.tabs { display: flex; flex-wrap: wrap; gap: 0 1.75rem; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--hair); }
-.tab { position: relative; border: 0; background: none; padding: 0 0 0.7rem; margin-bottom: -1px; transition: color 120ms ease; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.tab { border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); padding: 0.5rem 0.8rem; transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
 .tab .n { margin-left: 0.4rem; font-weight: 500; letter-spacing: 0; font-size: 0.8rem; font-variant-numeric: tabular-nums; opacity: 0.8; }
-.tab:hover { color: var(--cream); }
-.tab[aria-selected="true"] { color: var(--cream); }
-.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cream); }
+.tab:hover { color: var(--cream); border-color: rgba(233, 230, 217, 0.3); }
+.tab[aria-selected="true"] { color: var(--cream); border-color: rgba(233, 230, 217, 0.4); background: rgba(233, 230, 217, 0.06); }
+
 .panel { padding-top: 1.1rem; }
 .setlist-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2.5rem; }
 .setlist-panel .k { display: block; margin-bottom: 0.4rem; }
@@ -304,11 +312,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .fact-ask, .timeline-ask { display: block; margin-top: 0.45rem; }
 .timeline-ask { grid-column: 2; }
 .entity-block .ask-chip { margin-top: 1rem; }
-.era-performances { margin: var(--space-part) 0 0; padding: 0; list-style: none; }
-.era-performances li { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-detail) var(--space-part); align-items: baseline; border-top: 1px solid #3e5544; padding: 0.65rem 0; }
-.era-performances li > span:not(.listening-label) { grid-column: 1; color: #aebbac; font-size: 0.86rem; }
+.era-performances { margin: 1.25rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
+.era-performances li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
+.era-performances li > span:not(.listening-label) { color: var(--muted); font-size: 0.88rem; }
 .era-performances li > .listen-action { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
-.era-performances li:last-child { padding-bottom: 0; }
+.era-unit h2 { margin-top: 0.75rem; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
 .show-selection-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2rem; margin: 1.2rem 0 0; padding: 0; list-style: none; }
 .show-selection-list li { border-top: 1px solid #3e5544; padding: 0.65rem 0; }
 .show-selection-list li span + span { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
@@ -373,6 +381,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .arrangement-facts { grid-template-columns: 1fr; }
   .setlist-panel { grid-template-columns: 1fr; }
   .criteria > div { grid-template-columns: 1fr; gap: 0.15rem; }
+  .mention { grid-template-columns: 1fr; }
   .id-row { flex-wrap: wrap; }
   .show-selection-list { grid-template-columns: 1fr; }
   .unit-heading { flex-direction: column; }
@@ -406,11 +415,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .group-comparison .group-blocks > .card { margin-top: 0; }
 }
 
-.mention-list { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; }
-.mention { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.75rem; border-top: 1px solid #3e5544; padding: 0.6rem 0; }
-.mention:last-child { border-bottom: 1px solid #3e5544; }
-.mention-note { color: #bdc9bb; font-size: 0.92rem; line-height: 1.45; }
-.mention-note::before { content: "· "; color: #7f9582; }
+.mention-list { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; }
+.mention { display: grid; grid-template-columns: minmax(12rem, 20rem) 1fr; gap: 0.2rem 1.25rem; align-items: baseline; }
+
+.mention-note { color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+
 .criteria { display: grid; gap: var(--space-part); margin: var(--space-part) 0 0; border-top: 1px solid #3e5544; padding-top: var(--space-part); }
 .criteria > div { display: grid; grid-template-columns: minmax(6rem, 9rem) 1fr; gap: var(--space-detail) var(--space-identity); }
 .criteria dd { margin: 0; color: #f1efdf; font-size: 0.95rem; line-height: 1.45; min-height: 1.45em; }
