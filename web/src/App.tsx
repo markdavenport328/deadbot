@@ -1398,7 +1398,7 @@ export default function App() {
             {error && <p className="error" role="alert">{error}</p>}
 
             <form className="composer" onSubmit={submit}>
-              <div className="question-row">
+              <div className="question-field">
                 <textarea
                   id="question"
                   aria-label="Question"
@@ -1409,7 +1409,7 @@ export default function App() {
                   onKeyDown={submitOnEnter}
                   disabled={loading}
                 />
-                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
+                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Ask"}</button>
               </div>
               {response && !loading && (
                 <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
