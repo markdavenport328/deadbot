@@ -62,6 +62,22 @@
         "Uses component count as a substitute for explaining why the chosen shows differ.",
         "Lets sources, setlists, or metadata compete visually with the recommendations."
       ]
+    },
+    {
+      "id": "guest-musician-shows",
+      "question": "What shows did Branford Marsalis play on?",
+      "expected": {
+        "scope": "The shows are the answer. Each show the visitor should know gets its own show unit with the guests facet, the one to start with primary and the rest supporting, each carrying the model's note on what distinguishes it.",
+        "priority": "The count and the list of shows come first in chat; the body earns its place with insight drawn from the shows' pathways and setlists: what the guest changed, which appearance to hear first, how the appearances differ.",
+        "optional_paths": "Listening actions on the shows and Ask chips written from the cataloged lore.",
+        "voice": "Counts and dates are stated as facts."
+      },
+      "failure_conditions": [
+        "Presents the appearances only as a bare list of dates and venues.",
+        "Offers no insight beyond the inventory when the tool output carried pathways, setlists or official releases.",
+        "Hedges the count or dates with coverage language such as documented or not necessarily complete.",
+        "Makes every show primary, or makes none of them primary."
+      ]
     }
   ]
 }

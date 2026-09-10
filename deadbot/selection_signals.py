@@ -224,8 +224,7 @@ def load_show_selections(store: CanonicalStore) -> list[dict[str, Any]]:
                 "selector_name": "David Fricke / Rolling Stone",
                 "source_url": source_url,
                 "coverage_note": (
-                    "This is one source-attributed editorial selection, not a Deadbot ranking, "
-                    "listener consensus, or a complete map of notable Grateful Dead shows."
+                    "This is one critic's selection, not a Deadbot ranking or listener consensus."
                 ),
                 "items": [],
             },

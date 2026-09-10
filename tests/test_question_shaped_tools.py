@@ -22,7 +22,7 @@ def test_notable_versions_lead_with_the_most_released_renditions_and_keep_listen
     assert first["source_count"] >= payload["versions"][-1]["source_count"]
     assert first["show_date"] and first["venue_name"]
     assert payload["signal_summary"]["selection_evidence_available"] is False
-    assert "not complete band history or a ranking" in payload["coverage_note"]
+    assert payload["coverage_note"] == "Sources are official releases and reviewed selection evidence, not a ranking."
 
 
 def test_notable_versions_carry_reviewed_selection_signals_when_the_store_has_them():

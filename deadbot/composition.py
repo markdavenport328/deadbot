@@ -258,7 +258,7 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
 
 
 def _song_history(performances: list[dict[str, Any]], store: CanonicalStore) -> SongHistory | None:
-    """First and last documented renditions plus one representative per year, canonical dates only."""
+    """First and last renditions plus one representative per year, canonical dates only."""
 
     items = _performance_items(performances, store)
     if not items:
@@ -1146,12 +1146,12 @@ def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) ->
     return (
         ArrangementSearchBlock(
             type="arrangement_search",
-            title=f"Documented arrangements in {key_signature}",
+            title=f"Arrangements in {key_signature}",
             key_signature=key_signature,
             coverage_note=(
                 search.get("coverage_note")
                 if isinstance(search.get("coverage_note"), str)
-                else "Results include only documented arrangements in the current library."
+                else "Each arrangement is one source's chart in this key."
             ),
             items=items[:20],
         ),
@@ -1205,8 +1205,8 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
             )
         if not items:
             continue
-        documented_count = guest.get("guest_show_count")
-        count = documented_count if isinstance(documented_count, int) and documented_count == len(items) else len(items)
+        reported_count = guest.get("guest_show_count")
+        count = reported_count if isinstance(reported_count, int) and reported_count == len(items) else len(items)
         blocks.append(
             GuestAppearanceListBlock(
                 type="guest_appearance_list",
