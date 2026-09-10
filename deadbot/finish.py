@@ -187,6 +187,14 @@ _FOLLOW_UPS_DESCRIPTION = (
 class ShowUnitRef(_Ref):
     """One show as a primary object of the answer. The server supplies date, venue, setlist, guests and listening."""
 
+    title: str | None = Field(
+        default=None,
+        description=(
+            "The headline for this show, as a fan would name it: the venue's common name ('Nassau Coliseum', 'The Garden') "
+            "or the show's familiar nickname ('Cornell \'77', 'Veneta'). The card shows the full venue, city and date beneath it, "
+            "so the headline names the place or the legend, in a few words. Omit it to use the venue name."
+        ),
+    )
     type: Literal["show_unit"]
     show_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
