@@ -517,11 +517,57 @@ const album: ExperienceResponse = fixture(
   { title: "The record" }
 );
 
-export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album"] as const;
+// One primary performance_unit judged on four criteria, with its set
+// neighbors, so the labeled groups and the before/after strip can be reviewed
+// at full width.
+const performanceBlocks: ExperienceBlock[] = [
+  {
+    type: "performance_unit", performance_id: "fixture-1968-02-14-dark-star", song_id: "song-dark-star", song_title: "Dark Star",
+    show_id: "fixture-1968-02-14", show_date: "1968-02-14", show_label: "1968-02-14 — Carousel Ballroom", venue_name: "Carousel Ballroom", location: "San Francisco, CA",
+    set_label: "Set 1", position_in_set: "3", emphasis: "primary",
+    note: "A useful early comparison: the 1968 approach is more compressed and eventful, with abrupt changes of color and intensity.",
+    judgments: [
+      "Dense, echoing, and sharply colored; early psychedelia still feels close to the studio experiment.",
+      "Garcia is foregrounded while Lesh and Weir increasingly respond in loose counterpoint.",
+      "The form feels like a route through episodes—verse, exploratory jam, return—rather than a long, spacious arc.",
+      "Unstable and electric: the music seems to be discovering what the song can become."
+    ],
+    previous: { performance_id: "fixture-1968-02-14-schoolgirl", title: "Good Morning Little Schoolgirl" },
+    next: { performance_id: "fixture-1968-02-14-china-cat", title: "China Cat Sunflower" },
+    listen: [
+      { label: "Hear Dark Star on the official release", provider: "Dead.net", url: "https://www.dead.net/", is_official: true },
+      { label: "Hear the full show", provider: "Internet Archive", url: `${archive}gd1968-02-14.sbd`, is_official: false }
+    ],
+    sources: [{ label: "Show notes", url: "https://jerrybase.com/events/19680214-01", source_name: "Jerrybase", note: "Set order and venue context." }],
+    follow_up: "How does the 1968 Dark Star differ from the 1972 versions?"
+  }
+];
+
+const performance: ExperienceResponse = {
+  schema_version: "2",
+  thread_id: "visual-performance",
+  title: "The 1968 Dark Star is a route through episodes",
+  answer: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
+  body_lead: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
+  mode: "answer",
+  conversation: [
+    { role: "user", text: "What is the 1968 Carousel Ballroom Dark Star like?" },
+    { role: "assistant", text: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into." }
+  ],
+  blocks: performanceBlocks,
+  groups: [
+    { presentation: "comparison", title: null, criteria: ["Texture", "Band interaction", "Form", "Emotional effect"], block_indexes: [0] }
+  ],
+  sources: [
+    { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }
+  ]
+};
+
+export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album };
+const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album, performance };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
