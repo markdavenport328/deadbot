@@ -131,7 +131,10 @@ together.
 Use collection for peers, sequence for development or a listening route,
 comparison for shared criteria, and argument when items support a claim. The
 page title states the central finding. A lead or group introduction earns its
-place only by adding a distinct idea.
+place only by adding a distinct idea, and so does a group: each group brings
+material the page has not shown yet. When what remains would only restate the
+finding in another form (a closing summary, a grid of the same songs already
+given their own units), the page ends instead.
 
 The model declares semantic units; the server hydrates their facts and URLs:
 

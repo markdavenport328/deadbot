@@ -963,6 +963,47 @@ function PerformanceUnit({
 
 type SongOverviewBlockT = Extract<ExperienceBlock, { type: "song_overview" }>;
 
+// A show label arrives as "1970-06-07 — Fillmore West". The venue is the name;
+// the date is written out beneath it.
+function splitShowLabel(label: string, showDate?: string | null): { venue: string; date: string | null } {
+  const parts = label.split(/\s+[—–-]\s+/);
+  const venue = parts.length > 1 ? parts.slice(1).join(" — ") : label;
+  const date = showDate ? formatShowDateLong(showDate) : parts.length > 1 ? parts[0] : null;
+  return { venue, date };
+}
+
+type HistoryStop = { performance_id: string; show_label: string; show_date?: string | null; listen_url?: string | null; set_label?: string | null };
+
+function HistoryStop({ stop, label }: { stop: HistoryStop; label: ReactNode }) {
+  const { venue, date } = splitShowLabel(stop.show_label, stop.show_date);
+  return (
+    <li>
+      <span className="history-year">{label}</span>
+      <ListeningLabel title={venue} url={stop.listen_url} className="entry-title" />
+      <span className="entry-detail">{[date, stop.set_label].filter(Boolean).join(" · ")}</span>
+    </li>
+  );
+}
+
+// The song's performance history: where it began and ended, then one
+// performance a year across a horizontal strip.
+function HistoryPanel({ history }: { history: NonNullable<SongOverviewBlockT["history"]> }) {
+  const byYear = history.by_year ?? [];
+  return (
+    <div className="history">
+      <ol className="history-span">
+        <HistoryStop stop={history.first} label="First" />
+        <HistoryStop stop={history.last} label="Last" />
+      </ol>
+      {byYear.length > 1 && (
+        <ol className="history-years" aria-label="One performance a year">
+          {byYear.map((item) => <HistoryStop key={item.performance_id} stop={item} label={item.year} />)}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 function SongOverviewUnit({
   block,
   criteria,
@@ -980,35 +1021,10 @@ function SongOverviewUnit({
   const tabs: DrawerTab[] = [];
   if (showsFacet("history") && block.history) {
     const history = block.history;
-    const byYear = history.by_year ?? [];
     tabs.push({
       id: "history",
       label: "History",
-      content: (
-        <div>
-          <p className="subtitle">{history.known_count} performance{history.known_count === 1 ? "" : "s"}</p>
-          <div className="endpoints">
-            <div>
-              <span className="k">First</span>
-              <ListeningLabel title={history.first.show_label} url={history.first.listen_url} className="list-item-label" />
-            </div>
-            <div>
-              <span className="k">Last</span>
-              <ListeningLabel title={history.last.show_label} url={history.last.listen_url} className="list-item-label" />
-            </div>
-          </div>
-          {byYear.length > 1 && (
-            <ol className="comparison-track" aria-label="One performance per year">
-              {byYear.map((item) => (
-                <li className="comparison-stop" key={item.performance_id}>
-                  <p className="comparison-year">{item.year}</p>
-                  <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-      )
+      content: <HistoryPanel history={history} />
     });
   }
   if (showsFacet("albums") && block.albums.length > 0) {
@@ -1017,13 +1033,31 @@ function SongOverviewUnit({
       label: "On record",
       count: block.albums.length,
       content: (
-        <PlainList
-          items={block.albums.map((album) => ({
-            key: album.release_id,
-            title: album.title,
-            detail: [album.release_type, album.release_date?.slice(0, 4)].filter(Boolean).join(" · ")
-          }))}
-        />
+        <ul className="entry-list two-up records">
+          {block.albums.map((album) => {
+            const detail = [capitalize(album.release_type), album.release_date?.slice(0, 4)].filter(Boolean).join(" · ");
+            return (
+              <li key={album.release_id}>
+                {album.listen_url ? (
+                  <a
+                    className="entry-title record-link"
+                    href={album.listen_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`Listen to ${album.title} on ${listeningDestination(album.listen_url)} (opens in a new tab)`}
+                    title={`Opens ${listeningDestination(album.listen_url)} in a new tab`}
+                  >
+                    <Glyph kind={glyphForAction(album.listen_url, true)} />
+                    {album.title}
+                  </a>
+                ) : (
+                  <span className="entry-title">{album.title}</span>
+                )}
+                <span className="entry-detail">{detail}</span>
+              </li>
+            );
+          })}
+        </ul>
       )
     });
   }

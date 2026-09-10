@@ -917,6 +917,8 @@ export interface components {
         };
         /** SongReleaseItem */
         SongReleaseItem: {
+            /** Listen Url */
+            listen_url?: string | null;
             /** Release Date */
             release_date?: string | null;
             /** Release Id */
