@@ -566,21 +566,6 @@ function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: string 
   );
 }
 
-function UnitSourceList({ sources }: { sources: UnitSources }) {
-  if (sources.length === 0) return null;
-  return (
-    <ul className="unit-sources" aria-label="Sources for this item">
-      {sources.map((source) => (
-        <li key={source.url}>
-          {source.note && <p className="unit-source-note">{source.note}</p>}
-          <ExternalLink href={source.url}>{source.label}</ExternalLink>
-          {source.source_name && <span className="unit-source-name"> · {source.source_name}</span>}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 type UnitBlock = Extract<ExperienceBlock, { type: "show_unit" | "performance_unit" | "album_unit" | "song_overview" }>;
 
 function isUnit(block: ExperienceBlock): block is UnitBlock {
@@ -948,14 +933,17 @@ function PerformanceUnit({
             : { key: "next", n: null, title: `Closes ${setName}`, edge: true }
         ];
         return (
-          <ol className="set-excerpt" aria-label="Where this sits in the set">
-            {rows.map((row) => (
-              <li key={row.key} className={row.here ? "here" : row.edge ? "edge" : undefined}>
-                <span className="n" aria-hidden="true">{row.n ?? ""}</span>
-                <span>{row.title}</span>
-              </li>
+          <p className="set-excerpt" aria-label="Where this sits in the set">
+            {rows.map((row, index) => (
+              <span key={row.key}>
+                {index > 0 && <span className="arrow" aria-hidden="true">→</span>}
+                <span className={row.here ? "stop here" : row.edge ? "stop edge" : "stop"}>
+                  {row.n !== null && <span className="n">{row.n}</span>}
+                  {row.title}
+                </span>
+              </span>
             ))}
-          </ol>
+          </p>
         );
       })()}
       <ListenActionList actions={block.listen} />
@@ -1103,12 +1091,8 @@ function Block({
     case "era_unit":
       return (
         <section className="era-unit">
-          <header className="unit-heading">
-            <div>
-              {block.span && <Eyebrow label={block.span} title={block.title} />}
-              <h2>{block.title}</h2>
-            </div>
-          </header>
+          <IdRow type="Era" when={block.span} />
+          <h2>{block.title}</h2>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <ul className="era-performances">
             {block.performances.map((performance) => (
@@ -1122,8 +1106,12 @@ function Block({
               </li>
             ))}
           </ul>
-          <UnitSourceList sources={block.sources} />
-          <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
+          {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
+            <footer className="unit-footer">
+              <GoDeeper sources={block.sources} />
+              <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
+            </footer>
+          )}
         </section>
       );
     case "album_unit":
