@@ -21,7 +21,8 @@
   --listen-ink: #1c1a10;
   --read: #e8779a;
   --ask: #3f95dc;
-  --ask-deep: #1e4d9b;
+  --ask-deep: #2b63d6;
+  --ask-teal: #1f8fc0;
   --violet: #8b5cf6;
   --serif: Fraunces, Georgia, "Times New Roman", serif;
   --r: 2px;
@@ -33,7 +34,8 @@
 }
 
 * { box-sizing: border-box; }
-body { min-width: 320px; margin: 0; background: #14221b; -webkit-font-smoothing: antialiased; }
+/* The ground color lives on html; body stays transparent so the fixed gradient layer beneath it can show. */
+body { min-width: 320px; margin: 0; background: transparent; -webkit-font-smoothing: antialiased; }
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(circle at 90% 0%, #31513c 0, transparent 38rem), #14221b; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
@@ -87,7 +89,9 @@ h2 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem; }
 textarea { display: block; width: 100%; min-width: 0; resize: none; border: 1px solid rgba(89, 112, 94, 0.55); border-radius: var(--r); background: rgba(51, 79, 59, 0.35); color: #f2f3eb; line-height: 1.4; padding: 0.78rem 0.85rem 3rem; }
 textarea::placeholder { color: #9fb29f; }
 textarea:focus { outline: 2px solid #c49e48; outline-offset: 2px; border-color: #c49e48; }
-.question-field button[type="submit"] { position: absolute; right: 0.6rem; bottom: 0.6rem; border: 0; border-radius: var(--r); background: var(--ask-deep); color: #fff; font-weight: 700; padding: 0.5rem 0.9rem; }
+/* The one filled blue on the page: cobalt into teal, like the cover's sky, with a hairline of light along the top. */
+.question-field button[type="submit"] { position: absolute; right: 0.6rem; bottom: 0.6rem; border: 0; border-radius: var(--r); background: linear-gradient(135deg, var(--ask-deep) 0%, var(--ask-teal) 100%); color: var(--cream); font-weight: 600; letter-spacing: 0.01em; padding: 0.6rem 1.1rem; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 1px 2px rgba(0, 0, 0, 0.35); transition: filter 120ms ease; }
+.question-field button[type="submit"]:hover:not(:disabled), .question-field button[type="submit"]:focus-visible { filter: brightness(1.1); }
 button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68; }
 .error { margin: 0 0 0.8rem; border-radius: var(--r); border-left: 4px solid #e17e64; background: #3d2923; color: #f0d6ca; padding: 0.8rem; font-size: 0.86rem; }
 
