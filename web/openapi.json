@@ -2525,6 +2525,17 @@
       "SongReleaseItem": {
         "additionalProperties": false,
         "properties": {
+          "listen_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listen Url"
+          },
           "release_date": {
             "anyOf": [
               {

@@ -354,6 +354,8 @@ class SongReleaseItem(ExperienceModel):
     title: str
     release_date: str | None = None
     release_type: str
+    # Where to hear the release, when the library has a link for it.
+    listen_url: str | None = None
 
 
 class SongRepresentativePerformance(ExperienceModel):

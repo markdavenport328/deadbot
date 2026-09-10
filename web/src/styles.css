@@ -167,20 +167,19 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 .list-item-label { display: inline-flex; gap: 0.35rem; color: var(--cream); font-size: 0.95rem; font-weight: 600; }
 /* First/Last, in a song's History tab. */
-.endpoints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.endpoints .k { display: block; margin-bottom: 0.15rem; }
+
 /* Zone 3: the set thread, performances only. One line of text, wrapping like a sentence. */
 /* Where a performance sits: three consecutive setlist lines, this one lit. */
 .set-excerpt { margin: 1rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.8; }
 .set-excerpt .stop { white-space: nowrap; }
 .set-excerpt .n { color: var(--quiet); font-size: 0.8rem; font-variant-numeric: tabular-nums; margin-right: 0.4rem; }
-.set-excerpt .here { color: var(--cream); font-weight: 600; border-left: 2px solid var(--listen); padding-left: 0.5rem; }
+.set-excerpt .here { color: var(--cream); font-weight: 600; }
 .set-excerpt .here .n { color: var(--listen); }
 .set-excerpt .arrow { color: var(--quiet); margin: 0 0.55rem; }
 .set-excerpt .edge { font-style: italic; color: var(--quiet); }
 .topics { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .fact-ask .topics, .timeline-ask .topics { display: inline-flex; margin-top: 0.35rem; }
-.comparison-track { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(12rem, 1fr); gap: 1rem; margin: 1.2rem 0 0; padding: 0 0 0.5rem; list-style: none; overflow-x: auto; }
+
 .comparison-stop .list-item-label { font-size: 0.95rem; }
 .comparison-placement { display: block; margin-top: 0.25rem; color: #aebbac; font-size: 0.86rem; }
 .show-setlist { grid-column: span 12; }
@@ -242,11 +241,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 
 /* Zone 5: the tabbed drawer. */
 .drawer { margin: var(--zone) 0 0; }
-.tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
-.tab { border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); padding: 0.5rem 0.8rem; transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0 1.75rem; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--hair); }
+.tab { position: relative; border: 0; background: none; color: var(--muted); font-size: 0.7rem; padding: 0.2rem 0 0.75rem; margin-bottom: -1px; transition: color 120ms ease; }
 .tab .n { margin-left: 0.4rem; font-weight: 500; letter-spacing: 0; font-size: 0.8rem; font-variant-numeric: tabular-nums; opacity: 0.8; }
-.tab:hover { color: var(--cream); border-color: rgba(233, 230, 217, 0.3); }
-.tab[aria-selected="true"] { color: var(--cream); border-color: rgba(233, 230, 217, 0.4); background: rgba(233, 230, 217, 0.06); }
+.tab:hover { color: var(--cream); }
+.tab[aria-selected="true"] { color: var(--cream); }
+.tab[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cream); }
 
 .panel { padding-top: 1.1rem; }
 .setlist-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2.5rem; }
@@ -266,7 +266,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .plain { margin: 0; padding: 0; list-style: none; }
 .plain li { padding: 0.15rem 0; font-size: 0.93rem; color: var(--cream); }
 .plain li span { color: var(--muted); }
-.plain li span::before { content: " · "; color: var(--quiet); }
+.plain li span:not(.plain-title)::before { content: " · "; color: var(--quiet); }
 .plain a, .plain .plain-title { color: var(--cream); font-weight: 600; text-decoration: none; }
 .plain a:hover { text-decoration: underline; }
 
@@ -286,6 +286,16 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* The song listen zone: representative performances, cream links with the
    small gold play mark already carried by ListeningLabel. */
 .song-representatives { margin: var(--zone) 0 0; }
+.history { display: grid; gap: 1.5rem; }
+.history ol { margin: 0; padding: 0; list-style: none; }
+.history li { display: grid; gap: 0.1rem; align-content: start; }
+.history-span { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2.5rem; }
+.history-years { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 1.1rem 1.5rem; }
+.history-year { display: block; margin-bottom: 0.2rem; color: var(--quiet); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.6; font-variant-numeric: tabular-nums; }
+.history .entry-title { display: inline-flex; align-items: baseline; gap: 0.35rem; }
+.record-link { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+.record-link svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--listen); }
+.record-link:hover { text-decoration: underline; text-decoration-color: var(--listen); }
 .song-representatives ul { margin: 0; padding: 0; list-style: none; }
 .song-representatives li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.65rem; padding: 0.2rem 0; }
 .song-representatives li > span { color: var(--muted); font-size: 0.88rem; }
@@ -351,8 +361,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .typography-block .reading { margin-top: 1.25rem; display: grid; gap: 0.75rem; }
 .chords { margin: 1rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.35rem; color: var(--cream); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95rem; }
 .media-card .listen-actions { margin-top: 1rem; }
-.comparison-stop { padding-top: 0; }
-.comparison-year { margin: 0 0 0.35rem; color: var(--cream); font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.15rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 /* Asides are the one place a rule stays: a quiet left bar marks a note about the material rather than the material itself. */
 .aside-block { max-width: 46rem; border-left: 2px solid var(--hair); padding-left: 1.1rem; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
 .aside-block .k { display: block; }
@@ -377,6 +385,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .criteria > div { grid-template-columns: 1fr; gap: 0.15rem; }
   .mention { grid-template-columns: 1fr; }
   .entry-list.two-up { grid-template-columns: 1fr; }
+  .history-span { grid-template-columns: 1fr; }
   .timeline-block li { grid-template-columns: 1fr; gap: 0.1rem; }
   .timeline-marker { grid-row: auto; }
   .timeline-ask, .timeline-link { grid-column: auto; }

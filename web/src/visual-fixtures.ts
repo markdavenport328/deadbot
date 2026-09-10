@@ -317,8 +317,28 @@ const legacy: ExperienceResponse = {
       type: "song_overview", song_id: "song-sugar-magnolia", title: "Sugar Magnolia", original_artist: null, known_performance_count: 606,
       emphasis: "supporting", note: "A compact studio song became one of the band's recurring celebratory vehicles.",
       representative_performances: [{ performance_id: "fixture-sugar", show_id: "fixture-1972-08-27", show_date: "1972-08-27", show_label: "1972-08-27 — Oregon Country Fair", set_label: "Second set", listen_url: `${archive}gd1972-08-27#sugar-magnolia` }],
-      credits: [], source_ids: ["canonical:song-sugar-magnolia"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
+      credits: [{ person_id: "bob-weir", name: "Bob Weir", role: "music" }, { person_id: "robert-hunter", name: "Robert Hunter", role: "lyrics" }], source_ids: ["canonical:song-sugar-magnolia"],
+      albums: [
+        { release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio", listen_url: "https://open.spotify.com/album/1CBhqfy4uwiWhPMZ2sqjRc" },
+        { release_id: "release-europe-72", title: "Europe '72", release_date: "1972-11-05", release_type: "live", listen_url: "https://open.spotify.com/album/2" },
+        { release_id: "release-dp19", title: "Dick's Picks, Volume 19: Fairgrounds Arena, Oklahoma City, OK 10/19/73", release_date: "2000-10-01", release_type: "live", listen_url: null },
+        { release_id: "release-hyh", title: "Hundred Year Hall", release_date: "1995-09-26", release_type: "live", listen_url: "https://open.spotify.com/album/3" }
+      ],
+      sources: [],
+      visible_facets: ["representatives", "history", "albums", "credits"], judgments: [],
+      history: {
+        known_count: 606,
+        first: { performance_id: "sm-first", show_id: "s-1970-06-07", show_label: "1970-06-07 — Fillmore West", show_date: "1970-06-07", set_label: "Second set", listen_url: null },
+        last: { performance_id: "sm-last", show_id: "s-1995-07-09", show_label: "1995-07-09 — Soldier Field", show_date: "1995-07-09", set_label: "Second set", listen_url: `${archive}gd1995-07-09#sugar-magnolia` },
+        by_year: [
+          { performance_id: "sm-70", show_id: "s-1970-06-07", show_label: "1970-06-07 — Fillmore West", show_date: "1970-06-07", year: 1970, listen_url: null },
+          { performance_id: "sm-72", show_id: "s-1972-01-02", show_label: "1972-01-02 — Winterland", show_date: "1972-01-02", year: 1972, listen_url: `${archive}gd1972-01-02#sugar-magnolia` },
+          { performance_id: "sm-75", show_id: "s-1975-06-17", show_label: "1975-06-17 — Winterland", show_date: "1975-06-17", year: 1975, listen_url: null },
+          { performance_id: "sm-77", show_id: "s-1977-02-27", show_label: "1977-02-27 — Robertson Gym, UC Santa Barbara", show_date: "1977-02-27", year: 1977, listen_url: `${archive}gd1977-02-27#sugar-magnolia` },
+          { performance_id: "sm-89", show_id: "s-1989-10-09", show_label: "1989-10-09 — Hampton Coliseum", show_date: "1989-10-09", year: 1989, listen_url: `${archive}gd1989-10-09#sugar-magnolia` }
+        ]
+      },
+      follow_ups: []
     },
     {
       type: "song_overview", song_id: "song-truckin", title: "Truckin'", original_artist: null, known_performance_count: 538,
