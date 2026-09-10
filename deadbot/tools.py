@@ -452,7 +452,7 @@ def build_tools(
 
     @tool
     def search_guest_musicians(query: str = "") -> str:
-        """Find guest musicians and their documented Grateful Dead show appearances.
+        """Find guest musicians and the Grateful Dead shows they played.
 
         A name or phrase narrows the results. Each appearance includes its show,
         venue, location, credited instruments, and any known participation scope.
@@ -638,7 +638,7 @@ def build_tools(
         resources = [item[2] for item in scored]
         payload = {
             "query": query,
-            "coverage_note": "Matching cataloged resource metadata; source text is not retrieved.",
+            "note": "Matching cataloged resource metadata; source text is not retrieved.",
             "match_count": len(resources),
             "resources": resources[:_RESOURCE_RESULT_CAP],
         }
@@ -654,7 +654,7 @@ def build_tools(
         context. Treat source notes and interviews as attributed material. The
         `releases` list names every official record carrying this song, earliest
         first, with its date and track number. `performance_summary` gives the
-        song's documented span and count; call `list_song_performances` when
+        song's span and count on stage; call `list_song_performances` when
         you need concrete rendition IDs and listening paths rather than loading
         the full history into an otherwise album- or song-focused answer.
         pathways lists the cataloged lore for each result (resources, source
@@ -688,9 +688,9 @@ def build_tools(
                 "performance_summary": {
                     key: profile[key]
                     for key in (
-                        "known_performance_count",
-                        "first_known_performance",
-                        "last_known_performance",
+                        "performance_count",
+                        "first_performance",
+                        "last_performance",
                         "immediate_predecessors",
                         "immediate_successors",
                     )
@@ -702,7 +702,7 @@ def build_tools(
 
     @tool
     def list_song_performances(song_id_or_title: str, offset: int = 0, limit: int = 24) -> str:
-        """List a bounded chronological page of one song's documented performances.
+        """List a bounded chronological page of one song's performances.
 
         Use after `get_song` when a question needs concrete renditions, dates,
         or per-performance listening paths. Start with the first page unless a
@@ -792,7 +792,7 @@ def build_tools(
                 if track.get("song_id") in legacy:
                     track["live_legacy"] = legacy[track["song_id"]]
             payload["live_legacy_note"] = (
-                "live_legacy per track: documented performance count, span, count by era and the "
+                "live_legacy per track: performance count, span, count by era and the "
                 "performances most often issued on official live records. Call get_song_notable_versions "
                 "for one song's versions with critic, curator and fan signals."
             )
@@ -865,9 +865,9 @@ def build_tools(
     def get_song_performance_profile(song_id_or_title: str) -> str:
         """Get derived counts, dated endpoints, and frequent set neighbors for a song.
 
-        This is an on-demand observation of the current documented library.
-        It is not editorial lore, a complete band-history total, or a ranking
-        of the best performance. Neighbor counts include their denominator.
+        Derived from the library's performances; it is not editorial lore or
+        a ranking of the best performance. Neighbor counts include their
+        denominator.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
@@ -1015,8 +1015,7 @@ def build_tools(
         if total > cap:
             payload["note"] = f"Showing {cap} of {total} versions with a source; raise limit for more."
         payload["coverage_note"] = (
-            "Sources are the documented library's official releases and reviewed selection evidence, "
-            "not complete band history or a ranking."
+            "Sources are official releases and reviewed selection evidence, not a ranking."
         )
         return _json(payload)
 
@@ -1193,7 +1192,7 @@ def build_tools(
 
     @tool
     def find_arrangements(key_signature: str) -> str:
-        """Find source-documented song arrangements in one key, such as B, E, or A minor.
+        """Find charted song arrangements in one key, such as B, E, or A minor.
 
         Use this for musician questions about keys, transpositions, charts, or
         songs to cover. Results describe only arrangements whose source records
@@ -1208,7 +1207,7 @@ def build_tools(
 
     @tool
     def get_equipment_history(equipment_id_or_name: str) -> str:
-        """Get the first and last documented Grateful Dead show assignments for a named instrument.
+        """Get the first and last Grateful Dead show assignments for a named instrument.
 
         Use this before answering questions such as when Jerry first or last
         played Tiger, Wolf, Rosebud, or another named guitar. The result names

@@ -46,6 +46,7 @@ def test_editorial_scope_suite_covers_different_earned_depths():
         "american-beauty-live-legacy",
         "eyes-development-earned-depth",
         "best-shows-differentiated",
+        "guest-musician-shows",
     }
     assert "complete album tracklist or personnel" in " ".join(cases["american-beauty-live-legacy"]["failure_conditions"])
     for case in cases.values():

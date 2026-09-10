@@ -126,14 +126,14 @@ def test_get_song_carries_the_records_that_hold_it():
     payload = json.loads(_tool_by_name(store, "get_song").invoke({"song_id_or_title": "Truckin'"}))
     assert any(release["release_type"] == "studio" for release in payload["releases"])
     assert "performances" not in payload
-    assert payload["performance_summary"]["known_performance_count"] > 0
+    assert payload["performance_summary"]["performance_count"] > 0
 
 
 def test_get_song_keeps_a_long_lived_song_compact():
     store = CanonicalStore()
     payload = _tool_by_name(store, "get_song").invoke({"song_id_or_title": "Eyes of the World"})
     parsed = json.loads(payload)
-    assert parsed["performance_summary"]["known_performance_count"] == 382
+    assert parsed["performance_summary"]["performance_count"] == 382
     assert len(payload) < 35_000
 
 

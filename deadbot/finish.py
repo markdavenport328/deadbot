@@ -261,7 +261,7 @@ class SongOverviewRef(_Ref):
         max_length=4,
         description=(
             "The song facets worth showing: representatives (your chosen renditions), credits, albums, history (first "
-            "and last documented performances, the count, and one rendition per year with listening links)."
+            "and last performances, the count, and one rendition per year with listening links)."
         ),
     )
     representative_performance_ids: list[str] = Field(

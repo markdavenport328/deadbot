@@ -474,31 +474,19 @@ class CanonicalStore:
                 if count == highest
             ]
 
-        coverage = self.coverage_summary()
         return {
             "song": song,
-            "known_performance_count": len(performances),
-            "first_known_performance": endpoint(dated[0] if dated else None),
-            "last_known_performance": endpoint(dated[-1] if dated else None),
+            "performance_count": len(performances),
+            "first_performance": endpoint(dated[0] if dated else None),
+            "last_performance": endpoint(dated[-1] if dated else None),
             "immediate_predecessors": neighbors(predecessor_counts),
             "immediate_successors": neighbors(successor_counts),
             "predecessor_denominator": predecessor_denominator,
             "successor_denominator": successor_denominator,
-            "coverage": {
-                "scope": "current canonical library",
-                "documented_performance_count": coverage["performance_count"],
-                "documented_show_count": coverage["dated_show_count"],
-                "first_documented_year": coverage["first_year"],
-                "last_documented_year": coverage["last_year"],
-                "limitations": (
-                    "Counts, endpoints, and neighboring songs describe only performances and set order "
-                    "documented in this library; they are not band-history-complete and do not identify a best version."
-                ),
-            },
         }
 
     def arrangement_search(self, key_signature: str) -> dict[str, Any]:
-        """Find only source-documented arrangements in the requested key."""
+        """Find the charted arrangements in the requested key."""
 
         normalized_key = key_signature.strip()
         arrangements = [
@@ -511,8 +499,7 @@ class CanonicalStore:
                 "key_signature": normalized_key,
                 "match_count": len(arrangements),
                 "coverage_note": (
-                    "Results include only arrangements documented in the current library. "
-                    "They do not establish a universal key for a song or cover undocumented transpositions."
+                    "Each arrangement is one source's chart in this key; the same song may appear in other keys elsewhere."
                 ),
             },
             "arrangements": arrangements,
@@ -555,13 +542,9 @@ class CanonicalStore:
 
         return {
             "equipment": equipment,
-            "first_documented_show": show_summary(assignments[0] if assignments else None),
-            "last_documented_show": show_summary(assignments[-1] if assignments else None),
-            "documented_show_count": len(assignments),
-            "coverage_note": (
-                "These are source-dated equipment assignments in the current library, "
-                "not a complete instrument log for every show."
-            ),
+            "first_show": show_summary(assignments[0] if assignments else None),
+            "last_show": show_summary(assignments[-1] if assignments else None),
+            "show_count": len(assignments),
         }
 
     def _performance_summary(self, row: dict[str, str], include_show_id: bool = False) -> dict[str, str]:

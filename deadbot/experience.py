@@ -148,7 +148,7 @@ class ComparisonStripItem(ExperienceModel):
 
 
 class SongHistory(ExperienceModel):
-    """A song's documented stage life: first, last, and one performance per year."""
+    """A song's stage life: first, last, and one performance per year."""
 
     known_count: int = Field(ge=1)
     first: PerformanceListItem
