@@ -305,6 +305,35 @@ Live trace run: conditions are local API against the production database, OpenAI
 
 The first block reaches the browser 1 to 4 seconds after the chat answer completes, and the page fills over the following 2 to 23 seconds instead of appearing all at once when the response lands. In the American Beauty run the answer-complete mark was recorded after the first block, which is consistent with a finish retry resetting the draft partway through.
 
+## Batch: post-launch frontend fixes (September 9, 2026)
+
+Owner feedback after the streaming launch, frontend half. The prompt and tool
+half (plain facts without coverage caveats, guest questions answered with show
+units and insight) is the next batch.
+
+- The end-of-stream flash was not a remount. When the final `response` landed,
+  `composing` flipped false in the same commit, and a sole primary unit's facet
+  disclosures (setlist, lineup, recordings, tracklist, credits, history) were
+  controlled by that flag, so they snapped open together. Facets now decide
+  once, when they first appear, whether to start open (`Facet` in `App.tsx`);
+  later renders leave them alone. Trade-off: a sole-unit answer that streamed
+  in keeps its facets collapsed, one click to open. Plain, cached and fixture
+  responses still open them, as before.
+- Blocks are keyed by unit identity rather than position, so a streamed block
+  and its final counterpart are the same element even if the two passes ever
+  diverge. Verified with a mutation observer over a `?stream=album` replay: the
+  card was added once, never removed, and no `open` attribute changed.
+- Criteria groups (Texture, Band interaction, and so on) are separated by the
+  1rem token while label and text stay 0.25rem apart. The four duplicated
+  small-caps label rules share one rule.
+- The before / this performance / after strip uses three equal columns in the
+  first/last endpoint pattern, one typeface and size, titles aligned at the
+  top, the current song in the highlight color.
+- The renderer no longer prints "documented" ("N shows", "N performances",
+  "key of B").
+- New `?fixture=performance`: one primary performance unit judged on four
+  criteria with set neighbors, for reviewing the card at full width.
+
 ## Measurements
 
 | Date | Change | finish_response schema (chars / approx tokens) |

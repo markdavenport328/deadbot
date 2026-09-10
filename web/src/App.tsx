@@ -259,6 +259,19 @@ function CriteriaTable({ criteria, judgments }: { criteria: string[]; judgments:
   );
 }
 
+// A disclosure decides once, when it first appears, whether to start open.
+// Later renders leave it alone, so a page that finishes composing does not
+// snap its facets open beneath the reader.
+function Facet({ className, initiallyOpen, summary, children }: { className: string; initiallyOpen: boolean; summary: string; children: ReactNode }) {
+  const [startOpen] = useState(initiallyOpen);
+  return (
+    <details className={className} open={startOpen || undefined}>
+      <summary>{summary}</summary>
+      {children}
+    </details>
+  );
+}
+
 function unitKey(block: UnitBlock): string {
   switch (block.type) {
     case "show_unit": return block.show_id;
@@ -268,16 +281,26 @@ function unitKey(block: UnitBlock): string {
   }
 }
 
+// Units are keyed by identity, so a block that streamed in stays the same
+// element when the final response replaces the draft; other blocks and mention
+// lists are keyed by position. A repeated identity gets a numbered suffix.
 function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
-  const out: Array<{ kind: "mentions"; blocks: UnitBlock[] } | { kind: "block"; block: ExperienceBlock }> = [];
+  const out: Array<{ kind: "mentions"; key: string; blocks: UnitBlock[] } | { kind: "block"; key: string; block: ExperienceBlock }> = [];
+  const seen = new Map<string, number>();
+  const uniqueKey = (base: string) => {
+    const times = seen.get(base) ?? 0;
+    seen.set(base, times + 1);
+    return times === 0 ? base : `${base}-${times}`;
+  };
   for (const block of blocks) {
     if (!block) continue;
     if (isUnit(block) && block.emphasis === "mention") {
       const last = out[out.length - 1];
       if (last && last.kind === "mentions") last.blocks.push(block);
-      else out.push({ kind: "mentions", blocks: [block] });
+      else out.push({ kind: "mentions", key: uniqueKey(`mentions-${out.length}`), blocks: [block] });
     } else {
-      out.push({ kind: "block", block });
+      const base = isUnit(block) ? `${block.type}-${unitKey(block)}` : `${block.type}-${out.length}`;
+      out.push({ kind: "block", key: uniqueKey(base), block });
     }
   }
   return out;
@@ -429,8 +452,7 @@ function ShowUnit({
         <p className="coverage-note">{unit.setlist_note}</p>
       ) : null)}
       {shows("lineup") && unit.lineup.length > 0 && (
-        <details className="unit-facet unit-setlist" open={openFacets}>
-          <summary>Lineup</summary>
+        <Facet className="unit-facet unit-setlist" initiallyOpen={openFacets} summary="Lineup">
           <ul className="facet-list">
             {unit.lineup.map((person) => (
               <li key={`${person.person_id}-${person.role}`}>
@@ -439,11 +461,10 @@ function ShowUnit({
               </li>
             ))}
           </ul>
-        </details>
+        </Facet>
       )}
       {shows("recordings") && unit.recordings.length > 0 && (
-        <details className="unit-facet unit-setlist" open={openFacets}>
-          <summary>Recordings</summary>
+        <Facet className="unit-facet unit-setlist" initiallyOpen={openFacets} summary="Recordings">
           <ul className="facet-list">
             {unit.recordings.map((recording) => (
               <li key={recording.recording_id}>
@@ -452,7 +473,7 @@ function ShowUnit({
               </li>
             ))}
           </ul>
-        </details>
+        </Facet>
       )}
       {shows("sources") && <UnitSourceList sources={unit.sources} />}
       {unit.follow_up && (
@@ -553,15 +574,13 @@ function AlbumUnit({
             </ol>
           );
           return (
-            <details className={compact ? "unit-facet unit-setlist" : "album-tracks-section unit-setlist"} open={compact ? undefined : openFacets}>
-              <summary>Tracklist</summary>
+            <Facet className={compact ? "unit-facet unit-setlist" : "album-tracks-section unit-setlist"} initiallyOpen={openFacets} summary="Tracklist">
               {trackList}
-            </details>
+            </Facet>
           );
         })()}
         {personnel.length > 0 && (
-          <details className={compact ? "unit-facet unit-setlist" : "album-credits unit-setlist"} open={compact ? undefined : openFacets}>
-            <summary>Personnel and credits</summary>
+          <Facet className={compact ? "unit-facet unit-setlist" : "album-credits unit-setlist"} initiallyOpen={openFacets} summary="Personnel and credits">
             <ul className="album-personnel">
               {personnel.map((person) => (
                 <li key={person.person_id}>
@@ -573,7 +592,7 @@ function AlbumUnit({
                 </li>
               ))}
             </ul>
-          </details>
+          </Facet>
         )}
       </div>
       )}
@@ -623,7 +642,10 @@ function Block({
                 <p className="fact-label">Before</p>
                 {block.previous ? <span className="list-item-label">{block.previous.title}</span> : <span className="thread-boundary">Set opener</span>}
               </div>
-              <div className="current-performance" aria-label="Current performance">{block.song_title}</div>
+              <div>
+                <p className="fact-label">This performance</p>
+                <span className="current-performance">{block.song_title}</span>
+              </div>
               <div>
                 <p className="fact-label">After</p>
                 {block.next ? <span className="list-item-label">{block.next.title}</span> : <span className="thread-boundary">Set closer</span>}
@@ -709,7 +731,7 @@ function Block({
           <Eyebrow label="Guest appearances" title={block.person_name} />
           <h2>{block.person_name}</h2>
           <p className="subtitle">
-            {block.known_show_count} documented show{block.known_show_count === 1 ? "" : "s"}
+            {block.known_show_count} show{block.known_show_count === 1 ? "" : "s"}
           </p>
           <ol>
             {block.items.map((item) => (
@@ -774,8 +796,7 @@ function Block({
                 ) : null;
               case "credits":
                 return block.credits.length > 0 ? (
-                  <details className={compact ? "unit-facet unit-setlist" : "song-credits unit-setlist"} key="credits" open={compact ? undefined : openFacets}>
-                    <summary>Credits</summary>
+                  <Facet className={compact ? "unit-facet unit-setlist" : "song-credits unit-setlist"} key="credits" initiallyOpen={openFacets} summary="Credits">
                     <ul>
                       {block.credits.map((credit) => (
                         <li key={`${credit.person_id}-${credit.role}`}>
@@ -784,7 +805,7 @@ function Block({
                         </li>
                       ))}
                     </ul>
-                  </details>
+                  </Facet>
                 ) : null;
               case "albums": {
                 if (block.albums.length === 0) return null;
@@ -799,10 +820,9 @@ function Block({
                   </ul>
                 );
                 return (
-                  <details className={compact ? "unit-facet unit-setlist" : "song-albums-section unit-setlist"} key="albums" open={compact ? undefined : openFacets}>
-                    <summary>On record</summary>
+                  <Facet className={compact ? "unit-facet unit-setlist" : "song-albums-section unit-setlist"} key="albums" initiallyOpen={openFacets} summary="On record">
                     {albumsList}
-                  </details>
+                  </Facet>
                 );
               }
               case "history": {
@@ -811,7 +831,7 @@ function Block({
                 const byYear = history.by_year ?? [];
                 const historyBody = (
                   <>
-                    <p className="subtitle">{history.known_count} documented performance{history.known_count === 1 ? "" : "s"}</p>
+                    <p className="subtitle">{history.known_count} performance{history.known_count === 1 ? "" : "s"}</p>
                     <div className="performance-endpoints">
                       <div className="performance-endpoint"><p className="fact-label">First</p><ListeningLabel title={history.first.show_label} url={history.first.listen_url} className="list-item-label" /></div>
                       <div className="performance-endpoint"><p className="fact-label">Last</p><ListeningLabel title={history.last.show_label} url={history.last.listen_url} className="list-item-label" /></div>
@@ -829,10 +849,9 @@ function Block({
                   </>
                 );
                 return (
-                  <details className={compact ? "unit-facet unit-setlist" : "song-history unit-setlist"} key="history" open={compact ? undefined : openFacets}>
-                    <summary>Performance history</summary>
+                  <Facet className={compact ? "unit-facet unit-setlist" : "song-history unit-setlist"} key="history" initiallyOpen={openFacets} summary="Performance history">
                     {historyBody}
-                  </details>
+                  </Facet>
                 );
               }
               default:
@@ -928,7 +947,7 @@ function Block({
             {block.items.map((item) => (
               <li key={item.arrangement_id}>
                 <strong className="inline-label">{item.title}</strong>
-                <span>{item.arrangement_scope.replaceAll("-", " ")} · documented key {item.key_signature}</span>
+                <span>{item.arrangement_scope.replaceAll("-", " ")} · key of {item.key_signature}</span>
                 <ExternalLink href={item.url}>{item.resource_title}</ExternalLink>
                 <span>{item.source_name}</span>
               </li>
@@ -1030,14 +1049,14 @@ function ComposedPage({
             )
           )}
           <div className="block-grid group-blocks">
-            {chunkMentions(group.blocks).map((entry, position) =>
+            {chunkMentions(group.blocks).map((entry) =>
               entry.kind === "mentions" ? (
-                <ul className="mention-list" key={`mentions-${groupIndex}-${position}`}>
+                <ul className="mention-list" key={entry.key}>
                   {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
                 </ul>
               ) : (
                 <Block
-                  key={`${entry.block.type}-${position}`}
+                  key={entry.key}
                   block={entry.block}
                   sources={sources}
                   criteria={group.presentation === "comparison" ? group.criteria : []}
