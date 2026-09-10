@@ -850,7 +850,7 @@ export interface components {
         };
         /**
          * SongHistory
-         * @description A song's documented stage life: first, last, and one performance per year.
+         * @description A song's stage life: first, last, and one performance per year.
          */
         SongHistory: {
             /** By Year */

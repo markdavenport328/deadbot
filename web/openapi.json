@@ -2345,7 +2345,7 @@
       },
       "SongHistory": {
         "additionalProperties": false,
-        "description": "A song's documented stage life: first, last, and one performance per year.",
+        "description": "A song's stage life: first, last, and one performance per year.",
         "properties": {
           "by_year": {
             "items": {
