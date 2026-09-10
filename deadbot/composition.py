@@ -1036,7 +1036,8 @@ def _song_overview(
                 title=release.get("title") or release["release_id"],
                 release_date=release.get("release_date"),
                 release_type=release.get("release_type") or "live",
-                listen_url=release.get("spotify_album_url") or release.get("source_url") or None,
+                # Only a streaming link counts as a place to listen; a catalog page does not.
+                listen_url=release.get("spotify_album_url") or None,
             )
             for release in (context.get("releases") or [])
             if isinstance(release, dict) and release.get("release_id")
