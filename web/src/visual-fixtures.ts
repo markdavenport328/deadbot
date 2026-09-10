@@ -563,11 +563,106 @@ const performance: ExperienceResponse = {
   ]
 };
 
-export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance"] as const;
+
+// Every typography block on one page, for reviewing the open-block anatomy.
+const blocks: ExperienceResponse = fixture(
+  "What is known about the Veneta show beyond the music?",
+  "Veneta, August 27, 1972: the show around the show",
+  "The Springfield Creamery benefit is documented from many angles: the heat, the gear, the guests, the film, and the fans who ranked it.",
+  [
+    {
+      type: "editorial", presentation: "narrative", eyebrow: "The day", title: "A benefit in a field, in 100-degree heat",
+      paragraphs: [
+        "The Grateful Dead played the Old Renaissance Faire Grounds outside Veneta, Oregon, to raise money for Ken Kesey's family creamery. The stage faced west into the afternoon sun and the band played three sets as the temperature climbed.",
+        "The performance was filmed for **Sunshine Daydream**, which sat unreleased for four decades before the 2013 restoration."
+      ],
+      items: []
+    },
+    {
+      type: "editorial", presentation: "fact_grid", eyebrow: "By the numbers", title: null, paragraphs: [],
+      items: [
+        { marker: "Attendance", title: "About 20,000", value: null, detail: "Roughly double the tickets sold; the fences did not hold.", link: null, follow_ups: [] },
+        { marker: "Temperature", title: "Over 100°F", value: null, detail: "Measured on stage during the second set.", link: null, follow_ups: [] },
+        { marker: "Sets", title: "Three", value: null, detail: "An afternoon set, a long second set, and an evening set after sunset.", link: null, follow_ups: [{ label: "Three-set shows", question: "How common were three-set shows in 1972?" }] },
+        { marker: "Film", title: "Sunshine Daydream", value: null, detail: "Released August 2013 with the complete show.", link: { label: "About the film", url: "https://www.dead.net/features/sunshine-daydream" }, follow_ups: [] }
+      ]
+    },
+    {
+      type: "editorial", presentation: "timeline", eyebrow: "How the day unfolded", title: "From soundcheck to Sing Me Back Home", paragraphs: [],
+      items: [
+        { marker: "Noon", title: "Gates open", value: null, detail: "The crowd is already larger than the tickets sold.", link: null, follow_ups: [] },
+        { marker: "2:30 pm", title: "First set", value: null, detail: "Opens with Promised Land; the heat is already the story.", link: null, follow_ups: [] },
+        { marker: "5:00 pm", title: "Second set", value: null, detail: "Dark Star into El Paso, then the Bird Song many fans call definitive.", link: null, follow_ups: [{ label: "This Dark Star", question: "What makes the Veneta Dark Star stand out?" }] },
+        { marker: "Dusk", title: "Third set", value: null, detail: "Sing Me Back Home closes the night as the temperature finally drops.", link: null, follow_ups: [] }
+      ]
+    },
+    {
+      type: "entity_card", entity_id: "song-bird-song", entity_type: "song", title: "Bird Song", subtitle: "Garcia and Hunter, 1971",
+      details: ["Written for Janis Joplin after her death", "Dropped from the repertoire from 1973 to 1980", "The Veneta version is often cited as the best of the early years"],
+      follow_up: "Why did Bird Song disappear for seven years?", source_id: "fixture-archive"
+    },
+    {
+      type: "show_selection", selection_type: "Fan ranking", selector_name: "Deadbase readers", source_id: "fixture-deadnet", title: "Where Veneta lands among 1972 shows",
+      items: [
+        { show_id: "s1", show_date: "1972-08-27", venue_name: "Old Renaissance Faire Grounds", location: "Veneta, OR" },
+        { show_id: "s2", show_date: "1972-05-26", venue_name: "Lyceum Theatre", location: "London, England" },
+        { show_id: "s3", show_date: "1972-05-11", venue_name: "Rotterdam Civic Hall", location: "Rotterdam, Netherlands" },
+        { show_id: "s4", show_date: "1972-09-21", venue_name: "The Spectrum", location: "Philadelphia, PA" }
+      ],
+      coverage_note: "Rankings come from reader polls collected between 1987 and 2001 and reflect the recordings in circulation at the time."
+    },
+    {
+      type: "guest_appearance_list", person_id: "p-kesey", person_name: "Ken Kesey", known_show_count: 3,
+      items: [
+        { show_id: "s1", show_date: "1972-08-27", venue_name: "Old Renaissance Faire Grounds", location: "Veneta, OR", instruments: ["announcements"], participation_scope: "between sets" },
+        { show_id: "s5", show_date: "1982-08-28", venue_name: "Oregon Country Fair", location: "Veneta, OR", instruments: ["spoken word"], participation_scope: "second set" },
+        { show_id: "s6", show_date: "1994-06-19", venue_name: "Autzen Stadium", location: "Eugene, OR", instruments: ["spoken word"], participation_scope: null }
+      ]
+    },
+    {
+      type: "equipment_list", show_id: "s1", title: "What the band played through",
+      items: [
+        { equipment_id: "e1", name: "Alembic-modified Stratocaster", manufacturer: "Fender", model: "Stratocaster", usage_context: "Garcia's main guitar for the 1972 tour", claim_type: "date_range", evidence: "photographs", source_id: "fixture-deadnet", source_url: "https://gratefuldeadoftheday.com" },
+        { equipment_id: "e2", name: "Big Brown", manufacturer: "Alembic", model: "Custom bass", usage_context: "Lesh's bass at Veneta", claim_type: "show", evidence: "film", source_id: "fixture-deadnet", source_url: "https://gratefuldeadoftheday.com" }
+      ]
+    },
+    {
+      type: "resource_list", title: "Reading and watching",
+      items: [
+        { resource_id: "r1", title: "Sunshine Daydream: the film and the day", url: "https://www.dead.net/features/sunshine-daydream", resource_type: "Feature", source_name: "Dead.net", source_id: "fixture-deadnet", context_note: "The official account of the restoration, with interviews." },
+        { resource_id: "r2", title: "Veneta 1972 at the Internet Archive", url: "https://archive.org/details/gd1972-08-27.sbd.miller.97659.flac16", resource_type: "Recording", source_name: "Internet Archive", source_id: "fixture-archive", context_note: null }
+      ]
+    },
+    {
+      type: "credit_list", title: "Who wrote Bird Song", source_ids: ["fixture-archive"],
+      items: [
+        { person_id: "jg", name: "Jerry Garcia", role: "music" },
+        { person_id: "rh", name: "Robert Hunter", role: "lyrics" }
+      ]
+    },
+    {
+      type: "arrangement", resource_id: "a1", source_id: "fixture-deadnet", title: "Bird Song, as the band played it in 1972",
+      arrangement_scope: "live-version", key_signature: "E major", capo: null, tuning: "Standard", notes: "The 1972 arrangement stays in E throughout, with the jam moving between E and D.",
+      progressions: ["E · D · E · D", "A · B · E"]
+    },
+    {
+      type: "arrangement_search", title: "Charts for Bird Song", key_signature: "E major", coverage_note: "Two charts in the library cover this song; both are fan transcriptions.",
+      items: [
+        { arrangement_id: "as1", song_id: "song-bird-song", title: "Bird Song", arrangement_scope: "studio-version", key_signature: "E major", resource_id: "r3", resource_title: "Bird Song chords and lyrics", url: "https://gratefuldeadoftheday.com", source_name: "Grateful Dead of the Day" }
+      ]
+    },
+    { type: "coverage", title: "What the library holds for this show", message: "The library has the complete soundboard, the film's setlist, and two contemporary reviews. Attendance figures come from newspaper accounts, not ticket records." },
+    { type: "provenance_note", source_ids: ["fixture-deadnet"], text: "Temperature and attendance are as reported by the Eugene Register-Guard the following day." },
+    { type: "gap_state", message: "No equipment records exist for the third set; the film shows a guitar change that the catalog does not document." },
+    { type: "media_link", title: "Sunshine Daydream on Spotify", url: "https://open.spotify.com/album/0", provider: "Spotify", link_type: "official-release", is_official: true, embed_kind: "spotify", embed_id: "album/0" }
+  ]
+);
+
+export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance", "blocks"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album, performance };
+const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album, performance, blocks };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

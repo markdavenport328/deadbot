@@ -808,6 +808,10 @@ function ShowUnit({
   );
 }
 
+function countLabel(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
 function capitalize(text: string): string {
   return text.length > 0 ? text.charAt(0).toUpperCase() + text.slice(1) : text;
 }
@@ -1117,31 +1121,39 @@ function Block({
     case "album_unit":
       return <AlbumUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
     case "entity_card": {
+      const typeLabel = block.entity_type === "song" ? "Song" : block.entity_type === "show" ? "Show" : "Performance";
       return (
         <article className="typography-block entity-block">
-          <Eyebrow label={block.entity_type} title={block.title} />
+          <IdRow type={typeLabel} />
           <h2>{block.title}</h2>
-          {block.subtitle && <p className="subtitle">{block.subtitle}</p>}
+          {block.subtitle && <p className="meta">{block.subtitle}</p>}
           {block.details.length > 0 && (
             <ul className="details">
               {block.details.map((detail) => <li key={detail}>{detail}</li>)}
             </ul>
           )}
-          {block.follow_up && <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />}
+          {block.follow_up && (
+            <footer className="unit-footer">
+              <div className="ask-block">
+                <span className="k">Ask</span>
+                <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
+              </div>
+            </footer>
+          )}
         </article>
       );
     }
     case "show_selection":
       return (
         <section className="typography-block show-selection">
-          <Eyebrow label={block.selection_type} title={block.title} />
+          <IdRow type={block.selection_type} when={countLabel(block.items.length, "show")} />
           <h2>{block.title}</h2>
-          <p className="subtitle">Selected by {block.selector_name}</p>
-          <ol className="show-selection-list">
+          <p className="meta">Selected by {block.selector_name}</p>
+          <ol className="entry-list two-up">
             {block.items.map((item) => (
               <li key={item.show_id}>
-                <span className="list-item-label">{formatShowDate(item.show_date)} · {item.venue_name}</span>
-                {item.location && <span>{item.location}</span>}
+                <span className="entry-title">{item.venue_name}</span>
+                <span className="entry-detail">{[formatShowDateLong(item.show_date), item.location].filter(Boolean).join(" · ")}</span>
               </li>
             ))}
           </ol>
@@ -1151,16 +1163,15 @@ function Block({
     case "guest_appearance_list":
       return (
         <section className="typography-block guest-appearance-list">
-          <Eyebrow label="Guest appearances" title={block.person_name} />
+          <IdRow type="Guest appearances" when={countLabel(block.known_show_count, "show")} />
           <h2>{block.person_name}</h2>
-          <p className="subtitle">
-            {block.known_show_count} show{block.known_show_count === 1 ? "" : "s"}
-          </p>
-          <ol>
+          <ol className="entry-list two-up">
             {block.items.map((item) => (
               <li key={item.show_id}>
-                <strong className="list-item-label">{formatShowDate(item.show_date)}{item.venue_name ? ` · ${item.venue_name}` : ""}</strong>
-                <span>{[item.location, item.instruments.join(", "), item.participation_scope].filter(Boolean).join(" · ")}</span>
+                <span className="entry-title">{item.venue_name || formatShowDateLong(item.show_date)}</span>
+                <span className="entry-detail">
+                  {[item.venue_name ? formatShowDateLong(item.show_date) : null, item.location, item.instruments.join(", "), item.participation_scope].filter(Boolean).join(" · ")}
+                </span>
               </li>
             ))}
           </ol>
@@ -1169,15 +1180,17 @@ function Block({
     case "equipment_list":
       return (
         <section className="typography-block equipment-list">
-          <Eyebrow label="Equipment" title={block.title} />
+          <IdRow type="Equipment" when={countLabel(block.items.length, "item")} />
           <h2>{block.title}</h2>
-          <ul>
+          <ul className="entry-list two-up">
             {block.items.map((item) => (
               <li key={`${item.equipment_id}-${item.usage_context}-${item.evidence}`}>
-                <strong className="inline-label">{item.name}</strong>
-                <span>{[item.manufacturer, item.model].filter(Boolean).join(" · ")}</span>
-                <span>{item.usage_context}{item.claim_type === "show" ? " · specific show evidence" : " · dated range evidence"}</span>
-                <ExternalLink href={item.source_url}>Source note</ExternalLink>
+                <span className="entry-title">{item.name}</span>
+                <span className="entry-detail">{[item.manufacturer, item.model].filter(Boolean).join(" ")}</span>
+                <span className="entry-detail">
+                  {item.usage_context} · {item.claim_type === "show" ? "seen at this show" : "dated to this period"} · {item.evidence}
+                </span>
+                <ExternalLink className="entry-link" href={item.source_url}>Source note</ExternalLink>
               </li>
             ))}
           </ul>
@@ -1188,48 +1201,42 @@ function Block({
     case "resource_list":
       return (
         <section className="typography-block resource-list">
-          <Eyebrow label="Sources" title={block.title} />
+          <IdRow type="Go deeper" when={countLabel(block.items.length, "source")} />
           <h2>{block.title}</h2>
-          <ul>
+          <div className="reading">
             {block.items.map((item) => (
-              <li key={item.resource_id}>
-                <ExternalLink href={item.url}>{item.title}</ExternalLink>
-                <span>{item.resource_type} · {item.source_name}</span>
-                {item.context_note && <p>{item.context_note}</p>}
-              </li>
+              <div className="reading-source" key={item.resource_id}>
+                <p className="reading-title"><ExternalLink href={item.url}>{item.title}</ExternalLink></p>
+                <p className="reading-pub">
+                  <span className="pub">{item.source_name}</span> · {item.resource_type}{item.context_note ? ` · ${item.context_note}` : ""}
+                </p>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       );
     case "credit_list":
       return (
         <section className="typography-block credit-list">
-          <Eyebrow label="Composition" title={block.title} />
+          <IdRow type="Composition" />
           <h2>{block.title}</h2>
-          <ul>
-            {block.items.map((item) => (
-              <li key={`${item.person_id}-${item.role}`}>
-                <strong className="inline-label">{item.name}</strong>
-                <span>{item.role}</span>
-              </li>
-            ))}
-          </ul>
+          <PeopleList people={block.items.map((item) => ({ key: `${item.person_id}-${item.role}`, name: item.name, detail: item.role }))} />
         </section>
       );
     case "media_link":
       return (
         <section className="card media-card">
-          <Eyebrow label={`${block.provider}${block.is_official ? " · official" : ""}`} title={block.title} />
+          <IdRow type={block.provider} when={block.is_official ? "Official release" : null} />
           <h2>{block.title}</h2>
           <MediaEmbed block={block} />
-          <ExternalLink href={block.url}>Open on {block.provider}</ExternalLink>
+          <ListenActionList actions={[{ label: `Open on ${block.provider}`, provider: block.provider, url: block.url, is_official: block.is_official }]} />
         </section>
       );
     case "coverage":
       return (
-        <aside className="typography-block coverage-block">
-          <Eyebrow label="Library coverage" title={block.title} />
-          <h2>{block.title}</h2>
+        <aside className="typography-block aside-block coverage-block">
+          <span className="k">Library coverage</span>
+          <p className="aside-title">{block.title}</p>
           <p>{block.message}</p>
         </aside>
       );
@@ -1237,37 +1244,35 @@ function Block({
       const source = sourceFor(sources, block.source_id);
       return (
         <section className="typography-block arrangement-block">
-          <Eyebrow label="Source-specific arrangement" title={block.title} />
+          <IdRow type="Arrangement" when={block.key_signature ? `Key of ${block.key_signature}` : null} />
           <h2>{block.title}</h2>
-          <dl className="arrangement-facts">
-            {block.key_signature && <div><dt>Documented key</dt><dd>{block.key_signature}</dd></div>}
-            <div><dt>Scope</dt><dd>{block.arrangement_scope.replaceAll("-", " ")}</dd></div>
-            {block.capo && <div><dt>Capo</dt><dd>{block.capo}</dd></div>}
-            {block.tuning && <div><dt>Tuning</dt><dd>{block.tuning}</dd></div>}
-          </dl>
-          {block.notes && <p className="arrangement-note">{block.notes}</p>}
+          <Meta parts={[capitalize(block.arrangement_scope.replaceAll("-", " ")), block.capo ? `Capo ${block.capo}` : null, block.tuning ? `${block.tuning} tuning` : null]} />
+          {block.notes && <p className="unit-note">{block.notes}</p>}
           {block.progressions.length > 0 && (
             <ul className="chords">
               {block.progressions.map((progression, index) => <li key={`${index}-${progression}`}>{progression}</li>)}
             </ul>
           )}
-          {source?.url && <ExternalLink href={source.url}>Open the source</ExternalLink>}
+          {source?.url && (
+            <div className="reading">
+              <p className="reading-pub"><ExternalLink href={source.url}>Open the source</ExternalLink></p>
+            </div>
+          )}
         </section>
       );
     }
     case "arrangement_search":
       return (
         <section className="typography-block arrangement-search">
-          <Eyebrow label="Musician’s reference" title={block.title} />
+          <IdRow type="Musician’s reference" when={`Key of ${block.key_signature}`} />
           <h2>{block.title}</h2>
-          <p className="arrangement-note">{block.coverage_note}</p>
-          <ul>
+          <p className="meta">{block.coverage_note}</p>
+          <ul className="entry-list">
             {block.items.map((item) => (
               <li key={item.arrangement_id}>
-                <strong className="inline-label">{item.title}</strong>
-                <span>{item.arrangement_scope.replaceAll("-", " ")} · key of {item.key_signature}</span>
-                <ExternalLink href={item.url}>{item.resource_title}</ExternalLink>
-                <span>{item.source_name}</span>
+                <span className="entry-title">{item.title}</span>
+                <span className="entry-detail">{capitalize(item.arrangement_scope.replaceAll("-", " "))} · key of {item.key_signature}</span>
+                <ExternalLink className="entry-link" href={item.url}>{item.resource_title} · {item.source_name}</ExternalLink>
               </li>
             ))}
           </ul>
@@ -1312,8 +1317,8 @@ function Block({
               <li key={`${item.marker ?? item.title}-${index}`}>
                 {item.marker && <span className="timeline-marker">{item.marker}</span>}
                 <strong>{renderInline(item.title)}</strong>
-                {item.detail && <span>{renderInline(item.detail)}</span>}
-                {item.link && <ExternalLink href={item.link.url}>{item.link.label}</ExternalLink>}
+                {item.detail && <span className="timeline-detail">{renderInline(item.detail)}</span>}
+                {item.link && <ExternalLink className="timeline-link" href={item.link.url}>{item.link.label}</ExternalLink>}
                 {(item.follow_ups ?? []).length > 0 && <span className="timeline-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></span>}
               </li>
             ))}
@@ -1321,9 +1326,19 @@ function Block({
         </section>
       );
     case "provenance_note":
-      return <aside className="typography-block provenance-note">{block.text}</aside>;
+      return (
+        <aside className="typography-block aside-block provenance-note">
+          <span className="k">From the source</span>
+          <p>{block.text}</p>
+        </aside>
+      );
     case "gap_state":
-      return <aside className="typography-block gap-state">{block.message}</aside>;
+      return (
+        <aside className="typography-block aside-block gap-state">
+          <span className="k">Not in the library</span>
+          <p>{block.message}</p>
+        </aside>
+      );
   }
 }
 
