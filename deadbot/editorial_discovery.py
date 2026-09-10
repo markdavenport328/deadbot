@@ -125,7 +125,7 @@ def model_capability_map(store: CanonicalStore) -> str:
             "relationships": {
                 "show_performer_credits": store.row_count("show_performers"),
                 "people_with_guest_credits": len(guest_person_ids),
-                "guest_credit_meaning": "Guest credits record documented show relationships.",
+                "guest_credit_meaning": "Guest credits record which shows a guest played.",
                 "other_relationships": ["ordered show setlists", "show recordings and media links", "song-performance history", "equipment assignments", "song resources and arrangements"],
             },
             "stored_resource_catalog": {

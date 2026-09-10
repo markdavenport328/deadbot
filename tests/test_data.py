@@ -215,35 +215,36 @@ def test_song_performance_profile_is_bounded_and_reports_neighbor_denominators()
         tool_by_name(store, "get_song_performance_profile").invoke({"song_id_or_title": "Sugaree"})
     )
     assert result["song"]["song_id"] == "song-sugaree"
-    assert result["known_performance_count"] == 364
-    assert result["first_known_performance"]["show_date"] == "1971-07-31"
-    assert result["last_known_performance"]["show_date"] == "1995-07-08"
+    assert result["performance_count"] == 364
+    assert result["first_performance"]["show_date"] == "1971-07-31"
+    assert result["last_performance"]["show_date"] == "1995-07-08"
     assert result["immediate_predecessors"] == [
         {"song_id": "song-hell-in-a-bucket", "title": "Hell In A Bucket", "count": 66}
     ]
     assert result["predecessor_denominator"] == 338
     assert result["successor_denominator"] == 359
-    assert result["coverage"]["scope"] == "current canonical library"
-    assert "not band-history-complete" in result["coverage"]["limitations"]
+    assert "coverage" not in result
 
 
-def test_arrangement_tool_finds_only_documented_source_specific_keys():
+def test_arrangement_tool_finds_source_specific_keys():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "find_arrangements").invoke({"key_signature": "B"}))
     assert result["arrangement_search"]["key_signature"] == "B"
     assert result["arrangement_search"]["match_count"] == 1
     assert result["arrangements"][0]["song_id"] == "song-sugaree"
-    assert "universal key" in result["arrangement_search"]["coverage_note"]
+    assert "one source's chart" in result["arrangement_search"]["coverage_note"]
 
 
-def test_equipment_history_returns_tiger_first_and_last_documented_shows():
+def test_equipment_history_returns_tiger_first_and_last_shows():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_equipment_history").invoke({"equipment_id_or_name": "Tiger"}))
     assert result["equipment"]["equipment_id"] == "guitar-tiger"
-    assert result["first_documented_show"]["show_date"] == "1979-08-04"
-    assert result["first_documented_show"]["venue_name"] == "Oakland Auditorium"
-    assert result["last_documented_show"]["show_date"] == "1995-07-09"
-    assert result["first_documented_show"]["claim_type"] == "date_range"
+    assert result["first_show"]["show_date"] == "1979-08-04"
+    assert result["first_show"]["venue_name"] == "Oakland Auditorium"
+    assert result["last_show"]["show_date"] == "1995-07-09"
+    assert result["first_show"]["claim_type"] == "date_range"
+    assert result["show_count"] > 0
+    assert "coverage_note" not in result
 
 
 def test_song_credit_cleanup_removes_legacy_generic_sugaree_rows():

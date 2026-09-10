@@ -307,9 +307,8 @@ The first block reaches the browser 1 to 4 seconds after the chat answer complet
 
 ## Batch: post-launch frontend fixes (September 9, 2026)
 
-Owner feedback after the streaming launch, frontend half. The prompt and tool
-half (plain facts without coverage caveats, guest questions answered with show
-units and insight) is the next batch.
+Owner feedback after the streaming launch, frontend half (PR #31). The prompt
+and tool half is PR #32, below.
 
 - The end-of-stream flash was not a remount. When the final `response` landed,
   `composing` flipped false in the same commit, and a sole primary unit's facet
@@ -333,6 +332,47 @@ units and insight) is the next batch.
   "key of B").
 - New `?fixture=performance`: one primary performance unit judged on four
   criteria with set neighbors, for reviewing the card at full width.
+## Batch: plain facts and guest questions as show units (September 9, 2026)
+
+Owner feedback after the streaming launch, prompt and tool half (the frontend
+half is PR #31).
+
+- "Documented" reached the page from three layers: the renderer (fixed in
+  PR #31), tool payloads that handed the model caveat strings on nearly every
+  call (`limitations`, `coverage_note`, `documented_*` and `known_*` field
+  names), and the prompt itself. The song profile's `coverage` block turned out
+  to be library-wide totals (39,774 performances), so it is gone rather than
+  renamed; equipment history and the profile now use `first_show`,
+  `last_show`, `show_count`, `performance_count`, `first_performance`,
+  `last_performance`. Notes that change meaning stay, reworded neutrally:
+  selection signals are sources rather than a ranking, an arrangement is one
+  source's chart in a key, absence from a source is not a judgment.
+- The prompt states facts as facts and mentions coverage only when it changes
+  what the visitor should conclude (a first performance that may not be the
+  debut). The two ceilings from the palette cut are gone: "one such insight"
+  became a floor ("that is a floor, not a ceiling"), and "one or two primary
+  objects is the norm" became: when the answer is a set of shows, performances
+  or songs, each gets its own unit, one primary and the rest supporting, each
+  with a note. "Choose the component that best expresses the relationship and
+  let it carry that material completely" is restored. The guest route now says
+  the tool returns shows with IDs and pathways and to call get_show for the
+  shows you will write about; guest_appearance_list is for a guest whose
+  appearances are too many to present as units.
+- New review case `guest-musician-shows` in evals/editorial-scope-v1.json.
+
+Live check (OpenAI gpt-5.6-luna, production database, cache off), before from
+production and after from this branch:
+
+| Question | Before | After |
+| --- | --- | --- |
+| What shows did Branford play on? | guest_appearance_list plus a five-item editorial timeline; "documented" 4 times | five show_units in a sequence group, one primary and four supporting, each with a note, highlights, listen actions and lore sources; "documented" 0 times; 21s |
+| how often was minglewood played | "437 documented times ... not a complete band-history total"; "documented" 9 times | "437 times, from May 19, 1966, through June 27, 1995"; song_overview plus two supporting performance_units on official releases; 0 times; 14s |
+
+Left alone: the block schema's `known_performance_count`, `known_count` and
+`known_show_count` (the browser contract, which the model does not write) and
+the songs table's `first_known_dead_performance` column, which the song record
+still carries into get_song. If "known" keeps surfacing in answers, rename
+those next.
 
 ## Measurements
 
