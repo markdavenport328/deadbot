@@ -58,7 +58,7 @@ def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
         assert unit in prompt
     assert "Group by meaning and referent, not by tool, source or data type." in unwrapped
     assert "Tool boundaries and database tables are not presentation boundaries." in unwrapped
-    assert '"Ask" chip' in unwrapped
+    assert '"More about"' in unwrapped
     assert "Setlist songs, performances and semantic units retain the verified actions attached to them" in unwrapped
     assert "show_explorer" not in prompt
     assert "quick_fact" not in prompt
@@ -107,7 +107,7 @@ def test_prompt_teaches_pathways_and_show_unit_hydration():
     assert (
         "Every entity result carries pathways: the lore already cataloged for it, or the research sites "
         "worth searching when nothing is. Answer the question directly, then offer the pathways that fit "
-        "as links or Ask chips. When a pathway looks likely to change the answer, open it; otherwise offer it."
+        "as links or follow-up topics. When a pathway looks likely to change the answer, open it; otherwise offer it."
         in prompt
     )
     assert (

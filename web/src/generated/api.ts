@@ -106,8 +106,8 @@ export interface components {
              * @enum {string}
              */
             emphasis: "primary" | "supporting" | "mention";
-            /** Follow Up */
-            follow_up?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Judgments */
             judgments?: string[];
             /** Listen */
@@ -297,10 +297,10 @@ export interface components {
              */
             detail?: string | null;
             /**
-             * Follow Up
-             * @description A question in the visitor's voice, rendered as an Ask chip that starts a new turn. Only the composer writes these.
+             * Follow Ups
+             * @description Up to three topics the visitor might want more about, each a short label plus the specific question it opens when pressed, rendered as chips under 'More about'.
              */
-            follow_up?: string | null;
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** @description An outbound link for this item; kept only when its URL appeared in a tool result this turn. */
             link?: components["schemas"]["EditorialLink"] | null;
             /**
@@ -418,8 +418,8 @@ export interface components {
          * @description A stage of a development the composer names, with representative listening.
          */
         EraUnitBlock: {
-            /** Follow Up */
-            follow_up?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Note */
             note?: string | null;
             /** Performances */
@@ -498,6 +498,20 @@ export interface components {
             thread_id: string;
             /** Title */
             title: string;
+        };
+        /**
+         * FollowUpTopic
+         * @description A short topic chip the visitor can press, and the full question it stands for.
+         *
+         *     The chip shows only the label under "More about"; pressing it sends the
+         *     question, in the visitor's voice, to start a new turn. Only the composer
+         *     writes these; the server never generates one.
+         */
+        FollowUpTopic: {
+            /** Label */
+            label: string;
+            /** Question */
+            question: string;
         };
         /** GapStateBlock */
         GapStateBlock: {
@@ -622,8 +636,8 @@ export interface components {
              * @enum {string}
              */
             emphasis: "primary" | "supporting" | "mention";
-            /** Follow Up */
-            follow_up?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Judgments */
             judgments?: string[];
             /** Listen */
@@ -794,7 +808,7 @@ export interface components {
          * @description One show as a primary object of the answer, hydrated from the store.
          *
          *     The composer supplies the interpretive fields (emphasis, note, highlights,
-         *     preferred recording, sources, follow-up); date, venue, setlist, guests and
+         *     preferred recording, sources, follow-up topics); date, venue, setlist, guests and
          *     listening actions come from canonical data.
          */
         ShowUnitBlock: {
@@ -804,8 +818,8 @@ export interface components {
              * @enum {string}
              */
             emphasis: "primary" | "supporting" | "mention";
-            /** Follow Up */
-            follow_up?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Guests */
             guests?: components["schemas"]["PerformerItem"][];
             /** Judgments */
@@ -872,8 +886,8 @@ export interface components {
              * @enum {string}
              */
             emphasis: "primary" | "supporting" | "mention";
-            /** Follow Up */
-            follow_up?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
             history?: components["schemas"]["SongHistory"] | null;
             /** Judgments */
             judgments?: string[];

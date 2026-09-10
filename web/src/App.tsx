@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
@@ -13,6 +13,40 @@ function formatShowDate(iso: string | null | undefined): string {
   if (!match) return iso;
   const [, year, month, day] = match;
   return `${Number(month)}/${Number(day)}/${year.slice(2)}`;
+}
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
+// A card's identity row wants a reading date ("March 29, 1990"), not the
+// short numeric form the rest of the page uses.
+function formatShowDateLong(iso: string | null | undefined): string {
+  if (!iso) return "Undated";
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!match) return iso;
+  const [, year, month, day] = match;
+  const monthName = MONTH_NAMES[Number(month) - 1];
+  if (!monthName) return iso;
+  return `${monthName} ${Number(day)}, ${year}`;
+}
+
+// A release date is sometimes only a year. Prefer the full reading date and
+// fall back to the year alone rather than showing nothing.
+function formatReleaseDate(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return formatShowDateLong(iso);
+  const year = /^(\d{4})/.exec(iso);
+  return year ? year[1] : iso;
+}
+
+// "studio" becomes "Studio album"; a release type that already reads as an
+// album ("live album") is not doubled up.
+function formatReleaseType(releaseType: string): string {
+  const words = releaseType.split(/[\s-]+/).filter(Boolean);
+  const capitalized = words.map((word, index) => (index === 0 ? capitalize(word) : word)).join(" ");
+  return /album/i.test(releaseType) ? capitalized : `${capitalized} album`;
 }
 
 const suggestions = [
@@ -144,9 +178,36 @@ function Eyebrow({ label, title }: { label?: string | null; title?: string | nul
 function AskChip({ prompt, onFollowUp }: { prompt: string; onFollowUp: (prompt: string) => void }) {
   return (
     <button type="button" className="ask-chip" onClick={() => onFollowUp(prompt)}>
-      <span className="ask-label">Ask</span>
-      <span>{prompt}</span>
+      {prompt}
     </button>
+  );
+}
+
+// Topic chips: the model writes a short label and the full question it stands
+// for. The chip shows the label; pressing it sends the model's question.
+type FollowUpTopic = { label: string; question: string };
+
+function TopicChips({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
+  const items = (topics ?? []).filter((topic) => topic.label.trim() && topic.question.trim());
+  if (items.length === 0) return null;
+  return (
+    <div className="topics">
+      {items.map((topic) => (
+        <button type="button" className="ask-chip" key={topic.label} onClick={() => onFollowUp(topic.question)} title={topic.question}>
+          {topic.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function MoreAbout({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
+  if ((topics ?? []).length === 0) return null;
+  return (
+    <div className="ask-block">
+      <span className="k">More about</span>
+      <TopicChips topics={topics} onFollowUp={onFollowUp} />
+    </div>
   );
 }
 
@@ -177,26 +238,331 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
   return null;
 }
 
+type GlyphKind = "spotify" | "wave" | "disc" | "play";
+
+// A leading destination glyph replaces the trailing arrow: gold, 14px, and
+// chosen by where the link actually goes rather than by a generic convention.
+function Glyph({ kind }: { kind: GlyphKind }) {
+  if (kind === "wave") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+          <path d="M3 12v1M7 8v8M11 5v14M15 8v8M19 10v4M23 12v1" />
+        </g>
+      </svg>
+    );
+  }
+  if (kind === "disc") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g fill="none" stroke="currentColor" strokeWidth={2}>
+          <circle cx={12} cy={12} r={9} />
+          <circle cx={12} cy={12} r={2.2} fill="currentColor" />
+        </g>
+      </svg>
+    );
+  }
+  const path = kind === "spotify"
+    ? "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.59 14.42a.62.62 0 0 1-.86.21c-2.35-1.44-5.31-1.76-8.79-.97a.62.62 0 0 1-.28-1.22c3.81-.87 7.08-.5 9.72 1.12.3.18.39.57.21.86zm1.22-2.72a.78.78 0 0 1-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 1 1-.45-1.49c3.63-1.1 8.15-.57 11.24 1.33.36.22.48.7.25 1.07zm.1-2.84c-3.22-1.91-8.54-2.09-11.62-1.16a.94.94 0 1 1-.54-1.79c3.53-1.07 9.4-.87 13.11 1.34a.94.94 0 0 1-.95 1.61z"
+    : "M7 4.5v15l12-7.5z";
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d={path} />
+    </svg>
+  );
+}
+
+function glyphForAction(url: string, isOfficial: boolean): GlyphKind {
+  let host = "";
+  try {
+    host = new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    host = "";
+  }
+  if (host === "open.spotify.com") return "spotify";
+  if (host === "youtube.com" || host === "youtu.be") return "play";
+  if (host === "archive.org" || host === "relisten.net") return "wave";
+  return isOfficial ? "disc" : "wave";
+}
+
+// The primary action is the first official listening path, or simply the
+// first when none is marked official. It renders filled; the rest are
+// outlined, and none carries a trailing arrow now that a glyph leads instead.
 function ListenActionList({ actions }: { actions: ListenActions }) {
   if (actions.length === 0) return null;
+  const officialIndex = actions.findIndex((action) => action.is_official);
+  const primaryIndex = officialIndex >= 0 ? officialIndex : 0;
   return (
     <ul className="listen-actions" aria-label="Listen">
-      {actions.map((action) => (
+      {actions.map((action, index) => (
         <li key={action.url}>
           <a
-            className={action.is_official ? "listen-action official" : "listen-action"}
+            className={index === primaryIndex ? "listen-action primary" : "listen-action"}
             href={action.url}
             target="_blank"
             rel="noreferrer"
             aria-label={`${action.label} on ${listeningDestination(action.url)} (opens in a new tab)`}
             title={`Opens ${listeningDestination(action.url)} in a new tab`}
           >
+            <Glyph kind={glyphForAction(action.url, action.is_official)} />
             <span className="listen-action-label">{action.label}</span>
-            <span aria-hidden="true">↗</span>
           </a>
         </li>
       ))}
     </ul>
+  );
+}
+
+// "Listen for" is a sentence, not a labeled row: cream links in muted body
+// text, shown whenever a unit has highlighted songs or tracks.
+function ListenFor({ items: allItems }: { items: { key: string; title: string; url?: string | null }[] }) {
+  // A song highlighted twice in one show (a reprise) is named once here; the
+  // setlist still stars both.
+  const seen = new Set<string>();
+  const items = allItems.filter((item) => {
+    const key = item.title.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  if (items.length === 0) return null;
+  return (
+    <p className="listen-for">
+      Listen for{" "}
+      {items.map((item, index) => (
+        <span key={item.key}>
+          {index > 0 && <span className="sep">·</span>}
+          {item.url ? (
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Listen to ${item.title} (opens in a new tab)`}
+              title={`Opens ${listeningDestination(item.url)} in a new tab`}
+            >
+              {item.title}
+            </a>
+          ) : (
+            item.title
+          )}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+// One header row per card: the type on the left, a tabular-numeral fact on
+// the right. Both are the same small-caps label style.
+function IdRow({ type, when }: { type: ReactNode; when?: ReactNode }) {
+  return (
+    <div className="id-row">
+      <span className="k type">{type}</span>
+      {when ? <span className="k when">{when}</span> : null}
+    </div>
+  );
+}
+
+// The meta line under a card's h2: parts joined by a quiet middot, blank
+// parts dropped so a card missing one fact doesn't leave a stray separator.
+function Meta({ parts }: { parts: ReactNode[] }) {
+  const visible = parts.filter((part) => part !== null && part !== undefined && part !== "");
+  if (visible.length === 0) return null;
+  return (
+    <p className="meta">
+      {visible.map((part, index) => (
+        <span key={index}>
+          {index > 0 && <span className="sep">·</span>}
+          {part}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+// A plain "Title · detail" row, used for recordings, on-record albums, and
+// credits inside the drawer. Title links out when a url is given.
+function PlainList({ items }: { items: { key: string; title: string; url?: string | null; detail?: string | null }[] }) {
+  return (
+    <ul className="plain">
+      {items.map((item) => (
+        <li key={item.key}>
+          {item.url ? (
+            <ExternalLink className="plain-title" href={item.url}>{item.title}</ExternalLink>
+          ) : (
+            <span className="plain-title">{item.title}</span>
+          )}
+          {item.detail ? <span>{item.detail}</span> : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// A "Name · instruments" grid, used for lineups and album personnel.
+function PeopleList({ people }: { people: { key: string; name: string; detail: string; guest?: boolean }[] }) {
+  return (
+    <ul className="people">
+      {people.map((person) => (
+        <li key={person.key}>
+          {person.name}
+          <span>{[person.detail, person.guest ? "guest" : null].filter(Boolean).join(" · ")}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// The setlist panel: one column per set, numbering continuing across sets
+// (Set 2 starts at 9 when Set 1 has 8 songs), no play triangles, highlighted
+// songs starred.
+function SetlistPanel({ sets }: { sets: SetlistSections }) {
+  let runningCount = 0;
+  return (
+    <div className="setlist-panel">
+      {sets.map((set) => {
+        const start = runningCount + 1;
+        runningCount += set.songs.length;
+        return (
+          <div key={set.label}>
+            <span className="k">{set.label}</span>
+            <ol className="song-list" start={start}>
+              {set.songs.map((song, index) => (
+                <li key={song.performance_id} value={start + index} className={song.highlighted ? "hi" : undefined}>
+                  {song.listen_url ? (
+                    <a
+                      href={song.listen_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Listen to ${song.title} (opens in a new tab)`}
+                      title={`Opens ${listeningDestination(song.listen_url)} in a new tab`}
+                    >
+                      {song.title}
+                    </a>
+                  ) : (
+                    <span>{song.title}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// The album tracklist: the same numbered-link styling as the setlist, one
+// column, no set grouping.
+function TrackList({ tracks }: { tracks: AlbumUnitBlock["tracks"] }) {
+  return (
+    <ol className="song-list">
+      {tracks.map((track) => (
+        <li key={track.track_number} value={track.track_number} className={track.highlighted ? "hi" : undefined}>
+          {track.listen_url ? (
+            <a
+              href={track.listen_url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`Listen to ${track.title} (opens in a new tab)`}
+              title={`Opens ${listeningDestination(track.listen_url)} in a new tab`}
+            >
+              {track.title}
+            </a>
+          ) : (
+            <span>{track.title}</span>
+          )}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// The "Go deeper" footer block: each source's title set in the serif as a
+// cited headline, with publication and note sharing one muted line beneath.
+function GoDeeper({ sources }: { sources: UnitSources }) {
+  if (sources.length === 0) return null;
+  return (
+    <div className="reading">
+      <span className="k">Go deeper</span>
+      {sources.map((source) => (
+        <div className="reading-source" key={source.url}>
+          <p className="reading-title">
+            <ExternalLink href={source.url}>{source.label}</ExternalLink>
+          </p>
+          {(source.source_name || source.note) && (
+            <p className="reading-pub">
+              {source.source_name && <span className="pub">{source.source_name}</span>}
+              {source.source_name && source.note ? " · " : ""}
+              {source.note}
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+type DrawerTab = { id: string; label: string; count?: number; content: ReactNode };
+
+// The tabbed drawer that replaced the stacked <details> facets. A disclosure
+// decides once, when it first appears, whether to start open (the same
+// reasoning as the old Facet component): later renders must not snap it open
+// or closed beneath the reader.
+function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: string | null }) {
+  const [open, setOpen] = useState(initialOpen);
+  const baseId = useId();
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  if (tabs.length === 0) return null;
+
+  function focusTabAt(index: number) {
+    const target = tabs[(index + tabs.length) % tabs.length];
+    tabRefs.current[target.id]?.focus();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      focusTabAt(index + 1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      focusTabAt(index - 1);
+    }
+  }
+
+  return (
+    <div className="drawer">
+      <div className="tabs" role="tablist">
+        {tabs.map((tab, index) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            id={`${baseId}-tab-${tab.id}`}
+            aria-selected={open === tab.id}
+            aria-controls={`${baseId}-panel-${tab.id}`}
+            className="tab k"
+            ref={(element) => { tabRefs.current[tab.id] = element; }}
+            onClick={() => setOpen((current) => (current === tab.id ? null : tab.id))}
+            onKeyDown={(event) => handleKeyDown(event, index)}
+          >
+            {tab.label}
+            {tab.count !== undefined && <span className="n">{tab.count}</span>}
+          </button>
+        ))}
+      </div>
+      {tabs.map((tab) => (
+        <div
+          key={tab.id}
+          role="tabpanel"
+          id={`${baseId}-panel-${tab.id}`}
+          aria-labelledby={`${baseId}-tab-${tab.id}`}
+          className="panel"
+          hidden={open !== tab.id}
+        >
+          {open === tab.id ? tab.content : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -262,16 +628,6 @@ function CriteriaTable({ criteria, judgments }: { criteria: string[]; judgments:
 // A disclosure decides once, when it first appears, whether to start open.
 // Later renders leave it alone, so a page that finishes composing does not
 // snap its facets open beneath the reader.
-function Facet({ className, initiallyOpen, summary, children }: { className: string; initiallyOpen: boolean; summary: string; children: ReactNode }) {
-  const [startOpen] = useState(initiallyOpen);
-  return (
-    <details className={className} open={startOpen || undefined}>
-      <summary>{summary}</summary>
-      {children}
-    </details>
-  );
-}
-
 function unitKey(block: UnitBlock): string {
   switch (block.type) {
     case "show_unit": return block.show_id;
@@ -366,26 +722,6 @@ function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
   }));
 }
 
-function SetlistSectionList({ sets }: { sets: SetlistSections }) {
-  return (
-    <div className="setlist-sections">
-      {sets.map((set) => (
-        <div className="setlist-section" key={set.label}>
-          <p className="fact-label">{set.label}</p>
-          <ol>
-            {set.songs.map((song) => (
-              <li key={song.performance_id} className={song.highlighted ? "setlist-song highlighted" : "setlist-song"}>
-                <ListeningLabel title={song.title} url={song.listen_url} />
-                {song.highlighted && <span className="highlight-mark" title="A performance worth your attention" aria-label="Highlighted">★</span>}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function ShowUnit({
   unit,
   criteria,
@@ -397,89 +733,91 @@ function ShowUnit({
   soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
 }) {
-  const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
   const shows = (facet: ShowUnitBlock["visible_facets"][number]) => unit.visible_facets.includes(facet);
-  const compact = unit.emphasis === "supporting";
   const openFacets = unit.emphasis === "primary" && soleUnit;
+  const dateLong = formatShowDateLong(unit.show_date);
+  const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
+  const totalSongs = unit.sets.reduce((count, set) => count + set.songs.length, 0);
+
+  // The guest joins the meta line: who was there, not a separate labeled row.
+  const guestsNode = shows("guests") && unit.guests.length > 0 ? (
+    <>
+      with{" "}
+      {unit.guests.map((guest, index) => (
+        <span key={`${guest.person_id}-${index}`}>
+          {index > 0 ? ", " : ""}
+          <strong>{guest.name}</strong>, {guest.instruments.join(", ")}
+        </span>
+      ))}
+    </>
+  ) : null;
+
+  const tabs: DrawerTab[] = [];
+  if (shows("setlist") && unit.setlist_disclosure !== "hidden" && unit.sets.length > 0) {
+    tabs.push({ id: "setlist", label: "Setlist", count: totalSongs, content: <SetlistPanel sets={unit.sets} /> });
+  }
+  if (shows("lineup") && unit.lineup.length > 0) {
+    tabs.push({
+      id: "lineup",
+      label: "Lineup",
+      count: unit.lineup.length,
+      content: (
+        <PeopleList
+          people={unit.lineup.map((person) => ({
+            key: `${person.person_id}-${person.role}`,
+            name: person.name,
+            detail: person.instruments.join(", "),
+            guest: person.role === "guest"
+          }))}
+        />
+      )
+    });
+  }
+  if (shows("recordings") && unit.recordings.length > 0) {
+    tabs.push({
+      id: "recordings",
+      label: "Recordings",
+      count: unit.recordings.length,
+      content: (
+        <PlainList
+          items={unit.recordings.map((recording) => ({
+            key: recording.recording_id,
+            title: recording.title,
+            url: recording.url,
+            detail: [recording.source_type, recording.archive_identifier].filter(Boolean).join(" · ")
+          }))}
+        />
+      )
+    });
+  }
+  // The model writes the headline (the place or the legend); the venue is the
+  // fallback. When the headline is not the venue, the full venue joins the meta line.
+  const modelHeadline = unit.title?.trim() || "";
+  const headline = modelHeadline || unit.venue_name || dateLong;
+  const venueInMeta = modelHeadline && unit.venue_name && modelHeadline.toLowerCase() !== unit.venue_name.toLowerCase() ? unit.venue_name : null;
+  const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets;
+  const initialOpen = wantsSetlistOpen && tabs.some((tab) => tab.id === "setlist") ? "setlist" : null;
+
   return (
     <article className={`card show-unit emphasis-${unit.emphasis}`}>
-      <header className="unit-heading">
-        <div>
-          {unit.title && <Eyebrow label={unit.title} />}
-          <h2>{unit.venue_name || formatShowDate(unit.show_date)}{unit.venue_name && <span className="subtitle"> ({formatShowDate(unit.show_date)})</span>}</h2>
-          {unit.location && <p className="subtitle">{unit.location}</p>}
-        </div>
-      </header>
+      <IdRow type="Show" when={dateLong} />
+      <h2>{headline}</h2>
+      <Meta parts={[venueInMeta, unit.location, guestsNode]} />
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={unit.judgments} />
-      {shows("guests") && unit.guests.length > 0 && (
-        <p className="unit-guests">
-          <span className="fact-label">With </span>
-          {unit.guests.map((guest, index) => (
-            <span key={`${guest.person_id}-${index}`}>
-              {index > 0 ? ", " : ""}
-              <strong>{guest.name}</strong> ({guest.instruments.join(", ")})
-            </span>
-          ))}
-        </p>
-      )}
       {shows("listen") && <ListenActionList actions={unit.listen} />}
-      {unit.setlist_disclosure === "collapsed" && highlights.length > 0 && (
-        <div className="unit-highlights">
-          <p className="fact-label">Listen for</p>
-          <ul>
-            {highlights.map((song) => (
-              <li key={song.performance_id}>
-                <ListeningLabel title={song.title} url={song.listen_url} className="list-item-label" />
-              </li>
-            ))}
-          </ul>
-        </div>
+      {highlights.length > 0 && (
+        <ListenFor items={highlights.map((song) => ({ key: song.performance_id, title: song.title, url: song.listen_url }))} />
       )}
-      {shows("setlist") && unit.setlist_disclosure !== "hidden" && (unit.sets.length > 0 ? (
-        unit.setlist_disclosure === "collapsed" || compact ? (
-          <details className="unit-setlist">
-            <summary>Setlist</summary>
-            <SetlistSectionList sets={unit.sets} />
-          </details>
-        ) : (
-          <div className="unit-setlist">
-            <p className="fact-label">Setlist</p>
-            <SetlistSectionList sets={unit.sets} />
-          </div>
-        )
-      ) : unit.setlist_note ? (
+      {shows("setlist") && unit.setlist_disclosure !== "hidden" && unit.sets.length === 0 && unit.setlist_note && (
         <p className="coverage-note">{unit.setlist_note}</p>
-      ) : null)}
-      {shows("lineup") && unit.lineup.length > 0 && (
-        <Facet className="unit-facet unit-setlist" initiallyOpen={openFacets} summary="Lineup">
-          <ul className="facet-list">
-            {unit.lineup.map((person) => (
-              <li key={`${person.person_id}-${person.role}`}>
-                <strong>{person.name}</strong>
-                <span>{person.instruments.join(", ")}{person.role === "guest" ? " · Guest" : ""}</span>
-              </li>
-            ))}
-          </ul>
-        </Facet>
       )}
-      {shows("recordings") && unit.recordings.length > 0 && (
-        <Facet className="unit-facet unit-setlist" initiallyOpen={openFacets} summary="Recordings">
-          <ul className="facet-list">
-            {unit.recordings.map((recording) => (
-              <li key={recording.recording_id}>
-                <ExternalLink href={recording.url}>{recording.title}</ExternalLink>
-                <span>{recording.source_type}{recording.archive_identifier ? ` · ${recording.archive_identifier}` : ""}</span>
-              </li>
-            ))}
-          </ul>
-        </Facet>
-      )}
-      {shows("sources") && <UnitSourceList sources={unit.sources} />}
-      {unit.follow_up && (
-        <p className="unit-follow-up">
-          <AskChip prompt={unit.follow_up} onFollowUp={onFollowUp} />
-        </p>
+      <Drawer tabs={tabs} initialOpen={initialOpen} />
+      {((shows("sources") && unit.sources.length > 0) || (unit.follow_ups ?? []).length > 0) && (
+        <footer className="unit-footer">
+          {shows("sources") && <GoDeeper sources={unit.sources} />}
+          <MoreAbout topics={unit.follow_ups} onFollowUp={onFollowUp} />
+        </footer>
       )}
     </article>
   );
@@ -525,82 +863,220 @@ function AlbumUnit({
   soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
 }) {
-  const year = block.release_date?.slice(0, 4);
+  const openFacets = block.emphasis === "primary" && soleUnit;
   const highlightedTracks = block.tracks.filter((track) => track.highlighted);
   const personnel = groupPersonnel(block.personnel);
-  const compact = block.emphasis === "supporting";
-  const openFacets = block.emphasis === "primary" && soleUnit;
+  const typeLabel = block.artist_name && block.artist_name !== "Grateful Dead" ? `Album · ${block.artist_name}` : "Album";
+  const releaseLong = formatReleaseDate(block.release_date);
+
+  const tabs: DrawerTab[] = [];
+  if (block.tracks.length > 0) {
+    tabs.push({ id: "tracks", label: "Tracklist", count: block.tracks.length, content: <TrackList tracks={block.tracks} /> });
+  }
+  if (personnel.length > 0) {
+    tabs.push({
+      id: "personnel",
+      label: "Personnel",
+      count: personnel.length,
+      content: (
+        <PeopleList
+          people={personnel.map((person) => ({
+            key: person.person_id,
+            name: person.name,
+            detail: [person.instruments.join(", "), person.extraRole ? capitalize(person.extraRole) : null].filter(Boolean).join(" · ")
+          }))}
+        />
+      )
+    });
+  }
+  const initialOpen = openFacets && tabs.some((tab) => tab.id === "tracks") ? "tracks" : null;
+
   return (
     <article className={`card album-unit emphasis-${block.emphasis}`}>
-      <header className="unit-heading">
-        <div>
-          {block.artist_name && block.artist_name !== "Grateful Dead" && <Eyebrow label={block.artist_name} title={block.title} />}
-          <h2>
-            {block.title}
-            {year ? <span className="subtitle"> ({year})</span> : null}
-          </h2>
-        </div>
-      </header>
+      <IdRow type={typeLabel} when={releaseLong ? `Released ${releaseLong}` : null} />
+      <h2>{block.title}</h2>
+      <Meta parts={[formatReleaseType(block.release_type)]} />
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       <ListenActionList actions={block.listen} />
       {highlightedTracks.length > 0 && (
-        <div className="unit-highlights">
-          <p className="fact-label">Listen for</p>
-          <ul>
-            {highlightedTracks.map((track) => (
-              <li key={track.track_number}>
-                <ListeningLabel title={track.title} url={track.listen_url} className="list-item-label" />
+        <ListenFor items={highlightedTracks.map((track) => ({ key: String(track.track_number), title: track.title, url: track.listen_url }))} />
+      )}
+      <Drawer tabs={tabs} initialOpen={initialOpen} />
+      {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
+        <footer className="unit-footer">
+          <GoDeeper sources={block.sources} />
+          <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
+        </footer>
+      )}
+    </article>
+  );
+}
+
+type PerformanceUnitBlockT = Extract<ExperienceBlock, { type: "performance_unit" }>;
+
+function PerformanceUnit({
+  block,
+  criteria,
+  onFollowUp
+}: {
+  block: PerformanceUnitBlockT;
+  criteria: string[];
+  onFollowUp: (prompt: string) => void;
+}) {
+  const rightParts = [block.set_label, block.position_in_set ? `Song ${block.position_in_set}` : null].filter(Boolean) as string[];
+  return (
+    <article className={`card performance-unit emphasis-${block.emphasis}`}>
+      <IdRow type="Performance" when={rightParts.length > 0 ? rightParts.join(" · ") : null} />
+      <h2>{block.song_title}</h2>
+      <Meta parts={[block.venue_name, formatShowDateLong(block.show_date), block.location]} />
+      {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      <CriteriaTable criteria={criteria} judgments={block.judgments} />
+      {(block.previous || block.next) && (() => {
+        // Three consecutive setlist lines with this performance lit, numbered
+        // from its position when the set position is known.
+        const parsed = block.position_in_set ? Number(block.position_in_set) : NaN;
+        const here = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        const setName = block.set_label || "the set";
+        const rows: { key: string; n: number | null; title: string; here?: boolean; edge?: boolean }[] = [
+          block.previous
+            ? { key: "prev", n: here ? here - 1 : null, title: block.previous.title }
+            : { key: "prev", n: null, title: `Opens ${setName}`, edge: true },
+          { key: "here", n: here, title: block.song_title, here: true },
+          block.next
+            ? { key: "next", n: here ? here + 1 : null, title: block.next.title }
+            : { key: "next", n: null, title: `Closes ${setName}`, edge: true }
+        ];
+        return (
+          <ol className="set-excerpt" aria-label="Where this sits in the set">
+            {rows.map((row) => (
+              <li key={row.key} className={row.here ? "here" : row.edge ? "edge" : undefined}>
+                <span className="n" aria-hidden="true">{row.n ?? ""}</span>
+                <span>{row.title}</span>
               </li>
             ))}
-          </ul>
-        </div>
+          </ol>
+        );
+      })()}
+      <ListenActionList actions={block.listen} />
+      {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
+        <footer className="unit-footer">
+          <GoDeeper sources={block.sources} />
+          <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
+        </footer>
       )}
-      {(block.tracks.length > 0 || personnel.length > 0) && (
-      <div className="album-body">
-        {block.tracks.length > 0 && (() => {
-          const trackList = (
-            <ol className="album-tracks">
-              {block.tracks.map((track) => (
-                <li
-                  key={track.track_number}
-                  className={track.highlighted ? "album-track highlighted" : "album-track"}
-                  value={track.track_number}
-                >
-                  <ListeningLabel title={track.title} url={track.listen_url} />
-                  {track.highlighted && <span className="highlight-mark" aria-label="Highlighted track">★</span>}
+    </article>
+  );
+}
+
+type SongOverviewBlockT = Extract<ExperienceBlock, { type: "song_overview" }>;
+
+function SongOverviewUnit({
+  block,
+  criteria,
+  soleUnit,
+  onFollowUp
+}: {
+  block: SongOverviewBlockT;
+  criteria: string[];
+  soleUnit: boolean;
+  onFollowUp: (prompt: string) => void;
+}) {
+  const openFacets = block.emphasis === "primary" && soleUnit;
+  const showsFacet = (facet: SongOverviewBlockT["visible_facets"][number]) => block.visible_facets.includes(facet);
+
+  const tabs: DrawerTab[] = [];
+  if (showsFacet("history") && block.history) {
+    const history = block.history;
+    const byYear = history.by_year ?? [];
+    tabs.push({
+      id: "history",
+      label: "History",
+      content: (
+        <div>
+          <p className="subtitle">{history.known_count} performance{history.known_count === 1 ? "" : "s"}</p>
+          <div className="endpoints">
+            <div>
+              <span className="k">First</span>
+              <ListeningLabel title={history.first.show_label} url={history.first.listen_url} className="list-item-label" />
+            </div>
+            <div>
+              <span className="k">Last</span>
+              <ListeningLabel title={history.last.show_label} url={history.last.listen_url} className="list-item-label" />
+            </div>
+          </div>
+          {byYear.length > 1 && (
+            <ol className="comparison-track" aria-label="One performance per year">
+              {byYear.map((item) => (
+                <li className="comparison-stop" key={item.performance_id}>
+                  <p className="comparison-year">{item.year}</p>
+                  <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
                 </li>
               ))}
             </ol>
-          );
-          return (
-            <Facet className={compact ? "unit-facet unit-setlist" : "album-tracks-section unit-setlist"} initiallyOpen={openFacets} summary="Tracklist">
-              {trackList}
-            </Facet>
-          );
-        })()}
-        {personnel.length > 0 && (
-          <Facet className={compact ? "unit-facet unit-setlist" : "album-credits unit-setlist"} initiallyOpen={openFacets} summary="Personnel and credits">
-            <ul className="album-personnel">
-              {personnel.map((person) => (
-                <li key={person.person_id}>
-                  <strong>{person.name}</strong>
-                  <span>
-                    {person.instruments.join(", ")}
-                    {person.extraRole ? ` · ${capitalize(person.extraRole)}` : ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </Facet>
-        )}
-      </div>
+          )}
+        </div>
+      )
+    });
+  }
+  if (showsFacet("albums") && block.albums.length > 0) {
+    tabs.push({
+      id: "record",
+      label: "On record",
+      count: block.albums.length,
+      content: (
+        <PlainList
+          items={block.albums.map((album) => ({
+            key: album.release_id,
+            title: album.title,
+            detail: [album.release_type, album.release_date?.slice(0, 4)].filter(Boolean).join(" · ")
+          }))}
+        />
+      )
+    });
+  }
+  if (showsFacet("credits") && block.credits.length > 0) {
+    tabs.push({
+      id: "credits",
+      label: "Credits",
+      count: block.credits.length,
+      content: (
+        <PlainList items={block.credits.map((credit) => ({ key: `${credit.person_id}-${credit.role}`, title: credit.name, detail: credit.role }))} />
+      )
+    });
+  }
+  const initialOpen = openFacets && tabs.length > 0 ? tabs[0].id : null;
+  const representatives = showsFacet("representatives") ? block.representative_performances : [];
+
+  return (
+    <article className={`card song-overview emphasis-${block.emphasis}`}>
+      <IdRow type="Song" when={`${block.known_performance_count} performance${block.known_performance_count === 1 ? "" : "s"}`} />
+      <h2>{block.title}</h2>
+      <Meta parts={[block.original_artist ? `Originally by ${block.original_artist}` : null]} />
+      {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      <CriteriaTable criteria={criteria} judgments={block.judgments} />
+      {representatives.length > 0 && (
+        <section className="song-representatives">
+          <ul>
+            {representatives.map((performance) => (
+              <li key={performance.performance_id}>
+                <ListeningLabel
+                  title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
+                  url={performance.listen_url}
+                  className="list-item-label"
+                />
+                {performance.set_label && <span>{performance.set_label}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
-      <UnitSourceList sources={block.sources} />
-      {block.follow_up && (
-        <p className="unit-follow-up">
-          <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
-        </p>
+      <Drawer tabs={tabs} initialOpen={initialOpen} />
+      {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
+        <footer className="unit-footer">
+          <GoDeeper sources={block.sources} />
+          <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
+        </footer>
       )}
     </article>
   );
@@ -623,44 +1099,7 @@ function Block({
     case "show_unit":
       return <ShowUnit unit={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
     case "performance_unit":
-      return (
-        <article className={`card performance-unit emphasis-${block.emphasis}`}>
-          <header className="unit-heading">
-            <div>
-              <p className="eyebrow">{block.song_title}</p>
-              <h2>{venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}</h2>
-              <p className="subtitle">
-                {[block.location, block.set_label, block.position_in_set ? `#${block.position_in_set}` : null].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-          </header>
-          {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
-          <CriteriaTable criteria={criteria} judgments={block.judgments} />
-          {(block.previous || block.next) && (
-            <div className="set-thread" aria-label="Adjacent songs in the set">
-              <div>
-                <p className="fact-label">Before</p>
-                {block.previous ? <span className="list-item-label">{block.previous.title}</span> : <span className="thread-boundary">Set opener</span>}
-              </div>
-              <div>
-                <p className="fact-label">This performance</p>
-                <span className="current-performance">{block.song_title}</span>
-              </div>
-              <div>
-                <p className="fact-label">After</p>
-                {block.next ? <span className="list-item-label">{block.next.title}</span> : <span className="thread-boundary">Set closer</span>}
-              </div>
-            </div>
-          )}
-          <ListenActionList actions={block.listen} />
-          <UnitSourceList sources={block.sources} />
-          {block.follow_up && (
-            <p className="unit-follow-up">
-              <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
-            </p>
-          )}
-        </article>
-      );
+      return <PerformanceUnit block={block} criteria={criteria} onFollowUp={onFollowUp} />;
     case "era_unit":
       return (
         <section className="era-unit">
@@ -684,11 +1123,7 @@ function Block({
             ))}
           </ul>
           <UnitSourceList sources={block.sources} />
-          {block.follow_up && (
-            <p className="unit-follow-up">
-              <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
-            </p>
-          )}
+          <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
         </section>
       );
     case "album_unit":
@@ -760,113 +1195,8 @@ function Block({
           </ul>
         </section>
       );
-    case "song_overview": {
-      const compact = block.emphasis === "supporting";
-      const openFacets = block.emphasis === "primary" && soleUnit;
-      return (
-        <article className={`card song-overview emphasis-${block.emphasis}`}>
-          <header className="unit-heading">
-            <div>
-              <p className="eyebrow">Song</p>
-              <h2>{block.title}</h2>
-              {block.original_artist && <p className="subtitle">Originally by {block.original_artist}</p>}
-            </div>
-          </header>
-          {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
-          <CriteriaTable criteria={criteria} judgments={block.judgments} />
-          {block.visible_facets.map((facet) => {
-            switch (facet) {
-              case "representatives":
-                return block.representative_performances.length > 0 ? (
-                  <section className="song-representatives" key="representatives">
-                    <p className="fact-label">Representative performances</p>
-                    <ul>
-                      {block.representative_performances.map((performance) => (
-                        <li key={performance.performance_id}>
-                          <ListeningLabel
-                            title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
-                            url={performance.listen_url}
-                            className="list-item-label"
-                          />
-                          {performance.set_label && <span>{performance.set_label}</span>}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                ) : null;
-              case "credits":
-                return block.credits.length > 0 ? (
-                  <Facet className={compact ? "unit-facet unit-setlist" : "song-credits unit-setlist"} key="credits" initiallyOpen={openFacets} summary="Credits">
-                    <ul>
-                      {block.credits.map((credit) => (
-                        <li key={`${credit.person_id}-${credit.role}`}>
-                          <strong className="inline-label">{credit.name}</strong>
-                          <span>{credit.role}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </Facet>
-                ) : null;
-              case "albums": {
-                if (block.albums.length === 0) return null;
-                const albumsList = (
-                  <ul className="song-albums">
-                    {block.albums.map((album) => (
-                      <li key={album.release_id}>
-                        <strong>{album.title}</strong>
-                        <span>{[album.release_type, album.release_date?.slice(0, 4)].filter(Boolean).join(" · ")}</span>
-                      </li>
-                    ))}
-                  </ul>
-                );
-                return (
-                  <Facet className={compact ? "unit-facet unit-setlist" : "song-albums-section unit-setlist"} key="albums" initiallyOpen={openFacets} summary="On record">
-                    {albumsList}
-                  </Facet>
-                );
-              }
-              case "history": {
-                const history = block.history;
-                if (!history) return null;
-                const byYear = history.by_year ?? [];
-                const historyBody = (
-                  <>
-                    <p className="subtitle">{history.known_count} performance{history.known_count === 1 ? "" : "s"}</p>
-                    <div className="performance-endpoints">
-                      <div className="performance-endpoint"><p className="fact-label">First</p><ListeningLabel title={history.first.show_label} url={history.first.listen_url} className="list-item-label" /></div>
-                      <div className="performance-endpoint"><p className="fact-label">Last</p><ListeningLabel title={history.last.show_label} url={history.last.listen_url} className="list-item-label" /></div>
-                    </div>
-                    {byYear.length > 1 && (
-                      <ol className="comparison-track" aria-label="One performance per year">
-                        {byYear.map((item) => (
-                          <li className="comparison-stop" key={item.performance_id}>
-                            <p className="comparison-year">{item.year}</p>
-                            <ListeningLabel title={item.show_label} url={item.listen_url} className="list-item-label" />
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </>
-                );
-                return (
-                  <Facet className={compact ? "unit-facet unit-setlist" : "song-history unit-setlist"} key="history" initiallyOpen={openFacets} summary="Performance history">
-                    {historyBody}
-                  </Facet>
-                );
-              }
-              default:
-                return null;
-            }
-          })}
-          <UnitSourceList sources={block.sources} />
-          {block.follow_up && (
-            <p className="unit-follow-up">
-              <AskChip prompt={block.follow_up} onFollowUp={onFollowUp} />
-            </p>
-          )}
-        </article>
-      );
-    }
+    case "song_overview":
+      return <SongOverviewUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
     case "resource_list":
       return (
         <section className="typography-block resource-list">
@@ -979,7 +1309,7 @@ function Block({
                 )}
                 {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
                 {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
-                {item.follow_up && <dd className="fact-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></dd>}
+                {(item.follow_ups ?? []).length > 0 && <dd className="fact-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></dd>}
               </div>
             ))}
           </dl>
@@ -996,7 +1326,7 @@ function Block({
                 <strong>{renderInline(item.title)}</strong>
                 {item.detail && <span>{renderInline(item.detail)}</span>}
                 {item.link && <ExternalLink href={item.link.url}>{item.link.label}</ExternalLink>}
-                {item.follow_up && <span className="timeline-ask"><AskChip prompt={item.follow_up} onFollowUp={onFollowUp} /></span>}
+                {(item.follow_ups ?? []).length > 0 && <span className="timeline-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></span>}
               </li>
             ))}
           </ol>
@@ -1398,7 +1728,7 @@ export default function App() {
             {error && <p className="error" role="alert">{error}</p>}
 
             <form className="composer" onSubmit={submit}>
-              <div className="question-row">
+              <div className="question-field">
                 <textarea
                   id="question"
                   aria-label="Question"
@@ -1409,7 +1739,7 @@ export default function App() {
                   onKeyDown={submitOnEnter}
                   disabled={loading}
                 />
-                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Send"}</button>
+                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Ask"}</button>
               </div>
               {response && !loading && (
                 <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>

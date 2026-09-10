@@ -126,16 +126,13 @@
             "title": "Emphasis",
             "type": "string"
           },
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Follow Up"
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 3,
+            "title": "Follow Ups",
+            "type": "array"
           },
           "judgments": {
             "items": {
@@ -675,17 +672,14 @@
             "description": "One or two sentences of context or evidence for this item.",
             "title": "Detail"
           },
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "A question in the visitor's voice, rendered as an Ask chip that starts a new turn. Only the composer writes these.",
-            "title": "Follow Up"
+          "follow_ups": {
+            "description": "Up to three topics the visitor might want more about, each a short label plus the specific question it opens when pressed, rendered as chips under 'More about'.",
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 3,
+            "title": "Follow Ups",
+            "type": "array"
           },
           "link": {
             "anyOf": [
@@ -987,16 +981,13 @@
         "additionalProperties": false,
         "description": "A stage of a development the composer names, with representative listening.",
         "properties": {
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Follow Up"
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 3,
+            "title": "Follow Ups",
+            "type": "array"
           },
           "note": {
             "anyOf": [
@@ -1311,6 +1302,26 @@
           "answer"
         ],
         "title": "ExperienceResponse",
+        "type": "object"
+      },
+      "FollowUpTopic": {
+        "additionalProperties": false,
+        "description": "A short topic chip the visitor can press, and the full question it stands for.\n\nThe chip shows only the label under \"More about\"; pressing it sends the\nquestion, in the visitor's voice, to start a new turn. Only the composer\nwrites these; the server never generates one.",
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "question"
+        ],
+        "title": "FollowUpTopic",
         "type": "object"
       },
       "GapStateBlock": {
@@ -1647,16 +1658,13 @@
             "title": "Emphasis",
             "type": "string"
           },
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Follow Up"
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 3,
+            "title": "Follow Ups",
+            "type": "array"
           },
           "judgments": {
             "items": {
@@ -2161,7 +2169,7 @@
       },
       "ShowUnitBlock": {
         "additionalProperties": false,
-        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (emphasis, note, highlights,\npreferred recording, sources, follow-up); date, venue, setlist, guests and\nlistening actions come from canonical data.",
+        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (emphasis, note, highlights,\npreferred recording, sources, follow-up topics); date, venue, setlist, guests and\nlistening actions come from canonical data.",
         "properties": {
           "emphasis": {
             "default": "supporting",
@@ -2173,16 +2181,13 @@
             "title": "Emphasis",
             "type": "string"
           },
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Follow Up"
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 3,
+            "title": "Follow Ups",
+            "type": "array"
           },
           "guests": {
             "items": {
@@ -2404,16 +2409,13 @@
             "title": "Emphasis",
             "type": "string"
           },
-          "follow_up": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Follow Up"
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 3,
+            "title": "Follow Ups",
+            "type": "array"
           },
           "history": {
             "anyOf": [

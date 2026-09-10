@@ -30,6 +30,7 @@ from deadbot.experience import (
     EquipmentListBlock,
     EraPerformanceItem,
     EraUnitBlock,
+    FollowUpTopic,
     GuestAppearanceItem,
     GuestAppearanceListBlock,
     ComparisonStripItem,
@@ -475,6 +476,18 @@ def _guest_items(payload: dict[str, Any], store: CanonicalStore) -> list[Perform
     return [item for item in performers if item.role == "guest"][:8]
 
 
+def _clean_follow_ups(follow_ups: list[Any] | None) -> list[FollowUpTopic]:
+    """Strip and validate the composer's follow-up topics, dropping any with a blank label or question."""
+
+    cleaned: list[FollowUpTopic] = []
+    for entry in follow_ups or []:
+        label = (getattr(entry, "label", None) or "").strip()
+        question = (getattr(entry, "question", None) or "").strip()
+        if label and question:
+            cleaned.append(FollowUpTopic(label=label, question=question))
+    return cleaned[:3]
+
+
 def _show_unit(
     payload: dict[str, Any],
     store: CanonicalStore,
@@ -488,7 +501,7 @@ def _show_unit(
     highlighted_performance_ids: list[str] | None = None,
     preferred_recording_id: str | None = None,
     sources: list[UnitSource] | None = None,
-    follow_up: str | None = None,
+    follow_ups: list[FollowUpTopic] | None = None,
 ) -> tuple[ShowUnitBlock | None, list[SourceReference]]:
     """Hydrate one show unit from its show payload.
 
@@ -533,7 +546,7 @@ def _show_unit(
         recordings=recordings,
         listen=listen if "listen" in facets else [],
         sources=(sources or [])[:4] if "sources" in facets else [],
-        follow_up=(follow_up or "").strip() or None,
+        follow_ups=_clean_follow_ups(follow_ups),
     )
     result_sources = list(listen_sources) if "listen" in facets else []
     result_sources.extend(
@@ -585,7 +598,7 @@ def _performance_unit(
     judgments: list[str] | None = None,
     note: str | None = None,
     sources: list[UnitSource] | None = None,
-    follow_up: str | None = None,
+    follow_ups: list[FollowUpTopic] | None = None,
 ) -> PerformanceUnitBlock | None:
     performance = context.get("performance")
     song = context.get("song")
@@ -616,7 +629,7 @@ def _performance_unit(
         next=next_,
         listen=_performance_listen_actions(context),
         sources=(sources or [])[:4],
-        follow_up=(follow_up or "").strip() or None,
+        follow_ups=_clean_follow_ups(follow_ups),
     )
 
 
@@ -653,7 +666,7 @@ def _era_unit(
     span: str | None = None,
     note: str | None = None,
     sources: list[UnitSource] | None = None,
-    follow_up: str | None = None,
+    follow_ups: list[FollowUpTopic] | None = None,
 ) -> EraUnitBlock | None:
     items = [item for item in (_era_performance_item(context, store) for context in contexts) if item]
     if not items or not title.strip():
@@ -665,7 +678,7 @@ def _era_unit(
         note=(note or "").strip() or None,
         performances=items[:6],
         sources=(sources or [])[:4],
-        follow_up=(follow_up or "").strip() or None,
+        follow_ups=_clean_follow_ups(follow_ups),
     )
 
 
@@ -680,7 +693,7 @@ def _album_unit(
     visible_facets: list[str] | None = None,
     highlighted_song_ids: list[str] | None = None,
     sources: list[UnitSource] | None = None,
-    follow_up: str | None = None,
+    follow_ups: list[FollowUpTopic] | None = None,
 ) -> tuple[AlbumUnitBlock | None, list[SourceReference]]:
     """Hydrate one album unit from its release payload.
 
@@ -750,7 +763,7 @@ def _album_unit(
         personnel=personnel,
         listen=listen,
         sources=(sources or [])[:4] if "sources" in facets else [],
-        follow_up=(follow_up or "").strip() or None,
+        follow_ups=_clean_follow_ups(follow_ups),
     )
     return block, []
 
@@ -999,7 +1012,7 @@ def _song_overview(
     visible_facets: list[str] | None = None,
     representative_performance_ids: list[str] | None = None,
     sources: list[UnitSource] | None = None,
-    follow_up: str | None = None,
+    follow_ups: list[FollowUpTopic] | None = None,
 ) -> SongOverviewBlock | None:
     song = context.get("song")
     if not isinstance(song, dict) or not song.get("song_id"):
@@ -1073,7 +1086,7 @@ def _song_overview(
         source_ids=[f"canonical:{song['song_id']}"],
         albums=albums,
         sources=(sources or [])[:4],
-        follow_up=(follow_up or "").strip() or None,
+        follow_ups=_clean_follow_ups(follow_ups),
     )
 
 

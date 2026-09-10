@@ -2,7 +2,7 @@ import json
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from deadbot import composition, finish
+from deadbot import composition, experience, finish
 from deadbot.data import CanonicalStore
 
 
@@ -133,8 +133,8 @@ def test_resolve_body_keeps_editorial_blocks_and_strips_ungrounded_links():
                         "title": "Ways in",
                         "paragraphs": [f"Start with the [soundboard]({good_url}) or [this](https://example.com/no)."],
                         "items": [
-                            {"marker": "SBD", "title": "Soundboard", "value": None, "detail": None, "follow_up": None, "link": {"url": good_url, "label": "Archive"}},
-                            {"marker": "Bad", "title": "Nope", "value": None, "detail": None, "follow_up": None, "link": {"url": "https://example.com/no", "label": "x"}},
+                            {"marker": "SBD", "title": "Soundboard", "value": None, "detail": None, "follow_ups": [], "link": {"url": good_url, "label": "Archive"}},
+                            {"marker": "Bad", "title": "Nope", "value": None, "detail": None, "follow_ups": [], "link": {"url": "https://example.com/no", "label": "x"}},
                         ],
                     }
                 ],
@@ -467,7 +467,11 @@ def test_finish_plan_accepts_semantic_units():
                         {"type": "editorial", "presentation": "narrative", "paragraphs": ["Across the appearances he grew more integrated."]},
                         {"type": "show_unit", "show_id": "gd-1990-03-29", "emphasis": "primary", "note": "The debut.", "highlighted_performance_ids": ["p1"]},
                         {"type": "show_unit", "show_id": "gd-1990-12-31", "supporting_sources": [{"url": "https://example.org/x", "note": "A quote."}]},
-                        {"type": "performance_unit", "performance_id": "p1", "follow_up": "Another like this?"},
+                        {
+                            "type": "performance_unit",
+                            "performance_id": "p1",
+                            "follow_ups": [{"label": "Another like this", "question": "Another like this?"}],
+                        },
                         {"type": "era_unit", "title": "1973–74: spacious", "span": "1973–74", "representative_performance_ids": ["p2", "p3"]},
                     ],
                 }
@@ -653,7 +657,7 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
                             finish.SupportingSource(url=good_url, note="A firsthand account."),
                             finish.SupportingSource(url="https://example.com/not-returned"),
                         ],
-                        follow_up="Why is Veneta so loved?",
+                        follow_ups=[finish.FollowUpTopic(label="Veneta lore", question="Why is Veneta so loved?")],
                     )
                 ],
             )
@@ -666,7 +670,8 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     assert unit.show_date == "1972-08-27"
     assert unit.venue_name == "Old Renaissance Faire Grounds"
     assert unit.location == "Veneta, OR"
-    assert unit.emphasis == "primary" and unit.note == "The Sunshine Daydream show." and unit.follow_up == "Why is Veneta so loved?"
+    assert unit.emphasis == "primary" and unit.note == "The Sunshine Daydream show."
+    assert unit.follow_ups == [experience.FollowUpTopic(label="Veneta lore", question="Why is Veneta so loved?")]
     # The setlist marks the composer's highlight and only performances of this show.
     songs = [song for section in unit.sets for song in section.songs]
     assert [song.performance_id for song in songs if song.highlighted] == [highlighted]
@@ -755,9 +760,40 @@ def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_acti
 
 
 def test_follow_up_contract_reserves_ask_for_exploration():
-    description = finish.ShowUnitRef.model_fields["follow_up"].description or ""
-    assert "Never ask to hear, listen to, play or open material" in description
+    description = finish.ShowUnitRef.model_fields["follow_ups"].description or ""
+    assert "listening links already cover hearing it" in description
     assert "explanation, comparison, history, lore or evidence" in description
+
+
+def test_show_unit_follow_ups_carry_label_and_question_and_drop_a_blank_label():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None,
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ShowUnitRef(
+                        type="show_unit",
+                        show_id="gd-1972-08-27",
+                        follow_ups=[
+                            finish.FollowUpTopic(label="Veneta lore", question="Why is Veneta so loved?"),
+                            finish.FollowUpTopic(label="Sunshine Daydream", question="What is the Sunshine Daydream film?"),
+                            finish.FollowUpTopic(label="   ", question="Dropped for its blank label"),
+                        ],
+                    )
+                ],
+            )
+        ],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
+    unit = blocks[0]
+    assert [(topic.label, topic.question) for topic in unit.follow_ups] == [
+        ("Veneta lore", "Why is Veneta so loved?"),
+        ("Sunshine Daydream", "What is the Sunshine Daydream film?"),
+    ]
 
 
 def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
@@ -796,8 +832,6 @@ def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
 def test_server_built_items_carry_no_generated_follow_ups():
     """Only the composer writes follow-ups; server projections never invent one."""
 
-    from deadbot import experience
-
     for model in (
         experience.SetlistSong,
         experience.PerformerItem,
@@ -811,10 +845,10 @@ def test_server_built_items_carry_no_generated_follow_ups():
         experience.EraPerformanceItem,
         experience.CreditItem,
     ):
-        assert "follow_up" not in model.model_fields, model.__name__
+        assert "follow_ups" not in model.model_fields, model.__name__
     # The composer's own follow-ups survive on units and editorial items.
     for model in (experience.ShowUnitBlock, experience.PerformanceUnitBlock, experience.EraUnitBlock, experience.EditorialItem):
-        assert "follow_up" in model.model_fields, model.__name__
+        assert "follow_ups" in model.model_fields, model.__name__
 
 
 def finish_call(plan: dict):

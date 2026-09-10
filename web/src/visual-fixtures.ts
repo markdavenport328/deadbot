@@ -36,7 +36,7 @@ function show({
   sources = [],
   lineup = [],
   recordings = [],
-  follow_up
+  follow_ups = []
 }: {
   id: string;
   date: string;
@@ -53,7 +53,7 @@ function show({
   sources?: ShowUnitBlock["sources"];
   lineup?: ShowUnitBlock["lineup"];
   recordings?: ShowUnitBlock["recordings"];
-  follow_up?: string;
+  follow_ups?: ShowUnitBlock["follow_ups"];
 }): ShowUnitBlock {
   return {
     type: "show_unit",
@@ -74,7 +74,7 @@ function show({
     lineup,
     recordings,
     judgments: [],
-    follow_up: follow_up ?? null
+    follow_ups
   };
 }
 
@@ -144,7 +144,7 @@ const branford: ExperienceResponse = fixture(
         { label: "Set 1", songs: songs([["910-01", "Hell in a Bucket", null], ["910-02", "Loser", null], ["910-03", "Stuck Inside of Mobile with the Memphis Blues Again", null]]) },
         { label: "Set 2", songs: songs([["910-11", "Eyes of the World", `${archive}gd1991-09-10.sbd#track11`, true], ["910-12", "Estimated Prophet", `${archive}gd1991-09-10.sbd#track12`, true], ["910-13", "Dark Star", `${archive}gd1991-09-10.sbd#track13`, true], ["910-14", "Drums", null], ["910-15", "Space", null], ["910-16", "Dark Star", `${archive}gd1991-09-10.sbd#track16`, true], ["910-17", "The Other One", null], ["910-18", "Wharf Rat", null], ["910-19", "Turn On Your Love Light", null]]) }
       ],
-      follow_up: "How does Branford’s September 1991 approach differ from his 1990 appearance?"
+      follow_ups: [{ label: "Branford in 1990", question: "How does Branford’s September 1991 approach differ from his 1990 appearance?" }, { label: "Guest musicians", question: "Which other guest musicians changed how the Dead played?" }]
     }),
     show({
       id: "fixture-1991-09-20",
@@ -186,7 +186,7 @@ const evolution: ExperienceResponse = fixture(
         { performance_id: "eyes-73-winterland", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1973-11-11", show_date: "1973-11-11", show_label: "1973-11-11 — Winterland Arena", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1973-11-11#eyes`, is_official: false } },
         { performance_id: "eyes-73-roosevelt", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1973-08-04", show_date: "1973-08-04", show_label: "1973-08-04 — Roosevelt Stadium", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1973-08-04#eyes`, is_official: false } }
       ],
-      sources: [{ label: "Performance notes", url: "https://jerrybase.com", source_name: "Jerrybase", note: "Context for the early arrangement." }], follow_up: "What does Phil’s bass do differently in the 1973 versions?"
+      sources: [{ label: "Performance notes", url: "https://jerrybase.com", source_name: "Jerrybase", note: "Context for the early arrangement." }], follow_ups: [{ label: "Phil’s bass in 1973", question: "What does Phil’s bass do differently in the 1973 versions?" }]
     },
     {
       type: "era_unit", title: "1974: leaner and more percussive", span: "1974",
@@ -195,7 +195,7 @@ const evolution: ExperienceResponse = fixture(
         { performance_id: "eyes-74-freedom", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1974-06-18", show_date: "1974-06-18", show_label: "1974-06-18 — Freedom Hall", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1974-06-18#eyes`, is_official: false } },
         { performance_id: "eyes-74-providence", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1974-06-23", show_date: "1974-06-23", show_label: "1974-06-23 — Providence Civic Center", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1974-06-23#eyes`, is_official: false } }
       ],
-      sources: [], follow_up: null
+      sources: [], follow_ups: []
     },
     {
       type: "era_unit", title: "1990: a new kind of space", span: "1990",
@@ -204,7 +204,7 @@ const evolution: ExperienceResponse = fixture(
         { performance_id: "eyes-90-nassau", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1990-03-29", show_date: "1990-03-29", show_label: "1990-03-29 — Nassau Veterans Memorial Coliseum", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1990-03-29#eyes`, is_official: false } },
         { performance_id: "eyes-90-msg", song_id: "song-eyes-of-the-world", song_title: "Eyes of the World", show_id: "fixture-1990-09-16", show_date: "1990-09-16", show_label: "1990-09-16 — Madison Square Garden", set_label: "Second set", listen: { label: "Listen to Eyes of the World", provider: "Internet Archive", url: `${archive}gd1990-09-16#eyes`, is_official: false } }
       ],
-      sources: [], follow_up: "What should I listen for when Branford enters this version?"
+      sources: [], follow_ups: [{ label: "Branford’s entrance", question: "What should I listen for when Branford enters this version?" }]
     },
     {
       type: "song_overview", song_id: "song-eyes-of-the-world", title: "Eyes of the World", original_artist: null, known_performance_count: 384,
@@ -225,7 +225,7 @@ const evolution: ExperienceResponse = fixture(
           { performance_id: "eyes-1990-sample", show_id: "fixture-1990-09-16", show_date: "1990-09-16", show_label: "1990-09-16 — Madison Square Garden", set_label: "Second set", position_in_set: null, year: 1990, listen_url: `${archive}gd1990-09-16#eyes` }
         ]
       },
-      follow_up: "Which other songs show a similarly gradual rhythmic shift?"
+      follow_ups: [{ label: "Rhythmic shifts", question: "Which other songs show a similarly gradual rhythmic shift?" }]
     }
   ] as ExperienceBlock[],
   "sequence"
@@ -243,7 +243,7 @@ const cornell: ExperienceResponse = fixture(
       listen: [{ label: "Listen to Betty Board recording", provider: "Internet Archive", url: `${archive}gd1977-05-08.sbd.hicks`, is_official: false }],
       sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19770508-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
       sets: [{ label: "Second set", songs: songs([["cornell-1", "Scarlet Begonias", `${archive}gd1977-05-08.sbd#scarlet`, true], ["cornell-2", "Fire on the Mountain", `${archive}gd1977-05-08.sbd#fire`, true], ["cornell-3", "Estimated Prophet", null], ["cornell-4", "The Other One", `${archive}gd1977-05-08.sbd#otherone`, true], ["cornell-5", "Morning Dew", `${archive}gd1977-05-08.sbd#morningdew`, true]]) }],
-      follow_up: "Which other May 1977 show makes the strongest counterargument?"
+      follow_ups: [{ label: "May 1977 rivals", question: "Which other May 1977 show makes the strongest counterargument?" }]
     })
   ],
   "argument",
@@ -291,7 +291,7 @@ const fact: ExperienceResponse = {
       personnel: [],
       sources: [],
       judgments: [],
-      follow_up: "How did these songs settle into the live repertoire?"
+      follow_ups: [{ label: "Live repertoire", question: "How did these songs settle into the live repertoire?" }, { label: "1970", question: "What else was the band recording and playing in 1970?" }]
     }
   ] as ExperienceBlock[],
   groups: [{ presentation: "collection", criteria: [], block_indexes: [0] }],
@@ -318,42 +318,42 @@ const legacy: ExperienceResponse = {
       emphasis: "supporting", note: "A compact studio song became one of the band's recurring celebratory vehicles.",
       representative_performances: [{ performance_id: "fixture-sugar", show_id: "fixture-1972-08-27", show_date: "1972-08-27", show_label: "1972-08-27 — Oregon Country Fair", set_label: "Second set", listen_url: `${archive}gd1972-08-27#sugar-magnolia` }],
       credits: [], source_ids: ["canonical:song-sugar-magnolia"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
+      visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
       type: "song_overview", song_id: "song-truckin", title: "Truckin'", original_artist: null, known_performance_count: 538,
       emphasis: "supporting", note: "Its travel narrative became a durable live setlist engine across the documented touring span.",
       representative_performances: [{ performance_id: "fixture-truckin", show_id: "fixture-1970-11-08", show_date: "1970-11-08", show_label: "1970-11-08 — Capitol Theatre", set_label: "Second set", listen_url: `${archive}gd1970-11-08#truckin` }],
       credits: [], source_ids: ["canonical:song-truckin"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
+      visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
       type: "song_overview", song_id: "song-friend-of-the-devil", title: "Friend of the Devil", original_artist: null, known_performance_count: 308,
       emphasis: "supporting", note: "It survived the acoustic period by repeatedly changing shape inside the band's larger concert sound.",
       representative_performances: [{ performance_id: "fixture-friend", show_id: "fixture-1978-04-16", show_date: "1978-04-16", show_label: "1978-04-16 — Huntington Civic Center", set_label: "First set", listen_url: `${archive}gd1978-04-16#friend-of-the-devil` }],
       credits: [], source_ids: ["canonical:song-friend-of-the-devil"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
+      visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
       type: "song_overview", song_id: "song-brokedown-palace", title: "Brokedown Palace", original_artist: null, known_performance_count: 287,
       emphasis: "supporting", note: "Its theatrical emotional arc made it a recurring Garcia showcase rather than a fixed studio replica.",
       representative_performances: [{ performance_id: "fixture-brokedown", show_id: "fixture-1989-10-09", show_date: "1989-10-09", show_label: "1989-10-09 — Hampton Coliseum", set_label: "Encore", listen_url: `${archive}gd1989-10-09#brokedown-palace` }],
       credits: [], source_ids: ["canonical:song-brokedown-palace"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: ["representatives"], judgments: [], history: null, follow_up: null
+      visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
       type: "song_overview", song_id: "song-candyman", title: "Candyman", original_artist: null, known_performance_count: 114,
       emphasis: "mention", note: "Candyman found only occasional space in the sets after the mid-1970s, well below the album's other songs.",
       representative_performances: [], credits: [], source_ids: ["canonical:song-candyman"],
       albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: [], judgments: [], history: null, follow_up: null
+      visible_facets: [], judgments: [], history: null, follow_ups: []
     },
     {
       type: "song_overview", song_id: "song-attics-of-my-life", title: "Attics of My Life", original_artist: null, known_performance_count: 24,
       emphasis: "mention", note: "Attics of My Life stopped appearing for most of the 1970s and 1980s, returning only briefly late in the band's touring history.",
       representative_performances: [], credits: [], source_ids: ["canonical:song-attics-of-my-life"],
       albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
-      visible_facets: [], judgments: [], history: null, follow_up: null
+      visible_facets: [], judgments: [], history: null, follow_ups: []
     },
     {
       type: "editorial", presentation: "narrative", eyebrow: "The pattern", title: null,
@@ -390,7 +390,7 @@ const viewsBlocks: ExperienceBlock[] = [
     ],
     listen: [{ label: "Listen to So Many Roads", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#somanyroads`, is_official: false }],
     sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19950709-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
-    follow_up: null
+    follow_ups: []
   },
   {
     type: "performance_unit", performance_id: "fixture-1995-07-09-black-muddy-river", song_id: "song-black-muddy-river", song_title: "Black Muddy River",
@@ -404,7 +404,7 @@ const viewsBlocks: ExperienceBlock[] = [
     ],
     listen: [{ label: "Listen to Black Muddy River", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#blackmuddyriver`, is_official: false }],
     sources: [],
-    follow_up: null
+    follow_ups: []
   },
   {
     type: "performance_unit", performance_id: "fixture-1995-07-09-box-of-rain", song_id: "song-box-of-rain", song_title: "Box of Rain",
@@ -418,7 +418,7 @@ const viewsBlocks: ExperienceBlock[] = [
     ],
     listen: [{ label: "Listen to Box of Rain", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#boxofrain`, is_official: false }],
     sources: [],
-    follow_up: null
+    follow_ups: []
   },
   {
     type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
@@ -510,7 +510,7 @@ const album: ExperienceResponse = fixture(
         { label: "Album credits", url: "https://www.discogs.com/release/workingmans-dead", source_name: "Discogs", note: "Personnel and release details." }
       ],
       judgments: [],
-      follow_up: "Why did the band turn toward acoustic material in 1970?"
+      follow_ups: [{ label: "The acoustic turn", question: "Why did the band turn toward acoustic material in 1970?" }]
     }
   ] as ExperienceBlock[],
   "collection",
@@ -539,7 +539,7 @@ const performanceBlocks: ExperienceBlock[] = [
       { label: "Hear the full show", provider: "Internet Archive", url: `${archive}gd1968-02-14.sbd`, is_official: false }
     ],
     sources: [{ label: "Show notes", url: "https://jerrybase.com/events/19680214-01", source_name: "Jerrybase", note: "Set order and venue context." }],
-    follow_up: "How does the 1968 Dark Star differ from the 1972 versions?"
+    follow_ups: [{ label: "1972 versions", question: "How does the 1968 Dark Star differ from the 1972 versions?" }]
   }
 ];
 
