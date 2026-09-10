@@ -738,9 +738,9 @@ def test_editorial_items_can_carry_an_outbound_link():
         title="Veneta",
         value=None,
         detail="The Sunshine Daydream show.",
-        follow_up=None,
+        follow_ups=[],
         link=experience.EditorialLink(url="https://archive.org/details/gd1972-08-27.sbd.latvala-eaton-lutch-dankseed.4682.shnf", label="Listen on Archive.org"),
     )
     assert item.link.label == "Listen on Archive.org"
-    legacy = experience.EditorialItem(marker=None, title="Appearances", value="5", detail=None, follow_up=None)
+    legacy = experience.EditorialItem(marker=None, title="Appearances", value="5", detail=None, follow_ups=[])
     assert legacy.link is None

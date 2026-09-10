@@ -84,6 +84,18 @@ class UnitSource(ExperienceModel):
     note: str | None = None
 
 
+class FollowUpTopic(ExperienceModel):
+    """A short topic chip the visitor can press, and the full question it stands for.
+
+    The chip shows only the label under "More about"; pressing it sends the
+    question, in the visitor's voice, to start a new turn. Only the composer
+    writes these; the server never generates one.
+    """
+
+    label: str
+    question: str
+
+
 class PerformanceSpineNeighbor(ExperienceModel):
     performance_id: str
     title: str
@@ -160,7 +172,7 @@ class ShowUnitBlock(ExperienceModel):
     """One show as a primary object of the answer, hydrated from the store.
 
     The composer supplies the interpretive fields (emphasis, note, highlights,
-    preferred recording, sources, follow-up); date, venue, setlist, guests and
+    preferred recording, sources, follow-up topics); date, venue, setlist, guests and
     listening actions come from canonical data.
     """
 
@@ -182,7 +194,7 @@ class ShowUnitBlock(ExperienceModel):
     judgments: list[str] = Field(default_factory=list, max_length=5)
     listen: list[ListenAction] = Field(default_factory=list, max_length=4)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_up: str | None = None
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
 
 class PerformanceUnitBlock(ExperienceModel):
@@ -206,7 +218,7 @@ class PerformanceUnitBlock(ExperienceModel):
     next: PerformanceSpineNeighbor | None = None
     listen: list[ListenAction] = Field(default_factory=list, max_length=3)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_up: str | None = None
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
 
 class EraPerformanceItem(ExperienceModel):
@@ -229,7 +241,7 @@ class EraUnitBlock(ExperienceModel):
     note: str | None = None
     performances: list[EraPerformanceItem] = Field(min_length=1, max_length=6)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_up: str | None = None
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
 
 class AlbumTrackItem(ExperienceModel):
@@ -267,7 +279,7 @@ class AlbumUnitBlock(ExperienceModel):
     personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=20)
     listen: list[ListenAction] = Field(default_factory=list, max_length=3)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_up: str | None = None
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
 
 class GuestAppearanceItem(ExperienceModel):
@@ -371,7 +383,7 @@ class SongOverviewBlock(ExperienceModel):
     source_ids: list[str] = Field(default_factory=list, max_length=8)
     albums: list[SongReleaseItem] = Field(default_factory=list, max_length=6)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_up: str | None = None
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
 
 class MediaLinkBlock(ExperienceModel):
@@ -466,11 +478,15 @@ class EditorialItem(ExperienceModel):
         default=None,
         description="One or two sentences of context or evidence for this item.",
     )
-    # A question in the visitor's voice, rendered as an "Ask" chip. Only the
-    # composer writes these; the server never generates one.
-    follow_up: str | None = Field(
-        default=None,
-        description="A question in the visitor's voice, rendered as an Ask chip that starts a new turn. Only the composer writes these.",
+    # Short topic chips under "More about", each carrying the full question it
+    # sends. Only the composer writes these; the server never generates one.
+    follow_ups: list[FollowUpTopic] = Field(
+        default_factory=list,
+        max_length=3,
+        description=(
+            "Up to three topics the visitor might want more about, each a short label plus the specific question it "
+            "opens when pressed, rendered as chips under 'More about'."
+        ),
     )
     link: EditorialLink | None = Field(
         default=None,

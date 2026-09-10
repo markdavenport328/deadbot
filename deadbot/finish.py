@@ -149,6 +149,21 @@ class SupportingSource(BaseModel):
     note: str | None = Field(default=None, description="What this source says about the unit, in a sentence, with attribution.")
 
 
+class FollowUpTopic(BaseModel):
+    """A short topic chip the visitor can press, and the full question it stands for.
+
+    The chip shows only the label under "More about"; pressing it sends the
+    question, in the visitor's voice, to start a new turn.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    label: str = Field(
+        max_length=40,
+        description="Two or three words naming the topic as it will appear on the chip, e.g. 'Guest musicians', 'Spring 1990', 'Jazz and the Dead'.",
+    )
+    question: str = Field(description="The full question, in the visitor's voice, that the chip sends when pressed.")
+
+
 _EMPHASIS_DESCRIPTION = (
     "How much of the page this object earns. primary: the object the answer is about; renders full width with its "
     "selected facets open. supporting: a peer or piece of evidence; renders as a compact card with its note, listening "
@@ -161,11 +176,11 @@ _JUDGMENTS_DESCRIPTION = (
 )
 _NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
 _SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
-_FOLLOW_UP_DESCRIPTION = (
-    "An optional exploratory question the visitor might ask next, in their voice. "
-    "Use a relationship or implication discovered in this research: explanation, comparison, history, lore or evidence. "
-    "Never ask to hear, listen to, play or open material; the object's listening links already provide that action. "
-    "Include it when it creates a specific, worthwhile continuation; omit generic or repetitive questions."
+_FOLLOW_UPS_DESCRIPTION = (
+    "Up to three topics the visitor might want more about, each a short label plus the specific question it opens. "
+    "Draw them from relationships or implications found in this research: explanation, comparison, history, lore or "
+    "evidence. This object's listening links already cover hearing it, so topics open understanding rather than "
+    "playback. Include only topics that create a worthwhile continuation."
 )
 
 
@@ -197,7 +212,7 @@ class ShowUnitRef(_Ref):
     )
     preferred_recording_id: str | None = Field(default=None, description="The recording of this show to lead with, when you have a reason to prefer one.")
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class PerformanceUnitRef(_Ref):
@@ -210,7 +225,7 @@ class PerformanceUnitRef(_Ref):
     judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class EraUnitRef(_Ref):
@@ -222,7 +237,7 @@ class EraUnitRef(_Ref):
     note: str | None = Field(default=None, description="What changed in this stage and how you know.")
     representative_performance_ids: list[str] = Field(min_length=1, max_length=6, description="Performances that show this stage; each becomes a listening path.")
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class AlbumUnitRef(_Ref):
@@ -244,7 +259,7 @@ class AlbumUnitRef(_Ref):
     )
     highlighted_song_ids: list[str] = Field(default_factory=list, max_length=12)
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class SongOverviewRef(_Ref):
@@ -270,7 +285,7 @@ class SongOverviewRef(_Ref):
         description="Representative performances for this song, in the listening order you chose. Retrieve concrete rendition IDs first; each known direct recording link remains attached.",
     )
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_up: str | None = Field(default=None, description=_FOLLOW_UP_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 def _emphasis_for(ref: Any) -> Emphasis:
@@ -425,7 +440,7 @@ def _resolve_show_unit(
         highlighted_performance_ids=item.highlighted_performance_ids,
         preferred_recording_id=item.preferred_recording_id,
         sources=unit_sources,
-        follow_up=item.follow_up,
+        follow_ups=item.follow_ups,
     )
     return block, [*listen_sources, *source_refs]
 
@@ -450,7 +465,7 @@ def _resolve_reference(
             return None, []
         unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
         block = composition._performance_unit(
-            context, store, emphasis=_emphasis_for(item), judgments=item.judgments, note=item.note, sources=unit_sources, follow_up=item.follow_up
+            context, store, emphasis=_emphasis_for(item), judgments=item.judgments, note=item.note, sources=unit_sources, follow_ups=item.follow_ups
         )
         return block, sources
 
@@ -465,7 +480,7 @@ def _resolve_reference(
         if not contexts:
             return None, []
         unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
-        block = composition._era_unit(contexts, store, title=item.title, span=item.span, note=item.note, sources=unit_sources, follow_up=item.follow_up)
+        block = composition._era_unit(contexts, store, title=item.title, span=item.span, note=item.note, sources=unit_sources, follow_ups=item.follow_ups)
         return block, sources
 
     if kind == "album_unit":
@@ -488,7 +503,7 @@ def _resolve_reference(
             visible_facets=item.visible_facets,
             highlighted_song_ids=item.highlighted_song_ids,
             sources=unit_sources,
-            follow_up=item.follow_up,
+            follow_ups=item.follow_ups,
         )
         return block, [*listen_sources, *sources]
 
@@ -529,7 +544,7 @@ def _resolve_reference(
                     if performance_id in grounded.ids
                 ],
                 sources=unit_sources,
-                follow_up=item.follow_up,
+                follow_ups=item.follow_ups,
             ),
             item.title,
         ), sources
