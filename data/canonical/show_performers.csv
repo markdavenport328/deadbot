@@ -3344,8 +3344,8 @@ gd-1968-09-02,person-phil-lesh,performer,bass,"JerryBase source event 19680902-0
 gd-1968-09-02,person-phil-lesh,performer,vocals,"JerryBase source event 19680902-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19680902-01
 gd-1968-09-02,person-ron-pigpen-mckernan,performer,organ,"JerryBase source event 19680902-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: organ, vocals.",jerrybase,19680902-01
 gd-1968-09-02,person-ron-pigpen-mckernan,performer,vocals,"JerryBase source event 19680902-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: organ, vocals.",jerrybase,19680902-01
-gd-1968-09-20,person-shankar-ghosh,guest,percussionussion,JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: percussion.,jerrybase,19680920-01
-gd-1968-09-20,person-vince-delgado,guest,percussionussion,JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: percussion.,jerrybase,19680920-01
+gd-1968-09-20,person-shankar-ghosh,guest,percussion,JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: percussion.,jerrybase,19680920-01
+gd-1968-09-20,person-vince-delgado,guest,percussion,JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: percussion.,jerrybase,19680920-01
 gd-1968-09-20,person-bill-kreutzmann,performer,drums,"JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19680920-01
 gd-1968-09-20,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19680920-01
 gd-1968-09-20,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19680920-01; raw snapshot jerrybase-1968.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19680920-01
@@ -4473,8 +4473,8 @@ gd-1969-05-10,person-phil-lesh,performer,vocals,"JerryBase source event 19690510
 gd-1969-05-10,person-ron-pigpen-mckernan,performer,organ,"JerryBase source event 19690510-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: organ, vocals.",jerrybase,19690510-01
 gd-1969-05-10,person-ron-pigpen-mckernan,performer,vocals,"JerryBase source event 19690510-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: organ, vocals.",jerrybase,19690510-01
 gd-1969-05-10,person-tom-constanten,performer,keyboards,JerryBase source event 19690510-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: keyboards.,jerrybase,19690510-01
-gd-1969-05-11,person-chepito-areas,guest,percussionussion,JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: percussion.,jerrybase,19690511-01
-gd-1969-05-11,person-mike-carabello,guest,percussionussion,JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: percussion.,jerrybase,19690511-01
+gd-1969-05-11,person-chepito-areas,guest,percussion,JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: percussion.,jerrybase,19690511-01
+gd-1969-05-11,person-mike-carabello,guest,percussion,JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: percussion.,jerrybase,19690511-01
 gd-1969-05-11,person-bill-kreutzmann,performer,drums,"JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19690511-01
 gd-1969-05-11,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19690511-01
 gd-1969-05-11,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19690511-01; raw snapshot jerrybase-1969.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19690511-01
@@ -5714,7 +5714,7 @@ gd-1970-03-08,person-phil-lesh,performer,vocals,"JerryBase source event 19700308
 gd-1970-03-08,person-ron-pigpen-mckernan,performer,organ,"JerryBase source event 19700308-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: organ, vocals.",jerrybase,19700308-01
 gd-1970-03-08,person-ron-pigpen-mckernan,performer,vocals,"JerryBase source event 19700308-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: organ, vocals.",jerrybase,19700308-01
 gd-1970-03-17,person-lukas-foss,guest,piano,JerryBase source event 19700317-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: piano.,jerrybase,19700317-01
-gd-1970-03-17,person-lynn-harbold,guest,percussionussion,JerryBase source event 19700317-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: percussion.,jerrybase,19700317-01
+gd-1970-03-17,person-lynn-harbold,guest,percussion,JerryBase source event 19700317-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: percussion.,jerrybase,19700317-01
 gd-1970-03-17,person-bill-kreutzmann,performer,drums,"JerryBase source event 19700317-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19700317-01
 gd-1970-03-17,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19700317-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19700317-01
 gd-1970-03-17,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19700317-01; raw snapshot jerrybase-1970.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19700317-01
@@ -11546,7 +11546,7 @@ gd-1978-09-02,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-09-02,person-mickey-hart,performer,drums,"JerryBase source event 19780902-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780902-01
 gd-1978-09-02,person-mickey-hart,performer,percussion,"JerryBase source event 19780902-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780902-01
 gd-1978-09-02,person-phil-lesh,performer,bass,JerryBase source event 19780902-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19780902-01
-gd-1978-09-14,person-hamza-el-din,guest,percussionussion,JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19780914-01
+gd-1978-09-14,person-hamza-el-din,guest,percussion,JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19780914-01
 gd-1978-09-14,person-bill-kreutzmann,performer,drums,"JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780914-01
 gd-1978-09-14,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780914-01
 gd-1978-09-14,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19780914-01
@@ -11558,7 +11558,7 @@ gd-1978-09-14,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-09-14,person-mickey-hart,performer,drums,"JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780914-01
 gd-1978-09-14,person-mickey-hart,performer,percussion,"JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780914-01
 gd-1978-09-14,person-phil-lesh,performer,bass,JerryBase source event 19780914-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19780914-01
-gd-1978-09-15,person-hamza-el-din,guest,percussionussion,JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19780915-01
+gd-1978-09-15,person-hamza-el-din,guest,percussion,JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19780915-01
 gd-1978-09-15,person-bill-kreutzmann,performer,drums,"JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780915-01
 gd-1978-09-15,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780915-01
 gd-1978-09-15,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19780915-01
@@ -11570,7 +11570,7 @@ gd-1978-09-15,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-09-15,person-mickey-hart,performer,drums,"JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780915-01
 gd-1978-09-15,person-mickey-hart,performer,percussion,"JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780915-01
 gd-1978-09-15,person-phil-lesh,performer,bass,JerryBase source event 19780915-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19780915-01
-gd-1978-09-16,person-hamza-el-din,guest,percussionussion,JerryBase source event 19780916-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19780916-01
+gd-1978-09-16,person-hamza-el-din,guest,percussion,JerryBase source event 19780916-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19780916-01
 gd-1978-09-16,person-bill-kreutzmann,performer,drums,"JerryBase source event 19780916-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780916-01
 gd-1978-09-16,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19780916-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19780916-01
 gd-1978-09-16,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19780916-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19780916-01
@@ -11616,7 +11616,7 @@ gd-1978-10-20,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-10-20,person-mickey-hart,performer,drums,"JerryBase source event 19781020-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781020-01
 gd-1978-10-20,person-mickey-hart,performer,percussion,"JerryBase source event 19781020-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781020-01
 gd-1978-10-20,person-phil-lesh,performer,bass,JerryBase source event 19781020-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19781020-01
-gd-1978-10-21,person-hamza-el-din,guest,percussionussion,JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781021-01
+gd-1978-10-21,person-hamza-el-din,guest,percussion,JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781021-01
 gd-1978-10-21,person-lee-oskar,guest,harmonica,JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: harmonica.,jerrybase,19781021-01
 gd-1978-10-21,person-bill-kreutzmann,performer,drums,"JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781021-01
 gd-1978-10-21,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781021-01
@@ -11629,7 +11629,7 @@ gd-1978-10-21,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-10-21,person-mickey-hart,performer,drums,"JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781021-01
 gd-1978-10-21,person-mickey-hart,performer,percussion,"JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781021-01
 gd-1978-10-21,person-phil-lesh,performer,bass,JerryBase source event 19781021-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19781021-01
-gd-1978-10-22,person-hamza-el-din,guest,percussionussion,JerryBase source event 19781022-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781022-01
+gd-1978-10-22,person-hamza-el-din,guest,percussion,JerryBase source event 19781022-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781022-01
 gd-1978-10-22,person-john-cipollina,guest,guitar,JerryBase source event 19781022-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: guitar.,jerrybase,19781022-01
 gd-1978-10-22,person-bill-kreutzmann,performer,drums,"JerryBase source event 19781022-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781022-01
 gd-1978-10-22,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19781022-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781022-01
@@ -11741,7 +11741,7 @@ gd-1978-11-23,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-11-23,person-mickey-hart,performer,drums,"JerryBase source event 19781123-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781123-01
 gd-1978-11-23,person-mickey-hart,performer,percussion,"JerryBase source event 19781123-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781123-01
 gd-1978-11-23,person-phil-lesh,performer,bass,JerryBase source event 19781123-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19781123-01
-gd-1978-11-24,person-hamza-el-din,guest,percussionussion,JerryBase source event 19781124-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781124-01
+gd-1978-11-24,person-hamza-el-din,guest,percussion,JerryBase source event 19781124-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781124-01
 gd-1978-11-24,person-bill-kreutzmann,performer,drums,"JerryBase source event 19781124-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781124-01
 gd-1978-11-24,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19781124-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781124-01
 gd-1978-11-24,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19781124-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19781124-01
@@ -11863,7 +11863,7 @@ gd-1978-12-28,person-keith-godchaux,performer,keyboards,JerryBase source event 1
 gd-1978-12-28,person-mickey-hart,performer,drums,"JerryBase source event 19781228-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781228-01
 gd-1978-12-28,person-mickey-hart,performer,percussion,"JerryBase source event 19781228-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781228-01
 gd-1978-12-28,person-phil-lesh,performer,bass,JerryBase source event 19781228-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: electric bass.,jerrybase,19781228-01
-gd-1978-12-30,person-hamza-el-din,guest,percussionussion,JerryBase source event 19781230-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781230-01
+gd-1978-12-30,person-hamza-el-din,guest,percussion,JerryBase source event 19781230-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: percussion.,jerrybase,19781230-01
 gd-1978-12-30,person-lee-oskar,guest,harmonica,JerryBase source event 19781230-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: harmonica.,jerrybase,19781230-01
 gd-1978-12-30,person-bill-kreutzmann,performer,drums,"JerryBase source event 19781230-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781230-01
 gd-1978-12-30,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19781230-01; raw snapshot jerrybase-1978.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19781230-01
@@ -12267,7 +12267,7 @@ gd-1979-08-04,person-jerry-garcia,performer,vocals,"JerryBase source event 19790
 gd-1979-08-04,person-mickey-hart,performer,drums,"JerryBase source event 19790804-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19790804-01
 gd-1979-08-04,person-mickey-hart,performer,percussion,"JerryBase source event 19790804-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19790804-01
 gd-1979-08-04,person-phil-lesh,performer,bass,JerryBase source event 19790804-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: electric bass.,jerrybase,19790804-01
-gd-1979-08-05,person-hamza-el-din,guest,percussionussion,JerryBase source event 19790805-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: percussion.,jerrybase,19790805-01
+gd-1979-08-05,person-hamza-el-din,guest,percussion,JerryBase source event 19790805-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: percussion.,jerrybase,19790805-01
 gd-1979-08-05,person-bill-kreutzmann,performer,drums,"JerryBase source event 19790805-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19790805-01
 gd-1979-08-05,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19790805-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19790805-01
 gd-1979-08-05,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19790805-01; raw snapshot jerrybase-1979.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19790805-01
@@ -14208,7 +14208,7 @@ gd-1981-08-16,person-mickey-hart,performer,drums,"JerryBase source event 1981081
 gd-1981-08-16,person-mickey-hart,performer,percussion,"JerryBase source event 19810816-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19810816-01
 gd-1981-08-16,person-phil-lesh,performer,bass,JerryBase source event 19810816-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: electric bass.,jerrybase,19810816-01
 gd-1981-08-27,person-flora-purim,guest,vocals,JerryBase source event 19810827-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: vocals.,jerrybase,19810827-01
-gd-1981-08-27,person-michael-hinton,guest,percussionussion,JerryBase source event 19810827-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: percussion.,jerrybase,19810827-01
+gd-1981-08-27,person-michael-hinton,guest,percussion,JerryBase source event 19810827-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: percussion.,jerrybase,19810827-01
 gd-1981-08-27,person-bill-kreutzmann,performer,drums,"JerryBase source event 19810827-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19810827-01
 gd-1981-08-27,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19810827-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19810827-01
 gd-1981-08-27,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19810827-01; raw snapshot jerrybase-1981.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19810827-01
@@ -14878,7 +14878,7 @@ gd-1982-05-23,person-mickey-hart,performer,drums,"JerryBase source event 1982052
 gd-1982-05-23,person-mickey-hart,performer,percussion,"JerryBase source event 19820523-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19820523-01
 gd-1982-05-23,person-phil-lesh,performer,bass,JerryBase source event 19820523-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: electric bass.,jerrybase,19820523-01
 gd-1982-05-28,person-airto-moreira-complete-show,guest,drums,"JerryBase source event 19820528-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: drums, percussion.",jerrybase,19820528-01
-gd-1982-05-28,person-airto-moreira-complete-show,guest,percussionussion,"JerryBase source event 19820528-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: drums, percussion.",jerrybase,19820528-01
+gd-1982-05-28,person-airto-moreira-complete-show,guest,percussion,"JerryBase source event 19820528-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: drums, percussion.",jerrybase,19820528-01
 gd-1982-05-28,person-boz-scaggs,guest,guitar,"JerryBase source event 19820528-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: guitar, vocals.",jerrybase,19820528-01
 gd-1982-05-28,person-boz-scaggs,guest,vocals,"JerryBase source event 19820528-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: guitar, vocals.",jerrybase,19820528-01
 gd-1982-05-28,person-flora-purim,guest,vocals,JerryBase source event 19820528-01; raw snapshot jerrybase-1982.jsonl; JerryBase source instrument: vocals.,jerrybase,19820528-01
@@ -16880,7 +16880,7 @@ gd-1985-03-12,person-mickey-hart,performer,drums,"JerryBase source event 1985031
 gd-1985-03-12,person-mickey-hart,performer,percussion,"JerryBase source event 19850312-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19850312-01
 gd-1985-03-12,person-phil-lesh,performer,bass,"JerryBase source event 19850312-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19850312-01
 gd-1985-03-12,person-phil-lesh,performer,vocals,"JerryBase source event 19850312-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19850312-01
-gd-1985-03-13,person-hamza-el-din,guest,percussionussion,JerryBase source event 19850313-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: percussion.,jerrybase,19850313-01
+gd-1985-03-13,person-hamza-el-din,guest,percussion,JerryBase source event 19850313-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: percussion.,jerrybase,19850313-01
 gd-1985-03-13,person-matthew-kelly,guest,harmonica,JerryBase source event 19850313-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: harmonica.,jerrybase,19850313-01
 gd-1985-03-13,person-bill-kreutzmann,performer,drums,"JerryBase source event 19850313-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19850313-01
 gd-1985-03-13,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19850313-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19850313-01
@@ -17628,7 +17628,7 @@ gd-1985-11-21,person-mickey-hart,performer,drums,"JerryBase source event 1985112
 gd-1985-11-21,person-mickey-hart,performer,percussion,"JerryBase source event 19851121-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19851121-01
 gd-1985-11-21,person-phil-lesh,performer,bass,"JerryBase source event 19851121-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19851121-01
 gd-1985-11-21,person-phil-lesh,performer,vocals,"JerryBase source event 19851121-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19851121-01
-gd-1985-11-22,person-jose-lorenzo,guest,percussionussion,JerryBase source event 19851122-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: percussion.,jerrybase,19851122-01
+gd-1985-11-22,person-jose-lorenzo,guest,percussion,JerryBase source event 19851122-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: percussion.,jerrybase,19851122-01
 gd-1985-11-22,person-bill-kreutzmann,performer,drums,"JerryBase source event 19851122-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19851122-01
 gd-1985-11-22,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19851122-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19851122-01
 gd-1985-11-22,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19851122-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19851122-01
@@ -17653,7 +17653,7 @@ gd-1985-12-30,person-mickey-hart,performer,drums,"JerryBase source event 1985123
 gd-1985-12-30,person-mickey-hart,performer,percussion,"JerryBase source event 19851230-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19851230-01
 gd-1985-12-30,person-phil-lesh,performer,bass,"JerryBase source event 19851230-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19851230-01
 gd-1985-12-30,person-phil-lesh,performer,vocals,"JerryBase source event 19851230-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19851230-01
-gd-1985-12-31,person-baba-olatunji,guest,percussionussion,JerryBase source event 19851231-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: percussion.,jerrybase,19851231-01
+gd-1985-12-31,person-baba-olatunji,guest,percussion,JerryBase source event 19851231-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: percussion.,jerrybase,19851231-01
 gd-1985-12-31,person-bill-kreutzmann,performer,drums,"JerryBase source event 19851231-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19851231-01
 gd-1985-12-31,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19851231-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19851231-01
 gd-1985-12-31,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19851231-01; raw snapshot jerrybase-1985.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19851231-01
@@ -17694,11 +17694,11 @@ gd-1986-02-11,person-art-neville,guest,keyboards,"JerryBase source event 1986021
 gd-1986-02-11,person-art-neville,guest,tambourine,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: tambourine and vocals, keyboards.",jerrybase,19860211-01
 gd-1986-02-11,person-art-neville,guest,vocals,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: tambourine and vocals, keyboards.",jerrybase,19860211-01
 gd-1986-02-11,person-brian-stoltz,guest,guitar,JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion and guitar.,jerrybase,19860211-01
-gd-1986-02-11,person-brian-stoltz,guest,percussionussion,JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion and guitar.,jerrybase,19860211-01
-gd-1986-02-11,person-cyril-neville,guest,percussionussion,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19860211-01
+gd-1986-02-11,person-brian-stoltz,guest,percussion,JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion and guitar.,jerrybase,19860211-01
+gd-1986-02-11,person-cyril-neville,guest,percussion,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19860211-01
 gd-1986-02-11,person-cyril-neville,guest,vocals,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19860211-01
 gd-1986-02-11,person-daryl-johnson,guest,bass,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion, bass, and tambourine.",jerrybase,19860211-01
-gd-1986-02-11,person-daryl-johnson,guest,percussionussion,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion, bass, and tambourine.",jerrybase,19860211-01
+gd-1986-02-11,person-daryl-johnson,guest,percussion,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion, bass, and tambourine.",jerrybase,19860211-01
 gd-1986-02-11,person-daryl-johnson,guest,tambourine,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion, bass, and tambourine.",jerrybase,19860211-01
 gd-1986-02-11,person-willie-green,guest,drums,JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums.,jerrybase,19860211-01
 gd-1986-02-11,person-bill-kreutzmann,performer,drums,"JerryBase source event 19860211-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19860211-01
@@ -17719,9 +17719,9 @@ gd-1986-02-12,person-brian-stoltz,guest,guitar,JerryBase source event 19860212-0
 gd-1986-02-12,person-charles-neville,guest,saxophone,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: saxophone.,jerrybase,19860212-01
 gd-1986-02-12,person-cyril-neville,guest,drums,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums.,jerrybase,19860212-01
 gd-1986-02-12,person-daryl-johnson,guest,bass,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: bass.,jerrybase,19860212-01
-gd-1986-02-12,person-jose-lorenzo,guest,percussionussion,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19860212-01
+gd-1986-02-12,person-jose-lorenzo,guest,percussion,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19860212-01
 gd-1986-02-12,person-willie-green,guest,drums,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums and percussion.,jerrybase,19860212-01
-gd-1986-02-12,person-willie-green,guest,percussionussion,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums and percussion.,jerrybase,19860212-01
+gd-1986-02-12,person-willie-green,guest,percussion,JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums and percussion.,jerrybase,19860212-01
 gd-1986-02-12,person-bill-kreutzmann,performer,drums,"JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19860212-01
 gd-1986-02-12,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19860212-01
 gd-1986-02-12,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19860212-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19860212-01
@@ -17950,7 +17950,7 @@ gd-1986-04-19,person-mickey-hart,performer,drums,"JerryBase source event 1986041
 gd-1986-04-19,person-mickey-hart,performer,percussion,"JerryBase source event 19860419-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19860419-01
 gd-1986-04-19,person-phil-lesh,performer,bass,"JerryBase source event 19860419-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19860419-01
 gd-1986-04-19,person-phil-lesh,performer,vocals,"JerryBase source event 19860419-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19860419-01
-gd-1986-04-21,person-jose-lorenzo,guest,percussionussion,JerryBase source event 19860421-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19860421-01
+gd-1986-04-21,person-jose-lorenzo,guest,percussion,JerryBase source event 19860421-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19860421-01
 gd-1986-04-21,person-bill-kreutzmann,performer,drums,"JerryBase source event 19860421-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19860421-01
 gd-1986-04-21,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19860421-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19860421-01
 gd-1986-04-21,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19860421-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19860421-01
@@ -18187,7 +18187,7 @@ gd-1986-12-16,person-mickey-hart,performer,drums,"JerryBase source event 1986121
 gd-1986-12-16,person-mickey-hart,performer,percussion,"JerryBase source event 19861216-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19861216-01
 gd-1986-12-16,person-phil-lesh,performer,bass,"JerryBase source event 19861216-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19861216-01
 gd-1986-12-16,person-phil-lesh,performer,vocals,"JerryBase source event 19861216-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19861216-01
-gd-1986-12-17,person-jose-lorenzo,guest,percussionussion,JerryBase source event 19861217-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19861217-01
+gd-1986-12-17,person-jose-lorenzo,guest,percussion,JerryBase source event 19861217-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19861217-01
 gd-1986-12-17,person-sikiru-adepoju,guest,talking drum,JerryBase source event 19861217-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: talking drum.,jerrybase,19861217-01
 gd-1986-12-17,person-bill-kreutzmann,performer,drums,"JerryBase source event 19861217-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19861217-01
 gd-1986-12-17,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19861217-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19861217-01
@@ -18228,10 +18228,10 @@ gd-1986-12-28,person-phil-lesh,performer,vocals,"JerryBase source event 19861228
 gd-1986-12-30,person-art-neville,guest,keyboards,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: keyboards and vocals, keys.",jerrybase,19861230-01
 gd-1986-12-30,person-art-neville,guest,vocals,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: keyboards and vocals, keys.",jerrybase,19861230-01
 gd-1986-12-30,person-brian-stoltz,guest,guitar,JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: guitar.,jerrybase,19861230-01
-gd-1986-12-30,person-charles-neville,guest,percussionussion,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: sax, percussion.",jerrybase,19861230-01
+gd-1986-12-30,person-charles-neville,guest,percussion,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: sax, percussion.",jerrybase,19861230-01
 gd-1986-12-30,person-charles-neville,guest,sax,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: sax, percussion.",jerrybase,19861230-01
-gd-1986-12-30,person-hamza-el-din,guest,percussionussion,JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19861230-01
-gd-1986-12-30,person-jose-lorenzo,guest,percussionussion,JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19861230-01
+gd-1986-12-30,person-hamza-el-din,guest,percussion,JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19861230-01
+gd-1986-12-30,person-jose-lorenzo,guest,percussion,JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: percussion.,jerrybase,19861230-01
 gd-1986-12-30,person-willie-green,guest,drums,JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums.,jerrybase,19861230-01
 gd-1986-12-30,person-bill-kreutzmann,performer,drums,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19861230-01
 gd-1986-12-30,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19861230-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19861230-01
@@ -18257,8 +18257,8 @@ gd-1986-12-31,person-mickey-hart,performer,drums,"JerryBase source event 1986123
 gd-1986-12-31,person-mickey-hart,performer,percussion,"JerryBase source event 19861231-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19861231-01
 gd-1986-12-31,person-phil-lesh,performer,bass,"JerryBase source event 19861231-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19861231-01
 gd-1986-12-31,person-phil-lesh,performer,vocals,"JerryBase source event 19861231-01; raw snapshot jerrybase-1986.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19861231-01
-gd-1987-01-28,person-jose-lorenzo,guest,percussionussion,JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: percussion.,jerrybase,19870128-01
-gd-1987-01-28,person-sikiru-adepoju,guest,percussionussion,JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: percussion.,jerrybase,19870128-01
+gd-1987-01-28,person-jose-lorenzo,guest,percussion,JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: percussion.,jerrybase,19870128-01
+gd-1987-01-28,person-sikiru-adepoju,guest,percussion,JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: percussion.,jerrybase,19870128-01
 gd-1987-01-28,person-bill-kreutzmann,performer,drums,"JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19870128-01
 gd-1987-01-28,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19870128-01
 gd-1987-01-28,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19870128-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19870128-01
@@ -18762,7 +18762,7 @@ gd-1987-07-04,person-mickey-hart,performer,drums,"JerryBase source event 1987070
 gd-1987-07-04,person-mickey-hart,performer,percussion,"JerryBase source event 19870704-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19870704-01
 gd-1987-07-04,person-phil-lesh,performer,bass,"JerryBase source event 19870704-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19870704-01
 gd-1987-07-04,person-phil-lesh,performer,vocals,"JerryBase source event 19870704-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19870704-01
-gd-1987-07-06,person-aaron-neville,guest,percussionussion,"JerryBase source event 19870706-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19870706-01
+gd-1987-07-06,person-aaron-neville,guest,percussion,"JerryBase source event 19870706-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19870706-01
 gd-1987-07-06,person-aaron-neville,guest,vocals,"JerryBase source event 19870706-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19870706-01
 gd-1987-07-06,person-art-neville,guest,keyboards,"JerryBase source event 19870706-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, keys.",jerrybase,19870706-01
 gd-1987-07-06,person-art-neville,guest,vocals,"JerryBase source event 19870706-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, keys.",jerrybase,19870706-01
@@ -19289,14 +19289,14 @@ gd-1987-12-30,person-mickey-hart,performer,drums,"JerryBase source event 1987123
 gd-1987-12-30,person-mickey-hart,performer,percussion,"JerryBase source event 19871230-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19871230-01
 gd-1987-12-30,person-phil-lesh,performer,bass,"JerryBase source event 19871230-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19871230-01
 gd-1987-12-30,person-phil-lesh,performer,vocals,"JerryBase source event 19871230-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19871230-01
-gd-1987-12-31,person-aaron-neville,guest,percussionussion,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19871231-01
+gd-1987-12-31,person-aaron-neville,guest,percussion,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19871231-01
 gd-1987-12-31,person-aaron-neville,guest,vocals,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19871231-01
 gd-1987-12-31,person-art-neville,guest,keyboards,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, keys.",jerrybase,19871231-01
 gd-1987-12-31,person-art-neville,guest,vocals,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, keys.",jerrybase,19871231-01
 gd-1987-12-31,person-brian-stoltz,guest,guitar,JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: guitar.,jerrybase,19871231-01
-gd-1987-12-31,person-charles-neville,guest,percussionussion,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19871231-01
+gd-1987-12-31,person-charles-neville,guest,percussion,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19871231-01
 gd-1987-12-31,person-charles-neville,guest,vocals,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19871231-01
-gd-1987-12-31,person-cyril-neville,guest,percussionussion,JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: percussion.,jerrybase,19871231-01
+gd-1987-12-31,person-cyril-neville,guest,percussion,JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: percussion.,jerrybase,19871231-01
 gd-1987-12-31,person-willie-green,guest,drums,JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums.,jerrybase,19871231-01
 gd-1987-12-31,person-bill-kreutzmann,performer,drums,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19871231-01
 gd-1987-12-31,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19871231-01; raw snapshot jerrybase-1987.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19871231-01
@@ -19334,7 +19334,7 @@ gd-1988-02-14,person-mickey-hart,performer,drums,"JerryBase source event 1988021
 gd-1988-02-14,person-mickey-hart,performer,percussion,"JerryBase source event 19880214-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880214-01
 gd-1988-02-14,person-phil-lesh,performer,bass,"JerryBase source event 19880214-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880214-01
 gd-1988-02-14,person-phil-lesh,performer,vocals,"JerryBase source event 19880214-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880214-01
-gd-1988-02-16,person-hamza-el-din,guest,percussionussion,JerryBase source event 19880216-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880216-01
+gd-1988-02-16,person-hamza-el-din,guest,percussion,JerryBase source event 19880216-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880216-01
 gd-1988-02-16,person-bill-kreutzmann,performer,drums,"JerryBase source event 19880216-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880216-01
 gd-1988-02-16,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19880216-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880216-01
 gd-1988-02-16,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19880216-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19880216-01
@@ -19371,7 +19371,7 @@ gd-1988-03-16,person-mickey-hart,performer,drums,"JerryBase source event 1988031
 gd-1988-03-16,person-mickey-hart,performer,percussion,"JerryBase source event 19880316-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880316-01
 gd-1988-03-16,person-phil-lesh,performer,bass,"JerryBase source event 19880316-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880316-01
 gd-1988-03-16,person-phil-lesh,performer,vocals,"JerryBase source event 19880316-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880316-01
-gd-1988-03-17,person-hamza-el-din,guest,percussionussion,JerryBase source event 19880317-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880317-01
+gd-1988-03-17,person-hamza-el-din,guest,percussion,JerryBase source event 19880317-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880317-01
 gd-1988-03-17,person-bill-kreutzmann,performer,drums,"JerryBase source event 19880317-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880317-01
 gd-1988-03-17,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19880317-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880317-01
 gd-1988-03-17,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19880317-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19880317-01
@@ -19805,7 +19805,7 @@ gd-1988-07-15,person-mickey-hart,performer,drums,"JerryBase source event 1988071
 gd-1988-07-15,person-mickey-hart,performer,percussion,"JerryBase source event 19880715-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880715-01
 gd-1988-07-15,person-phil-lesh,performer,bass,"JerryBase source event 19880715-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880715-01
 gd-1988-07-15,person-phil-lesh,performer,vocals,"JerryBase source event 19880715-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880715-01
-gd-1988-07-16,person-baba-olatunji,guest,percussionussion,JerryBase source event 19880716-02; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880716-02
+gd-1988-07-16,person-baba-olatunji,guest,percussion,JerryBase source event 19880716-02; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880716-02
 gd-1988-07-16,person-bill-kreutzmann,performer,drums,"JerryBase source event 19880716-02; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880716-02
 gd-1988-07-16,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19880716-02; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880716-02
 gd-1988-07-16,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19880716-02; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19880716-02
@@ -20087,7 +20087,7 @@ gd-1988-09-23,person-mickey-hart,performer,drums,"JerryBase source event 1988092
 gd-1988-09-23,person-mickey-hart,performer,percussion,"JerryBase source event 19880923-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19880923-01
 gd-1988-09-23,person-phil-lesh,performer,bass,"JerryBase source event 19880923-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880923-01
 gd-1988-09-23,person-phil-lesh,performer,vocals,"JerryBase source event 19880923-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19880923-01
-gd-1988-09-24,person-baba-olatunji,guest,percussionussion,JerryBase source event 19880924-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880924-01
+gd-1988-09-24,person-baba-olatunji,guest,percussion,JerryBase source event 19880924-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19880924-01
 gd-1988-09-24,person-bruce-hornsby,guest,accordion,"JerryBase source event 19880924-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: vocals, electric piano and vocals, accordion.",jerrybase,19880924-01
 gd-1988-09-24,person-bruce-hornsby,guest,electric piano,"JerryBase source event 19880924-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: vocals, electric piano and vocals, accordion.",jerrybase,19880924-01
 gd-1988-09-24,person-bruce-hornsby,guest,vocals,"JerryBase source event 19880924-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: vocals, electric piano and vocals, accordion.",jerrybase,19880924-01
@@ -20187,12 +20187,12 @@ gd-1988-10-16,person-mickey-hart,performer,drums,"JerryBase source event 1988101
 gd-1988-10-16,person-mickey-hart,performer,percussion,"JerryBase source event 19881016-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19881016-01
 gd-1988-10-16,person-phil-lesh,performer,bass,"JerryBase source event 19881016-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19881016-01
 gd-1988-10-16,person-phil-lesh,performer,vocals,"JerryBase source event 19881016-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19881016-01
-gd-1988-10-18,person-aaron-neville,guest,percussionussion,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881018-01
+gd-1988-10-18,person-aaron-neville,guest,percussion,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881018-01
 gd-1988-10-18,person-art-neville,guest,keyboard,"JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: keyboard, vocals and percussion.",jerrybase,19881018-01
-gd-1988-10-18,person-art-neville,guest,percussionussion,"JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: keyboard, vocals and percussion.",jerrybase,19881018-01
+gd-1988-10-18,person-art-neville,guest,percussion,"JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: keyboard, vocals and percussion.",jerrybase,19881018-01
 gd-1988-10-18,person-art-neville,guest,vocals,"JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: keyboard, vocals and percussion.",jerrybase,19881018-01
-gd-1988-10-18,person-charles-neville,guest,percussionussion,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881018-01
-gd-1988-10-18,person-cyril-neville,guest,percussionussion,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881018-01
+gd-1988-10-18,person-charles-neville,guest,percussion,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881018-01
+gd-1988-10-18,person-cyril-neville,guest,percussion,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881018-01
 gd-1988-10-18,person-debbi-peterson,guest,vocals,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: vocals.,jerrybase,19881018-01
 gd-1988-10-18,person-michael-micki-steele,guest,vocals,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: vocals.,jerrybase,19881018-01
 gd-1988-10-18,person-susanna-hoffs,guest,vocals,JerryBase source event 19881018-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: vocals.,jerrybase,19881018-01
@@ -20294,9 +20294,9 @@ gd-1988-12-29,person-mickey-hart,performer,drums,"JerryBase source event 1988122
 gd-1988-12-29,person-mickey-hart,performer,percussion,"JerryBase source event 19881229-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19881229-01
 gd-1988-12-29,person-phil-lesh,performer,bass,"JerryBase source event 19881229-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19881229-01
 gd-1988-12-29,person-phil-lesh,performer,vocals,"JerryBase source event 19881229-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19881229-01
-gd-1988-12-31,person-baba-olatunji,guest,percussionussion,JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881231-01
+gd-1988-12-31,person-baba-olatunji,guest,percussion,JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881231-01
 gd-1988-12-31,person-clarence-clemons,guest,saxophone,JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: saxophone.,jerrybase,19881231-01
-gd-1988-12-31,person-kitaro,guest,percussionussion,JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881231-01
+gd-1988-12-31,person-kitaro,guest,percussion,JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: percussion.,jerrybase,19881231-01
 gd-1988-12-31,person-sikiru-adepoju,guest,talking drum,JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: talking drum.,jerrybase,19881231-01
 gd-1988-12-31,person-bill-kreutzmann,performer,drums,"JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19881231-01
 gd-1988-12-31,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19881231-01; raw snapshot jerrybase-1988.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19881231-01
@@ -21240,7 +21240,7 @@ gd-1990-02-26,person-mickey-hart,performer,percussion,"JerryBase source event 19
 gd-1990-02-26,person-phil-lesh,performer,bass,"JerryBase source event 19900226-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19900226-01
 gd-1990-02-26,person-phil-lesh,performer,vocals,"JerryBase source event 19900226-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19900226-01
 gd-1990-02-27,person-al-tharp,guest,banjo,JerryBase source event 19900227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: banjo.,jerrybase,19900227-01
-gd-1990-02-27,person-billy-ware,guest,percussionussion,JerryBase source event 19900227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: percussion.,jerrybase,19900227-01
+gd-1990-02-27,person-billy-ware,guest,percussion,JerryBase source event 19900227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: percussion.,jerrybase,19900227-01
 gd-1990-02-27,person-michael-doucet,guest,fiddle,JerryBase source event 19900227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: fiddle.,jerrybase,19900227-01
 gd-1990-02-27,person-bill-kreutzmann,performer,drums,"JerryBase source event 19900227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19900227-01
 gd-1990-02-27,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19900227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19900227-01
@@ -22104,7 +22104,7 @@ gd-1990-12-14,person-phil-lesh,performer,bass,"JerryBase source event 19901214-0
 gd-1990-12-14,person-phil-lesh,performer,vocals,"JerryBase source event 19901214-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19901214-01
 gd-1990-12-14,person-vince-welnick,performer,keyboards,"JerryBase source event 19901214-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19901214-01
 gd-1990-12-14,person-vince-welnick,performer,vocals,"JerryBase source event 19901214-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19901214-01
-gd-1990-12-27,person-hamza-el-din,guest,percussionussion,JerryBase source event 19901227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: percussion.,jerrybase,19901227-01
+gd-1990-12-27,person-hamza-el-din,guest,percussion,JerryBase source event 19901227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: percussion.,jerrybase,19901227-01
 gd-1990-12-27,person-bill-kreutzmann,performer,drums,"JerryBase source event 19901227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19901227-01
 gd-1990-12-27,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19901227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19901227-01
 gd-1990-12-27,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19901227-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19901227-01
@@ -22148,7 +22148,7 @@ gd-1990-12-30,person-phil-lesh,performer,vocals,"JerryBase source event 19901230
 gd-1990-12-30,person-vince-welnick,performer,keyboards,"JerryBase source event 19901230-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19901230-01
 gd-1990-12-30,person-vince-welnick,performer,vocals,"JerryBase source event 19901230-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19901230-01
 gd-1990-12-31,person-branford-marsalis,guest,saxophone,JerryBase source event 19901231-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: saxophone.,jerrybase,19901231-01
-gd-1990-12-31,person-hamza-el-din,guest,percussionussion,JerryBase source event 19901231-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: percussion.,jerrybase,19901231-01
+gd-1990-12-31,person-hamza-el-din,guest,percussion,JerryBase source event 19901231-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: percussion.,jerrybase,19901231-01
 gd-1990-12-31,person-bill-kreutzmann,performer,drums,"JerryBase source event 19901231-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19901231-01
 gd-1990-12-31,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19901231-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19901231-01
 gd-1990-12-31,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19901231-01; raw snapshot jerrybase-1990.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19901231-01
@@ -22175,7 +22175,7 @@ gd-1991-02-19,person-phil-lesh,performer,bass,"JerryBase source event 19910219-0
 gd-1991-02-19,person-phil-lesh,performer,vocals,"JerryBase source event 19910219-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19910219-01
 gd-1991-02-19,person-vince-welnick,performer,keyboards,"JerryBase source event 19910219-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19910219-01
 gd-1991-02-19,person-vince-welnick,performer,vocals,"JerryBase source event 19910219-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19910219-01
-gd-1991-02-20,person-baba-olatunji,guest,percussionussion,JerryBase source event 19910220-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: percussion.,jerrybase,19910220-01
+gd-1991-02-20,person-baba-olatunji,guest,percussion,JerryBase source event 19910220-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: percussion.,jerrybase,19910220-01
 gd-1991-02-20,person-sikiru-adepoju,guest,talking drum,JerryBase source event 19910220-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: talking drum.,jerrybase,19910220-01
 gd-1991-02-20,person-bill-kreutzmann,performer,drums,"JerryBase source event 19910220-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19910220-01
 gd-1991-02-20,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19910220-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19910220-01
@@ -23211,7 +23211,7 @@ gd-1991-12-30,person-phil-lesh,performer,bass,"JerryBase source event 19911230-0
 gd-1991-12-30,person-phil-lesh,performer,vocals,"JerryBase source event 19911230-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19911230-01
 gd-1991-12-30,person-vince-welnick,performer,keyboards,"JerryBase source event 19911230-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19911230-01
 gd-1991-12-30,person-vince-welnick,performer,vocals,"JerryBase source event 19911230-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19911230-01
-gd-1991-12-31,person-airto-moreira,guest,percussionussion,JerryBase source event 19911231-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: percussion.,jerrybase,19911231-01
+gd-1991-12-31,person-airto-moreira,guest,percussion,JerryBase source event 19911231-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: percussion.,jerrybase,19911231-01
 gd-1991-12-31,person-bill-kreutzmann,performer,drums,"JerryBase source event 19911231-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19911231-01
 gd-1991-12-31,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19911231-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19911231-01
 gd-1991-12-31,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19911231-01; raw snapshot jerrybase-1991.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19911231-01
@@ -23236,7 +23236,7 @@ gd-1992-02-22,person-phil-lesh,performer,bass,"JerryBase source event 19920222-0
 gd-1992-02-22,person-phil-lesh,performer,vocals,"JerryBase source event 19920222-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: electric bass, vocals.",jerrybase,19920222-01
 gd-1992-02-22,person-vince-welnick,performer,keyboards,"JerryBase source event 19920222-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19920222-01
 gd-1992-02-22,person-vince-welnick,performer,vocals,"JerryBase source event 19920222-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19920222-01
-gd-1992-02-23,person-hamza-el-din,guest,percussionussion,"JerryBase source event 19920223-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19920223-01
+gd-1992-02-23,person-hamza-el-din,guest,percussion,"JerryBase source event 19920223-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19920223-01
 gd-1992-02-23,person-hamza-el-din,guest,vocals,"JerryBase source event 19920223-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: vocals, percussion.",jerrybase,19920223-01
 gd-1992-02-23,person-bill-kreutzmann,performer,drums,"JerryBase source event 19920223-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19920223-01
 gd-1992-02-23,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19920223-01; raw snapshot jerrybase-1992.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19920223-01
@@ -23955,7 +23955,7 @@ gd-1993-02-22,person-vince-welnick,performer,vocals,"JerryBase source event 1993
 gd-1993-02-23,person-denardo-coleman,guest,drums,JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: drums.,jerrybase,19930223-02
 gd-1993-02-23,person-graham-wiggins,guest,didgeridoo,JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: didgeridoo.,jerrybase,19930223-02
 gd-1993-02-23,person-ornette-coleman,guest,saxophone,JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: saxophone.,jerrybase,19930223-02
-gd-1993-02-23,person-sikiru-adepoju,guest,percussionussion,JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: percussion.,jerrybase,19930223-02
+gd-1993-02-23,person-sikiru-adepoju,guest,percussion,JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: percussion.,jerrybase,19930223-02
 gd-1993-02-23,person-bill-kreutzmann,performer,drums,"JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19930223-02
 gd-1993-02-23,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19930223-02
 gd-1993-02-23,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19930223-02; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19930223-02
@@ -24167,7 +24167,7 @@ gd-1993-04-02,person-mickey-hart,performer,percussion,"JerryBase source event 19
 gd-1993-04-02,person-phil-lesh,performer,bass,JerryBase source event 19930402-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: electric bass.,jerrybase,19930402-01
 gd-1993-04-02,person-vince-welnick,performer,keyboards,"JerryBase source event 19930402-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19930402-01
 gd-1993-04-02,person-vince-welnick,performer,vocals,"JerryBase source event 19930402-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: keyboards, vocals.",jerrybase,19930402-01
-gd-1993-04-04,person-baba-olatunji,guest,percussionussion,JerryBase source event 19930404-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: percussion.,jerrybase,19930404-01
+gd-1993-04-04,person-baba-olatunji,guest,percussion,JerryBase source event 19930404-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: percussion.,jerrybase,19930404-01
 gd-1993-04-04,person-bill-kreutzmann,performer,drums,"JerryBase source event 19930404-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19930404-01
 gd-1993-04-04,person-bill-kreutzmann,performer,percussion,"JerryBase source event 19930404-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: drums, perc.",jerrybase,19930404-01
 gd-1993-04-04,person-bob-weir,performer,rhythm guitar,"JerryBase source event 19930404-01; raw snapshot jerrybase-1993.jsonl; JerryBase source instrument: electric guitar (rhythm), vocals.",jerrybase,19930404-01
