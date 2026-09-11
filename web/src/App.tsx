@@ -810,14 +810,18 @@ function ShowUnit({
 
   return (
     <article className={`card show-unit emphasis-${unit.emphasis}`}>
-      <IdRow type="Show" when={dateLong} />
       {modelHeadline ? (
         <>
-          <div className="identity"><Meta parts={[identityName, unit.location, guestsNode]} /></div>
+          <IdRow type="Show" />
+          <div className="identity">
+            <p className="identity-date">{dateLong}</p>
+            <Meta parts={[identityName, unit.location, guestsNode]} />
+          </div>
           <h2 className="overview">{modelHeadline}</h2>
         </>
       ) : (
         <>
+          <IdRow type="Show" when={dateLong} />
           <h2>{identityName}</h2>
           <Meta parts={[unit.location, guestsNode]} />
         </>

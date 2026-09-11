@@ -223,11 +223,15 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 .card.emphasis-supporting:is(.show-unit, .album-unit, .performance-unit, .song-overview) > h2 { font-size: 1.6rem; }
 .meta { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
-/* When the model wrote the headline, the library's naming of the show sits
-   above it as one cream identity line, and the headline opens the overview. */
-.show-unit .identity .meta { margin-top: 0.6rem; color: var(--cream); font-size: 1.05rem; font-weight: 500; }
+/* When the model wrote the headline, the library names the show in one tight
+   stack under the type label: the date fans know it by, then venue and place.
+   Proximity groups the stack; the larger gap before the headline separates the
+   library's naming from the model's overview. */
+.show-unit .identity { display: grid; gap: 0.2rem; margin-top: 0.55rem; }
+.show-unit .identity .identity-date { margin: 0; color: var(--cream); font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.show-unit .identity .meta { margin-top: 0; color: var(--text); font-size: 0.98rem; font-weight: 400; }
 .show-unit .identity .meta .sep { color: var(--quiet); }
-:is(.show-unit) > h2.overview { margin-top: var(--space-part); }
+:is(.show-unit) > h2.overview { margin-top: var(--space-content); }
 .meta .sep { color: var(--quiet); margin: 0 0.4rem; }
 .meta strong { color: var(--cream); font-weight: 600; }
 
