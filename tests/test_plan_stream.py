@@ -155,6 +155,15 @@ def test_a_failing_item_is_skipped_without_disabling_the_streamer():
     assert streamer.disabled is False
 
 
+def test_items_past_the_group_limit_are_not_streamed():
+    items = [{"type": "show_unit", "show_id": f"gd-1990-03-{day:02d}"} for day in range(1, 24)]
+    plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": items}]}
+    events = drive(json.dumps(plan), 7)
+    blocks = [event for event in events if event.type == "block"]
+    assert len(blocks) == 20
+    assert blocks[-1].payload["block"]["id"] == "gd-1990-03-20"
+
+
 def test_indented_json_gives_identical_events_to_compact_json():
     indented = json.dumps(PLAN, indent=2)
     compact_events = drive(PLAN_TEXT, 1)

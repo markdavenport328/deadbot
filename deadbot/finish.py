@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Annotated, Any, Literal
 
 from langchain_core.tools import BaseTool, StructuredTool
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
 from deadbot import composition
 from deadbot.data import CanonicalStore
@@ -44,6 +44,11 @@ from deadbot.experience import (
 logger = logging.getLogger(__name__)
 
 FINISH_TOOL_NAME = "finish_response"
+
+# The most items one group carries. Applied identically by the finish tool's
+# plan validation and by the progressive streamer, so the page the visitor
+# watches compose is the page that is delivered.
+GROUP_ITEM_LIMIT = 20
 
 # Deprecated plan vocabulary, accepted for one release and mapped to emphasis.
 UnitRole = Literal["anchor", "supporting", "contrast", "turning_point", "outlier", "culmination", "overlooked", "representative"]
@@ -364,6 +369,38 @@ BodyItem = Annotated[
     Field(discriminator="type"),
 ]
 
+_BODY_ITEM_ADAPTER = TypeAdapter(BodyItem)
+
+
+def _describe_validation_error(error: ValidationError) -> str:
+    """The first problem in a validation error, as one short line for a log."""
+
+    problems = error.errors()
+    if not problems:
+        return str(error)
+    first = problems[0]
+    location = ".".join(str(part) for part in first.get("loc", ()))
+    return f"{location or 'item'}: {first.get('msg', 'invalid')}"
+
+
+def validate_body_item(raw: Any, *, where: str) -> Any | None:
+    """One body item, or ``None`` when it does not fit its schema.
+
+    The one rule for a body item, shared by the finish tool's plan validation
+    and the progressive streamer: an item that does not fit is dropped and
+    logged, never a reason to reject the plan around it. Both paths apply it
+    to the same text, so the draft page and the delivered page agree.
+    """
+
+    if isinstance(raw, BaseModel):
+        return raw
+    try:
+        return _BODY_ITEM_ADAPTER.validate_python(raw)
+    except ValidationError as error:
+        kind = raw.get("type") if isinstance(raw, dict) else type(raw).__name__
+        logger.warning("Dropped a %s %s item that did not fit its schema (%s)", where, kind, _describe_validation_error(error))
+        return None
+
 
 class GroupPlan(BaseModel):
     """A model-selected editorial relationship among body items."""
@@ -387,8 +424,11 @@ class GroupPlan(BaseModel):
     )
     items: list[BodyItem] = Field(
         min_length=1,
-        max_length=12,
-        description="Only the items that earn a place in the answer, in exact reading order. Retrieved or related does not mean included.",
+        max_length=GROUP_ITEM_LIMIT,
+        description=(
+            "Only the items that earn a place in the answer, in exact reading order, up to twenty. "
+            "Retrieved or related does not mean included."
+        ),
     )
 
 
@@ -396,6 +436,45 @@ class FinishPlan(BaseModel):
     """The model's finished response: chat answer plus the main-body plan."""
 
     model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_body_rules(cls, data: Any) -> Any:
+        """Body rules the streamer applies too, so both paths deliver one page.
+
+        A group keeps its first ``GROUP_ITEM_LIMIT`` items; an item that does
+        not fit its schema is dropped; a group left with no items is dropped;
+        the page keeps its first eight groups. Sizes truncate and bad items
+        drop instead of failing the whole plan, because a failed plan makes
+        the model retry with a different plan after the visitor has already
+        watched the first one compose. What the plan must still get right is
+        its own shape: the answer, the title and each group's presentation.
+        """
+
+        if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
+            return data
+        raw_groups = data["groups"]
+        if len(raw_groups) > 8:
+            logger.warning("finish_response planned %d groups; keeping the first 8", len(raw_groups))
+            raw_groups = raw_groups[:8]
+        groups: list[Any] = []
+        for group in raw_groups:
+            if not isinstance(group, dict) or not isinstance(group.get("items"), list):
+                groups.append(group)  # Ordinary validation reports what is wrong with it.
+                continue
+            raw_items = group["items"]
+            if len(raw_items) > GROUP_ITEM_LIMIT:
+                logger.warning("finish_response planned %d items in one group; keeping the first %d", len(raw_items), GROUP_ITEM_LIMIT)
+                raw_items = raw_items[:GROUP_ITEM_LIMIT]
+            items = [item for item in (validate_body_item(raw, where="planned") for raw in raw_items) if item is not None]
+            if not items:
+                logger.warning("finish_response planned a group with no usable items (title=%r); dropping it", group.get("title"))
+                continue
+            criteria = group.get("criteria")
+            if isinstance(criteria, list) and len(criteria) > 5:
+                criteria = criteria[:5]
+            groups.append({**group, "items": items, **({"criteria": criteria} if criteria is not None else {})})
+        return {**data, "groups": groups}
     chat_answer: str = Field(
         description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. May use markdown links to URLs the tools returned this turn."
     )

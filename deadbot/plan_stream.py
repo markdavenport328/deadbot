@@ -17,13 +17,9 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from pydantic import TypeAdapter, ValidationError
-
-from deadbot.finish import FINISH_TOOL_NAME, BodyItem, keep_grounded_links
+from deadbot.finish import FINISH_TOOL_NAME, GROUP_ITEM_LIMIT, keep_grounded_links, validate_body_item
 
 logger = logging.getLogger(__name__)
-
-_ITEM_ADAPTER = TypeAdapter(BodyItem)
 
 
 @dataclass
@@ -234,7 +230,8 @@ class PlanStreamer:
         raw = self._text[frame.start : pos + 1]
         events: list[PlanEvent] = []
         if len(path) == 4 and path[0] == "groups" and path[2] == "items" and frame.kind == "object":
-            events.extend(self._item_closed(path[1], raw))
+            items_frame = self._top()
+            events.extend(self._item_closed(path[1], items_frame.index if items_frame else 0, raw))
         elif len(path) == 3 and path[0] == "groups" and path[2] == "criteria" and frame.kind == "array":
             self._group(path[1])["criteria"] = [entry for entry in json.loads(raw) if isinstance(entry, str)]
         elif len(path) == 2 and path[0] == "groups" and frame.kind == "object":
@@ -247,11 +244,20 @@ class PlanStreamer:
             parent.value_start = None
         return events
 
-    def _item_closed(self, group_index: int, raw: str) -> list[PlanEvent]:
+    def _item_closed(self, group_index: int, position: int, raw: str) -> list[PlanEvent]:
+        # The same two rules the plan's validation applies (finish.FinishPlan):
+        # a group keeps its first GROUP_ITEM_LIMIT items, and an item that does
+        # not fit its schema is dropped.
+        if position >= GROUP_ITEM_LIMIT:
+            logger.warning("Skipped streamed item %d of group %d: past the group limit of %d", position + 1, group_index, GROUP_ITEM_LIMIT)
+            return []
         try:
-            item = _ITEM_ADAPTER.validate_python(json.loads(raw))
-        except (json.JSONDecodeError, ValidationError) as error:
-            logger.info("Skipped a streamed item that did not validate: %s", error)
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as error:
+            logger.info("Skipped a streamed item that was not JSON: %s", error)
+            return []
+        item = validate_body_item(parsed, where="streamed")
+        if item is None:
             return []
         criteria = self._group(group_index).get("criteria")
         events: list[PlanEvent] = []
