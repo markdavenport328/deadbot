@@ -119,7 +119,7 @@ def test_import_bootstraps_schema_in_dependency_order_and_reports_counts(tmp_pat
         tmp_path,
         {
             "people": [["person-jerry", "Jerry Garcia", "1942-08-01", "1995-08-09", ""]],
-            "venues": [["venue-1", "Test Venue", "", "", "", "", "", ""]],
+            "venues": [["venue-1", "Test Venue", "", "", "", "", "", "", "", ""]],
             "shows": [["show-1", "1972-08-27", "venue-1", "", "", "", "manual", "show-1"]],
         },
     )
@@ -335,8 +335,8 @@ def test_release_personnel_spec_follows_show_performers_and_loads_after_releases
     assert names.index("release_personnel") > names.index("people")
 
 
-def test_schema_version_is_seven_and_each_version_has_exactly_one_migration():
-    assert SCHEMA_VERSION == 7
+def test_schema_version_is_eight_and_each_version_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 8
     migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
     for version in range(2, SCHEMA_VERSION + 1):
         assert len(sorted(migrations_dir.glob(f"{version:03d}_*.sql"))) == 1
@@ -347,9 +347,14 @@ def test_schema_version_is_seven_and_each_version_has_exactly_one_migration():
     response_cache = sorted(migrations_dir.glob("007_*.sql"))[0].read_text(encoding="utf-8")
     assert "CREATE TABLE IF NOT EXISTS deadbot_response_cache" in response_cache
     assert "UPDATE deadbot_schema_metadata SET schema_version = 7" in response_cache
+    venue_geography = sorted(migrations_dir.glob("008_*.sql"))[0].read_text(encoding="utf-8")
+    assert "ALTER TABLE venues" in venue_geography
+    assert "ADD COLUMN setting TEXT" in venue_geography
+    assert "ADD COLUMN capacity INTEGER" in venue_geography
+    assert "UPDATE deadbot_schema_metadata SET schema_version = 8" in venue_geography
     bootstrap = (Path(__file__).resolve().parents[1] / "schema" / "postgres.sql").read_text(encoding="utf-8")
     assert "CREATE TABLE deadbot_response_cache" in bootstrap
-    assert "VALUES (7)" in bootstrap
+    assert "VALUES (8)" in bootstrap
 
 
 def test_every_spec_matches_its_canonical_csv_header():
@@ -402,7 +407,7 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
     report = check_import(connection, canonical_dir=tmp_path)
     assert connection.writes == []
     assert report["installed_schema_version"] == SCHEMA_VERSION - 1
-    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_response_cache.sql"]
+    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_venue_geography.sql"]
     assert report["recent_imports"][0]["mode"] == "rebuild"
     assert report["tables"]["shows"]["database_rows"] == 5
     assert "shows" in report["rebuild_would_delete_rows_in"]
