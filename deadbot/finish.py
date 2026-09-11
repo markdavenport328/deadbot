@@ -284,6 +284,14 @@ class EraUnitRef(_Ref):
 class AlbumUnitRef(_Ref):
     """One official record as a primary object, with model-selected facets."""
 
+    title: str | None = Field(
+        default=None,
+        description=(
+            "Your headline for this record: the phrase that says what it means in this answer ('Hear the source and trace the afterlife'). "
+            "The card names the record, its kind and release date above your headline, and your note is the text beneath it, so the "
+            "headline is free to interpret. Omit it and the record's own title is the headline."
+        ),
+    )
     type: Literal["album_unit"]
     release_id: str
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)

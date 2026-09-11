@@ -174,12 +174,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 
 /* Zone 3: the set thread, performances only. One line of text, wrapping like a sentence. */
 /* Where a performance sits: three consecutive setlist lines, this one lit. */
-.set-excerpt { margin: 1rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.8; }
-.set-excerpt .stop { white-space: nowrap; }
+.set-excerpt { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 0.55rem; row-gap: 0.1rem; margin: 1rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.8; }
+.set-excerpt .leg { white-space: nowrap; }
 .set-excerpt .n { color: var(--quiet); font-size: 0.8rem; font-variant-numeric: tabular-nums; margin-right: 0.4rem; }
 .set-excerpt .here { color: var(--cream); font-weight: 600; }
 .set-excerpt .here .n { color: var(--listen); }
-.set-excerpt .arrow { color: var(--quiet); margin: 0 0.55rem; }
+.set-excerpt .arrow { color: var(--quiet); margin-left: 0.55rem; }
 .set-excerpt .edge { font-style: italic; color: var(--quiet); }
 .topics { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .fact-ask .topics, .timeline-ask .topics { display: inline-flex; margin-top: 0.35rem; }
@@ -223,15 +223,16 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 .card.emphasis-supporting:is(.show-unit, .album-unit, .performance-unit, .song-overview) > h2 { font-size: 1.6rem; }
 .meta { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
-/* When the model wrote the headline, the library names the show in one tight
-   stack under the type label: the date fans know it by, then venue and place.
-   Proximity groups the stack; the larger gap before the headline separates the
-   library's naming from the model's overview. */
-.show-unit .identity { display: grid; gap: 0.2rem; margin-top: 0.55rem; }
-.show-unit .identity .identity-date { margin: 0; color: var(--cream); font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
-.show-unit .identity .meta { margin-top: 0; color: var(--text); font-size: 0.98rem; font-weight: 400; }
-.show-unit .identity .meta .sep { color: var(--quiet); }
-:is(.show-unit) > h2.overview { margin-top: var(--space-content); }
+/* When the model wrote the headline, the library names the object in one tight
+   stack under the type label: for a show the date fans know it by, then venue
+   and place; for a record its title, then kind and release date. Proximity
+   groups the stack; the larger gap before the headline separates the library's
+   naming from the model's overview. */
+:is(.show-unit, .album-unit) .identity { display: grid; gap: 0.2rem; margin-top: 0.55rem; }
+:is(.show-unit, .album-unit) .identity :is(.identity-date, .identity-name) { margin: 0; color: var(--cream); font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+:is(.show-unit, .album-unit) .identity .meta { margin-top: 0; color: var(--text); font-size: 0.98rem; font-weight: 400; }
+:is(.show-unit, .album-unit) .identity .meta .sep { color: var(--quiet); }
+:is(.show-unit, .album-unit) > h2.overview { margin-top: var(--space-content); }
 .meta .sep { color: var(--quiet); margin: 0 0.4rem; }
 .meta strong { color: var(--cream); font-weight: 600; }
 

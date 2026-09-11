@@ -1014,6 +1014,15 @@ def test_album_unit_hydrates_from_the_release_payload():
     assert [track.track_number for track in block.tracks] == sorted(t.track_number for t in block.tracks)
 
 
+def test_album_unit_keeps_the_record_title_beside_a_model_headline():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store, title="Hear the source and trace the afterlife")
+
+    assert block.title == "Hear the source and trace the afterlife"
+    assert block.release_title == "American Beauty"
+
+
 def test_album_unit_keeps_only_highlights_that_are_on_the_record():
     store = CanonicalStore()
     payload = store.album_context(store.resolve_release("release-american-beauty"))

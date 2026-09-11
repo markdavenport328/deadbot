@@ -120,6 +120,8 @@ export interface components {
             release_date?: string | null;
             /** Release Id */
             release_id: string;
+            /** Release Title */
+            release_title?: string | null;
             /** Release Type */
             release_type: string;
             /** Sources */

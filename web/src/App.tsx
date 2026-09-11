@@ -286,18 +286,20 @@ function glyphForAction(url: string, isOfficial: boolean): GlyphKind {
 }
 
 // The primary action is the first official listening path, or simply the
-// first when none is marked official. It renders filled; the rest are
-// outlined, and none carries a trailing arrow now that a glyph leads instead.
+// first when none is marked official. It leads the row and renders filled;
+// the rest follow in their given order, outlined. Position and emphasis
+// agree, so the eye lands on the filled button where the row starts.
 function ListenActionList({ actions }: { actions: ListenActions }) {
   if (actions.length === 0) return null;
   const officialIndex = actions.findIndex((action) => action.is_official);
   const primaryIndex = officialIndex >= 0 ? officialIndex : 0;
+  const ordered = [actions[primaryIndex], ...actions.filter((_, index) => index !== primaryIndex)];
   return (
     <ul className="listen-actions" aria-label="Listen">
-      {actions.map((action, index) => (
+      {ordered.map((action, index) => (
         <li key={action.url}>
           <a
-            className={index === primaryIndex ? "listen-action primary" : "listen-action"}
+            className={index === 0 ? "listen-action primary" : "listen-action"}
             href={action.url}
             target="_blank"
             rel="noreferrer"
@@ -917,12 +919,32 @@ function AlbumUnit({
     });
   }
   const initialOpen = openFacets && tabs.some((tab) => tab.id === "tracks") ? "tracks" : null;
+  // Two authors share the top of the card, as on the show card. The library
+  // names the record: type, then its title, kind and release date in one
+  // identity zone. When the model wrote a headline of its own, it opens the
+  // overview beneath that zone; otherwise the record's title is the headline.
+  const recordName = block.release_title?.trim() || block.title;
+  const modelHeadline = block.title.trim() && !sameHeading(block.title, recordName) ? block.title.trim() : "";
+  const kindLine = formatReleaseType(block.release_type);
 
   return (
     <article className={`card album-unit emphasis-${block.emphasis}`}>
-      <IdRow type={typeLabel} when={releaseLong ? `Released ${releaseLong}` : null} />
-      <h2>{block.title}</h2>
-      <Meta parts={[formatReleaseType(block.release_type)]} />
+      {modelHeadline ? (
+        <>
+          <IdRow type={typeLabel} />
+          <div className="identity">
+            <p className="identity-name">{recordName}</p>
+            <Meta parts={[kindLine, releaseLong ? `Released ${releaseLong}` : null]} />
+          </div>
+          <h2 className="overview">{modelHeadline}</h2>
+        </>
+      ) : (
+        <>
+          <IdRow type={typeLabel} when={releaseLong ? `Released ${releaseLong}` : null} />
+          <h2>{recordName}</h2>
+          <Meta parts={[kindLine]} />
+        </>
+      )}
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       <ListenActionList actions={block.listen} />
@@ -974,15 +996,17 @@ function PerformanceUnit({
             ? { key: "next", n: here ? here + 1 : null, title: block.next.title }
             : { key: "next", n: null, title: `Closes ${setName}`, edge: true }
         ];
+        // Each leg is a stop with its trailing arrow, so a narrow card wraps
+        // between legs and every line but the last ends on an arrow.
         return (
           <p className="set-excerpt" aria-label="Where this sits in the set">
             {rows.map((row, index) => (
-              <span key={row.key}>
-                {index > 0 && <span className="arrow" aria-hidden="true">→</span>}
+              <span key={row.key} className="leg">
                 <span className={row.here ? "stop here" : row.edge ? "stop edge" : "stop"}>
                   {row.n !== null && <span className="n">{row.n}</span>}
                   {row.title}
                 </span>
+                {index < rows.length - 1 && <span className="arrow" aria-hidden="true">→</span>}
               </span>
             ))}
           </p>

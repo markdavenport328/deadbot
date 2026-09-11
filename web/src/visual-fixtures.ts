@@ -492,7 +492,8 @@ const album: ExperienceResponse = fixture(
     {
       type: "album_unit",
       release_id: "workingmans-dead",
-      title: "Workingman's Dead",
+      title: "Where the second repertoire engine started",
+      release_title: "Workingman's Dead",
       release_date: "1970-06-14",
       release_type: "studio",
       artist_name: "Grateful Dead",
