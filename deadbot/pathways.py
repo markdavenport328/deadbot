@@ -20,7 +20,10 @@ from deadbot.selection_signals import SelectionSignalError, stored_selection_ent
 
 # Inventory rows, not lore: a catalog/lyrics page names a song but carries no
 # musical or historical commentary a visitor would open as a pathway.
-_EXCLUDED_RESOURCE_TYPES = {"catalog-work-search", "lyrics-and-credits", "catalog-song-page"}
+# lyric-annotation (whitegum.com's per-song lyric-and-variant pages, added
+# 2026-09-11) is the same shape as lyrics-and-credits: a reference lookup, not
+# a discursive source.
+_EXCLUDED_RESOURCE_TYPES = {"catalog-work-search", "lyrics-and-credits", "catalog-song-page", "lyric-annotation"}
 _MAX_TOP_RESOURCES = 3
 # A little under the ~900-character target so real-world long titles and URLs
 # still leave headroom once cataloged/research_routes overhead is added.

@@ -75,7 +75,8 @@
             "GET"
           ],
           "paths": [
-            "/deadcast"
+            "/deadcast",
+            "/deadcast-index"
           ]
         }
       },
@@ -89,11 +90,11 @@
       "rate_policy": {
         "requests_per_minute": 6,
         "burst": 1,
-        "min_interval_seconds": 2,
+        "min_interval_seconds": 10,
         "retry_after_seconds": 60
       },
-      "adapter_version": "deadcast-metadata-v1",
-      "notes": "Episode title, date, scope, and source link only; no transcript or audio retrieval or redistribution."
+      "adapter_version": "deadcast-metadata-v2",
+      "notes": "Episode title, date, scope, and source link only; no transcript or audio retrieval or redistribution. v2 (2026-09-11) adds /deadcast-index, the site's own unpaginated episode archive listing (title, URL, season heading and publish date per row for all episodes), so scripts/collect/collect_deadcast_episode_index.py can index the full catalog without a per-episode request; robots.txt permits both paths with no crawl-delay. min_interval_seconds raised to 10 to match the 6 requests/minute ceiling already set here."
     },
     {
       "source_id": "musicbrainz-api",
@@ -603,6 +604,57 @@
       },
       "adapter_version": "gdao-archive-v1",
       "notes": "UC Santa Cruz Library's Omeka archive of posters, tickets, photographs, fan art and first-person recollections, queried through its public /api/items endpoint by date; scripts/collect/collect_gdao_show_items.py indexes item metadata only: item id, title, item type, item sets, date and coverage fields, creator, item page URL and at most 200 characters of the item description, never files, media or thumbnails. Contributed recollections are subjective testimony: cite the archive and the contributor and do not treat an item as a canonical show fact. Entry restored by the Task A agent after a file revert dropped it; Task B owns its content and should review the paths and notes."
+    },
+    {
+      "source_id": "whitegum-lyric-finder",
+      "name": "Alex Allan's Grateful Dead Lyric and Song Finder",
+      "host_allowlist": [
+        "whitegum.com",
+        "www.whitegum.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/longlist.htm"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/songfile/",
+            "/~acsa/songfile/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_page_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "whitegum-lyric-finder-v1",
+      "notes": "Alex Allan's per-song lyric-and-annotation pages, discovered through the site's own full-site index at /longlist.htm (title, URL and section per song, including 'see' cross-reference aliases; no per-page request needed to enumerate). The index's own hrefs resolve under /~acsa/songfile/ (an Apache user-directory alias for Alex Allan's account); a plain /songfile/ path answers the same content (spot-checked), but this pass stores the literal URL the index gave and the collector fetched, so both prefixes are listed here. Source review 2026-09-11: robots.txt allows all paths except /contact.htm, with no Crawl-delay; no terms-of-use, licensing, or attribution-requirement page exists anywhere on the site (checked / (home), /alex.htm, /intro3.htm, footer of a sampled songfile page). Each songfile page itself displays full lyric text and third-party annotation prose, which is the site's own copyright exposure, not this project's; this entry stores only a page title and URL per song, never the displayed lyrics or notes, matching the metadata-only boundary already applied to the research-blog and Deadhead High entries in this registry. Attribution on every stored row: 'Grateful Dead Lyric and Song Finder / whitegum.com', creator 'Alex Allan'."
     }
   ]
 }
