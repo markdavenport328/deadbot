@@ -75,7 +75,10 @@ Run from a checkout of `main` at the commit that is deployed (Vercel deploys
    It prints the installed schema version and pending migrations, the last
    ledger entries, this checkout's snapshot id, and per-table row counts
    (database vs CSV). Read three things:
-   - *Pending migrations* are the ones that will run. Open each file and
+   - *Pending migrations* are the ones that will run. A table one of them
+     creates shows `database_rows: null` and is listed under
+     `tables_created_by_pending_migrations`; the check does not try to count
+     it. Open each file and
      confirm it is additive (`CREATE TABLE IF NOT EXISTS`, `ADD COLUMN`,
      `ALTER … TYPE`) or that you understand what it changes.
    - *Last import snapshot* should match the snapshot of the `main` commit

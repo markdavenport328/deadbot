@@ -636,12 +636,20 @@ def check_import(
             ]
         tables: dict[str, dict[str, Any]] = {}
         rebuild_would_delete: list[str] = []
+        not_yet_created: list[str] = []
         for spec in specs:
             database_rows: int | None = None
             if installed is not None:
-                cursor.execute(f"SELECT COUNT(*) FROM public.{spec.name}")
-                fetched = cursor.fetchone()
-                database_rows = int(fetched[0]) if fetched else 0
+                # A table added by a pending migration does not exist yet;
+                # counting it would abort the read-only transaction.
+                cursor.execute("SELECT to_regclass(%s)", (f"public.{spec.name}",))
+                exists_row = cursor.fetchone()
+                if exists_row and exists_row[0]:
+                    cursor.execute(f"SELECT COUNT(*) FROM public.{spec.name}")
+                    fetched = cursor.fetchone()
+                    database_rows = int(fetched[0]) if fetched else 0
+                else:
+                    not_yet_created.append(spec.name)
             csv_rows = len(rows_by_table[spec.name])
             tables[spec.name] = {"database_rows": database_rows, "csv_rows": csv_rows}
             if database_rows is not None and database_rows > csv_rows:
@@ -659,6 +667,7 @@ def check_import(
         "recent_imports": ledger,
         "tables": tables,
         "rebuild_would_delete_rows_in": rebuild_would_delete,
+        "tables_created_by_pending_migrations": not_yet_created,
         "merge_deletes_nothing": True,
     }
 
