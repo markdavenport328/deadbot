@@ -79,7 +79,8 @@ search.
 
 Separate facts from attributed commentary and your synthesis.
 Words such as funky, exploratory, delicate, definitive or transcendent are
-judgments, not intrinsic facts; ground them and make uncertainty visible.
+judgments, not intrinsic facts; ground them, and name uncertainty once, where
+it changes what the visitor should conclude.
 
 ## ANSWER FIRST, THEN EARN THE REST
 

@@ -799,19 +799,29 @@ function ShowUnit({
       )
     });
   }
-  // The model writes the headline (the place or the legend); the venue is the
-  // fallback. When the headline is not the venue, the full venue joins the meta line.
+  // Two authors share the top of the card. The library names the show: type,
+  // date, venue and place, in one identity zone. When the model wrote a
+  // headline, it opens the overview beneath that zone with its note as the
+  // text; without one, the venue is the headline as before.
   const modelHeadline = unit.title?.trim() || "";
-  const headline = modelHeadline || unit.venue_name || dateLong;
-  const venueInMeta = modelHeadline && unit.venue_name && modelHeadline.toLowerCase() !== unit.venue_name.toLowerCase() ? unit.venue_name : null;
+  const identityName = unit.venue_name || dateLong;
   const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets;
   const initialOpen = wantsSetlistOpen && tabs.some((tab) => tab.id === "setlist") ? "setlist" : null;
 
   return (
     <article className={`card show-unit emphasis-${unit.emphasis}`}>
       <IdRow type="Show" when={dateLong} />
-      <h2>{headline}</h2>
-      <Meta parts={[venueInMeta, unit.location, guestsNode]} />
+      {modelHeadline ? (
+        <>
+          <div className="identity"><Meta parts={[identityName, unit.location, guestsNode]} /></div>
+          <h2 className="overview">{modelHeadline}</h2>
+        </>
+      ) : (
+        <>
+          <h2>{identityName}</h2>
+          <Meta parts={[unit.location, guestsNode]} />
+        </>
+      )}
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={unit.judgments} />
       {shows("listen") && <ListenActionList actions={unit.listen} />}
@@ -1444,7 +1454,7 @@ function ComposedPage({
       {groups.map((group, groupIndex) => {
         const groupTitle = group.blocks.length === 1 && sameHeading(group.title, blockHeading(group.blocks[0])) ? null : group.title;
         return (
-        <section className={`experience-group group-${group.presentation}`} key={groupIndex}>
+        <section className={`experience-group group-${group.presentation}${groupTitle ? " has-heading" : ""}`} key={groupIndex}>
           {(groupTitle || group.lead) && (
             group.presentation === "argument" ? (
               <header className="group-heading claim">

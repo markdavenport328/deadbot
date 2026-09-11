@@ -223,9 +223,9 @@ class ShowUnitRef(_Ref):
     title: str | None = Field(
         default=None,
         description=(
-            "The headline for this show, as a fan would name it: the venue's common name ('Nassau Coliseum', 'The Garden') "
-            "or the show's familiar nickname ('Cornell \'77', 'Veneta'). The card shows the full venue, city and date beneath it, "
-            "so the headline names the place or the legend, in a few words. Omit it to use the venue name."
+            "Your headline for this show: its familiar nickname ('Cornell \'77', 'The Field Trip') or the phrase that says what "
+            "it means in this answer ('A remarkably complete night'). The card names the venue, city and date above your headline, "
+            "and your note is the text beneath it, so the headline is free to interpret. Omit it and the venue name is the headline."
         ),
     )
     type: Literal["show_unit"]

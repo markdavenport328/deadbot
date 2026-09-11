@@ -119,7 +119,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .block-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
 .experience-group + .experience-group { border-top: 1px solid #3e5544; margin-top: var(--space-section); padding-top: var(--space-section); }
 .group-heading { max-width: 65rem; margin: 0 0 var(--space-content); }
-.group-heading h2 { max-width: 36ch; margin: 0; text-wrap: balance; }
+.group-heading h2 { max-width: 36ch; margin: 0; font-size: 1.8rem; letter-spacing: -0.012em; text-wrap: balance; }
+/* One heading per level: inside a titled group, an open block's own title steps
+   down a size so the section heading reads as the heading and the block's as
+   its subject. Cards keep their headline size; a card is a bounded object. */
+.experience-group.has-heading :is(.typography-block h2, .era-unit h2) { font-size: 1.3rem; }
 .group-heading p { max-width: 58rem; margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
 /* Relationships: peers, order, contrast, claim and evidence each have a shape. */
 .group-sequence .group-blocks { position: relative; counter-reset: step; gap: var(--space-unit); padding-left: 3.25rem; }
@@ -219,6 +223,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 .card.emphasis-supporting:is(.show-unit, .album-unit, .performance-unit, .song-overview) > h2 { font-size: 1.6rem; }
 .meta { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
+/* When the model wrote the headline, the library's naming of the show sits
+   above it as one cream identity line, and the headline opens the overview. */
+.show-unit .identity .meta { margin-top: 0.6rem; color: var(--cream); font-size: 1.05rem; font-weight: 500; }
+.show-unit .identity .meta .sep { color: var(--quiet); }
+:is(.show-unit) > h2.overview { margin-top: var(--space-part); }
 .meta .sep { color: var(--quiet); margin: 0 0.4rem; }
 .meta strong { color: var(--cream); font-weight: 600; }
 
