@@ -1,15 +1,29 @@
 #!/usr/bin/env python3
-"""Collect concise writer-credit metadata from Dead.net song pages."""
+"""Collect concise writer-credit metadata from Dead.net song pages.
+
+Runs catalog-wide by default: every canonical song not already covered by an
+existing `data/raw/songs/deadnet-song-credits-*.jsonl` record (from any prior
+year-scoped or catalog run) is fetched and appended to a new run-specific
+output file, `deadnet-song-credits-catalog.jsonl`. Pass `--year YEAR` to
+reproduce the original year-scoped behavior instead.
+
+Retry-safe per docs/collection-methodology.md: requests are made serially at
+the Dead.net editorial rate policy (one request per six seconds, per
+`data/source_registry.json`'s `deadnet-editorial` entry, requests_per_minute:
+10), progress is flushed to a `.partial` file after every song so an
+interrupted run can resume, and a prior successful fetch is never
+overwritten by a later failure.
+"""
 
 from __future__ import annotations
 
-import concurrent.futures
 import argparse
 import csv
 import html
 import json
 import re
 import subprocess
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -18,6 +32,11 @@ ROOT = Path(__file__).resolve().parents[2]
 SONGS = ROOT / "data" / "canonical" / "songs.csv"
 PERFORMANCES = ROOT / "data" / "canonical" / "performances.csv"
 SHOWS = ROOT / "data" / "canonical" / "shows.csv"
+RAW_DIR = ROOT / "data" / "raw" / "songs"
+FILE_PREFIX = "deadnet-song-credits"
+# requests_per_minute: 10 in data/source_registry.json's deadnet-editorial
+# rate_policy averages to one request per six seconds for a sustained run.
+MIN_INTERVAL_SECONDS = 6.0
 
 
 def candidates(slug: str) -> list[str]:
@@ -115,9 +134,13 @@ def fetch_song(song: dict[str, str]) -> dict:
     }
 
 
-def songs_for_year(year: int) -> list[dict[str, str]]:
+def read_songs() -> dict[str, dict[str, str]]:
     with SONGS.open(newline="", encoding="utf-8") as handle:
-        songs = {row["song_id"]: row for row in csv.DictReader(handle)}
+        return {row["song_id"]: row for row in csv.DictReader(handle)}
+
+
+def songs_for_year(year: int) -> list[dict[str, str]]:
+    songs = read_songs()
     with SHOWS.open(newline="", encoding="utf-8") as handle:
         show_ids = {
             row["show_id"] for row in csv.DictReader(handle) if row["show_date"].startswith(f"{year}-")
@@ -127,21 +150,84 @@ def songs_for_year(year: int) -> list[dict[str, str]]:
     return [songs[song_id] for song_id in sorted(song_ids)]
 
 
+def already_covered_song_ids() -> set[str]:
+    """Song ids present in any existing raw record from a prior run.
+
+    Scans every `deadnet-song-credits-*.jsonl` file (year-scoped or catalog),
+    excluding in-progress `.partial` files. A song is "covered" once any
+    attempt (success or failure) has been recorded for it; failures are
+    preserved as evidence rather than re-requested silently, per
+    docs/collection-methodology.md.
+    """
+    covered: set[str] = set()
+    for path in RAW_DIR.glob(f"{FILE_PREFIX}-*.jsonl"):
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line:
+                continue
+            record = json.loads(line)
+            covered.add(record["raw_payload"]["song_id"])
+    return covered
+
+
+def songs_for_catalog() -> list[dict[str, str]]:
+    songs = read_songs()
+    covered = already_covered_song_ids()
+    pending = [songs[song_id] for song_id in sorted(songs) if song_id not in covered]
+    return pending
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("year", type=int, help="show year whose song labels should be enriched")
+    parser.add_argument(
+        "--year",
+        type=int,
+        default=None,
+        help="limit collection to one show year's song set (legacy mode); "
+        "default is catalog-wide over songs not yet covered by any raw record",
+    )
     args = parser.parse_args()
-    songs = songs_for_year(args.year)
-    output = ROOT / "data" / "raw" / "songs" / f"deadnet-song-credits-{args.year}.jsonl"
-    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        records = list(pool.map(fetch_song, songs))
+
+    if args.year is not None:
+        songs = songs_for_year(args.year)
+        output = RAW_DIR / f"{FILE_PREFIX}-{args.year}.jsonl"
+    else:
+        songs = songs_for_catalog()
+        output = RAW_DIR / f"{FILE_PREFIX}-catalog.jsonl"
+
+    partial = output.with_name(output.name + ".partial")
+    existing: dict[str, dict] = {}
+    for prior_path in (path for path in (output, partial) if path.exists()):
+        for line in prior_path.read_text(encoding="utf-8").splitlines():
+            if line:
+                record = json.loads(line)
+                existing[record["raw_payload"]["song_id"]] = record
+
+    records = [existing[song["song_id"]] for song in songs if song["song_id"] in existing]
+    pending = [song for song in songs if song["song_id"] not in existing]
+
+    for index, song in enumerate(pending):
+        if index:
+            time.sleep(MIN_INTERVAL_SECONDS)
+        record = fetch_song(song)
+        records.append(record)
+        with partial.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+        status = record["raw_payload"]["attempts"][-1]["status"] if record["raw_payload"]["attempts"] else 0
+        print(f"{len(records)}/{len(songs)} {song['title']}: HTTP {status}")
+
     records.sort(key=lambda record: record["raw_payload"]["song_id"])
     with output.open("w", encoding="utf-8") as handle:
         for record in records:
             handle.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")) + "\n")
+    partial.unlink(missing_ok=True)
+
     successful = sum(record["raw_payload"]["attempts"][-1]["status"] == 200 for record in records)
     credited = sum(record["raw_payload"]["has_credits"] for record in records)
-    print(f"Preserved {len(records)} {args.year} song records at {output}; {successful} pages resolved and {credited} contain credits.")
+    label = args.year if args.year is not None else "catalog"
+    print(
+        f"Preserved {len(records)} {label} song records at {output}; "
+        f"{successful} pages resolved and {credited} contain credits."
+    )
 
 
 if __name__ == "__main__":

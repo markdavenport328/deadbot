@@ -42,6 +42,19 @@ For `show_performers.csv`, enter one row per person's role-and-instrument assign
 empty; a credit that names a person and a role but no instrument is held in
 the normalizer's review log rather than entered with a placeholder.
 
+`band_memberships.csv` answers "who was in the band, in what role, over what
+dates" directly, instead of requiring a scan of all of `show_performers.csv`.
+One row is one person's role and tenure in a named `act` (`grateful-dead` for
+this pass); a non-contiguous tenure (Mickey Hart leaving in 1971 and
+rejoining in 1975) carries one row per contiguous span. It covers only core
+and officially recognized members -- guests and sit-ins stay in
+`show_performers.csv` and are never promoted here. The read store derives a
+show's standing lineup from this table by date (`get_show`'s
+`band_memberships` field) instead of storing it redundantly on every
+`show_performers` row. See `docs/collection-status-band-membership.md` for
+how the current 13 rows were sourced and cross-checked against the lineup
+evidence.
+
 Resources are generic, source-specific references. `resources.csv` holds a link and descriptive metadata; `resource_songs.csv`, `resource_shows.csv`, and `resource_performances.csv` attach it to the entities it addresses. This lets a future model find interviews, reviews, lessons, tabs, and videos for a song, show, or performance before opening the original link. `song_arrangements.csv` records the version, key, and scope that a music resource describes; `arrangement_chord_sections.csv` records its chord progression by section. Do not treat a chart for one recording or transposition as an authoritative chart for every performance.
 
 Lyrics and other protected works follow the same resource boundary: canonical

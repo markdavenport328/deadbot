@@ -4,15 +4,41 @@
     {
       "source_id": "deadnet-editorial",
       "name": "Dead.net editorial",
-      "host_allowlist": ["dead.net", "www.dead.net"],
+      "host_allowlist": [
+        "dead.net",
+        "www.dead.net"
+      ],
       "authority_level": "official",
       "access_state": "allowed",
       "rights_state": "restricted",
       "review_state": "approved",
-      "allowed_operations": ["search", "read"],
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
       "operation_policies": {
-        "search": {"methods": ["GET"], "paths": ["/search"]},
-        "read": {"methods": ["GET"], "paths": ["/song", "/show", "/person", "/venue", "/album", "/features", "/listen-"]}
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/search"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/song",
+            "/show",
+            "/person",
+            "/venue",
+            "/album",
+            "/features",
+            "/listen-"
+          ]
+        }
       },
       "retention_policy": {
         "mode": "metadata_only",
@@ -32,14 +58,27 @@
     {
       "source_id": "deadcast-metadata",
       "name": "Deadcast metadata-only",
-      "host_allowlist": ["dead.net", "www.dead.net"],
+      "host_allowlist": [
+        "dead.net",
+        "www.dead.net"
+      ],
       "authority_level": "official",
       "access_state": "allowed",
       "rights_state": "restricted",
       "review_state": "approved",
-      "allowed_operations": ["read"],
+      "allowed_operations": [
+        "read"
+      ],
       "operation_policies": {
-        "read": {"methods": ["GET"], "paths": ["/deadcast"]}
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/deadcast",
+            "/deadcast-index"
+          ]
+        }
       },
       "retention_policy": {
         "mode": "metadata_only",
@@ -51,24 +90,54 @@
       "rate_policy": {
         "requests_per_minute": 6,
         "burst": 1,
-        "min_interval_seconds": 2,
+        "min_interval_seconds": 10,
         "retry_after_seconds": 60
       },
-      "adapter_version": "deadcast-metadata-v1",
-      "notes": "Episode title, date, scope, and source link only; no transcript or audio retrieval or redistribution."
+      "adapter_version": "deadcast-metadata-v2",
+      "notes": "Episode title, date, scope, and source link only; no transcript or audio retrieval or redistribution. v2 (2026-09-11) adds /deadcast-index, the site's own unpaginated episode archive listing (title, URL, season heading and publish date per row for all episodes), so scripts/collect/collect_deadcast_episode_index.py can index the full catalog without a per-episode request; robots.txt permits both paths with no crawl-delay. min_interval_seconds raised to 10 to match the 6 requests/minute ceiling already set here."
     },
     {
       "source_id": "musicbrainz-api",
       "name": "MusicBrainz web service",
-      "host_allowlist": ["musicbrainz.org"],
+      "host_allowlist": [
+        "musicbrainz.org"
+      ],
       "authority_level": "curated",
       "access_state": "allowed",
       "rights_state": "cleared",
       "review_state": "approved",
-      "allowed_operations": ["search", "browse"],
+      "allowed_operations": [
+        "search",
+        "browse",
+        "lookup"
+      ],
       "operation_policies": {
-        "search": {"methods": ["GET"], "paths": ["/ws/2/artist/"]},
-        "browse": {"methods": ["GET"], "paths": ["/ws/2/release-group", "/ws/2/release"]}
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/ws/2/artist/",
+            "/ws/2/work"
+          ]
+        },
+        "browse": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/ws/2/release-group",
+            "/ws/2/release"
+          ]
+        },
+        "lookup": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/ws/2/artist/"
+          ]
+        }
       },
       "retention_policy": {
         "mode": "metadata_only",
@@ -83,20 +152,39 @@
         "retry_after_seconds": 30
       },
       "adapter_version": "musicbrainz-api-v1",
-      "notes": "JSON web service only, one request per second, descriptive User-Agent required. Covers artist search plus release-group and release browse used by scripts/collect/fetch_musicbrainz_live_releases.py and fetch_musicbrainz_studio_releases.py. No cover art or annotation text is retrieved or stored. fetch_musicbrainz_song_works.py's /ws/2/work search is a separate, unverified gap tracked outside this entry."
+      "notes": "JSON web service only, one request per second, descriptive User-Agent required. Covers artist search plus release-group and release browse used by scripts/collect/fetch_musicbrainz_live_releases.py and fetch_musicbrainz_studio_releases.py, and work search (/ws/2/work) used by fetch_musicbrainz_song_works.py to look up composition credits; the work-search path was added to operation_policies during the 2026-09-10 catalog-wide song-credit pass after confirming the path, method, and rate policy match this entry. The 2026-09-11 'lookup' operation is scripts/collect/fetch_band_membership_sources.py's single by-MBID GET on the Grateful Dead artist entity with inc=artist-rels, read for 'member of band' relations (begin/end/ended dates) feeding data/canonical/band_memberships.csv; it retrieves only those relation fields. No cover art or annotation text is retrieved or stored."
     },
     {
       "source_id": "wikipedia-api",
       "name": "Wikipedia API (en)",
-      "host_allowlist": ["en.wikipedia.org"],
+      "host_allowlist": [
+        "en.wikipedia.org"
+      ],
       "authority_level": "curated",
       "access_state": "allowed",
       "rights_state": "restricted",
       "review_state": "approved",
-      "allowed_operations": ["search", "read"],
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
       "operation_policies": {
-        "search": {"methods": ["GET"], "paths": ["/w/api.php"]},
-        "read": {"methods": ["GET"], "paths": ["/w/api.php"]}
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/w/api.php"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/w/api.php"
+          ]
+        }
       },
       "retention_policy": {
         "mode": "metadata_only",
@@ -112,8 +200,54 @@
       },
       "adapter_version": "wikipedia-api-v1",
       "notes": "JSON MediaWiki action API only, one request per second, descriptive User-Agent required. 'search' is action=query&list=search to resolve an ambiguous album title to the confidently correct article; 'read' is action=query&prop=revisions with rvslots=main to fetch that article's current wikitext. Used by scripts/collect/fetch_wikipedia_album_dates.py to sharpen imprecise official_releases.release_date values. Only the infobox 'Released' field is extracted and stored, verbatim, alongside article title, page id, revision id and URL; no other article text, images, or full wikitext is retained."
-    }
-,
+    },
+    {
+      "source_id": "wikidata-api",
+      "name": "Wikidata API",
+      "host_allowlist": [
+        "www.wikidata.org"
+      ],
+      "authority_level": "curated",
+      "access_state": "allowed",
+      "rights_state": "cleared",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/w/api.php"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/w/api.php"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 55,
+        "burst": 1,
+        "min_interval_seconds": 1,
+        "retry_after_seconds": 30
+      },
+      "adapter_version": "wikidata-api-v1",
+      "notes": "JSON wbgetclaims and wbgetentities actions on the public Wikidata API only, one request per second, descriptive User-Agent 'Deadbot/0.1 (band membership research; contact via repository)' required. Used by scripts/collect/fetch_band_membership_sources.py to read: P527 ('has part(s)') on the Grateful Dead item (Q212533) for its member list and any start(P580)/end(P582) qualifiers on that statement; each member's own P463 ('member of') statement for the band with its own P580/P582 qualifiers; and each member's date of birth (P569) and date of death (P570). No other Wikidata statement, sitelink, or property is read or stored. Wikidata's own data is CC0; only the compact fields named above are retained, feeding data/canonical/band_memberships.csv and the birth_date/death_date fill in data/canonical/people.csv. Venue geography (2026-09-10): JSON MediaWiki action API only, one request per second, descriptive User-Agent required. 'search' is action=wbsearchentities to find venue-name candidates; 'read' is action=wbgetentities to fetch a candidate's English label, English aliases, and a fixed claim set: P625 (coordinate location), P31 (instance of), P131 (located in the administrative territorial entity), P17 (country), P1083 (capacity). Used by scripts/collect/fetch_wikidata_venues.py to resolve venues.csv latitude/longitude, setting, capacity and state_region, and by scripts/normalize_wikidata_venues.py to decide which candidates are confident enough to promote. Data is CC0; only the listed properties, the item QID, and label/alias text used for matching are retained -- no other statements, images, or sitelinks."
+    },
     {
       "source_id": "lostlivedead-feed",
       "name": "Lost Live Dead post feed",
@@ -470,6 +604,57 @@
       },
       "adapter_version": "gdao-archive-v1",
       "notes": "UC Santa Cruz Library's Omeka archive of posters, tickets, photographs, fan art and first-person recollections, queried through its public /api/items endpoint by date; scripts/collect/collect_gdao_show_items.py indexes item metadata only: item id, title, item type, item sets, date and coverage fields, creator, item page URL and at most 200 characters of the item description, never files, media or thumbnails. Contributed recollections are subjective testimony: cite the archive and the contributor and do not treat an item as a canonical show fact. Entry restored by the Task A agent after a file revert dropped it; Task B owns its content and should review the paths and notes."
+    },
+    {
+      "source_id": "whitegum-lyric-finder",
+      "name": "Alex Allan's Grateful Dead Lyric and Song Finder",
+      "host_allowlist": [
+        "whitegum.com",
+        "www.whitegum.com"
+      ],
+      "authority_level": "community",
+      "access_state": "allowed",
+      "rights_state": "restricted",
+      "review_state": "approved",
+      "allowed_operations": [
+        "search",
+        "read"
+      ],
+      "operation_policies": {
+        "search": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/longlist.htm"
+          ]
+        },
+        "read": {
+          "methods": [
+            "GET"
+          ],
+          "paths": [
+            "/robots.txt",
+            "/songfile/",
+            "/~acsa/songfile/"
+          ]
+        }
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "store_page_text": false,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 30,
+        "burst": 1,
+        "min_interval_seconds": 2,
+        "retry_after_seconds": 60
+      },
+      "adapter_version": "whitegum-lyric-finder-v1",
+      "notes": "Alex Allan's per-song lyric-and-annotation pages, discovered through the site's own full-site index at /longlist.htm (title, URL and section per song, including 'see' cross-reference aliases; no per-page request needed to enumerate). The index's own hrefs resolve under /~acsa/songfile/ (an Apache user-directory alias for Alex Allan's account); a plain /songfile/ path answers the same content (spot-checked), but this pass stores the literal URL the index gave and the collector fetched, so both prefixes are listed here. Source review 2026-09-11: robots.txt allows all paths except /contact.htm, with no Crawl-delay; no terms-of-use, licensing, or attribution-requirement page exists anywhere on the site (checked / (home), /alex.htm, /intro3.htm, footer of a sampled songfile page). Each songfile page itself displays full lyric text and third-party annotation prose, which is the site's own copyright exposure, not this project's; this entry stores only a page title and URL per song, never the displayed lyrics or notes, matching the metadata-only boundary already applied to the research-blog and Deadhead High entries in this registry. Attribution on every stored row: 'Grateful Dead Lyric and Song Finder / whitegum.com', creator 'Alex Allan'."
     }
   ]
 }

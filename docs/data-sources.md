@@ -16,6 +16,7 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Licensing / usage considerations: TBD. Use low-volume, source-attributed collection only until terms and an appropriate access method are reviewed.
 - Potential canonical entities populated: Shows, venues, performances, people, show performers, and recording cross-references.
 - Known limitations: Public page data is not yet a bulk-import interface; source-specific title, instrument, and setlist notation require normalization.
+- Access state (2026-09-10/11): Every request from this environment to `jerrybase.com`, including `GET /events?year=1972` with the same `User-Agent` string the performer collector used successfully on 2026-08-26, now returns HTTP 403. This is recorded as an access state, not as an absence of tour, setlist, or performer data on the source; no browser user agent or proxy was tried to work around it. The event pages' tour field (used for the one existing `gd-1972-08-27` `tour_name` row) remains held pending renewed access — see `docs/collection-status-show-tours.md`.
 
 ## gdshowsdb
 
@@ -82,14 +83,14 @@ For each candidate, assess data quality, terms, attribution requirements, access
 
 ## Relisten
 
-- What it provides: Public browsing of shows, recording sources, source types, taper/transfer details, SHNIDs, lineages, and track-level presentation.
-- Access method: Public JSON API (`https://api.relisten.net/api/v2/artists/grateful-dead/years/<year>` and `/years/<year>/<date>`), confirmed working 2026-09-01. `scripts/collect/fetch_relisten_years.py` fetches one year listing per request at one request per second with a descriptive User-Agent and stores compact metadata only.
-- Structured fields: Per show, display date, source count, average rating, soundboard/FLAC flags, venue name and location; per source, source type, taper, transferer, SHNID, lineage, and per-track archive.org stream URLs.
-- Coverage: 31 year listings (1965–1995) preserved in `data/raw/recordings/relisten-years.jsonl`; 2,080 Relisten show dates, 1,963 of which match canonical shows. Those shows now carry a `show_links` row (`platform=relisten`, `link_type=streaming-show-page`) pointing at `https://relisten.net/grateful-dead/YYYY/MM/DD`. 144 Relisten dates have no canonical show and are reconciliation candidates. See `docs/collection-status-show-listening-links.md`.
-- Authority / reliability: Secondary. Relisten is a player over the Internet Archive's Grateful Dead collection; its ratings and review counts are archive.org community signals surfaced through the API. Preserve identifiers and compare against the underlying item metadata.
-- Licensing / usage considerations: The about page describes a free, non-commercial, open-source project (API server MIT, web client AGPL-3.0) that complies with Archive.org policy and posts the band's taping and distribution stipulations. No written API terms, rate limits, or usage policy were found; the API docs endpoint is not public. Current use is 31 metadata requests and link-outs to Relisten's own pages. Ask the Relisten team (GitHub or Discord) before higher-volume or scheduled collection, and add a source-registry entry before the runtime agent reads Relisten directly. Name Relisten as the player and the Internet Archive as the recording source in any user-facing surface.
-- Potential canonical entities populated: Show links today; recordings, performance recordings, and source cross-references later.
-- Known limitations: Relisten lists one show per date, so early and late shows on the same date share a URL (54 rows, noted on each row). Shows with no known tape (nearly all 1965–1970 gaps) do not appear.
+- What it provides: Public browsing of shows, recording sources, source types, taper/transfer details, SHNIDs, lineages, track-level presentation, and (per show) the band's own touring-run assignment.
+- Access method: Public JSON API (`https://api.relisten.net/api/v2/artists/grateful-dead/years/<year>` and `/years/<year>/<date>`), confirmed working 2026-09-01. `scripts/collect/fetch_relisten_years.py` fetches one year listing per request at one request per second with a descriptive User-Agent and stores compact metadata only. `scripts/collect/fetch_relisten_tours.py` calls the identical per-year endpoint (a separate raw file, not an additional request volume increase in kind) to preserve each show's `tour` object; `GET /api/v2/artists/grateful-dead/tours` separately enumerates the closed list of named tours this data model supports.
+- Structured fields: Per show, display date, source count, average rating, soundboard/FLAC flags, venue name and location, and a `tour` object (name, slug, uuid, start/end date) or null; per source, source type, taper, transferer, SHNID, lineage, and per-track archive.org stream URLs.
+- Coverage: 31 year listings (1965–1995) preserved in `data/raw/recordings/relisten-years.jsonl`; 2,080 Relisten show dates, 1,963 of which match canonical shows. Those shows now carry a `show_links` row (`platform=relisten`, `link_type=streaming-show-page`) pointing at `https://relisten.net/grateful-dead/YYYY/MM/DD`. 144 Relisten dates have no canonical show and are reconciliation candidates. See `docs/collection-status-show-listening-links.md`. Tour data (2026-09-11): a separate raw file, `data/raw/recordings/relisten-tours.jsonl`, preserves the per-show `tour` field for the same 31 years. The source models only eight named touring runs (Spring 1970, Europe 1972, Summer 1974, Summer 1976, Spring 1977, Summer 1988, Spring 1990, Fall 1993); every other show, including well-known runs such as Egypt '78 or Fall '73, falls under its "Not Part of a Tour" catch-all. `scripts/normalize_show_tours.py` promoted 151 canonical `tour_name` values from the eight named tours (152 total with one pre-existing JerryBase-sourced row); 2,206 shows remain blank. See `docs/collection-status-show-tours.md`.
+- Authority / reliability: Secondary. Relisten is a player over the Internet Archive's Grateful Dead collection; its ratings and review counts are archive.org community signals surfaced through the API. Its tour tagging is itself sourced upstream from jerrygarcia.com data, per the artist endpoint's `upstream_sources`. Preserve identifiers and compare against the underlying item metadata; do not treat its eight-tour list as an exhaustive touring history.
+- Licensing / usage considerations: The about page describes a free, non-commercial, open-source project (API server MIT, web client AGPL-3.0) that complies with Archive.org policy and posts the band's taping and distribution stipulations. No written API terms, rate limits, or usage policy were found; the API docs endpoint is not public. Current use is 31 metadata requests per collection pass and link-outs to Relisten's own pages. Ask the Relisten team (GitHub or Discord) before higher-volume or scheduled collection, and add a source-registry entry before the runtime agent reads Relisten directly. Name Relisten as the player and the Internet Archive as the recording source in any user-facing surface.
+- Potential canonical entities populated: Show links and `tour_name` today; recordings, performance recordings, and source cross-references later.
+- Known limitations: Relisten lists one show per date, so early and late shows on the same date share a URL (54 rows, noted on each row) and, where relevant, the same tour assignment. Shows with no known tape (nearly all 1965–1970 gaps, plus isolated dates elsewhere such as 1970-04-26 and 1970-05-10) do not appear in the per-year listing at all, so a date can be part of a named tour by the source's own `/tours` totals yet still be unreachable through the per-show listing this project reads. Its named-tour list is narrow (eight runs across 31 years) compared to how Deadheads discuss touring history; see "Held for later" in `docs/collection-status-show-tours.md`.
 
 ## Research blogs (Lost Live Dead, Hooterollin' Around, Grateful Dead Guide / Deadessays, Dead Sources, Grateful Seconds)
 
@@ -182,11 +183,59 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - What it provides: Work-level title, composer, lyricist, and writer relationships, with stable work and artist identifiers.
 - Access method: Official JSON web service at `musicbrainz.org/ws/2/work`; the collection script spaces requests and preserves the query/result summary.
 - Structured fields: Work ID, title, score, ISWC values where supplied, and source-reported composer/lyricist/writer relationships.
-- Coverage: 80 title queries for the 1972 song set; 60 responses were available in the collected run, with 52 exact-title matches and 51 exact matches carrying credit relations.
+- Coverage: 80 title queries for the 1972 song set; 60 responses were available in the collected run, with 52 exact-title matches and 51 exact matches carrying credit relations. The 2026-09-11 catalog-wide pass queried the other 262 songs not covered by the 1970-1972 runs; all 262 resolved (HTTP 200) after two bounded retry passes handled transient `503`s, 233 had at least one exact title-key match, and 162 of those 262 songs received a promoted canonical credit (68 held as ambiguous exact-title-key matches that disagreed on credits, e.g. "A Day In the Life"). See `docs/collection-status-song-credits-catalog.md`.
 - Authority / reliability: Secondary structured catalog for composition-credit reconciliation. Exact-title results are not automatically authoritative for a Dead performance when a title is shared by unrelated works.
 - Licensing / usage considerations: Preserve identifiers, concise metadata, and source URLs; review MusicBrainz attribution/database terms before redistributing a larger derived dataset.
 - Potential canonical entities populated: Songs, people, and role-level song-writer relationships.
 - Known limitations: Title-only search can return unrelated works, traditional works may not map to a person, and a work's role model may differ from a source's display convention. Ambiguous matches remain in raw records and are not canonicalized.
+
+## Band membership (MusicBrainz + Wikidata)
+
+- What it provides: Who was a core or officially recognized Grateful Dead
+  member, in what role, and over what dates, plus each member's date of birth
+  and (where applicable) date of death.
+- Access method: `scripts/collect/fetch_band_membership_sources.py` makes two
+  requests, one second apart, both read-only and unauthenticated: MusicBrainz
+  `GET /ws/2/artist/6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6?inc=artist-rels` for
+  the Grateful Dead artist's `member of band` relations (`begin`/`end`/
+  `ended`, plus role attributes such as `keyboard`); and Wikidata
+  `wbgetclaims` for the band item (`Q212533`) property `P527` ("has part(s)")
+  to enumerate members, followed by `wbgetentities` on each member QID for
+  their label, date of birth (`P569`), date of death (`P570`), and their own
+  `P463` ("member of") statement for the band with its `P580`/`P582` start/end
+  qualifiers. `scripts/normalize_band_membership.py` reads those raw records
+  plus `show_performers.csv`'s `role == "performer"` rows (never `guest`) to
+  cross-check each source tenure against the band's own documented lineup and
+  writes `data/canonical/band_memberships.csv`.
+- Structured fields: MusicBrainz artist MBID, relation begin/end/ended and
+  attributes; Wikidata QID, birth/death dates, and member-of start/end
+  qualifiers at whatever precision (year, sometimes month) Wikidata records.
+- Coverage (2026-09-11): 13 tenure rows for 12 people -- the five
+  1965-founding members (Garcia, Weir, Lesh, Kreutzmann, Pigpen), Mickey Hart
+  across two tenures (1967-1971 and 1975-1995), the post-Pigpen keyboardists
+  (Constanten, Keith Godchaux, Mydland, Welnick), Donna Jean Godchaux, and
+  touring auxiliary member Bruce Hornsby. `people.csv` `birth_date`/
+  `death_date` were filled for the same 12 people (plus their two
+  JerryBase `(complete show)` duplicate rows) from Wikidata. See
+  `docs/collection-status-band-membership.md` for the full comparison,
+  including where MusicBrainz, Wikidata, and the lineup evidence disagree.
+- Authority / reliability: Both are secondary structured catalogs, cross-checked
+  against the band's own canonical performance ledger rather than trusted
+  alone; `show_performers` evidence is preferred for exact dates, with the
+  source claims retained in `notes` for comparison.
+- Licensing / usage considerations: MusicBrainz core data and Wikidata
+  statements are both CC0. Rows cite the MusicBrainz artist MBID (all rows
+  in this pass) and name the corroborating Wikidata QID in `notes`.
+- Potential canonical entities populated: `band_memberships`, and the
+  `birth_date`/`death_date` columns of `people`.
+- Known limitations: This pass covers only the twelve core/officially
+  recognized members documented by both sources; MusicBrainz's relation also
+  names Robert Hunter (lyricist, never a performing member) and Rob Wasserman
+  (a solo/duo collaborator), both excluded as not band members. A held
+  disagreement remains for Pigpen's end date (MusicBrainz gives his death
+  year 1973; Wikidata and the lineup evidence agree on his last performance,
+  1972-06-17) -- see the status doc rather than treating either as settled
+  without review.
 
 ## Official Grateful Dead releases / catalog
 
@@ -209,6 +258,17 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Licensing / usage considerations: Wikipedia article text is CC BY-SA (share-alike, attribution required), not CC0. Only a short, verbatim infobox field is extracted and stored — never article prose, images, or full wikitext — and rows cite the article URL and revision id in the raw record for attribution.
 - Potential canonical entities populated: `official_releases.release_date` only, at finer precision.
 - Known limitations: A conflicting year is a review item for a human, not something this pass resolves; the four conflicts above are open questions. The search step's confidence rule is curated per-album for the 2026-09-06 catalog; an album added to the target set later falls back to a generic title-fold heuristic that may need its own curated entry if the fallback cannot find a unique match.
+
+## Wikidata
+
+- What it provides: A structured, CC0-licensed knowledge base entry per venue, when one exists — coordinate location, instance-of class (arena, theatre, stadium, fairground, and so on), the administrative-entity chain a place sits in (city, county/state or province, country), and, where an editor has entered it, a stated maximum capacity.
+- Access method: The public MediaWiki action API at `www.wikidata.org/w/api.php` (JSON, one request per second, descriptive User-Agent). `scripts/collect/fetch_wikidata_venues.py` searches each canonical venue by name (`action=wbsearchentities`), then fetches every candidate's English label, English aliases, and a fixed claim set (`action=wbgetentities`; P625 coordinate location, P31 instance of, P131 located-in, P17 country, P1083 capacity), walking P131 upward until it reaches a country. `scripts/normalize_wikidata_venues.py` makes every promotion decision offline from that raw data; see `docs/collection-status-venue-geography.md` for the matching rule and counts.
+- Structured fields: QID, English label, English aliases, coordinate location, instance-of QIDs and their labels, the located-in chain and its labels, country, and stated capacity.
+- Coverage: See `docs/collection-status-venue-geography.md` for the requested/confident/held/unmatched counts and setting/capacity coverage from the 2026-09 pass over all 595 `venues.csv` rows.
+- Authority / reliability: Curated, crowd-edited knowledge base. A candidate is promoted only when its label or an alias matches the venue name after normalization and its location chain independently confirms the canonical city; anything short of that (no candidate, no name match, a name match whose city disagrees, or more than one qualifying candidate) is held for human review rather than guessed, and a held venue's coordinates are never backed by a city centroid presented as the venue.
+- Licensing / usage considerations: Wikidata's own data is dedicated to the public domain (CC0). The QID is recorded in `venues.csv` `notes` for every promoted match so the decision stays reviewable and reproducible.
+- Potential canonical entities populated: `venues.csv` latitude, longitude, setting, capacity, and state_region (only for the rows that started blank).
+- Known limitations: Coverage is uneven — a well-known arena or stadium usually has a Wikidata item with coordinates, but a small club, a college fieldhouse, or a private residence often does not, and this pass does not fabricate a location for those. Instance-of classification is limited to the ten explicit terms in the collection brief (five outdoor, five indoor); anything else — a university building, a generic hall, a convention center — is left blank rather than assigned a guessed setting.
 
 ## YouTube
 
@@ -237,11 +297,12 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - What it provides: Official editorial articles, podcast episodes and transcripts, archival interview excerpts, song histories, show oral histories, and release context.
 - Access method: Public web pages; retain links and concise metadata rather than copying articles or transcripts.
 - Structured fields: Title, author or host, source URL, publication date where displayed, resource type, and song/show/performance relationship.
-- Coverage: The 1972 song pass resolved 54 Dead.net song pages for the 80-title set; 51 expose lyric-page content and 52 expose credit fields. The canonical layer stores source links and concise metadata, not full lyrics.
+- Coverage: The 1972 song pass resolved 54 Dead.net song pages for the 80-title set; 51 expose lyric-page content and 52 expose credit fields. The canonical layer stores source links and concise metadata, not full lyrics. The 2026-09-11 catalog-wide pass requested the other 262 songs at one request per six seconds (this source's `requests_per_minute: 10` rate policy); 107 pages resolved and 105 expose a credit field. Every canonical song has now been attempted against this source at least once. See `docs/collection-status-song-credits-catalog.md`.
+- Deadcast coverage: The 2026-09-11 episode-index pass indexed all 129 Good Ol' Grateful Deadcast episodes published so far (13 seasons) from the site's own unpaginated archive listing at `/deadcast-index`, one request in total beyond `robots.txt` — that single page carries every episode's title, URL, season and publish date, so no per-episode request was needed (two representative episode pages were checked by hand and confirmed the index's fields exactly match the live page; see `docs/collection-status-lore-deadcast.md`). 126 new `podcast-episode` resource rows were added (3 episode URLs already had a row from an earlier pass and were left untouched); 4 episodes mapped to a canonical show and 36 to one or two canonical songs (37 `resource_songs` rows) from the episode's own title, conservatively — a title giving only a month and year, or a segment naming more than one canonical song, is held or left unmapped rather than guessed at. 1 episode ("Weather Report Suite") was held for naming two canonical songs at once.
 - Authority / reliability: First-party editorial context and a strong starting point for the retrieval layer. Statements from interview subjects, especially recollections of origins or events, stay attributed to that source.
-- Licensing / usage considerations: Store metadata, short editorial scope notes, and links only; do not copy or redistribute transcripts/audio absent a separately reviewed right.
+- Licensing / usage considerations: Store metadata, short editorial scope notes, and links only; do not copy or redistribute transcripts/audio absent a separately reviewed right. The `deadcast-metadata` registry entry (`data/source_registry.json`) is metadata-only and now (v2) allows both `/deadcast` and `/deadcast-index`, at one request per ten seconds.
 - Potential canonical entities populated: Generic resources and resource-to-song/show/performance relationships; occasionally a reviewed supporting source for a future canonical fact.
-- Known limitations: Editorial accounts are not automatically a canonical authority for all historical claims, and podcast pages may not show a publication date.
+- Known limitations: Editorial accounts are not automatically a canonical authority for all historical claims, and podcast pages may not show a publication date. Episode titles that give only a month/year or month/day (common in the "Friend Of the Devils", "Summer Magic" and "In and Out Of The Garden" episode groups) name no single show unambiguously and are left unmapped; a segment that only partly names a canonical song (extra trailing words) also stays unmapped rather than force a match.
 
 ## Independent reporting and archive-hosted memoirs
 
@@ -253,6 +314,17 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Licensing / usage considerations: Store links, metadata, and concise notes only. Archive-hosted memoirs may have separate reuse restrictions.
 - Potential canonical entities populated: Generic contextual resources and source-attributed anecdotal evidence.
 - Known limitations: A memoir's impressions and remembered details are subjective; reported figures and claims need corroboration before use as canonical data.
+
+## David Dodd's Annotated Grateful Dead Lyrics (UC Santa Cruz / whitegum.com)
+
+- What it provides: David Dodd's song-by-song lyric annotations, the standard reference for the sources, allusions and history behind Grateful Dead lyrics.
+- Access method: Two hosts. The original home, `artsites.ucsc.edu/GDead/agdl/`, does not respond at all from this environment (a connection failure, not a 404; verified 2026-09-10 and reconfirmed 2026-09-11) — its absence is recorded, not treated as though the pages never existed. Alex Allan's `whitegum.com` hosts an independent, currently-reachable "Grateful Dead Lyric and Song Finder" with a per-song page under `/songfile/` for nearly every song the band and its members' side projects performed; each page links out to Dodd's own essay (via the Wayback Machine, since the UCSC original no longer resolves) alongside its own lyric-variant notes. The site's own full index, `/longlist.htm`, lists every song's title, URL and section in one page, so the 2026-09-11 pass needed no per-song URL guessing to discover a candidate page — only one confirming request per resolved song.
+- Structured fields: Page title, URL, and the canonical song it was resolved for.
+- Coverage: 2026-09-11 pass: 376 of 436 canonical songs resolved to exactly one whitegum.com page (one confirming request each); 7 resolved to more than one distinct page (14 pages fetched, held for review — e.g. a Grateful Dead original and an unrelated Phil & Friends cover sharing the same title, "Rain" and "Forever Young" among them); 53 had no matching page at source, mostly title-spelling variants ("Cosmic Charley" vs. canonical "Cosmic Charlie") or Deadbot-internal placeholder entries (unidentified jam ids) that were never going to appear on an external site. See `docs/collection-status-lore-lyric-annotations.md`.
+- Authority / reliability: Dodd's own essays are the field's standard reference, cited throughout Grateful Dead scholarship; whitegum.com is an independent fan compilation that quotes and cross-references Dodd's work rather than being it, and is treated here as a community source, not an official one.
+- Licensing / usage considerations: Source review 2026-09-11 — `robots.txt` allows every path except `/contact.htm`, no `Crawl-delay`; no terms-of-use, licensing or attribution-requirement statement exists anywhere on the site (home page, author bio, and a sampled song page's footer were all checked). Each `/songfile/` page displays full lyric text and third-party annotation prose, which is the site's own copyright exposure; this project stores only a page title and URL per song, matching the metadata-only boundary already used for the research-blog and Deadhead High entries. See the `whitegum-lyric-finder` entry in `data/source_registry.json` for the full finding.
+- Potential canonical entities populated: Generic resources (`resource_type lyric-annotation`) and `resource_songs` rows (`relationship_type annotates`).
+- Known limitations: A title-spelling mismatch between the canonical song and the site's own spelling is a real gap this pass does not close (e.g. "Turn On Your Lovelight" vs. the site's "Turn On Your Love Light", "And We Bid You Good Night" vs. "...Goodnight"); closing it would need a curated alias list, which was judged not worth the risk of a false match for a one-off pass. The UCSC original stays unreachable from this environment; if it becomes reachable again, it is the more authoritative host and should be indexed directly rather than only through whitegum.com's cross-references to it.
 
 ## Apple Music
 

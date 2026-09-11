@@ -14,6 +14,7 @@ def test_reviewed_seed_loads_with_every_metadata_adapter():
         "deadcast-metadata",
         "musicbrainz-api",
         "wikipedia-api",
+        "wikidata-api",
         "lostlivedead-feed",
         "hooterollin-feed",
         "deadessays-feed",
@@ -21,6 +22,7 @@ def test_reviewed_seed_loads_with_every_metadata_adapter():
         "gratefulseconds-feed",
         "deadheadhigh-guides",
         "gdao-archive",
+        "whitegum-lyric-finder",
     }
     for source in sources:
         assert source["review_state"] == "approved"

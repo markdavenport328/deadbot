@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (7);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (9);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -119,8 +119,16 @@ CREATE TABLE venues (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     notes TEXT,
+    -- Scope the notable-weather question family: 'indoor'/'outdoor' only when
+    -- Wikidata's instance-of (or an explicit source statement) makes the
+    -- class unambiguous; capacity only where Wikidata states it. A blank is
+    -- deliberate -- see docs/collection-status-venue-geography.md.
+    setting TEXT,
+    capacity INTEGER,
     CHECK (latitude IS NULL OR latitude BETWEEN -90 AND 90),
-    CHECK (longitude IS NULL OR longitude BETWEEN -180 AND 180)
+    CHECK (longitude IS NULL OR longitude BETWEEN -180 AND 180),
+    CHECK (setting IS NULL OR setting IN ('indoor', 'outdoor')),
+    CHECK (capacity IS NULL OR capacity > 0)
 );
 
 CREATE TABLE equipment (
@@ -165,6 +173,37 @@ CREATE TABLE song_writers (
     notes TEXT,
     PRIMARY KEY (song_id, person_id, writer_role)
 );
+
+-- One row per person's role and tenure in a named act. act is a stable text
+-- identifier ('grateful-dead' for this pass), not a foreign key to a band
+-- table, because the catalog does not yet model bands as entities in their
+-- own right. A person with a non-contiguous tenure (for example, Mickey Hart
+-- leaving and rejoining) carries one row per contiguous span. end_date is
+-- nullable so a currently active tenure in a future act need not invent an
+-- end, but every Grateful Dead row in this pass carries an explicit end date
+-- -- 1995-07-09 for a tenure that ran to the band's last show -- rather than
+-- leaving it blank.
+CREATE TABLE band_memberships (
+    membership_id TEXT PRIMARY KEY,
+    person_id TEXT NOT NULL REFERENCES people (person_id) ON DELETE CASCADE,
+    act TEXT NOT NULL,
+    role TEXT NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE,
+    start_precision TEXT NOT NULL,
+    end_precision TEXT,
+    source_key TEXT,
+    source_record_id TEXT,
+    notes TEXT,
+    UNIQUE (person_id, act, start_date),
+    CHECK (end_date IS NULL OR end_date >= start_date),
+    CHECK (start_precision IN ('day', 'month', 'year')),
+    CHECK (end_precision IS NULL OR end_precision IN ('day', 'month', 'year')),
+    CHECK (end_date IS NOT NULL OR end_precision IS NULL)
+);
+
+CREATE INDEX band_memberships_person_id_idx ON band_memberships (person_id);
+CREATE INDEX band_memberships_act_dates_idx ON band_memberships (act, start_date, end_date);
 
 CREATE TABLE resources (
     resource_id TEXT PRIMARY KEY,

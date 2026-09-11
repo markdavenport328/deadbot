@@ -8,6 +8,18 @@
 - `deadcast-metadata`: approved first-party episode metadata and links under
   `/deadcast`; it does not retrieve or retain transcript or audio content.
 
+It also defines `wikidata-api`: the public Wikidata JSON web service at
+`www.wikidata.org/w/api.php`, one request per second with a descriptive
+User-Agent, metadata-only retention. `scripts/collect/fetch_band_membership_sources.py`
+uses it to read the Grateful Dead item's member list (`P527`) and each
+member's own `member of` statement (`P463`) with their start/end (`P580`/
+`P582`) qualifiers, plus date of birth (`P569`) and date of death (`P570`) --
+feeding `data/canonical/band_memberships.csv` and the `birth_date`/
+`death_date` fill in `data/canonical/people.csv`. The same script's second
+request extends `musicbrainz-api`'s existing `search`/`browse` operations
+with a new `lookup` operation (`GET /ws/2/artist/<mbid>?inc=artist-rels`) for
+the band's own "member of band" relations.
+
 Each entry includes the schema-v3 authority, access, rights, and review states,
 adapter version, retention and rate policies, and an operation policy that
 combines an HTTP method allowlist with path prefixes. The JSON seed is
