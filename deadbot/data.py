@@ -37,7 +37,7 @@ class CanonicalStore:
     def by_id(self) -> dict[str, dict[str, dict[str, str]]]:
         result: dict[str, dict[str, dict[str, str]]] = {}
         for table, rows in self.tables.items():
-            singular = {"people": "person", "official_releases": "release"}.get(
+            singular = {"people": "person", "official_releases": "release", "band_memberships": "membership"}.get(
                 table, table[:-1] if table.endswith("s") else table
             )
             id_column = f"{singular}_id"
@@ -568,6 +568,49 @@ class CanonicalStore:
             summary["show_id"] = row.get("show_id", "")
         return summary
 
+    def band_lineup(self, show_date: str, act: str = "grateful-dead") -> list[dict[str, str]]:
+        """The band_memberships rows covering one date, for one act.
+
+        A membership covers a date when its start_date is on or before that
+        date and its end_date (when present) is on or after it. This derives
+        "who was in the band" for a given show date from the small
+        band_memberships table rather than requiring show_performers to
+        repeat it on every row.
+        """
+
+        if not show_date:
+            return []
+        people = self.by_id.get("people", {})
+        lineup = []
+        for row in self.rows("band_memberships"):
+            if row.get("act") != act:
+                continue
+            start = row.get("start_date", "")
+            end = row.get("end_date", "")
+            if start and start > show_date:
+                continue
+            if end and end < show_date:
+                continue
+            person = people.get(row.get("person_id", ""))
+            lineup.append(
+                {
+                    "person_id": row.get("person_id", ""),
+                    "name": (person.get("name") if person else None) or row.get("person_id", ""),
+                    "role": row.get("role", ""),
+                    "start_date": start,
+                    "end_date": end,
+                }
+            )
+        lineup.sort(key=lambda item: item["name"].casefold())
+        return lineup
+
+    def person_band_memberships(self, person_id: str) -> list[dict[str, str]]:
+        """Every band_memberships row for one person, earliest tenure first."""
+
+        rows = [row for row in self.rows("band_memberships") if row.get("person_id") == person_id]
+        rows.sort(key=lambda row: row.get("start_date", ""))
+        return rows
+
     def show_context(self, show: dict[str, str]) -> dict[str, Any]:
         show_id = show["show_id"]
         performances = [row for row in self.rows("performances") if row["show_id"] == show_id]
@@ -650,6 +693,7 @@ class CanonicalStore:
             "venue": venue,
             "performances": performance_summaries,
             "performers": performers,
+            "band_memberships": self.band_lineup(show.get("show_date", "")),
             "equipment": equipment,
             "resources": self.resources_for("resource_shows", "show_id", show_id),
             "show_links": [row for row in self.rows("show_links") if row["show_id"] == show_id],

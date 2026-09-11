@@ -76,6 +76,7 @@ _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 # across query plans, VACUUMs, and replicas.
 _ORDER_COLUMNS: dict[str, tuple[str, ...]] = {
     "arrangement_chord_sections": ("arrangement_id", "section_position"),
+    "band_memberships": ("person_id", "start_date"),
     "equipment": ("equipment_id",),
     "official_releases": ("release_id",),
     "people": ("person_id",),
@@ -131,6 +132,7 @@ def _identifier(value: str) -> str:
 
 
 _ID_COLUMNS = {
+    "band_memberships": "membership_id",
     "equipment": "equipment_id",
     "official_releases": "release_id",
     "people": "person_id",
@@ -711,6 +713,15 @@ class PostgresCanonicalStore(CanonicalStore):
             equipment,
         )
 
+    def band_lineup(self, show_date: str, act: str = "grateful-dead") -> list[dict[str, str]]:
+        memberships = self._filtered_rows("band_memberships", act=act) if show_date else []
+        people = self._rows_in(
+            "people", "person_id", (row["person_id"] for row in memberships)
+        )
+        return CanonicalStore.band_lineup(
+            self._projection({"band_memberships": memberships, "people": people}), show_date, act
+        )
+
     def show_context(self, show: dict[str, str]) -> dict[str, Any]:
         show_id = show["show_id"]
         performances = self._filtered_rows("performances", show_id=show_id)
@@ -719,6 +730,13 @@ class PostgresCanonicalStore(CanonicalStore):
         performer_assignments = self._filtered_rows("show_performers", show_id=show_id)
         equipment_assignments = self._filtered_rows("show_equipment", show_id=show_id)
         resource_relationships = self._filtered_rows("resource_shows", show_id=show_id)
+        # band_memberships is small enough (a few dozen rows at most) to fetch
+        # whole; CanonicalStore.band_lineup derives the date-range match
+        # rather than issuing a per-show query.
+        band_memberships = self.rows("band_memberships")
+        person_ids = {row["person_id"] for row in performer_assignments} | {
+            row["person_id"] for row in band_memberships
+        }
         tables = {
             "performances": performances,
             "official_release_tracks": release_tracks,
@@ -727,9 +745,7 @@ class PostgresCanonicalStore(CanonicalStore):
             ),
             "venues": self._rows_in("venues", "venue_id", (show.get("venue_id", ""),)),
             "show_performers": performer_assignments,
-            "people": self._rows_in(
-                "people", "person_id", (row["person_id"] for row in performer_assignments)
-            ),
+            "people": self._rows_in("people", "person_id", person_ids),
             "show_equipment": equipment_assignments,
             "equipment": self._rows_in(
                 "equipment", "equipment_id", (row["equipment_id"] for row in equipment_assignments)
@@ -738,6 +754,7 @@ class PostgresCanonicalStore(CanonicalStore):
             # Per-performance listening paths (CanonicalStore._listen_paths)
             # read performance_links and official_release_tracks.
             "performance_links": self._rows_in("performance_links", "performance_id", performance_ids),
+            "band_memberships": band_memberships,
             "resource_shows": resource_relationships,
             "resources": self._rows_in(
                 "resources", "resource_id", (row["resource_id"] for row in resource_relationships)

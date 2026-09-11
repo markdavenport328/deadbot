@@ -407,11 +407,11 @@ def build_tools(
         matches = []
         seen = set()
 
-        def add(entity_type: str, entity_id: str, label: str) -> None:
+        def add(entity_type: str, entity_id: str, label: str, **extra: Any) -> None:
             key = (entity_type, entity_id)
             if key not in seen:
                 seen.add(key)
-                matches.append({"entity_type": entity_type, "id": entity_id, "label": label})
+                matches.append({"entity_type": entity_type, "id": entity_id, "label": label, **extra})
 
         # One query per table for every phrase at once. Searching each phrase
         # separately issued about 190 sequential remote queries for a
@@ -424,7 +424,23 @@ def build_tools(
             ("official_releases", ("title",), "release_id", "title", "release"),
         ]:
             for row in store.matching_rows_any(table, phrases, fields):
-                add(entity_type, row[id_field], row[label_field])
+                extra: dict[str, Any] = {}
+                if entity_type == "person":
+                    # A core/officially-recognized member's tenure (band_memberships)
+                    # answers "when did they join/leave" directly, without a
+                    # separate person lookup tool.
+                    memberships = store.person_band_memberships(row[id_field])
+                    if memberships:
+                        extra["band_memberships"] = [
+                            {
+                                "act": membership.get("act", ""),
+                                "role": membership.get("role", ""),
+                                "start_date": membership.get("start_date", ""),
+                                "end_date": membership.get("end_date", ""),
+                            }
+                            for membership in memberships
+                        ]
+                add(entity_type, row[id_field], row[label_field], **extra)
 
         for show in store.search_shows(phrases, limit=20):
             add(

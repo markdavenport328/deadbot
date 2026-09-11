@@ -188,6 +188,54 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Potential canonical entities populated: Songs, people, and role-level song-writer relationships.
 - Known limitations: Title-only search can return unrelated works, traditional works may not map to a person, and a work's role model may differ from a source's display convention. Ambiguous matches remain in raw records and are not canonicalized.
 
+## Band membership (MusicBrainz + Wikidata)
+
+- What it provides: Who was a core or officially recognized Grateful Dead
+  member, in what role, and over what dates, plus each member's date of birth
+  and (where applicable) date of death.
+- Access method: `scripts/collect/fetch_band_membership_sources.py` makes two
+  requests, one second apart, both read-only and unauthenticated: MusicBrainz
+  `GET /ws/2/artist/6faa7ca7-0d99-4a5e-bfa6-1fd5037520c6?inc=artist-rels` for
+  the Grateful Dead artist's `member of band` relations (`begin`/`end`/
+  `ended`, plus role attributes such as `keyboard`); and Wikidata
+  `wbgetclaims` for the band item (`Q212533`) property `P527` ("has part(s)")
+  to enumerate members, followed by `wbgetentities` on each member QID for
+  their label, date of birth (`P569`), date of death (`P570`), and their own
+  `P463` ("member of") statement for the band with its `P580`/`P582` start/end
+  qualifiers. `scripts/normalize_band_membership.py` reads those raw records
+  plus `show_performers.csv`'s `role == "performer"` rows (never `guest`) to
+  cross-check each source tenure against the band's own documented lineup and
+  writes `data/canonical/band_memberships.csv`.
+- Structured fields: MusicBrainz artist MBID, relation begin/end/ended and
+  attributes; Wikidata QID, birth/death dates, and member-of start/end
+  qualifiers at whatever precision (year, sometimes month) Wikidata records.
+- Coverage (2026-09-11): 13 tenure rows for 12 people -- the five
+  1965-founding members (Garcia, Weir, Lesh, Kreutzmann, Pigpen), Mickey Hart
+  across two tenures (1967-1971 and 1975-1995), the post-Pigpen keyboardists
+  (Constanten, Keith Godchaux, Mydland, Welnick), Donna Jean Godchaux, and
+  touring auxiliary member Bruce Hornsby. `people.csv` `birth_date`/
+  `death_date` were filled for the same 12 people (plus their two
+  JerryBase `(complete show)` duplicate rows) from Wikidata. See
+  `docs/collection-status-band-membership.md` for the full comparison,
+  including where MusicBrainz, Wikidata, and the lineup evidence disagree.
+- Authority / reliability: Both are secondary structured catalogs, cross-checked
+  against the band's own canonical performance ledger rather than trusted
+  alone; `show_performers` evidence is preferred for exact dates, with the
+  source claims retained in `notes` for comparison.
+- Licensing / usage considerations: MusicBrainz core data and Wikidata
+  statements are both CC0. Rows cite the MusicBrainz artist MBID (all rows
+  in this pass) and name the corroborating Wikidata QID in `notes`.
+- Potential canonical entities populated: `band_memberships`, and the
+  `birth_date`/`death_date` columns of `people`.
+- Known limitations: This pass covers only the twelve core/officially
+  recognized members documented by both sources; MusicBrainz's relation also
+  names Robert Hunter (lyricist, never a performing member) and Rob Wasserman
+  (a solo/duo collaborator), both excluded as not band members. A held
+  disagreement remains for Pigpen's end date (MusicBrainz gives his death
+  year 1973; Wikidata and the lineup evidence agree on his last performance,
+  1972-06-17) -- see the status doc rather than treating either as settled
+  without review.
+
 ## Official Grateful Dead releases / catalog
 
 - What it provides: Official live release identities, release dates, track lists, per-track recording dates where MusicBrainz editors recorded them, and streaming URL relationships.

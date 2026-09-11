@@ -14,6 +14,7 @@ def test_reviewed_seed_loads_with_every_metadata_adapter():
         "deadcast-metadata",
         "musicbrainz-api",
         "wikipedia-api",
+        "wikidata-api",
         "lostlivedead-feed",
         "hooterollin-feed",
         "deadessays-feed",

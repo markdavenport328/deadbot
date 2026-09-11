@@ -23,7 +23,7 @@ DEFAULT_CANONICAL_DIR = ROOT / "data" / "canonical"
 DEFAULT_SELECTION_EVIDENCE_PATH = ROOT / "data" / "editorial" / "selection-evidence-review.json"
 DEFAULT_SCHEMA_PATH = ROOT / "schema" / "postgres.sql"
 DEFAULT_MIGRATIONS_DIR = ROOT / "schema" / "migrations"
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 Converter = Callable[[str], Any]
@@ -91,6 +91,7 @@ def _spec(
 # its children.  It also gives rebuild mode a safe deletion order when reversed.
 TABLE_SPECS: tuple[TableSpec, ...] = (
     _spec("people", "person_id name birth_date death_date notes", nullable=("birth_date", "death_date", "notes"), dates=("birth_date", "death_date")),
+    _spec("band_memberships", "membership_id person_id act role start_date end_date start_precision end_precision source_key source_record_id notes", nullable=("end_date", "end_precision", "source_key", "source_record_id", "notes"), dates=("start_date", "end_date")),
     _spec("songs", "song_id title slug original_artist first_known_dead_performance last_known_dead_performance notes", nullable=("original_artist", "first_known_dead_performance", "last_known_dead_performance", "notes"), dates=("first_known_dead_performance", "last_known_dead_performance")),
     _spec("venues", "venue_id name city state_region country latitude longitude notes", nullable=("city", "state_region", "country", "latitude", "longitude", "notes"), floats=("latitude", "longitude")),
     _spec("equipment", "equipment_id name category manufacturer model notes", nullable=("manufacturer", "model", "notes")),

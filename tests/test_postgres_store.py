@@ -130,6 +130,21 @@ TABLES: dict[str, list[dict[str, Any]]] = {
         {"person_id": "person-garcia", "name": "Jerry Garcia"},
         {"person_id": "person-hunter", "name": "Robert Hunter"},
     ],
+    "band_memberships": [
+        {
+            "membership_id": "membership-garcia-1965",
+            "person_id": "person-garcia",
+            "act": "grateful-dead",
+            "role": "guitar, vocals",
+            "start_date": "1965-05-05",
+            "end_date": "1995-07-09",
+            "start_precision": "day",
+            "end_precision": "day",
+            "source_key": "",
+            "source_record_id": "",
+            "notes": "",
+        }
+    ],
     "show_performers": [
         {
             "show_performer_id": "sp-1",
@@ -396,6 +411,29 @@ def test_release_personnel_is_a_known_table_with_ordering(real_connection):
     rows = store.rows("release_personnel")
     assert isinstance(rows, list)
     assert rows
+
+
+def test_band_lineup_matches_the_csv_store(real_connection):
+    postgres_store = PostgresCanonicalStore(real_connection, schema="canonical")
+    csv_store = CanonicalStore()
+
+    for show_date in ("1972-08-27", "1977-05-08", ""):
+        assert postgres_store.band_lineup(show_date) == csv_store.band_lineup(show_date)
+
+    assert postgres_store.person_band_memberships("person-mickey-hart") == (
+        csv_store.person_band_memberships("person-mickey-hart")
+    )
+
+
+def test_show_context_band_memberships_match_the_csv_store(real_connection):
+    postgres_store = PostgresCanonicalStore(real_connection, schema="canonical")
+    csv_store = CanonicalStore()
+
+    show = csv_store.resolve_show("1972-08-27")
+    postgres_lineup = postgres_store.show_context(show)["band_memberships"]
+    csv_lineup = csv_store.show_context(show)["band_memberships"]
+    assert postgres_lineup == csv_lineup
+    assert {row["person_id"] for row in postgres_lineup} >= {"person-jerry-garcia", "person-bob-weir"}
 
 
 def test_entity_search_uses_a_bounded_show_venue_query(store, connection):

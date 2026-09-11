@@ -65,10 +65,11 @@
       "access_state": "allowed",
       "rights_state": "cleared",
       "review_state": "approved",
-      "allowed_operations": ["search", "browse"],
+      "allowed_operations": ["search", "browse", "lookup"],
       "operation_policies": {
         "search": {"methods": ["GET"], "paths": ["/ws/2/artist/"]},
-        "browse": {"methods": ["GET"], "paths": ["/ws/2/release-group", "/ws/2/release"]}
+        "browse": {"methods": ["GET"], "paths": ["/ws/2/release-group", "/ws/2/release"]},
+        "lookup": {"methods": ["GET"], "paths": ["/ws/2/artist/"]}
       },
       "retention_policy": {
         "mode": "metadata_only",
@@ -83,7 +84,7 @@
         "retry_after_seconds": 30
       },
       "adapter_version": "musicbrainz-api-v1",
-      "notes": "JSON web service only, one request per second, descriptive User-Agent required. Covers artist search plus release-group and release browse used by scripts/collect/fetch_musicbrainz_live_releases.py and fetch_musicbrainz_studio_releases.py. No cover art or annotation text is retrieved or stored. fetch_musicbrainz_song_works.py's /ws/2/work search is a separate, unverified gap tracked outside this entry."
+      "notes": "JSON web service only, one request per second, descriptive User-Agent required. Covers artist search plus release-group and release browse used by scripts/collect/fetch_musicbrainz_live_releases.py and fetch_musicbrainz_studio_releases.py. The 2026-09-11 'lookup' operation is scripts/collect/fetch_band_membership_sources.py's single by-MBID GET on the Grateful Dead artist entity with inc=artist-rels, read for 'member of band' relations (begin/end/ended dates) feeding data/canonical/band_memberships.csv; it retrieves only those relation fields, never cover art, annotation text, or unrelated relation types. fetch_musicbrainz_song_works.py's /ws/2/work search is a separate, unverified gap tracked outside this entry."
     },
     {
       "source_id": "wikipedia-api",
@@ -114,6 +115,34 @@
       "notes": "JSON MediaWiki action API only, one request per second, descriptive User-Agent required. 'search' is action=query&list=search to resolve an ambiguous album title to the confidently correct article; 'read' is action=query&prop=revisions with rvslots=main to fetch that article's current wikitext. Used by scripts/collect/fetch_wikipedia_album_dates.py to sharpen imprecise official_releases.release_date values. Only the infobox 'Released' field is extracted and stored, verbatim, alongside article title, page id, revision id and URL; no other article text, images, or full wikitext is retained."
     }
 ,
+    {
+      "source_id": "wikidata-api",
+      "name": "Wikidata web service",
+      "host_allowlist": ["www.wikidata.org"],
+      "authority_level": "curated",
+      "access_state": "allowed",
+      "rights_state": "cleared",
+      "review_state": "approved",
+      "allowed_operations": ["search", "read"],
+      "operation_policies": {
+        "search": {"methods": ["GET"], "paths": ["/w/api.php"]},
+        "read": {"methods": ["GET"], "paths": ["/w/api.php"]}
+      },
+      "retention_policy": {
+        "mode": "metadata_only",
+        "store_content": false,
+        "store_links": true,
+        "max_retention_days": 3650
+      },
+      "rate_policy": {
+        "requests_per_minute": 55,
+        "burst": 1,
+        "min_interval_seconds": 1,
+        "retry_after_seconds": 30
+      },
+      "adapter_version": "wikidata-api-v1",
+      "notes": "JSON wbgetclaims and wbgetentities actions on the public Wikidata API only, one request per second, descriptive User-Agent 'Deadbot/0.1 (band membership research; contact via repository)' required. Used by scripts/collect/fetch_band_membership_sources.py to read: P527 ('has part(s)') on the Grateful Dead item (Q212533) for its member list and any start(P580)/end(P582) qualifiers on that statement; each member's own P463 ('member of') statement for the band with its own P580/P582 qualifiers; and each member's date of birth (P569) and date of death (P570). No other Wikidata statement, sitelink, or property is read or stored. Wikidata's own data is CC0; only the compact fields named above are retained, feeding data/canonical/band_memberships.csv and the birth_date/death_date fill in data/canonical/people.csv."
+    },
     {
       "source_id": "lostlivedead-feed",
       "name": "Lost Live Dead post feed",
