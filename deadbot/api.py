@@ -291,6 +291,8 @@ def create_app(
                                     # The model is retrying finish_response; the previous
                                     # draft's answer text is void, so the fresh accumulator
                                     # must still see the current chunk's own answer text.
+                                    # The visitor sees the draft vanish, so say why.
+                                    yield line({"type": "status", "text": "Starting the page over"})
                                     answer_accumulator = AnswerAccumulator()
                                     reset_answer = answer_accumulator.feed(message_chunk)
                                     if reset_answer:

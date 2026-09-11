@@ -89,7 +89,7 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "one or two across the whole page" not in prompt
     assert "perform an omission pass" not in prompt
     assert "avoid first-person singular" in prompt
-    assert "each item title names its subject" in prompt
+    assert "each item's title names its subject" in prompt
     assert "Song_overview units are the home for individual song stories and listening actions.".casefold() in prompt.casefold()
     for job in ("unit formation", "grouping", "completion", "segregation", "global organization"):
         assert job in prompt.casefold()

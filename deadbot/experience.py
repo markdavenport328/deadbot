@@ -10,9 +10,9 @@ can pass browser code, raw HTML, or arbitrary embeds to the client.
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 ExperienceMode = Literal["answer", "gap"]
@@ -527,6 +527,32 @@ class EditorialItem(ExperienceModel):
 
 class EditorialBlock(ExperienceModel):
     """Flexible model-shaped material rendered in one of several visual forms."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _lift_a_row_written_as_a_block(cls, data: Any) -> Any:
+        """A fact-grid row the model wrote as a whole block becomes that block's one item.
+
+        In a comparison the model sometimes writes each row as its own
+        editorial block, with the item fields (value, detail, marker) beside
+        the title. Read as written, every row fails the schema and the group
+        empties. The row's fields move into one item, so the material the
+        model meant survives in both the streamed and the delivered page.
+        """
+
+        if not isinstance(data, dict):
+            return data
+        row_keys = [key for key in ("value", "detail", "marker") if key in data]
+        if not row_keys or data.get("items"):
+            return data
+        title = data.get("title")
+        if not isinstance(title, str) or not title.strip():
+            return data
+        item = {"title": title, **{key: data[key] for key in row_keys}}
+        lifted = {key: value for key, value in data.items() if key not in row_keys}
+        lifted["items"] = [item]
+        lifted.setdefault("presentation", "fact_grid")
+        return lifted
 
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(

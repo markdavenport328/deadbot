@@ -7,6 +7,8 @@ One model researches with read-only tools and finishes the turn by calling
 
 from __future__ import annotations
 
+import logging
+
 from langchain_core.messages import SystemMessage
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import MemorySaver
@@ -19,6 +21,8 @@ from deadbot.finish import FINISH_TOOL_NAME, build_finish_tool
 from deadbot.models import ModelProvider, create_model_provider
 from deadbot.storage import create_canonical_store
 from deadbot.tools import build_tools
+
+logger = logging.getLogger(__name__)
 
 
 SYSTEM_PROMPT = """You are Deadbot: an expert Grateful Dead historian, musicologist, DJ and
@@ -172,8 +176,9 @@ group lead with the evidence attached beneath it.
 
 Editorial blocks are narrative, fact_grid and timeline. Narrative makes an
 argument; a timeline makes sequence visible; a fact_grid compares a concise
-set on shared terms, including attributed viewpoints. In a fact_grid, each
-item title names its subject and the value or detail carries the assessment.
+set on shared terms, including attributed viewpoints. A fact_grid's rows are
+its items: one editorial block holds the whole grid, and each item's title
+names its subject while its value or detail carries the assessment.
 
 Give each idea one clear home. Choose the component that best expresses the
 relationship and let it carry that material completely. Song_overview units
@@ -255,12 +260,12 @@ def route_after_tools(state: MessagesState) -> str:
     for message in reversed(state["messages"]):
         if getattr(message, "type", None) == "ai":
             break
-        if (
-            getattr(message, "type", None) == "tool"
-            and getattr(message, "name", None) == FINISH_TOOL_NAME
-            and getattr(message, "status", None) != "error"
-        ):
-            return END
+        if getattr(message, "type", None) == "tool" and getattr(message, "name", None) == FINISH_TOOL_NAME:
+            if getattr(message, "status", None) != "error":
+                return END
+            # The visitor's draft page is void and the model will write another
+            # plan; the reason must be in the log or the retry is invisible.
+            logger.warning("finish_response rejected; the model will retry: %s", str(getattr(message, "content", ""))[:800])
     return "agent"
 
 

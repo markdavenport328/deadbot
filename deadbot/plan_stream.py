@@ -17,7 +17,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from deadbot.finish import FINISH_TOOL_NAME, GROUP_ITEM_LIMIT, keep_grounded_links, validate_body_item
+from deadbot.finish import FINISH_TOOL_NAME, GROUP_ITEM_LIMIT, PRESENTATIONS, keep_grounded_links, validate_body_item
 
 logger = logging.getLogger(__name__)
 
@@ -124,12 +124,14 @@ class PlanStreamer:
 
     def _group_payload(self, index: int) -> dict[str, Any]:
         group = self._group(index)
-        criteria = [c.strip() for c in (group.get("criteria") or []) if c.strip()][:5]
+        criteria = [c.strip() for c in (group.get("criteria") or []) if isinstance(c, str) and c.strip()][:5]
+        presentation = group.get("presentation")
         return {
             "index": index,
             "title": group.get("title"),
             "lead": self._grounded(group.get("lead")),
-            "presentation": group.get("presentation") or "collection",
+            # The same reading finish.FinishPlan gives an unknown presentation.
+            "presentation": presentation if presentation in PRESENTATIONS else "collection",
             "criteria": criteria,
         }
 
