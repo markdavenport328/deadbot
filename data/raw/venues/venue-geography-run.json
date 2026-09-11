@@ -1,0 +1,19 @@
+{
+  "capacity_coverage": {
+    "blank": 488,
+    "filled": 107
+  },
+  "confident": 176,
+  "held": 231,
+  "requested": 595,
+  "setting_coverage": {
+    "blank": 471,
+    "indoor": 91,
+    "outdoor": 33
+  },
+  "state_region": {
+    "blank_going_in": 56,
+    "filled_this_pass": 3
+  },
+  "unmatched": 188
+}

@@ -210,6 +210,17 @@ For each candidate, assess data quality, terms, attribution requirements, access
 - Potential canonical entities populated: `official_releases.release_date` only, at finer precision.
 - Known limitations: A conflicting year is a review item for a human, not something this pass resolves; the four conflicts above are open questions. The search step's confidence rule is curated per-album for the 2026-09-06 catalog; an album added to the target set later falls back to a generic title-fold heuristic that may need its own curated entry if the fallback cannot find a unique match.
 
+## Wikidata
+
+- What it provides: A structured, CC0-licensed knowledge base entry per venue, when one exists — coordinate location, instance-of class (arena, theatre, stadium, fairground, and so on), the administrative-entity chain a place sits in (city, county/state or province, country), and, where an editor has entered it, a stated maximum capacity.
+- Access method: The public MediaWiki action API at `www.wikidata.org/w/api.php` (JSON, one request per second, descriptive User-Agent). `scripts/collect/fetch_wikidata_venues.py` searches each canonical venue by name (`action=wbsearchentities`), then fetches every candidate's English label, English aliases, and a fixed claim set (`action=wbgetentities`; P625 coordinate location, P31 instance of, P131 located-in, P17 country, P1083 capacity), walking P131 upward until it reaches a country. `scripts/normalize_wikidata_venues.py` makes every promotion decision offline from that raw data; see `docs/collection-status-venue-geography.md` for the matching rule and counts.
+- Structured fields: QID, English label, English aliases, coordinate location, instance-of QIDs and their labels, the located-in chain and its labels, country, and stated capacity.
+- Coverage: See `docs/collection-status-venue-geography.md` for the requested/confident/held/unmatched counts and setting/capacity coverage from the 2026-09 pass over all 595 `venues.csv` rows.
+- Authority / reliability: Curated, crowd-edited knowledge base. A candidate is promoted only when its label or an alias matches the venue name after normalization and its location chain independently confirms the canonical city; anything short of that (no candidate, no name match, a name match whose city disagrees, or more than one qualifying candidate) is held for human review rather than guessed, and a held venue's coordinates are never backed by a city centroid presented as the venue.
+- Licensing / usage considerations: Wikidata's own data is dedicated to the public domain (CC0). The QID is recorded in `venues.csv` `notes` for every promoted match so the decision stays reviewable and reproducible.
+- Potential canonical entities populated: `venues.csv` latitude, longitude, setting, capacity, and state_region (only for the rows that started blank).
+- Known limitations: Coverage is uneven — a well-known arena or stadium usually has a Wikidata item with coordinates, but a small club, a college fieldhouse, or a private residence often does not, and this pass does not fabricate a location for those. Instance-of classification is limited to the ten explicit terms in the collection brief (five outdoor, five indoor); anything else — a university building, a generic hall, a convention center — is left blank rather than assigned a guessed setting.
+
 ## YouTube
 
 - What it provides: External full-show and performance-specific videos, lessons, interviews, and demonstrations.

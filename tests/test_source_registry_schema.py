@@ -10,7 +10,7 @@ def test_source_registry_schema_contract_is_in_bootstrap_and_migration():
     bootstrap = (ROOT / "schema" / "postgres.sql").read_text(encoding="utf-8")
     migration = _schema_sql(ROOT / "schema/migrations/003_source_registry_snapshots.sql")
 
-    assert SCHEMA_VERSION == 7
+    assert SCHEMA_VERSION == 8
     for table in ("source_registry", "source_snapshots"):
         assert f"CREATE TABLE {table}" in bootstrap
         assert f"CREATE TABLE {table}" in migration

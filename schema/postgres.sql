@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (7);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (8);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -119,8 +119,16 @@ CREATE TABLE venues (
     latitude DOUBLE PRECISION,
     longitude DOUBLE PRECISION,
     notes TEXT,
+    -- Scope the notable-weather question family: 'indoor'/'outdoor' only when
+    -- Wikidata's instance-of (or an explicit source statement) makes the
+    -- class unambiguous; capacity only where Wikidata states it. A blank is
+    -- deliberate -- see docs/collection-status-venue-geography.md.
+    setting TEXT,
+    capacity INTEGER,
     CHECK (latitude IS NULL OR latitude BETWEEN -90 AND 90),
-    CHECK (longitude IS NULL OR longitude BETWEEN -180 AND 180)
+    CHECK (longitude IS NULL OR longitude BETWEEN -180 AND 180),
+    CHECK (setting IS NULL OR setting IN ('indoor', 'outdoor')),
+    CHECK (capacity IS NULL OR capacity > 0)
 );
 
 CREATE TABLE equipment (
