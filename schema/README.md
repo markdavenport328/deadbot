@@ -41,30 +41,41 @@ inventing a day; `release_date` now stores exactly what is known, at whatever
 precision that is. ISO 8601 date strings of mixed precision still sort and
 compare correctly as plain text, so nothing else about the column changes.
 
+Schema version 9 adds `band_memberships`: one row per person's role and
+tenure in a named act (`grateful-dead` for this pass), so "who was the
+keyboardist in 1978" or "when did Brent join" no longer requires scanning all
+of `show_performers`. `act` is a stable text identifier, not a foreign key,
+because the catalog does not yet model bands as entities in their own right.
+A non-contiguous tenure (Mickey Hart leaving in 1971 and rejoining in 1975)
+carries one row per contiguous span. `end_date` is nullable so a currently
+active tenure in a future act need not invent an end, but every row from this
+pass carries an explicit end date rather than leaving it blank.
+
 Load canonical files in foreign-key dependency order:
 
 1. `people.csv`
-2. `songs.csv`
-3. `venues.csv`
-4. `equipment.csv`
-5. `shows.csv`
-6. `song_writers.csv`
-7. `resources.csv`
-8. `resource_songs.csv`
-9. `resource_shows.csv`
-10. `show_performers.csv`
-11. `performances.csv`
-12. `resource_performances.csv`
-13. `show_links.csv`
-14. `performance_links.csv`
-15. `official_releases.csv`
-16. `official_release_tracks.csv`
-17. `release_personnel.csv`
-18. `song_arrangements.csv`
-19. `arrangement_chord_sections.csv`
-20. `recordings.csv`
-21. `performance_recordings.csv`
-22. `show_equipment.csv`
+2. `band_memberships.csv`
+3. `songs.csv`
+4. `venues.csv`
+5. `equipment.csv`
+6. `shows.csv`
+7. `song_writers.csv`
+8. `resources.csv`
+9. `resource_songs.csv`
+10. `resource_shows.csv`
+11. `show_performers.csv`
+12. `performances.csv`
+13. `resource_performances.csv`
+14. `show_links.csv`
+15. `performance_links.csv`
+16. `official_releases.csv`
+17. `official_release_tracks.csv`
+18. `release_personnel.csv`
+19. `song_arrangements.csv`
+20. `arrangement_chord_sections.csv`
+21. `recordings.csv`
+22. `performance_recordings.csv`
+23. `show_equipment.csv`
 
 `performance_recordings` is checked to ensure a performance is mapped only to
 a recording of the same show. The importer validates CSV formatting, required

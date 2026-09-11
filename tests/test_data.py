@@ -597,3 +597,64 @@ def test_a_song_never_released_has_an_empty_release_list():
     store = CanonicalStore()
     payload = store.song_context(store.resolve_song("song-a-mind-to-give-up-livin"))
     assert payload["releases"] == []
+
+
+def test_band_lineup_covers_a_date_within_a_tenure_and_excludes_a_gap():
+    store = CanonicalStore()
+
+    # 1972-08-27 (Veneta) falls after Pigpen's last documented performance
+    # (1972-06-17) and before Mickey Hart's return (1975-03-23): both are core
+    # members elsewhere in the catalog but neither belongs in this lineup.
+    veneta_lineup = {row["person_id"] for row in store.band_lineup("1972-08-27")}
+    assert "person-jerry-garcia" in veneta_lineup
+    assert "person-bob-weir" in veneta_lineup
+    assert "person-phil-lesh" in veneta_lineup
+    assert "person-bill-kreutzmann" in veneta_lineup
+    assert "person-keith-godchaux" in veneta_lineup
+    assert "person-donna-jean-godchaux" in veneta_lineup
+    assert "person-ron-pigpen-mckernan" not in veneta_lineup
+    assert "person-mickey-hart" not in veneta_lineup
+
+    # 1977-05-08 (Cornell) falls inside Mickey Hart's second tenure.
+    cornell_lineup = {row["person_id"] for row in store.band_lineup("1977-05-08")}
+    assert "person-mickey-hart" in cornell_lineup
+    assert "person-keith-godchaux" in cornell_lineup
+
+    assert store.band_lineup("") == []
+    assert store.band_lineup("1977-05-08", act="some-other-act") == []
+
+
+def test_show_context_carries_the_derived_band_lineup():
+    store = CanonicalStore()
+    show = store.resolve_show("1972-08-27")
+    payload = store.show_context(show)
+    lineup_ids = {row["person_id"] for row in payload["band_memberships"]}
+    assert "person-jerry-garcia" in lineup_ids
+    assert "person-mickey-hart" not in lineup_ids
+    for row in payload["band_memberships"]:
+        assert row["name"]
+        assert row["role"]
+
+
+def test_person_band_memberships_orders_multiple_tenures_by_start_date():
+    store = CanonicalStore()
+    tenures = store.person_band_memberships("person-mickey-hart")
+    assert [row["start_date"] for row in tenures] == sorted(row["start_date"] for row in tenures)
+    assert len(tenures) == 2
+    assert tenures[0]["end_date"] < tenures[1]["start_date"]
+
+
+def test_search_entities_surfaces_band_memberships_for_a_core_member():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "search_entities").invoke({"query": "Jerry Garcia"}))
+    person_match = next(
+        match for match in result["matches"] if match["entity_type"] == "person" and match["id"] == "person-jerry-garcia"
+    )
+    assert person_match["band_memberships"] == [
+        {
+            "act": "grateful-dead",
+            "role": "guitar, vocals",
+            "start_date": "1965-05-05",
+            "end_date": "1995-07-09",
+        }
+    ]

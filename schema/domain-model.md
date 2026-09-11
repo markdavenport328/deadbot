@@ -39,6 +39,7 @@ erDiagram
     RECORDING ||--o{ PERFORMANCE_RECORDING : locates
     PERSON ||--o{ SHOW_PERFORMER : performs_at
     SHOW ||--o{ SHOW_PERFORMER : has_performer
+    PERSON ||--o{ BAND_MEMBERSHIP : has_tenure
 ```
 
 ## Entities and relationships
@@ -54,6 +55,7 @@ erDiagram
 | `performance_recordings` | A performance's track/timing location in a recording. |
 | `song_writers` | Many-to-many authorship relationship between people and songs. |
 | `show_performers` | People who actually performed at a particular show, including guests and changing lineups. One row represents one role-and-instrument assignment. |
+| `band_memberships` | One row per person's role and tenure in a named act (`grateful-dead` for this pass) -- who was a core or officially recognized member, in what role, and over what dates. A non-contiguous tenure (Mickey Hart's 1971 departure and 1975 return) carries one row per contiguous span. |
 | `resources` | Source documents and external links, including interviews, reviews, tabs, lessons, videos, and future transcription pointers. |
 | `resource_songs` / `resource_shows` / `resource_performances` | Typed relationships that attach a resource to the song, show, or performance it addresses. |
 | `song_arrangements` | A source-specific interpretation or performance-specific arrangement of a song, with key, capo, tuning, and scope. |
@@ -82,6 +84,10 @@ an introduction, tuning, banter, or another non-song segment.
 ## Show performers
 
 `show_performers` supports one or more assignments for a person at a show. Use a separate row for each role-and-instrument combination; for example, a performer who plays guitar and sings has two rows with the same `show_id` and `person_id`. `role` can describe their participation (such as `band-member` or `guest`), while `instrument` records the musical role (such as `guitar`, `vocals`, `piano`, or `tenor sax`). No controlled vocabulary is enforced yet.
+
+## Band memberships
+
+`show_performers` answers "who played this particular show"; `band_memberships` answers "who was in the band, in what role, over what dates" without scanning every show. Each row is one person's role and tenure in a named `act` (`grateful-dead` for this pass), bounded by `start_date`/`end_date` at whatever `start_precision`/`end_precision` the source supports (`day`, `month`, or `year`). This pass covers only core and officially recognized members; guest and sit-in appearances stay in `show_performers` and are never promoted here. A person with a non-contiguous tenure -- Mickey Hart left in February 1971 and returned in March 1975 -- carries one row per contiguous span, not one row with a gap.
 
 ## Integrity and loading
 

@@ -335,8 +335,30 @@ def test_release_personnel_spec_follows_show_performers_and_loads_after_releases
     assert names.index("release_personnel") > names.index("people")
 
 
-def test_schema_version_is_eight_and_each_version_has_exactly_one_migration():
-    assert SCHEMA_VERSION == 8
+def test_band_memberships_spec_loads_after_people_and_end_fields_are_nullable():
+    spec = next(spec for spec in TABLE_SPECS if spec.name == "band_memberships")
+    assert spec.columns == (
+        "membership_id",
+        "person_id",
+        "act",
+        "role",
+        "start_date",
+        "end_date",
+        "start_precision",
+        "end_precision",
+        "source_key",
+        "source_record_id",
+        "notes",
+    )
+    assert spec.nullable == frozenset(
+        {"end_date", "end_precision", "source_key", "source_record_id", "notes"}
+    )
+    names = [spec.name for spec in TABLE_SPECS]
+    assert names.index("band_memberships") > names.index("people")
+
+
+def test_schema_version_is_nine_and_each_version_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 9
     migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
     for version in range(2, SCHEMA_VERSION + 1):
         assert len(sorted(migrations_dir.glob(f"{version:03d}_*.sql"))) == 1
@@ -352,9 +374,13 @@ def test_schema_version_is_eight_and_each_version_has_exactly_one_migration():
     assert "ADD COLUMN setting TEXT" in venue_geography
     assert "ADD COLUMN capacity INTEGER" in venue_geography
     assert "UPDATE deadbot_schema_metadata SET schema_version = 8" in venue_geography
+    band_memberships = sorted(migrations_dir.glob("009_*.sql"))[0].read_text(encoding="utf-8")
+    assert "CREATE TABLE band_memberships" in band_memberships
+    assert "UPDATE deadbot_schema_metadata SET schema_version = 9" in band_memberships
     bootstrap = (Path(__file__).resolve().parents[1] / "schema" / "postgres.sql").read_text(encoding="utf-8")
     assert "CREATE TABLE deadbot_response_cache" in bootstrap
-    assert "VALUES (8)" in bootstrap
+    assert "CREATE TABLE band_memberships" in bootstrap
+    assert "VALUES (9)" in bootstrap
 
 
 def test_every_spec_matches_its_canonical_csv_header():
@@ -407,7 +433,7 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
     report = check_import(connection, canonical_dir=tmp_path)
     assert connection.writes == []
     assert report["installed_schema_version"] == SCHEMA_VERSION - 1
-    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_venue_geography.sql"]
+    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_band_memberships.sql"]
     assert report["recent_imports"][0]["mode"] == "rebuild"
     assert report["tables"]["shows"]["database_rows"] == 5
     assert "shows" in report["rebuild_would_delete_rows_in"]
