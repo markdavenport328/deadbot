@@ -409,8 +409,14 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
                     upper = sql.strip().upper()
                     if upper.startswith(("INSERT", "DELETE", "UPDATE", "CREATE", "ALTER")):
                         connection.writes.append(sql)
+                    if sql == "SELECT to_regclass(%s)" and params:
+                        # band_memberships arrives with the pending migration.
+                        table = params[0].removeprefix("public.")
+                        self._fetchone = (None,) if table == "band_memberships" else (table,)
+                        return
                     if upper.startswith("SELECT COUNT(*) FROM PUBLIC."):
                         table = sql.rsplit(".", 1)[1]
+                        assert table != "band_memberships", "counted a table that does not exist yet"
                         self._fetchone = (connection.counts.get(table, 0),)
                         return
                     if "FROM public.canonical_imports" in sql:
@@ -438,4 +444,6 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
     assert report["tables"]["shows"]["database_rows"] == 5
     assert "shows" in report["rebuild_would_delete_rows_in"]
     assert "resources" not in report["rebuild_would_delete_rows_in"]
+    assert report["tables"]["band_memberships"]["database_rows"] is None
+    assert report["tables_created_by_pending_migrations"] == ["band_memberships"]
     assert report["merge_deletes_nothing"] is True
