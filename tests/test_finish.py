@@ -623,6 +623,22 @@ def test_the_finish_tool_delivers_a_plan_that_carries_one_bad_item():
     assert result == "Response delivered to the visitor."
 
 
+def test_the_last_finish_call_in_a_message_is_the_plan_that_is_delivered():
+    from langchain_core.messages import AIMessage, HumanMessage
+
+    first = {"chat_answer": "first", "title": "First", "groups": []}
+    last = {"chat_answer": "last", "title": "Last", "groups": []}
+    message = AIMessage(
+        content="",
+        tool_calls=[
+            {"name": finish.FINISH_TOOL_NAME, "args": first, "id": "f1", "type": "tool_call"},
+            {"name": finish.FINISH_TOOL_NAME, "args": last, "id": "f2", "type": "tool_call"},
+        ],
+    )
+    plan = finish.finish_plan_from_messages([HumanMessage(content="q"), message])
+    assert plan is not None and plan.title == "Last"
+
+
 def test_a_plan_may_declare_an_album_unit():
     plan = finish.FinishPlan(
         chat_answer="Truckin' closes American Beauty.",

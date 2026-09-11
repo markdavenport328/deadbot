@@ -1696,7 +1696,10 @@ export default function App() {
   // The streaming endpoint sends one JSON object per line: statuses while the
   // agent works, page events as the page is composed, then the response. A
   // null return means the stream was not available and the caller should
-  // fall back to the plain request.
+  // fall back to the plain request. A stream that started and then ended
+  // without its response is a failure, not a reason to run the question
+  // again: a second run writes a different answer, and the visitor would
+  // watch the first one be replaced without knowing why.
   async function askStreaming(
     body: string,
     handlers: {
@@ -1720,8 +1723,10 @@ export default function App() {
     const decoder = new TextDecoder();
     let buffer = "";
     let answer: ExperienceResponse | null = null;
+    let sawEvent = false;
     const consume = (line: string) => {
       if (!line.trim()) return;
+      sawEvent = true;
       const event = JSON.parse(line) as StreamEvent;
       dispatchStreamEvent(event, {
         onStatus: handlers.onStatus,
@@ -1742,6 +1747,9 @@ export default function App() {
       }
     }
     consume(buffer);
+    if (answer === null && sawEvent) {
+      throw new Error("The connection closed before Deadbot finished the page. Please ask again.");
+    }
     return answer;
   }
 

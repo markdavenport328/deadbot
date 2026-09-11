@@ -744,3 +744,24 @@ def test_editorial_items_can_carry_an_outbound_link():
     assert item.link.label == "Listen on Archive.org"
     legacy = experience.EditorialItem(marker=None, title="Appearances", value="5", detail=None, follow_ups=[])
     assert legacy.link is None
+
+
+def test_a_fact_grid_row_written_as_a_block_becomes_that_blocks_one_item():
+    from deadbot.experience import EditorialBlock
+
+    block = EditorialBlock.model_validate({"type": "editorial", "title": "Tempo", "value": "Slower, then brisk", "detail": "The late versions launch."})
+    assert block.presentation == "fact_grid"
+    assert block.title == "Tempo"
+    assert [(item.title, item.value, item.detail) for item in block.items] == [("Tempo", "Slower, then brisk", "The late versions launch.")]
+
+
+def test_a_well_formed_editorial_block_is_left_alone():
+    from deadbot.experience import EditorialBlock
+
+    block = EditorialBlock.model_validate({
+        "type": "editorial",
+        "presentation": "fact_grid",
+        "title": "What changed",
+        "items": [{"title": "Tempo", "value": "Slower"}],
+    })
+    assert block.title == "What changed" and len(block.items) == 1 and block.items[0].title == "Tempo"
