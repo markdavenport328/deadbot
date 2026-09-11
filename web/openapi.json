@@ -184,6 +184,17 @@
             "title": "Release Id",
             "type": "string"
           },
+          "release_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Title"
+          },
           "release_type": {
             "title": "Release Type",
             "type": "string"

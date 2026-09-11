@@ -753,6 +753,7 @@ def _album_unit(
         type="album_unit",
         release_id=release["release_id"],
         title=(title or "").strip() or release.get("title") or "Untitled release",
+        release_title=release.get("title") or None,
         artist_name=release.get("artist_name") or None,
         release_date=release.get("release_date") or None,
         release_type=release.get("release_type") or "studio",

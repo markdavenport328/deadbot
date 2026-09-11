@@ -565,6 +565,64 @@ def test_finish_plan_rejects_an_unknown_role():
         raise AssertionError("roles are a closed vocabulary")
 
 
+def _show_item(show_id: str) -> dict:
+    return {"type": "show_unit", "show_id": show_id}
+
+
+def test_an_item_that_does_not_fit_its_schema_is_dropped_and_the_plan_still_validates():
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "x",
+        "title": "T",
+        "groups": [{"presentation": "collection", "items": [
+            _show_item("gd-1972-08-27"),
+            {"type": "song_overview", "song_id": "song-ripple", "mood": "wistful"},
+            {"type": "not_a_block"},
+            _show_item("gd-1977-05-08"),
+        ]}],
+    })
+    assert [item.show_id for item in plan.groups[0].items] == ["gd-1972-08-27", "gd-1977-05-08"]
+
+
+def test_a_group_keeps_only_its_first_twenty_items():
+    items = [_show_item(f"gd-1990-03-{day:02d}") for day in range(1, 24)]
+    plan = finish.FinishPlan.model_validate({"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": items}]})
+    assert len(plan.groups[0].items) == finish.GROUP_ITEM_LIMIT == 20
+    assert plan.groups[0].items[-1].show_id == "gd-1990-03-20"
+
+
+def test_a_group_left_with_no_usable_items_is_dropped_not_fatal():
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "x",
+        "title": "T",
+        "groups": [
+            {"title": "Broken", "presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"title": "Fine", "presentation": "collection", "items": [_show_item("gd-1972-08-27")]},
+        ],
+    })
+    assert [group.title for group in plan.groups] == ["Fine"]
+
+
+def test_a_plan_missing_its_title_still_fails_validation():
+    from pydantic import ValidationError
+
+    try:
+        finish.FinishPlan.model_validate({"chat_answer": "x", "groups": [{"presentation": "collection", "items": [_show_item("gd-1972-08-27")]}]})
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("the plan's own shape is still the model's to get right")
+
+
+def test_the_finish_tool_delivers_a_plan_that_carries_one_bad_item():
+    tool = finish.build_finish_tool()
+    result = tool.invoke({
+        "chat_answer": "x",
+        "title": "T",
+        "groups": [{"presentation": "collection", "items": [{"type": "not_a_block"}, _show_item("gd-1972-08-27")]}],
+    })
+    assert result == "Response delivered to the visitor."
+
+
 def test_a_plan_may_declare_an_album_unit():
     plan = finish.FinishPlan(
         chat_answer="Truckin' closes American Beauty.",
@@ -1012,6 +1070,15 @@ def test_album_unit_hydrates_from_the_release_payload():
     assert block.title == "American Beauty"
     assert block.release_type == "studio"
     assert [track.track_number for track in block.tracks] == sorted(t.track_number for t in block.tracks)
+
+
+def test_album_unit_keeps_the_record_title_beside_a_model_headline():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store, title="Hear the source and trace the afterlife")
+
+    assert block.title == "Hear the source and trace the afterlife"
+    assert block.release_title == "American Beauty"
 
 
 def test_album_unit_keeps_only_highlights_that_are_on_the_record():

@@ -269,6 +269,9 @@ class AlbumUnitBlock(ExperienceModel):
     type: Literal["album_unit"]
     release_id: str
     title: str
+    # The record's own name from the library, kept apart from ``title`` so the
+    # card can name the record even when the model wrote the headline.
+    release_title: str | None = None
     artist_name: str | None = None
     release_date: str | None = None
     release_type: str
