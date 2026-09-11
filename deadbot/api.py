@@ -337,6 +337,13 @@ def create_app(
         assets = client_dist / "assets"
         if assets.is_dir():
             app.mount("/assets", StaticFiles(directory=assets), name="assets")
+        # Self-hosted fonts are copied verbatim from web/public/fonts, so they
+        # are not under /assets; without this mount the SPA catch-all below
+        # would answer /fonts/*.woff2 with index.html and the browser would
+        # fall back to system fonts.
+        fonts = client_dist / "fonts"
+        if fonts.is_dir():
+            app.mount("/fonts", StaticFiles(directory=fonts), name="fonts")
 
         @app.get("/{full_path:path}", include_in_schema=False)
         def client(full_path: str) -> FileResponse:
