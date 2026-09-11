@@ -31,6 +31,8 @@ from deadbot.experience import (
     ExperienceBlock,
     ExperienceResponse,
     GapStateBlock,
+    PersonRosterBlock,
+    PersonRosterItem,
     ResourceListBlock,
     ShowFacet,
     ShowUnitBlock,
@@ -106,6 +108,37 @@ class EquipmentListRef(_Ref):
 class GuestAppearancesRef(_Ref):
     type: Literal["guest_appearance_list"]
     person_id: str
+
+
+class PersonRosterEntry(BaseModel):
+    """One person in a roster, by ID, with an optional phrase from the model."""
+
+    model_config = ConfigDict(extra="forbid")
+    person_id: str = Field(description="A person_id that appeared in a tool result this turn.")
+    note: str | None = Field(
+        default=None,
+        description="A short phrase on what makes this person worth knowing here, when you have one grounded in the research. The server supplies name, roles, show count and years.",
+    )
+
+
+class PersonRosterRef(_Ref):
+    """One section of people under a heading you choose.
+
+    The inventory component for questions that ask for everyone. A page that
+    lists everyone uses several rosters, one per section, so that together they
+    hold the complete set; a section is a scene, an instrument, an era or a
+    pattern such as the people who kept coming back. The server hydrates each
+    person's name, roles, show count and span from the library.
+    """
+
+    type: Literal["person_roster"]
+    title: str = Field(description="The heading that names this section of people: a scene, role, era or pattern, in a few words.")
+    lead: str | None = Field(default=None, description="One sentence on what unites these people, when the heading alone does not say it.")
+    entries: list[PersonRosterEntry] = Field(
+        min_length=1,
+        max_length=200,
+        description="Everyone who belongs in this section, in the order you want them read. Across the page's rosters, every person appears once.",
+    )
 
 
 class ShowSelectionRef(_Ref):
@@ -314,6 +347,7 @@ BodyItem = Annotated[
     | SongOverviewRef
     | EquipmentListRef
     | GuestAppearancesRef
+    | PersonRosterRef
     | ShowSelectionRef
     | ArrangementRef
     | ArrangementSearchRef
@@ -327,7 +361,13 @@ class GroupPlan(BaseModel):
     """A model-selected editorial relationship among body items."""
 
     model_config = ConfigDict(extra="forbid")
-    title: str | None = Field(default=None, description="A concise heading that names this group's subject. Omit it when the page title already does that job.")
+    title: str | None = Field(
+        default=None,
+        description=(
+            "A concise heading that names this group's subject. Omit it when the page title already does that job, and when the "
+            "group holds one item that carries its own title: that title is the heading."
+        ),
+    )
     lead: str | None = Field(default=None, description="A brief relationship, claim, or shared basis that adds to the page lead. Omit it rather than restating the same framing.")
     presentation: Literal["collection", "sequence", "comparison", "argument"] = Field(
         description="collection for peers, sequence for a development or route, comparison for items judged on shared terms, argument for evidence supporting a claim."
@@ -361,8 +401,9 @@ class FinishPlan(BaseModel):
             "comparison for items judged on shared criteria, argument for evidence under a claim. Inside a group, semantic units declare the "
             "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
             "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
-            "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, show_selection, arrangement, "
-            "arrangement_search, media_link, resource_list. An answer that needs no main body leaves groups empty."
+            "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
+            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list. An answer that "
+            "needs no main body leaves groups empty."
         ),
     )
 
@@ -451,6 +492,98 @@ def _resolve_show_unit(
         follow_ups=item.follow_ups,
     )
     return block, [*listen_sources, *source_refs]
+
+
+def _person_facts_from_store(person_ids: list[str], store: CanonicalStore) -> dict[str, dict[str, Any]]:
+    """Name, roles, show count and span for each person, from the library in three bounded queries."""
+
+    people = {row["person_id"]: row for row in store.rows_in("people", "person_id", person_ids)}
+    assignments = store.rows_in("show_performers", "person_id", person_ids)
+    shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {row.get("show_id", "") for row in assignments})}
+    facts: dict[str, dict[str, Any]] = {}
+    for person_id, person in people.items():
+        facts[person_id] = {"name": person.get("name") or person_id, "roles": [], "show_ids": set(), "years": []}
+    for row in assignments:
+        person_facts = facts.get(row.get("person_id", ""))
+        if person_facts is None:
+            continue
+        instrument = row.get("instrument") or ""
+        if instrument and instrument not in person_facts["roles"]:
+            person_facts["roles"].append(instrument)
+        show = shows.get(row.get("show_id", ""))
+        if show:
+            person_facts["show_ids"].add(show["show_id"])
+            date = show.get("show_date") or ""
+            if len(date) >= 4:
+                person_facts["years"].append(date[:4])
+    return facts
+
+
+def _person_facts_from_payloads(person_id: str, payloads: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """A guest record from search_guest_musicians already carries canonical appearances."""
+
+    guest = _find_in_payloads(payloads, "guests", "person_id", person_id)
+    if not guest or not isinstance(guest.get("appearances"), list):
+        return None
+    roles: list[str] = []
+    years: list[str] = []
+    show_ids: set[str] = set()
+    for appearance in guest["appearances"]:
+        if not isinstance(appearance, dict):
+            continue
+        for instrument in appearance.get("instruments") or []:
+            if isinstance(instrument, str) and instrument and instrument not in roles:
+                roles.append(instrument)
+        date = appearance.get("show_date") or ""
+        if isinstance(date, str) and len(date) >= 4:
+            years.append(date[:4])
+        if isinstance(appearance.get("show_id"), str):
+            show_ids.add(appearance["show_id"])
+    name = guest.get("name")
+    return {"name": name if isinstance(name, str) and name else person_id, "roles": roles, "show_ids": show_ids, "years": years}
+
+
+def _resolve_person_roster(
+    item: Any,
+    grounded: GroundedContext,
+    payloads: list[dict[str, Any]],
+    store: CanonicalStore,
+) -> PersonRosterBlock | None:
+    """Hydrate a roster: the model chose who and in what order; the server supplies each person's facts."""
+
+    wanted = [entry for entry in item.entries if entry.person_id in grounded.ids]
+    if not wanted:
+        return None
+    from_store = _person_facts_from_store([entry.person_id for entry in wanted], store)
+    items: list[PersonRosterItem] = []
+    seen: set[str] = set()
+    for entry in wanted:
+        if entry.person_id in seen:
+            continue
+        facts = _person_facts_from_payloads(entry.person_id, payloads) or from_store.get(entry.person_id)
+        if not facts:
+            continue
+        seen.add(entry.person_id)
+        years = sorted(facts["years"])
+        items.append(
+            PersonRosterItem(
+                person_id=entry.person_id,
+                name=facts["name"],
+                roles=facts["roles"][:6],
+                show_count=len(facts["show_ids"]),
+                first_year=years[0] if years else None,
+                last_year=years[-1] if years else None,
+                note=entry.note.strip() if entry.note and entry.note.strip() else None,
+            )
+        )
+    if not items:
+        return None
+    return PersonRosterBlock(
+        type="person_roster",
+        title=item.title.strip() or "People",
+        lead=keep_grounded_links(item.lead.strip(), grounded.urls) if item.lead and item.lead.strip() else None,
+        items=items[:200],
+    )
 
 
 def _resolve_reference(
@@ -561,6 +694,9 @@ def _resolve_reference(
         guest = _find_in_payloads(payloads, "guests", "person_id", item.person_id)
         blocks = composition._guest_appearance_blocks({"guests": [guest]}) if guest else []
         return (blocks[0], []) if blocks else (None, [])
+
+    if kind == "person_roster":
+        return _resolve_person_roster(item, grounded, payloads, store), []
 
     if kind == "show_selection":
         selection = _find_in_payloads(payloads, "show_selections", "selection_id", item.selection_id)

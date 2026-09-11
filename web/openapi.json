@@ -608,6 +608,7 @@
             "title": "Eyebrow"
           },
           "items": {
+            "description": "Up to twelve items: a fact_grid or timeline is a designed comparison of a small set. A complete set of people belongs in a person_roster, which holds the whole list.",
             "items": {
               "$ref": "#/components/schemas/EditorialItem"
             },
@@ -1168,6 +1169,7 @@
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
                   "performance_unit": "#/components/schemas/PerformanceUnitBlock",
+                  "person_roster": "#/components/schemas/PersonRosterBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
                   "resource_list": "#/components/schemas/ResourceListBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
@@ -1197,6 +1199,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/GuestAppearanceListBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PersonRosterBlock"
                 },
                 {
                   "$ref": "#/components/schemas/EquipmentListBlock"
@@ -1849,6 +1854,115 @@
           "instruments"
         ],
         "title": "PerformerItem",
+        "type": "object"
+      },
+      "PersonRosterBlock": {
+        "additionalProperties": false,
+        "description": "A complete set of people, organized under one model-chosen heading.\n\nThe inventory component for questions that ask for everyone: the model\nnames the section and chooses who belongs in it; the server supplies each\nperson's name, roles, show count and span.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PersonRosterItem"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Items",
+            "type": "array"
+          },
+          "lead": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "person_roster",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "items"
+        ],
+        "title": "PersonRosterBlock",
+        "type": "object"
+      },
+      "PersonRosterItem": {
+        "additionalProperties": false,
+        "description": "One person in a roster: identity and appearance facts from the store, one note from the model.",
+        "properties": {
+          "first_year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Year"
+          },
+          "last_year": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Year"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "roles": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Roles",
+            "type": "array"
+          },
+          "show_count": {
+            "minimum": 0.0,
+            "title": "Show Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "show_count"
+        ],
+        "title": "PersonRosterItem",
         "type": "object"
       },
       "ProvenanceNoteBlock": {

@@ -271,7 +271,10 @@ export interface components {
         EditorialBlock: {
             /** Eyebrow */
             eyebrow?: string | null;
-            /** Items */
+            /**
+             * Items
+             * @description Up to twelve items: a fact_grid or timeline is a designed comparison of a small set. A complete set of people belongs in a person_roster, which holds the whole list.
+             */
             items?: components["schemas"]["EditorialItem"][];
             /** Paragraphs */
             paragraphs?: string[];
@@ -473,7 +476,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -687,6 +690,47 @@ export interface components {
              * @enum {string}
              */
             role: "performer" | "guest";
+        };
+        /**
+         * PersonRosterBlock
+         * @description A complete set of people, organized under one model-chosen heading.
+         *
+         *     The inventory component for questions that ask for everyone: the model
+         *     names the section and chooses who belongs in it; the server supplies each
+         *     person's name, roles, show count and span.
+         */
+        PersonRosterBlock: {
+            /** Items */
+            items: components["schemas"]["PersonRosterItem"][];
+            /** Lead */
+            lead?: string | null;
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "person_roster";
+        };
+        /**
+         * PersonRosterItem
+         * @description One person in a roster: identity and appearance facts from the store, one note from the model.
+         */
+        PersonRosterItem: {
+            /** First Year */
+            first_year?: string | null;
+            /** Last Year */
+            last_year?: string | null;
+            /** Name */
+            name: string;
+            /** Note */
+            note?: string | null;
+            /** Person Id */
+            person_id: string;
+            /** Roles */
+            roles?: string[];
+            /** Show Count */
+            show_count: number;
         };
         /** ProvenanceNoteBlock */
         ProvenanceNoteBlock: {

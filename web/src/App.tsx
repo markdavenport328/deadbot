@@ -650,6 +650,27 @@ function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
   return out;
 }
 
+// The roles, show count and years line under a roster name; blank parts dropped.
+function rosterDetail(item: Extract<ExperienceBlock, { type: "person_roster" }>["items"][number]): string {
+  const years = item.first_year && item.last_year
+    ? item.first_year === item.last_year ? item.first_year : `${item.first_year}–${item.last_year.slice(2)}`
+    : null;
+  return [(item.roles ?? []).join(", "), item.show_count > 0 ? countLabel(item.show_count, "show") : null, years].filter(Boolean).join(" · ");
+}
+
+// The heading a block prints for itself, when it has one. A group whose only
+// block repeats the group's own heading would stutter; the block keeps its
+// heading and the group's is dropped.
+function blockHeading(block: ExperienceBlock): string | null {
+  if (block.type === "guest_appearance_list") return block.person_name;
+  if ("title" in block && typeof block.title === "string") return block.title;
+  return null;
+}
+
+function sameHeading(a: string | null, b: string | null): boolean {
+  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
 type Draft = { title: string; lead: string | null; groups: RenderGroup[] };
 
@@ -1214,6 +1235,23 @@ function Block({
           </ol>
         </section>
       );
+    case "person_roster":
+      return (
+        <section className="typography-block person-roster">
+          <IdRow type="Roster" when={countLabel(block.items.length, "name")} />
+          <h2>{block.title}</h2>
+          {block.lead && <p className="unit-note">{renderInline(block.lead)}</p>}
+          <ul className="people roster">
+            {block.items.map((item) => (
+              <li key={item.person_id}>
+                {item.name}
+                <span>{rosterDetail(item)}</span>
+                {item.note && <em className="roster-note">{renderInline(item.note)}</em>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      );
     case "equipment_list":
       return (
         <section className="typography-block equipment-list">
@@ -1403,17 +1441,19 @@ function ComposedPage({
         <h1 id="answer-title" tabIndex={-1}>{title}</h1>
       </div>
       {lead && <p className="answer-lead">{renderInline(lead)}</p>}
-      {groups.map((group, groupIndex) => (
+      {groups.map((group, groupIndex) => {
+        const groupTitle = group.blocks.length === 1 && sameHeading(group.title, blockHeading(group.blocks[0])) ? null : group.title;
+        return (
         <section className={`experience-group group-${group.presentation}`} key={groupIndex}>
-          {(group.title || group.lead) && (
+          {(groupTitle || group.lead) && (
             group.presentation === "argument" ? (
               <header className="group-heading claim">
-                {group.title && <h2>{group.title}</h2>}
+                {groupTitle && <h2>{groupTitle}</h2>}
                 {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
               </header>
             ) : (
               <header className="group-heading">
-                {group.title && <h2>{group.title}</h2>}
+                {groupTitle && <h2>{groupTitle}</h2>}
                 {group.lead && <p>{renderInline(group.lead)}</p>}
               </header>
             )
@@ -1437,7 +1477,8 @@ function ComposedPage({
             )}
           </div>
         </section>
-      ))}
+        );
+      })}
       {composing && <p className="composing-note">Composing the page…</p>}
       {!composing && sources.length > 0 && (
         <footer className="sources-footer">

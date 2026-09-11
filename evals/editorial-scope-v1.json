@@ -78,6 +78,22 @@
         "Hedges the count or dates with coverage language such as documented or not necessarily complete.",
         "Makes every show primary, or makes none of them primary."
       ]
+    },
+    {
+      "id": "guest-roster-complete",
+      "question": "list all the guest stars",
+      "expected": {
+        "scope": "Completeness is the answer. Every cataloged guest appears once, in person rosters organized by a meaning the material supports, such as scene, instrument, era or how often someone returned, with narrative carrying the reading of the roster.",
+        "priority": "Chat states the count and how the roster is organized. The body's first section is the most revealing one rather than the first letter of the alphabet.",
+        "optional_paths": "The recurring guests offer a way in: a guest appearance list or show units for one or two of them, and Ask chips for the rest.",
+        "voice": "The count is stated as a fact."
+      },
+      "failure_conditions": [
+        "Presents the names as prose paragraphs or alphabetical ranges.",
+        "Repeats one heading at group and block level, or uses a heading that names a range rather than a subject.",
+        "Drops guests to fit a component's item cap instead of using the roster.",
+        "Follows the tool's output order instead of organizing by meaning."
+      ]
     }
   ]
 }

@@ -266,6 +266,13 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .people li { font-size: 0.93rem; color: var(--cream); line-height: 1.5; }
 .people li span { color: var(--muted); }
 .people li span::before { content: " · "; color: var(--quiet); }
+/* A roster is the people grid with the name on its own line, so the eye can run
+   down the names, and roles, count and years beneath it in the entry-detail voice. */
+.person-roster .people.roster { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.9rem 2.5rem; margin-top: 1.25rem; }
+.person-roster .people.roster li { display: grid; gap: 0.15rem; align-content: start; font-size: 1rem; font-weight: 600; }
+.person-roster .people.roster li span { font-size: 0.88rem; font-weight: 400; line-height: 1.45; }
+.person-roster .people.roster li span::before { content: none; }
+.person-roster .roster-note { color: var(--text); font-style: normal; font-size: 0.9rem; font-weight: 400; line-height: 1.45; }
 .plain { margin: 0; padding: 0; list-style: none; }
 .plain li { padding: 0.15rem 0; font-size: 0.93rem; color: var(--cream); }
 .plain li span { color: var(--muted); }

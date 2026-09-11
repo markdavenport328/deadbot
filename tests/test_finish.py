@@ -198,6 +198,51 @@ def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
     assert blocks[0].type == "guest_appearance_list" and blocks[0].person_id == person_id
 
 
+def test_resolve_body_hydrates_a_person_roster_from_the_turn_payload():
+    store = CanonicalStore()
+    from deadbot.tools import build_tools
+
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    payload = json.loads(guest_tool.invoke({"query": ""}))
+    guests = payload["guests"]
+    assert len(guests) > 12, "the roster exists for sets larger than an editorial grid"
+    grounded = finish.grounded_context([payload])
+    entries = [
+        finish.PersonRosterEntry(person_id=guest["person_id"], note="cartwheels" if guest["name"] == "John Belushi" else None)
+        for guest in guests
+    ]
+    entries.append(finish.PersonRosterEntry(person_id="person-nobody-mentioned-this-turn"))
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[
+            finish.PersonRosterRef(type="person_roster", title="Everyone who sat in", lead="One line.", entries=entries)
+        ])],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
+    block = blocks[0]
+    assert block.type == "person_roster" and block.title == "Everyone who sat in" and block.lead == "One line."
+    assert len(block.items) == len(guests), "every grounded person survives; the ungrounded one is dropped"
+    first = block.items[0]
+    assert first.name == guests[0]["name"] and first.show_count == guests[0]["guest_show_count"] and first.roles
+    assert all(item.first_year and item.last_year for item in block.items)
+    assert next(item for item in block.items if item.name == "John Belushi").note == "cartwheels"
+
+
+def test_resolve_body_hydrates_a_person_roster_from_the_store_when_the_payload_has_no_guest_record():
+    store = CanonicalStore()
+    payload = {"lineup": [{"person_id": "person-bill-kreutzmann", "name": "Bill Kreutzmann"}]}
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[
+            finish.PersonRosterRef(type="person_roster", title="Drummers", entries=[finish.PersonRosterEntry(person_id="person-bill-kreutzmann")])
+        ])],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
+    item = blocks[0].items[0]
+    assert item.name == "Bill Kreutzmann" and "drums" in item.roles and item.show_count > 1000 and item.first_year == "1965"
+
+
 def test_resolve_body_resolves_research_and_canonical_resources_together():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")

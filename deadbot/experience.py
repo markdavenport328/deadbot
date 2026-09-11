@@ -301,6 +301,32 @@ class GuestAppearanceListBlock(ExperienceModel):
     items: list[GuestAppearanceItem] = Field(min_length=1, max_length=24)
 
 
+class PersonRosterItem(ExperienceModel):
+    """One person in a roster: identity and appearance facts from the store, one note from the model."""
+
+    person_id: str
+    name: str
+    roles: list[str] = Field(default_factory=list, max_length=6)
+    show_count: int = Field(ge=0)
+    first_year: str | None = None
+    last_year: str | None = None
+    note: str | None = None
+
+
+class PersonRosterBlock(ExperienceModel):
+    """A complete set of people, organized under one model-chosen heading.
+
+    The inventory component for questions that ask for everyone: the model
+    names the section and chooses who belongs in it; the server supplies each
+    person's name, roles, show count and span.
+    """
+
+    type: Literal["person_roster"]
+    title: str
+    lead: str | None = None
+    items: list[PersonRosterItem] = Field(min_length=1, max_length=200)
+
+
 class EquipmentItem(ExperienceModel):
     equipment_id: str
     name: str
@@ -506,7 +532,14 @@ class EditorialBlock(ExperienceModel):
     eyebrow: str | None = None
     title: str | None = None
     paragraphs: list[str] = Field(default_factory=list, max_length=4)
-    items: list[EditorialItem] = Field(default_factory=list, max_length=12)
+    items: list[EditorialItem] = Field(
+        default_factory=list,
+        max_length=12,
+        description=(
+            "Up to twelve items: a fact_grid or timeline is a designed comparison of a small set. "
+            "A complete set of people belongs in a person_roster, which holds the whole list."
+        ),
+    )
 
 
 ExperienceBlock = Annotated[
@@ -517,6 +550,7 @@ ExperienceBlock = Annotated[
     | AlbumUnitBlock
     | ShowSelectionBlock
     | GuestAppearanceListBlock
+    | PersonRosterBlock
     | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock

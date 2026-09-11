@@ -567,14 +567,16 @@ def build_tools(
                     "appearances": appearances,
                 }
             )
-        guests.sort(key=lambda guest: guest["name"].casefold())
+        # Recurring guests first: the shape of the directory shows who became a
+        # thread in the band's story before it shows who dropped by once.
+        guests.sort(key=lambda guest: (-guest["guest_show_count"], guest["name"].casefold()))
         show_ids = []
         for guest in guests:
             for appearance in guest["appearances"]:
                 if appearance["show_id"] not in show_ids:
                     show_ids.append(appearance["show_id"])
         pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
-        payload: dict[str, Any] = {"query": query, "guests": guests}
+        payload: dict[str, Any] = {"query": query, "guest_count": len(guests), "guests": guests}
         if pathway_entities:
             payload["pathways"] = pathways_for(store, pathway_entities)
         return _json(payload)

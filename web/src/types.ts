@@ -53,6 +53,7 @@ export type ExperienceBlock =
   | AlbumUnitBlock
   | components["schemas"]["ShowSelectionBlock"]
   | components["schemas"]["GuestAppearanceListBlock"]
+  | components["schemas"]["PersonRosterBlock"]
   | components["schemas"]["EquipmentListBlock"]
   | components["schemas"]["ResourceListBlock"]
   | components["schemas"]["CreditListBlock"]
