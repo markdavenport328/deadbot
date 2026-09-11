@@ -119,7 +119,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .block-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
 .experience-group + .experience-group { border-top: 1px solid #3e5544; margin-top: var(--space-section); padding-top: var(--space-section); }
 .group-heading { max-width: 65rem; margin: 0 0 var(--space-content); }
-.group-heading h2 { max-width: 36ch; margin: 0; text-wrap: balance; }
+.group-heading h2 { max-width: 36ch; margin: 0; font-size: 1.8rem; letter-spacing: -0.012em; text-wrap: balance; }
+/* One heading per level: inside a titled group, an open block's own title steps
+   down a size so the section heading reads as the heading and the block's as
+   its subject. Cards keep their headline size; a card is a bounded object. */
+.experience-group.has-heading :is(.typography-block h2, .era-unit h2) { font-size: 1.3rem; }
 .group-heading p { max-width: 58rem; margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
 /* Relationships: peers, order, contrast, claim and evidence each have a shape. */
 .group-sequence .group-blocks { position: relative; counter-reset: step; gap: var(--space-unit); padding-left: 3.25rem; }
@@ -219,6 +223,15 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 .card.emphasis-supporting:is(.show-unit, .album-unit, .performance-unit, .song-overview) > h2 { font-size: 1.6rem; }
 .meta { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
+/* When the model wrote the headline, the library names the show in one tight
+   stack under the type label: the date fans know it by, then venue and place.
+   Proximity groups the stack; the larger gap before the headline separates the
+   library's naming from the model's overview. */
+.show-unit .identity { display: grid; gap: 0.2rem; margin-top: 0.55rem; }
+.show-unit .identity .identity-date { margin: 0; color: var(--cream); font-size: 1.2rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.show-unit .identity .meta { margin-top: 0; color: var(--text); font-size: 0.98rem; font-weight: 400; }
+.show-unit .identity .meta .sep { color: var(--quiet); }
+:is(.show-unit) > h2.overview { margin-top: var(--space-content); }
 .meta .sep { color: var(--quiet); margin: 0 0.4rem; }
 .meta strong { color: var(--cream); font-weight: 600; }
 
@@ -266,6 +279,13 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .people li { font-size: 0.93rem; color: var(--cream); line-height: 1.5; }
 .people li span { color: var(--muted); }
 .people li span::before { content: " · "; color: var(--quiet); }
+/* A roster is the people grid with the name on its own line, so the eye can run
+   down the names, and roles, count and years beneath it in the entry-detail voice. */
+.person-roster .people.roster { grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.9rem 2.5rem; margin-top: 1.25rem; }
+.person-roster .people.roster li { display: grid; gap: 0.15rem; align-content: start; font-size: 1rem; font-weight: 600; }
+.person-roster .people.roster li span { font-size: 0.88rem; font-weight: 400; line-height: 1.45; }
+.person-roster .people.roster li span::before { content: none; }
+.person-roster .roster-note { color: var(--text); font-style: normal; font-size: 0.9rem; font-weight: 400; line-height: 1.45; }
 .plain { margin: 0; padding: 0; list-style: none; }
 .plain li { padding: 0.15rem 0; font-size: 0.93rem; color: var(--cream); }
 .plain li span { color: var(--muted); }

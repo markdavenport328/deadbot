@@ -640,6 +640,16 @@ const blocks: ExperienceResponse = fixture(
       ]
     },
     {
+      type: "person_roster", title: "The Oregon circle", lead: "Kesey's people, who treated the stage as an extension of the farm.",
+      items: [
+        { person_id: "p-kesey", name: "Ken Kesey", roles: ["harmonica", "rap"], show_count: 5, first_year: "1978", last_year: "1991", note: "Announcements between sets, and the reason the show happened." },
+        { person_id: "p-babbs", name: "Ken Babbs", roles: ["rap"], show_count: 2, first_year: "1969", last_year: "1978", note: null },
+        { person_id: "p-cassady", name: "Neal Cassady", roles: ["rap"], show_count: 1, first_year: "1967", last_year: "1967", note: "One 1967 appearance, talking over the band." },
+        { person_id: "p-belushi", name: "John Belushi", roles: ["cartwheels", "vocals"], show_count: 1, first_year: "1980", last_year: "1980", note: null },
+        { person_id: "p-nordine", name: "Ken Nordine", roles: ["rap"], show_count: 1, first_year: "1993", last_year: "1993", note: null }
+      ]
+    },
+    {
       type: "equipment_list", show_id: "s1", title: "What the band played through",
       items: [
         { equipment_id: "e1", name: "Alembic-modified Stratocaster", manufacturer: "Fender", model: "Stratocaster", usage_context: "Garcia's main guitar for the 1972 tour", claim_type: "date_range", evidence: "photographs", source_id: "fixture-deadnet", source_url: "https://gratefuldeadoftheday.com" },
