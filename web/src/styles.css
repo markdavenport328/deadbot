@@ -62,7 +62,12 @@ a { color: var(--read); text-underline-offset: 0.18em; }
 h1, h2 { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-weight: 600; line-height: 1.08; }
 h1 { font-variation-settings: "SOFT" 40, "opsz" 72; font-size: clamp(2rem, 3.6vw, 3.5rem); }
 h2 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem; }
-.thread { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0 0.7rem; }
+/* The thread takes the height its content needs, not the whole rail, so the
+   composer rides directly under the conversation: near the masthead when
+   there is nothing to show, moving down as turns accumulate, and resting
+   against the bottom once the thread is tall enough to fill the rail and
+   start scrolling. flex: 1 pinned it to the bottom even on an empty screen. */
+.thread { display: flex; flex: 0 1 auto; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0 0.7rem; }
 .thread-messages { display: flex; flex-direction: column; gap: 0.7rem; padding: 1rem 0; }
 .message { max-width: 95%; border-radius: var(--r); padding: 0.75rem 0.85rem; font-size: 0.92rem; line-height: 1.5; white-space: pre-line; }
 .message.user { align-self: flex-end; background: #334f3b; color: #f2f3eb; }

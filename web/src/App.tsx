@@ -1907,7 +1907,7 @@ export default function App() {
                   onKeyDown={submitOnEnter}
                   disabled={loading}
                 />
-                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Ask"}</button>
+                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Explore"}</button>
               </div>
               {response && !loading && (
                 <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
