@@ -4,6 +4,7 @@ from pathlib import Path
 
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import MetadataRecord, ResearchResult, ResultState
+from deadbot.people_names import QUALIFIER
 import deadbot.tools as tools_module
 from deadbot.tools import build_tools
 
@@ -157,6 +158,62 @@ def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
     ]
     assert len(community_pages) == 5
     assert all(resource["notes"].startswith("Visitor context:") for resource in community_pages)
+
+
+def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_person():
+    """Marvin Boxley is one harmonica player, not one per qualifier form.
+
+    The canonical people table carries both ``person-marvin-boxley`` and
+    ``person-marvin-boxley-songs-unknown``. "(songs unknown)" describes how
+    complete the source record is, so it folds the identity without claiming
+    anything about the appearance the way "(complete show)" does.
+    """
+
+    payload = json.loads(
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Marvin Boxley"})
+    )
+
+    assert [guest["name"] for guest in payload["guests"]] == ["Marvin Boxley"]
+    boxley = payload["guests"][0]
+    assert boxley["person_id"] == "person-marvin-boxley"
+    assert boxley["guest_show_count"] == 2
+    assert [appearance["show_id"] for appearance in boxley["appearances"]] == [
+        "gd-1966-12-01",
+        "gd-1967-01-14-0",
+    ]
+    assert sorted(boxley["appearances"][0]["instruments"]) == ["harmonica", "vocals"]
+    assert boxley["appearances"][1]["instruments"] == ["harmonica"]
+    # The payload drops empty values, so an absent key is the absent scope:
+    # "songs unknown" folds the identity without describing the appearance.
+    assert [appearance.get("participation_scope") for appearance in boxley["appearances"]] == [None, None]
+
+
+def test_guest_directory_reports_no_person_under_a_qualified_name():
+    """Every legacy qualifier row in the people table folds, not just one form."""
+
+    payload = json.loads(
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": ""})
+    )
+
+    reported_ids = {guest["person_id"] for guest in payload["guests"]}
+    assert not [guest for guest in payload["guests"] if QUALIFIER.search(guest["name"])]
+    assert not [
+        person_id
+        for person_id in reported_ids
+        if person_id.endswith(("-complete-show", "-songs-unknown"))
+    ]
+    assert {"person-airto-moreira", "person-marvin-boxley", "person-tom-constanten"} <= reported_ids
+
+
+def test_complete_show_qualifier_still_reaches_the_reader_as_a_participation_scope():
+    payload = json.loads(
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Ned Lagin"})
+    )
+
+    lagin = payload["guests"][0]
+    assert lagin["person_id"] == "person-ned-lagin"
+    scopes = {appearance.get("participation_scope") for appearance in lagin["appearances"]}
+    assert "complete show" in scopes
 
 
 def test_guest_search_accepts_a_natural_language_person_query():

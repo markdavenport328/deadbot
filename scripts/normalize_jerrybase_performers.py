@@ -10,6 +10,8 @@ import re
 import unicodedata
 from pathlib import Path
 
+from deadbot.people_names import participation_scope_for, split_person_qualifier
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CANONICAL = ROOT / "data" / "canonical"
@@ -45,12 +47,16 @@ def append_note(value: str, addition: str) -> str:
 
 
 def person_name_and_scope(value: str) -> tuple[str, str | None]:
-    """Separate JerryBase participation notes from a person's identity."""
+    """Separate JerryBase participation notes from a person's identity.
 
-    match = re.search(r"\s+\((complete show)\)\s*$", value, re.IGNORECASE)
-    if not match:
-        return value.strip(), None
-    return value[: match.start()].strip(), match.group(1).casefold()
+    A qualifier of any form leaves the identity; only the participation forms
+    become a note on the appearance. Both readings come from
+    ``deadbot.people_names`` so this pass and the guest directory that queries
+    its output cannot disagree about who is one person.
+    """
+
+    base_name, qualifier = split_person_qualifier(value)
+    return base_name, participation_scope_for(qualifier)
 
 
 def instruments(value: str) -> list[str]:
