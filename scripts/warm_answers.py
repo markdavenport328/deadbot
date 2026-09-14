@@ -14,11 +14,21 @@ import sys
 import time
 from urllib.request import Request, urlopen
 
-# Keep in step with the `suggestions` list in web/src/App.tsx.
+# Keep in step with the `startingPoints` list in web/src/App.tsx. Nothing warms
+# these on deploy today, so they answer cold unless you run this by hand.
 OPENING_QUESTIONS = [
-    "What are the best versions of Franklin's Tower?",
-    "What shows did Branford play on?",
-    "What was the live legacy of American Beauty?",
+    "How did Eyes of the World evolve?",
+    "Where should I start with Dark Star?",
+    "Find me an overlooked Sugaree",
+    "What shows did Branford play?",
+    "Best songs with Santana",
+    "Which guests changed the music most?",
+    "What shows did Reckoning draw from?",
+    "What was the deal with Veneta '72?",
+    "Why is Cornell '77 so famous?",
+    "Cornell vs. Buffalo '77",
+    "What are the best shows of each era?",
+    "Early vs. late Shakedown",
 ]
 
 
