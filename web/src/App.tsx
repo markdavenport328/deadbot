@@ -1949,7 +1949,7 @@ export default function App() {
             />
           ) : (
             <div className="content-empty">
-              <h1>Deadbot helps you explore the Dead</h1>
+              <h1>Exploration and listening across the entire Dead catalog.</h1>
               <p className="catalog-stats">
                 {stats.map(({ count, noun }) => (
                   <span key={noun} className="catalog-stat">
@@ -1957,10 +1957,11 @@ export default function App() {
                   </span>
                 ))}
               </p>
+              <p className="eyebrow">Starting points</p>
               <div className="starting-points">
                 {startingPoints.map(({ category, questions }) => (
                   <div key={category} className="starting-group">
-                    <p className="eyebrow">{category}</p>
+                    <p className="starting-category">{category}</p>
                     {questions.map((question) => (
                       <button key={question} type="button" onClick={() => void askQuestion(question, { fresh: true })} disabled={loading}>
                         {question}
