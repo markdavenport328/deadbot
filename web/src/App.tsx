@@ -49,10 +49,51 @@ function formatReleaseType(releaseType: string): string {
   return /album/i.test(releaseType) ? capitalized : `${capitalized} album`;
 }
 
-const suggestions = [
-  "What are the best versions of Franklin's Tower?",
-  "What shows did Branford play on?",
-  "What was the live legacy of American Beauty?"
+// Catalog counts shown on the home screen. These are read from the canonical
+// CSVs, not the live database, so they cost the page nothing to display.
+// tests/test_home_stats.py fails when an import moves them; recompute with:
+//   python scripts/home_stats.py
+const stats = [
+  { count: "2,358", noun: "shows" },
+  { count: "436", noun: "songs" },
+  { count: "39,774", noun: "performances" },
+  { count: "17,977", noun: "recordings" },
+  { count: "139", noun: "guests" }
+];
+
+const startingPoints = [
+  {
+    category: "Songs",
+    questions: [
+      "How did Eyes of the World evolve?",
+      "Where should I start with Dark Star?",
+      "Find me an overlooked Sugaree"
+    ]
+  },
+  {
+    category: "Guests",
+    questions: [
+      "What shows did Branford play?",
+      "Best songs with Santana",
+      "Which guests changed the music most?"
+    ]
+  },
+  {
+    category: "Shows",
+    questions: [
+      "What shows did Reckoning draw from?",
+      "What was the deal with Veneta '72?",
+      "Why is Cornell '77 so famous?"
+    ]
+  },
+  {
+    category: "Compare",
+    questions: [
+      "Cornell vs. Buffalo '77",
+      "What are the best shows of each era?",
+      "Early vs. late Shakedown"
+    ]
+  }
 ];
 
 function createThreadId(): string {
@@ -1908,12 +1949,24 @@ export default function App() {
             />
           ) : (
             <div className="content-empty">
-              <p className="eyebrow">Starting points</p>
+              <h1>Deadbot helps you explore the Dead</h1>
+              <p className="catalog-stats">
+                {stats.map(({ count, noun }) => (
+                  <span key={noun} className="catalog-stat">
+                    <strong>{count}</strong> {noun}
+                  </span>
+                ))}
+              </p>
               <div className="starting-points">
-                {suggestions.map((suggestion) => (
-                  <button key={suggestion} type="button" onClick={() => void askQuestion(suggestion, { fresh: true })} disabled={loading}>
-                    {suggestion}
-                  </button>
+                {startingPoints.map(({ category, questions }) => (
+                  <div key={category} className="starting-group">
+                    <p className="eyebrow">{category}</p>
+                    {questions.map((question) => (
+                      <button key={question} type="button" onClick={() => void askQuestion(question, { fresh: true })} disabled={loading}>
+                        {question}
+                      </button>
+                    ))}
+                  </div>
                 ))}
               </div>
             </div>
