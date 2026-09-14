@@ -27,6 +27,11 @@ from deadbot.deadnet import (
 from deadbot.source_registry import RegistryValidationError, load_registry
 from deadbot.lore_source_trails import source_trails_for_entity
 from deadbot.pathways import pathways_for
+from deadbot.people_names import (
+    is_plain_name,
+    participation_scope_for,
+    split_person_qualifier,
+)
 from deadbot.selection_signals import (
     SelectionSignalError,
     load_selection_signals,
@@ -480,28 +485,32 @@ def build_tools(
         people = {person["person_id"]: person for person in store.rows("people")}
         shows = {show["show_id"]: show for show in store.rows("shows")}
         venues = {venue["venue_id"]: venue for venue in store.rows("venues")}
-        # JerryBase sometimes appends a participation qualifier to a person's
-        # display name (for example, ``Branford Marsalis (complete show)``).
-        # That qualifier describes the appearance, not a second human being.
-        # Collapse legacy rows here as well as at import time so an operational
-        # database created from an older snapshot still returns one identity.
+        # JerryBase sometimes appends a qualifier to a person's display name
+        # (``Bruce Hornsby (complete show)``, ``Marvin Boxley (songs unknown)``).
+        # The qualifier describes the appearance, not a second human being.
+        # The canonical CSVs still carry six such legacy rows, each of them a
+        # duplicate of a plain row, so collapse them here: the directory should
+        # answer with one identity per person whichever store it reads.
         canonical_people_by_name = {
-            person.get("name", "").casefold(): person
+            person["name"].strip().casefold(): person
             for person in people.values()
-            if person.get("name") and not re.search(r"\s+\(complete show\)\s*$", person["name"], re.IGNORECASE)
+            if is_plain_name(person.get("name", ""))
         }
 
         def canonical_person(person_id: str) -> tuple[str, dict[str, str], str | None]:
             person = people[person_id]
             source_name = person.get("name", person_id)
-            match = re.search(r"\s+\((complete show)\)\s*$", source_name, re.IGNORECASE)
-            if not match:
+            base_name, qualifier = split_person_qualifier(source_name)
+            if not qualifier:
                 return person_id, person, None
-            base_name = source_name[: match.start()].strip()
+            scope = participation_scope_for(qualifier)
+            # A qualifier alone is never evidence of who someone is. Merge only
+            # onto a plain row of the same name; without one, keep the row's own
+            # identity and show the person under the name inside it.
             canonical = canonical_people_by_name.get(base_name.casefold())
             if canonical:
-                return canonical["person_id"], canonical, match.group(1).casefold()
-            return person_id, {**person, "name": base_name}, match.group(1).casefold()
+                return canonical["person_id"], canonical, scope
+            return person_id, {**person, "name": base_name}, scope
 
         by_person: dict[str, list[dict[str, str | None]]] = {}
         for assignment in store.rows("show_performers"):
