@@ -1,169 +1,130 @@
 # Deadbot
 
-Deadbot is an experimental Grateful Dead knowledge and music system. It has a reviewable canonical dataset, source-preserving raw-data conventions, a PostgreSQL schema that can be rebuilt from the canonical files, and a small read-only LangGraph agent harness.
+Deadbot is a conversational Grateful Dead knowledge and music companion — an experiment in what happens when you give a language model a structured catalog of live music history and let it compose experiences, not just answers.
 
-## Current phase
+Ask it a question like *"What did they play after Dark Star at Veneta?"* and you get a quick factual answer. Ask *"Show me a strong Bird Song recording with the players' roles, chords, and something worth reading about it"* and you get a composed page: setlist cards, performer lineups, listening links, sourced editorial context, and pathways into recordings — all assembled from grounded data and validated before it reaches the browser.
 
-The agent harness serves the canonical graph from PostgreSQL only. CSV files
-in `data/canonical/` are the reviewed import inputs the database is rebuilt
-from, not a runtime fallback; the test suite uses the CSV store directly. The
-harness is deliberately read-only: it can find songs, shows, performances,
-contextual resources, and playback links. Its first reviewed external reader
-can also retrieve Dead.net page metadata and links for a resolved song; it
-cannot collect article bodies, lyrics, audio, or change canonical data.
+The project explores how model-driven editorial choices and a defined interface system can produce useful, coherent web experiences from structured data. It's built on a knowledge graph of 2,300+ shows, 500 songs, and 40,000 song performances spanning 1965–1995.
 
-## Why the model is separated
+**[Live →](https://deadbot-ten.vercel.app/)**
 
-The same composition can be played at many shows, and a single show can have many independently captured sources. Deadbot therefore distinguishes:
+## The question behind the project
 
-- **Song** — the composition.
-- **Show** — a dated event at a venue.
-- **Performance** — one song played at one show, in set order.
-- **Recording** — one captured source of a show.
-- **Performance recording** — the track and timestamp where a performance appears on a recording.
+Most AI chat interfaces produce transcripts. Deadbot asks a different question: can the model act as an editorial layer — choosing what to emphasize, how to group it, and what paths to offer the reader — while the system guarantees that everything rendered is grounded in real data?
 
-That separation makes it possible to connect musical history, setlists, recording lineage, and eventual playback without conflating them.
+The model researches, synthesizes, and composes. But it doesn't generate HTML or invent URLs. It produces a structured plan that the server validates and resolves against the database before anything reaches the browser. Every entity reference must trace to a tool result from the same conversation. Hallucinated references are silently dropped, not rendered.
+
+This separation — model as editorial judgment, application as rendering and verification — is the core architectural idea.
+
+## How it works
+
+For the full technical walkthrough, see **[How Deadbot works](docs/how-it-works.md)**. Here's the short version.
+
+### Data model
+
+The same composition can be played at many shows, and a single show can have many independently captured sources. The data model makes these distinctions explicit:
+
+- **Song** — the composition itself (writers, arrangements, first/last performance dates).
+- **Show** — a dated event at a venue, with a tour, setlist, and performer lineup.
+- **Performance** — one song played at one show, in set order. This is the key join: it's how "Dark Star" at Veneta is a different record from "Dark Star" at Cornell.
+- **Recording** — one captured source of a show (audience tape, soundboard, matrix blend).
+- **Official release** — an album, with track-level mappings back to specific performances.
+
+Around these sit recordings, external resources, curated selection signals, sourced claims, and derived observations — about 30 PostgreSQL tables with strict foreign keys and referential-integrity triggers. The database is populated from 23 reviewed CSV files that are the version-controlled source of truth, loaded in a single validated transaction.
+
+### Retrieval
+
+A user's question enters a **LangGraph agent loop** where the language model alternates between deciding what to look up and executing the lookups — up to eight rounds. It has 26 read-only tools: catalog tools that query PostgreSQL (search, show lookup, song lookup, performance context, album details, recording reviews, selection signals) and external tools that fetch articles, interviews, and lore from the web. Search is structured SQL text matching, not vector/semantic — the Dead domain has bounded vocabulary and the model formulates specific terms.
+
+### Experience composition
+
+When the model has enough material, it calls `finish_response` — a terminal tool whose arguments *are* the answer. It delivers a chat reply, a page title, and groups of **semantic units** (show cards, song overviews, performance units, album units, era units) referenced by ID, plus editorial blocks (narrative, fact grid, timeline) for the model's own synthesis.
+
+The server resolves each reference against the database — hydrating shows with venues, setlists, performers, recordings, and listening links — and validates that every entity appeared in a tool result. The model organizes units into groups with presentation modes (collection, sequence, comparison, argument) and controls emphasis (primary, supporting, mention) to shape the page layout. The browser renders the validated result as deterministic React components.
+
+The page streams progressively as the model writes: a token-by-token JSON parser emits blocks as they complete, so the browser lays out the page before the full plan arrives. Every unit carries follow-up topic chips that send new questions into the conversation, creating pathways through the catalog rather than dead-ending at an answer.
 
 ## Architecture
 
-```text
-external sources → raw JSONL → normalization → canonical CSV → PostgreSQL
+```
+external sources → raw JSON → normalization → canonical CSV → PostgreSQL
+                                                                  ↑
+                                                          reviewed, versioned,
+                                                          rebuildable from CSVs
 ```
 
-Canonical CSV files in `data/canonical/` remain the reviewable source of truth.
-The deterministic importer validates and loads all of them into the rebuildable
-operational database described in `schema/postgres.sql`. Structured observations
-are computed from that grounded layer and versioned separately; generated prose
-is not stored as canonical fact.
+The system has four layers:
 
-## Repository layout
+1. **Canonical knowledge graph** — reviewed, normalized data for factual relationships. CSV files are the source of truth; PostgreSQL is the operational store rebuilt from them.
+2. **Tool-using agent** — a bounded LangGraph loop that combines catalog retrieval with approved external-source reading.
+3. **Composition and validation** — resolves the model's editorial plan into grounded, typed blocks with provenance tracking.
+4. **React experience** — renders validated blocks as an interactive exploration interface.
 
-- `data/raw/` — source-preserving, regenerable collected records.
-- `data/canonical/` — normalized entities and relationships, tracked in Git.
-- `schema/` — PostgreSQL definition and domain-model documentation.
-- `scripts/` — collection, normalization, and import tooling.
-- `deadbot/` — LangGraph agent loop, model-provider abstraction, and read-only canonical-data tools.
-- `tests/` — harness and data-tool tests.
-- `docs/` — architecture, source-evaluation notes, provenance policy, and decisions.
+### Repository layout
 
-See `docs/graph-scope.md` for the boundary between structured graph data and externally hosted content.
+| Directory | Contents |
+| --- | --- |
+| `data/canonical/` | Normalized entities and relationships, tracked in Git |
+| `data/raw/` | Source-preserving collected records |
+| `schema/` | PostgreSQL definition and migrations |
+| `scripts/` | Collection, normalization, and import tooling |
+| `deadbot/` | LangGraph agent, tools, composition, FastAPI endpoints |
+| `web/` | React + TypeScript client |
+| `tests/` | Harness and data-tool tests |
+| `docs/` | Architecture, decisions, data audits, and design documents |
 
-## Project guide
+## Running locally
 
-- `docs/product-vision.md` — the intended user experience, system shape, and information boundaries.
-- `docs/experience-brief.md` — Deadbot's persona, response goal, model handoff, presentation palette, and whole-experience review criteria.
-- `docs/experience-architecture.md` — the FastAPI/React experience layer, composition contract, block catalog, and media/provenance safeguards.
-- `docs/development-plan.md` — current accomplishments, staged plan, and acceptance criteria.
-- `docs/data-and-retrieval-roadmap.md` — optimal collection order, PostgreSQL cutover gates, bounded graph retrieval, and the 1972-to-full-timeline rollout.
-- `docs/question-driven-enrichment.md` — question-first selection of the cross-decade song cohort, the role of the 1972 pilot, and source-qualified notable-show context.
-- `docs/serendipity-research-plan.md` — flexible two-column answers, model-guided exploration, and source-specific research-tool rollout.
-- `docs/editorial-discovery-guide.md` — the discretionary, non-factual lore-path inventory available to the answering model.
-- `docs/lore-pilot-research.md` — first source trails for song evolution and Veneta/Cornell context.
-- `docs/lore-source-trails.md` — the initial model-callable catalog of those source links and their question-specific purpose.
-- `docs/song-cohort-candidates.md` — reproducible 72-song factual coverage queue for cross-decade enrichment review.
-- `docs/featured-show-candidates.md` — reviewable cross-era show enhancement queue with current coverage and relationship gaps.
-- `docs/data-audit-2026-08-27.md` — a point-in-time, verified row-count and gap audit of the canonical CSV data, with prioritized next data-work steps.
-- `docs/canonical-spine-baseline.md` — generated, machine-readable entity and relationship coverage baseline with explicit unresolved gaps.
-- `docs/reconciliation-queue.md` — source-scoped queue for resolving missing setlists and performer assignments without inventing facts.
-- `docs/selection-evidence-review.md` — staged official-release, critic, and fan signals with explicit source and entity-resolution limits.
-- `docs/collection-methodology.md` — practical collection workflow, retry safety, title matching, rights boundaries, and validation checklist.
-- `docs/collection-status-1965-1995.md` — full show/setlist baseline coverage and early-year gaps.
-- `docs/agent-handoff.md` — concise onboarding guide for a collaborating agent.
-- `docs/agent-harness.md` — LangGraph loop, tool surface, and local-model configuration.
-- `docs/decisions.md` — architectural decisions that should not be casually revisited.
+### Prerequisites
 
-## Run the local agent
+Python 3.11+, Node.js 18+, PostgreSQL, and either [Ollama](https://ollama.ai) (local) or an OpenAI API key.
 
-Create a virtual environment and install the project dependencies:
+### Setup
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-```
-
-Install and start Ollama, then download the recommended starting model:
-
-```bash
-ollama pull qwen3:8b
-```
-
-Copy `.env.example` to `.env` if you want to change the model or local Ollama URL, then run:
-
-```bash
-.venv/bin/deadbot chat
-```
-
-See `docs/agent-harness.md` for the architecture, available tools, and model-provider contract.
-
-## Use PostgreSQL
-
-PostgreSQL is the only runtime store; CSV files are import inputs, not a
-serving fallback. Create an empty PostgreSQL database and import the
-canonical snapshot:
-
-```bash
 .venv/bin/python -m pip install -e '.[dev,postgres]'
+```
+
+### Import the catalog
+
+```bash
 export DEADBOT_DATABASE_URL='postgresql://deadbot:deadbot@localhost:5432/deadbot'
 .venv/bin/deadbot db-import --rebuild
 ```
 
-The importer validates every CSV before touching the database, creates a
-content-addressed manifest for that exact file set, and commits the schema,
-snapshot ledger, and data as one transaction. The command prints the canonical
-snapshot ID; use it as the `input_revision` for any derived observation.
-Without `--rebuild`, existing rows win and conflicts are skipped, so that
-non-destructive merge is not proof that the database is an exact mirror of the
-listed snapshot. Use the explicit rebuild after canonical corrections when the
-operational projection must match the files.
+The importer validates every CSV, creates a content-addressed manifest, and commits the schema and data as one transaction. Without `--rebuild`, existing rows win and new rows merge in.
 
-To run the app against the imported database:
+### Run the web experience
 
 ```bash
-export DEADBOT_DATA_STORE=postgres
+cd web && npm install && npm run build && cd ..
 .venv/bin/deadbot serve
 ```
 
-`DEADBOT_DATA_STORE=postgres` is already the default; the export above is
-explicit for clarity. CSV remains the reviewed source of truth the database is
-rebuilt from, and tests use it directly, but it is never a runtime fallback.
-See `schema/README.md` for load order and the forward enrichment tables.
+Open `http://127.0.0.1:8000`. For frontend development, run `deadbot serve --reload` alongside `npm run dev` from `web/`; Vite proxies `/api` requests to FastAPI.
 
-## Run the web experience
-
-Install the Python dependencies as above, then install and build the React
-client:
+### Run the CLI agent
 
 ```bash
-cd web
-npm install
-npm run build
-cd ..
-.venv/bin/deadbot serve
+ollama pull qwen3:8b
+.venv/bin/deadbot chat
 ```
 
-Open `http://127.0.0.1:8000`. The web experience requires the configured local
-model service when a question is submitted. For frontend development, run
-`.venv/bin/deadbot serve --reload` and `npm run dev` from `web/`; Vite proxies
-`/api` requests to FastAPI.
+### Evaluate retrieval
 
-The browser receives a server-validated experience response made of allowlisted
-cards, links, and media blocks. See `docs/experience-architecture.md` for the
-composition and provenance contract.
-
-## Evaluate canonical retrieval
-
-Run the versioned Veneta tool-retrieval baseline without starting Ollama:
+Run the versioned tool-retrieval baseline without a model:
 
 ```bash
 .venv/bin/deadbot evaluate
 ```
 
-The command prints one pass/fail result per case. To preserve a run for comparison,
-write the JSON report outside the tracked suite:
+## Design documents
 
-```bash
-.venv/bin/deadbot evaluate --output eval-results/veneta-v1.json
-```
-
-See `docs/evaluation.md` for the boundary between deterministic tool checks and
-separate model-response review.
+- **[How Deadbot works](docs/how-it-works.md)** — the database, retrieval loop, and experience system in detail
+- [`docs/product-vision.md`](docs/product-vision.md) — the intended experience, system shape, and information boundaries
+- [`docs/experience-brief.md`](docs/experience-brief.md) — persona, response goals, presentation palette, and review criteria
+- [`docs/experience-architecture.md`](docs/experience-architecture.md) — composition contract, block catalog, and provenance safeguards
+- [`docs/development-plan.md`](docs/development-plan.md) — accomplishments, staged plan, and acceptance criteria
+- [`docs/decisions.md`](docs/decisions.md) — architectural decisions that should not be casually revisited
+- [`docs/agent-harness.md`](docs/agent-harness.md) — LangGraph loop, tool surface, and model-provider contract
