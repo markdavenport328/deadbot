@@ -1402,6 +1402,14 @@
             "title": "Show Id",
             "type": "string"
           },
+          "songs": {
+            "items": {
+              "$ref": "#/components/schemas/GuestAppearanceSong"
+            },
+            "maxItems": 12,
+            "title": "Songs",
+            "type": "array"
+          },
           "venue_name": {
             "anyOf": [
               {
@@ -1462,6 +1470,37 @@
           "items"
         ],
         "title": "GuestAppearanceListBlock",
+        "type": "object"
+      },
+      "GuestAppearanceSong": {
+        "additionalProperties": false,
+        "description": "One song a guest is credited on, from performance_performers.",
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "song_title": {
+            "title": "Song Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "song_title"
+        ],
+        "title": "GuestAppearanceSong",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -2834,13 +2873,6 @@
       },
       "ValidationError": {
         "properties": {
-          "ctx": {
-            "title": "Context",
-            "type": "object"
-          },
-          "input": {
-            "title": "Input"
-          },
           "loc": {
             "items": {
               "anyOf": [

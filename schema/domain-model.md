@@ -55,6 +55,7 @@ erDiagram
 | `performance_recordings` | A performance's track/timing location in a recording. |
 | `song_writers` | Many-to-many authorship relationship between people and songs. |
 | `show_performers` | People who actually performed at a particular show, including guests and changing lineups. One row represents one role-and-instrument assignment. |
+| `performance_performers` | People credited on one particular performance, one row per role-and-instrument assignment. Sparse: a row exists only where a source pins a person to that song, so it refines a `show_performers` credit rather than repeating the lineup for every song. |
 | `band_memberships` | One row per person's role and tenure in a named act (`grateful-dead` for this pass) -- who was a core or officially recognized member, in what role, and over what dates. A non-contiguous tenure (Mickey Hart's 1971 departure and 1975 return) carries one row per contiguous span. |
 | `resources` | Source documents and external links, including interviews, reviews, tabs, lessons, videos, and future transcription pointers. |
 | `resource_songs` / `resource_shows` / `resource_performances` | Typed relationships that attach a resource to the song, show, or performance it addresses. |
@@ -84,6 +85,10 @@ an introduction, tuning, banter, or another non-song segment.
 ## Show performers
 
 `show_performers` supports one or more assignments for a person at a show. Use a separate row for each role-and-instrument combination; for example, a performer who plays guitar and sings has two rows with the same `show_id` and `person_id`. `role` can describe their participation (such as `band-member` or `guest`), while `instrument` records the musical role (such as `guitar`, `vocals`, `piano`, or `tenor sax`). No controlled vocabulary is enforced yet.
+
+## Song-level performer credits
+
+`performance_performers` carries the same shape as `show_performers` but hangs off a `performance_id`. It exists for the question a show-level guest credit cannot answer: which songs did the guest play on? Rows are entered only where a source says so, and `notes` carries the citation and a one-line account of what happened. An appearance with a `show_performers` row and no `performance_performers` rows is known at the show level only; nothing about the setlist should be inferred from that absence.
 
 ## Band memberships
 

@@ -285,6 +285,14 @@ class AlbumUnitBlock(ExperienceModel):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
 
+class GuestAppearanceSong(ExperienceModel):
+    """One song a guest is credited on, from performance_performers."""
+
+    performance_id: str
+    song_title: str
+    note: str | None = None
+
+
 class GuestAppearanceItem(ExperienceModel):
     show_id: str
     show_date: str
@@ -292,6 +300,8 @@ class GuestAppearanceItem(ExperienceModel):
     location: str | None = None
     instruments: list[str] = Field(min_length=1, max_length=8)
     participation_scope: str | None = None
+    # Empty when the credit is known only at the show level.
+    songs: list[GuestAppearanceSong] = Field(default_factory=list, max_length=12)
 
 
 class GuestAppearanceListBlock(ExperienceModel):

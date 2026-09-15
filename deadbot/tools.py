@@ -477,14 +477,51 @@ def build_tools(
 
         A name or phrase narrows the results. Each appearance includes its show,
         venue, location, credited instruments, and any known participation scope.
-        pathways lists the cataloged lore for each result (resources, source
-        trail, selections) or the research sites to search when nothing is
-        cataloged.
+        Where a source pins the guest to particular songs, the appearance also
+        carries songs: the performances they played on, in set order, each with
+        a note on what happened. An appearance without songs is known at the
+        show level only. pathways lists the cataloged lore for each result
+        (resources, source trail, selections) or the research sites to search
+        when nothing is cataloged.
         """
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
         shows = {show["show_id"]: show for show in store.rows("shows")}
         venues = {venue["venue_id"]: venue for venue in store.rows("venues")}
+        songs = {song["song_id"]: song for song in store.rows("songs")}
+        performances = {row["performance_id"]: row for row in store.rows("performances")}
+        # Song-level credits, keyed by (person, show) so an appearance can list
+        # the songs its guest played without a second scan per appearance.
+        song_credits: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
+        for credit in store.rows("performance_performers"):
+            performance = performances.get(credit.get("performance_id", ""))
+            if not performance:
+                continue
+            key = (credit.get("person_id", ""), performance["show_id"])
+            entry = song_credits.setdefault(key, {}).setdefault(
+                performance["performance_id"],
+                {
+                    "performance_id": performance["performance_id"],
+                    "song_id": performance["song_id"],
+                    "song_title": songs.get(performance["song_id"], {}).get("title", performance["song_id"]),
+                    "set_number": performance.get("set_number") or None,
+                    "position_in_set": performance.get("position_in_set") or None,
+                    "instruments": [],
+                    "note": credit.get("notes") or None,
+                },
+            )
+            if credit.get("instrument") and credit["instrument"] not in entry["instruments"]:
+                entry["instruments"].append(credit["instrument"])
+
+        def songs_for(person_id: str, show_id: str) -> list[dict[str, Any]]:
+            entries = song_credits.get((person_id, show_id), {}).values()
+            return sorted(
+                entries,
+                key=lambda entry: (
+                    int(entry["set_number"] or 0),
+                    int(entry["position_in_set"] or 0),
+                ),
+            )
         # JerryBase sometimes appends a qualifier to a person's display name
         # (``Bruce Hornsby (complete show)``, ``Marvin Boxley (songs unknown)``).
         # The qualifier describes the appearance, not a second human being.
@@ -564,6 +601,12 @@ def build_tools(
                     appearance["instruments"].append(instrument)
                 if assignment.get("participation_scope"):
                     appearance["participation_scope"] = assignment["participation_scope"]
+            for appearance in appearances_by_show.values():
+                # Only set when known: the payload keeps empty lists, and an
+                # absent key is the honest shape for "show-level credit only".
+                credited_songs = songs_for(person_id, appearance["show_id"])
+                if credited_songs:
+                    appearance["songs"] = credited_songs
             appearances = sorted(
                 appearances_by_show.values(),
                 key=lambda appearance: (appearance.get("show_date") or "", appearance["show_id"]),

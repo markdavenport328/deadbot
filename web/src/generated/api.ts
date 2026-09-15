@@ -540,6 +540,8 @@ export interface components {
             show_date: string;
             /** Show Id */
             show_id: string;
+            /** Songs */
+            songs?: components["schemas"]["GuestAppearanceSong"][];
             /** Venue Name */
             venue_name?: string | null;
         };
@@ -561,6 +563,18 @@ export interface components {
              * @enum {string}
              */
             type: "guest_appearance_list";
+        };
+        /**
+         * GuestAppearanceSong
+         * @description One song a guest is credited on, from performance_performers.
+         */
+        GuestAppearanceSong: {
+            /** Note */
+            note?: string | null;
+            /** Performance Id */
+            performance_id: string;
+            /** Song Title */
+            song_title: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1022,10 +1036,6 @@ export interface components {
         };
         /** ValidationError */
         ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */

@@ -636,7 +636,7 @@ const blocks: ExperienceResponse = fixture(
       type: "guest_appearance_list", person_id: "p-kesey", person_name: "Ken Kesey", known_show_count: 3,
       items: [
         { show_id: "s1", show_date: "1972-08-27", venue_name: "Old Renaissance Faire Grounds", location: "Veneta, OR", instruments: ["announcements"], participation_scope: "between sets" },
-        { show_id: "s5", show_date: "1982-08-28", venue_name: "Oregon Country Fair", location: "Veneta, OR", instruments: ["spoken word"], participation_scope: "second set" },
+        { show_id: "s5", show_date: "1982-08-28", venue_name: "Oregon Country Fair", location: "Veneta, OR", instruments: ["spoken word"], participation_scope: "second set", songs: [{ performance_id: "s5-drums", song_title: "Drums", note: "Talked over the drummers." }, { performance_id: "s5-nfa", song_title: "Not Fade Away", note: null }] },
         { show_id: "s6", show_date: "1994-06-19", venue_name: "Autzen Stadium", location: "Eugene, OR", instruments: ["spoken word"], participation_scope: null }
       ]
     },

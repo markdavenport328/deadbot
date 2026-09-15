@@ -42,6 +42,13 @@ For `show_performers.csv`, enter one row per person's role-and-instrument assign
 empty; a credit that names a person and a role but no instrument is held in
 the normalizer's review log rather than entered with a placeholder.
 
+`performance_performers.csv` refines a `show_performers.csv` guest credit down
+to the songs, one row per person's role-and-instrument assignment on one
+performance. Enter a row only where a source pins the person to that song, and
+put the citation in `notes`; `source_key` is `manual` for hand-researched rows
+and `source_record_id` names the research document. An appearance with no rows
+here stays a show-level fact. See `docs/collection-status-guest-song-credits.md`.
+
 `band_memberships.csv` answers "who was in the band, in what role, over what
 dates" directly, instead of requiring a scan of all of `show_performers.csv`.
 One row is one person's role and tenure in a named `act` (`grateful-dead` for

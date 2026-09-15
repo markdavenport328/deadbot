@@ -145,6 +145,17 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "notes": "",
         }
     ],
+    "performance_performers": [
+        {
+            "performance_id": "performance-dark-star",
+            "person_id": "person-garcia",
+            "role": "performer",
+            "instrument": "lead guitar",
+            "notes": "Fixture credit so performance_context carries a song-level performer.",
+            "source_key": "manual",
+            "source_record_id": "fixture",
+        }
+    ],
     "show_performers": [
         {
             "show_performer_id": "sp-1",
