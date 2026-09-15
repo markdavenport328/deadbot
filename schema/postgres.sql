@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (9);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (10);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -260,6 +260,22 @@ CREATE TABLE performances (
     CHECK (position_in_set > 0),
     UNIQUE (show_id, set_number, position_in_set)
 );
+
+-- Song-level performer credits, sparse: a row exists only where a source pins
+-- a person to one performance. show_performers still carries the show-level
+-- credit; an appearance with no rows here is known at the show level only.
+CREATE TABLE performance_performers (
+    performance_id TEXT NOT NULL REFERENCES performances (performance_id) ON DELETE CASCADE,
+    person_id TEXT NOT NULL REFERENCES people (person_id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    notes TEXT,
+    source_key TEXT,
+    source_record_id TEXT,
+    PRIMARY KEY (performance_id, person_id, role, instrument)
+);
+
+CREATE INDEX performance_performers_person_id_idx ON performance_performers (person_id);
 
 CREATE TABLE resource_performances (
     resource_id TEXT NOT NULL REFERENCES resources (resource_id) ON DELETE CASCADE,

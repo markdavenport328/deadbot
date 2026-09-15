@@ -51,6 +51,16 @@ carries one row per contiguous span. `end_date` is nullable so a currently
 active tenure in a future act need not invent an end, but every row from this
 pass carries an explicit end date rather than leaving it blank.
 
+Schema version 10 adds `performance_performers`: one row per person's
+role-and-instrument credit on one performance, shaped like `show_performers`.
+`show_performers` says who was onstage at a show; this table says which songs
+they played on, when a source pins it down. It is sparse by design. A guest
+with a show-level credit and no rows here is known at the show level only,
+and readers should say so rather than infer the songs. The first pass covers
+Carlos Santana's sit-ins and the guests who joined him on the same songs
+(John Cipollina, Gary Duncan, Greg Errico); see
+`docs/collection-status-guest-song-credits.md`.
+
 Load canonical files in foreign-key dependency order:
 
 1. `people.csv`
@@ -65,17 +75,18 @@ Load canonical files in foreign-key dependency order:
 10. `resource_shows.csv`
 11. `show_performers.csv`
 12. `performances.csv`
-13. `resource_performances.csv`
-14. `show_links.csv`
-15. `performance_links.csv`
-16. `official_releases.csv`
-17. `official_release_tracks.csv`
-18. `release_personnel.csv`
-19. `song_arrangements.csv`
-20. `arrangement_chord_sections.csv`
-21. `recordings.csv`
-22. `performance_recordings.csv`
-23. `show_equipment.csv`
+13. `performance_performers.csv`
+14. `resource_performances.csv`
+15. `show_links.csv`
+16. `performance_links.csv`
+17. `official_releases.csv`
+18. `official_release_tracks.csv`
+19. `release_personnel.csv`
+20. `song_arrangements.csv`
+21. `arrangement_chord_sections.csv`
+22. `recordings.csv`
+23. `performance_recordings.csv`
+24. `show_equipment.csv`
 
 `performance_recordings` is checked to ensure a performance is mapped only to
 a recording of the same show. The importer validates CSV formatting, required

@@ -701,6 +701,16 @@ class CanonicalStore:
             "official_releases": self.official_release_summaries(release_ids),
         }
 
+    def performance_performers(self, performance_id: str) -> list[dict[str, str]]:
+        """Song-level performer credits for one performance, with the person's name."""
+
+        people = self.by_id.get("people", {})
+        credits = []
+        for row in self.filtered_rows("performance_performers", performance_id=performance_id):
+            person = people.get(row.get("person_id", ""), {})
+            credits.append({**row, "name": person.get("name", row.get("person_id", ""))})
+        return credits
+
     def performance_context(self, performance_id: str) -> dict[str, Any] | None:
         performance = self.one("performances", performance_id)
         if not performance:
@@ -714,6 +724,10 @@ class CanonicalStore:
             "performance": performance,
             "song": self.one("songs", performance["song_id"]),
             "show": self.one("shows", performance["show_id"]),
+            # Song-level credits are sparse: a row exists only where a source
+            # pins a person to this performance, so an empty list means "known
+            # at the show level only", not "nobody played".
+            "performers": self.performance_performers(performance_id),
             "resources": self.resources_for("resource_performances", "performance_id", performance_id),
             "links": [row for row in self.rows("performance_links") if row["performance_id"] == performance_id],
             "show_links": [row for row in self.rows("show_links") if row["show_id"] == performance["show_id"]],

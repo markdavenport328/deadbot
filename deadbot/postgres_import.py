@@ -23,7 +23,7 @@ DEFAULT_CANONICAL_DIR = ROOT / "data" / "canonical"
 DEFAULT_SELECTION_EVIDENCE_PATH = ROOT / "data" / "editorial" / "selection-evidence-review.json"
 DEFAULT_SCHEMA_PATH = ROOT / "schema" / "postgres.sql"
 DEFAULT_MIGRATIONS_DIR = ROOT / "schema" / "migrations"
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 Converter = Callable[[str], Any]
@@ -102,6 +102,7 @@ TABLE_SPECS: tuple[TableSpec, ...] = (
     _spec("resource_shows", "resource_id show_id relationship_type notes", nullable=("notes",)),
     _spec("show_performers", "show_id person_id role instrument notes source_key source_record_id", nullable=("notes", "source_key", "source_record_id")),
     _spec("performances", "performance_id show_id song_id set_number set_label position_in_set encore segue_into_next performance_notes source_key source_record_id", nullable=("set_number", "set_label", "performance_notes", "source_key", "source_record_id"), integers=("set_number", "position_in_set"), booleans=("encore", "segue_into_next")),
+    _spec("performance_performers", "performance_id person_id role instrument notes source_key source_record_id", nullable=("notes", "source_key", "source_record_id")),
     _spec("resource_performances", "resource_id performance_id relationship_type notes", nullable=("notes",)),
     _spec("show_links", "show_link_id show_id platform link_type url title is_official notes", nullable=("title", "notes"), booleans=("is_official",)),
     _spec("performance_links", "performance_link_id performance_id platform link_type url title start_seconds duration_seconds is_official notes", nullable=("title", "start_seconds", "duration_seconds", "notes"), integers=("start_seconds", "duration_seconds"), booleans=("is_official",)),

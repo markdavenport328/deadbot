@@ -357,8 +357,25 @@ def test_band_memberships_spec_loads_after_people_and_end_fields_are_nullable():
     assert names.index("band_memberships") > names.index("people")
 
 
-def test_schema_version_is_nine_and_each_version_has_exactly_one_migration():
-    assert SCHEMA_VERSION == 9
+def test_performance_performers_spec_loads_after_performances_and_people():
+    spec = next(spec for spec in TABLE_SPECS if spec.name == "performance_performers")
+    assert spec.columns == (
+        "performance_id",
+        "person_id",
+        "role",
+        "instrument",
+        "notes",
+        "source_key",
+        "source_record_id",
+    )
+    assert spec.nullable == frozenset({"notes", "source_key", "source_record_id"})
+    names = [spec.name for spec in TABLE_SPECS]
+    assert names.index("performance_performers") > names.index("performances")
+    assert names.index("performance_performers") > names.index("people")
+
+
+def test_schema_version_is_ten_and_each_version_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 10
     migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
     for version in range(2, SCHEMA_VERSION + 1):
         assert len(sorted(migrations_dir.glob(f"{version:03d}_*.sql"))) == 1
@@ -377,10 +394,14 @@ def test_schema_version_is_nine_and_each_version_has_exactly_one_migration():
     band_memberships = sorted(migrations_dir.glob("009_*.sql"))[0].read_text(encoding="utf-8")
     assert "CREATE TABLE band_memberships" in band_memberships
     assert "UPDATE deadbot_schema_metadata SET schema_version = 9" in band_memberships
+    performance_performers = sorted(migrations_dir.glob("010_*.sql"))[0].read_text(encoding="utf-8")
+    assert "CREATE TABLE performance_performers" in performance_performers
+    assert "UPDATE deadbot_schema_metadata SET schema_version = 10" in performance_performers
     bootstrap = (Path(__file__).resolve().parents[1] / "schema" / "postgres.sql").read_text(encoding="utf-8")
     assert "CREATE TABLE deadbot_response_cache" in bootstrap
     assert "CREATE TABLE band_memberships" in bootstrap
-    assert "VALUES (9)" in bootstrap
+    assert "CREATE TABLE performance_performers" in bootstrap
+    assert "VALUES (10)" in bootstrap
 
 
 def test_every_spec_matches_its_canonical_csv_header():
@@ -410,13 +431,13 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
                     if upper.startswith(("INSERT", "DELETE", "UPDATE", "CREATE", "ALTER")):
                         connection.writes.append(sql)
                     if sql == "SELECT to_regclass(%s)" and params:
-                        # band_memberships arrives with the pending migration.
+                        # performance_performers arrives with the pending migration.
                         table = params[0].removeprefix("public.")
-                        self._fetchone = (None,) if table == "band_memberships" else (table,)
+                        self._fetchone = (None,) if table == "performance_performers" else (table,)
                         return
                     if upper.startswith("SELECT COUNT(*) FROM PUBLIC."):
                         table = sql.rsplit(".", 1)[1]
-                        assert table != "band_memberships", "counted a table that does not exist yet"
+                        assert table != "performance_performers", "counted a table that does not exist yet"
                         self._fetchone = (connection.counts.get(table, 0),)
                         return
                     if "FROM public.canonical_imports" in sql:
@@ -439,11 +460,11 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
     report = check_import(connection, canonical_dir=tmp_path)
     assert connection.writes == []
     assert report["installed_schema_version"] == SCHEMA_VERSION - 1
-    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_band_memberships.sql"]
+    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_performance_performers.sql"]
     assert report["recent_imports"][0]["mode"] == "rebuild"
     assert report["tables"]["shows"]["database_rows"] == 5
     assert "shows" in report["rebuild_would_delete_rows_in"]
     assert "resources" not in report["rebuild_would_delete_rows_in"]
-    assert report["tables"]["band_memberships"]["database_rows"] is None
-    assert report["tables_created_by_pending_migrations"] == ["band_memberships"]
+    assert report["tables"]["performance_performers"]["database_rows"] is None
+    assert report["tables_created_by_pending_migrations"] == ["performance_performers"]
     assert report["merge_deletes_nothing"] is True

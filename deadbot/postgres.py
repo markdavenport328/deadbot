@@ -81,6 +81,7 @@ _ORDER_COLUMNS: dict[str, tuple[str, ...]] = {
     "official_releases": ("release_id",),
     "people": ("person_id",),
     "performance_links": ("performance_link_id",),
+    "performance_performers": ("performance_id", "person_id", "role", "instrument"),
     "performance_recordings": ("performance_id", "recording_id", "track_number"),
     "recordings": ("recording_id",),
     "release_personnel": ("release_id", "person_id", "role", "instrument"),
@@ -771,10 +772,13 @@ class PostgresCanonicalStore(CanonicalStore):
         resource_relationships = self._filtered_rows(
             "resource_performances", performance_id=performance_id
         )
+        performer_credits = self._filtered_rows("performance_performers", performance_id=performance_id)
         tables = {
             "performances": [performance],
             "songs": self._rows_in("songs", "song_id", (performance["song_id"],)),
             "shows": self._rows_in("shows", "show_id", (performance["show_id"],)),
+            "performance_performers": performer_credits,
+            "people": self._rows_in("people", "person_id", (row["person_id"] for row in performer_credits)),
             "official_release_tracks": release_tracks,
             "official_releases": self._rows_in(
                 "official_releases", "release_id", (row["release_id"] for row in release_tracks)

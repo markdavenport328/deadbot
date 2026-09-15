@@ -228,6 +228,47 @@ def test_guest_search_accepts_a_natural_language_person_query():
     ]
 
 
+def test_guest_directory_names_the_songs_a_guest_played_when_the_catalog_knows_them():
+    """A show-level credit says Santana was there; performance_performers says on what."""
+
+    payload = json.loads(
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Santana"})
+    )
+
+    assert [guest["name"] for guest in payload["guests"]] == ["Carlos Santana"]
+    santana = payload["guests"][0]
+    assert santana["guest_show_count"] == 7
+    by_show = {appearance["show_id"]: appearance for appearance in santana["appearances"]}
+    assert [song["song_title"] for song in by_show["gd-1993-01-26"]["songs"]] == [
+        "The Other One",
+        "Stella Blue",
+        "Turn On Your Lovelight",
+        "Gloria",
+    ]
+    assert by_show["gd-1993-01-26"]["songs"][1]["performance_id"] == "gd-1993-01-26-stella-blue-2-9"
+    assert [song["song_title"] for song in by_show["gd-1987-08-23"]["songs"]] == [
+        "Iko Iko",
+        "All Along The Watchtower",
+    ]
+    # Where no source pins down the songs, the appearance stays show-level
+    # rather than guessing: the payload drops empty values, so no key.
+    assert "songs" not in by_show["gd-1976-12-31"]
+
+
+def test_performance_context_lists_the_guests_credited_on_that_performance():
+    context = CanonicalStore().performance_context("gd-1993-01-26-stella-blue-2-9")
+
+    assert context is not None
+    performers = context["performers"]
+    assert [(row["person_id"], row["role"], row["instrument"]) for row in performers] == [
+        ("person-carlos-santana", "guest", "guitar")
+    ]
+    assert performers[0]["name"] == "Carlos Santana"
+    assert "resource-jambase-weir-teaches-santana-stella-blue-1993" in {
+        resource["resource_id"] for resource in context["resources"]
+    }
+
+
 def test_resource_directory_searches_cataloged_anecdotal_sources_across_scopes():
     store = CanonicalStore()
     payload = json.loads(tool_by_name(store, "search_stored_resources").invoke({"query": "Veneta"}))

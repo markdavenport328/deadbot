@@ -32,6 +32,7 @@ from deadbot.experience import (
     EraUnitBlock,
     FollowUpTopic,
     GuestAppearanceItem,
+    GuestAppearanceSong,
     GuestAppearanceListBlock,
     ComparisonStripItem,
     ListenAction,
@@ -1209,6 +1210,23 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
             if not isinstance(show_id, str) or not isinstance(show_date, str) or not instruments:
                 continue
             scope = appearance.get("participation_scope")
+            songs: list[GuestAppearanceSong] = []
+            raw_songs = appearance.get("songs")
+            for song in raw_songs if isinstance(raw_songs, list) else []:
+                if not isinstance(song, dict):
+                    continue
+                performance_id = song.get("performance_id")
+                song_title = song.get("song_title")
+                if not isinstance(performance_id, str) or not isinstance(song_title, str) or not song_title:
+                    continue
+                note = song.get("note")
+                songs.append(
+                    GuestAppearanceSong(
+                        performance_id=performance_id,
+                        song_title=song_title,
+                        note=note if isinstance(note, str) and note else None,
+                    )
+                )
             items.append(
                 GuestAppearanceItem(
                     show_id=show_id,
@@ -1217,6 +1235,7 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
                     location=location if isinstance(location, str) and location else None,
                     instruments=instruments[:8],
                     participation_scope=scope if isinstance(scope, str) and scope else None,
+                    songs=songs[:12],
                 )
             )
         if not items:

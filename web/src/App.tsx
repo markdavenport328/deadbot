@@ -1309,6 +1309,9 @@ function Block({
                 <span className="entry-detail">
                   {[item.venue_name ? formatShowDateLong(item.show_date) : null, item.location, item.instruments.join(", "), item.participation_scope].filter(Boolean).join(" · ")}
                 </span>
+                {item.songs && item.songs.length > 0 && (
+                  <span className="entry-detail">{item.songs.map((song) => song.song_title).join(", ")}</span>
+                )}
               </li>
             ))}
           </ol>
