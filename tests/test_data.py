@@ -782,3 +782,27 @@ def test_canonical_csv_values_pass_the_importer_converters():
                     except (ValueError, TypeError) as error:
                         bad.append(f"{spec.csv_name}:{line_number} {column}={value!r}: {error}")
     assert bad == []
+
+
+def test_canonical_resources_satisfy_the_unique_and_foreign_key_constraints():
+    """The importer inserts with ON CONFLICT DO NOTHING, so a resource sharing a source_url
+    with another vanishes silently and its links then fail the foreign key in CI."""
+    import collections
+    import csv
+    from pathlib import Path
+
+    canonical = Path(__file__).parents[1] / "data" / "canonical"
+
+    def rows(name: str) -> list[dict[str, str]]:
+        with (canonical / f"{name}.csv").open(encoding="utf-8", newline="") as handle:
+            return list(csv.DictReader(handle))
+
+    resources = rows("resources")
+    urls = collections.Counter(row["source_url"] for row in resources if row["source_url"])
+    assert [url for url, count in urls.items() if count > 1] == []
+    ids = collections.Counter(row["resource_id"] for row in resources)
+    assert [rid for rid, count in ids.items() if count > 1] == []
+    known = set(ids)
+    for table in ("resource_shows", "resource_songs", "resource_performances"):
+        dangling = sorted({row["resource_id"] for row in rows(table)} - known)
+        assert dangling == [], table
