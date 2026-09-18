@@ -756,3 +756,53 @@ def test_search_entities_surfaces_band_memberships_for_a_core_member():
             "end_date": "1995-07-09",
         }
     ]
+
+
+def test_canonical_csv_values_pass_the_importer_converters():
+    """CI's db-import rejects a bare year or year-month in a DATE column; catch it here first."""
+    import csv
+    from pathlib import Path
+
+    from deadbot.postgres_import import TABLE_SPECS
+
+    canonical = Path(__file__).parents[1] / "data" / "canonical"
+    bad = []
+    for spec in TABLE_SPECS:
+        path = canonical / spec.csv_name
+        if not spec.converters or not path.exists():
+            continue
+        with path.open(encoding="utf-8", newline="") as handle:
+            for line_number, row in enumerate(csv.DictReader(handle), start=2):
+                for column, convert in spec.converters.items():
+                    value = row.get(column, "")
+                    if not value:
+                        continue
+                    try:
+                        convert(value)
+                    except (ValueError, TypeError) as error:
+                        bad.append(f"{spec.csv_name}:{line_number} {column}={value!r}: {error}")
+    assert bad == []
+
+
+def test_canonical_resources_satisfy_the_unique_and_foreign_key_constraints():
+    """The importer inserts with ON CONFLICT DO NOTHING, so a resource sharing a source_url
+    with another vanishes silently and its links then fail the foreign key in CI."""
+    import collections
+    import csv
+    from pathlib import Path
+
+    canonical = Path(__file__).parents[1] / "data" / "canonical"
+
+    def rows(name: str) -> list[dict[str, str]]:
+        with (canonical / f"{name}.csv").open(encoding="utf-8", newline="") as handle:
+            return list(csv.DictReader(handle))
+
+    resources = rows("resources")
+    urls = collections.Counter(row["source_url"] for row in resources if row["source_url"])
+    assert [url for url, count in urls.items() if count > 1] == []
+    ids = collections.Counter(row["resource_id"] for row in resources)
+    assert [rid for rid, count in ids.items() if count > 1] == []
+    known = set(ids)
+    for table in ("resource_shows", "resource_songs", "resource_performances"):
+        dangling = sorted({row["resource_id"] for row in rows(table)} - known)
+        assert dangling == [], table
