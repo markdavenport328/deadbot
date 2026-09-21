@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ComponentProps, type FormEvent, type KeyboardEvent, type ReactNode, createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
@@ -63,11 +63,35 @@ const stats = [
 
 const startingPoints = [
   {
+    category: "Shows",
+    questions: [
+      "Why is Cornell '77 so famous?",
+      "What was the deal with Veneta '72?",
+      "Cornell vs. Buffalo '77"
+    ]
+  },
+  {
     category: "Songs",
     questions: [
       "How did Eyes of the World evolve?",
       "Where should I start with Dark Star?",
-      "Find me an overlooked Sugaree"
+      "Early vs. late Shakedown"
+    ]
+  },
+  {
+    category: "Performances",
+    questions: [
+      "Find me an overlooked Sugaree",
+      "What's the best Scarlet > Fire of 1977?",
+      "Find me a great 1973 Playing in the Band"
+    ]
+  },
+  {
+    category: "Recordings",
+    questions: [
+      "What shows did Reckoning draw from?",
+      "Best soundboard of Cornell '77?",
+      "Which official releases cover 1972?"
     ]
   },
   {
@@ -76,22 +100,6 @@ const startingPoints = [
       "What shows did Branford play?",
       "Best songs with Santana",
       "Which guests changed the music most?"
-    ]
-  },
-  {
-    category: "Shows",
-    questions: [
-      "What shows did Reckoning draw from?",
-      "What was the deal with Veneta '72?",
-      "Why is Cornell '77 so famous?"
-    ]
-  },
-  {
-    category: "Compare",
-    questions: [
-      "Cornell vs. Buffalo '77",
-      "What are the best shows of each era?",
-      "Early vs. late Shakedown"
     ]
   }
 ];
@@ -126,6 +134,17 @@ function dedupeSources(sources: SourceReference[]): SourceReference[] {
     result.push(source);
   }
   return result;
+}
+
+// Cards inside a titled group must not sit at the same heading level as the
+// group's own <h2>. ComposedPage sets this to "h3" for the duration of a
+// titled group's blocks; every card-level heading renders through here so it
+// follows without each renderer knowing which level applies.
+const HeadingContext = createContext<"h2" | "h3">("h2");
+
+function CardHeading(props: ComponentProps<"h2">) {
+  const Tag = useContext(HeadingContext);
+  return <Tag {...props} />;
 }
 
 function ExternalLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
@@ -754,7 +773,7 @@ function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void
   if (event.type === "status") handlers.onStatus(event.text);
   else if (event.type === "answer") handlers.onAnswer(event.text);
   else if (event.type === "response") handlers.onResponse(event.response);
-  else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now.");
+  else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
   else if (PAGE_EVENT_TYPES.has(event.type)) handlers.onPage(event);
 }
 
@@ -857,12 +876,12 @@ function ShowUnit({
             </p>
             <Meta parts={[unit.location, guestsNode]} />
           </div>
-          <h2 className="overview">{modelHeadline}</h2>
+          <CardHeading className="overview">{modelHeadline}</CardHeading>
         </>
       ) : (
         <>
           <IdRow type="Show" when={dateLong} />
-          <h2>{identityName}</h2>
+          <CardHeading>{identityName}</CardHeading>
           <Meta parts={[unit.location, guestsNode]} />
         </>
       )}
@@ -974,12 +993,12 @@ function AlbumUnit({
             <p className="identity-name">{recordName}</p>
             <Meta parts={[kindLine, releaseLong ? `Released ${releaseLong}` : null]} />
           </div>
-          <h2 className="overview">{modelHeadline}</h2>
+          <CardHeading className="overview">{modelHeadline}</CardHeading>
         </>
       ) : (
         <>
           <IdRow type={typeLabel} when={releaseLong ? `Released ${releaseLong}` : null} />
-          <h2>{recordName}</h2>
+          <CardHeading>{recordName}</CardHeading>
           <Meta parts={[kindLine]} />
         </>
       )}
@@ -1015,7 +1034,7 @@ function PerformanceUnit({
   return (
     <article className={`card performance-unit emphasis-${block.emphasis}`}>
       <IdRow type="Performance" when={rightParts.length > 0 ? rightParts.join(" · ") : null} />
-      <h2>{block.song_title}</h2>
+      <CardHeading>{block.song_title}</CardHeading>
       <Meta parts={[block.venue_name, formatShowDateLong(block.show_date), block.location]} />
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
@@ -1177,7 +1196,7 @@ function SongOverviewUnit({
   return (
     <article className={`card song-overview emphasis-${block.emphasis}`}>
       <IdRow type="Song" when={`${block.known_performance_count} performance${block.known_performance_count === 1 ? "" : "s"}`} />
-      <h2>{block.title}</h2>
+      <CardHeading>{block.title}</CardHeading>
       <Meta parts={[block.original_artist ? `Originally by ${block.original_artist}` : null]} />
       {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
@@ -1230,7 +1249,7 @@ function Block({
       return (
         <section className="era-unit">
           <IdRow type="Era" when={block.span} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
           <ul className="era-performances">
             {block.performances.map((performance) => (
@@ -1259,7 +1278,7 @@ function Block({
       return (
         <article className="typography-block entity-block">
           <IdRow type={typeLabel} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           {block.subtitle && <p className="meta">{block.subtitle}</p>}
           {block.details.length > 0 && (
             <ul className="details">
@@ -1281,7 +1300,7 @@ function Block({
       return (
         <section className="typography-block show-selection">
           <IdRow type={block.selection_type} when={countLabel(block.items.length, "show")} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <p className="meta">Selected by {block.selector_name}</p>
           <ol className="entry-list two-up">
             {block.items.map((item) => (
@@ -1298,7 +1317,7 @@ function Block({
       return (
         <section className="typography-block guest-appearance-list">
           <IdRow type="Guest appearances" when={countLabel(block.known_show_count, "show")} />
-          <h2>{block.person_name}</h2>
+          <CardHeading>{block.person_name}</CardHeading>
           <ol className="entry-list two-up">
             {block.items.map((item) => (
               <li key={item.show_id}>
@@ -1318,7 +1337,7 @@ function Block({
       return (
         <section className="typography-block person-roster">
           <IdRow type="Roster" when={countLabel(block.items.length, "name")} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           {block.lead && <p className="unit-note">{renderInline(block.lead)}</p>}
           <ul className="people roster">
             {block.items.map((item) => (
@@ -1335,7 +1354,7 @@ function Block({
       return (
         <section className="typography-block equipment-list">
           <IdRow type="Equipment" when={countLabel(block.items.length, "item")} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <ul className="entry-list two-up">
             {block.items.map((item) => (
               <li key={`${item.equipment_id}-${item.usage_context}-${item.evidence}`}>
@@ -1356,7 +1375,7 @@ function Block({
       return (
         <section className="typography-block resource-list">
           <IdRow type="Go deeper" when={countLabel(block.items.length, "source")} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <div className="reading">
             {block.items.map((item) => (
               <div className="reading-source" key={item.resource_id}>
@@ -1373,7 +1392,7 @@ function Block({
       return (
         <section className="typography-block credit-list">
           <IdRow type="Composition" />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <PeopleList people={block.items.map((item) => ({ key: `${item.person_id}-${item.role}`, name: item.name, detail: item.role }))} />
         </section>
       );
@@ -1381,7 +1400,7 @@ function Block({
       return (
         <section className="card media-card">
           <IdRow type={block.provider} when={block.is_official ? "Official release" : null} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <MediaEmbed block={block} />
           <ListenActionList actions={[{ label: `Open on ${block.provider}`, provider: block.provider, url: block.url, is_official: block.is_official }]} />
         </section>
@@ -1399,7 +1418,7 @@ function Block({
       return (
         <section className="typography-block arrangement-block">
           <IdRow type="Arrangement" when={block.key_signature ? `Key of ${block.key_signature}` : null} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <Meta parts={[capitalize(block.arrangement_scope.replaceAll("-", " ")), block.capo ? `Capo ${block.capo}` : null, block.tuning ? `${block.tuning} tuning` : null]} />
           {block.notes && <p className="unit-note">{block.notes}</p>}
           {block.progressions.length > 0 && (
@@ -1419,7 +1438,7 @@ function Block({
       return (
         <section className="typography-block arrangement-search">
           <IdRow type="Musician’s reference" when={`Key of ${block.key_signature}`} />
-          <h2>{block.title}</h2>
+          <CardHeading>{block.title}</CardHeading>
           <p className="meta">{block.coverage_note}</p>
           <ul className="entry-list">
             {block.items.map((item) => (
@@ -1436,14 +1455,14 @@ function Block({
       if (block.presentation === "narrative") return (
         <section className="typography-block narrative-block">
           <Eyebrow label={block.eyebrow} title={block.title} />
-          {block.title && <h2>{block.title}</h2>}
+          {block.title && <CardHeading>{block.title}</CardHeading>}
           {block.paragraphs.map((paragraph, index) => <p key={index}>{renderInline(paragraph)}</p>)}
         </section>
       );
       if (block.presentation === "fact_grid") return (
         <section className="typography-block fact-grid-block">
           <Eyebrow label={block.eyebrow} title={block.title} />
-          {block.title && <h2>{block.title}</h2>}
+          {block.title && <CardHeading>{block.title}</CardHeading>}
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
@@ -1465,7 +1484,7 @@ function Block({
       return (
         <section className="typography-block timeline-block">
           <Eyebrow label={block.eyebrow} title={block.title} />
-          {block.title && <h2>{block.title}</h2>}
+          {block.title && <CardHeading>{block.title}</CardHeading>}
           <ol>
             {block.items.map((item, index) => (
               <li key={`${item.marker ?? item.title}-${index}`}>
@@ -1537,24 +1556,26 @@ function ComposedPage({
               </header>
             )
           )}
-          <div className="block-grid group-blocks">
-            {chunkMentions(group.blocks).map((entry) =>
-              entry.kind === "mentions" ? (
-                <ul className="mention-list" key={entry.key}>
-                  {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
-                </ul>
-              ) : (
-                <Block
-                  key={entry.key}
-                  block={entry.block}
-                  sources={sources}
-                  criteria={group.presentation === "comparison" ? group.criteria : []}
-                  soleUnit={composing ? false : unitCount === 1}
-                  onFollowUp={onFollowUp}
-                />
-              )
-            )}
-          </div>
+          <HeadingContext.Provider value={groupTitle ? "h3" : "h2"}>
+            <div className="block-grid group-blocks">
+              {chunkMentions(group.blocks).map((entry) =>
+                entry.kind === "mentions" ? (
+                  <ul className="mention-list" key={entry.key}>
+                    {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
+                  </ul>
+                ) : (
+                  <Block
+                    key={entry.key}
+                    block={entry.block}
+                    sources={sources}
+                    criteria={group.presentation === "comparison" ? group.criteria : []}
+                    soleUnit={composing ? false : unitCount === 1}
+                    onFollowUp={onFollowUp}
+                  />
+                )
+              )}
+            </div>
+          </HeadingContext.Provider>
         </section>
         );
       })}
@@ -1603,9 +1624,32 @@ export default function App() {
   // show only the statuses that arrived after the answer, not the whole run.
   const [answerProgressStart, setAnswerProgressStart] = useState<number | null>(null);
   const threadContainer = useRef<HTMLElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const conversationPaneRef = useRef<HTMLElement>(null);
   // Callbacks passed into askStreaming close over stale render state, so track
   // whether the answer has already started in a ref.
   const answerStartedRef = useRef(false);
+  // Set right before a successful response lands, so the focus/live-region
+  // effect below knows this render is the one to act on rather than firing on
+  // every unrelated response change (a `?fixture=` load, for instance).
+  const askJustCompletedRef = useRef(false);
+
+  // The start screen is the whole content area until a question is asked (or
+  // one is already in flight, or already answered). It drives both the empty
+  // layout and the initial animation phase below.
+  const atStart = !response && !loading && !pendingQuestion;
+
+  // The ask transition's state machine. Emil Kowalski's rules: transform and
+  // opacity only, never ease-in. "start" is the still, rail-less home screen;
+  // "leaving" fades the lead and library while the composer stays put;
+  // "opening" snaps the rail and content pane off-canvas with no transition
+  // the instant the real layout replaces the start screen; "arriving" turns
+  // the transitions on for one frame later so the browser animates from that
+  // off-canvas position back to rest; "settled" is the ordinary, resting page.
+  const [phase, setPhase] = useState<"start" | "leaving" | "opening" | "arriving" | "settled">(atStart ? "start" : "settled");
+  // A visually hidden status line, announced once per answer instead of on
+  // every render (finding 3).
+  const [answerReadyMessage, setAnswerReadyMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const thread = threadContainer.current;
@@ -1632,62 +1676,97 @@ export default function App() {
     });
   }, [visualFixture]);
 
-  // A named `?stream=` fixture replays as a timed event sequence through the
-  // same dispatch the network path uses, so progressive rendering can be
-  // reviewed without a model. Development only, like `?fixture=`.
-  useEffect(() => {
-    if (!import.meta.env.DEV || !requestedStreamFixture) return;
-    let cancelled = false;
-    void loadRequestedStreamEvents().then(async (events) => {
-      if (!events || cancelled) return;
-      const responseEvent = events.find((event): event is Extract<StreamEvent, { type: "response" }> => event.type === "response");
-      const firstTurn = responseEvent?.response.conversation.find((turn) => turn.role === "user")?.text ?? null;
-      setPendingQuestion(firstTurn);
-      setPendingStartsFresh(true);
-      setLoading(true);
-      setError(null);
-      setProgress([]);
-      setStreamingAnswer(null);
-      setDraft(null);
-      answerStartedRef.current = false;
-      let statusCount = 0;
-      for (const event of events) {
-        if (cancelled) return;
-        await delay(event.type === "block" ? 600 : event.type === "answer" ? 40 : 300);
-        if (cancelled) return;
-        dispatchStreamEvent(event, {
-          onStatus: (status) => {
-            statusCount += 1;
-            setProgress((lines) => [...lines, status]);
-          },
-          onAnswer: (text) => {
-            if (!answerStartedRef.current) {
-              answerStartedRef.current = true;
-              setAnswerProgressStart(statusCount);
-            }
-            setStreamingAnswer(text);
-          },
-          onPage: (pageEvent) => setDraft((current) => applyPageEvent(current, pageEvent)),
-          onResponse: (nextResponse) => {
-            setResponse(nextResponse);
-            setLoading(false);
-            setPendingQuestion(null);
-            setPendingStartsFresh(false);
-            setProgress([]);
-            setStreamingAnswer(null);
-            setAnswerProgressStart(null);
-            setDraft(null);
-          }
-        });
-      }
+  // Once the app switches out of the start screen ("opening"), measure the
+  // rail's actual width and hand it to the content pane as a CSS variable, so
+  // the content pane's opening translateX matches the rail exactly even if
+  // the rail isn't the 310px the grid track defaults to. Two nested rAFs
+  // force a reflow at the off-canvas position before "arriving" turns the
+  // transitions on, so the browser animates from there rather than skipping
+  // straight to rest.
+  const innerFrameRef = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (phase !== "opening") return;
+    const rail = conversationPaneRef.current;
+    const workspace = workspaceRef.current;
+    if (rail && workspace) {
+      workspace.style.setProperty("--rail-w", `${rail.getBoundingClientRect().width}px`);
+    }
+    const outer = requestAnimationFrame(() => {
+      const inner = requestAnimationFrame(() => setPhase("arriving"));
+      innerFrameRef.current = inner;
     });
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelAnimationFrame(outer);
+      if (innerFrameRef.current !== null) cancelAnimationFrame(innerFrameRef.current);
+    };
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "arriving") return;
+    const timer = window.setTimeout(() => setPhase("settled"), 1300);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
+
+  // Move focus to the answer heading once a response actually lands from an
+  // ask (never on a `?fixture=` load, which never sets the ref).
+  useEffect(() => {
+    if (!response || !askJustCompletedRef.current) return;
+    askJustCompletedRef.current = false;
+    document.getElementById("answer-title")?.focus({ preventScroll: false });
+  }, [response]);
+
+  // The dev `?stream=` fixture replays a canned event sequence through the
+  // same dispatch the network path uses, so progressive rendering can be
+  // reviewed without a model. It no longer starts itself on mount: askQuestion
+  // triggers it, the same way it triggers a real request, so the start screen
+  // and the ask transition are both exercised by simply asking a question.
+  async function replayStreamFixture(): Promise<void> {
+    const events = await loadRequestedStreamEvents();
+    if (!events) return;
+    let statusCount = 0;
+    for (const event of events) {
+      await delay(event.type === "block" ? 600 : event.type === "answer" ? 40 : 300);
+      dispatchStreamEvent(event, {
+        onStatus: (status) => {
+          statusCount += 1;
+          setProgress((lines) => [...lines, status]);
+        },
+        onAnswer: (text) => {
+          if (!answerStartedRef.current) {
+            answerStartedRef.current = true;
+            setAnswerProgressStart(statusCount);
+          }
+          setStreamingAnswer(text);
+        },
+        onPage: (pageEvent) => setDraft((current) => applyPageEvent(current, pageEvent)),
+        onResponse: (nextResponse) => {
+          setResponse(nextResponse);
+          setAnswerReadyMessage(`Answer ready: ${nextResponse.title}`);
+          askJustCompletedRef.current = true;
+          setLoading(false);
+          setPendingQuestion(null);
+          setPendingStartsFresh(false);
+          setProgress([]);
+          setStreamingAnswer(null);
+          setAnswerProgressStart(null);
+          setDraft(null);
+        }
+      });
+    }
+  }
 
   async function askQuestion(nextQuestion?: string, { fresh = false }: { fresh?: boolean } = {}) {
-    if (visualFixture || requestedStreamFixture) return;
+    if (visualFixture) return;
     const trimmed = (nextQuestion ?? question).trim();
     if (!trimmed || loading) return;
+
+    const cameFromStart = phase === "start";
+    if (cameFromStart) {
+      setPhase("leaving");
+      await delay(180);
+    }
+
     const requestThreadId = fresh ? createThreadId() : activeThreadId;
     const conversation = fresh ? [] : response?.conversation ?? [];
     if (fresh) {
@@ -1702,7 +1781,15 @@ export default function App() {
     setProgress([]);
     setStreamingAnswer(null);
     setDraft(null);
+    setAnswerReadyMessage(null);
     answerStartedRef.current = false;
+    if (cameFromStart) setPhase("opening");
+
+    if (import.meta.env.DEV && requestedStreamFixture) {
+      await replayStreamFixture();
+      return;
+    }
+
     const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
     try {
       let statusCount = 0;
@@ -1720,9 +1807,13 @@ export default function App() {
         },
         onPage: (event) => setDraft((current) => applyPageEvent(current, event))
       });
-      setResponse(streamed ?? await askPlain(body));
+      const finalResponse = streamed ?? await askPlain(body);
+      setResponse(finalResponse);
+      setAnswerReadyMessage(`Answer ready: ${finalResponse.title}`);
+      askJustCompletedRef.current = true;
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now.");
+      setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now. Try again, or rephrase the question.");
+      if (cameFromStart) setPhase("start");
     } finally {
       setLoading(false);
       setPendingQuestion(null);
@@ -1757,7 +1848,7 @@ export default function App() {
     if (result.status === 404 || result.status === 405) return null;
     if (!result.ok) {
       const detail = await result.json().catch(() => null) as { detail?: string } | null;
-      throw new Error(detail?.detail ?? "Deadbot could not answer just now.");
+      throw new Error(detail?.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
     }
     if (!result.body) return null;
     const reader = result.body.getReader();
@@ -1802,7 +1893,7 @@ export default function App() {
     });
     if (!result.ok) {
       const detail = await result.json().catch(() => null) as { detail?: string } | null;
-      throw new Error(detail?.detail ?? "Deadbot could not answer just now.");
+      throw new Error(detail?.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
     }
     return await result.json() as ExperienceResponse;
   }
@@ -1822,6 +1913,8 @@ export default function App() {
     setResponse(null);
     setError(null);
     setQuestion("");
+    setAnswerReadyMessage(null);
+    setPhase("start");
   }
 
   const visibleConversation = pendingQuestion
@@ -1846,10 +1939,44 @@ export default function App() {
     void askQuestion();
   }
 
+  // Shared by the rail and the start screen, which never render at the same
+  // time (the rail is visually collapsed while atStart), but each needs its
+  // own element id.
+  function renderComposer(variant: "rail" | "start") {
+    return (
+      <form className={variant === "start" ? "composer start-composer" : "composer"} onSubmit={submit}>
+        <div className="question-field">
+          <textarea
+            id={`question-${variant}`}
+            aria-label="Question"
+            rows={3}
+            placeholder="Ask about a song, show, source, or recording"
+            value={question}
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={submitOnEnter}
+            disabled={loading}
+          />
+          <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Explore"}</button>
+        </div>
+        {variant === "rail" && response && !loading && (
+          <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
+        )}
+      </form>
+    );
+  }
+
+  const workspaceClassName = [
+    "workspace",
+    atStart ? "start" : null,
+    phase === "opening" ? "opening" : null,
+    phase === "arriving" ? "arriving" : null
+  ].filter(Boolean).join(" ");
+
   return (
     <main className="app-shell">
-      <div className="workspace">
-        <aside className="conversation-pane" aria-label="Conversation">
+      <p role="status" className="sr-only">{answerReadyMessage}</p>
+      <div className={workspaceClassName} ref={workspaceRef}>
+        <aside className="conversation-pane" aria-label="Conversation" ref={conversationPaneRef}>
           <header className="masthead">
             <div className="masthead-row">
               <a className="wordmark" href="/">Deadbot</a>
@@ -1868,7 +1995,7 @@ export default function App() {
                 </article>
               ))}
               {loading && (
-                <article className="message assistant pending" aria-live="polite">
+                <article className="message assistant pending">
                   {streamingAnswer ? (
                     <div className="streaming-answer">
                       {renderInline(streamingAnswer)}
@@ -1893,31 +2020,42 @@ export default function App() {
               )}
             </div>
 
-            {error && <p className="error" role="alert">{error}</p>}
+            {error && !atStart && <p className="error" role="alert">{error}</p>}
 
-            <form className="composer" onSubmit={submit}>
-              <div className="question-field">
-                <textarea
-                  id="question"
-                  aria-label="Question"
-                  rows={3}
-                  placeholder="Ask about a song, show, source, or recording"
-                  value={question}
-                  onChange={(event) => setQuestion(event.target.value)}
-                  onKeyDown={submitOnEnter}
-                  disabled={loading}
-                />
-                <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Explore"}</button>
-              </div>
-              {response && !loading && (
-                <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
-              )}
-            </form>
+            {renderComposer("rail")}
           </section>
         </aside>
 
-        <section className="content-pane" aria-live={loading && draft ? "off" : "polite"} aria-label="Deadbot guide">
-          {loading && draft ? (
+        <section className="content-pane" aria-label="Deadbot guide">
+          {atStart ? (
+            <div className={`start-screen${phase === "leaving" ? " leaving" : ""}`}>
+              <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
+              {renderComposer("start")}
+              {error && <p className="error" role="alert">{error}</p>}
+              <div className="library">
+                {stats.map(({ count, noun }) => {
+                  const group = startingPoints.find((candidate) => candidate.category.toLowerCase() === noun);
+                  return (
+                    <section className="library-stat" key={noun}>
+                      <p className="num">{count}</p>
+                      <p className="noun">{noun}</p>
+                      {group && (
+                        <ul className="qs">
+                          {group.questions.map((prompt) => (
+                            <li key={prompt}>
+                              <button type="button" onClick={() => void askQuestion(prompt, { fresh: true })} disabled={loading}>
+                                {prompt}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            </div>
+          ) : loading && draft ? (
             <ComposedPage
               title={draft.title || pendingQuestion || ""}
               lead={draft.lead}
@@ -1947,31 +2085,7 @@ export default function App() {
               composing={false}
               onFollowUp={chooseFollowUp}
             />
-          ) : (
-            <div className="content-empty">
-              <h1>Exploration and listening across the entire Dead catalog.</h1>
-              <p className="catalog-stats">
-                {stats.map(({ count, noun }) => (
-                  <span key={noun} className="catalog-stat">
-                    <strong>{count}</strong> {noun}
-                  </span>
-                ))}
-              </p>
-              <p className="eyebrow">Starting points</p>
-              <div className="starting-points">
-                {startingPoints.map(({ category, questions }) => (
-                  <div key={category} className="starting-group">
-                    <p className="starting-category">{category}</p>
-                    {questions.map((question) => (
-                      <button key={question} type="button" onClick={() => void askQuestion(question, { fresh: true })} disabled={loading}>
-                        {question}
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          ) : null}
         </section>
       </div>
     </main>
