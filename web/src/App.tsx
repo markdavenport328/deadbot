@@ -574,34 +574,28 @@ function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: string 
 
   return (
     <div className="drawer">
-      <div className="tabs" role="tablist">
+      <div className="tabs">
         {tabs.map((tab, index) => (
           <button
             key={tab.id}
             type="button"
-            role="tab"
             id={`${baseId}-tab-${tab.id}`}
-            aria-selected={open === tab.id}
+            aria-expanded={open === tab.id}
             aria-controls={`${baseId}-panel-${tab.id}`}
-            className="tab k"
+            className="tab"
             ref={(element) => { tabRefs.current[tab.id] = element; }}
             onClick={() => setOpen((current) => (current === tab.id ? null : tab.id))}
             onKeyDown={(event) => handleKeyDown(event, index)}
           >
             {tab.label}
             {tab.count !== undefined && <span className="n">{tab.count}</span>}
-            <svg className="tab-caret" viewBox="0 0 12 12" aria-hidden="true">
-              <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
           </button>
         ))}
       </div>
       {tabs.map((tab) => (
         <div
           key={tab.id}
-          role="tabpanel"
           id={`${baseId}-panel-${tab.id}`}
-          aria-labelledby={`${baseId}-tab-${tab.id}`}
           className="panel"
           hidden={open !== tab.id}
         >
@@ -857,8 +851,11 @@ function ShowUnit({
         <>
           <IdRow type="Show" />
           <div className="identity">
-            <p className="identity-date">{dateLong}</p>
-            <Meta parts={[identityName, unit.location, guestsNode]} />
+            <p className="identity-name">
+              <span>{unit.venue_name || dateLong}</span>
+              {unit.venue_name ? <span>{dateLong}</span> : null}
+            </p>
+            <Meta parts={[unit.location, guestsNode]} />
           </div>
           <h2 className="overview">{modelHeadline}</h2>
         </>
