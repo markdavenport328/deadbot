@@ -13,6 +13,7 @@ from deadbot.aggregation import (
     stable_aggregation_id,
     zero_fill_years,
 )
+from deadbot.data import CanonicalStore
 
 
 # ---------------------------------------------------------------------------
@@ -233,3 +234,188 @@ def test_assemble_result_on_empty_rows():
     assert result.date_range == date_range
     assert result.rows == []
     assert result.excluded_count == 0
+
+
+# ---------------------------------------------------------------------------
+# CanonicalStore.aggregate (CSV reference implementation)
+# ---------------------------------------------------------------------------
+
+
+def test_aggregate_performances_by_year_filtered_to_dark_star():
+    store = CanonicalStore()
+    request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "year",
+            "measure": "count",
+            "filters": {"song_id": "song-dark-star"},
+        }
+    )
+    result = store.aggregate(request)
+    assert result.rows, "expected Dark Star performances in at least one year"
+    years = [row["year"] for row in result.rows]
+    assert years == sorted(years)
+    for row in result.rows:
+        assert isinstance(row["value"], int)
+        assert row["value"] > 0
+    assert result.total == sum(row["value"] for row in result.rows)
+
+
+def test_aggregate_performances_by_year_fill_missing_has_no_gaps():
+    store = CanonicalStore()
+    request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "year",
+            "measure": "count",
+            "filters": {"song_id": "song-dark-star"},
+            "fill_missing": True,
+        }
+    )
+    result = store.aggregate(request)
+    years = [row["year"] for row in result.rows]
+    assert years == list(range(years[0], years[-1] + 1))
+    present_years = {
+        row["year"]
+        for row in store.aggregate(
+            parse_request(
+                {
+                    "dataset": "performances",
+                    "group_by": "year",
+                    "measure": "count",
+                    "filters": {"song_id": "song-dark-star"},
+                }
+            )
+        ).rows
+    }
+    for row in result.rows:
+        if row["year"] not in present_years:
+            assert row["value"] == 0
+
+
+def test_aggregate_shows_by_year_date_range_spans_decades():
+    store = CanonicalStore()
+    request = parse_request({"dataset": "shows", "group_by": "year", "measure": "count"})
+    result = store.aggregate(request)
+    assert result.date_range is not None
+    assert result.date_range["from"] <= 1970
+    assert result.date_range["to"] >= 1990
+
+
+def test_aggregate_performances_by_song_top_five_non_increasing():
+    store = CanonicalStore()
+    request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "song",
+            "measure": "count",
+            "sort": "value_desc",
+            "limit": 5,
+        }
+    )
+    result = store.aggregate(request)
+    assert len(result.rows) == 5
+    values = [row["value"] for row in result.rows]
+    assert values == sorted(values, reverse=True)
+    assert result.excluded_count > 0
+
+
+def test_aggregate_performances_by_venue_distinct_shows_ids_resolve():
+    store = CanonicalStore()
+    request = parse_request(
+        {"dataset": "performances", "group_by": "venue", "measure": "distinct_shows"}
+    )
+    result = store.aggregate(request)
+    assert result.rows
+    for row in result.rows[:3]:
+        venue = store.one("venues", row["id"])
+        assert venue is not None
+        assert venue.get("name") == row["label"]
+
+
+def test_aggregate_guest_appearances_by_guest_includes_jack_casady():
+    store = CanonicalStore()
+    request = parse_request(
+        {
+            "dataset": "guest_appearances",
+            "group_by": "guest",
+            "measure": "count",
+            "filters": {"guest_id": "person-jack-casady"},
+        }
+    )
+    result = store.aggregate(request)
+    rows_by_id = {row["id"]: row["value"] for row in result.rows}
+    assert "person-jack-casady" in rows_by_id
+    assert rows_by_id["person-jack-casady"] >= 1
+
+
+def test_aggregate_guest_appearances_by_year_filtered_to_guest_only_shows_their_years():
+    store = CanonicalStore()
+    shows_by_id = store.by_id["shows"]
+    expected_years = set()
+    for assignment in store.rows("show_performers"):
+        if assignment.get("role") != "guest" or assignment.get("person_id") != "person-jack-casady":
+            continue
+        show = shows_by_id.get(assignment.get("show_id", ""))
+        date = (show or {}).get("show_date", "")
+        if len(date) >= 4 and date[:4].isdigit():
+            expected_years.add(int(date[:4]))
+
+    request = parse_request(
+        {
+            "dataset": "guest_appearances",
+            "group_by": "year",
+            "measure": "distinct_shows",
+            "filters": {"guest_id": "person-jack-casady"},
+        }
+    )
+    result = store.aggregate(request)
+    assert result.rows
+    actual_years = {row["year"] for row in result.rows}
+    assert actual_years == expected_years
+
+
+def test_aggregate_impossible_filter_returns_empty_result():
+    store = CanonicalStore()
+    request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "year",
+            "measure": "count",
+            "filters": {"song_id": "song-dark-star", "show_id": "gd-1900-01-01"},
+        }
+    )
+    result = store.aggregate(request)
+    assert result.rows == []
+    assert result.total == 0
+    assert result.empty_reason is not None
+    assert result.date_range is None
+
+
+def test_aggregate_performances_by_song_top_ranked_at_least_dark_star():
+    store = CanonicalStore()
+    top_request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "song",
+            "measure": "count",
+            "sort": "value_desc",
+            "limit": 1,
+        }
+    )
+    top_result = store.aggregate(top_request)
+    assert len(top_result.rows) == 1
+
+    dark_star_request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "song",
+            "measure": "count",
+            "filters": {"song_id": "song-dark-star"},
+        }
+    )
+    dark_star_result = store.aggregate(dark_star_request)
+    assert len(dark_star_result.rows) == 1
+    dark_star_value = dark_star_result.rows[0]["value"]
+
+    assert top_result.rows[0]["value"] >= dark_star_value

@@ -14,6 +14,8 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
+from deadbot import aggregation
+
 
 def repository_root() -> Path:
     return Path(__file__).resolve().parents[1]
@@ -738,3 +740,124 @@ class CanonicalStore:
         if listen:
             context["listen"] = listen
         return context
+
+    def aggregate(self, request: aggregation.AggregationRequest) -> aggregation.AggregationResult:
+        """Compute a constrained aggregation entirely from loaded canonical rows.
+
+        Mirrors PostgresCanonicalStore.aggregate's grouping/measure semantics so
+        both stores return identical shaped rows for the same request; only the
+        fetch strategy (Python loop vs SQL GROUP BY) differs.
+        """
+
+        filters = request.filters
+        shows_by_id = self.by_id.get("shows", {})
+        venues_by_id = self.by_id.get("venues", {})
+        songs_by_id = self.by_id.get("songs", {})
+        people_by_id = self.by_id.get("people", {})
+
+        def show_year(show: dict[str, str] | None) -> int | None:
+            date = (show or {}).get("show_date", "")
+            return int(date[:4]) if len(date) >= 4 and date[:4].isdigit() else None
+
+        def show_matches(show: dict[str, str] | None) -> bool:
+            if show is None:
+                return False
+            if filters.venue_id is not None and show.get("venue_id") != filters.venue_id:
+                return False
+            year = show_year(show)
+            if filters.year is not None and year != filters.year:
+                return False
+            if filters.year_from is not None and (year is None or year < filters.year_from):
+                return False
+            if filters.year_to is not None and (year is None or year > filters.year_to):
+                return False
+            return True
+
+        facts: list[dict[str, object]] = []
+        if request.dataset == "shows":
+            for show in self.rows("shows"):
+                if not show_matches(show):
+                    continue
+                facts.append({"show_id": show["show_id"], "year": show_year(show), "venue_id": show.get("venue_id")})
+        elif request.dataset == "performances":
+            for performance in self.rows("performances"):
+                if filters.song_id is not None and performance.get("song_id") != filters.song_id:
+                    continue
+                if filters.show_id is not None and performance.get("show_id") != filters.show_id:
+                    continue
+                if filters.performance_id is not None and performance.get("performance_id") != filters.performance_id:
+                    continue
+                show = shows_by_id.get(performance.get("show_id", ""))
+                if not show_matches(show):
+                    continue
+                facts.append({
+                    "show_id": performance["show_id"],
+                    "year": show_year(show),
+                    "venue_id": show.get("venue_id"),
+                    "song_id": performance.get("song_id"),
+                })
+        else:  # guest_appearances
+            seen: set[tuple[str, str]] = set()
+            for assignment in self.rows("show_performers"):
+                if assignment.get("role") != "guest":
+                    continue
+                pair = (assignment.get("show_id", ""), assignment.get("person_id", ""))
+                if pair in seen:
+                    continue
+                if filters.guest_id is not None and assignment.get("person_id") != filters.guest_id:
+                    continue
+                if filters.show_id is not None and assignment.get("show_id") != filters.show_id:
+                    continue
+                show = shows_by_id.get(assignment.get("show_id", ""))
+                if not show_matches(show):
+                    continue
+                seen.add(pair)
+                facts.append({
+                    "show_id": assignment["show_id"],
+                    "year": show_year(show),
+                    "venue_id": show.get("venue_id"),
+                    "person_id": assignment.get("person_id"),
+                })
+
+        years = [fact["year"] for fact in facts if fact["year"] is not None]
+        date_range = {"from": min(years), "to": max(years)} if years else None
+
+        def dimension(fact: dict[str, object]) -> tuple[str, str]:
+            if request.group_by == "year":
+                return (str(fact["year"]), str(fact["year"]))
+            if request.group_by == "venue":
+                venue = venues_by_id.get(fact["venue_id"], {})
+                return (fact["venue_id"], venue.get("name") or fact["venue_id"])
+            if request.group_by == "city":
+                venue = venues_by_id.get(fact["venue_id"], {})
+                city = venue.get("city") or "Unknown"
+                return (city, city)
+            if request.group_by == "song":
+                song = songs_by_id.get(fact["song_id"], {})
+                return (fact["song_id"], song.get("title") or fact["song_id"])
+            person = people_by_id.get(fact["person_id"], {})
+            return (fact["person_id"], person.get("name") or fact["person_id"])
+
+        groups: dict[str, dict[str, object]] = {}
+        for fact in facts:
+            dim_id, dim_label = dimension(fact)
+            group = groups.setdefault(dim_id, {"label": dim_label, "show_ids": set(), "song_ids": set(), "count": 0})
+            group["count"] += 1
+            group["show_ids"].add(fact["show_id"])
+            if fact.get("song_id"):
+                group["song_ids"].add(fact["song_id"])
+
+        raw_rows = []
+        for dim_id, group in groups.items():
+            if request.measure == "count":
+                value = group["count"]
+            elif request.measure == "distinct_shows":
+                value = len(group["show_ids"])
+            else:  # distinct_songs
+                value = len(group["song_ids"])
+            if request.group_by == "year":
+                raw_rows.append(aggregation.AggregationRow(year=int(dim_id), value=value))
+            else:
+                raw_rows.append(aggregation.AggregationRow(id=dim_id, label=group["label"], value=value))
+
+        return aggregation.assemble_result(request, raw_rows, date_range)
