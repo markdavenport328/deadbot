@@ -27,15 +27,29 @@ from deadbot.tools import build_tools
 # SQL (and the copy recorded in `statements` for assertions) is untouched --
 # it remains genuine PostgreSQL syntax, verified correct by the real-data
 # parity tests, not weakened to satisfy this mock.
-_PG_ONLY_CAST = re.compile(r"::\w+")
+#
+# This regex is deliberately narrow: it strips a `::type` cast only when it
+# directly follows one of aggregate()'s three EXTRACT(YEAR FROM
+# s."show_date") shapes (bare, MIN(...)-wrapped, MAX(...)-wrapped -- the
+# only call sites that emit this construct today, in _aggregate_dimension_sql,
+# _aggregate_predicates, and aggregate()'s date-range query). A `::cast` on
+# any other expression (e.g. postgres.py's selection_signal_rows, which casts
+# `e."payload"::text`) is left alone, so a future PostgreSQL-only construct
+# elsewhere fails loudly under this mock instead of silently "working" here
+# when it wouldn't on real PostgreSQL.
+_YEAR_EXTRACT_CAST = re.compile(
+    r'(EXTRACT\(YEAR FROM s\."show_date"\)'
+    r'|MIN\(EXTRACT\(YEAR FROM s\."show_date"\)\)'
+    r'|MAX\(EXTRACT\(YEAR FROM s\."show_date"\)\))::\w+'
+)
 
 
 def _sqlite_compatible_sql(sql: str) -> str:
-    sql = sql.replace(
+    sql = _YEAR_EXTRACT_CAST.sub(r"\1", sql)
+    return sql.replace(
         'EXTRACT(YEAR FROM s."show_date")',
         'CAST(SUBSTR(s."show_date", 1, 4) AS INTEGER)',
     )
-    return _PG_ONLY_CAST.sub("", sql)
 
 
 TABLES: dict[str, list[dict[str, Any]]] = {

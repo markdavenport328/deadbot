@@ -20,6 +20,7 @@ import json
 import re
 from typing import Any, Protocol
 
+from deadbot import aggregation
 from deadbot.data import CanonicalStore
 
 
@@ -845,7 +846,7 @@ class PostgresCanonicalStore(CanonicalStore):
             ["guest"],
         )
 
-    def _aggregate_dimension_sql(self, dataset: str, group_by: str) -> tuple[str, str, str, str]:
+    def _aggregate_dimension_sql(self, group_by: str) -> tuple[str, str, str, str]:
         if group_by == "year":
             expr = 'EXTRACT(YEAR FROM s."show_date")::int'
             return expr, expr, expr, ""
@@ -888,11 +889,9 @@ class PostgresCanonicalStore(CanonicalStore):
         return predicates, params
 
     def aggregate(self, request: aggregation.AggregationRequest) -> aggregation.AggregationResult:
-        from deadbot import aggregation
-
         dataset, group_by = request.dataset, request.group_by
         from_sql, base_params = self._aggregate_from_clause(dataset)
-        dim_id_sql, dim_label_sql, dim_group_sql, join_sql = self._aggregate_dimension_sql(dataset, group_by)
+        dim_id_sql, dim_label_sql, dim_group_sql, join_sql = self._aggregate_dimension_sql(group_by)
         measure_sql = _AGGREGATE_MEASURE_SQL[request.measure]
         predicates, filter_params = self._aggregate_predicates(dataset, request.filters)
 

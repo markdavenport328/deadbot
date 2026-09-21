@@ -198,6 +198,8 @@ class AggregationRow:
 
 def zero_fill_years(rows: list[AggregationRow], filters: AggregationFilters) -> list[AggregationRow]:
     if filters.year_from is not None or filters.year_to is not None:
+        if not rows and (filters.year_from is None or filters.year_to is None):
+            return rows
         start = filters.year_from if filters.year_from is not None else min(r.year for r in rows)
         end = filters.year_to if filters.year_to is not None else max(r.year for r in rows)
     elif rows:
@@ -280,7 +282,10 @@ def assemble_result(
     total = sum(r.value for r in raw_rows)
     rows = zero_fill_years(raw_rows, request.filters) if request.fill_missing else raw_rows
     rows = sort_rows(rows, request)
-    limited, excluded_count = apply_limit(rows, request.limit)
+    if request.effective_sort == "chronological":
+        limited, excluded_count = rows, 0
+    else:
+        limited, excluded_count = apply_limit(rows, request.limit)
     columns = [
         AggregationColumn(key=spec.dimension_key, label=spec.dimension_label, type=spec.dimension_type),
         AggregationColumn(key="value", label=spec.metric_label, type="quantitative"),

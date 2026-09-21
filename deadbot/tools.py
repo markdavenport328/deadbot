@@ -1757,9 +1757,11 @@ def build_tools(
             payload["sort"] = sort
         try:
             request = aggregation.parse_request(payload)
+            result = store.aggregate(request)
         except ValidationError as error:
             return _json({"error": "Invalid aggregation request", "detail": str(error)})
-        result = store.aggregate(request)
+        except ValueError as error:
+            return _json({"error": "Aggregation failed", "detail": str(error)})
         return _json(result.to_payload())
 
     return [

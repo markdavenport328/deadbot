@@ -196,6 +196,27 @@ def test_zero_fill_years_no_bounds_no_rows_returns_empty_unchanged():
     assert zero_fill_years(rows, filters) == []
 
 
+def test_zero_fill_years_one_sided_bound_no_rows_returns_empty_unchanged():
+    # A bound with no matching data (e.g. year_from=2050) and empty rows must
+    # not fall through to min()/max() over an empty sequence.
+    filters = AggregationFilters(year_from=2050)
+    rows: list[AggregationRow] = []
+    assert zero_fill_years(rows, filters) == []
+
+
+def test_zero_fill_years_both_bounds_no_rows_fills_the_full_range():
+    # Both bounds come from filters directly, so this must still zero-fill
+    # correctly on empty rows rather than being over-guarded into a no-op.
+    filters = AggregationFilters(year_from=2050, year_to=2052)
+    rows: list[AggregationRow] = []
+    filled = zero_fill_years(rows, filters)
+    assert [(r.year, r.value) for r in filled] == [
+        (2050, 0),
+        (2051, 0),
+        (2052, 0),
+    ]
+
+
 def test_sort_rows_value_desc_stable_casefold_tiebreak():
     request = parse_request({"dataset": "shows", "group_by": "venue", "measure": "count"})
     rows = [
@@ -234,6 +255,46 @@ def test_assemble_result_on_empty_rows():
     assert result.date_range == date_range
     assert result.rows == []
     assert result.excluded_count == 0
+
+
+def test_assemble_result_chronological_sort_is_never_truncated():
+    # A year-grouped time series (effective_sort == "chronological") must
+    # never be silently cut off by the default/explicit limit, even when the
+    # explicit limit is far smaller than the row count.
+    request = parse_request(
+        {"dataset": "shows", "group_by": "year", "measure": "count", "limit": 1}
+    )
+    raw_rows = [
+        AggregationRow(year=1972, value=3),
+        AggregationRow(year=1973, value=5),
+        AggregationRow(year=1974, value=2),
+    ]
+    result = assemble_result(request, raw_rows, {"from": 1972, "to": 1974})
+    assert len(result.rows) == 3
+    assert result.excluded_count == 0
+
+
+def test_assemble_result_non_chronological_sort_still_truncates():
+    # A ranked list (e.g. group_by="song", value_desc) must still truncate
+    # and report a nonzero excluded_count -- proving the chronological-only
+    # exemption did not also disable truncation here.
+    request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "song",
+            "measure": "count",
+            "sort": "value_desc",
+            "limit": 2,
+        }
+    )
+    raw_rows = [
+        AggregationRow(id="song-a", label="A", value=10),
+        AggregationRow(id="song-b", label="B", value=5),
+        AggregationRow(id="song-c", label="C", value=1),
+    ]
+    result = assemble_result(request, raw_rows, None)
+    assert len(result.rows) == 2
+    assert result.excluded_count == 1
 
 
 # ---------------------------------------------------------------------------
@@ -373,6 +434,25 @@ def test_aggregate_guest_appearances_by_year_filtered_to_guest_only_shows_their_
     assert result.rows
     actual_years = {row["year"] for row in result.rows}
     assert actual_years == expected_years
+
+
+def test_aggregate_one_sided_year_bound_with_no_matching_rows_does_not_crash():
+    # Live crash repro: year_from far beyond the catalog's span, combined
+    # with fill_missing, used to raise ValueError from min()/max() over an
+    # empty sequence inside zero_fill_years.
+    store = CanonicalStore()
+    request = parse_request(
+        {
+            "dataset": "performances",
+            "group_by": "year",
+            "measure": "count",
+            "filters": {"song_id": "song-dark-star", "year_from": 2050},
+            "fill_missing": True,
+        }
+    )
+    result = store.aggregate(request)
+    assert result.rows == []
+    assert result.empty_reason is not None
 
 
 def test_aggregate_impossible_filter_returns_empty_result():

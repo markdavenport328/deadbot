@@ -840,6 +840,12 @@ class CanonicalStore:
 
         groups: dict[str, dict[str, object]] = {}
         for fact in facts:
+            # Matches the Postgres side's `WHERE s."show_date" IS NOT NULL`
+            # for group_by="year": a fact with no derivable year has no year
+            # bucket to join. Other group_bys (venue/city/song/guest) don't
+            # depend on the date, so they keep facts with a null year.
+            if request.group_by == "year" and fact["year"] is None:
+                continue
             dim_id, dim_label = dimension(fact)
             group = groups.setdefault(dim_id, {"label": dim_label, "show_ids": set(), "song_ids": set(), "count": 0})
             group["count"] += 1
