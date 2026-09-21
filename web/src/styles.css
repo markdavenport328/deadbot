@@ -39,6 +39,16 @@
   --featured-start: var(--read);
   --featured-mid: var(--violet);
   --featured-end: var(--ask);
+  /* Ask transition timings (Emil Kowalski's rules: transform and opacity
+     only, never ease-in). */
+  --t-fade: 180ms;
+  --t-rail: 450ms;
+  --t-shift: 400ms;
+  --t-enter: 220ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --rail-w: 310px;
 }
 
 * { box-sizing: border-box; }
@@ -53,6 +63,15 @@ a { color: var(--read); text-underline-offset: 0.18em; }
 .app-shell { width: min(1440px, calc(100% - 2rem)); min-height: 100vh; margin: 0 auto; }
 .wordmark { color: #f5efdd; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.35rem; font-weight: 600; text-decoration: none; }
 .workspace { display: grid; grid-template-columns: minmax(310px, 0.82fr) minmax(0, 1.85fr); align-items: start; min-height: 100vh; column-gap: 3rem; }
+/* The home start screen has no rail: the column collapses to nothing and the
+   main column takes the page. .conversation-pane keeps rendering underneath
+   (so the ask transition has something to slide in) but is clipped to zero
+   width and taken out of the tab order while it is there. */
+.workspace.start { grid-template-columns: 0px minmax(0, 1fr); column-gap: 0; }
+.workspace.start .conversation-pane { min-width: 0; overflow: hidden; pointer-events: none; visibility: hidden; }
+/* The off-canvas rail must never cause a horizontal scrollbar while it is
+   sliding in. */
+.workspace.opening, .workspace.arriving { overflow-x: clip; }
 
 .conversation-pane { position: sticky; top: 0; display: flex; flex-direction: column; align-self: start; height: 100vh; min-height: 0; padding: 0 0 1.25rem; font-size: 0.9rem; }
 .masthead { display: flex; flex-direction: column; align-items: flex-start; gap: 0.3rem; flex-shrink: 0; padding: 1.45rem 0.7rem 1.25rem; color: #b8c4b8; font-size: 0.9rem; }
@@ -60,9 +79,45 @@ a { color: var(--read); text-underline-offset: 0.18em; }
 .masthead-row { display: flex; align-items: baseline; justify-content: space-between; width: 100%; gap: 0.75rem; }
 .new-chat-button { flex-shrink: 0; align-self: flex-end; transform: translateY(-0.2rem); border: 1px solid #465b4b; border-radius: var(--r); background: transparent; color: #9fb29f; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.02em; padding: 0.32rem 0.75rem; }
 .new-chat-button:focus-visible { border-color: var(--listen); color: #f1efdf; }
-h1, h2 { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-weight: 600; line-height: 1.08; }
+h1, h2, .card h3 { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-weight: 600; line-height: 1.08; }
 h1 { font-variation-settings: "SOFT" 40, "opsz" 72; font-size: clamp(2rem, 3.6vw, 3.5rem); }
-h2 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem; }
+h2, .card h3 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem; }
+
+/* Ask transition: leaving the start screen swaps the rail and content panes
+   from off-canvas back to rest. "opening" snaps them off-canvas with no
+   transition the instant the real layout replaces the start screen;
+   "arriving", added one frame later, turns the transitions on so the browser
+   animates from there. */
+.workspace.opening .conversation-pane { transform: translateX(-100%); }
+.workspace.opening .conversation-pane > * { opacity: 0; }
+.workspace.opening .content-pane { transform: translateX(calc(-1 * var(--rail-w))); }
+.workspace.arriving .conversation-pane {
+  transform: translateX(0);
+  transition: transform var(--t-rail) var(--ease-drawer);
+}
+.workspace.arriving .conversation-pane > * {
+  opacity: 1;
+  transition: opacity 300ms var(--ease-out) 120ms;
+}
+.workspace.arriving .content-pane {
+  transform: translateX(0);
+  transition: transform var(--t-shift) var(--ease-in-out) 120ms;
+}
+/* Answer entrance: the first content the content pane shows, appearing after
+   the rail is most of the way open. */
+.workspace.arriving .content-working,
+.workspace.arriving .content-heading {
+  animation: appear var(--t-enter) var(--ease-out) both;
+  animation-delay: 540ms;
+}
+.workspace.arriving .content-working .progress-lines {
+  animation: appear var(--t-enter) var(--ease-out) both;
+  animation-delay: 620ms;
+}
+@keyframes appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
 /* The thread takes the height its content needs, not the whole rail, so the
    composer rides directly under the conversation: near the masthead when
    there is nothing to show, moving down as turns accumulate, and resting
@@ -111,34 +166,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .content-pane { min-width: 0; padding: 2rem clamp(1.4rem, 4vw, 4.5rem) 4rem; }
 .content-heading { max-width: 780px; margin-bottom: var(--space-part); }
 .content-heading h1 { font-size: clamp(2.2rem, 3.4vw, 3.1rem); font-variation-settings: "SOFT" 40, "opsz" 96; letter-spacing: -0.015em; max-width: 22ch; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
-.content-empty h1 { max-width: 26ch; font-size: clamp(1.75rem, 2.8vw, 2.5rem); line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
-.content-heading > p:last-child, .content-empty > p:last-child { max-width: 46rem; margin: 1rem 0 0; color: #c3cec3; line-height: 1.6; }
+.content-heading > p:last-child { max-width: 46rem; margin: 1rem 0 0; color: #c3cec3; line-height: 1.6; }
 .answer-lead { max-width: 62ch; margin: 0 0 var(--space-content); color: #d6ddcf; font-size: 1.125rem; line-height: 1.6; }
-.content-empty { max-width: 62rem; padding: clamp(2rem, 7vh, 5rem) 0; }
-/* The catalog line reads as one sentence of numbers, so the figures carry in
-   cream and the nouns recede. It stays out of gold/rose/blue: those three
-   already mean listen, read and ask everywhere else on the page. */
-.catalog-stats { display: flex; flex-wrap: wrap; gap: 0.4rem 0.7rem; max-width: 46rem; margin: var(--space-part) 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
-.catalog-stat strong { color: var(--cream); font-weight: 600; font-variant-numeric: tabular-nums; }
-/* The separator trails its own stat rather than leading the next one, so a
-   wrapped line starts on a number instead of on a stray dot. */
-.catalog-stat:not(:last-child)::after { content: "\00b7"; margin-left: 0.7rem; color: var(--quiet); }
-.content-empty > .eyebrow { margin: var(--space-unit) 0 var(--space-part); }
 .content-working { max-width: 780px; padding-top: 2rem; }
 .content-working h1 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); color: #c3cec3; font-weight: 400; line-height: 1.2; overflow-wrap: anywhere; }
-/* Two columns when a question fits on one line, one column when it does not,
-   decided by the space there actually is rather than by a guessed viewport
-   width. The 52rem cap is what keeps auto-fit from finding room for a third
-   column and leaving the fourth category stranded on its own row. */
-.starting-points { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: var(--space-content) var(--space-unit); max-width: 52rem; margin-top: 0; }
-.starting-group { display: grid; align-content: start; gap: 0.1rem; }
-/* The section carries one uppercase label. Category names step down into the
-   serif so they read as headings under it rather than competing with it. */
-.starting-category { margin: 0 0 var(--space-detail); color: var(--cream); font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.05rem; font-weight: 600; line-height: 1.35; }
-/* Twelve bordered boxes cost more room and more ink than twelve questions
-   need. They are links; they behave like the song links elsewhere. */
-.starting-points button { border: 0; border-radius: 0; background: none; color: var(--text); font-size: 0.95rem; padding: 0.3rem 0; text-align: left; line-height: 1.45; text-decoration: underline; text-decoration-color: rgba(63, 149, 220, 0.5); text-underline-offset: 0.18em; }
-.starting-points button:focus-visible { outline: 2px solid var(--listen); outline-offset: 3px; }
 .layout-section + .layout-section { margin-top: 2rem; }
 .region-label { margin: 0 0 0.75rem; }
 .block-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 1rem; }
@@ -148,8 +179,36 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* One heading per level: inside a titled group, an open block's own title steps
    down a size so the section heading reads as the heading and the block's as
    its subject. Cards keep their headline size; a card is a bounded object. */
-.experience-group.has-heading :is(.typography-block h2, .era-unit h2) { font-size: 1.3rem; }
+.experience-group.has-heading :is(.typography-block, .era-unit) :is(h2, h3) { font-size: 1.3rem; }
 .group-heading p { max-width: 58rem; margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
+
+/* Home start screen: the whole content area before a question is asked. The
+   composer sits centred between a lead line and the library numbers; the
+   rail is visually absent (see .workspace.start below), so this is the
+   page's only content until someone asks something. */
+.start-screen { max-width: 64rem; margin: 0 auto; padding: clamp(3rem, 12vh, 7rem) 0 4rem; }
+.start-lead { margin: 0 auto; max-width: 34ch; text-align: center; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 72; font-weight: 500; font-size: clamp(1.6rem, 2.6vw, 2.2rem); line-height: 1.2; color: var(--cream); text-wrap: balance; }
+.start-composer { max-width: 42rem; margin: 2rem auto 0; }
+.start-composer textarea { font-size: 1.125rem; padding: 1rem 1.1rem 3.4rem; }
+.start-screen > .error { max-width: 42rem; margin: 0.8rem auto 0; }
+/* The five library numbers double as the old "Starting points" heading: the
+   figure is the heading, the noun beneath it is the label, and the model's
+   worth of sample questions live under each. */
+.library { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 2.25rem 2rem; margin-top: clamp(2.5rem, 8vh, 4.5rem); }
+.library .num { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 96; font-weight: 500; font-size: clamp(2.2rem, 3.4vw, 3.1rem); letter-spacing: -0.02em; line-height: 1; color: var(--cream); font-variant-numeric: tabular-nums; }
+.library .noun { margin: 0.2rem 0 0.9rem; color: var(--muted); font-size: 0.95rem; }
+.qs { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.35rem; }
+/* Twelve bordered boxes cost more room and more ink than twelve questions
+   need. They are links; they behave like the song links elsewhere. */
+.qs button { border: 0; border-radius: 0; background: none; color: var(--text); font-size: 0.95rem; padding: 0.3rem 0; text-align: left; line-height: 1.45; text-decoration: underline; text-decoration-color: rgba(63, 149, 220, 0.5); text-underline-offset: 0.18em; }
+.qs button:focus-visible { outline: 2px solid var(--listen); outline-offset: 3px; }
+/* Leaving the start screen: the questions and lead fade in place, no
+   movement, while the composer stays exactly where it is. */
+.start-screen.leaving .library, .start-screen.leaving .start-lead { opacity: 0; transition: opacity var(--t-fade) var(--ease-out); }
+
+/* One visually hidden live region for the whole shell, announced once per
+   answer instead of on every render. */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 /* Relationships: peers, order, contrast, claim and evidence each have a shape. */
 .group-sequence .group-blocks { position: relative; counter-reset: step; gap: var(--space-unit); padding-left: 3.25rem; }
 .group-sequence .group-blocks::before { content: ""; position: absolute; top: 0.4rem; bottom: 0.4rem; left: 1rem; border-left: 1px solid #506757; }
@@ -237,7 +296,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .id-row { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .id-row .k.type { color: var(--muted); }
 .id-row .k.when { color: var(--cream); font-variant-numeric: tabular-nums; }
-:is(.show-unit, .album-unit, .performance-unit, .song-overview) > h2 {
+:is(.show-unit, .album-unit, .performance-unit, .song-overview) > :is(h2, h3) {
   margin: 0.75rem 0 0;
   font-size: 1.6rem;
   line-height: 1.08;
@@ -246,7 +305,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   overflow-wrap: anywhere;
   text-wrap: balance;
 }
-.card.emphasis-supporting:is(.show-unit, .album-unit, .performance-unit, .song-overview) > h2 { font-size: 1.45rem; }
+.card.emphasis-supporting:is(.show-unit, .album-unit, .performance-unit, .song-overview) > :is(h2, h3) { font-size: 1.45rem; }
 .meta { margin: 0.5rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.55; }
 /* When the model wrote the headline, the library names the object in one tight
    stack under the type label: for a show the date fans know it by, then venue
@@ -260,8 +319,8 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 :is(.show-unit, .album-unit) .identity .meta .sep { color: var(--quiet); }
 .card.emphasis-supporting .identity-name { font-size: 0.8rem; font-weight: 500; color: var(--text); }
 .card.emphasis-supporting .identity .meta { color: var(--quiet); }
-:is(.show-unit, .album-unit) .identity + h2.overview { margin-top: 1.25rem; }
-.emphasis-supporting:is(.show-unit, .album-unit) .identity + h2.overview { margin-top: 1.4rem; }
+:is(.show-unit, .album-unit) .identity + :is(h2, h3).overview { margin-top: 1.25rem; }
+.emphasis-supporting:is(.show-unit, .album-unit) .identity + :is(h2, h3).overview { margin-top: 1.4rem; }
 .meta .sep { color: var(--quiet); margin: 0 0.4rem; }
 .meta strong { color: var(--cream); font-weight: 600; }
 
@@ -374,13 +433,13 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 
 /* Open blocks: the card anatomy without the panel. Eyebrow row, headline,
    meta line, then lists that separate by spacing rather than rules. */
-.typography-block h2, .era-unit h2 { margin-top: 0.75rem; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
+:is(.typography-block, .era-unit) :is(h2, h3) { margin-top: 0.75rem; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
 .eyebrow { margin: 0 0 0.75rem; color: var(--muted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.6; }
-.eyebrow + h2 { margin-top: 0; }
+.eyebrow + :is(h2, h3) { margin-top: 0; }
 .subtitle { color: var(--muted); }
 .narrative-block { font-size: 1.05rem; line-height: 1.62; }
 .narrative-block > p:not(.eyebrow) { max-width: 62ch; margin: 0.8rem 0 0; color: var(--text); }
-.narrative-block h2 + p { margin-top: 1rem; }
+.narrative-block :is(h2, h3) + p { margin-top: 1rem; }
 .fact-grid-block dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 1.25rem 2rem; margin: 1.25rem 0 0; }
 .fact-grid-block dl > div { display: grid; gap: 0.25rem; align-content: start; }
 .fact-grid-block dd { margin: 0; color: var(--cream); }
@@ -419,10 +478,17 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .app-shell { width: min(100% - 1.25rem, 1440px); }
   .workspace { display: block; min-height: 0; }
   .conversation-pane { position: static; height: auto; min-height: 0; padding: 0 0 1.25rem; }
+  /* Block layout: the hidden rail would still take its height above the start screen. */
+  .workspace.start .conversation-pane { display: none; }
   .thread { max-height: 25rem; }
   .content-pane { padding: var(--space-content) 0 var(--space-section); }
   .view-answer-link { display: inline-block; align-self: flex-start; margin: var(--space-identity) 0 0; padding: 0.5rem 0; font-size: 0.92rem; }
-  .content-empty { padding: 0 0 var(--space-part); }
+  .start-screen { padding: 2rem 0 3rem; }
+  /* The rail no longer overlays the content on a block layout, so the ask
+     transition drops its slide here: keep only the 180ms start-screen fade
+     and the answer entrance. */
+  .workspace.opening .conversation-pane, .workspace.opening .content-pane,
+  .workspace.arriving .conversation-pane, .workspace.arriving .content-pane { transform: none; }
 }
 
 @media (max-width: 520px) {
@@ -451,6 +517,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 
 @media (prefers-reduced-motion: reduce) {
   .message.pending .cursor { animation: none; }
+  .workspace.opening .conversation-pane, .workspace.opening .content-pane { transform: none; }
+  .workspace.arriving .conversation-pane, .workspace.arriving .content-pane { transition: opacity 300ms var(--ease-out); }
+  @keyframes appear {
+    from { opacity: 0; transform: none; }
+    to { opacity: 1; transform: none; }
+  }
 }
 
 /* Emphasis: how much of the page one object earns. */
@@ -478,7 +550,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 @media (hover: hover) {
   .new-chat-button:hover:not(:disabled) { border-color: var(--listen); color: #f1efdf; }
   .question-field button[type="submit"]:hover:not(:disabled) { background: var(--ask-deep-hover); }
-  .starting-points button:hover { color: #f7e7b5; text-decoration-color: var(--ask); }
+  .qs button:hover { color: #f7e7b5; text-decoration-color: var(--ask); }
   .ask-chip:hover { border-color: var(--ask); background: rgba(63, 149, 220, 0.12); }
   .song-link:hover { color: #f7e7b5; text-decoration: underline; text-underline-offset: 0.16em; }
   .listen-action:hover { border-color: var(--listen); color: var(--cream); }
