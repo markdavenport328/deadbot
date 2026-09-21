@@ -151,3 +151,43 @@ def test_list_song_performances_pages_chronologically_with_listening_paths():
         row["show_date"] for row in payload["performances"]
     )
     assert payload["next_offset"] == 3
+
+
+def test_aggregate_data_is_registered():
+    store = CanonicalStore()
+    assert "aggregate_data" in {tool.name for tool in build_tools(store)}
+
+
+def test_aggregate_data_counts_dark_star_performances_by_year():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "aggregate_data").invoke(
+            {"dataset": "performances", "group_by": "year", "measure": "count", "song_id": "song-dark-star"}
+        )
+    )
+    assert payload["rows"]
+    assert payload["metric_label"] == "Known performances"
+
+
+def test_aggregate_data_rejects_an_invalid_combination_without_raising():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "aggregate_data").invoke(
+            {"dataset": "shows", "group_by": "song", "measure": "count"}
+        )
+    )
+    assert payload["error"] == "Invalid aggregation request"
+
+
+def test_aggregate_data_does_not_resolve_a_name_filter():
+    # A title instead of a canonical ID passes schema validation (the tool
+    # doesn't know what an ID is supposed to look like) but matches nothing,
+    # documenting that resolving names to IDs is the caller's job.
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "aggregate_data").invoke(
+            {"dataset": "performances", "group_by": "year", "measure": "count", "song_id": "Dark Star"}
+        )
+    )
+    assert payload["rows"] == []
+    assert payload["empty_reason"]

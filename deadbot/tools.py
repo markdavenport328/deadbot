@@ -14,7 +14,9 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from langchain_core.tools import BaseTool, tool
+from pydantic import ValidationError
 
+from deadbot import aggregation
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import (
     DeadnetConfig,
@@ -1699,6 +1701,67 @@ def build_tools(
         except (ExternalServiceError, ValueError) as error:
             return _json({"error": str(error), "query": show_id_or_date})
 
+    @tool
+    def aggregate_data(
+        dataset: str,
+        group_by: str,
+        measure: str,
+        song_id: str | None = None,
+        venue_id: str | None = None,
+        guest_id: str | None = None,
+        show_id: str | None = None,
+        performance_id: str | None = None,
+        year: int | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+        sort: str | None = None,
+        limit: int = 20,
+        fill_missing: bool = False,
+    ) -> str:
+        """Count or group canonical Deadbot rows with a constrained, verified aggregation.
+
+        dataset is one of "shows", "performances", "guest_appearances".
+        group_by is one of "year", "song", "venue", "city", "guest" — only
+        some combinations are valid per dataset (an invalid combination
+        returns an error naming what's wrong, not a guess). measure is one of
+        "count", "distinct_shows", "distinct_songs" (also only valid for some
+        combinations); "average_duration" is reserved but not yet available —
+        expect a rejection explaining why if you try it.
+
+        Every ID filter (song_id, venue_id, guest_id, show_id,
+        performance_id) takes a canonical ID only, never a name — resolve a
+        name to an ID with search_entities or search_guest_musicians first.
+        year, year_from, year_to filter by show year.
+
+        The response's rows and metric_label are the actual computed
+        aggregate: never estimate, extrapolate, or restate these numbers from
+        memory. aggregation_id grounds a data_chart reference in
+        finish_response — call this tool once per distinct question and reuse
+        its aggregation_id rather than calling again with the same
+        parameters.
+        """
+        filters = {
+            "song_id": song_id, "venue_id": venue_id, "guest_id": guest_id,
+            "show_id": show_id, "performance_id": performance_id,
+            "year": year, "year_from": year_from, "year_to": year_to,
+        }
+        payload: dict[str, Any] = {
+            "dataset": dataset,
+            "group_by": group_by,
+            "measure": measure,
+            "filters": {key: value for key, value in filters.items() if value is not None},
+            "limit": limit,
+            "fill_missing": fill_missing,
+        }
+        if sort is not None:
+            payload["sort"] = sort
+        try:
+            request = aggregation.parse_request(payload)
+        except ValidationError as error:
+            return _json({"error": "Invalid aggregation request", "detail": str(error)})
+        result = store.aggregate(request)
+        return _json(result.to_payload())
+
     return [
         search_entities,
         search_guest_musicians,
@@ -1726,4 +1789,5 @@ def build_tools(
         get_historical_weather,
         get_astronomy,
         get_astrology,
+        aggregate_data,
     ]
