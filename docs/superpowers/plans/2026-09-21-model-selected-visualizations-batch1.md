@@ -670,7 +670,11 @@ def _aggregate_dimension_sql(self, dataset: str, group_by: str) -> tuple[str, st
         return 's."venue_id"', 'v."name"', 's."venue_id", v."name"', f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
     if group_by == "city":
         venues = self._qualified_table("venues")
-        return 'v."city"', 'v."city"', 'v."city"', f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
+        # venues.city is nullable; COALESCE to match CanonicalStore.aggregate's
+        # `venue.get("city") or "Unknown"` in data.py exactly, or the
+        # CSV/Postgres parity test in Task 3 will fail on any blank city.
+        city_expr = "COALESCE(NULLIF(v.\"city\", ''), 'Unknown')"
+        return city_expr, city_expr, city_expr, f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
     if group_by == "song":
         songs = self._qualified_table("songs")
         return 'p."song_id"', 'so."title"', 'p."song_id", so."title"', f'JOIN {songs} so ON so."song_id" = p."song_id"'
