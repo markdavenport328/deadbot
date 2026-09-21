@@ -4,6 +4,7 @@
   "functions": {
     "app.py": {
       "includeFiles": "{web/dist/index.html,web/dist/assets/**,web/dist/fonts/**}",
+      "excludeFiles": "{data/raw/**,data/canonical/**,docs/**,tests/**,evals/**,scripts/**}",
       "maxDuration": 60
     }
   }
