@@ -71,6 +71,35 @@ ConnectionFactory = Callable[[], DBAPIConnection]
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
+# aggregate()'s internal, literal (never request-derived) spec tables. Table
+# and column names reaching SQL come only from these dicts (passed through
+# _identifier/_qualified_table) or from _aggregate_dimension_sql's own
+# literal branches below -- never directly from request.dataset/group_by/
+# filters. Every value from request.filters becomes a bound %s parameter.
+
+# filter name -> (table alias in the aggregate query, column name)
+_AGGREGATE_FILTER_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
+    "shows": {"venue_id": ("s", "venue_id")},
+    "performances": {
+        "song_id": ("p", "song_id"),
+        "show_id": ("p", "show_id"),
+        "performance_id": ("p", "performance_id"),
+        "venue_id": ("s", "venue_id"),
+    },
+    "guest_appearances": {
+        "guest_id": ("g", "person_id"),
+        "show_id": ("g", "show_id"),
+        "venue_id": ("s", "venue_id"),
+    },
+}
+
+# measure -> SQL aggregate expression (table aliases match the FROM clauses below)
+_AGGREGATE_MEASURE_SQL: dict[str, str] = {
+    "count": "COUNT(*)",
+    "distinct_shows": 'COUNT(DISTINCT s."show_id")',
+    "distinct_songs": 'COUNT(DISTINCT p."song_id")',
+}
+
 # These keys reproduce the deterministic ordering of the tracked canonical
 # exports. They also make entity disambiguation and setlist rendering stable
 # across query plans, VACUUMs, and replicas.
@@ -796,6 +825,115 @@ class PostgresCanonicalStore(CanonicalStore):
             ),
         }
         return CanonicalStore.performance_context(self._projection(tables), performance_id)
+
+    # ---- model-selected aggregation --------------------------------------
+    # Grouping/counting happens in SQL; deadbot.aggregation shapes the raw
+    # grouped rows (zero-fill, sort, limit, totals) identically for both this
+    # store and CanonicalStore.aggregate's Python reference implementation.
+
+    def _aggregate_from_clause(self, dataset: str) -> tuple[str, list[Any]]:
+        shows = self._qualified_table("shows")
+        if dataset == "shows":
+            return f"{shows} s", []
+        if dataset == "performances":
+            performances = self._qualified_table("performances")
+            return f'{performances} p JOIN {shows} s ON s."show_id" = p."show_id"', []
+        show_performers = self._qualified_table("show_performers")
+        return (
+            f'(SELECT DISTINCT "show_id", "person_id" FROM {show_performers} WHERE "role" = %s) g '
+            f'JOIN {shows} s ON s."show_id" = g."show_id"',
+            ["guest"],
+        )
+
+    def _aggregate_dimension_sql(self, dataset: str, group_by: str) -> tuple[str, str, str, str]:
+        if group_by == "year":
+            expr = 'EXTRACT(YEAR FROM s."show_date")::int'
+            return expr, expr, expr, ""
+        if group_by == "venue":
+            venues = self._qualified_table("venues")
+            return 's."venue_id"', 'v."name"', 's."venue_id", v."name"', f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
+        if group_by == "city":
+            venues = self._qualified_table("venues")
+            # venues.city is nullable; COALESCE to match CanonicalStore.aggregate's
+            # `venue.get("city") or "Unknown"` in data.py exactly, or the
+            # CSV/Postgres parity test fails on any blank city.
+            city_expr = "COALESCE(NULLIF(v.\"city\", ''), 'Unknown')"
+            return city_expr, city_expr, city_expr, f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
+        if group_by == "song":
+            songs = self._qualified_table("songs")
+            return 'p."song_id"', 'so."title"', 'p."song_id", so."title"', f'JOIN {songs} so ON so."song_id" = p."song_id"'
+        people = self._qualified_table("people")
+        return 'g."person_id"', 'pe."name"', 'g."person_id", pe."name"', f'JOIN {people} pe ON pe."person_id" = g."person_id"'
+
+    def _aggregate_predicates(self, dataset: str, filters: aggregation.AggregationFilters) -> tuple[list[str], list[Any]]:
+        predicates: list[str] = []
+        params: list[Any] = []
+        filter_columns = _AGGREGATE_FILTER_COLUMNS[dataset]
+        for name in ("song_id", "venue_id", "guest_id", "show_id", "performance_id"):
+            value = getattr(filters, name)
+            if value is None or name not in filter_columns:
+                continue
+            alias, column = filter_columns[name]
+            predicates.append(f"{alias}.{_identifier(column)} = %s")
+            params.append(value)
+        if filters.year is not None:
+            predicates.append('EXTRACT(YEAR FROM s."show_date")::int = %s')
+            params.append(filters.year)
+        if filters.year_from is not None:
+            predicates.append('EXTRACT(YEAR FROM s."show_date")::int >= %s')
+            params.append(filters.year_from)
+        if filters.year_to is not None:
+            predicates.append('EXTRACT(YEAR FROM s."show_date")::int <= %s')
+            params.append(filters.year_to)
+        return predicates, params
+
+    def aggregate(self, request: aggregation.AggregationRequest) -> aggregation.AggregationResult:
+        from deadbot import aggregation
+
+        dataset, group_by = request.dataset, request.group_by
+        from_sql, base_params = self._aggregate_from_clause(dataset)
+        dim_id_sql, dim_label_sql, dim_group_sql, join_sql = self._aggregate_dimension_sql(dataset, group_by)
+        measure_sql = _AGGREGATE_MEASURE_SQL[request.measure]
+        predicates, filter_params = self._aggregate_predicates(dataset, request.filters)
+
+        grouped_predicates = list(predicates)
+        if group_by == "year":
+            grouped_predicates.append('s."show_date" IS NOT NULL')
+        where_sql = f"WHERE {' AND '.join(grouped_predicates)}" if grouped_predicates else ""
+        sql = (
+            f"SELECT {dim_id_sql} AS dim_id, {dim_label_sql} AS dim_label, {measure_sql} AS value "
+            f"FROM {from_sql} {join_sql} {where_sql} GROUP BY {dim_group_sql}"
+        )
+        grouped = self._query(sql, tuple(base_params + filter_params))
+
+        range_predicates = list(predicates) + ['s."show_date" IS NOT NULL']
+        range_where_sql = f"WHERE {' AND '.join(range_predicates)}"
+        range_sql = (
+            'SELECT MIN(EXTRACT(YEAR FROM s."show_date"))::int AS min_year, '
+            'MAX(EXTRACT(YEAR FROM s."show_date"))::int AS max_year '
+            f"FROM {from_sql} {range_where_sql}"
+        )
+        range_rows = self._query(range_sql, tuple(base_params + filter_params))
+        min_year = range_rows[0].get("min_year") if range_rows else None
+        max_year = range_rows[0].get("max_year") if range_rows else None
+        # _query stringifies every value (see _string_value), so a SQL NULL
+        # from MIN/MAX over zero matching rows comes back as "" here, never
+        # Python None -- guard against both or int("") raises ValueError.
+        date_range = (
+            {"from": int(min_year), "to": int(max_year)}
+            if min_year not in (None, "") and max_year not in (None, "")
+            else None
+        )
+
+        raw_rows = []
+        for row in grouped:
+            value = int(row["value"] or 0)
+            if group_by == "year":
+                raw_rows.append(aggregation.AggregationRow(year=int(row["dim_id"]), value=value))
+            else:
+                raw_rows.append(aggregation.AggregationRow(id=row["dim_id"], label=row["dim_label"] or row["dim_id"], value=value))
+
+        return aggregation.assemble_result(request, raw_rows, date_range)
 
 
 # A spelling-friendly alias for callers that prefer the expanded initialism.

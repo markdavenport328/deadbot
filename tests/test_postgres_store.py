@@ -1,15 +1,41 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from datetime import date, datetime
 from typing import Any
 
 import pytest
 
+from deadbot import aggregation
 from deadbot.data import CanonicalStore
 from deadbot.postgres import PostgresCanonicalStore, PostgresStore, PostgreSQLCanonicalStore
 from deadbot.tools import build_tools
+
+
+# PostgresCanonicalStore.aggregate() emits genuine PostgreSQL syntax
+# (EXTRACT(YEAR FROM ...) and the `::type` cast operator) that this test's
+# SQLite-backed Connection mock cannot execute at all -- not "different
+# results", a parser-level syntax error, confirmed against a bare sqlite3
+# connection. `::` is not valid SQLite syntax anywhere, and EXTRACT(... FROM
+# ...) is not a SQLite function/syntax either. Every table in this mock
+# stores show_date as ISO "YYYY-MM-DD" TEXT (as does the real CSV/Postgres
+# schema), so a SUBSTR/CAST gives the same year as PostgreSQL's EXTRACT for
+# every value these tests exercise. This translation is applied only to the
+# SQL text sent to the underlying sqlite3 cursor below; postgres.py's actual
+# SQL (and the copy recorded in `statements` for assertions) is untouched --
+# it remains genuine PostgreSQL syntax, verified correct by the real-data
+# parity tests, not weakened to satisfy this mock.
+_PG_ONLY_CAST = re.compile(r"::\w+")
+
+
+def _sqlite_compatible_sql(sql: str) -> str:
+    sql = sql.replace(
+        'EXTRACT(YEAR FROM s."show_date")',
+        'CAST(SUBSTR(s."show_date", 1, 4) AS INTEGER)',
+    )
+    return _PG_ONLY_CAST.sub("", sql)
 
 
 TABLES: dict[str, list[dict[str, Any]]] = {
@@ -163,7 +189,17 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "person_id": "person-garcia",
             "role": "member",
             "instrument": "guitar, vocals",
-        }
+        },
+        # A "guest" role row (distinct from the "member" row above) so the
+        # toy-fixture aggregate() parity pass has a non-empty
+        # guest_appearances dataset to exercise across every group_by.
+        {
+            "show_performer_id": "sp-2",
+            "show_id": "show-1966-10-08-a",
+            "person_id": "person-hunter",
+            "role": "guest",
+            "instrument": "",
+        },
     ],
     "equipment": [
         {
@@ -265,7 +301,8 @@ class Cursor:
 
     def execute(self, operation: str, parameters: tuple[Any, ...] = ()):
         self.statements.append((operation, parameters))
-        return self.cursor.execute(operation.replace("%s", "?"), parameters)
+        sqlite_sql = _sqlite_compatible_sql(operation.replace("%s", "?"))
+        return self.cursor.execute(sqlite_sql, parameters)
 
     def fetchall(self):
         return self.cursor.fetchall()
@@ -581,3 +618,150 @@ def test_database_scalar_types_match_csv_string_semantics():
             "count": "7",
         }
     ]
+
+
+# ---- aggregate() parity: PostgresCanonicalStore's SQL grouping vs
+# CanonicalStore.aggregate's pure-Python reference implementation. Both feed
+# the same raw grouped rows through deadbot.aggregation.assemble_result, so
+# any difference here is a bug in the SQL this task added, not in shaping.
+
+
+@pytest.fixture
+def real_store(real_connection):
+    return PostgresCanonicalStore(real_connection, schema="canonical")
+
+
+@pytest.fixture
+def real_csv_store(real_tables):
+    result = CanonicalStore()
+    result.__dict__["tables"] = real_tables
+    return result
+
+
+def _every_combo() -> list:
+    """Every valid (dataset, group_by, measure) triple, read live from Task
+    1's table (never hand-copied) so this test can't silently drift from it."""
+
+    return [
+        pytest.param(dataset, group_by, measure, id=f"{dataset}-{group_by}-{measure}")
+        for (dataset, group_by), measures in sorted(aggregation._MEASURES_BY_COMBO.items())
+        for measure in sorted(measures)
+    ]
+
+
+def _representative_request(dataset: str, group_by: str, measure: str) -> aggregation.AggregationRequest:
+    return aggregation.AggregationRequest(
+        dataset=dataset,
+        group_by=group_by,
+        measure=measure,
+        limit=50,
+        fill_missing=(group_by == "year"),
+    )
+
+
+@pytest.mark.parametrize("dataset, group_by, measure", _every_combo())
+def test_aggregate_toy_fixture_matches_csv_for_every_valid_combo(store, csv_store, dataset, group_by, measure):
+    """Quick pass against the toy TABLES fixture.
+
+    PostgresCanonicalStore.aggregate() emits genuine PostgreSQL syntax
+    (EXTRACT(YEAR FROM ...)::int) that this test's SQLite-backed Connection
+    mock cannot parse at all -- confirmed as a parser-level syntax error
+    against bare sqlite3, not merely a different result. The mock's
+    Cursor.execute (see _sqlite_compatible_sql above) rewrites just that
+    construct into a SQLite-executable equivalent before running it against
+    the toy in-memory database; the SQL text postgres.py actually builds, and
+    the copy recorded in `connection.statements`, is untouched. This is a
+    real SQLite/PostgreSQL incompatibility, not one this test's toy data
+    happens to dodge -- see the real-data pass below for the test that
+    actually proves the SQL is correct.
+    """
+
+    request = _representative_request(dataset, group_by, measure)
+    assert store.aggregate(request).to_payload() == csv_store.aggregate(request).to_payload()
+
+
+@pytest.mark.parametrize("dataset, group_by, measure", _every_combo())
+def test_aggregate_real_data_matches_csv_for_every_valid_combo(real_store, real_csv_store, dataset, group_by, measure):
+    """The test that actually proves the hand-written SQL is correct: every
+    valid combo against the full ~40k-row production dataset."""
+
+    request = _representative_request(dataset, group_by, measure)
+    assert real_store.aggregate(request).to_payload() == real_csv_store.aggregate(request).to_payload()
+
+
+def test_aggregate_filtered_requests_match_csv(real_store, real_csv_store):
+    dark_star_by_year = aggregation.AggregationRequest(
+        dataset="performances",
+        group_by="year",
+        measure="count",
+        limit=50,
+        fill_missing=True,
+        filters={"song_id": "song-dark-star"},
+    )
+    assert real_store.aggregate(dark_star_by_year).to_payload() == real_csv_store.aggregate(
+        dark_star_by_year
+    ).to_payload()
+
+    jack_casady_by_year = aggregation.AggregationRequest(
+        dataset="guest_appearances",
+        group_by="year",
+        measure="distinct_shows",
+        limit=50,
+        filters={"guest_id": "person-jack-casady"},
+    )
+    assert real_store.aggregate(jack_casady_by_year).to_payload() == real_csv_store.aggregate(
+        jack_casady_by_year
+    ).to_payload()
+
+    shows_year_range = aggregation.AggregationRequest(
+        dataset="shows",
+        group_by="year",
+        measure="count",
+        limit=50,
+        filters={"year_from": 1972, "year_to": 1974},
+    )
+    assert real_store.aggregate(shows_year_range).to_payload() == real_csv_store.aggregate(
+        shows_year_range
+    ).to_payload()
+
+
+def test_aggregate_city_fallback_matches_csv_for_a_real_blank_city_venue(real_store, real_csv_store):
+    """COALESCE(NULLIF(v."city", ''), 'Unknown') must match CanonicalStore's
+    `venue.get("city") or "Unknown"` against a venue that actually has a
+    blank city in the real data, not just the toy fixture's synthetic one."""
+
+    blank_city_venues = [
+        venue for venue in real_csv_store.rows("venues") if not (venue.get("city") or "").strip()
+    ]
+    assert blank_city_venues, "expected at least one real venue with a blank city"
+    venue_id = blank_city_venues[0]["venue_id"]
+
+    request = aggregation.AggregationRequest(
+        dataset="shows", group_by="city", measure="count", limit=50, filters={"venue_id": venue_id}
+    )
+    payload = real_store.aggregate(request).to_payload()
+    assert payload == real_csv_store.aggregate(request).to_payload()
+    assert payload["rows"] and payload["rows"][0]["id"] == "Unknown"
+
+
+def test_aggregate_zero_match_filter_does_not_crash_the_date_range(real_store, real_csv_store):
+    """A request whose filters match zero rows must not raise while computing
+    the date range.
+
+    _query stringifies every DB value (see PostgresCanonicalStore._query /
+    _string_value), so MIN/MAX over zero matching rows comes back as SQL
+    NULL -> "" here, never Python None. aggregate() must treat both as "no
+    data" rather than passing "" to int().
+    """
+
+    request = aggregation.AggregationRequest(
+        dataset="shows",
+        group_by="venue",
+        measure="count",
+        limit=50,
+        filters={"venue_id": "venue-unknown-", "year": 1800},
+    )
+    payload = real_store.aggregate(request).to_payload()
+    assert payload == real_csv_store.aggregate(request).to_payload()
+    assert payload["rows"] == []
+    assert "date_range" not in payload
