@@ -1,0 +1,28 @@
+# What gets uploaded to Vercel and bundled into the Python function.
+#
+# This is an allowlist, not a list of things to leave out: the first rule
+# ignores everything, and each "!" line adds one thing back. Anything new --
+# a new top-level folder, a new pile of research under data/ -- stays out of
+# the deployment unless someone adds it here on purpose. That is deliberate.
+# A denylist would have to be updated every time the repository grows, and
+# would silently ship whatever nobody remembered to add.
+#
+# scripts/tests/docs/evals/.github are covered by the first rule.
+
+/*
+!app.py
+!pyproject.toml
+!vercel.json
+!deadbot
+!web
+
+# data/ carries ~165 MB of research material. The running site never opens
+# any of it -- it serves from PostgreSQL, and deadbot/storage.py refuses to
+# start any other way. Only the handful of small files the request path
+# actually reads are added back: the top-level *.json config files, plus the
+# editorial and coverage sets. data/raw and data/canonical stay out.
+!data
+data/*
+!data/*.json
+!data/editorial
+!data/coverage

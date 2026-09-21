@@ -656,10 +656,11 @@ def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):
     client = TestClient(
         create_app(settings=Settings(), store=CanonicalStore(), agent=FakeAgent([]), client_dist=client_dist)
     )
-    page = client.get("/songs/sugaree")
+    page = client.get("/songs/sugaree", headers={"Accept": "text/html"})
     assert page.status_code == 200
     assert "Deadbot client" in page.text
-    assert page.headers["cache-control"] == "no-cache, no-store, must-revalidate"
+    # The shell is served by the CDN in production, so its Cache-Control is set
+    # in vercel.json rather than here. tests/test_deployment_config.py guards it.
 
 
 def test_album_unit_block_validates_a_full_record():

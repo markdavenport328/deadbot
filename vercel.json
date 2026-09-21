@@ -4,7 +4,22 @@
   "functions": {
     "app.py": {
       "includeFiles": "{web/dist/index.html,web/dist/assets/**,web/dist/fonts/**}",
+      "excludeFiles": "{data/raw/**,data/canonical/**}",
       "maxDuration": 60
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/((?!assets/|fonts/).*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    }
+  ]
 }

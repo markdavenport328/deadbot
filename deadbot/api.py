@@ -15,8 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from langchain_core.messages import AIMessage, HumanMessage
 
 from deadbot import composition, finish
@@ -336,26 +335,14 @@ def create_app(
         )
 
     if client_dist.is_dir():
-        assets = client_dist / "assets"
-        if assets.is_dir():
-            app.mount("/assets", StaticFiles(directory=assets), name="assets")
-        # Self-hosted fonts are copied verbatim from web/public/fonts, so they
-        # are not under /assets; without this mount the SPA catch-all below
-        # would answer /fonts/*.woff2 with index.html and the browser would
-        # fall back to system fonts.
-        fonts = client_dist / "fonts"
-        if fonts.is_dir():
-            app.mount("/fonts", StaticFiles(directory=fonts), name="fonts")
-
-        @app.get("/{full_path:path}", include_in_schema=False)
-        def client(full_path: str) -> FileResponse:
-            # The SPA owns browser routes. API routes were registered above.
-            # Always revalidate the shell so a production deploy cannot leave a
-            # browser loading an older hashed bundle from a cached index page.
-            return FileResponse(
-                client_dist / "index.html",
-                headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
-            )
+        # Registered as a frontend rather than a catch-all route. A route
+        # reaches the function on every page load, so a crawler walking browser
+        # URLs used to wake Python once per URL just to hand back the shell.
+        # A frontend is promoted to the CDN at build time instead, and the API
+        # routes registered above still take priority over it. The shell, the
+        # hashed bundles under /assets and the self-hosted fonts under /fonts
+        # are all part of this one build directory.
+        app.frontend("/", directory=client_dist, fallback="index.html")
 
     return app
 
