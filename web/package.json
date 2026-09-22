@@ -27,6 +27,6 @@
     "openapi-typescript": "^7.13.0",
     "typescript": "latest",
     "vite": "latest",
-    "vitest": "^2.1.8"
+    "vitest": "^4.1.11"
   }
 }
