@@ -48,3 +48,5 @@ def test_openapi_publishes_the_album_unit_block():
     assert "AlbumUnitBlock" in schemas
     assert "AlbumTrackItem" in schemas
     assert "albums" in schemas["SongOverviewBlock"]["properties"]
+    assert "DataChartBlock" in schemas
+    assert "aggregation_id" in schemas["DataChartBlock"]["properties"]
