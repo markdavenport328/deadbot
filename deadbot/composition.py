@@ -286,8 +286,11 @@ def _data_chart(
         return None
     if series_field is not None:
         return None  # no series dimension exists in this batch's aggregation contract
-    if chart == "stacked_bar":
-        return None  # requires a series dimension the contract can't yet produce
+    # Only "bar" is supported: "stacked_bar" needs a series dimension the
+    # contract can't yet produce, and this also rejects any out-of-vocabulary
+    # chart value before it reaches DataChartBlock's Literal validation.
+    if chart != "bar":
+        return None
 
     dimension_column = next((column for column in parsed_columns if column.key != "value"), None)
     if dimension_column is None:

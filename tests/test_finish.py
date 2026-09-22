@@ -1283,6 +1283,23 @@ def test_data_chart_rejects_stacked_bar_on_an_otherwise_valid_payload():
     ) is None
 
 
+def test_data_chart_rejects_an_out_of_vocabulary_chart_value_instead_of_raising():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    assert composition._data_chart(
+        payload,
+        chart="pie",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
 def test_data_chart_rejects_any_series_field():
     store = CanonicalStore()
     payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
