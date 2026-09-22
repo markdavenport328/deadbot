@@ -226,6 +226,33 @@ _FOLLOW_UPS_DESCRIPTION = (
 )
 
 
+class DataChartRef(_Ref):
+    """A chart built from one aggregate_data result called this turn.
+
+    Choose bar for any result today — stacked_bar is reserved for a
+    future aggregation with more than one series and is always dropped
+    until then. orientation must be vertical for a year-grouped result
+    and horizontal for a ranked category (song, venue, city, guest).
+    x_field/y_field must be exact column keys from that aggregate_data
+    result's own columns list.
+    """
+
+    type: Literal["data_chart"]
+    aggregation_id: str
+    chart: Literal["bar", "stacked_bar"] = Field(
+        description="bar for any result today; stacked_bar is not yet available and is always dropped."
+    )
+    orientation: Literal["vertical", "horizontal"] = Field(
+        description="vertical for a year-grouped result, horizontal for a ranked category."
+    )
+    x_field: str = Field(description="One of the exact column keys this aggregate_data result returned.")
+    y_field: str = Field(description="One of the exact column keys this aggregate_data result returned.")
+    series_field: str | None = Field(default=None, description="Not yet supported; leave unset.")
+    x_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
+    y_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+
+
 class ShowUnitRef(_Ref):
     """One show as a primary object of the answer. The server supplies date, venue, setlist, guests and listening."""
 
@@ -369,7 +396,8 @@ BodyItem = Annotated[
     | ArrangementRef
     | ArrangementSearchRef
     | MediaLinkRef
-    | ResourceListRef,
+    | ResourceListRef
+    | DataChartRef,
     Field(discriminator="type"),
 ]
 
@@ -502,7 +530,8 @@ class FinishPlan(BaseModel):
             "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
             "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
             "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
-            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list. An answer that "
+            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list, "
+            "data_chart (a chart built from one aggregate_data result). An answer that "
             "needs no main body leaves groups empty."
         ),
     )
@@ -559,6 +588,13 @@ def _find_research_resource(payloads: list[dict[str, Any]], resource_id: str) ->
                 projected = composition._research_resource(candidate)
                 if projected and projected["resource_id"] == resource_id:
                     return projected
+    return None
+
+
+def _find_aggregation_payload(payloads: list[dict[str, Any]], aggregation_id: str) -> dict[str, Any] | None:
+    for payload in payloads:
+        if payload.get("aggregation_id") == aggregation_id:
+            return payload
     return None
 
 
@@ -860,6 +896,26 @@ def _resolve_reference(
         if not rows:
             return None, []
         return ResourceListBlock(type="resource_list", title=(item.title or "Reading and listening").strip(), items=rows[:8]), sources
+
+    if kind == "data_chart":
+        if item.aggregation_id not in grounded.ids:
+            return None, []
+        payload = _find_aggregation_payload(payloads, item.aggregation_id)
+        if payload is None:
+            return None, []
+        block = composition._data_chart(
+            payload,
+            chart=item.chart,
+            orientation=item.orientation,
+            x_field=item.x_field,
+            y_field=item.y_field,
+            series_field=item.series_field,
+            title=item.title,
+            note=item.note,
+            x_label=item.x_label,
+            y_label=item.y_label,
+        )
+        return (block, []) if block else (None, [])
 
     return None, []
 

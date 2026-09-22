@@ -1402,3 +1402,199 @@ def test_data_chart_title_falls_back_to_metric_label_and_keeps_a_supplied_title(
     custom_block = composition._data_chart(payload, title="Shows per year", **common)
     assert custom_block is not None
     assert custom_block.title == "Shows per year"
+
+
+# --- DataChartRef: schema, grounding, and hydration -------------------------
+
+
+def test_finish_plan_accepts_a_data_chart_ref_in_a_group():
+    plan = finish.FinishPlan.model_validate(
+        {
+            "chat_answer": "Attendance grew steadily.",
+            "title": "Shows per year",
+            "groups": [
+                {
+                    "presentation": "collection",
+                    "items": [
+                        {
+                            "type": "data_chart",
+                            "aggregation_id": "agg:handbuilt0000",
+                            "chart": "bar",
+                            "orientation": "vertical",
+                            "x_field": "year",
+                            "y_field": "value",
+                        },
+                    ],
+                }
+            ],
+        }
+    )
+    assert plan.groups[0].items[0].type == "data_chart"
+    assert plan.groups[0].items[0].aggregation_id == "agg:handbuilt0000"
+
+
+def test_data_chart_ref_rejects_an_out_of_vocabulary_chart_value():
+    from pydantic import ValidationError
+
+    try:
+        finish.DataChartRef(
+            type="data_chart",
+            aggregation_id="agg:handbuilt0000",
+            chart="line",
+            orientation="vertical",
+            x_field="year",
+            y_field="value",
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("chart is a closed vocabulary")
+
+
+def test_resolve_body_resolves_a_data_chart_from_the_turn_s_aggregate_data_payload():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        lead=None,
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.DataChartRef(
+                        type="data_chart",
+                        aggregation_id=payload["aggregation_id"],
+                        chart="bar",
+                        orientation="vertical",
+                        x_field="year",
+                        y_field="value",
+                    )
+                ],
+            )
+        ],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
+    assert blocks[0].type == "data_chart"
+    assert blocks[0].aggregation_id == payload["aggregation_id"]
+
+
+def test_an_ungrounded_aggregation_id_is_dropped():
+    items = [
+        {
+            "type": "data_chart",
+            "aggregation_id": "agg:madeup00000000",
+            "chart": "bar",
+            "orientation": "vertical",
+            "x_field": "year",
+            "y_field": "value",
+        }
+    ]
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="x",
+        groups=[finish.GroupPlan(presentation="collection", items=items)],
+    )
+    blocks, _ = finish.resolve_items(
+        plan.groups[0].items, finish.GroundedContext(ids=frozenset(), urls=frozenset()), [], CanonicalStore()
+    )
+    assert blocks == []
+
+
+def test_a_grounded_aggregation_id_with_no_matching_payload_is_dropped():
+    store = CanonicalStore()
+    item = finish.DataChartRef(
+        type="data_chart",
+        aggregation_id="agg:handbuilt0000",
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+    )
+    # Grounded by id, but the payload list carries nothing matching it —
+    # a mismatched pair, not a missing lookup.
+    grounded = finish.GroundedContext(ids=frozenset({"agg:handbuilt0000"}), urls=frozenset())
+    blocks, _ = finish.resolve_items([item], grounded, [], store)
+    assert blocks == []
+
+
+def test_a_data_chart_with_mismatched_orientation_is_dropped_through_resolve_items():
+    store = CanonicalStore()
+    payload = _hand_built_shows_year_payload()
+    grounded = finish.grounded_context([payload])
+    item = finish.DataChartRef(
+        type="data_chart",
+        aggregation_id=payload["aggregation_id"],
+        chart="bar",
+        orientation="horizontal",
+        x_field="year",
+        y_field="value",
+    )
+    blocks, _ = finish.resolve_items([item], grounded, [payload], store)
+    assert blocks == []
+
+
+def test_resolve_groups_preserves_order_with_a_data_chart_mixed_among_units():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    agg_payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    all_payloads = [*payloads, agg_payload]
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        groups=[
+            finish.GroupPlan(
+                presentation="collection",
+                items=[
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27"),
+                    finish.DataChartRef(
+                        type="data_chart",
+                        aggregation_id=agg_payload["aggregation_id"],
+                        chart="bar",
+                        orientation="vertical",
+                        x_field="year",
+                        y_field="value",
+                    ),
+                ],
+            )
+        ],
+    )
+    blocks, groups, _ = finish.resolve_groups(plan, finish.grounded_context(all_payloads), all_payloads, store)
+    assert [block.type for block in blocks] == ["show_unit", "data_chart"]
+    assert groups[0].block_indexes == [0, 1]
+
+
+def test_resolve_groups_leaves_a_data_chart_unchanged_in_a_comparison_group_with_criteria():
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    agg_payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    all_payloads = [*payloads, agg_payload]
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="t",
+        groups=[
+            finish.GroupPlan(
+                presentation="comparison",
+                criteria=["Pace"],
+                items=[
+                    finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", judgments=["Relaxed"]),
+                    finish.DataChartRef(
+                        type="data_chart",
+                        aggregation_id=agg_payload["aggregation_id"],
+                        chart="bar",
+                        orientation="vertical",
+                        x_field="year",
+                        y_field="value",
+                    ),
+                ],
+            )
+        ],
+    )
+    # A DataChartBlock has no judgments field; resolve_groups's
+    # hasattr(block, "judgments") truncation step must be a no-op for it,
+    # not raise, when it sits in a comparison group with criteria set.
+    blocks, groups, _ = finish.resolve_groups(plan, finish.grounded_context(all_payloads), all_payloads, store)
+    chart_block = next(block for block in blocks if block.type == "data_chart")
+    assert not hasattr(chart_block, "judgments")
+    assert chart_block.aggregation_id == agg_payload["aggregation_id"]
