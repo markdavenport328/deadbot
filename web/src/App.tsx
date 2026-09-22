@@ -1,8 +1,14 @@
-import { type ComponentProps, type FormEvent, type KeyboardEvent, type ReactNode, createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
-import { DataChart } from "./DataChart";
+import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./components";
+
+// recharts (pulled in by DataChart) is a large dependency relative to how
+// rarely a page actually contains a data_chart block, so it loads lazily:
+// the main bundle stays small and recharts' own chunk is fetched only when
+// a page needs to plot something.
+const DataChart = lazy(() => import("./DataChart").then((module) => ({ default: module.DataChart })));
 
 type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
@@ -135,17 +141,6 @@ function dedupeSources(sources: SourceReference[]): SourceReference[] {
     result.push(source);
   }
   return result;
-}
-
-// Cards inside a titled group must not sit at the same heading level as the
-// group's own <h2>. ComposedPage sets this to "h3" for the duration of a
-// titled group's blocks; every card-level heading renders through here so it
-// follows without each renderer knowing which level applies.
-const HeadingContext = createContext<"h2" | "h3">("h2");
-
-function CardHeading(props: ComponentProps<"h2">) {
-  const Tag = useContext(HeadingContext);
-  return <Tag {...props} />;
 }
 
 function ExternalLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
@@ -559,67 +554,6 @@ function GoDeeper({ sources }: { sources: UnitSources }) {
               {source.note}
             </p>
           )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-type DrawerTab = { id: string; label: string; count?: number; content: ReactNode };
-
-// The tabbed drawer that replaced the stacked <details> facets. A disclosure
-// decides once, when it first appears, whether to start open (the same
-// reasoning as the old Facet component): later renders must not snap it open
-// or closed beneath the reader.
-export function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: string | null }) {
-  const [open, setOpen] = useState(initialOpen);
-  const baseId = useId();
-  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  if (tabs.length === 0) return null;
-
-  function focusTabAt(index: number) {
-    const target = tabs[(index + tabs.length) % tabs.length];
-    tabRefs.current[target.id]?.focus();
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      focusTabAt(index + 1);
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      focusTabAt(index - 1);
-    }
-  }
-
-  return (
-    <div className="drawer">
-      <div className="tabs">
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.id}
-            type="button"
-            id={`${baseId}-tab-${tab.id}`}
-            aria-expanded={open === tab.id}
-            aria-controls={`${baseId}-panel-${tab.id}`}
-            className="tab"
-            ref={(element) => { tabRefs.current[tab.id] = element; }}
-            onClick={() => setOpen((current) => (current === tab.id ? null : tab.id))}
-            onKeyDown={(event) => handleKeyDown(event, index)}
-          >
-            {tab.label}
-            {tab.count !== undefined && <span className="n">{tab.count}</span>}
-          </button>
-        ))}
-      </div>
-      {tabs.map((tab) => (
-        <div
-          key={tab.id}
-          id={`${baseId}-panel-${tab.id}`}
-          className="panel"
-          hidden={open !== tab.id}
-        >
-          {open === tab.id ? tab.content : null}
         </div>
       ))}
     </div>
@@ -1514,7 +1448,11 @@ function Block({
         </aside>
       );
     case "data_chart":
-      return <DataChart block={block} />;
+      return (
+        <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
+          <DataChart block={block} />
+        </Suspense>
+      );
   }
 }
 

@@ -50,4 +50,5 @@ jobs:
       - run: npm ci --prefix web
       - run: npm run gen:types --prefix web
       - run: git diff --exit-code web/src
+      - run: npm test --prefix web
       - run: npm run build --prefix web

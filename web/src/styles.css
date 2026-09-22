@@ -307,6 +307,8 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .data-chart-table th, .data-chart-table td { text-align: left; padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 1px solid var(--hair); }
 .data-chart-table th { color: var(--muted); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; }
 .data-chart-table td { color: var(--text); font-variant-numeric: tabular-nums; }
+.data-chart-loading { color: var(--muted); font-size: 0.9rem; padding: 1.5rem 0; }
+.data-chart-coverage-detail { margin: 0.35rem 0 0; max-width: 62ch; color: var(--muted); font-size: 0.9rem; line-height: 1.55; }
 
 .show-explorer { grid-column: 1 / -1; }
 .show-explorer > h2 { max-width: 30ch; margin-bottom: 1rem; }

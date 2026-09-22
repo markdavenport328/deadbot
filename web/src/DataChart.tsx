@@ -10,7 +10,7 @@ import {
   type TooltipContentProps
 } from "recharts";
 import type { ExperienceBlock } from "./types";
-import { Drawer } from "./App";
+import { CardHeading, Drawer } from "./components";
 
 // `./types` re-exports several block types individually (ShowUnitBlock,
 // AlbumUnitBlock, ...) but not this one -- it only appears as a member of
@@ -25,6 +25,21 @@ export type DataChartBlock = Extract<ExperienceBlock, { type: "data_chart" }>;
 // text is ever shortened.
 const MAX_TICK_LABEL_LENGTH = 18;
 
+// The horizontal (ranked/categorical) layout's plot height scales with row
+// count so every row gets a readable tick label -- a fixed height forced
+// recharts' tick-skipping to drop most labels at realistic row counts (15-50
+// rows). The vertical (temporal/year-series) layout keeps a fixed height:
+// year-series row counts are naturally bounded (a handful of years), so
+// there's nothing to scale for.
+const VERTICAL_CHART_HEIGHT = 320;
+const HORIZONTAL_ROW_HEIGHT = 28;
+const HORIZONTAL_CHART_BASE_HEIGHT = 48;
+const HORIZONTAL_CHART_MIN_HEIGHT = 240;
+
+function horizontalChartHeight(rowCount: number): number {
+  return Math.max(HORIZONTAL_CHART_MIN_HEIGHT, rowCount * HORIZONTAL_ROW_HEIGHT + HORIZONTAL_CHART_BASE_HEIGHT);
+}
+
 function truncateLabel(value: string, maxLength: number = MAX_TICK_LABEL_LENGTH): string {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
@@ -32,14 +47,44 @@ function truncateLabel(value: string, maxLength: number = MAX_TICK_LABEL_LENGTH)
 
 // The description composed for `aria-describedby` — same for the plotted
 // figure and the empty-state figure, since both carry the same block-level
-// facts (metric, scope, total, exclusions).
+// facts (metric, scope, total, exclusions). `scope_note` comes from the
+// server and may already end in terminal punctuation; appending a second
+// period would read as "...already ends with a period..".
+function endsWithTerminalPunctuation(text: string): boolean {
+  return /[.!?]$/.test(text.trim());
+}
+
 function chartDescription(block: DataChartBlock): string {
   const excluded = block.excluded_count > 0 ? `, ${block.excluded_count} more not shown` : "";
-  return `${block.metric_label}. ${block.scope_note}. Total ${block.total}${excluded}.`;
+  const scopeNote = block.scope_note.trim();
+  const scopeSentence = endsWithTerminalPunctuation(scopeNote) ? scopeNote : `${scopeNote}.`;
+  return `${block.metric_label}. ${scopeSentence} Total ${block.total}${excluded}.`;
 }
 
 type DataChartColumn = DataChartBlock["columns"][number];
 type DataChartRow = { [key: string]: unknown };
+
+// A plain, reasonable plural: the dimension column's label is always a
+// count-friendly noun ("Venue", "Year", "Song"), never irregular, so a
+// trailing "s" (skipped when the label already ends in one) is sufficient.
+function pluralizeLabel(label: string): string {
+  const lower = label.toLowerCase();
+  return lower.endsWith("s") ? lower : `${lower}s`;
+}
+
+// The visible (sighted-reader) counterpart to the hidden `excluded_count`
+// fact already carried in the figure's aria-describedby text: "Top 5 of 24
+// venues" whenever some rows were left out of the plot. Renders nothing when
+// nothing was excluded, so a complete result doesn't say "Top 7 of 7".
+function CoverageDetail({ block, dimensionLabel, shownCount }: { block: DataChartBlock; dimensionLabel: string; shownCount: number }) {
+  if (block.excluded_count <= 0) return null;
+  const totalCount = shownCount + block.excluded_count;
+  return (
+    <p className="data-chart-coverage-detail">
+      Top {shownCount} of {totalCount} {pluralizeLabel(dimensionLabel)}
+    </p>
+  );
+}
 
 export function DataChart({ block }: { block: DataChartBlock }) {
   const titleId = useId();
@@ -56,6 +101,18 @@ export function DataChart({ block }: { block: DataChartBlock }) {
   }
   const dimensionColumn = block.columns.find((column) => column.key !== "value");
   if (!dimensionColumn) {
+    return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
+  }
+  // Per the contract, y_field is always "value" and x_field always matches
+  // the dimension column's key. Both are checked against the single source
+  // of truth (dimensionColumn.key / the literal "value") rather than trusted
+  // independently, so a payload where they've drifted apart is treated as
+  // the same malformed-request case as the other structural guards, not a
+  // silently-wrong render.
+  if (block.x_field !== dimensionColumn.key || block.y_field !== "value") {
+    return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
+  }
+  if (block.rows.some((row: unknown) => row === null || typeof row !== "object")) {
     return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
   }
   const rows = block.rows.filter(
@@ -77,17 +134,18 @@ export function DataChart({ block }: { block: DataChartBlock }) {
   // orientation="horizontal" -> bars grow rightward, one per row (a ranked
   // category) -> recharts' layout="vertical".
   const isVertical = block.orientation === "vertical";
+  const plotHeight = isVertical ? VERTICAL_CHART_HEIGHT : horizontalChartHeight(rows.length);
 
   return (
     <figure className="data-chart-figure" aria-labelledby={titleId} aria-describedby={descId}>
-      <figcaption id={titleId} className="data-chart-title">
+      <CardHeading id={titleId} className="data-chart-title">
         {block.title}
-      </figcaption>
+      </CardHeading>
       <p id={descId} className="visually-hidden">
         {chartDescription(block)}
       </p>
       {block.note && <p className="unit-note">{block.note}</p>}
-      <ResponsiveContainer width="100%" height={320} className="data-chart-plot">
+      <ResponsiveContainer width="100%" height={plotHeight} className="data-chart-plot">
         <BarChart data={rows} layout={isVertical ? "horizontal" : "vertical"} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
           <CartesianGrid stroke="var(--hair)" strokeDasharray="0" horizontal={isVertical} vertical={!isVertical} />
           {isVertical ? (
@@ -98,12 +156,29 @@ export function DataChart({ block }: { block: DataChartBlock }) {
                 tickLine={false}
                 axisLine={{ stroke: "var(--hair)" }}
                 tick={{ fill: "var(--muted)" }}
+                label={block.x_label ?? undefined}
               />
-              <YAxis type="number" allowDecimals={false} tickLine={false} axisLine={{ stroke: "var(--hair)" }} tick={{ fill: "var(--muted)" }} />
+              <YAxis
+                type="number"
+                allowDecimals={false}
+                tickLine={false}
+                axisLine={{ stroke: "var(--hair)" }}
+                tick={{ fill: "var(--muted)" }}
+                tickFormatter={(value) => Number(value).toLocaleString()}
+                label={block.y_label ?? undefined}
+              />
             </>
           ) : (
             <>
-              <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={{ stroke: "var(--hair)" }} tick={{ fill: "var(--muted)" }} />
+              <XAxis
+                type="number"
+                allowDecimals={false}
+                tickLine={false}
+                axisLine={{ stroke: "var(--hair)" }}
+                tick={{ fill: "var(--muted)" }}
+                tickFormatter={(value) => Number(value).toLocaleString()}
+                label={block.y_label ?? undefined}
+              />
               <YAxis
                 dataKey={block.x_field}
                 type="category"
@@ -111,7 +186,9 @@ export function DataChart({ block }: { block: DataChartBlock }) {
                 axisLine={{ stroke: "var(--hair)" }}
                 tick={{ fill: "var(--muted)" }}
                 tickFormatter={(value) => truncateLabel(String(value))}
+                interval={0}
                 width={120}
+                label={block.x_label ?? undefined}
               />
             </>
           )}
@@ -136,6 +213,7 @@ export function DataChart({ block }: { block: DataChartBlock }) {
         </BarChart>
       </ResponsiveContainer>
       <p className="coverage-note">{block.scope_note}</p>
+      <CoverageDetail block={block} dimensionLabel={dimensionColumn.label} shownCount={rows.length} />
       <Drawer
         tabs={[
           {
@@ -157,7 +235,7 @@ export function DataChart({ block }: { block: DataChartBlock }) {
 function UnavailableChart({ block, reason }: { block: DataChartBlock; reason: string }) {
   return (
     <div className="data-chart-unavailable" role="note">
-      <p className="data-chart-title">{block.title}</p>
+      <CardHeading className="data-chart-title">{block.title}</CardHeading>
       <p className="data-chart-unavailable-reason">{reason}</p>
     </div>
   );
@@ -169,9 +247,9 @@ function UnavailableChart({ block, reason }: { block: DataChartBlock; reason: st
 function EmptyChart({ block, titleId, descId }: { block: DataChartBlock; titleId: string; descId: string }) {
   return (
     <figure className="data-chart-figure data-chart-empty" aria-labelledby={titleId} aria-describedby={descId}>
-      <figcaption id={titleId} className="data-chart-title">
+      <CardHeading id={titleId} className="data-chart-title">
         {block.title}
-      </figcaption>
+      </CardHeading>
       <p id={descId} className="visually-hidden">
         {chartDescription(block)}
       </p>

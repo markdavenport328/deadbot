@@ -15,7 +15,7 @@ const yearBlock: DataChartBlock = {
     { key: "year", label: "Year", type: "temporal" },
     { key: "value", label: "Shows", type: "quantitative" }
   ],
-  date_range: { start: 1977, end: 1979 },
+  date_range: { from: 1977, to: 1979 },
   empty_reason: null,
   excluded_count: 0,
   metric_label: "Shows performed",
@@ -56,7 +56,10 @@ const rankedBlock: DataChartBlock = {
   ],
   scope_note: "Top venues by documented show count.",
   title: "Most-played venues",
-  total: 28,
+  // total is computed server-side over the full, unlimited result set, not
+  // just these three shown rows (28) -- the 2 excluded venues account for
+  // the remainder, so total is deliberately larger than the visible sum.
+  total: 37,
   x_field: "label",
   x_label: "Venue",
   y_field: "value",
@@ -79,6 +82,19 @@ const emptyBlock: DataChartBlock = {
   title: "No shows found",
   rows: [],
   empty_reason: "No shows matched this search."
+};
+
+// 20 rows -- this app's default `limit` -- is exactly the row count the
+// reviewer measured recharts' default tick-skipping (interval="preserveEnd")
+// dropping most labels at: only 10 of 20 survived. A fixed-height plot with
+// only a handful of rows never exercised this.
+const manyRowsBlock: DataChartBlock = {
+  ...rankedBlock,
+  aggregation_id: "agg-many-rows",
+  title: "Twenty venues",
+  excluded_count: 0,
+  rows: Array.from({ length: 20 }, (_, index) => ({ label: `Venue ${index + 1}`, value: 20 - index })),
+  total: 210
 };
 
 function withOverride(overrides: Partial<DataChartBlock>): DataChartBlock {
@@ -288,5 +304,57 @@ describe("DataChart", () => {
     const tooltipWrapper = container.querySelector(".recharts-tooltip-wrapper") as HTMLElement;
     expect(tooltipWrapper.style.visibility).toBe("visible");
     expect(within(tooltipWrapper).getByText("12")).toBeInTheDocument();
+  });
+
+  it("renders every row's label at a realistic (20-row) categorical row count, not just a handful", () => {
+    const { container } = render(<DataChart block={manyRowsBlock} />);
+
+    const yLabels = yTickLabels(container);
+    for (const row of manyRowsBlock.rows) {
+      expect(within(yLabels).getByText(String(row.label))).toBeInTheDocument();
+    }
+  });
+
+  it("shows a visible top-N-of-M caption when rows were excluded, and nothing when none were", () => {
+    const { container: withExclusions } = render(<DataChart block={rankedBlock} />);
+    const detail = withExclusions.querySelector(".data-chart-coverage-detail");
+    expect(detail).toBeInTheDocument();
+    expect(detail?.textContent).toBe("Top 3 of 5 venues");
+
+    const { container: withoutExclusions } = render(<DataChart block={yearBlock} />);
+    expect(withoutExclusions.querySelector(".data-chart-coverage-detail")).not.toBeInTheDocument();
+  });
+
+  it("renders a safe fallback for a null row, never throwing", () => {
+    const nullRow = withOverride({
+      title: "Null row example",
+      rows: [{ label: "Winterland", value: 12 }, null as unknown as { label: string; value: number }]
+    });
+
+    expect(() => render(<DataChart block={nullRow} />)).not.toThrow();
+    expect(screen.getByText("Null row example")).toBeInTheDocument();
+    expect(screen.getByText(/unexpected shape/i)).toBeInTheDocument();
+  });
+
+  it("renders a safe fallback when x_field doesn't match the dimension column's key, never throwing", () => {
+    const mismatchedXField = withOverride({
+      title: "Mismatched x_field example",
+      x_field: "venue_name"
+    });
+
+    expect(() => render(<DataChart block={mismatchedXField} />)).not.toThrow();
+    expect(screen.getByText("Mismatched x_field example")).toBeInTheDocument();
+    expect(screen.getByText(/unexpected shape/i)).toBeInTheDocument();
+  });
+
+  it("renders block.title as a heading element (not a figcaption), participating in the page's heading outline", () => {
+    render(<DataChart block={rankedBlock} />);
+    const heading = screen.getByRole("heading", { name: rankedBlock.title });
+    expect(heading.tagName.toLowerCase()).toBe("h2");
+  });
+
+  it("passes x_label/y_label through to the plotted axes when supplied", () => {
+    const { container } = render(<DataChart block={rankedBlock} />);
+    expect(container.querySelector(".recharts-label")).toBeInTheDocument();
   });
 });

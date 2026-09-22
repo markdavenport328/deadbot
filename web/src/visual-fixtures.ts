@@ -696,7 +696,7 @@ const blocks: ExperienceResponse = fixture(
         { key: "year", label: "Year", type: "temporal" },
         { key: "value", label: "Performances", type: "quantitative" }
       ],
-      date_range: { start: 1968, end: 1974 },
+      date_range: { from: 1968, to: 1974 },
       empty_reason: null,
       excluded_count: 0,
       metric_label: "Performances",
@@ -744,7 +744,10 @@ const blocks: ExperienceResponse = fixture(
       ],
       scope_note: "Top five venues by documented Dark Star performance count.",
       title: "Where Dark Star was played most",
-      total: 34,
+      // total is computed server-side over the full, unlimited result set
+      // (all 24 venues), not just these top five (34) -- the 19 excluded
+      // venues account for the remainder.
+      total: 127,
       x_field: "label",
       x_label: "Venue",
       y_field: "value",
