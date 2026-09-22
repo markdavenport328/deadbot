@@ -603,6 +603,186 @@
         "title": "CreditListBlock",
         "type": "object"
       },
+      "DataChartBlock": {
+        "additionalProperties": false,
+        "description": "A model-selected chart, hydrated entirely from one verified\naggregate_data result.\n\nEvery number here is server-computed from that exact result; the\nmodel chose only which aggregation to reference, how to frame it\n(title/note), and how to plot it (chart/orientation/field mapping).",
+        "properties": {
+          "aggregation_id": {
+            "title": "Aggregation Id",
+            "type": "string"
+          },
+          "chart": {
+            "enum": [
+              "bar",
+              "stacked_bar"
+            ],
+            "title": "Chart",
+            "type": "string"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/DataChartColumn"
+            },
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Columns",
+            "type": "array"
+          },
+          "date_range": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Range"
+          },
+          "empty_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empty Reason"
+          },
+          "excluded_count": {
+            "title": "Excluded Count",
+            "type": "integer"
+          },
+          "metric_label": {
+            "title": "Metric Label",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "orientation": {
+            "enum": [
+              "vertical",
+              "horizontal"
+            ],
+            "title": "Orientation",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "maxItems": 200,
+            "title": "Rows",
+            "type": "array"
+          },
+          "scope_note": {
+            "title": "Scope Note",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "type": {
+            "const": "data_chart",
+            "title": "Type",
+            "type": "string"
+          },
+          "x_field": {
+            "title": "X Field",
+            "type": "string"
+          },
+          "x_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "X Label"
+          },
+          "y_field": {
+            "title": "Y Field",
+            "type": "string"
+          },
+          "y_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Y Label"
+          }
+        },
+        "required": [
+          "type",
+          "aggregation_id",
+          "title",
+          "chart",
+          "orientation",
+          "x_field",
+          "y_field",
+          "columns",
+          "metric_label",
+          "scope_note",
+          "total",
+          "excluded_count"
+        ],
+        "title": "DataChartBlock",
+        "type": "object"
+      },
+      "DataChartColumn": {
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "temporal",
+              "categorical",
+              "quantitative"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "type"
+        ],
+        "title": "DataChartColumn",
+        "type": "object"
+      },
       "EditorialBlock": {
         "additionalProperties": false,
         "description": "Flexible model-shaped material rendered in one of several visual forms.",
@@ -1172,6 +1352,7 @@
                   "arrangement_search": "#/components/schemas/ArrangementSearchBlock",
                   "coverage": "#/components/schemas/CoverageBlock",
                   "credit_list": "#/components/schemas/CreditListBlock",
+                  "data_chart": "#/components/schemas/DataChartBlock",
                   "editorial": "#/components/schemas/EditorialBlock",
                   "entity_card": "#/components/schemas/EntityCardBlock",
                   "equipment_list": "#/components/schemas/EquipmentListBlock",
@@ -1237,6 +1418,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/ArrangementSearchBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/DataChartBlock"
                 },
                 {
                   "$ref": "#/components/schemas/ProvenanceNoteBlock"

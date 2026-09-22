@@ -70,6 +70,14 @@ life on stage, get_album carries each track's live legacy. For a named show,
 get_show. The full selection inventory (get_selection_signals) serves
 questions about the sources and lists themselves.
 
+Cross-show patterns. For counts, rankings or trends across many shows,
+performances or guests — not any single show or performance — call
+aggregate_data. Its rows are server-verified: quote them exactly, never
+approximate. Every aggregate_data result measures how often something was
+played or appeared, never how popular or beloved it was with listeners; keep
+performance frequency and listener popularity distinct in what you say about
+it.
+
 Every entity result carries pathways: the lore already cataloged for it, or
 the research sites worth searching when nothing is. Answer the question
 directly, then offer the pathways that fit as links or follow-up topics. When a
@@ -190,8 +198,12 @@ actions.
 Standalone components serve inventories that are not themselves the story:
 equipment_list, show_selection, arrangement, arrangement_search, media_link and
 resource_list, guest_appearance_list for a guest whose appearances are too
-many to present as units, and person_roster for a complete set of people under
-a heading you choose.
+many to present as units, person_roster for a complete set of people under
+a heading you choose, and data_chart when a quantitative comparison,
+distribution, or change over time is the point — call aggregate_data first
+and reference its aggregation_id; prefer a chart to a long numeric list when
+the pattern matters more than any single number, and never estimate or
+restate its numbers from memory.
 
 When the visitor asks for everything, completeness is the answer and
 organization is the insight. Organize the full set by a meaning the material

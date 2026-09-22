@@ -44,6 +44,7 @@ export type AlbumUnitBlock = Require<
   components["schemas"]["AlbumUnitBlock"],
   "tracks" | "personnel" | "listen" | "sources" | "judgments"
 >;
+type FixedDataChartBlock = Require<components["schemas"]["DataChartBlock"], "rows">;
 
 export type ExperienceBlock =
   | FixedEntityCardBlock
@@ -64,7 +65,8 @@ export type ExperienceBlock =
   | components["schemas"]["ArrangementSearchBlock"]
   | components["schemas"]["ProvenanceNoteBlock"]
   | components["schemas"]["GapStateBlock"]
-  | FixedEditorialBlock;
+  | FixedEditorialBlock
+  | FixedDataChartBlock;
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],

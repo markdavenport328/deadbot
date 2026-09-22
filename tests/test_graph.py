@@ -118,6 +118,28 @@ def test_prompt_teaches_pathways_and_show_unit_hydration():
     assert "do not" not in prompt.casefold()
 
 
+def test_prompt_teaches_data_chart_and_aggregate_data():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "data_chart" in prompt
+    assert "aggregate_data" in prompt
+    assert (
+        "and data_chart when a quantitative comparison, distribution, or change over time is the point — "
+        "call aggregate_data first and reference its aggregation_id; prefer a chart to a long numeric list "
+        "when the pattern matters more than any single number, and never estimate or restate its numbers "
+        "from memory."
+        in prompt
+    )
+    assert (
+        "Cross-show patterns. For counts, rankings or trends across many shows, performances or guests — "
+        "not any single show or performance — call aggregate_data. Its rows are server-verified: quote them "
+        "exactly, never approximate. Every aggregate_data result measures how often something was played or "
+        "appeared, never how popular or beloved it was with listeners; keep performance frequency and "
+        "listener popularity distinct in what you say about it."
+        in prompt
+    )
+    assert "do not" not in prompt.casefold()
+
+
 def test_persona_tells_the_model_that_albums_are_held():
     from deadbot.graph import SYSTEM_PROMPT  # use the module's actual prompt constant
 
