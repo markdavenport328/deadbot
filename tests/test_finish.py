@@ -1404,6 +1404,77 @@ def test_data_chart_title_falls_back_to_metric_label_and_keeps_a_supplied_title(
     assert custom_block.title == "Shows per year"
 
 
+def test_data_chart_rejects_a_transposed_x_field_and_y_field():
+    """x_field must be the dimension column's key and y_field must be "value" --
+    not merely two distinct real column keys, which a swapped pair also satisfies."""
+
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="value",
+        y_field="year",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_a_date_range_with_an_unexpected_extra_key_instead_of_raising():
+    payload = _hand_built_shows_year_payload()
+    payload["date_range"] = {"from": 1968, "to": 1995, "junk": "x"}
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_a_row_with_a_non_string_key_instead_of_raising():
+    payload = _hand_built_shows_year_payload()
+    payload["rows"] = [{123: "not a string key", "value": 5}]
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_a_column_with_a_non_string_key_instead_of_raising_typeerror():
+    payload = _hand_built_shows_year_payload()
+    payload["columns"] = [{123: "x"}, {"key": "value", "label": "Known shows", "type": "quantitative"}]
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
 # --- DataChartRef: schema, grounding, and hydration -------------------------
 
 

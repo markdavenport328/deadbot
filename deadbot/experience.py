@@ -490,6 +490,8 @@ class DataChartBlock(ExperienceModel):
     Every number here is server-computed from that exact result; the
     model chose only which aggregation to reference, how to frame it
     (title/note), and how to plot it (chart/orientation/field mapping).
+    x_field is always the aggregation's dimension column key; y_field is
+    always "value", regardless of orientation.
     """
 
     type: Literal["data_chart"]

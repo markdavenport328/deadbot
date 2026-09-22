@@ -175,6 +175,38 @@ class ResourceListRef(_Ref):
     resource_ids: list[str] = Field(min_length=1, max_length=8)
 
 
+_NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
+
+
+class DataChartRef(_Ref):
+    """A chart built from one aggregate_data result called this turn.
+
+    Choose bar for any result today — stacked_bar is reserved for a
+    future aggregation with more than one series and is always dropped
+    until then. orientation must be vertical for a year-grouped result
+    and horizontal for a ranked category (song, venue, city, guest).
+    x_field/y_field must be exact column keys from that aggregate_data
+    result's own columns list.
+    """
+
+    type: Literal["data_chart"]
+    aggregation_id: str
+    chart: Literal["bar", "stacked_bar"] = Field(
+        description="bar for any result today; stacked_bar is not yet available and is always dropped."
+    )
+    orientation: Literal["vertical", "horizontal"] = Field(
+        description="vertical for a year-grouped result, horizontal for a ranked category."
+    )
+    x_field: str = Field(
+        description="The dimension column's exact key from this aggregate_data result's columns (the one whose type is not quantitative)."
+    )
+    y_field: str = Field(description='Always the exact key "value" from this aggregate_data result\'s columns.')
+    series_field: str | None = Field(default=None, description="Not yet supported; leave unset.")
+    x_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
+    y_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+
+
 # --- semantic units ---------------------------------------------------------
 #
 # A unit declares what the visitor should perceive as one meaningful object in
@@ -216,7 +248,6 @@ _JUDGMENTS_DESCRIPTION = (
     "For a unit inside a comparison group: your one-line judgment for each of the group's criteria, in the same order. "
     "Leave an entry empty when you have nothing grounded to say."
 )
-_NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
 _SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
 _FOLLOW_UPS_DESCRIPTION = (
     "Up to three topics the visitor might want more about, each a short label plus the specific question it opens. "
@@ -224,33 +255,6 @@ _FOLLOW_UPS_DESCRIPTION = (
     "evidence. This object's listening links already cover hearing it, so topics open understanding rather than "
     "playback. Include only topics that create a worthwhile continuation."
 )
-
-
-class DataChartRef(_Ref):
-    """A chart built from one aggregate_data result called this turn.
-
-    Choose bar for any result today — stacked_bar is reserved for a
-    future aggregation with more than one series and is always dropped
-    until then. orientation must be vertical for a year-grouped result
-    and horizontal for a ranked category (song, venue, city, guest).
-    x_field/y_field must be exact column keys from that aggregate_data
-    result's own columns list.
-    """
-
-    type: Literal["data_chart"]
-    aggregation_id: str
-    chart: Literal["bar", "stacked_bar"] = Field(
-        description="bar for any result today; stacked_bar is not yet available and is always dropped."
-    )
-    orientation: Literal["vertical", "horizontal"] = Field(
-        description="vertical for a year-grouped result, horizontal for a ranked category."
-    )
-    x_field: str = Field(description="One of the exact column keys this aggregate_data result returned.")
-    y_field: str = Field(description="One of the exact column keys this aggregate_data result returned.")
-    series_field: str | None = Field(default=None, description="Not yet supported; leave unset.")
-    x_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
-    y_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
 
 
 class ShowUnitRef(_Ref):
