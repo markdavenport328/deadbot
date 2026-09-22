@@ -13,7 +13,7 @@
   "dependencies": {
     "react": "latest",
     "react-dom": "latest",
-    "recharts": "^2.13.0"
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
