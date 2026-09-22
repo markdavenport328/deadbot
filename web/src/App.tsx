@@ -570,7 +570,7 @@ type DrawerTab = { id: string; label: string; count?: number; content: ReactNode
 // decides once, when it first appears, whether to start open (the same
 // reasoning as the old Facet component): later renders must not snap it open
 // or closed beneath the reader.
-function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: string | null }) {
+export function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: string | null }) {
   const [open, setOpen] = useState(initialOpen);
   const baseId = useId();
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
