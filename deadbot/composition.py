@@ -12,9 +12,12 @@ only decides how a chosen component is shaped.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Iterable
 from typing import Any, Literal
 from urllib.parse import parse_qs, urlparse
+
+from pydantic import ValidationError
 
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
@@ -25,6 +28,8 @@ from deadbot.experience import (
     ArrangementSearchBlock,
     ArrangementSearchItem,
     CreditItem,
+    DataChartBlock,
+    DataChartColumn,
     Emphasis,
     EquipmentItem,
     EquipmentListBlock,
@@ -218,6 +223,119 @@ def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
         is_official=link.get("is_official", "").casefold() == "true" if isinstance(link.get("is_official"), str) else bool(link.get("is_official")),
         embed_kind=embed_kind,
         embed_id=embed_id,
+    )
+
+
+def _data_chart(
+    payload: dict[str, Any],
+    *,
+    chart: str,
+    orientation: str,
+    x_field: str,
+    y_field: str,
+    series_field: str | None,
+    title: str | None,
+    note: str | None,
+    x_label: str | None,
+    y_label: str | None,
+) -> DataChartBlock | None:
+    """Hydrate a data_chart block from a verified aggregate_data payload.
+
+    ``payload`` is the exact JSON an aggregate_data tool call returned
+    this turn; nothing here re-derives or re-computes a number. Returns
+    None for any structurally invalid chart request (unknown/mismatched
+    field names, an orientation that doesn't match the aggregation's
+    dimension type, a still-unsupported stacked_bar/series request, or a
+    non-finite value) so an invalid reference is dropped exactly like any
+    other unresolvable reference. A genuinely empty but well-formed
+    aggregation (rows == [], empty_reason set) still hydrates.
+    """
+    columns = payload.get("columns")
+    rows = payload.get("rows")
+    aggregation_id = payload.get("aggregation_id")
+    metric_label = payload.get("metric_label")
+    scope_note = payload.get("scope_note")
+    total = payload.get("total")
+    excluded_count = payload.get("excluded_count")
+    if (
+        not isinstance(aggregation_id, str)
+        or not isinstance(columns, list)
+        or len(columns) != 2
+        or not isinstance(rows, list)
+        or len(rows) > 200
+        or not isinstance(metric_label, str)
+        or not isinstance(scope_note, str)
+        or not isinstance(total, int)
+        or isinstance(total, bool)
+        or not isinstance(excluded_count, int)
+        or isinstance(excluded_count, bool)
+    ):
+        return None
+
+    parsed_columns: list[DataChartColumn] = []
+    for column in columns:
+        if not isinstance(column, dict):
+            return None
+        try:
+            parsed_columns.append(DataChartColumn(**column))
+        except ValidationError:
+            return None
+
+    column_keys = {column.key for column in parsed_columns}
+    if x_field not in column_keys or y_field not in column_keys or x_field == y_field:
+        return None
+    if series_field is not None:
+        return None  # no series dimension exists in this batch's aggregation contract
+    if chart == "stacked_bar":
+        return None  # requires a series dimension the contract can't yet produce
+
+    dimension_column = next((column for column in parsed_columns if column.key != "value"), None)
+    if dimension_column is None:
+        return None
+    wants_vertical = dimension_column.type == "temporal"
+    if wants_vertical and orientation != "vertical":
+        return None
+    if not wants_vertical and orientation != "horizontal":
+        return None
+
+    for row in rows:
+        if not isinstance(row, dict):
+            return None
+        value = row.get("value")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            return None
+
+    date_range = payload.get("date_range")
+    if date_range is not None and not (
+        isinstance(date_range, dict)
+        and isinstance(date_range.get("from"), int)
+        and isinstance(date_range.get("to"), int)
+    ):
+        return None
+    empty_reason = payload.get("empty_reason")
+    if empty_reason is not None and not isinstance(empty_reason, str):
+        return None
+
+    resolved_title = (title or "").strip() or metric_label
+    return DataChartBlock(
+        type="data_chart",
+        aggregation_id=aggregation_id,
+        title=resolved_title,
+        note=note,
+        chart=chart,
+        orientation=orientation,
+        x_field=x_field,
+        y_field=y_field,
+        x_label=x_label,
+        y_label=y_label,
+        columns=parsed_columns,
+        rows=rows,
+        metric_label=metric_label,
+        scope_note=scope_note,
+        total=total,
+        excluded_count=excluded_count,
+        date_range=date_range,
+        empty_reason=empty_reason,
     )
 
 

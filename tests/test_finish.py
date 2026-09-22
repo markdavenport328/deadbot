@@ -1171,3 +1171,217 @@ def test_performance_unit_still_carries_set_neighbors():
     unit = blocks[0]
     assert unit.type == "performance_unit"
     assert unit.previous is not None or unit.next is not None
+
+
+# --- _data_chart -------------------------------------------------------------
+
+
+def _aggregate_data_tool(store):
+    from deadbot.tools import build_tools
+
+    return next(tool for tool in build_tools(store) if tool.name == "aggregate_data")
+
+
+def _hand_built_shows_year_payload() -> dict:
+    return {
+        "aggregation_id": "agg:handbuilt0000",
+        "query": {"dataset": "shows", "group_by": "year", "measure": "count"},
+        "columns": [
+            {"key": "year", "label": "Year", "type": "temporal"},
+            {"key": "value", "label": "Known shows", "type": "quantitative"},
+        ],
+        "rows": [{"year": 1972, "value": 5}],
+        "metric_label": "Known shows",
+        "scope_note": "Based on shows represented in Deadbot",
+        "total": 5,
+        "excluded_count": 0,
+    }
+
+
+def test_data_chart_hydrates_a_year_series_from_a_real_aggregate_data_payload():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    block = composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    )
+    assert block is not None
+    assert block.type == "data_chart"
+    assert block.rows == payload["rows"]
+    assert block.total == payload["total"]
+    assert block.metric_label == payload["metric_label"]
+    assert block.title == payload["metric_label"]
+
+
+def test_data_chart_rejects_horizontal_orientation_for_a_temporal_dimension():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="horizontal",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_vertical_but_accepts_horizontal_for_a_categorical_dimension():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "performances", "group_by": "song", "measure": "count"}))
+    common = dict(chart="bar", x_field="label", y_field="value", series_field=None, title=None, note=None, x_label=None, y_label=None)
+    assert composition._data_chart(payload, orientation="vertical", **common) is None
+    block = composition._data_chart(payload, orientation="horizontal", **common)
+    assert block is not None
+    assert block.orientation == "horizontal"
+    assert block.rows == payload["rows"]
+
+
+def test_data_chart_rejects_a_field_name_not_present_in_the_payload_s_columns():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="not_a_real_column",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_stacked_bar_on_an_otherwise_valid_payload():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    assert composition._data_chart(
+        payload,
+        chart="stacked_bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_any_series_field():
+    store = CanonicalStore()
+    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field="anything",
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_hydrates_a_genuinely_empty_result_with_its_empty_reason_carried_through():
+    store = CanonicalStore()
+    payload = json.loads(
+        _aggregate_data_tool(store).invoke(
+            {"dataset": "shows", "group_by": "year", "measure": "count", "year_from": 2050, "year_to": 2052}
+        )
+    )
+    assert payload["rows"] == [] and payload.get("empty_reason")
+    block = composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    )
+    assert block is not None
+    assert block.rows == []
+    assert block.empty_reason == payload["empty_reason"]
+
+
+def test_data_chart_rejects_a_non_numeric_row_value():
+    payload = _hand_built_shows_year_payload()
+    payload["rows"] = [{"year": 1972, "value": "five"}]
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_a_non_finite_row_value():
+    payload = _hand_built_shows_year_payload()
+    payload["rows"] = [{"year": 1972, "value": float("nan")}]
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_rejects_more_than_200_rows():
+    payload = _hand_built_shows_year_payload()
+    payload["rows"] = [{"year": 1900 + i, "value": 1} for i in range(201)]
+    assert composition._data_chart(
+        payload,
+        chart="bar",
+        orientation="vertical",
+        x_field="year",
+        y_field="value",
+        series_field=None,
+        title=None,
+        note=None,
+        x_label=None,
+        y_label=None,
+    ) is None
+
+
+def test_data_chart_title_falls_back_to_metric_label_and_keeps_a_supplied_title():
+    payload = _hand_built_shows_year_payload()
+    common = dict(chart="bar", orientation="vertical", x_field="year", y_field="value", series_field=None, note=None, x_label=None, y_label=None)
+    default_block = composition._data_chart(payload, title=None, **common)
+    assert default_block is not None
+    assert default_block.title == payload["metric_label"]
+    custom_block = composition._data_chart(payload, title="Shows per year", **common)
+    assert custom_block is not None
+    assert custom_block.title == "Shows per year"
