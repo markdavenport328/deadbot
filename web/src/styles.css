@@ -59,6 +59,10 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: var(--read); text-underline-offset: 0.18em; }
 :focus-visible { outline: 2px solid var(--listen); outline-offset: 2px; }
+/* Standard screen-reader-only utility: present in the accessibility tree,
+   removed from visual layout and painting. Used by DataChart's aria-describedby
+   text and its full-data-table caption. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .app-shell { width: min(1440px, calc(100% - 2rem)); min-height: 100vh; margin: 0 auto; }
 .wordmark { color: #f5efdd; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.35rem; font-weight: 600; text-decoration: none; }
@@ -281,6 +285,29 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* Open blocks breathe like units do; the grid gap alone reads as one continuous column. */
 .block-grid > .typography-block + .typography-block, .block-grid > .typography-block + .card, .block-grid > .card + .typography-block { margin-top: calc(var(--space-unit) - 1rem); }
 .block-grid > .aside-block + .aside-block { margin-top: 0.5rem; }
+
+/* A data chart stands alone (not `.typography-block`) so it can claim a
+   wider max-width than the block-grid's other open blocks: a bar chart
+   needs more horizontal room for readable bar widths and axis-label density
+   than 58rem gives a paragraph. 72rem splits the difference between that and
+   the full 12-column grid; the controller's browser review will confirm this
+   reads comfortably at typical widths. */
+.data-chart-figure, .data-chart-unavailable { grid-column: 1 / -1; max-width: 72rem; margin: 0; }
+.block-grid > .typography-block + .data-chart-figure, .block-grid > .data-chart-figure + .typography-block,
+.block-grid > .data-chart-figure + .data-chart-figure, .block-grid > .card + .data-chart-figure, .block-grid > .data-chart-figure + .card,
+.block-grid > .typography-block + .data-chart-unavailable, .block-grid > .data-chart-unavailable + .typography-block { margin-top: calc(var(--space-unit) - 1rem); }
+.data-chart-title { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
+.data-chart-plot { margin-top: var(--space-part); }
+.data-chart-empty-reason, .data-chart-unavailable-reason { max-width: 58ch; margin: 0.5rem 0 0; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+.data-chart-tooltip { background: var(--panel-featured); border: 1px solid var(--hair); border-radius: var(--r); padding: 0.6rem 0.85rem; }
+.data-chart-tooltip-value { margin: 0; color: var(--cream); font-size: 0.95rem; }
+.data-chart-tooltip-value strong { font-variant-numeric: tabular-nums; }
+.data-chart-tooltip-label { margin: 0.25rem 0 0; color: var(--muted); font-size: 0.85rem; }
+.data-chart-table { width: 100%; margin-top: 0.25rem; border-collapse: collapse; font-size: 0.93rem; }
+.data-chart-table th, .data-chart-table td { text-align: left; padding: 0.5rem 0.75rem 0.5rem 0; border-bottom: 1px solid var(--hair); }
+.data-chart-table th { color: var(--muted); font-weight: 700; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.data-chart-table td { color: var(--text); font-variant-numeric: tabular-nums; }
+
 .show-explorer { grid-column: 1 / -1; }
 .show-explorer > h2 { max-width: 30ch; margin-bottom: 1rem; }
 .explorer-units { display: grid; gap: var(--space-unit); }

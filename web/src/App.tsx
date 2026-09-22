@@ -2,6 +2,7 @@ import { type ComponentProps, type FormEvent, type KeyboardEvent, type ReactNode
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
+import { DataChart } from "./DataChart";
 
 type SetlistSections = ShowUnitBlock["sets"];
 type ListenActions = ShowUnitBlock["listen"];
@@ -1512,6 +1513,8 @@ function Block({
           <p>{block.message}</p>
         </aside>
       );
+    case "data_chart":
+      return <DataChart block={block} />;
   }
 }
 
