@@ -232,8 +232,35 @@ def _astrology_sign(requested_date: date) -> dict[str, str]:
     raise ValueError(f"Could not determine a zodiac sign for {requested_date.isoformat()}.")
 
 
+# The architecture doc's hard ceiling for one tool result (about 20,000
+# tokens). A result over it is transport damage, not an editorial choice:
+# trim the largest list and tell the model how much it did not see.
+TOOL_RESULT_CEILING_CHARS = 80_000
+
+
+def _dumps(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _largest_list(value: Any, path: str = "") -> tuple[str, list | None, int]:
+    best: tuple[str, list | None, int] = ("", None, 0)
+    if isinstance(value, dict):
+        children = ((f"{path}.{key}" if path else str(key), nested) for key, nested in value.items())
+    elif isinstance(value, list):
+        if len(value) > 1:
+            best = (path, value, len(_dumps(value)))
+        children = ((path, nested) for nested in value)
+    else:
+        return best
+    for child_path, nested in children:
+        candidate = _largest_list(nested, child_path)
+        if candidate[2] > best[2]:
+            best = candidate
+    return best
+
+
 def _json(value: Any) -> str:
-    """Serialize a lean tool payload for the local-model context window."""
+    """Serialize a lean tool payload, bounded by the tool result ceiling."""
 
     def compact(item: Any) -> Any:
         if isinstance(item, dict):
@@ -242,7 +269,34 @@ def _json(value: Any) -> str:
             return [compact(nested) for nested in item]
         return item
 
-    return json.dumps(compact(value), ensure_ascii=False, separators=(",", ":"))
+    payload = compact(value)
+    text = _dumps(payload)
+    if len(text) <= TOOL_RESULT_CEILING_CHARS or not isinstance(payload, dict):
+        return text
+    totals: dict[str, int] = {}
+    while len(text) > TOOL_RESULT_CEILING_CHARS:
+        path, items, _ = _largest_list(payload)
+        if items is None:
+            break
+        totals.setdefault(path, len(items))
+        keep = max(1, int(len(items) * TOOL_RESULT_CEILING_CHARS / len(text) * 0.9))
+        if keep >= len(items):
+            keep = len(items) - 1
+        del items[keep:]
+        payload["_truncated"] = [{"path": p, "kept": len(_value_at(payload, p)), "total": t} for p, t in totals.items()]
+        payload["_truncated_note"] = (
+            "This result was over the size ceiling, so the lists above were shortened. "
+            "To see the rest, narrow the request: a filter, a detail option, a smaller page, or a query_catalog query."
+        )
+        text = _dumps(payload)
+    return text
+
+
+def _value_at(payload: Any, path: str) -> list:
+    current = payload
+    for part in path.split("."):
+        current = current[part]
+    return current
 
 
 def _adapter_from_reviewed_source(source_id: str, *, needs_search: bool = False) -> DeadnetResearchAdapter | None:

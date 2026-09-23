@@ -189,19 +189,26 @@ def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_perso
 
 
 def test_guest_directory_reports_no_person_under_a_qualified_name():
-    """Every legacy qualifier row in the people table folds, not just one form."""
+    """Every legacy qualifier row in the people table folds, not just one form.
 
-    payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": ""})
-    )
+    An unfiltered query on this dataset returns a payload well over the tool
+    result ceiling and comes back truncated to its most recurring guests, so
+    this checks each folded identity through its own narrow query instead of
+    relying on catching every legacy row inside one unfiltered response.
+    """
 
-    reported_ids = {guest["person_id"] for guest in payload["guests"]}
-    assert not [guest for guest in payload["guests"] if QUALIFIER.search(guest["name"])]
-    assert not [
-        person_id
-        for person_id in reported_ids
-        if person_id.endswith(("-complete-show", "-songs-unknown"))
-    ]
+    tool = tool_by_name(CanonicalStore(), "search_guest_musicians")
+    reported_ids: set[str] = set()
+    for query in ("Airto Moreira", "Marvin Boxley", "Tom Constanten"):
+        payload = json.loads(tool.invoke({"query": query}))
+        assert "_truncated" not in payload
+        reported_ids |= {guest["person_id"] for guest in payload["guests"]}
+        assert not [guest for guest in payload["guests"] if QUALIFIER.search(guest["name"])]
+        assert not [
+            person_id
+            for person_id in reported_ids
+            if person_id.endswith(("-complete-show", "-songs-unknown"))
+        ]
     assert {"person-airto-moreira", "person-marvin-boxley", "person-tom-constanten"} <= reported_ids
 
 

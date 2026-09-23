@@ -203,9 +203,14 @@ def test_resolve_body_hydrates_a_person_roster_from_the_turn_payload():
     from deadbot.tools import build_tools
 
     guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    payload = json.loads(guest_tool.invoke({"query": ""}))
+    # "u" stays under the tool result ceiling while still returning a roster
+    # larger than an editorial grid, and it happens to include John Belushi
+    # (used below); an unfiltered query on this dataset is large enough to
+    # trip the ceiling and would be truncated before it reaches this test.
+    payload = json.loads(guest_tool.invoke({"query": "u"}))
     guests = payload["guests"]
     assert len(guests) > 12, "the roster exists for sets larger than an editorial grid"
+    assert "_truncated" not in payload
     grounded = finish.grounded_context([payload])
     entries = [
         finish.PersonRosterEntry(person_id=guest["person_id"], note="cartwheels" if guest["name"] == "John Belushi" else None)
