@@ -1,0 +1,89 @@
+{
+  "suite_id": "data-charts-tool-retrieval",
+  "version": "v1",
+  "description": "Deterministic retrieval baseline for the model-selected data_chart capability (aggregate_data). Each case supplies the user-facing question, the expected aggregate_data/search_entities call, and the answer failure to watch for during separate model-response review. Pinned counts (rows, total, excluded_count, setlist_coverage) were computed 2026-09-22 against the real canonical CSVs, immediately after the fix that made 'total' the corrected measure over the whole filtered set (not a sum of the grouped rows) and added per-year setlist_coverage to every performances-dataset result. These counts will move whenever a future data pass adds shows, performances, or setlists -- regenerate them against the live store rather than trusting this file blindly.",
+  "cases": [
+    {
+      "id": "dark-star-by-year",
+      "category": "trend-aggregation",
+      "question": "How often did they play Dark Star each year?",
+      "tool": "aggregate_data",
+      "arguments": {"dataset": "performances", "group_by": "year", "measure": "count", "song_id": "song-dark-star"},
+      "expected": {
+        "equals": {"metric_label": "Performances"},
+        "contains": {
+          "rows": {"year": 1969, "value": 70},
+          "setlist_coverage.by_year": {"year": 1968, "shows_with_setlist": 69}
+        }
+      },
+      "failure_conditions": [
+        "Does not add a data_chart to the body despite a clear year-over-year quantitative question.",
+        "States a per-year or total count in the chat answer that differs from the chart's rows.",
+        "Presents the thin 1966-1968 counts as complete performance history without noting how few of those years' shows have a surviving setlist."
+      ]
+    },
+    {
+      "id": "top-venues",
+      "category": "ranking-aggregation",
+      "question": "Which venues did the Dead play most often?",
+      "tool": "aggregate_data",
+      "arguments": {"dataset": "shows", "group_by": "venue", "measure": "count", "limit": 10},
+      "expected": {
+        "equals": {"excluded_count": 585},
+        "contains": {
+          "rows": {"id": "venue-oakland-alameda-county-coliseum-arena-oakland", "label": "Oakland-Alameda County Coliseum Arena", "value": 66}
+        }
+      },
+      "failure_conditions": [
+        "Invents a venue name or show count not present in the tool's rows.",
+        "States a ranking or count in the chat answer that disagrees with the chart.",
+        "Silently drops that the ranked list is limited to the top venues out of a much larger set (excluded_count)."
+      ]
+    },
+    {
+      "id": "song-variety-over-time",
+      "category": "corrected-total-aggregation",
+      "question": "How did the number of different songs they played change over the years?",
+      "tool": "aggregate_data",
+      "arguments": {"dataset": "performances", "group_by": "year", "measure": "distinct_songs"},
+      "expected": {
+        "equals": {"total": 436, "metric_label": "Songs"}
+      },
+      "failure_conditions": [
+        "States the sum of the per-year row values as the total number of distinct songs played, instead of the corrected total (a song repeated across years must not be double-counted).",
+        "Presents the very low early-year counts (e.g. 1965-1968) as evidence the band played few different songs, without noting how thin the surviving setlists are for those years.",
+        "Does not add a data_chart despite a clear change-over-time quantitative question."
+      ]
+    },
+    {
+      "id": "dark-star-vs-pitb",
+      "category": "multi-series-comparison",
+      "question": "Compare Dark Star and Playing in the Band over time.",
+      "tool": "aggregate_data",
+      "arguments": {"dataset": "performances", "group_by": "year", "measure": "count", "song_id": "song-dark-star"},
+      "expected": {
+        "equals": {"metric_label": "Performances"},
+        "contains": {
+          "rows": {"year": 1969, "value": 70}
+        }
+      },
+      "failure_conditions": [
+        "Fabricates a per-year or total count for either song instead of calling aggregate_data for each.",
+        "Answers with only one song's data while presenting it as if it addresses the comparison, without telling the visitor the other song is missing.",
+        "Renders both songs' counts in a single data_chart series when the tool only supports one aggregate_data call (one song filter) per chart, misrepresenting the second song's numbers."
+      ]
+    },
+    {
+      "id": "veneta-no-chart",
+      "category": "negative-case",
+      "question": "What happened at the Veneta show?",
+      "tool": "search_entities",
+      "arguments": {"query": "1972-08-27"},
+      "expected": {"contains": {"matches": {"entity_type": "show", "id": "gd-1972-08-27"}}},
+      "failure_conditions": [
+        "Adds a data_chart to a single-show narrative answer just because some quantitative fields (attendance, setlist counts) exist somewhere in the data.",
+        "Fabricates or resolves to the wrong show."
+      ]
+    }
+  ]
+}
