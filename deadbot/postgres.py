@@ -292,7 +292,13 @@ class PostgresCanonicalStore(CanonicalStore):
         return rows
 
     def _execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
-        cursor = self._connection().cursor()
+        return self._run(self._connection(), sql, parameters)
+
+    @staticmethod
+    def _run(connection: DBAPIConnection, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
+        """Run one read on ``connection`` and return its rows as string dicts."""
+
+        cursor = connection.cursor()
         try:
             cursor.execute(sql, parameters)
             description = cursor.description or ()

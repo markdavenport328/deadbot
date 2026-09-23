@@ -2,8 +2,11 @@
 
 The canonical database is a file built from the reviewed CSVs
 (``deadbot.sqlite_build``) and opened read-only and immutable: nothing locks,
-so every thread gets its own connection. The query layer is shared with the
-PostgreSQL store; only the placeholder style differs.
+so any thread may borrow any connection. Reads borrow from a small pool of
+idle connections and hand them back, so short-lived thread pools (LangGraph
+starts one per tools step) reuse connections instead of opening new ones.
+The query layer is shared with the PostgreSQL store; only the placeholder
+style differs.
 
 Stored answers need a writable home, so they live in a separate SQLite file
 in the temp directory. On Vercel that directory belongs to one instance and
@@ -14,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import queue
 import sqlite3
 import tempfile
 import threading
@@ -22,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from deadbot.postgres import PostgresCanonicalStore, _fresh_cached_payload
+from deadbot.sqlite_build import SQLITE_SCHEMA_VERSION
 
 DEFAULT_RESPONSE_CACHE_PATH = Path(
     os.getenv("DEADBOT_RESPONSE_CACHE_PATH")
@@ -75,15 +80,20 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
         {"official_releases", "recordings", "resource_performances", "resource_shows", "resource_songs"}
     )
 
+    # Idle read connections kept for reuse. LIFO hands back the most recently
+    # used connection, whose page cache is warmest. Extra connections opened
+    # under a burst are closed when returned to a full pool.
+    MAX_IDLE_CONNECTIONS = 8
+
     def __init__(self, path: Path | str, *, response_cache_path: Path | str | None = None) -> None:
         self.path = Path(path)
         if not self.path.is_file():
             raise FileNotFoundError(
                 f"Canonical SQLite database not found at {self.path}. Run `deadbot db-build`."
             )
-        self._local = threading.local()
-        self._opened: list[_Connection] = []
-        self._opened_lock = threading.Lock()
+        self._pool: queue.LifoQueue[_Connection] = queue.LifoQueue(maxsize=self.MAX_IDLE_CONNECTIONS)
+        self._pool_lock = threading.Lock()
+        self._checked_out = 0
         self._cache_path = Path(response_cache_path) if response_cache_path else DEFAULT_RESPONSE_CACHE_PATH
         self._cache_connection: sqlite3.Connection | None = None
         self._cache_lock = threading.Lock()
@@ -103,24 +113,93 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
         return _Connection(raw)
 
     def _connection(self) -> _Connection:
-        connection = getattr(self._local, "connection", None)
-        if connection is None:
-            connection = self._open()
-            self._local.connection = connection
-            with self._opened_lock:
-                self._opened.append(connection)
-        return connection
+        # Every read goes through ``_execute``'s borrow-and-return, and the
+        # response cache has its own file, so nothing should ask for a
+        # long-lived connection. Refuse rather than hand out one that leaks.
+        raise RuntimeError("SqliteCanonicalStore reads borrow pooled connections through _execute")
+
+    def _execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
+        with self._pool_lock:
+            pool = self._pool
+            try:
+                connection = pool.get_nowait()
+            except queue.Empty:
+                connection = None
+            self._checked_out += 1
+        try:
+            if connection is None:
+                connection = self._open()
+            return self._run(connection, sql, parameters)
+        finally:
+            self._give_back(pool, connection)
+
+    def _give_back(self, pool: queue.LifoQueue[_Connection], connection: _Connection | None) -> None:
+        with self._pool_lock:
+            self._checked_out -= 1
+            if connection is None:
+                return
+            # ``close()`` swaps in a fresh pool; a connection borrowed from the
+            # old one is closed rather than returned to a pool nobody drains.
+            if pool is self._pool:
+                try:
+                    pool.put_nowait(connection)
+                    return
+                except queue.Full:
+                    pass
+        connection.close()
+
+    @property
+    def open_connection_count(self) -> int:
+        """Read connections currently open: idle in the pool plus checked out."""
+
+        with self._pool_lock:
+            return self._pool.qsize() + self._checked_out
 
     def close(self) -> None:
-        with self._opened_lock:
-            opened, self._opened = self._opened, []
-            self._local = threading.local()
-        for connection in opened:
-            connection.close()
+        with self._pool_lock:
+            idle, self._pool = self._pool, queue.LifoQueue(maxsize=self.MAX_IDLE_CONNECTIONS)
+        while True:
+            try:
+                idle.get_nowait().close()
+            except queue.Empty:
+                break
         with self._cache_lock:
             if self._cache_connection is not None:
                 self._cache_connection.close()
                 self._cache_connection = None
+
+    def verify_ready(self) -> None:
+        """Fail closed unless this file was built by the current builder and holds the catalog."""
+
+        version_rows = self._query("SELECT schema_version FROM deadbot_schema_metadata")
+        version = int(version_rows[0]["schema_version"]) if version_rows else 0
+        if version != SQLITE_SCHEMA_VERSION:
+            raise RuntimeError(
+                f"SQLite schema version {version} is not ready; expected {SQLITE_SCHEMA_VERSION}. "
+                "Run `deadbot db-build`."
+            )
+        missing = [
+            label
+            for label, table in (
+                ("shows", "shows"),
+                ("performances", "performances"),
+                ("selection evidence", "selection_evidence"),
+            )
+            if self.row_count(table) <= 0
+        ]
+        if missing:
+            raise RuntimeError("SQLite is not ready to serve Deadbot; missing " + ", ".join(missing) + ".")
+
+    def data_version(self) -> str:
+        """The shared fingerprint plus the build's input fingerprint.
+
+        Row counts miss a same-count edit to the CSVs; the input fingerprint
+        changes with any edit, so stored answers built on old data go stale.
+        """
+
+        rows = self._query("SELECT input_fingerprint FROM deadbot_schema_metadata")
+        fingerprint = rows[0]["input_fingerprint"] if rows else ""
+        return f"{super().data_version()}|input_fingerprint={fingerprint}"
 
     # ---- response cache -------------------------------------------------
 

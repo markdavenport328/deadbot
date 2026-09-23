@@ -1,8 +1,12 @@
+import os
+import shutil
+import stat
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
 from deadbot.data import CanonicalStore
+from deadbot.sqlite_build import SQLITE_SCHEMA_VERSION
 from deadbot.sqlite_store import SqliteCanonicalStore
 
 
@@ -68,3 +72,72 @@ def test_response_cache_round_trip_and_expiry(store):
 def test_store_reopens_after_close(store):
     store.close()
     assert store.resolve_song("Dark Star")
+
+
+def test_short_lived_thread_pools_do_not_leak_connections(store):
+    # LangGraph starts a fresh thread pool for every tools step; each round
+    # here stands in for one question's worth of parallel tool calls.
+    for _ in range(50):
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(lambda query: (store.resolve_song("Dark Star"), store.search_shows(query)), ["1977", "Cornell", "1972", "Veneta"]))
+    assert store.open_connection_count <= SqliteCanonicalStore.MAX_IDLE_CONNECTIONS == 8
+
+
+def test_a_connection_returned_after_close_is_closed_not_pooled(store):
+    store.resolve_song("Dark Star")
+    assert store.open_connection_count >= 1
+    old_pool = store._pool
+    borrowed = old_pool.get_nowait()
+    store._checked_out += 1
+    store.close()
+    store._give_back(old_pool, borrowed)
+    assert store.open_connection_count == 0
+    assert old_pool.qsize() == 0
+    with pytest.raises(Exception):
+        borrowed.raw.execute("SELECT 1")
+    assert store.resolve_song("Dark Star")
+
+
+def test_close_drains_idle_connections(store):
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(lambda _: store.resolve_song("Dark Star"), range(16)))
+    assert store.open_connection_count >= 1
+    store.close()
+    assert store.open_connection_count == 0
+
+
+def test_verify_ready_passes_on_a_built_file(store):
+    store.verify_ready()
+
+
+def test_verify_ready_names_sqlite_on_a_version_mismatch(store, monkeypatch):
+    monkeypatch.setattr("deadbot.sqlite_store.SQLITE_SCHEMA_VERSION", SQLITE_SCHEMA_VERSION + 1)
+    with pytest.raises(RuntimeError, match="SQLite schema version"):
+        store.verify_ready()
+
+
+def test_data_version_carries_the_build_input_fingerprint(store):
+    fingerprint = store._query("SELECT input_fingerprint FROM deadbot_schema_metadata")[0]["input_fingerprint"]
+    assert fingerprint
+    assert store.data_version().endswith(f"|input_fingerprint={fingerprint}")
+    assert "shows=" in store.data_version()
+
+
+def test_opens_from_a_read_only_directory(built_sqlite, tmp_path):
+    folder = tmp_path / "readonly"
+    folder.mkdir()
+    database = folder / "deadbot.sqlite"
+    shutil.copy(built_sqlite, database)
+    os.chmod(database, 0o444)
+    os.chmod(folder, 0o555)
+    try:
+        store = SqliteCanonicalStore(database, response_cache_path=tmp_path / "cache.sqlite")
+        try:
+            assert store.resolve_song("Dark Star")
+        finally:
+            store.close()
+        leftovers = [path.name for path in folder.iterdir() if path.name != "deadbot.sqlite"]
+        assert not any(name.endswith(("-journal", "-wal", "-shm")) for name in leftovers), leftovers
+    finally:
+        os.chmod(folder, stat.S_IRWXU)
+        os.chmod(database, stat.S_IRUSR | stat.S_IWUSR)
