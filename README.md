@@ -77,23 +77,25 @@ The system has four layers:
 
 ### Prerequisites
 
-Python 3.11+, Node.js 18+, PostgreSQL, and either [Ollama](https://ollama.ai) (local) or an OpenAI API key.
+Python 3.11+, Node.js 18+, and either [Ollama](https://ollama.ai) (local) or an OpenAI API key.
 
 ### Setup
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev,postgres]'
+.venv/bin/python -m pip install -e '.[dev]'
 ```
 
-### Import the catalog
+### Build the catalog
 
-```bash
-export DEADBOT_DATABASE_URL='postgresql://deadbot:deadbot@localhost:5432/deadbot'
-.venv/bin/deadbot db-import --rebuild
-```
+Deadbot serves the catalog from `build/deadbot.sqlite`, a file built from
+`data/canonical/*.csv`. You don't need a database server: the first
+`deadbot serve`, `chat` or `evaluate` builds it (about two seconds), and any
+later run rebuilds it when the checked-out CSVs change. To build it by hand:
 
-The importer validates every CSV, creates a content-addressed manifest, and commits the schema and data as one transaction. Without `--rebuild`, existing rows win and new rows merge in.
+    .venv/bin/python -m deadbot.cli db-build
+
+Vercel builds the same file in its build step and bundles it with the function.
 
 ### Run the web experience
 
