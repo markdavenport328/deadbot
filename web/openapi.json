@@ -605,17 +605,14 @@
       },
       "DataChartBlock": {
         "additionalProperties": false,
-        "description": "A model-selected chart, hydrated entirely from one verified\naggregate_data result.\n\nEvery number here is server-computed from that exact result; the\nmodel chose only which aggregation to reference, how to frame it\n(title/note), and how to plot it (chart/orientation/field mapping).",
+        "description": "A model-selected chart, hydrated entirely from one verified\naggregate_data result.\n\nEvery number here is server-computed from that exact result; the\nmodel chose only which aggregation to reference and how to frame it\n(title/note). The server derives orientation from the dimension\ncolumn's type (temporal -> vertical, else horizontal) and finds the\ndimension column itself (the one whose key isn't \"value\") at render\ntime, so no field mapping travels through this block at all.",
         "properties": {
           "aggregation_id": {
             "title": "Aggregation Id",
             "type": "string"
           },
           "chart": {
-            "enum": [
-              "bar",
-              "stacked_bar"
-            ],
+            "const": "bar",
             "title": "Chart",
             "type": "string"
           },
@@ -689,10 +686,6 @@
             "title": "Rows",
             "type": "array"
           },
-          "scope_note": {
-            "title": "Scope Note",
-            "type": "string"
-          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -705,36 +698,6 @@
             "const": "data_chart",
             "title": "Type",
             "type": "string"
-          },
-          "x_field": {
-            "title": "X Field",
-            "type": "string"
-          },
-          "x_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "X Label"
-          },
-          "y_field": {
-            "title": "Y Field",
-            "type": "string"
-          },
-          "y_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Y Label"
           }
         },
         "required": [
@@ -743,11 +706,8 @@
           "title",
           "chart",
           "orientation",
-          "x_field",
-          "y_field",
           "columns",
           "metric_label",
-          "scope_note",
           "total",
           "excluded_count"
         ],

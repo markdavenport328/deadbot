@@ -229,36 +229,26 @@ def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
 def _data_chart(
     payload: dict[str, Any],
     *,
-    chart: str,
-    orientation: str,
-    x_field: str,
-    y_field: str,
-    series_field: str | None,
     title: str | None,
     note: str | None,
-    x_label: str | None,
-    y_label: str | None,
 ) -> DataChartBlock | None:
     """Hydrate a data_chart block from a verified aggregate_data payload.
 
     ``payload`` is the exact JSON an aggregate_data tool call returned
-    this turn; nothing here re-derives or re-computes a number. Returns
-    None for any structurally invalid chart request (unknown/mismatched
-    field names, an orientation that doesn't match the aggregation's
-    dimension type, a still-unsupported stacked_bar/series request, or a
-    non-finite value) so an invalid reference is dropped exactly like any
-    other unresolvable reference. A genuinely empty but well-formed
-    aggregation (rows == [], empty_reason set) still hydrates.
+    this turn; nothing here re-derives or re-computes a number. The model
+    chooses only which aggregation to reference and how to frame it
+    (title/note); chart, orientation and the field mapping are derived
+    entirely from the payload's own columns, never asked of the model.
+    Returns None for any structurally invalid payload (a malformed
+    columns/rows shape or a non-finite value) so an invalid reference is
+    dropped exactly like any other unresolvable reference. A genuinely
+    empty but well-formed aggregation (rows == [], empty_reason set)
+    still hydrates.
     """
     columns = payload.get("columns")
     rows = payload.get("rows")
     aggregation_id = payload.get("aggregation_id")
     metric_label = payload.get("metric_label")
-    # aggregate_data no longer returns scope_note (see docs/AGENTS.md: the
-    # model reasons over real facts, not a fixed caveat string). DataChartBlock
-    # still requires the field until Task B removes it; pass a placeholder
-    # here rather than reading one from the payload.
-    scope_note = ""
     total = payload.get("total")
     excluded_count = payload.get("excluded_count")
     if (
@@ -285,26 +275,13 @@ def _data_chart(
             return None
 
     dimension_column = next((column for column in parsed_columns if column.key != "value"), None)
-    # x_field always names the dimension column; y_field is always "value",
-    # regardless of chart orientation. This is the actual field-role
-    # convention (see DataChartRef/DataChartBlock docs), not merely "both are
-    # real column keys that differ" -- a transposed x_field/y_field pair
-    # would otherwise still validate as two distinct real column keys.
-    if dimension_column is None or x_field != dimension_column.key or y_field != "value":
+    if dimension_column is None:
         return None
-    if series_field is not None:
-        return None  # no series dimension exists in this batch's aggregation contract
-    # Only "bar" is supported: "stacked_bar" needs a series dimension the
-    # contract can't yet produce, and this also rejects any out-of-vocabulary
-    # chart value before it reaches DataChartBlock's Literal validation.
-    if chart != "bar":
-        return None
-
-    wants_vertical = dimension_column.type == "temporal"
-    if wants_vertical and orientation != "vertical":
-        return None
-    if not wants_vertical and orientation != "horizontal":
-        return None
+    # The one structural fact this aggregation contract encodes: a temporal
+    # dimension (a year series) reads as bars growing upward over time;
+    # any other dimension (song, venue, city, guest) reads as ranked bars
+    # growing rightward. This is derived, never a model choice.
+    orientation = "vertical" if dimension_column.type == "temporal" else "horizontal"
 
     for row in rows:
         if not isinstance(row, dict):
@@ -331,16 +308,11 @@ def _data_chart(
             aggregation_id=aggregation_id,
             title=resolved_title,
             note=note,
-            chart=chart,
+            chart="bar",
             orientation=orientation,
-            x_field=x_field,
-            y_field=y_field,
-            x_label=x_label,
-            y_label=y_label,
             columns=parsed_columns,
             rows=rows,
             metric_label=metric_label,
-            scope_note=scope_note,
             total=total,
             excluded_count=excluded_count,
             date_range=date_range,

@@ -488,26 +488,22 @@ class DataChartBlock(ExperienceModel):
     aggregate_data result.
 
     Every number here is server-computed from that exact result; the
-    model chose only which aggregation to reference, how to frame it
-    (title/note), and how to plot it (chart/orientation/field mapping).
-    x_field is always the aggregation's dimension column key; y_field is
-    always "value", regardless of orientation.
+    model chose only which aggregation to reference and how to frame it
+    (title/note). The server derives orientation from the dimension
+    column's type (temporal -> vertical, else horizontal) and finds the
+    dimension column itself (the one whose key isn't "value") at render
+    time, so no field mapping travels through this block at all.
     """
 
     type: Literal["data_chart"]
     aggregation_id: str
     title: str
     note: str | None = None
-    chart: Literal["bar", "stacked_bar"]
+    chart: Literal["bar"]
     orientation: Literal["vertical", "horizontal"]
-    x_field: str
-    y_field: str
-    x_label: str | None = None
-    y_label: str | None = None
     columns: list[DataChartColumn] = Field(min_length=2, max_length=2)
     rows: list[dict[str, object]] = Field(default_factory=list, max_length=200)
     metric_label: str
-    scope_note: str
     total: int
     excluded_count: int
     date_range: dict[str, int] | None = None

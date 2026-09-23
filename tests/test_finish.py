@@ -1192,7 +1192,6 @@ def _hand_built_shows_year_payload() -> dict:
         ],
         "rows": [{"year": 1972, "value": 5}],
         "metric_label": "Known shows",
-        "scope_note": "Based on shows represented in Deadbot",
         "total": 5,
         "excluded_count": 0,
     }
@@ -1201,120 +1200,31 @@ def _hand_built_shows_year_payload() -> dict:
 def test_data_chart_hydrates_a_year_series_from_a_real_aggregate_data_payload():
     store = CanonicalStore()
     payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    block = composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    )
+    block = composition._data_chart(payload, title=None, note=None)
     assert block is not None
     assert block.type == "data_chart"
+    assert block.chart == "bar"
     assert block.rows == payload["rows"]
     assert block.total == payload["total"]
     assert block.metric_label == payload["metric_label"]
     assert block.title == payload["metric_label"]
 
 
-def test_data_chart_rejects_horizontal_orientation_for_a_temporal_dimension():
+def test_data_chart_derives_vertical_orientation_for_a_temporal_dimension():
     store = CanonicalStore()
     payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="horizontal",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    block = composition._data_chart(payload, title=None, note=None)
+    assert block is not None
+    assert block.orientation == "vertical"
 
 
-def test_data_chart_rejects_vertical_but_accepts_horizontal_for_a_categorical_dimension():
+def test_data_chart_derives_horizontal_orientation_for_a_categorical_dimension():
     store = CanonicalStore()
     payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "performances", "group_by": "song", "measure": "count"}))
-    common = dict(chart="bar", x_field="label", y_field="value", series_field=None, title=None, note=None, x_label=None, y_label=None)
-    assert composition._data_chart(payload, orientation="vertical", **common) is None
-    block = composition._data_chart(payload, orientation="horizontal", **common)
+    block = composition._data_chart(payload, title=None, note=None)
     assert block is not None
     assert block.orientation == "horizontal"
     assert block.rows == payload["rows"]
-
-
-def test_data_chart_rejects_a_field_name_not_present_in_the_payload_s_columns():
-    store = CanonicalStore()
-    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="not_a_real_column",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
-
-
-def test_data_chart_rejects_stacked_bar_on_an_otherwise_valid_payload():
-    store = CanonicalStore()
-    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    assert composition._data_chart(
-        payload,
-        chart="stacked_bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
-
-
-def test_data_chart_rejects_an_out_of_vocabulary_chart_value_instead_of_raising():
-    store = CanonicalStore()
-    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    assert composition._data_chart(
-        payload,
-        chart="pie",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
-
-
-def test_data_chart_rejects_any_series_field():
-    store = CanonicalStore()
-    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field="anything",
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
 
 
 def test_data_chart_hydrates_a_genuinely_empty_result_with_its_empty_reason_carried_through():
@@ -1325,18 +1235,7 @@ def test_data_chart_hydrates_a_genuinely_empty_result_with_its_empty_reason_carr
         )
     )
     assert payload["rows"] == [] and payload.get("empty_reason")
-    block = composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    )
+    block = composition._data_chart(payload, title=None, note=None)
     assert block is not None
     assert block.rows == []
     assert block.empty_reason == payload["empty_reason"]
@@ -1345,134 +1244,47 @@ def test_data_chart_hydrates_a_genuinely_empty_result_with_its_empty_reason_carr
 def test_data_chart_rejects_a_non_numeric_row_value():
     payload = _hand_built_shows_year_payload()
     payload["rows"] = [{"year": 1972, "value": "five"}]
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    assert composition._data_chart(payload, title=None, note=None) is None
 
 
 def test_data_chart_rejects_a_non_finite_row_value():
     payload = _hand_built_shows_year_payload()
     payload["rows"] = [{"year": 1972, "value": float("nan")}]
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    assert composition._data_chart(payload, title=None, note=None) is None
 
 
 def test_data_chart_rejects_more_than_200_rows():
     payload = _hand_built_shows_year_payload()
     payload["rows"] = [{"year": 1900 + i, "value": 1} for i in range(201)]
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    assert composition._data_chart(payload, title=None, note=None) is None
 
 
 def test_data_chart_title_falls_back_to_metric_label_and_keeps_a_supplied_title():
     payload = _hand_built_shows_year_payload()
-    common = dict(chart="bar", orientation="vertical", x_field="year", y_field="value", series_field=None, note=None, x_label=None, y_label=None)
-    default_block = composition._data_chart(payload, title=None, **common)
+    default_block = composition._data_chart(payload, title=None, note=None)
     assert default_block is not None
     assert default_block.title == payload["metric_label"]
-    custom_block = composition._data_chart(payload, title="Shows per year", **common)
+    custom_block = composition._data_chart(payload, title="Shows per year", note=None)
     assert custom_block is not None
     assert custom_block.title == "Shows per year"
-
-
-def test_data_chart_rejects_a_transposed_x_field_and_y_field():
-    """x_field must be the dimension column's key and y_field must be "value" --
-    not merely two distinct real column keys, which a swapped pair also satisfies."""
-
-    store = CanonicalStore()
-    payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="value",
-        y_field="year",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
 
 
 def test_data_chart_rejects_a_date_range_with_an_unexpected_extra_key_instead_of_raising():
     payload = _hand_built_shows_year_payload()
     payload["date_range"] = {"from": 1968, "to": 1995, "junk": "x"}
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    assert composition._data_chart(payload, title=None, note=None) is None
 
 
 def test_data_chart_rejects_a_row_with_a_non_string_key_instead_of_raising():
     payload = _hand_built_shows_year_payload()
     payload["rows"] = [{123: "not a string key", "value": 5}]
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    assert composition._data_chart(payload, title=None, note=None) is None
 
 
 def test_data_chart_rejects_a_column_with_a_non_string_key_instead_of_raising_typeerror():
     payload = _hand_built_shows_year_payload()
     payload["columns"] = [{123: "x"}, {"key": "value", "label": "Known shows", "type": "quantitative"}]
-    assert composition._data_chart(
-        payload,
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
-        series_field=None,
-        title=None,
-        note=None,
-        x_label=None,
-        y_label=None,
-    ) is None
+    assert composition._data_chart(payload, title=None, note=None) is None
 
 
 # --- DataChartRef: schema, grounding, and hydration -------------------------
@@ -1490,10 +1302,6 @@ def test_finish_plan_accepts_a_data_chart_ref_in_a_group():
                         {
                             "type": "data_chart",
                             "aggregation_id": "agg:handbuilt0000",
-                            "chart": "bar",
-                            "orientation": "vertical",
-                            "x_field": "year",
-                            "y_field": "value",
                         },
                     ],
                 }
@@ -1504,22 +1312,19 @@ def test_finish_plan_accepts_a_data_chart_ref_in_a_group():
     assert plan.groups[0].items[0].aggregation_id == "agg:handbuilt0000"
 
 
-def test_data_chart_ref_rejects_an_out_of_vocabulary_chart_value():
+def test_data_chart_ref_rejects_an_unrecognized_field():
     from pydantic import ValidationError
 
     try:
         finish.DataChartRef(
             type="data_chart",
             aggregation_id="agg:handbuilt0000",
-            chart="line",
-            orientation="vertical",
-            x_field="year",
-            y_field="value",
+            chart="bar",
         )
     except ValidationError:
         pass
     else:
-        raise AssertionError("chart is a closed vocabulary")
+        raise AssertionError("chart is no longer part of DataChartRef's schema")
 
 
 def test_resolve_body_resolves_a_data_chart_from_the_turn_s_aggregate_data_payload():
@@ -1537,10 +1342,6 @@ def test_resolve_body_resolves_a_data_chart_from_the_turn_s_aggregate_data_paylo
                     finish.DataChartRef(
                         type="data_chart",
                         aggregation_id=payload["aggregation_id"],
-                        chart="bar",
-                        orientation="vertical",
-                        x_field="year",
-                        y_field="value",
                     )
                 ],
             )
@@ -1549,6 +1350,7 @@ def test_resolve_body_resolves_a_data_chart_from_the_turn_s_aggregate_data_paylo
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
     assert blocks[0].type == "data_chart"
     assert blocks[0].aggregation_id == payload["aggregation_id"]
+    assert blocks[0].orientation == "vertical"
 
 
 def test_an_ungrounded_aggregation_id_is_dropped():
@@ -1556,10 +1358,6 @@ def test_an_ungrounded_aggregation_id_is_dropped():
         {
             "type": "data_chart",
             "aggregation_id": "agg:madeup00000000",
-            "chart": "bar",
-            "orientation": "vertical",
-            "x_field": "year",
-            "y_field": "value",
         }
     ]
     plan = finish.FinishPlan(
@@ -1578,10 +1376,6 @@ def test_a_grounded_aggregation_id_with_no_matching_payload_is_dropped():
     item = finish.DataChartRef(
         type="data_chart",
         aggregation_id="agg:handbuilt0000",
-        chart="bar",
-        orientation="vertical",
-        x_field="year",
-        y_field="value",
     )
     # Grounded by id, but the payload list carries nothing matching it —
     # a mismatched pair, not a missing lookup.
@@ -1590,17 +1384,14 @@ def test_a_grounded_aggregation_id_with_no_matching_payload_is_dropped():
     assert blocks == []
 
 
-def test_a_data_chart_with_mismatched_orientation_is_dropped_through_resolve_items():
+def test_a_data_chart_with_a_malformed_payload_is_dropped_through_resolve_items():
     store = CanonicalStore()
     payload = _hand_built_shows_year_payload()
+    payload["rows"] = [{"year": 1972, "value": "not a number"}]
     grounded = finish.grounded_context([payload])
     item = finish.DataChartRef(
         type="data_chart",
         aggregation_id=payload["aggregation_id"],
-        chart="bar",
-        orientation="horizontal",
-        x_field="year",
-        y_field="value",
     )
     blocks, _ = finish.resolve_items([item], grounded, [payload], store)
     assert blocks == []
@@ -1622,10 +1413,6 @@ def test_resolve_groups_preserves_order_with_a_data_chart_mixed_among_units():
                     finish.DataChartRef(
                         type="data_chart",
                         aggregation_id=agg_payload["aggregation_id"],
-                        chart="bar",
-                        orientation="vertical",
-                        x_field="year",
-                        y_field="value",
                     ),
                 ],
             )
@@ -1653,10 +1440,6 @@ def test_resolve_groups_leaves_a_data_chart_unchanged_in_a_comparison_group_with
                     finish.DataChartRef(
                         type="data_chart",
                         aggregation_id=agg_payload["aggregation_id"],
-                        chart="bar",
-                        orientation="vertical",
-                        x_field="year",
-                        y_field="value",
                     ),
                 ],
             )

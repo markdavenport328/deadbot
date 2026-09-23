@@ -179,31 +179,21 @@ _NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretatio
 
 
 class DataChartRef(_Ref):
-    """A chart built from one aggregate_data result called this turn.
-
-    Choose bar for any result today — stacked_bar is reserved for a
-    future aggregation with more than one series and is always dropped
-    until then. orientation must be vertical for a year-grouped result
-    and horizontal for a ranked category (song, venue, city, guest).
-    x_field/y_field must be exact column keys from that aggregate_data
-    result's own columns list.
+    """A chart of one aggregate_data result from this turn. The server
+    draws it: bars over time for a year result, ranked bars for a song,
+    venue, city or guest result. Your title names the pattern; your note
+    says what it means.
     """
 
     type: Literal["data_chart"]
     aggregation_id: str
-    chart: Literal["bar", "stacked_bar"] = Field(
-        description="bar for any result today; stacked_bar is not yet available and is always dropped."
+    title: str | None = Field(
+        default=None,
+        description=(
+            'The pattern the visitor should see -- "Dark Star\'s 1969 peak" -- not the metric it came from '
+            '("Performances by year"). Omit it and the aggregation\'s own metric label is the title.'
+        ),
     )
-    orientation: Literal["vertical", "horizontal"] = Field(
-        description="vertical for a year-grouped result, horizontal for a ranked category."
-    )
-    x_field: str = Field(
-        description="The dimension column's exact key from this aggregate_data result's columns (the one whose type is not quantitative)."
-    )
-    y_field: str = Field(description='Always the exact key "value" from this aggregate_data result\'s columns.')
-    series_field: str | None = Field(default=None, description="Not yet supported; leave unset.")
-    x_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
-    y_label: str | None = Field(default=None, description="Optional axis label overriding the column's default label.")
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
 
 
@@ -909,15 +899,8 @@ def _resolve_reference(
             return None, []
         block = composition._data_chart(
             payload,
-            chart=item.chart,
-            orientation=item.orientation,
-            x_field=item.x_field,
-            y_field=item.y_field,
-            series_field=item.series_field,
             title=item.title,
             note=item.note,
-            x_label=item.x_label,
-            y_label=item.y_label,
         )
         return (block, []) if block else (None, [])
 

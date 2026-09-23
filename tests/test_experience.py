@@ -782,14 +782,9 @@ def test_data_chart_block_validates_a_full_record():
         note="1972 was the busiest year.",
         chart="bar",
         orientation="vertical",
-        x_field="year",
-        y_field="value",
-        x_label="Year",
-        y_label="Shows",
         columns=_data_chart_columns(),
         rows=[{"year": 1972, "value": 84}, {"year": 1973, "value": 76}],
         metric_label="Shows",
-        scope_note="All known shows.",
         total=160,
         excluded_count=0,
         date_range={"from": 1972, "to": 1973},
@@ -807,12 +802,9 @@ def test_data_chart_block_rejects_an_unrecognized_field():
                 "title": "Shows per year",
                 "chart": "bar",
                 "orientation": "vertical",
-                "x_field": "year",
-                "y_field": "value",
                 "columns": [c.model_dump() for c in _data_chart_columns()],
                 "rows": [],
                 "metric_label": "Shows",
-                "scope_note": "All known shows.",
                 "total": 160,
                 "excluded_count": 0,
                 "bogus_field": "not allowed",
@@ -824,6 +816,28 @@ def test_data_chart_block_rejects_an_unrecognized_field():
         raise AssertionError("An unrecognized field on DataChartBlock must be rejected")
 
 
+def test_data_chart_block_rejects_a_non_bar_chart_value():
+    try:
+        experience.DataChartBlock.model_validate(
+            {
+                "type": "data_chart",
+                "aggregation_id": "agg-1",
+                "title": "Shows per year",
+                "chart": "stacked_bar",
+                "orientation": "vertical",
+                "columns": [c.model_dump() for c in _data_chart_columns()],
+                "rows": [],
+                "metric_label": "Shows",
+                "total": 160,
+                "excluded_count": 0,
+            }
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("chart is a closed vocabulary of exactly one value: bar")
+
+
 def test_data_chart_columns_must_be_exactly_two():
     base = dict(
         type="data_chart",
@@ -831,11 +845,8 @@ def test_data_chart_columns_must_be_exactly_two():
         title="Shows per year",
         chart="bar",
         orientation="vertical",
-        x_field="year",
-        y_field="value",
         rows=[],
         metric_label="Shows",
-        scope_note="All known shows.",
         total=160,
         excluded_count=0,
     )
@@ -856,12 +867,9 @@ def test_data_chart_rows_cap_at_two_hundred():
             title="Shows per year",
             chart="bar",
             orientation="vertical",
-            x_field="year",
-            y_field="value",
             columns=_data_chart_columns(),
             rows=[{"year": 1900 + n, "value": n} for n in range(201)],
             metric_label="Shows",
-            scope_note="All known shows.",
             total=160,
             excluded_count=0,
         )
