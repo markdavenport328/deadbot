@@ -23,9 +23,30 @@ def test_sqlite_path_is_configurable(monkeypatch, tmp_path):
 
 def test_sqlite_store_is_created_from_a_built_file(built_sqlite, monkeypatch):
     monkeypatch.setenv("VERCEL", "1")  # trust the file as a deployment would
+
+    def must_not_rebuild(*_args, **_kwargs):
+        raise AssertionError("ensure_current ran on Vercel")
+
+    monkeypatch.setattr("deadbot.sqlite_build.ensure_current", must_not_rebuild)
     store = create_canonical_store(Settings(data_store="sqlite", sqlite_path=built_sqlite))
     try:
         assert store.resolve_song("Dark Star")
+    finally:
+        store.close()
+
+
+def test_local_sqlite_store_is_refreshed_before_it_opens(built_sqlite, monkeypatch):
+    monkeypatch.delenv("VERCEL", raising=False)
+    calls = []
+
+    def record(path, *_args, **_kwargs):
+        calls.append(path)
+        return path
+
+    monkeypatch.setattr("deadbot.sqlite_build.ensure_current", record)
+    store = create_canonical_store(Settings(data_store="sqlite", sqlite_path=built_sqlite))
+    try:
+        assert calls == [built_sqlite]
     finally:
         store.close()
 

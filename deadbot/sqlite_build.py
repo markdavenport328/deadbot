@@ -129,7 +129,8 @@ def build_database(
 
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    staging = output.with_name(output.name + ".building")
+    # One staging file per process, so two builds at once never share one.
+    staging = output.with_name(f"{output.name}.building.{os.getpid()}")
     staging.unlink(missing_ok=True)
     db = sqlite3.connect(staging)
     try:
