@@ -700,7 +700,7 @@ const blocks: ExperienceResponse = fixture(
       empty_reason: null,
       excluded_count: 0,
       metric_label: "Performances",
-      note: "Counts documented performances only; a handful of undated tapes are excluded.",
+      note: "A few undated tapes aren't counted here.",
       orientation: "vertical",
       rows: [
         { year: 1968, value: 9 },
@@ -711,7 +711,7 @@ const blocks: ExperienceResponse = fixture(
         { year: 1973, value: 31 },
         { year: 1974, value: 18 }
       ],
-      title: "Dark Star performances by year, 1968–1974",
+      title: "Dark Star nearly vanished in 1971, then peaked in 1973",
       total: 127
     },
     // Categorical (ranked) example, transposed to the horizontal/rightward-bar
@@ -737,7 +737,7 @@ const blocks: ExperienceResponse = fixture(
         { label: "Madison Square Garden", value: 5 },
         { label: "Boston Music Hall", value: 4 }
       ],
-      title: "Where Dark Star was played most",
+      title: "Winterland Arena hosted Dark Star more than anywhere else",
       // total is computed server-side over the full, unlimited result set
       // (all 24 venues), not just these top five (34) -- the 19 excluded
       // venues account for the remainder.

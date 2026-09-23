@@ -893,6 +893,22 @@ def _missing_record_tables() -> dict[str, list[dict[str, Any]]]:
             "event_name": "",
             "notes": "",
         },
+        {
+            "show_id": "show-whitespace-venue-name",
+            "show_date": "1970-01-03",
+            "venue_id": "venue-whitespace-name",
+            "tour_name": "",
+            "event_name": "",
+            "notes": "",
+        },
+    ]
+    tables["venues"] = tables["venues"] + [
+        {
+            "venue_id": "venue-whitespace-name",
+            "name": "  Fillmore West  ",
+            "city": "",
+            "state_region": "",
+        },
     ]
     tables["performances"] = tables["performances"] + [
         {
@@ -968,6 +984,23 @@ def test_aggregate_venue_grouping_falls_back_to_id_then_unknown(missing_record_s
     assert rows_by_id["venue-not-in-venues"] == "venue-not-in-venues"
     # show-blank-venue's venue_id is itself blank: label falls all the way to "Unknown".
     assert rows_by_id[""] == "Unknown"
+
+
+def test_aggregate_venue_grouping_trims_a_whitespace_only_padded_name(missing_record_store, missing_record_csv_store):
+    """A venue name that is only leading/trailing whitespace around real
+    content ("  Fillmore West  ") must render trimmed on both sides, matching
+    data.py's label_with_fallback (which calls .strip() on the name before
+    falling back to id then "Unknown"). Before this fix, Postgres's
+    NULLIF(name, '') check saw the padded string as non-empty and rendered it
+    literally, while the CSV path stripped it first."""
+
+    request = aggregation.AggregationRequest(
+        dataset="shows", group_by="venue", measure="count", limit=50,
+        filters={"venue_id": "venue-whitespace-name"},
+    )
+    payload = missing_record_store.aggregate(request).to_payload()
+    assert payload == missing_record_csv_store.aggregate(request).to_payload()
+    assert payload["rows"] and payload["rows"][0]["label"] == "Fillmore West"
 
 
 def test_aggregate_song_grouping_falls_back_to_id_when_the_song_record_is_missing(

@@ -168,6 +168,15 @@ describe("DataChart", () => {
     expect(bars.length).toBeGreaterThan(0);
     bars.forEach((bar) => {
       expect(bar.getAttribute("fill")).toBe("var(--muted)");
+      // recharts' Rectangle draws each rounded corner as an SVG elliptical
+      // arc "A rx,ry,0,0,sweep,..." -- a radius of 2 on exactly two of the
+      // four corners (orientation="horizontal" passes radius={[0, 2, 2, 0]},
+      // rounding only the data-end corners) shows up as exactly two
+      // "A 2,2,0,0," arcs in the path's `d` attribute, confirmed directly
+      // against this component's rendered output for both orientations.
+      const d = bar.getAttribute("d") ?? "";
+      const roundedCorners = d.match(/A 2,2,0,0,/g) ?? [];
+      expect(roundedCorners).toHaveLength(2);
     });
   });
 
@@ -314,6 +323,28 @@ describe("DataChart", () => {
 
     const { container: withoutExclusions } = render(<DataChart block={yearBlock} />);
     expect(withoutExclusions.querySelector(".data-chart-coverage-detail")).not.toBeInTheDocument();
+  });
+
+  it("renders block.metric_label as a visible caption, not only in the hidden description, the tooltip, or the table", () => {
+    const { container } = render(<DataChart block={rankedBlock} />);
+
+    const caption = container.querySelector(".data-chart-metric-label");
+    expect(caption).toBeInTheDocument();
+    expect(caption).not.toHaveClass("visually-hidden");
+    expect(caption?.textContent).toBe(rankedBlock.metric_label);
+  });
+
+  it("renders block.note as visible text when present, and renders no empty note element when it is absent", () => {
+    const withNote = withOverride({
+      aggregation_id: "agg-with-note",
+      note: "Counts every show with a known setlist."
+    });
+    const { container: withNoteContainer } = render(<DataChart block={withNote} />);
+    expect(within(withNoteContainer).getByText("Counts every show with a known setlist.")).toBeInTheDocument();
+
+    // rankedBlock.note is null -- no stray empty <p> should be rendered.
+    const { container: withoutNoteContainer } = render(<DataChart block={rankedBlock} />);
+    expect(withoutNoteContainer.querySelector(".unit-note")).not.toBeInTheDocument();
   });
 
   it("renders a safe fallback for a null row, never throwing", () => {

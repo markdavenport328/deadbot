@@ -123,6 +123,12 @@ export function DataChart({ block }: { block: DataChartBlock }) {
         {chartDescription(block)}
       </p>
       {block.note && <p className="unit-note">{block.note}</p>}
+      {/* The structural fact of what the bars count ("Performances", "Shows",
+          ...) -- always visible, not just in the hover tooltip, the
+          collapsed table, or the screen-reader-only description above. This
+          is server-derived, never model-chosen, so it stays present
+          regardless of what the model's title/note choose to say. */}
+      <p className="data-chart-metric-label">{block.metric_label}</p>
       <ResponsiveContainer width="100%" height={plotHeight} className="data-chart-plot">
         <BarChart data={rows} layout={isVertical ? "horizontal" : "vertical"} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
           <CartesianGrid stroke="var(--hair)" strokeDasharray="0" horizontal={isVertical} vertical={!isVertical} />

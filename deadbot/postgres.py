@@ -855,7 +855,13 @@ class PostgresCanonicalStore(CanonicalStore):
             # id itself is blank. LEFT JOIN (not JOIN) so a show whose
             # venue_id has no matching venues row survives instead of
             # disappearing -- data.py's dimension() falls back identically.
-            label_expr = "COALESCE(NULLIF(v.\"name\", ''), NULLIF(s.\"venue_id\", ''), 'Unknown')"
+            # TRIM the name before the blank check so a whitespace-only or
+            # whitespace-padded name is treated the same as data.py's
+            # label_with_fallback, which calls .strip() on the name before
+            # falling back -- otherwise a padded name would pass this
+            # NULLIF(..., '') check (non-empty) and render un-trimmed here
+            # while the CSV path strips it down to empty and falls through.
+            label_expr = "COALESCE(NULLIF(TRIM(v.\"name\"), ''), NULLIF(s.\"venue_id\", ''), 'Unknown')"
             return (
                 's."venue_id"', label_expr, 's."venue_id", v."name"',
                 f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id"',
@@ -871,13 +877,18 @@ class PostgresCanonicalStore(CanonicalStore):
             return city_expr, city_expr, city_expr, f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id"'
         if group_by == "song":
             songs = self._qualified_table("songs")
-            label_expr = "COALESCE(NULLIF(so.\"title\", ''), NULLIF(p.\"song_id\", ''), 'Unknown')"
+            # TRIM before the blank check, matching data.py's label_with_fallback
+            # (.strip() on the name before falling back to id then "Unknown") --
+            # see the venue case above for why.
+            label_expr = "COALESCE(NULLIF(TRIM(so.\"title\"), ''), NULLIF(p.\"song_id\", ''), 'Unknown')"
             return (
                 'p."song_id"', label_expr, 'p."song_id", so."title"',
                 f'LEFT JOIN {songs} so ON so."song_id" = p."song_id"',
             )
         people = self._qualified_table("people")
-        label_expr = "COALESCE(NULLIF(pe.\"name\", ''), NULLIF(g.\"person_id\", ''), 'Unknown')"
+        # TRIM before the blank check, matching data.py's label_with_fallback --
+        # see the venue case above for why.
+        label_expr = "COALESCE(NULLIF(TRIM(pe.\"name\"), ''), NULLIF(g.\"person_id\", ''), 'Unknown')"
         return (
             'g."person_id"', label_expr, 'g."person_id", pe."name"',
             f'LEFT JOIN {people} pe ON pe."person_id" = g."person_id"',
