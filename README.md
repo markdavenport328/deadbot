@@ -30,11 +30,11 @@ The same composition can be played at many shows, and a single show can have man
 - **Recording** — one captured source of a show (audience tape, soundboard, matrix blend).
 - **Official release** — an album, with track-level mappings back to specific performances.
 
-Around these sit recordings, external resources, curated selection signals, sourced claims, and derived observations — about 30 PostgreSQL tables with strict foreign keys and referential-integrity triggers. The database is populated from 23 reviewed CSV files that are the version-controlled source of truth, loaded in a single validated transaction.
+Around these sit recordings, external resources, curated selection signals, sourced claims, and derived observations — about 30 tables with strict foreign keys and referential-integrity triggers, in a SQLite file (`schema/sqlite.sql`). The file is built by `deadbot/sqlite_build.py` from 23 reviewed CSV files that are the version-controlled source of truth, validated in full before it replaces the previous build, and served read-only by `deadbot/sqlite_store.py`.
 
 ### Retrieval
 
-A user's question enters a **LangGraph agent loop** where the language model alternates between deciding what to look up and executing the lookups — up to eight rounds. It has 26 read-only tools: catalog tools that query PostgreSQL (search, show lookup, song lookup, performance context, album details, recording reviews, selection signals) and external tools that fetch articles, interviews, and lore from the web. Search is structured SQL text matching, not vector/semantic — the Dead domain has bounded vocabulary and the model formulates specific terms.
+A user's question enters a **LangGraph agent loop** where the language model alternates between deciding what to look up and executing the lookups — up to eight rounds. It has 26 read-only tools: catalog tools that query the SQLite catalog (search, show lookup, song lookup, performance context, album details, recording reviews, selection signals) and external tools that fetch articles, interviews, and lore from the web. Search is structured SQL text matching, not vector/semantic — the Dead domain has bounded vocabulary and the model formulates specific terms.
 
 ### Experience composition
 
@@ -47,15 +47,15 @@ The page streams progressively as the model writes: a token-by-token JSON parser
 ## Architecture
 
 ```
-external sources → raw JSON → normalization → canonical CSV → PostgreSQL
+external sources → raw JSON → normalization → canonical CSV → SQLite file
                                                                   ↑
                                                           reviewed, versioned,
-                                                          rebuildable from CSVs
+                                                          rebuilt from CSVs
 ```
 
 The system has four layers:
 
-1. **Canonical knowledge graph** — reviewed, normalized data for factual relationships. CSV files are the source of truth; PostgreSQL is the operational store rebuilt from them.
+1. **Canonical knowledge graph** — reviewed, normalized data for factual relationships. CSV files are the source of truth; a read-only SQLite file built from them is the operational store.
 2. **Tool-using agent** — a bounded LangGraph loop that combines catalog retrieval with approved external-source reading.
 3. **Composition and validation** — resolves the model's editorial plan into grounded, typed blocks with provenance tracking.
 4. **React experience** — renders validated blocks as an interactive exploration interface.
@@ -66,7 +66,7 @@ The system has four layers:
 | --- | --- |
 | `data/canonical/` | Normalized entities and relationships, tracked in Git |
 | `data/raw/` | Source-preserving collected records |
-| `schema/` | PostgreSQL definition and migrations |
+| `schema/` | SQLite definition (`sqlite.sql`), plus the PostgreSQL definition and migrations used by the legacy importer until it is retired |
 | `scripts/` | Collection, normalization, and import tooling |
 | `deadbot/` | LangGraph agent, tools, composition, FastAPI endpoints |
 | `web/` | React + TypeScript client |
