@@ -1,11 +1,10 @@
 """Pure logic for the model-selected data-aggregation tool.
 
 This module defines what dataset/group_by/measure/filter combinations are
-legal, their display labels and scope notes, and how already-grouped rows
-from a store become a verified, shaped result (zero-fill, sort, limit,
-totals). It contains no SQL and touches no store; ``deadbot/data.py`` and
-``deadbot/postgres.py`` both import and call into it so their outputs are
-provably identical.
+legal, their display labels, and how already-grouped rows from a store become
+a verified, shaped result (zero-fill, sort, limit, totals). It contains no
+SQL and touches no store; ``deadbot/data.py`` and ``deadbot/postgres.py``
+both import and call into it so their outputs are provably identical.
 """
 
 from __future__ import annotations
@@ -19,7 +18,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Dataset = Literal["shows", "performances", "guest_appearances"]
 GroupBy = Literal["year", "song", "venue", "city", "guest"]
-Measure = Literal["count", "distinct_shows", "distinct_songs", "average_duration"]
+# "average_duration" is not offered: recording-derived duration covers only
+# 66.5% of performances overall (50.7% for some songs), not enough for a
+# reliable aggregate.
+Measure = Literal["count", "distinct_shows", "distinct_songs"]
 Sort = Literal["chronological", "value_desc", "value_asc", "label"]
 
 _DATASET_GROUP_BYS: dict[Dataset, frozenset[GroupBy]] = {
@@ -44,23 +46,17 @@ _MEASURES_BY_COMBO: dict[tuple[Dataset, GroupBy], frozenset[Measure]] = {
 
 _DATASET_FILTERS: dict[Dataset, frozenset[str]] = {
     "shows": frozenset({"venue_id", "year", "year_from", "year_to"}),
-    "performances": frozenset({"song_id", "venue_id", "show_id", "performance_id", "year", "year_from", "year_to"}),
+    "performances": frozenset({"song_id", "venue_id", "show_id", "year", "year_from", "year_to"}),
     "guest_appearances": frozenset({"guest_id", "venue_id", "show_id", "year", "year_from", "year_to"}),
 }
 
 _METRIC_LABELS: dict[tuple[Dataset, Measure], str] = {
-    ("shows", "count"): "Known shows",
-    ("performances", "count"): "Known performances",
-    ("performances", "distinct_shows"): "Shows with a known performance",
-    ("performances", "distinct_songs"): "Distinct songs performed",
+    ("shows", "count"): "Shows",
+    ("performances", "count"): "Performances",
+    ("performances", "distinct_shows"): "Shows",
+    ("performances", "distinct_songs"): "Songs",
     ("guest_appearances", "count"): "Guest appearances",
-    ("guest_appearances", "distinct_shows"): "Shows with a guest appearance",
-}
-
-_SCOPE_NOTES: dict[Dataset, str] = {
-    "shows": "Based on shows represented in Deadbot",
-    "performances": "Based on performances represented in Deadbot",
-    "guest_appearances": "Based on guest appearances represented in Deadbot",
+    ("guest_appearances", "distinct_shows"): "Shows with a guest",
 }
 
 _DATASET_LABELS: dict[Dataset, str] = {
@@ -80,7 +76,6 @@ class AggregationFilters(BaseModel):
     venue_id: str | None = None
     guest_id: str | None = None
     show_id: str | None = None
-    performance_id: str | None = None
     year: int | None = None
     year_from: int | None = None
     year_to: int | None = None
@@ -106,14 +101,6 @@ class AggregationRequest(BaseModel):
 
     @model_validator(mode="after")
     def _check_combination(self) -> "AggregationRequest":
-        if self.measure == "average_duration":
-            raise ValueError(
-                "average_duration is not available yet: recording-derived "
-                "duration covers 66.5% of performances overall (50.7% for "
-                "some songs), not enough for a reliable aggregate. It will "
-                "return once a documented duration source and a minimum-"
-                "completeness policy are in place."
-            )
         allowed_group_bys = _DATASET_GROUP_BYS.get(self.dataset, frozenset())
         if self.group_by not in allowed_group_bys:
             raise ValueError(f"dataset {self.dataset!r} does not support group_by {self.group_by!r}")
@@ -124,7 +111,7 @@ class AggregationRequest(BaseModel):
             )
         provided = {
             name for name in
-            ("song_id", "venue_id", "guest_id", "show_id", "performance_id", "year", "year_from", "year_to")
+            ("song_id", "venue_id", "guest_id", "show_id", "year", "year_from", "year_to")
             if getattr(self.filters, name) is not None
         }
         allowed_filters = _DATASET_FILTERS.get(self.dataset, frozenset())
@@ -160,7 +147,6 @@ def parse_request(payload: dict[str, object]) -> AggregationRequest:
 @dataclass(frozen=True)
 class AggregationSpec:
     metric_label: str
-    scope_note: str
     empty_reason: str
     dimension_key: str            # "year" or "label"
     dimension_label: str          # column display label, e.g. "Song"
@@ -172,7 +158,6 @@ def resolve_spec(request: AggregationRequest) -> AggregationSpec:
     dimension_key = "year" if request.group_by == "year" else "label"
     return AggregationSpec(
         metric_label=metric_label,
-        scope_note=_SCOPE_NOTES[request.dataset],
         empty_reason=f"No {_DATASET_LABELS[request.dataset]} match these filters.",
         dimension_key=dimension_key,
         dimension_label=_GROUP_BY_LABELS[request.group_by],
@@ -242,11 +227,11 @@ class AggregationResult:
     columns: list[AggregationColumn]
     rows: list[dict[str, object]]
     metric_label: str
-    scope_note: str
     date_range: dict[str, int] | None
     total: int
     excluded_count: int
     empty_reason: str | None
+    setlist_coverage: dict[str, object] | None = None
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -255,7 +240,6 @@ class AggregationResult:
             "columns": [column.__dict__ for column in self.columns],
             "rows": self.rows,
             "metric_label": self.metric_label,
-            "scope_note": self.scope_note,
             "total": self.total,
             "excluded_count": self.excluded_count,
         }
@@ -263,23 +247,56 @@ class AggregationResult:
             payload["date_range"] = self.date_range
         if self.empty_reason is not None:
             payload["empty_reason"] = self.empty_reason
+        if self.setlist_coverage is not None:
+            payload["setlist_coverage"] = self.setlist_coverage
         return payload
+
+
+def build_setlist_coverage(
+    shows_on_record: int,
+    shows_with_setlist: int,
+    by_year: list[tuple[int, int, int]],
+) -> dict[str, object]:
+    """Shape setlist-coverage counts into the tool payload's shape.
+
+    Each store computes the raw counts its own way (a Python loop over CSV
+    rows, or a grouped SQL query) and supplies them here only for shaping:
+    ``by_year`` is a list of (year, shows_on_record, shows_with_setlist)
+    triples, one per year that has at least one show on record; a show with
+    no derivable year still counts toward the two top-level totals but has no
+    year bucket. The result lists every such year, chronological, with no
+    filtering or thresholding — the model decides what's worth saying about
+    it.
+    """
+    return {
+        "shows_on_record": shows_on_record,
+        "shows_with_setlist": shows_with_setlist,
+        "by_year": [
+            {"year": year, "shows_on_record": on_record, "shows_with_setlist": with_setlist}
+            for year, on_record, with_setlist in sorted(by_year)
+        ],
+    }
 
 
 def assemble_result(
     request: AggregationRequest,
     raw_rows: list[AggregationRow],
     date_range: dict[str, int] | None,
+    total: int,
+    setlist_coverage: dict[str, object] | None = None,
 ) -> AggregationResult:
     """Shape a store's raw grouped rows into a verified result.
 
     ``raw_rows`` is exactly one row per group, unfilled and unsorted —
     stores supply it from their own grouping logic (Python loop or SQL
-    GROUP BY). Zero-fill, sort, limit, totals, and empty-state text all
-    happen here so both stores produce identical shaped output.
+    GROUP BY). Zero-fill, sort, limit, and empty-state text all happen here
+    so both stores produce identical shaped output. ``total`` is the measure
+    computed by the store over the whole filtered set (not a sum of the
+    grouped rows) — see aggregate_data's docstring. ``setlist_coverage`` is
+    supplied only for the performances dataset; every other dataset passes
+    None and it is left out of the payload entirely.
     """
     spec = resolve_spec(request)
-    total = sum(r.value for r in raw_rows)
     rows = zero_fill_years(raw_rows, request.filters) if request.fill_missing else raw_rows
     rows = sort_rows(rows, request)
     if request.effective_sort == "chronological":
@@ -302,9 +319,9 @@ def assemble_result(
         columns=columns,
         rows=shaped_rows,
         metric_label=spec.metric_label,
-        scope_note=spec.scope_note,
         date_range=date_range,
         total=total,
         excluded_count=excluded_count,
         empty_reason=spec.empty_reason if not raw_rows else None,
+        setlist_coverage=setlist_coverage,
     )

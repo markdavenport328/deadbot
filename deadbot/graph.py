@@ -77,6 +77,11 @@ returned. Every aggregate_data result measures how often something was
 played or appeared; state it as performance frequency, keeping it distinct
 from listener popularity in what you say about it.
 
+Performance results also carry setlist_coverage: how many shows are on
+record each year and how many have a surviving setlist. Read the counts
+against it. Where many shows lack a setlist, the count describes the
+surviving setlists, and saying so in plain words keeps the pattern honest.
+
 Every entity result carries pathways: the lore already cataloged for it, or
 the research sites worth searching when nothing is. Answer the question
 directly, then offer the pathways that fit as links or follow-up topics. When a

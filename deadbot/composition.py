@@ -254,7 +254,11 @@ def _data_chart(
     rows = payload.get("rows")
     aggregation_id = payload.get("aggregation_id")
     metric_label = payload.get("metric_label")
-    scope_note = payload.get("scope_note")
+    # aggregate_data no longer returns scope_note (see docs/AGENTS.md: the
+    # model reasons over real facts, not a fixed caveat string). DataChartBlock
+    # still requires the field until Task B removes it; pass a placeholder
+    # here rather than reading one from the payload.
+    scope_note = ""
     total = payload.get("total")
     excluded_count = payload.get("excluded_count")
     if (
@@ -264,7 +268,6 @@ def _data_chart(
         or not isinstance(rows, list)
         or len(rows) > 200
         or not isinstance(metric_label, str)
-        or not isinstance(scope_note, str)
         or not isinstance(total, int)
         or isinstance(total, bool)
         or not isinstance(excluded_count, int)

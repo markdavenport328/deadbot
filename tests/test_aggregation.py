@@ -51,10 +51,21 @@ def test_combo_does_not_support_measure_distinct_shows():
         parse_request({"dataset": "guest_appearances", "group_by": "guest", "measure": "distinct_shows"})
 
 
-def test_average_duration_is_rejected_with_coverage_reason():
-    with pytest.raises(ValidationError) as excinfo:
+def test_average_duration_is_not_an_accepted_measure():
+    with pytest.raises(ValidationError):
         parse_request({"dataset": "performances", "group_by": "song", "measure": "average_duration"})
-    assert "66.5%" in str(excinfo.value)
+
+
+def test_performance_id_is_not_an_accepted_filter():
+    with pytest.raises(ValidationError):
+        parse_request(
+            {
+                "dataset": "performances",
+                "group_by": "song",
+                "measure": "count",
+                "filters": {"performance_id": "performance-dark-star"},
+            }
+        )
 
 
 def test_unknown_top_level_field_raises():
@@ -249,12 +260,14 @@ def test_apply_limit_no_excess_returns_zero_excluded():
 def test_assemble_result_on_empty_rows():
     request = parse_request({"dataset": "shows", "group_by": "year", "measure": "count"})
     date_range = {"start": 1965, "end": 1995}
-    result = assemble_result(request, [], date_range)
+    result = assemble_result(request, [], date_range, 0)
     assert result.empty_reason == "No shows match these filters."
     assert result.total == 0
     assert result.date_range == date_range
     assert result.rows == []
     assert result.excluded_count == 0
+    assert result.setlist_coverage is None
+    assert "setlist_coverage" not in result.to_payload()
 
 
 def test_assemble_result_chronological_sort_is_never_truncated():
@@ -269,9 +282,10 @@ def test_assemble_result_chronological_sort_is_never_truncated():
         AggregationRow(year=1973, value=5),
         AggregationRow(year=1974, value=2),
     ]
-    result = assemble_result(request, raw_rows, {"from": 1972, "to": 1974})
+    result = assemble_result(request, raw_rows, {"from": 1972, "to": 1974}, 10)
     assert len(result.rows) == 3
     assert result.excluded_count == 0
+    assert result.total == 10
 
 
 def test_assemble_result_non_chronological_sort_still_truncates():
@@ -292,9 +306,22 @@ def test_assemble_result_non_chronological_sort_still_truncates():
         AggregationRow(id="song-b", label="B", value=5),
         AggregationRow(id="song-c", label="C", value=1),
     ]
-    result = assemble_result(request, raw_rows, None)
+    result = assemble_result(request, raw_rows, None, 16)
     assert len(result.rows) == 2
     assert result.excluded_count == 1
+    assert result.total == 16
+
+
+def test_assemble_result_carries_setlist_coverage_through_to_the_payload():
+    request = parse_request({"dataset": "performances", "group_by": "year", "measure": "count"})
+    coverage = {
+        "shows_on_record": 5,
+        "shows_with_setlist": 3,
+        "by_year": [{"year": 1972, "shows_on_record": 5, "shows_with_setlist": 3}],
+    }
+    result = assemble_result(request, [], None, 0, coverage)
+    assert result.setlist_coverage == coverage
+    assert result.to_payload()["setlist_coverage"] == coverage
 
 
 # ---------------------------------------------------------------------------
@@ -470,6 +497,49 @@ def test_aggregate_impossible_filter_returns_empty_result():
     assert result.total == 0
     assert result.empty_reason is not None
     assert result.date_range is None
+
+
+def test_aggregate_performances_distinct_songs_by_year_total_is_the_whole_set_not_a_row_sum():
+    # total must be the number of distinct songs across every year combined,
+    # not the sum of each year's distinct-song count -- a song played across
+    # multiple years would otherwise be counted once per year it appeared in.
+    store = CanonicalStore()
+    request = parse_request(
+        {"dataset": "performances", "group_by": "year", "measure": "distinct_songs", "limit": 50}
+    )
+    result = store.aggregate(request)
+    naive_row_sum = sum(row["value"] for row in result.rows)
+    assert result.total < naive_row_sum
+    all_songs = {p["song_id"] for p in store.rows("performances") if p.get("song_id")}
+    assert result.total == len(all_songs)
+
+
+def test_aggregate_performances_distinct_shows_by_song_total_is_the_whole_set_not_a_row_sum():
+    # Likewise for distinct_shows grouped by song: a show that performed more
+    # than one grouped song would otherwise be double-counted in a naive sum.
+    store = CanonicalStore()
+    request = parse_request(
+        {"dataset": "performances", "group_by": "song", "measure": "distinct_shows", "limit": 50}
+    )
+    result = store.aggregate(request)
+    naive_row_sum = sum(row["value"] for row in result.rows)
+    assert result.total < naive_row_sum
+    all_shows = {p["show_id"] for p in store.rows("performances")}
+    assert result.total == len(all_shows)
+
+
+def test_aggregate_performances_count_by_song_total_still_equals_all_performances():
+    # count never double-counts a fact across groups (every performance
+    # belongs to exactly one song group), so its total is unaffected by this
+    # task's change: the count of every performance, regardless of limit or
+    # how many rows got truncated off the top-ranked list.
+    store = CanonicalStore()
+    request = parse_request(
+        {"dataset": "performances", "group_by": "song", "measure": "count", "limit": 5, "sort": "value_desc"}
+    )
+    result = store.aggregate(request)
+    assert result.excluded_count > 0
+    assert result.total == len(store.rows("performances"))
 
 
 def test_aggregate_performances_by_song_top_ranked_at_least_dark_star():

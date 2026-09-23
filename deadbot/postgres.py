@@ -84,7 +84,6 @@ _AGGREGATE_FILTER_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
     "performances": {
         "song_id": ("p", "song_id"),
         "show_id": ("p", "show_id"),
-        "performance_id": ("p", "performance_id"),
         "venue_id": ("s", "venue_id"),
     },
     "guest_appearances": {
@@ -852,25 +851,43 @@ class PostgresCanonicalStore(CanonicalStore):
             return expr, expr, expr, ""
         if group_by == "venue":
             venues = self._qualified_table("venues")
-            return 's."venue_id"', 'v."name"', 's."venue_id", v."name"', f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
+            # Label fallback: the venue's name -> its id -> "Unknown" when the
+            # id itself is blank. LEFT JOIN (not JOIN) so a show whose
+            # venue_id has no matching venues row survives instead of
+            # disappearing -- data.py's dimension() falls back identically.
+            label_expr = "COALESCE(NULLIF(v.\"name\", ''), NULLIF(s.\"venue_id\", ''), 'Unknown')"
+            return (
+                's."venue_id"', label_expr, 's."venue_id", v."name"',
+                f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id"',
+            )
         if group_by == "city":
             venues = self._qualified_table("venues")
             # venues.city is nullable; COALESCE to match CanonicalStore.aggregate's
             # `venue.get("city") or "Unknown"` in data.py exactly, or the
-            # CSV/Postgres parity test fails on any blank city.
+            # CSV/Postgres parity test fails on any blank city. LEFT JOIN so a
+            # show whose venue record is entirely missing still counts (as
+            # "Unknown") instead of disappearing.
             city_expr = "COALESCE(NULLIF(v.\"city\", ''), 'Unknown')"
-            return city_expr, city_expr, city_expr, f'JOIN {venues} v ON v."venue_id" = s."venue_id"'
+            return city_expr, city_expr, city_expr, f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id"'
         if group_by == "song":
             songs = self._qualified_table("songs")
-            return 'p."song_id"', 'so."title"', 'p."song_id", so."title"', f'JOIN {songs} so ON so."song_id" = p."song_id"'
+            label_expr = "COALESCE(NULLIF(so.\"title\", ''), NULLIF(p.\"song_id\", ''), 'Unknown')"
+            return (
+                'p."song_id"', label_expr, 'p."song_id", so."title"',
+                f'LEFT JOIN {songs} so ON so."song_id" = p."song_id"',
+            )
         people = self._qualified_table("people")
-        return 'g."person_id"', 'pe."name"', 'g."person_id", pe."name"', f'JOIN {people} pe ON pe."person_id" = g."person_id"'
+        label_expr = "COALESCE(NULLIF(pe.\"name\", ''), NULLIF(g.\"person_id\", ''), 'Unknown')"
+        return (
+            'g."person_id"', label_expr, 'g."person_id", pe."name"',
+            f'LEFT JOIN {people} pe ON pe."person_id" = g."person_id"',
+        )
 
     def _aggregate_predicates(self, dataset: str, filters: aggregation.AggregationFilters) -> tuple[list[str], list[Any]]:
         predicates: list[str] = []
         params: list[Any] = []
         filter_columns = _AGGREGATE_FILTER_COLUMNS[dataset]
-        for name in ("song_id", "venue_id", "guest_id", "show_id", "performance_id"):
+        for name in ("song_id", "venue_id", "guest_id", "show_id"):
             value = getattr(filters, name)
             if value is None or name not in filter_columns:
                 continue
@@ -932,7 +949,62 @@ class PostgresCanonicalStore(CanonicalStore):
             else:
                 raw_rows.append(aggregation.AggregationRow(id=row["dim_id"], label=row["dim_label"] or row["dim_id"], value=value))
 
-        return aggregation.assemble_result(request, raw_rows, date_range)
+        # total is the measure over the whole filtered set, computed with the
+        # same where_sql/params as the grouped query above (so it sees the
+        # same rows) rather than summed from `grouped` -- summing per-group
+        # distinct_shows/distinct_songs would double-count a fact that
+        # appears in more than one group. join_sql is unused by measure_sql
+        # itself (it only ever references the base from_sql aliases s/p/g)
+        # but is included for a query shaped like the grouped one above.
+        total_sql = f"SELECT {measure_sql} AS total FROM {from_sql} {join_sql} {where_sql}"
+        total_rows = self._query(total_sql, tuple(base_params + filter_params))
+        total = int(total_rows[0]["total"] or 0) if total_rows else 0
+
+        setlist_coverage = None
+        if dataset == "performances":
+            setlist_coverage = self._setlist_coverage(request.filters)
+
+        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_coverage)
+
+    def _setlist_coverage(self, filters: aggregation.AggregationFilters) -> dict[str, Any]:
+        """Coverage over the show-level filters only (venue_id/year/year_from/
+        year_to) -- reusing `_aggregate_predicates("shows", filters)` gives
+        exactly that subset, since song_id/show_id aren't in
+        _AGGREGATE_FILTER_COLUMNS["shows"] and so are silently dropped
+        whether or not the caller's (performances) filters carry them.
+        """
+
+        shows = self._qualified_table("shows")
+        performances = self._qualified_table("performances")
+        predicates, params = self._aggregate_predicates("shows", filters)
+        setlist_join = (
+            f'LEFT JOIN (SELECT DISTINCT "show_id" FROM {performances}) sl ON sl."show_id" = s."show_id"'
+        )
+
+        where_sql = f"WHERE {' AND '.join(predicates)}" if predicates else ""
+        totals_sql = (
+            'SELECT COUNT(*) AS shows_on_record, COUNT(sl."show_id") AS shows_with_setlist '
+            f'FROM {shows} s {setlist_join} {where_sql}'
+        )
+        totals_rows = self._query(totals_sql, tuple(params))
+        shows_on_record = int(totals_rows[0]["shows_on_record"] or 0) if totals_rows else 0
+        shows_with_setlist = int(totals_rows[0]["shows_with_setlist"] or 0) if totals_rows else 0
+
+        by_year_predicates = predicates + ['s."show_date" IS NOT NULL']
+        by_year_where_sql = f"WHERE {' AND '.join(by_year_predicates)}"
+        by_year_sql = (
+            'SELECT EXTRACT(YEAR FROM s."show_date")::int AS year, COUNT(*) AS shows_on_record, '
+            'COUNT(sl."show_id") AS shows_with_setlist '
+            f'FROM {shows} s {setlist_join} {by_year_where_sql} '
+            'GROUP BY EXTRACT(YEAR FROM s."show_date")::int'
+        )
+        by_year_rows = self._query(by_year_sql, tuple(params))
+        by_year = [
+            (int(row["year"]), int(row["shows_on_record"] or 0), int(row["shows_with_setlist"] or 0))
+            for row in by_year_rows
+        ]
+
+        return aggregation.build_setlist_coverage(shows_on_record, shows_with_setlist, by_year)
 
 
 # A spelling-friendly alias for callers that prefer the expanded initialism.

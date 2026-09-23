@@ -16,7 +16,7 @@ def test_tool_calls_become_visitor_facing_status_lines():
 
 
 def test_aggregate_data_describes_the_dataset_and_measure():
-    assert progress.describe_tool_call("aggregate_data", {"dataset": "performances", "measure": "count"}) == "Counting known performances"
+    assert progress.describe_tool_call("aggregate_data", {"dataset": "performances", "measure": "count"}) == "Counting performances"
     assert progress.describe_tool_call("aggregate_data", {"dataset": "shows", "measure": "distinct_songs"}) == "Counting the catalog"
 
 

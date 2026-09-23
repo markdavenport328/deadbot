@@ -1710,7 +1710,6 @@ def build_tools(
         venue_id: str | None = None,
         guest_id: str | None = None,
         show_id: str | None = None,
-        performance_id: str | None = None,
         year: int | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
@@ -1725,24 +1724,30 @@ def build_tools(
         some combinations are valid per dataset (an invalid combination
         returns an error naming what's wrong, not a guess). measure is one of
         "count", "distinct_shows", "distinct_songs" (also only valid for some
-        combinations); "average_duration" is reserved but not yet available —
-        expect a rejection explaining why if you try it.
+        combinations).
 
-        Every ID filter (song_id, venue_id, guest_id, show_id,
-        performance_id) takes a canonical ID only, never a name — resolve a
-        name to an ID with search_entities or search_guest_musicians first.
-        year, year_from, year_to filter by show year.
+        Every ID filter (song_id, venue_id, guest_id, show_id) takes a
+        canonical ID only, never a name — resolve a name to an ID with
+        search_entities or search_guest_musicians first. year, year_from,
+        year_to filter by show year.
 
         The response's rows and metric_label are the actual computed
         aggregate: never estimate, extrapolate, or restate these numbers from
-        memory. aggregation_id grounds a data_chart reference in
-        finish_response — call this tool once per distinct question and reuse
-        its aggregation_id rather than calling again with the same
-        parameters.
+        memory. total is the measure across the whole filtered set (for
+        example distinct songs across every year, not just the years shown),
+        including rows beyond limit. aggregation_id grounds a data_chart
+        reference in finish_response — call this tool once per distinct
+        question and reuse its aggregation_id rather than calling again with
+        the same parameters.
+
+        A performances-dataset result also carries setlist_coverage: how many
+        shows are on record each year against how many of those have a
+        surviving setlist, so a performance count can be read against what
+        share of shows from that era could even show up in it.
         """
         filters = {
             "song_id": song_id, "venue_id": venue_id, "guest_id": guest_id,
-            "show_id": show_id, "performance_id": performance_id,
+            "show_id": show_id,
             "year": year, "year_from": year_from, "year_to": year_to,
         }
         payload: dict[str, Any] = {

@@ -80,9 +80,9 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
         dataset = args.get("dataset")
         measure = args.get("measure")
         labels = {
-            ("shows", "count"): "Counting known shows",
-            ("performances", "count"): "Counting known performances",
-            ("performances", "distinct_shows"): "Counting shows with a known performance",
+            ("shows", "count"): "Counting shows",
+            ("performances", "count"): "Counting performances",
+            ("performances", "distinct_shows"): "Counting shows with a performance",
             ("performances", "distinct_songs"): "Counting distinct songs performed",
             ("guest_appearances", "count"): "Counting guest appearances",
             ("guest_appearances", "distinct_shows"): "Counting shows with a guest appearance",

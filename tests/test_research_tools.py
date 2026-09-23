@@ -166,7 +166,7 @@ def test_aggregate_data_counts_dark_star_performances_by_year():
         )
     )
     assert payload["rows"]
-    assert payload["metric_label"] == "Known performances"
+    assert payload["metric_label"] == "Performances"
 
 
 def test_aggregate_data_rejects_an_invalid_combination_without_raising():
@@ -191,3 +191,49 @@ def test_aggregate_data_does_not_resolve_a_name_filter():
     )
     assert payload["rows"] == []
     assert payload["empty_reason"]
+
+
+def test_aggregate_data_no_longer_accepts_a_performance_id_parameter():
+    # performance_id filtered performances to a single performance, which
+    # always counts exactly 1 -- dead surface area, removed everywhere,
+    # including the tool's own parameter list.
+    store = CanonicalStore()
+    assert "performance_id" not in _tool_by_name(store, "aggregate_data").args
+
+
+def test_aggregate_data_performances_result_carries_setlist_coverage():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "aggregate_data").invoke(
+            {"dataset": "performances", "group_by": "year", "measure": "count", "song_id": "song-dark-star"}
+        )
+    )
+    coverage = payload["setlist_coverage"]
+    assert coverage["shows_on_record"] > 0
+    assert coverage["shows_with_setlist"] > 0
+    assert coverage["shows_with_setlist"] <= coverage["shows_on_record"]
+    assert coverage["by_year"], "expected at least one year bucket"
+    for entry in coverage["by_year"]:
+        assert entry["shows_with_setlist"] <= entry["shows_on_record"]
+    years = [entry["year"] for entry in coverage["by_year"]]
+    assert years == sorted(years)
+
+
+def test_aggregate_data_shows_result_has_no_setlist_coverage():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "aggregate_data").invoke(
+            {"dataset": "shows", "group_by": "year", "measure": "count"}
+        )
+    )
+    assert "setlist_coverage" not in payload
+
+
+def test_aggregate_data_response_has_no_scope_note():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "aggregate_data").invoke(
+            {"dataset": "shows", "group_by": "year", "measure": "count"}
+        )
+    )
+    assert "scope_note" not in payload
