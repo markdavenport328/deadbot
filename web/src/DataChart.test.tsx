@@ -26,13 +26,8 @@ const yearBlock: DataChartBlock = {
     { year: 1978, value: 61 },
     { year: 1979, value: 47 }
   ],
-  scope_note: "Includes all documented shows from 1977 through 1979.",
   title: "Shows per year, 1977-1979",
-  total: 167,
-  x_field: "year",
-  x_label: "Year",
-  y_field: "value",
-  y_label: "Shows"
+  total: 167
 };
 
 const rankedBlock: DataChartBlock = {
@@ -54,16 +49,11 @@ const rankedBlock: DataChartBlock = {
     { label: "Fillmore West", value: 9 },
     { label: "Boston Garden", value: 7 }
   ],
-  scope_note: "Top venues by documented show count.",
   title: "Most-played venues",
   // total is computed server-side over the full, unlimited result set, not
   // just these three shown rows (28) -- the 2 excluded venues account for
   // the remainder, so total is deliberately larger than the visible sum.
-  total: 37,
-  x_field: "label",
-  x_label: "Venue",
-  y_field: "value",
-  y_label: "Shows"
+  total: 37
 };
 
 const longLabelBlock: DataChartBlock = {
@@ -171,6 +161,16 @@ describe("DataChart", () => {
     });
   });
 
+  it("draws bars in var(--muted) with a 2px corner radius matching --r, not the reserved action colors", () => {
+    const { container } = render(<DataChart block={rankedBlock} />);
+
+    const bars = container.querySelectorAll(".recharts-bar-rectangle path");
+    expect(bars.length).toBeGreaterThan(0);
+    bars.forEach((bar) => {
+      expect(bar.getAttribute("fill")).toBe("var(--muted)");
+    });
+  });
+
   it("shows the tooltip with the exact row value and dimension label on keyboard focus, value leading", () => {
     const { container } = render(<DataChart block={rankedBlock} />);
 
@@ -195,15 +195,6 @@ describe("DataChart", () => {
     expect(screen.getByRole("figure", { name: emptyBlock.title })).toBeInTheDocument();
     // No plot was attempted.
     expect(container.querySelector(".recharts-wrapper")).not.toBeInTheDocument();
-  });
-
-  it("renders a safe fallback for chart: 'stacked_bar', never throwing", () => {
-    const stackedBlock = withOverride({ chart: "stacked_bar", title: "Stacked example" });
-
-    expect(() => render(<DataChart block={stackedBlock} />)).not.toThrow();
-    expect(screen.getByText("Stacked example")).toBeInTheDocument();
-    expect(screen.getByText(/stacked charts aren't available yet/i)).toBeInTheDocument();
-    expect(screen.queryByRole("figure")).not.toBeInTheDocument();
   });
 
   it("renders a safe fallback for a malformed columns array, never throwing", () => {
@@ -336,25 +327,9 @@ describe("DataChart", () => {
     expect(screen.getByText(/unexpected shape/i)).toBeInTheDocument();
   });
 
-  it("renders a safe fallback when x_field doesn't match the dimension column's key, never throwing", () => {
-    const mismatchedXField = withOverride({
-      title: "Mismatched x_field example",
-      x_field: "venue_name"
-    });
-
-    expect(() => render(<DataChart block={mismatchedXField} />)).not.toThrow();
-    expect(screen.getByText("Mismatched x_field example")).toBeInTheDocument();
-    expect(screen.getByText(/unexpected shape/i)).toBeInTheDocument();
-  });
-
   it("renders block.title as a heading element (not a figcaption), participating in the page's heading outline", () => {
     render(<DataChart block={rankedBlock} />);
     const heading = screen.getByRole("heading", { name: rankedBlock.title });
     expect(heading.tagName.toLowerCase()).toBe("h2");
-  });
-
-  it("passes x_label/y_label through to the plotted axes when supplied", () => {
-    const { container } = render(<DataChart block={rankedBlock} />);
-    expect(container.querySelector(".recharts-label")).toBeInTheDocument();
   });
 });

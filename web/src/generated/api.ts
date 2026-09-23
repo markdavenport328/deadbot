@@ -272,17 +272,20 @@ export interface components {
          *     aggregate_data result.
          *
          *     Every number here is server-computed from that exact result; the
-         *     model chose only which aggregation to reference, how to frame it
-         *     (title/note), and how to plot it (chart/orientation/field mapping).
+         *     model chose only which aggregation to reference and how to frame it
+         *     (title/note). The server derives orientation from the dimension
+         *     column's type (temporal -> vertical, else horizontal) and finds the
+         *     dimension column itself (the one whose key isn't "value") at render
+         *     time, so no field mapping travels through this block at all.
          */
         DataChartBlock: {
             /** Aggregation Id */
             aggregation_id: string;
             /**
              * Chart
-             * @enum {string}
+             * @constant
              */
-            chart: "bar" | "stacked_bar";
+            chart: "bar";
             /** Columns */
             columns: components["schemas"]["DataChartColumn"][];
             /** Date Range */
@@ -306,8 +309,6 @@ export interface components {
             rows?: {
                 [key: string]: unknown;
             }[];
-            /** Scope Note */
-            scope_note: string;
             /** Title */
             title: string;
             /** Total */
@@ -317,14 +318,6 @@ export interface components {
              * @enum {string}
              */
             type: "data_chart";
-            /** X Field */
-            x_field: string;
-            /** X Label */
-            x_label?: string | null;
-            /** Y Field */
-            y_field: string;
-            /** Y Label */
-            y_label?: string | null;
         };
         /** DataChartColumn */
         DataChartColumn: {

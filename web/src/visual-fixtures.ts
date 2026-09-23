@@ -711,13 +711,8 @@ const blocks: ExperienceResponse = fixture(
         { year: 1973, value: 31 },
         { year: 1974, value: 18 }
       ],
-      scope_note: "Includes all documented Dark Star performances from 1968 through 1974.",
       title: "Dark Star performances by year, 1968–1974",
-      total: 127,
-      x_field: "year",
-      x_label: "Year",
-      y_field: "value",
-      y_label: "Performances"
+      total: 127
     },
     // Categorical (ranked) example, transposed to the horizontal/rightward-bar
     // orientation, with a long venue name to exercise axis-label truncation.
@@ -742,16 +737,11 @@ const blocks: ExperienceResponse = fixture(
         { label: "Madison Square Garden", value: 5 },
         { label: "Boston Music Hall", value: 4 }
       ],
-      scope_note: "Top five venues by documented Dark Star performance count.",
       title: "Where Dark Star was played most",
       // total is computed server-side over the full, unlimited result set
       // (all 24 venues), not just these top five (34) -- the 19 excluded
       // venues account for the remainder.
-      total: 127,
-      x_field: "label",
-      x_label: "Venue",
-      y_field: "value",
-      y_label: "Performances"
+      total: 127
     }
   ]
 );

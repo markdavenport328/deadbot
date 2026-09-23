@@ -47,18 +47,10 @@ function truncateLabel(value: string, maxLength: number = MAX_TICK_LABEL_LENGTH)
 
 // The description composed for `aria-describedby` — same for the plotted
 // figure and the empty-state figure, since both carry the same block-level
-// facts (metric, scope, total, exclusions). `scope_note` comes from the
-// server and may already end in terminal punctuation; appending a second
-// period would read as "...already ends with a period..".
-function endsWithTerminalPunctuation(text: string): boolean {
-  return /[.!?]$/.test(text.trim());
-}
-
+// facts (metric, total, exclusions).
 function chartDescription(block: DataChartBlock): string {
   const excluded = block.excluded_count > 0 ? `, ${block.excluded_count} more not shown` : "";
-  const scopeNote = block.scope_note.trim();
-  const scopeSentence = endsWithTerminalPunctuation(scopeNote) ? scopeNote : `${scopeNote}.`;
-  return `${block.metric_label}. ${scopeSentence} Total ${block.total}${excluded}.`;
+  return `${block.metric_label}. Total ${block.total}${excluded}.`;
 }
 
 type DataChartColumn = DataChartBlock["columns"][number];
@@ -91,11 +83,8 @@ export function DataChart({ block }: { block: DataChartBlock }) {
   const descId = useId();
 
   // Structural guards — defense in depth against a payload that somehow
-  // violates the contract Batch 2 already guarantees server-side. Render a
-  // safe, clearly-labeled fallback, never throw.
-  if (block.chart !== "bar") {
-    return <UnavailableChart block={block} reason="Stacked charts aren't available yet." />;
-  }
+  // violates the contract the server already guarantees. Render a safe,
+  // clearly-labeled fallback, never throw.
   if (block.columns.length !== 2) {
     return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
   }
@@ -103,21 +92,10 @@ export function DataChart({ block }: { block: DataChartBlock }) {
   if (!dimensionColumn) {
     return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
   }
-  // Per the contract, y_field is always "value" and x_field always matches
-  // the dimension column's key. Both are checked against the single source
-  // of truth (dimensionColumn.key / the literal "value") rather than trusted
-  // independently, so a payload where they've drifted apart is treated as
-  // the same malformed-request case as the other structural guards, not a
-  // silently-wrong render.
-  if (block.x_field !== dimensionColumn.key || block.y_field !== "value") {
-    return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
-  }
   if (block.rows.some((row: unknown) => row === null || typeof row !== "object")) {
     return <UnavailableChart block={block} reason="This chart's data is in an unexpected shape." />;
   }
-  const rows = block.rows.filter(
-    (row) => typeof row[block.y_field] === "number" && Number.isFinite(row[block.y_field] as number)
-  );
+  const rows = block.rows.filter((row) => typeof row.value === "number" && Number.isFinite(row.value as number));
   if (rows.length !== block.rows.length) {
     // Some row failed the finite-number check — this should never happen
     // given Batch 2's server-side validation; render what's safe rather
@@ -151,12 +129,11 @@ export function DataChart({ block }: { block: DataChartBlock }) {
           {isVertical ? (
             <>
               <XAxis
-                dataKey={block.x_field}
+                dataKey={dimensionColumn.key}
                 type="category"
                 tickLine={false}
                 axisLine={{ stroke: "var(--hair)" }}
                 tick={{ fill: "var(--muted)" }}
-                label={block.x_label ?? undefined}
               />
               <YAxis
                 type="number"
@@ -165,7 +142,6 @@ export function DataChart({ block }: { block: DataChartBlock }) {
                 axisLine={{ stroke: "var(--hair)" }}
                 tick={{ fill: "var(--muted)" }}
                 tickFormatter={(value) => Number(value).toLocaleString()}
-                label={block.y_label ?? undefined}
               />
             </>
           ) : (
@@ -177,10 +153,9 @@ export function DataChart({ block }: { block: DataChartBlock }) {
                 axisLine={{ stroke: "var(--hair)" }}
                 tick={{ fill: "var(--muted)" }}
                 tickFormatter={(value) => Number(value).toLocaleString()}
-                label={block.y_label ?? undefined}
               />
               <YAxis
-                dataKey={block.x_field}
+                dataKey={dimensionColumn.key}
                 type="category"
                 tickLine={false}
                 axisLine={{ stroke: "var(--hair)" }}
@@ -188,7 +163,6 @@ export function DataChart({ block }: { block: DataChartBlock }) {
                 tickFormatter={(value) => truncateLabel(String(value))}
                 interval={0}
                 width={120}
-                label={block.x_label ?? undefined}
               />
             </>
           )}
@@ -198,8 +172,8 @@ export function DataChart({ block }: { block: DataChartBlock }) {
             cursor={{ fill: "var(--hair)" }}
           />
           <Bar
-            dataKey={block.y_field}
-            fill="var(--violet)"
+            dataKey="value"
+            fill="var(--muted)"
             isAnimationActive={false}
             // Rounded at the data end, square at the baseline. For
             // layout="horizontal" (our orientation="vertical") the data end
@@ -207,12 +181,12 @@ export function DataChart({ block }: { block: DataChartBlock }) {
             // layout="vertical" (our orientation="horizontal") the data end
             // is the right of each bar: round the right corners. RectRadius
             // order is [top-left, top-right, bottom-right, bottom-left].
-            radius={isVertical ? [4, 4, 0, 0] : [0, 4, 4, 0]}
+            // 2px matches --r, the design system's corner radius.
+            radius={isVertical ? [2, 2, 0, 0] : [0, 2, 2, 0]}
             maxBarSize={24}
           />
         </BarChart>
       </ResponsiveContainer>
-      <p className="coverage-note">{block.scope_note}</p>
       <CoverageDetail block={block} dimensionLabel={dimensionColumn.label} shownCount={rows.length} />
       <Drawer
         tabs={[
@@ -230,8 +204,8 @@ export function DataChart({ block }: { block: DataChartBlock }) {
 }
 
 // A limitation, not an error: rendered whenever the payload doesn't match
-// the shape this batch knows how to plot (a stacked chart, a malformed
-// column/row shape). Never implies the visitor did something wrong.
+// the shape this batch knows how to plot (a malformed column/row shape).
+// Never implies the visitor did something wrong.
 function UnavailableChart({ block, reason }: { block: DataChartBlock; reason: string }) {
   return (
     <div className="data-chart-unavailable" role="note">
@@ -308,9 +282,9 @@ function DataChartTable({
       </thead>
       <tbody>
         {rows.map((row, index) => (
-          <tr key={`${String(row[block.x_field])}-${index}`}>
-            <td>{String(row[block.x_field])}</td>
-            <td>{(row[block.y_field] as number).toLocaleString()}</td>
+          <tr key={`${String(row[dimensionColumn.key])}-${index}`}>
+            <td>{String(row[dimensionColumn.key])}</td>
+            <td>{(row.value as number).toLocaleString()}</td>
           </tr>
         ))}
       </tbody>
