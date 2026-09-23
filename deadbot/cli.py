@@ -54,7 +54,7 @@ def main() -> None:
     if args.command == "db-build":
         from deadbot.sqlite_build import DEFAULT_SQLITE_PATH, main as build_main
 
-        build_main(["--output", str(args.output or DEFAULT_SQLITE_PATH)])
+        build_main(["--output", str(args.output or settings.sqlite_path or DEFAULT_SQLITE_PATH)])
         return
 
     if args.command == "db-import":

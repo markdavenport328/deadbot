@@ -1,21 +1,38 @@
 import sys
 from types import SimpleNamespace
 
+import pytest
+
 from deadbot.config import Settings
 from deadbot.models import OllamaProvider, OpenAIProvider, create_model_provider
 from deadbot.storage import create_canonical_store
 
 
-def test_postgres_is_the_only_runtime_store():
-    settings = Settings()
-    assert settings.data_store == "postgres"
-    assert settings.database_url is None
+def test_sqlite_is_the_default_runtime_store(monkeypatch, tmp_path):
+    monkeypatch.delenv("DEADBOT_DATA_STORE", raising=False)
+    monkeypatch.delenv("DEADBOT_SQLITE_PATH", raising=False)
+    settings = Settings.from_env(env_path=tmp_path / "absent.env")
+    assert settings.data_store == "sqlite"
+    assert settings.sqlite_path is None
+
+
+def test_sqlite_path_is_configurable(monkeypatch, tmp_path):
+    monkeypatch.setenv("DEADBOT_SQLITE_PATH", str(tmp_path / "custom.sqlite"))
+    assert Settings.from_env(env_path=tmp_path / "absent.env").sqlite_path == tmp_path / "custom.sqlite"
+
+
+def test_sqlite_store_is_created_from_a_built_file(built_sqlite, monkeypatch):
+    monkeypatch.setenv("VERCEL", "1")  # trust the file as a deployment would
+    store = create_canonical_store(Settings(data_store="sqlite", sqlite_path=built_sqlite))
     try:
-        create_canonical_store(settings)
-    except ValueError as error:
-        assert "requires DEADBOT_DATABASE_URL" in str(error)
-    else:
-        raise AssertionError("PostgreSQL runtime must require a database URL")
+        assert store.resolve_song("Dark Star")
+    finally:
+        store.close()
+
+
+def test_unknown_store_is_rejected():
+    with pytest.raises(ValueError, match="sqlite"):
+        create_canonical_store(Settings(data_store="csv"))
 
 
 def test_postgres_store_requires_a_database_url():
@@ -25,15 +42,6 @@ def test_postgres_store_requires_a_database_url():
         assert "requires DEADBOT_DATABASE_URL" in str(error)
     else:
         raise AssertionError("PostgreSQL selection without a database URL should fail")
-
-
-def test_unknown_canonical_store_fails_clearly():
-    try:
-        create_canonical_store(Settings(data_store="unknown"))
-    except ValueError as error:
-        assert "serves only PostgreSQL" in str(error)
-    else:
-        raise AssertionError("Unknown canonical store should fail")
 
 
 def test_canonical_store_settings_are_read_from_the_environment(monkeypatch):
