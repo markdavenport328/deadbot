@@ -108,8 +108,17 @@ function createThreadId(): string {
   return `web-${crypto.randomUUID()}`;
 }
 
+// Reload after a deploy, checked only when a tab comes back into view and at
+// most every few minutes. A timer would keep every forgotten background tab
+// calling the server around the clock.
+const VERSION_CHECK_INTERVAL_MS = 5 * 60_000;
+let lastVersionCheck = 0;
+
 async function refreshIfServerChanged(): Promise<void> {
-  const result = await fetch("/api/health", { cache: "no-store" });
+  const now = Date.now();
+  if (now - lastVersionCheck < VERSION_CHECK_INTERVAL_MS) return;
+  lastVersionCheck = now;
+  const result = await fetch("/api/version", { cache: "no-store" });
   if (!result.ok) return;
   const health = await result.json() as { git_commit?: string };
   const current = health.git_commit;
@@ -1665,8 +1674,11 @@ export default function App() {
   useEffect(() => {
     if (visualFixture || requestedStreamFixture) return;
     void refreshIfServerChanged();
-    const check = window.setInterval(() => void refreshIfServerChanged(), 60_000);
-    return () => window.clearInterval(check);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshIfServerChanged();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [visualFixture]);
 
   useEffect(() => {

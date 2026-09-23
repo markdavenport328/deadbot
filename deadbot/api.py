@@ -122,6 +122,13 @@ def create_app(
             return conversation
         return conversation[-window:]
 
+    @app.get("/api/version")
+    def version() -> dict[str, str]:
+        # Open tabs ask this when they come back into view, to reload after a
+        # deploy. It must stay free: no store queries, so an idle tab never
+        # keeps a function (or a database) busy.
+        return {"git_commit": os.getenv("VERCEL_GIT_COMMIT_SHA", "unknown")}
+
     @app.get("/api/health")
     def health() -> dict[str, str]:
         return {
