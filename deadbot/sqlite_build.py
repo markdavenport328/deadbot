@@ -168,6 +168,28 @@ def build_database(
     )
 
 
+def _stored_fingerprint(path: Path) -> str | None:
+    try:
+        db = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+        try:
+            row = db.execute("SELECT input_fingerprint FROM deadbot_schema_metadata").fetchone()
+        finally:
+            db.close()
+    except sqlite3.Error:
+        return None
+    return row[0] if row else None
+
+
+def ensure_current(path: Path | str = DEFAULT_SQLITE_PATH, **inputs: Any) -> Path:
+    """Build ``path`` unless it already reflects exactly the current inputs."""
+
+    path = Path(path)
+    fingerprint_inputs = {key: inputs[key] for key in ("canonical_dir", "selection_evidence_path", "schema_path") if key in inputs}
+    if path.is_file() and _stored_fingerprint(path) == input_fingerprint(**fingerprint_inputs):
+        return path
+    return build_database(path, **inputs).path
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Build the canonical SQLite read store.")
     parser.add_argument("--output", type=Path, default=DEFAULT_SQLITE_PATH)

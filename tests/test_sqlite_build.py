@@ -6,7 +6,7 @@ import sqlite3
 import pytest
 
 from deadbot.canonical_import import DEFAULT_CANONICAL_DIR, TABLE_SPECS, CanonicalImportError
-from deadbot.sqlite_build import SQLITE_SCHEMA_VERSION, build_database, input_fingerprint
+from deadbot.sqlite_build import SQLITE_SCHEMA_VERSION, build_database, input_fingerprint, ensure_current
 
 SELECTION_TABLES = ("selection_lists", "selection_entries", "selection_evidence")
 
@@ -93,3 +93,28 @@ def test_invalid_input_fails_before_the_output_is_replaced(tmp_path):
     with pytest.raises(CanonicalImportError, match="songs.csv"):
         build_database(output, canonical_dir=canonical)
     assert output.read_text() == "previous build"
+
+
+def test_ensure_current_keeps_a_matching_build(built_sqlite, tmp_path):
+    copy = tmp_path / "deadbot.sqlite"
+    shutil.copy(built_sqlite, copy)
+    before = copy.stat().st_mtime_ns
+    assert ensure_current(copy) == copy
+    assert copy.stat().st_mtime_ns == before
+
+
+def test_ensure_current_rebuilds_when_inputs_change(built_sqlite, tmp_path):
+    canonical = tmp_path / "canonical"
+    shutil.copytree(DEFAULT_CANONICAL_DIR, canonical)
+    copy = tmp_path / "deadbot.sqlite"
+    shutil.copy(built_sqlite, copy)
+    with (canonical / "equipment.csv").open("a", encoding="utf-8") as handle:
+        handle.write("\nequipment-test-rebuild,Test Rig,amplifier,,,\n")
+    ensure_current(copy, canonical_dir=canonical)
+    db = _connect(copy)
+    assert db.execute("SELECT name FROM equipment WHERE equipment_id = 'equipment-test-rebuild'").fetchone() == ("Test Rig",)
+
+
+def test_ensure_current_builds_a_missing_file(tmp_path):
+    target = tmp_path / "nested" / "deadbot.sqlite"
+    assert ensure_current(target).is_file()

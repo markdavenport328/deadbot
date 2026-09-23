@@ -21,12 +21,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the local Deadbot LangGraph agent.")
     parser.add_argument(
         "command",
-        choices=["chat", "evaluate", "serve", "db-import"],
-        help="Run chat, an evaluation, the web experience, or a canonical database import.",
+        choices=["chat", "evaluate", "serve", "db-build", "db-import"],
+        help="Run chat, an evaluation, the web experience, a SQLite build, or a PostgreSQL import.",
     )
     parser.add_argument("--thread-id", default=None, help="Optional in-memory session identifier.")
     parser.add_argument("--suite", type=Path, default=DEFAULT_SUITE_PATH, help="Evaluation-suite JSON file.")
-    parser.add_argument("--output", type=Path, default=None, help="Optional file for evaluation results as JSON.")
+    parser.add_argument("--output", type=Path, default=None, help="Evaluation results JSON file, or the database path for db-build.")
     parser.add_argument("--model", action="store_true", help="Run model responses and capture tool traces for manual review.")
     parser.add_argument("--case", action="append", default=None, help="Run only this evaluation case ID; may be repeated with --model.")
     parser.add_argument("--host", default="127.0.0.1", help="Host interface for the web experience.")
@@ -50,6 +50,12 @@ def main() -> None:
     args = parser.parse_args()
 
     settings = Settings.from_env()
+
+    if args.command == "db-build":
+        from deadbot.sqlite_build import DEFAULT_SQLITE_PATH, main as build_main
+
+        build_main(["--output", str(args.output or DEFAULT_SQLITE_PATH)])
+        return
 
     if args.command == "db-import":
         from deadbot.postgres_import import import_from_dsn
