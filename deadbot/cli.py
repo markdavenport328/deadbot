@@ -144,3 +144,7 @@ def main() -> None:
         print(f"\nDeadbot: {response.answer}")
         if response.body_lead:
             print(f"\n{response.title}\n{response.body_lead}")
+
+
+if __name__ == "__main__":
+    main()
