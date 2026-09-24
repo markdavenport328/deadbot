@@ -181,3 +181,19 @@ These are measured with `scripts/measure_turns.py`, not imposed as rules on the 
 - **Guide cost.** The guide adds up to 2,500 characters to every call. That's measured and small next to the savings. If it grows, move the full guide behind an error hint and keep only the view list in the description.
 - **The model over-queries**, running many small queries where one would do. The metrics record query counts per turn. Address it in the guide's examples if it appears.
 - **Stacked branch.** This work merges after #58. If #58 changes before merge, rebase.
+
+## Amendment, 2026-09-24: a menu of tested queries, with SQL as the fallback
+
+The owner asked why the model should write SQL at all when common set questions could be pre-written queries with one-line descriptions ("Get album titles by year"). Description size is not a real objection: a one-line entry costs about 15 tokens. The real trade-off is correctness against reach. The decision is both, in one tool.
+
+- `query_catalog` offers a menu of tested queries:
+  - `releases_covering_years`, `releases_from_venue`, `releases_with_show`;
+  - `most_played_songs`;
+  - `song_by_year`, `song_set_positions`, `song_neighbors`;
+  - `shows`.
+- The model passes a query name with simple parameters. Song and show accept a title, ID or date.
+- Each menu query is tested against an independent count from the CSVs, so the common set questions are always correct.
+- When no listed query fits, the model passes `sql`: one read-only SELECT against the same views, with the same guardrails.
+- The measurements record which free-form queries recur. Recurring ones get promoted into the menu, tested.
+- The tool description carries the menu plus the SQL guide and stays under 3,500 characters (revised from 2,500).
+- Guest counts are served by the guest directory summary (plan Task 3b), so they need no menu entry.

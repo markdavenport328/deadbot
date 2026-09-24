@@ -29,7 +29,7 @@
   - timeout **1.5 seconds**;
   - at most **200 rows**.
 - `query_catalog` is registered only when the store has `run_catalog_query`, so the CSV store, the Postgres store and test doubles don't get it.
-- The `query_catalog` tool description is **under 2,500 characters**.
+- The `query_catalog` tool description is **under 3,500 characters**: a menu of tested queries plus the SQL guide (owner decision 2026-09-24).
 - Code enforces structure only. Never choose content by question keywords (AGENTS.md "Keep the model in charge").
 - Prompt text says what to do, not "do not" (the owner's prompt-style rule).
 - Tests: `PYTHONPATH=. /Users/markdavenport/Development/DeadBot/.venv/bin/python -m pytest ...`. The full suite is currently 622 passed.
@@ -1000,24 +1000,42 @@ git commit -m "Four catalog views pre-join shows, performances, release tracks a
 
 ---
 
-### Task 6: `run_catalog_query` and the `query_catalog` tool
+### Task 6: `query_catalog`: a menu of tested queries, with SQL as the fallback
+
+Revised on 2026-09-24 by the owner's decision. The model picks a pre-written query from a short menu when one fits. When none does, it writes its own read-only SQL against the Task 5 views. Every menu query is written once and tested against an independent count, so the common set questions are always correct. Free SQL covers the long tail. Measurements show which free queries recur, and those get promoted into the menu later.
 
 **Files:**
-- Modify: `deadbot/sqlite_store.py` (add a method and module constants)
-- Modify: `deadbot/tools.py` (add the tool; register it conditionally at the end of `build_tools`)
-- Test: `tests/test_catalog_query.py`
+- Create: `deadbot/catalog_queries.py`: the menu (`NamedQuery`, `NAMED_QUERIES`) and the tool description builder
+- Modify: `deadbot/sqlite_store.py`: `run_catalog_query(sql, params=None)` and its guardrails
+- Modify: `deadbot/tools.py`: the `query_catalog` tool, registered only when the store has `run_catalog_query`
+- Test: `tests/test_catalog_query.py` (guardrails and free SQL) and `tests/test_catalog_menu.py` (each menu query against an independent count from the CSVs)
 
 **Interfaces:**
-- Consumes: the views from Task 5.
+- Consumes: the Task 5 views, `store.resolve_song`, `store.resolve_show`.
 - Produces:
-  - `CATALOG_QUERY_MAX_ROWS = 200` and `CATALOG_QUERY_TIMEOUT_SECONDS = 1.5` in `deadbot/sqlite_store.py`;
-  - `SqliteCanonicalStore.run_catalog_query(sql: str) -> dict`. On success it returns `{"columns": [...], "rows": [[...]], "row_count": int, "truncated": bool}` plus `note` when truncated. On failure it returns `{"error": str, "hint": str}`;
-  - the tool `query_catalog(sql: str) -> str`, present in `build_tools(store)` only when `callable(getattr(store, "run_catalog_query", None))`.
+  - `CATALOG_QUERY_MAX_ROWS = 200` and `CATALOG_QUERY_TIMEOUT_SECONDS = 1.5` in `deadbot/sqlite_store.py`.
+  - `SqliteCanonicalStore.run_catalog_query(sql: str, params: dict | None = None) -> dict`. On success it returns `{"columns", "rows", "row_count", "truncated"}` (plus `note` when truncated). On failure it returns `{"error", "hint"}`.
+  - `deadbot.catalog_queries`:
+    - `NamedQuery(name: str, summary: str, requires: tuple[str, ...], sql: str)`;
+    - `NAMED_QUERIES: dict[str, NamedQuery]`;
+    - `catalog_tool_description() -> str`.
+  - The tool: `query_catalog(name: str = "", song: str = "", venue: str = "", show: str = "", tour: str = "", year_from: int | None = None, year_to: int | None = None, limit: int = 25, sql: str = "") -> str`.
+- Parameter rules:
+  - `song` is resolved to `song_id` with `store.resolve_song`, and `show` to `show_id` with `store.resolve_show`.
+  - If only `year_from` is given, `year_to = year_from`.
+  - Years that aren't required default to the whole span, 1965–1995.
+  - `venue` and `tour` are case-insensitive substring matches.
+- Errors:
+  - an unknown name → `{"error": "Unknown query", "queries": [names]}`;
+  - a missing required parameter → `{"error": "Missing parameter", "query": name, "requires": [...]}`;
+  - an unresolved song or show → `{"error": "Song not found or ambiguous" | "Show not found", "query": value}`;
+  - neither `name` nor `sql` → `{"error": "Pass name (a listed query) or sql"}`.
+- A successful menu result is the store result plus `"query": name`.
+- The tool description is under **3,500 characters**. Ruling: this revises the spec's 2,500, since the description now carries a menu plus the SQL guide.
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Write the failing guardrail tests** in `tests/test_catalog_query.py`:
 
 ```python
-# tests/test_catalog_query.py
 import json
 
 import pytest
@@ -1037,6 +1055,11 @@ def store(built_sqlite, tmp_path):
 def test_select_returns_columns_and_rows(store):
     result = store.run_catalog_query("SELECT song_title, COUNT(*) AS n FROM performance_facts WHERE year = 1977 GROUP BY song_id ORDER BY n DESC LIMIT 3")
     assert result["columns"] == ["song_title", "n"] and result["row_count"] == 3 and result["truncated"] is False
+
+
+def test_named_parameters_bind(store):
+    result = store.run_catalog_query("SELECT COUNT(*) FROM show_facts WHERE year = :year", {"year": 1977})
+    assert result["rows"][0][0] > 50
 
 
 def test_rows_are_capped(store):
@@ -1066,8 +1089,7 @@ def test_runaway_query_times_out(store):
 
 
 def test_unknown_column_explains_itself(store):
-    result = store.run_catalog_query("SELECT nope FROM show_facts")
-    assert "no such column" in result["error"]
+    assert "no such column" in store.run_catalog_query("SELECT nope FROM show_facts")["error"]
 
 
 def test_tool_is_registered_only_for_stores_that_can_query(store):
@@ -1075,20 +1097,136 @@ def test_tool_is_registered_only_for_stores_that_can_query(store):
     assert "query_catalog" not in {t.name for t in build_tools(CanonicalStore())}
 
 
-def test_tool_description_stays_small(store):
+def test_tool_description_stays_small_and_lists_every_query(store):
+    from deadbot.catalog_queries import NAMED_QUERIES
+
     tool = next(t for t in build_tools(store) if t.name == "query_catalog")
-    assert len(tool.description) < 2500
-    assert json.loads(tool.invoke({"sql": "SELECT COUNT(*) AS n FROM show_facts"}))["rows"][0][0] > 2000
+    assert len(tool.description) < 3500
+    assert all(name in tool.description for name in NAMED_QUERIES)
+
+
+def test_tool_runs_free_sql_and_explains_bad_calls(store):
+    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    run = lambda **args: json.loads(tool.invoke(args))
+    assert run(sql="SELECT COUNT(*) AS n FROM show_facts")["rows"][0][0] > 2000
+    assert run()["error"].startswith("Pass name")
+    assert "queries" in run(name="nope")
+    assert run(name="most_played_songs")["requires"] == ["year_from"]
+    assert run(name="song_by_year", song="Not A Real Song")["error"].startswith("Song not found")
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [ ] **Step 2: Write the failing menu tests** in `tests/test_catalog_menu.py`. Each one checks a menu query against an independent computation from the CSVs:
 
-Run: `PYTHONPATH=. /Users/markdavenport/Development/DeadBot/.venv/bin/python -m pytest tests/test_catalog_query.py -v`
-Expected: FAIL with `ImportError: cannot import name 'CATALOG_QUERY_MAX_ROWS'`
+```python
+import csv
+import json
+from collections import Counter
 
-- [ ] **Step 3: Implement the store method**
+import pytest
 
-In `deadbot/sqlite_store.py`, add `import time` and:
+from deadbot.canonical_import import DEFAULT_CANONICAL_DIR
+from deadbot.sqlite_store import SqliteCanonicalStore
+from deadbot.tools import build_tools
+
+
+def _csv(name):
+    with (DEFAULT_CANONICAL_DIR / f"{name}.csv").open(encoding="utf-8-sig", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+SHOWS = {row["show_id"]: row for row in _csv("shows")}
+VENUES = {row["venue_id"]: row["name"] for row in _csv("venues")}
+SONGS = {row["title"]: row["song_id"] for row in _csv("songs")}
+PERFORMANCES = _csv("performances")
+PERF_SHOW = {row["performance_id"]: row["show_id"] for row in PERFORMANCES}
+TRACKS = _csv("official_release_tracks")
+
+
+def _year(show_id):
+    return int(SHOWS[show_id]["show_date"][:4])
+
+
+@pytest.fixture
+def run(built_sqlite, tmp_path):
+    store = SqliteCanonicalStore(built_sqlite, response_cache_path=tmp_path / "cache.sqlite")
+    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    yield lambda **args: json.loads(tool.invoke(args))
+    store.close()
+
+
+def _column(result, name):
+    index = result["columns"].index(name)
+    return [row[index] for row in result["rows"]]
+
+
+def test_releases_covering_years(run):
+    expected = {t["release_id"] for t in TRACKS if t["performance_id"] in PERF_SHOW and _year(PERF_SHOW[t["performance_id"]]) == 1972}
+    result = run(name="releases_covering_years", year_from=1972)
+    assert set(_column(result, "release_id")) == expected
+    assert "release-europe-72-the-complete-recordings-2011" in expected
+
+
+def test_releases_from_venue(run):
+    expected = {
+        t["release_id"] for t in TRACKS
+        if t["performance_id"] in PERF_SHOW and "winterland" in VENUES.get(SHOWS[PERF_SHOW[t["performance_id"]]]["venue_id"], "").lower()
+    }
+    assert set(_column(run(name="releases_from_venue", venue="Winterland"), "release_id")) == expected
+
+
+def test_releases_with_show(run):
+    expected = {t["release_id"] for t in TRACKS if PERF_SHOW.get(t["performance_id"]) == "gd-1972-08-27"}
+    assert set(_column(run(name="releases_with_show", show="1972-08-27"), "release_id")) == expected
+
+
+def test_most_played_songs(run):
+    counts = Counter(p["song_id"] for p in PERFORMANCES if _year(p["show_id"]) == 1977)
+    top_song, top_count = counts.most_common(1)[0]
+    result = run(name="most_played_songs", year_from=1977, limit=5)
+    assert (_column(result, "song_id")[0], _column(result, "times_played")[0]) == (top_song, top_count)
+    assert _column(result, "shows_in_range")[0] == sum(1 for show_id in SHOWS if _year(show_id) == 1977)
+
+
+def test_song_by_year(run):
+    song_id = SONGS["Dark Star"]
+    counts = Counter(_year(p["show_id"]) for p in PERFORMANCES if p["song_id"] == song_id)
+    result = run(name="song_by_year", song="Dark Star")
+    assert dict(zip(_column(result, "year"), _column(result, "times_played"))) == dict(counts)
+
+
+def test_song_set_positions(run):
+    song_id = SONGS["Scarlet Begonias"]
+    expected = sum(
+        1 for p in PERFORMANCES
+        if p["song_id"] == song_id and 1980 <= _year(p["show_id"]) <= 1989 and p["set_number"] == "2" and p["position_in_set"] == "1"
+    )
+    result = run(name="song_set_positions", song="Scarlet Begonias", year_from=1980, year_to=1989)
+    by_set = dict(zip(_column(result, "set_number"), _column(result, "opened")))
+    assert by_set[2] == expected
+
+
+def test_song_neighbors(run):
+    song_id = SONGS["Scarlet Begonias"]
+    position = {(p["show_id"], p["set_number"], int(p["position_in_set"])): p["song_id"] for p in PERFORMANCES if p["position_in_set"]}
+    after = Counter(
+        position.get((p["show_id"], p["set_number"], int(p["position_in_set"]) + 1))
+        for p in PERFORMANCES if p["song_id"] == song_id and p["position_in_set"]
+    )
+    after.pop(None, None)
+    result = run(name="song_neighbors", song="Scarlet Begonias")
+    rows = [dict(zip(result["columns"], row)) for row in result["rows"]]
+    top_after = next(row for row in rows if row["direction"] == "after")
+    assert top_after["song_id"] == after.most_common(1)[0][0] == SONGS["Fire On The Mountain"]
+
+
+def test_shows_by_venue(run):
+    expected = {show_id for show_id, show in SHOWS.items() if "winterland" in VENUES.get(show["venue_id"], "").lower()}
+    assert set(_column(run(name="shows", venue="Winterland"), "show_id")) == expected
+```
+
+- [ ] **Step 3:** Run both files and see them fail: `PYTHONPATH=. /Users/markdavenport/Development/DeadBot/.venv/bin/python -m pytest tests/test_catalog_query.py tests/test_catalog_menu.py -v`. Expect an ImportError.
+
+- [ ] **Step 4: The store method.** In `deadbot/sqlite_store.py`, add `import time` and the following:
 
 ```python
 CATALOG_QUERY_MAX_ROWS = 200
@@ -1110,10 +1248,10 @@ def _read_only(action: int, arg1: str | None, arg2: str | None, _db: str | None,
     return sqlite3.SQLITE_OK if action in _READ_ACTIONS else sqlite3.SQLITE_DENY
 ```
 
-and this method on `SqliteCanonicalStore`:
+Add the method on `SqliteCanonicalStore`:
 
 ```python
-    def run_catalog_query(self, sql: str) -> dict[str, Any]:
+    def run_catalog_query(self, sql: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         """Run one read-only SELECT with a row cap and a time limit.
 
         The guardrails protect the service, not the answer: reading is the only
@@ -1126,7 +1264,7 @@ and this method on `SqliteCanonicalStore`:
             connection.set_authorizer(_read_only)
             deadline = time.monotonic() + CATALOG_QUERY_TIMEOUT_SECONDS
             connection.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10_000)
-            cursor = connection.execute(sql)
+            cursor = connection.execute(sql, params or {})
             columns = [item[0] for item in cursor.description or ()]
             fetched = cursor.fetchmany(CATALOG_QUERY_MAX_ROWS + 1)
         except sqlite3.OperationalError as exc:
@@ -1156,52 +1294,206 @@ and this method on `SqliteCanonicalStore`:
         return result
 ```
 
-If `test_anything_but_reading_is_refused` shows a statement slipping through (for example `ATTACH` raising a different error class), extend the exception handling. Never widen `_READ_ACTIONS`.
+Never widen `_READ_ACTIONS` to make a test pass. If a refused statement raises a different exception class, extend the `except` handling instead.
 
-- [ ] **Step 4: Add the tool**
-
-In `deadbot/tools.py`, inside `build_tools`, before the final `return`:
+- [ ] **Step 5: The menu.** Create `deadbot/catalog_queries.py`:
 
 ```python
-    tools = [ ... the existing list, unchanged ... ]
+"""Tested catalog queries the model can pick from, and the query tool's description.
 
+Each query is written once and checked against an independent count
+(tests/test_catalog_menu.py), so the common set questions are always right.
+Free SQL covers what the menu does not; queries the measurements show
+recurring get promoted here.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class NamedQuery:
+    name: str
+    summary: str
+    requires: tuple[str, ...]
+    sql: str
+
+
+_YEARS = "year BETWEEN :year_from AND :year_to"
+
+NAMED_QUERIES: dict[str, NamedQuery] = {
+    query.name: query
+    for query in (
+        NamedQuery(
+            "releases_covering_years",
+            "official releases with shows from year_from–year_to: title, type, date, shows in range, first/last show",
+            ("year_from",),
+            "SELECT release_id, release_title, release_type, release_date, COUNT(DISTINCT show_id) AS shows_in_range, "
+            "MIN(show_date) AS first_show, MAX(show_date) AS last_show FROM release_track_facts "
+            f"WHERE {_YEARS} GROUP BY release_id ORDER BY release_date, release_title",
+        ),
+        NamedQuery(
+            "releases_from_venue",
+            "official releases with shows from a venue (name match): title, type, date, shows there",
+            ("venue",),
+            "SELECT release_id, release_title, release_type, release_date, venue_name, COUNT(DISTINCT show_id) AS shows_there, "
+            "MIN(show_date) AS first_show, MAX(show_date) AS last_show FROM release_track_facts "
+            "WHERE venue_name LIKE '%' || :venue || '%' GROUP BY release_id, venue_name ORDER BY release_date, release_title",
+        ),
+        NamedQuery(
+            "releases_with_show",
+            "official releases carrying tracks from one show: title, type, date, tracks from the show",
+            ("show",),
+            "SELECT release_id, release_title, release_type, release_date, COUNT(*) AS tracks_from_show "
+            "FROM release_track_facts WHERE show_id = :show GROUP BY release_id ORDER BY release_date, release_title",
+        ),
+        NamedQuery(
+            "most_played_songs",
+            "songs played most in year_from–year_to: times played, shows, total shows in range (includes Drums/Space)",
+            ("year_from",),
+            "SELECT song_id, song_title, COUNT(*) AS times_played, COUNT(DISTINCT show_id) AS shows, "
+            f"(SELECT COUNT(*) FROM show_facts WHERE {_YEARS}) AS shows_in_range FROM performance_facts "
+            f"WHERE {_YEARS} GROUP BY song_id ORDER BY times_played DESC, song_title LIMIT :limit",
+        ),
+        NamedQuery(
+            "song_by_year",
+            "one song's performances per year, with that year's show count",
+            ("song",),
+            "SELECT year, COUNT(*) AS times_played, COUNT(DISTINCT show_id) AS shows, "
+            "(SELECT COUNT(*) FROM show_facts sf WHERE sf.year = pf.year) AS shows_that_year "
+            "FROM performance_facts pf WHERE song_id = :song GROUP BY year ORDER BY year",
+        ),
+        NamedQuery(
+            "song_set_positions",
+            "where a song sat in year_from–year_to: per set, times it opened, closed, and appeared",
+            ("song",),
+            "WITH placed AS (SELECT p.show_id, p.set_number, p.set_label, "
+            "p.position_in_set = 1 AS opens, "
+            "p.position_in_set = (SELECT MAX(p2.position_in_set) FROM performances p2 "
+            "WHERE p2.show_id = p.show_id AND p2.set_number IS p.set_number) AS closes "
+            "FROM performances p JOIN shows s ON s.show_id = p.show_id "
+            "WHERE p.song_id = :song AND CAST(substr(s.show_date, 1, 4) AS INTEGER) BETWEEN :year_from AND :year_to) "
+            "SELECT set_number, set_label, SUM(opens) AS opened, SUM(closes) AS closed, COUNT(*) AS times_in_set "
+            "FROM placed GROUP BY set_number, set_label ORDER BY set_number",
+        ),
+        NamedQuery(
+            "song_neighbors",
+            "what a song followed and led into in year_from–year_to: direction, song, times, how often segued",
+            ("song",),
+            "SELECT * FROM (SELECT 'after' AS direction, nxt.song_id, so.title AS song_title, COUNT(*) AS times, "
+            "SUM(cur.segue_into_next = 'true') AS segued FROM performances cur "
+            "JOIN shows s ON s.show_id = cur.show_id "
+            "JOIN performances nxt ON nxt.show_id = cur.show_id AND nxt.set_number IS cur.set_number "
+            "AND nxt.position_in_set = cur.position_in_set + 1 "
+            "LEFT JOIN songs so ON so.song_id = nxt.song_id "
+            "WHERE cur.song_id = :song AND CAST(substr(s.show_date, 1, 4) AS INTEGER) BETWEEN :year_from AND :year_to "
+            "GROUP BY nxt.song_id ORDER BY times DESC LIMIT :limit) "
+            "UNION ALL SELECT * FROM (SELECT 'before' AS direction, prv.song_id, so.title AS song_title, COUNT(*) AS times, "
+            "SUM(prv.segue_into_next = 'true') AS segued FROM performances cur "
+            "JOIN shows s ON s.show_id = cur.show_id "
+            "JOIN performances prv ON prv.show_id = cur.show_id AND prv.set_number IS cur.set_number "
+            "AND prv.position_in_set = cur.position_in_set - 1 "
+            "LEFT JOIN songs so ON so.song_id = prv.song_id "
+            "WHERE cur.song_id = :song AND CAST(substr(s.show_date, 1, 4) AS INTEGER) BETWEEN :year_from AND :year_to "
+            "GROUP BY prv.song_id ORDER BY times DESC LIMIT :limit)",
+        ),
+        NamedQuery(
+            "shows",
+            "shows filtered by venue, tour and/or year_from–year_to: date, venue, city, tour, setlist length",
+            (),
+            "SELECT show_id, show_date, venue_name, city, tour_name, performance_count FROM show_facts "
+            "WHERE (:venue = '' OR venue_name LIKE '%' || :venue || '%') "
+            "AND (:tour = '' OR tour_name LIKE '%' || :tour || '%') "
+            f"AND {_YEARS} ORDER BY show_date",
+        ),
+    )
+}
+
+
+_GUIDE = """Views for SQL (prefer these):
+- show_facts: show_id, show_date, year, venue_id, venue_name, city, state_region, country, tour_name, event_name, performance_count
+- performance_facts (one row per setlist entry): performance_id, song_id, song_title, show_id, show_date, year, venue_id, venue_name, city, tour_name, set_number, set_label, position_in_set, encore, segue_into_next
+- release_track_facts (one row per official release track): release_id, release_title, release_type, release_date, track_number, track_title, song_id, song_title, performance_id, show_id, show_date, year, venue_id, venue_name, city (show columns NULL for studio tracks)
+- guest_appearances: show_id, show_date, year, person_id, person_name, instrument, venue_name, city
+Base tables are readable too. Dates are ISO text; use year for years. release_date may be partial ("1972"). Booleans are 'true'/'false'. Count shows with COUNT(DISTINCT show_id); setlists include Drums and Space. Results stop at 200 rows; aggregate or LIMIT."""
+
+
+def catalog_tool_description() -> str:
+    menu = "\n".join(
+        f"- {query.name}({', '.join(query.requires) or 'filters optional'}): {query.summary}"
+        for query in NAMED_QUERIES.values()
+    )
+    return (
+        "Find or count things across the catalog. Use a listed query when one fits "
+        "(song and show accept a title, ID or date; one year: set year_from only). "
+        "When none fits, pass sql: one read-only SQLite SELECT. Then look up the few items "
+        "your answer will feature for depth.\n"
+        f"Queries:\n{menu}\n{_GUIDE}"
+    )
+```
+
+- [ ] **Step 6: The tool.** In `deadbot/tools.py`, import `from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description`. Inside `build_tools`, turn the existing `return [...]` into `tools = [...]`, then add:
+
+```python
     if callable(getattr(store, "run_catalog_query", None)):
 
         @tool
-        def query_catalog(sql: str) -> str:
-            """Find or count things across the catalog with one read-only SQLite SELECT.
+        def query_catalog(
+            name: str = "",
+            song: str = "",
+            venue: str = "",
+            show: str = "",
+            tour: str = "",
+            year_from: int | None = None,
+            year_to: int | None = None,
+            limit: int = 25,
+            sql: str = "",
+        ) -> str:
+            """Find or count things across the catalog."""  # replaced below by catalog_tool_description()
+            if not name and not sql:
+                return _json({"error": "Pass name (a listed query) or sql"})
+            if not name:
+                return _json(store.run_catalog_query(sql))
+            query = NAMED_QUERIES.get(name)
+            if query is None:
+                return _json({"error": "Unknown query", "queries": list(NAMED_QUERIES)})
+            given = {"song": song, "venue": venue, "show": show, "year_from": year_from}
+            if any(not given.get(required) for required in query.requires):
+                return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
+            params: dict[str, Any] = {"venue": venue, "tour": tour, "limit": max(1, min(limit, 200))}
+            if song:
+                resolved = store.resolve_song(song)
+                if not resolved:
+                    return _json({"error": "Song not found or ambiguous", "query": song})
+                params["song"] = resolved["song_id"]
+            if show:
+                resolved_show = store.resolve_show(show)
+                if not resolved_show:
+                    return _json({"error": "Show not found", "query": show})
+                params["show"] = resolved_show["show_id"]
+            params["year_from"] = year_from if year_from is not None else 1965
+            params["year_to"] = year_to if year_to is not None else (year_from if year_from is not None else 1995)
+            result = store.run_catalog_query(query.sql, params)
+            return _json({"query": name, **result})
 
-            Use this for sets: which releases, how many times, the most, by year,
-            venue or tour. Then use the lookup tools for depth on the few items
-            your answer will feature. Views (prefer these):
-            - show_facts: show_id, show_date, year, venue_id, venue_name, city, state_region, country, tour_name, event_name, performance_count
-            - performance_facts: one row per setlist entry. performance_id, song_id, song_title, show_id, show_date, year, venue_id, venue_name, city, tour_name, set_number, set_label, position_in_set, encore, segue_into_next
-            - release_track_facts: one row per official release track. release_id, release_title, release_type (live/studio), release_date, track_number, track_title, song_id, song_title, performance_id, show_id, show_date, year, venue_id, venue_name, city (show columns are NULL for studio tracks)
-            - guest_appearances: show_id, show_date, year, person_id, person_name, instrument, venue_name, city
-            Base tables (songs, shows, venues, people, official_releases, ...) are also readable.
-            Notes: dates are ISO text, so compare as strings or use year. release_date may be partial ("1972", "1972-05").
-            Booleans are the text 'true'/'false'. Count shows with COUNT(DISTINCT show_id); performance_count
-            and setlist rows include Drums and Space. Results stop at 200 rows; aggregate or LIMIT.
-            Examples:
-            SELECT release_id, release_title, COUNT(DISTINCT show_id) AS shows FROM release_track_facts WHERE year = 1972 GROUP BY release_id ORDER BY shows DESC
-            SELECT song_title, COUNT(*) AS times FROM performance_facts WHERE year = 1977 GROUP BY song_id ORDER BY times DESC LIMIT 15
-            """
-            return _json(store.run_catalog_query(sql))
-
+        query_catalog.description = catalog_tool_description()
         tools.append(query_catalog)
     return tools
 ```
 
-- [ ] **Step 5: Run the tests**
+If LangChain doesn't allow assigning `description` on the tool object, build it with `StructuredTool.from_function(func=..., name="query_catalog", description=catalog_tool_description())` instead, keeping the same signature. SQLite rejects unused named parameters in some versions; if it complains that a parameter isn't used, pass only the parameters that appear in `query.sql` (`{k: v for k, v in params.items() if f":{k}" in query.sql}`).
 
-Run: `PYTHONPATH=. /Users/markdavenport/Development/DeadBot/.venv/bin/python -m pytest tests/test_catalog_query.py tests/test_research_tools.py tests/test_graph.py -q`
-Expected: all PASS. If a graph test pins the exact tool count or list, update it: `query_catalog` exists only with the SQLite store.
+- [ ] **Step 7: Run the tests**
 
-- [ ] **Step 6: Commit**
+Run: `PYTHONPATH=. /Users/markdavenport/Development/DeadBot/.venv/bin/python -m pytest tests/test_catalog_query.py tests/test_catalog_menu.py tests/test_research_tools.py tests/test_graph.py -q`
+Expected: all PASS. If `song_neighbors` or `song_set_positions` hits the 1.5-second limit, check the plan with `EXPLAIN QUERY PLAN`. The queries join base tables so that the indexes on `performances.song_id` and `performances.show_id` apply. Fix the SQL; don't raise the limit. If a graph test pins the exact tool list, update it: `query_catalog` exists only with the SQLite store.
+
+- [ ] **Step 8: Commit**
 
 ```bash
-git add deadbot/sqlite_store.py deadbot/tools.py tests/test_catalog_query.py
-git commit -m "A read-only catalog query tool answers set questions, with a row cap, a time limit and read-only access"
+git add deadbot/catalog_queries.py deadbot/sqlite_store.py deadbot/tools.py tests/test_catalog_query.py tests/test_catalog_menu.py
+git commit -m "A catalog query tool offers tested queries for common set questions, with read-only SQL as the fallback"
 ```
 
 ---
@@ -1259,8 +1551,8 @@ In `deadbot/graph.py`, append this paragraph to the end of the "Research efficie
 Work like a researcher. Lookups return a summary and list what more is
 available; open a detail only when your answer will use it. To find or count
 things across the catalog (which releases, how many times, the most, by year,
-venue or tour), query it with query_catalog; to understand one thing deeply or
-put it on the page, look it up.
+venue or tour), use query_catalog: pick a listed query when one fits, write SQL
+when none does. To understand one thing deeply or put it on the page, look it up.
 ```
 
 In the "Well-worn routes." paragraph:
@@ -1310,6 +1602,15 @@ In the "Well-worn routes." paragraph:
       "arguments": {"sql": "SELECT song_title, COUNT(*) AS times FROM performance_facts WHERE year = 1977 GROUP BY song_id ORDER BY times DESC LIMIT 1"},
       "expected": {"contains": {"rows": ["Estimated Prophet", 51]}},
       "failure_conditions": ["The top 1977 song or its count is wrong."]
+    },
+    {
+      "id": "menu-releases-covering-1972",
+      "category": "catalog-menu",
+      "question": "Which official releases cover 1972?",
+      "tool": "query_catalog",
+      "arguments": {"name": "releases_covering_years", "year_from": 1972},
+      "expected": {"equals": {"query": "releases_covering_years"}},
+      "failure_conditions": ["The listed query for releases by year does not run."]
     },
     {
       "id": "writes-refused",
