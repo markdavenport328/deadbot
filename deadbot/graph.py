@@ -63,9 +63,10 @@ Well-worn routes. For the best or notable versions of a song,
 get_song_notable_versions gathers official releases, critic and curator picks
 and fan votes per rendition with listening links, and get_selections_for
 narrows the reviewed selection inventory to one song or show. For a guest
-musician, search_guest_musicians returns their shows with IDs and pathways;
-call get_show for the shows you will write about so their setlists, guests and
-recordings inform what you say. For a record's
+musician, search_guest_musicians lists guests with their show counts and
+years; ask for include=["appearances"] to get a guest's shows with IDs and
+pathways. Call get_show for the shows you will write about so their setlists,
+guests and recordings inform what you say. For a record's
 life on stage, get_album carries each track's live legacy. For a named show,
 get_show. The full selection inventory (get_selection_signals) serves
 questions about the sources and lists themselves.

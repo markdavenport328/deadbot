@@ -526,18 +526,28 @@ def build_tools(
         return _json(payload)
 
     @tool
-    def search_guest_musicians(query: str = "") -> str:
-        """Find guest musicians and the Grateful Dead shows they played.
+    def search_guest_musicians(query: str = "", include: list[str] | None = None) -> str:
+        """List guest musicians: who sat in, how often, when, and on what.
 
-        A name or phrase narrows the results. Each appearance includes its show,
-        venue, location, credited instruments, and any known participation scope.
-        Where a source pins the guest to particular songs, the appearance also
-        carries songs: the performances they played on, in set order, each with
-        a note on what happened. An appearance without songs is known at the
-        show level only. pathways lists the cataloged lore for each result
-        (resources, source trail, selections) or the research sites to search
-        when nothing is cataloged.
+        A name or phrase narrows the results. By default each guest is a
+        directory entry: person_id, name, guest_show_count, first_show_date,
+        last_show_date, and the distinct instruments they are credited with.
+        Pass include=["appearances"] to get a guest's shows: each appearance's
+        venue, location, credited instruments, any known participation scope,
+        and (where a source pins the guest to particular songs) the
+        performances they played on in set order with a note on what
+        happened. That call also carries pathways: the cataloged lore for
+        each show (resources, source trail, selections) or the research
+        sites to search when nothing is cataloged. When the question is
+        about a specific guest, ask for include=["appearances"] in the same
+        call rather than looking the guest up twice.
         """
+        include = include or []
+        valid_includes = {"appearances"}
+        unknown = [item for item in include if item not in valid_includes]
+        if unknown:
+            return _json({"error": "Unknown include", "valid": sorted(valid_includes)})
+        want_appearances = "appearances" in include
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
         shows = {show["show_id"]: show for show in store.rows("shows")}
@@ -676,15 +686,50 @@ def build_tools(
         # Recurring guests first: the shape of the directory shows who became a
         # thread in the band's story before it shows who dropped by once.
         guests.sort(key=lambda guest: (-guest["guest_show_count"], guest["name"].casefold()))
-        show_ids = []
+        total_appearances = sum(len(guest["appearances"]) for guest in guests)
+        if want_appearances:
+            show_ids = []
+            for guest in guests:
+                for appearance in guest["appearances"]:
+                    if appearance["show_id"] not in show_ids:
+                        show_ids.append(appearance["show_id"])
+            pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
+            payload: dict[str, Any] = {"query": query, "guest_count": len(guests), "guests": guests}
+            if pathway_entities:
+                payload["pathways"] = pathways_for(store, pathway_entities)
+            return _json(payload)
+        summaries = []
         for guest in guests:
-            for appearance in guest["appearances"]:
-                if appearance["show_id"] not in show_ids:
-                    show_ids.append(appearance["show_id"])
-        pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
-        payload: dict[str, Any] = {"query": query, "guest_count": len(guests), "guests": guests}
-        if pathway_entities:
-            payload["pathways"] = pathways_for(store, pathway_entities)
+            appearances = guest["appearances"]
+            instruments: list[str] = []
+            for appearance in appearances:
+                for instrument in appearance.get("instruments") or []:
+                    if instrument not in instruments:
+                        instruments.append(instrument)
+            summaries.append(
+                {
+                    "person_id": guest["person_id"],
+                    "name": guest["name"],
+                    "guest_show_count": guest["guest_show_count"],
+                    "first_show_date": appearances[0]["show_date"] if appearances else None,
+                    "last_show_date": appearances[-1]["show_date"] if appearances else None,
+                    "instruments": instruments,
+                }
+            )
+        payload = {
+            "query": query,
+            "guest_count": len(guests),
+            "guests": summaries,
+            "available": {
+                "appearances": {
+                    "count": total_appearances,
+                    "ask": (
+                        "include=[\"appearances\"]: each guest's shows (date, venue, "
+                        "instruments, songs they played on) and pathways"
+                    ),
+                }
+            },
+        }
         return _json(payload)
 
     @tool

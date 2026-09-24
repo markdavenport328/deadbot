@@ -125,7 +125,11 @@ def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
 
 def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
     store = CanonicalStore()
-    payload = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford"}))
+    payload = json.loads(
+        tool_by_name(store, "search_guest_musicians").invoke(
+            {"query": "Branford", "include": ["appearances"]}
+        )
+    )
     assert [guest["name"] for guest in payload["guests"]] == ["Branford Marsalis"]
     branford = payload["guests"][0]
     assert branford["guest_show_count"] == 5
@@ -170,7 +174,9 @@ def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_perso
     """
 
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Marvin Boxley"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Marvin Boxley", "include": ["appearances"]}
+        )
     )
 
     assert [guest["name"] for guest in payload["guests"]] == ["Marvin Boxley"]
@@ -189,32 +195,27 @@ def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_perso
 
 
 def test_guest_directory_reports_no_person_under_a_qualified_name():
-    """Every legacy qualifier row in the people table folds, not just one form.
+    """Every legacy qualifier row in the people table folds, not just one form."""
 
-    An unfiltered query on this dataset returns a payload well over the tool
-    result ceiling and comes back truncated to its most recurring guests, so
-    this checks each folded identity through its own narrow query instead of
-    relying on catching every legacy row inside one unfiltered response.
-    """
+    payload = json.loads(
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": ""})
+    )
 
-    tool = tool_by_name(CanonicalStore(), "search_guest_musicians")
-    reported_ids: set[str] = set()
-    for query in ("Airto Moreira", "Marvin Boxley", "Tom Constanten"):
-        payload = json.loads(tool.invoke({"query": query}))
-        assert "_truncated" not in payload
-        reported_ids |= {guest["person_id"] for guest in payload["guests"]}
-        assert not [guest for guest in payload["guests"] if QUALIFIER.search(guest["name"])]
-        assert not [
-            person_id
-            for person_id in reported_ids
-            if person_id.endswith(("-complete-show", "-songs-unknown"))
-        ]
+    reported_ids = {guest["person_id"] for guest in payload["guests"]}
+    assert not [guest for guest in payload["guests"] if QUALIFIER.search(guest["name"])]
+    assert not [
+        person_id
+        for person_id in reported_ids
+        if person_id.endswith(("-complete-show", "-songs-unknown"))
+    ]
     assert {"person-airto-moreira", "person-marvin-boxley", "person-tom-constanten"} <= reported_ids
 
 
 def test_complete_show_qualifier_still_reaches_the_reader_as_a_participation_scope():
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Ned Lagin"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Ned Lagin", "include": ["appearances"]}
+        )
     )
 
     lagin = payload["guests"][0]
@@ -239,7 +240,9 @@ def test_guest_directory_names_the_songs_a_guest_played_when_the_catalog_knows_t
     """A show-level credit says Santana was there; performance_performers says on what."""
 
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Santana"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Santana", "include": ["appearances"]}
+        )
     )
 
     assert [guest["name"] for guest in payload["guests"]] == ["Carlos Santana"]
