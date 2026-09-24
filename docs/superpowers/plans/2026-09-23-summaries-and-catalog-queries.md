@@ -585,6 +585,47 @@ git commit -m "Every tool result is bounded by the 20,000-token ceiling and says
 
 ---
 
+### Task 3b: `search_guest_musicians`: a directory summary by default, appearances on request
+
+Added 2026-09-23 after the baseline. The guest lookup is the second-largest offender: `query=""` returns 201,164 characters because every guest carries every appearance in full (Branford alone is about 19,000). The owner's point stands: a list of 139 guests should be small. The same summary-first pattern as `get_album` applies.
+
+**Files:**
+- Modify: `deadbot/tools.py` (`search_guest_musicians`, ~lines 525–640)
+- Modify: `deadbot/graph.py` (the well-worn route sentence naming `search_guest_musicians`)
+- Modify: `tests/test_data.py`, `tests/test_finish.py` (callers that need appearances pass `include`); restore `test_guest_directory_reports_no_person_under_a_qualified_name` to scan the **full** directory, as it did at commit 6eaeadc (Task 3 narrowed it to about 4 guests)
+- Test: `tests/test_guest_summary.py`
+
+**Interfaces:**
+- Produces: `search_guest_musicians(query: str = "", include: list[str] | None = None) -> str`.
+- **Summary (default):** each guest is `{person_id, name, guest_show_count, first_show_date, last_show_date, instruments}`. `instruments` is the distinct credited instruments across their appearances. The order is unchanged: busiest first, as today.
+- The payload is `{guest_count, guests, available}`. `available` is `{"appearances": {"count": <total appearances across the returned guests>, "ask": "include=[\"appearances\"]: each guest's shows (date, venue, instruments, songs they played on) and pathways"}}`.
+- **With `include=["appearances"]`:** each guest also carries today's `appearances` exactly as now, and the payload carries today's `pathways`.
+- An unknown include returns `{"error": "Unknown include", "valid": ["appearances"]}`.
+
+- [ ] **Step 1: Write the failing tests** in `tests/test_guest_summary.py`:
+  - `query=""` returns all guests, and `len(result) < 20_000` characters.
+  - No guest has `appearances`, and there is no `_truncated`.
+  - Branford is present with `guest_show_count == 5`, a `first_show_date` of 1990-03-29 and a `last_show_date` of 1994-12-16.
+  - `query="Branford", include=["appearances"]` returns his five show IDs (the existing expectations from `test_data.py`).
+  - An unknown include returns the error.
+  - Use `CanonicalStore()` like the existing guest tests.
+- [ ] **Step 2:** Run it and see it fail.
+- [ ] **Step 3: Implement.**
+  - Build the appearances as today, then derive the summary fields from them.
+  - Attach `appearances` and `pathways` only when requested.
+  - Update the docstring:
+    - the default is a directory: who, how often, when, on what;
+    - `include=["appearances"]` returns the shows;
+    - for a question about a specific guest, request appearances in the same call.
+- [ ] **Step 4: Update the callers.**
+  - Every existing test that reads `appearances` or `pathways` passes `include=["appearances"]`.
+  - Restore the full-directory qualifier test to query `""` and check every guest name.
+  - In `deadbot/graph.py`, change "search_guest_musicians returns their shows with IDs and pathways" to "search_guest_musicians lists guests with their show counts and years; ask for include=[\"appearances\"] to get a guest's shows with IDs and pathways".
+- [ ] **Step 5:** Run the new, data, finish, graph and evaluation tests, then the full suite. Expect everything to pass.
+- [ ] **Step 6: Commit:** "The guest directory lists who, how often and when; a guest's shows come on request"
+
+---
+
 ### Task 4: `get_album` summary by default, detail on request
 
 **Files:**
