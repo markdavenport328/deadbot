@@ -6,14 +6,15 @@ from tests.test_data import tool_by_name
 
 
 def test_guest_directory_defaults_to_a_small_summary_with_no_appearances():
-    """The brief's own target was `< 20_000`; measured against this dataset's
+    """The size bound reflects what the required summary schema can deliver, not the brief's `< 20_000` figure.
 
-    139 guests, the five required summary fields alone put the honest floor
-    at roughly 24_000 (~172 chars/guest just for person_id, name, two dates,
-    guest_show_count and instruments — see task-3b-report.md). The bound here
-    is set to what the schema can actually deliver: still an ~8x reduction
-    from the 201_164-character full directory, with no per-guest appearances
-    and comfortably under the 80_000 tool result ceiling.
+    Measured against this dataset's 139 guests, the six required summary
+    fields (person_id, name, guest_show_count, first_show_date,
+    last_show_date, instruments) alone put the honest floor at roughly
+    24_000 characters (~172 chars/guest — see task-3b-report.md). The bound
+    here is set to what the schema can actually deliver: still an ~8x
+    reduction from the 201_164-character full directory, with no per-guest
+    appearances and comfortably under the 80_000 tool result ceiling.
     """
     store = CanonicalStore()
     result = tool_by_name(store, "search_guest_musicians").invoke({"query": ""})

@@ -686,7 +686,6 @@ def build_tools(
         # Recurring guests first: the shape of the directory shows who became a
         # thread in the band's story before it shows who dropped by once.
         guests.sort(key=lambda guest: (-guest["guest_show_count"], guest["name"].casefold()))
-        total_appearances = sum(len(guest["appearances"]) for guest in guests)
         if want_appearances:
             show_ids = []
             for guest in guests:
@@ -698,6 +697,7 @@ def build_tools(
             if pathway_entities:
                 payload["pathways"] = pathways_for(store, pathway_entities)
             return _json(payload)
+        total_appearances = sum(len(guest["appearances"]) for guest in guests)
         summaries = []
         for guest in guests:
             appearances = guest["appearances"]
