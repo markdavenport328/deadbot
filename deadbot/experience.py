@@ -103,6 +103,16 @@ class FollowUpTopic(ExperienceModel):
     question: str
 
 
+class PlayableTrack(ExperienceModel):
+    """One Internet Archive track the in-page player can play, in show order."""
+
+    performance_id: str
+    title: str
+    audio_url: str
+    duration_seconds: int | None = Field(default=None, ge=0)
+    set_label: str | None = None
+
+
 class PerformanceSpineNeighbor(ExperienceModel):
     performance_id: str
     title: str
@@ -230,6 +240,10 @@ class PerformanceUnitBlock(ExperienceModel):
     previous: PerformanceSpineNeighbor | None = None
     next: PerformanceSpineNeighbor | None = None
     listen: list[ListenAction] = Field(default_factory=list, max_length=3)
+    # The show's playable tracks from the same tape as this rendition, in show
+    # order, so a full-show action on the Internet Archive can play in-page.
+    # Empty when the library has no archive track for this performance.
+    show_tracks: list[PlayableTrack] = Field(default_factory=list, max_length=60)
     sources: list[UnitSource] = Field(default_factory=list, max_length=4)
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
 
@@ -512,6 +526,49 @@ class EditorialLink(ExperienceModel):
     label: str
 
 
+class ListeningHeroBlock(ExperienceModel):
+    """The page's lead when the answer is best heard: a cover, a name and one Play.
+
+    The model chooses the show or record, writes the line and the Play words,
+    and says where playback starts; the server hydrates identity, the image,
+    and the playable queue from the library.
+    """
+
+    type: Literal["listening_hero"]
+    show_id: str | None = None
+    release_id: str | None = None
+    # A show is named by its venue and date together; a record by its title.
+    venue_name: str | None = None
+    location: str | None = None
+    show_date: str | None = None
+    release_title: str | None = None
+    release_date: str | None = None
+    line: str | None = None
+    play_label: str | None = None
+    # The in-page queue, in listening order, and where playback starts in it.
+    queue: list[PlayableTrack] = Field(default_factory=list, max_length=60)
+    start_index: int = Field(default=0, ge=0)
+    # Where Play goes when nothing is playable in-page: the official release
+    # or the show's stream.
+    play_url: str | None = None
+    recording_identifier: str | None = None
+    recording_details_url: str | None = None
+    image_url: str | None = None
+    image_alt: str | None = None
+    link: EditorialLink | None = None
+
+
+class PullQuoteBlock(ExperienceModel):
+    """One sentence the model sets apart, large, as the page's pulled line."""
+
+    type: Literal["pull_quote"]
+    text: str = Field(
+        min_length=1,
+        max_length=400,
+        description="One sentence, in your voice, that states the idea the visitor should carry away.",
+    )
+
+
 class EditorialItem(ExperienceModel):
     # Everything but the title is optional with a default, because this model
     # doubles as the finish_response tool schema: when the optional fields were
@@ -613,7 +670,9 @@ ExperienceBlock = Annotated[
     | ArrangementSearchBlock
     | ProvenanceNoteBlock
     | GapStateBlock
-    | EditorialBlock,
+    | EditorialBlock
+    | ListeningHeroBlock
+    | PullQuoteBlock,
     Field(discriminator="type"),
 ]
 

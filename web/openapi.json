@@ -1178,10 +1178,12 @@
                   "era_unit": "#/components/schemas/EraUnitBlock",
                   "gap_state": "#/components/schemas/GapStateBlock",
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
+                  "listening_hero": "#/components/schemas/ListeningHeroBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
                   "performance_unit": "#/components/schemas/PerformanceUnitBlock",
                   "person_roster": "#/components/schemas/PersonRosterBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
+                  "pull_quote": "#/components/schemas/PullQuoteBlock",
                   "resource_list": "#/components/schemas/ResourceListBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_unit": "#/components/schemas/ShowUnitBlock",
@@ -1246,6 +1248,12 @@
                 },
                 {
                   "$ref": "#/components/schemas/EditorialBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/ListeningHeroBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PullQuoteBlock"
                 }
               ]
             },
@@ -1546,6 +1554,200 @@
         "title": "ListenAction",
         "type": "object"
       },
+      "ListeningHeroBlock": {
+        "additionalProperties": false,
+        "description": "The page's lead when the answer is best heard: a cover, a name and one Play.\n\nThe model chooses the show or record, writes the line and the Play words,\nand says where playback starts; the server hydrates identity, the image,\nand the playable queue from the library.",
+        "properties": {
+          "image_alt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Alt"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EditorialLink"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "play_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Play Label"
+          },
+          "play_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Play Url"
+          },
+          "queue": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "maxItems": 60,
+            "title": "Queue",
+            "type": "array"
+          },
+          "recording_details_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Details Url"
+          },
+          "recording_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Identifier"
+          },
+          "release_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Date"
+          },
+          "release_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Id"
+          },
+          "release_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Title"
+          },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
+          "show_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Id"
+          },
+          "start_index": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Start Index",
+            "type": "integer"
+          },
+          "type": {
+            "const": "listening_hero",
+            "title": "Type",
+            "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "ListeningHeroBlock",
+        "type": "object"
+      },
       "MediaLinkBlock": {
         "additionalProperties": false,
         "properties": {
@@ -1824,6 +2026,14 @@
             "title": "Show Label",
             "type": "string"
           },
+          "show_tracks": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "maxItems": 60,
+            "title": "Show Tracks",
+            "type": "array"
+          },
           "song_id": {
             "title": "Song Id",
             "type": "string"
@@ -2015,6 +2225,54 @@
         "title": "PersonRosterItem",
         "type": "object"
       },
+      "PlayableTrack": {
+        "additionalProperties": false,
+        "description": "One Internet Archive track the in-page player can play, in show order.",
+        "properties": {
+          "audio_url": {
+            "title": "Audio Url",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "title",
+          "audio_url"
+        ],
+        "title": "PlayableTrack",
+        "type": "object"
+      },
       "ProvenanceNoteBlock": {
         "additionalProperties": false,
         "properties": {
@@ -2043,6 +2301,30 @@
           "source_ids"
         ],
         "title": "ProvenanceNoteBlock",
+        "type": "object"
+      },
+      "PullQuoteBlock": {
+        "additionalProperties": false,
+        "description": "One sentence the model sets apart, large, as the page's pulled line.",
+        "properties": {
+          "text": {
+            "description": "One sentence, in your voice, that states the idea the visitor should carry away.",
+            "maxLength": 400,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "const": "pull_quote",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "PullQuoteBlock",
         "type": "object"
       },
       "RecordingItem": {

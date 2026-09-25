@@ -624,14 +624,18 @@ def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
     video = listen.get("video_url")
     if isinstance(video, str) and video:
         add(ListenAction(label=f"Watch {title}", url=video, provider="youtube"))
-    show_links = context.get("show_links") if isinstance(context.get("show_links"), list) else []
-    for link_type, label in (("streaming-show-page", "Hear the full show"),):
+    # The full show: the same tape as this rendition on the Internet Archive
+    # when the library has it, so the whole show can play in-page from the
+    # card; otherwise the show's stream.
+    tape = listen.get("archive_identifier")
+    if isinstance(tape, str) and tape and isinstance(archive_track, str) and archive_track:
+        add(ListenAction(label="Hear the full show", url=f"https://archive.org/details/{tape}", provider="archive"))
+    else:
+        show_links = context.get("show_links") if isinstance(context.get("show_links"), list) else []
         for link in show_links:
-            if isinstance(link, dict) and link.get("link_type") == link_type and link.get("url"):
-                add(ListenAction(label=label, url=link["url"], provider=_provider_for(link["url"], link.get("platform"))))
+            if isinstance(link, dict) and link.get("link_type") == "streaming-show-page" and link.get("url"):
+                add(ListenAction(label="Hear the full show", url=link["url"], provider=_provider_for(link["url"], link.get("platform"))))
                 break
-        if len(actions) >= 3:
-            break
     return actions[:3]
 
 
@@ -653,6 +657,13 @@ def _performance_unit(
     if not performance.get("performance_id") or not song.get("song_id") or not show.get("show_id") or not song.get("title"):
         return None
     previous, next_ = _set_neighbors(context, store)
+    listen_paths = context.get("listen") if isinstance(context.get("listen"), dict) else {}
+    tape = listen_paths.get("archive_identifier")
+    show_tracks: list[Any] = []
+    if isinstance(tape, str) and tape:
+        from deadbot.listening import playable_show_tracks
+
+        show_tracks, _ = playable_show_tracks(show["show_id"], store, tape)
     venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
     show_label = " — ".join(part for part in [show.get("show_date"), venue.get("name") if venue else None] if part) or show["show_id"]
     return PerformanceUnitBlock(
@@ -673,6 +684,7 @@ def _performance_unit(
         previous=previous,
         next=next_,
         listen=_performance_listen_actions(context),
+        show_tracks=show_tracks,
         sources=(sources or [])[:4],
         follow_ups=_clean_follow_ups(follow_ups),
     )

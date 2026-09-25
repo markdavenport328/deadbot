@@ -28,9 +28,11 @@ from deadbot.experience import (
     EditorialBlock,
     Emphasis,
     ExperienceGroup,
+    EditorialLink,
     ExperienceBlock,
     ExperienceResponse,
     GapStateBlock,
+    PullQuoteBlock,
     PersonRosterBlock,
     PersonRosterItem,
     ResourceListBlock,
@@ -346,6 +348,31 @@ class SongOverviewRef(_Ref):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
 
+class ListeningHeroRef(BaseModel):
+    """The page's lead when the visitor wants to hear a show or recording.
+
+    A cover, the show's venue and date (or the record's title), your line, and
+    one Play that starts the show's tape in-page where you say. The server
+    supplies identity, the image and the playable queue.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    type: Literal["listening_hero"]
+    show_id: str | None = Field(default=None, description="The show to play: a show_id that appeared in a tool result this turn.")
+    release_id: str | None = Field(
+        default=None,
+        description="The official record to lead with: a release_id from this turn. With a show_id, its cover leads the show.",
+    )
+    line: str | None = Field(default=None, description="One short line under the name: what the visitor is about to hear.")
+    play_label: str | None = Field(default=None, description="The Play button's words, such as 'Play the second set'.")
+    start_set: str | None = Field(default=None, description="The set to start from, as the show's setlist labels it, such as 'Set 2'.")
+    start_performance_id: str | None = Field(default=None, description="A performance_id in this show to start from, when one song is the way in.")
+    link: EditorialLink | None = Field(
+        default=None,
+        description="One quiet secondary link beside Play, such as the official release on Spotify; kept only when its URL appeared in a tool result this turn.",
+    )
+
+
 def _emphasis_for(ref: Any) -> Emphasis:
     """The rendered emphasis for a unit ref: explicit emphasis, else the deprecated role mapped."""
 
@@ -357,6 +384,8 @@ def _emphasis_for(ref: Any) -> Emphasis:
 
 BodyItem = Annotated[
     EditorialBlock
+    | PullQuoteBlock
+    | ListeningHeroRef
     | ShowUnitRef
     | PerformanceUnitRef
     | EraUnitRef
@@ -502,8 +531,9 @@ class FinishPlan(BaseModel):
             "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
             "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
             "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
-            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list. An answer that "
-            "needs no main body leaves groups empty."
+            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list. A listening_hero "
+            "leads the page when the visitor wants to hear a show or recording: place it first. A pull_quote sets one sentence of yours large, "
+            "for the idea the visitor should carry away. An answer that needs no main body leaves groups empty."
         ),
     )
 
@@ -745,6 +775,25 @@ def _resolve_reference(
     if kind == "show_unit":
         return _resolve_show_unit(item, grounded, payloads, store)
 
+    if kind == "listening_hero":
+        show_id = item.show_id if item.show_id and item.show_id in grounded.ids else None
+        release_id = item.release_id if item.release_id and item.release_id in grounded.ids else None
+        start_performance_id = item.start_performance_id if item.start_performance_id in grounded.ids else None
+        link = item.link if item.link and item.link.url in grounded.urls else None
+        from deadbot.listening import listening_hero
+
+        block = listening_hero(
+            store,
+            show_id=show_id,
+            release_id=release_id,
+            line=keep_grounded_links(item.line, grounded.urls) if item.line else None,
+            play_label=item.play_label,
+            start_set=item.start_set,
+            start_performance_id=start_performance_id,
+            link=link,
+        )
+        return block, []
+
     if kind == "performance_unit":
         if item.performance_id not in grounded.ids:
             return None, []
@@ -925,6 +974,11 @@ def resolve_items(
         if isinstance(item, EditorialBlock):
             blocks.append(_sanitize_editorial(item, grounded.urls))
             continue
+        if isinstance(item, PullQuoteBlock):
+            text = _MARKDOWN_LINK.sub(lambda match: match.group(1), item.text).strip()
+            if text:
+                blocks.append(item.model_copy(update={"text": text}))
+            continue
         block, block_sources = _resolve_reference(item, grounded, payloads, store)
         if block is None:
             logger.info("Dropped ungrounded or unresolvable reference: %s", item.model_dump())
@@ -994,7 +1048,8 @@ def build_finish_tool() -> BaseTool:
             "chat_answer gives the conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, with "
             "listening and source actions attached to the objects they belong to. Compose groups (collection, sequence, comparison, argument) of semantic "
             "units with an emphasis, a note, selected facets, highlights and sources, plus your own narrative, fact grids or timelines for what spans the "
-            "units. IDs must have appeared in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
+            "units. A listening_hero leads a page that is best heard, and a pull_quote sets apart the one line worth remembering. IDs must have appeared "
+            "in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,
     )

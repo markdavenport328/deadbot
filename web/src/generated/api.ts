@@ -495,7 +495,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -615,6 +615,57 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * ListeningHeroBlock
+         * @description The page's lead when the answer is best heard: a cover, a name and one Play.
+         *
+         *     The model chooses the show or record, writes the line and the Play words,
+         *     and says where playback starts; the server hydrates identity, the image,
+         *     and the playable queue from the library.
+         */
+        ListeningHeroBlock: {
+            /** Image Alt */
+            image_alt?: string | null;
+            /** Image Url */
+            image_url?: string | null;
+            /** Line */
+            line?: string | null;
+            link?: components["schemas"]["EditorialLink"] | null;
+            /** Location */
+            location?: string | null;
+            /** Play Label */
+            play_label?: string | null;
+            /** Play Url */
+            play_url?: string | null;
+            /** Queue */
+            queue?: components["schemas"]["PlayableTrack"][];
+            /** Recording Details Url */
+            recording_details_url?: string | null;
+            /** Recording Identifier */
+            recording_identifier?: string | null;
+            /** Release Date */
+            release_date?: string | null;
+            /** Release Id */
+            release_id?: string | null;
+            /** Release Title */
+            release_title?: string | null;
+            /** Show Date */
+            show_date?: string | null;
+            /** Show Id */
+            show_id?: string | null;
+            /**
+             * Start Index
+             * @default 0
+             */
+            start_index: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "listening_hero";
+            /** Venue Name */
+            venue_name?: string | null;
+        };
         /** MediaLinkBlock */
         MediaLinkBlock: {
             /** Embed Id */
@@ -696,6 +747,8 @@ export interface components {
             show_id: string;
             /** Show Label */
             show_label: string;
+            /** Show Tracks */
+            show_tracks?: components["schemas"]["PlayableTrack"][];
             /** Song Id */
             song_id: string;
             /** Song Title */
@@ -765,6 +818,22 @@ export interface components {
             /** Show Count */
             show_count: number;
         };
+        /**
+         * PlayableTrack
+         * @description One Internet Archive track the in-page player can play, in show order.
+         */
+        PlayableTrack: {
+            /** Audio Url */
+            audio_url: string;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
+            /** Performance Id */
+            performance_id: string;
+            /** Set Label */
+            set_label?: string | null;
+            /** Title */
+            title: string;
+        };
         /** ProvenanceNoteBlock */
         ProvenanceNoteBlock: {
             /** Source Ids */
@@ -776,6 +845,22 @@ export interface components {
              * @enum {string}
              */
             type: "provenance_note";
+        };
+        /**
+         * PullQuoteBlock
+         * @description One sentence the model sets apart, large, as the page's pulled line.
+         */
+        PullQuoteBlock: {
+            /**
+             * Text
+             * @description One sentence, in your voice, that states the idea the visitor should carry away.
+             */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "pull_quote";
         };
         /** RecordingItem */
         RecordingItem: {

@@ -202,6 +202,13 @@ resource_list, guest_appearance_list for a guest whose appearances are too
 many to present as units, and person_roster for a complete set of people under
 a heading you choose.
 
+Two primitives shape how a page opens and what it leaves with the visitor. A
+listening_hero leads the page when the visitor wants to hear a show or
+recording: place it first, give it the show_id (or release_id), one short line,
+the words on its Play button, and the set or song to start from; the server
+adds the cover, the venue and date, and the in-page queue. A pull_quote sets one
+sentence of yours large: use it for the idea the visitor should carry away.
+
 When the visitor asks for everything, completeness is the answer and
 organization is the insight. Organize the full set by a meaning the material
 supports, such as role, scene, era or how often someone returned, with one
