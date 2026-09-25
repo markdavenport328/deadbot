@@ -64,7 +64,9 @@ export type ExperienceBlock =
   | components["schemas"]["ArrangementSearchBlock"]
   | components["schemas"]["ProvenanceNoteBlock"]
   | components["schemas"]["GapStateBlock"]
-  | FixedEditorialBlock;
+  | FixedEditorialBlock
+  | Require<components["schemas"]["ListeningHeroBlock"], "queue">
+  | components["schemas"]["PullQuoteBlock"];
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],

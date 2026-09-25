@@ -3,6 +3,7 @@ import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceRespon
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
+import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 
 type SetlistSections = ShowUnitBlock["sets"];
 type SetlistSongType = SetlistSections[number]["songs"][number];
@@ -401,77 +402,22 @@ function glyphForAction(url: string, isOfficial: boolean): GlyphKind {
   return isOfficial ? "disc" : "wave";
 }
 
-// The primary action is the first official listening path, or simply the
-// first when none is marked official. It leads the row and renders filled;
-// the rest follow in their given order, outlined. Position and emphasis
-// agree, so the eye lands on the filled button where the row starts.
-//
-// A recording action (archive, not an official release) starts the show's
-// playable queue in-page instead of leaving the site, when the setlist
-// supplied one; an official release or a video link keeps its external
-// destination.
-function ListenActionList({ actions, playableQueue = [] }: { actions: ListenActions; playableQueue?: PlayerTrack[] }) {
-  const player = usePlayer();
-  if (actions.length === 0) return null;
-  const officialIndex = actions.findIndex((action) => action.is_official);
-  const primaryIndex = officialIndex >= 0 ? officialIndex : 0;
-  const ordered = [actions[primaryIndex], ...actions.filter((_, index) => index !== primaryIndex)];
+// Listen actions on a card that has no in-page play of its own (a record, a
+// media link): quiet text links, the first carrying the small gold play mark
+// because it is the card's way to hear it.
+function ListenActionList({ actions }: { actions: ListenActions }) {
+  return <ListenLinks actions={actions} plays={actions.map(() => null)} leadsListening />;
+}
+
+// A card's header: its one in-page play, round and gold, beside the title and
+// identity line. Without an in-page play the header is the title alone.
+function CardHead({ primary, children }: { primary: { play: InPagePlay; label: string } | null; children: ReactNode }) {
+  if (!primary) return <>{children}</>;
   return (
-    <ul className="listen-actions" aria-label="Listen">
-      {ordered.map((action, index) => {
-        const className = index === 0 ? "listen-action primary" : "listen-action";
-        const isArchiveHost = (() => {
-          try {
-            return new URL(action.url).hostname.replace(/^www\./, "") === "archive.org";
-          } catch {
-            return false;
-          }
-        })();
-        const canPlayInPage = !action.is_official && isArchiveHost && playableQueue.length > 0;
-        if (canPlayInPage) {
-          const isThisQueue = Boolean(player.currentTrack) && playableQueue.some((track) => track.id === player.currentTrack?.id);
-          const isPlayingThis = isThisQueue && player.status === "playing";
-          const isLoadingThis = isThisQueue && player.status === "loading";
-          const isErrorThis = isThisQueue && player.status === "error";
-          return (
-            <li key={action.url}>
-              <button
-                type="button"
-                className={className}
-                aria-pressed={isThisQueue}
-                aria-busy={isLoadingThis}
-                disabled={isLoadingThis}
-                onClick={() => {
-                  if (isLoadingThis) return;
-                  if (isPlayingThis) player.pause();
-                  else if (isErrorThis) player.retry();
-                  else if (isThisQueue) player.toggle();
-                  else player.play(playableQueue[0], playableQueue);
-                }}
-              >
-                <PlayPauseIcon playing={isPlayingThis} />
-                <span className="listen-action-label">{action.label}</span>
-              </button>
-            </li>
-          );
-        }
-        return (
-          <li key={action.url}>
-            <a
-              className={className}
-              href={action.url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`${action.label} on ${listeningDestination(action.url)} (opens in a new tab)`}
-              title={`Opens ${listeningDestination(action.url)} in a new tab`}
-            >
-              <Glyph kind={glyphForAction(action.url, action.is_official)} />
-              <span className="listen-action-label">{action.label}</span>
-            </a>
-          </li>
-        );
-      })}
-    </ul>
+    <div className="card-head">
+      <CardPlayButton play={primary.play} label={primary.label} />
+      <div className="card-head-text">{children}</div>
+    </div>
   );
 }
 
@@ -849,17 +795,20 @@ function MentionRow({ block }: { block: UnitBlock }) {
   );
 }
 
+// Judgments on a comparison's shared terms, as sentences: the criterion is a
+// run-in lead, not a stacked label row. Each sentence clamps on its own.
 function CriteriaTable({ criteria, judgments }: { criteria: string[]; judgments: string[] }) {
   if (criteria.length === 0) return null;
+  const rows = criteria.map((criterion, index) => ({ criterion, judgment: (judgments[index] ?? "").trim() })).filter((row) => row.judgment);
+  if (rows.length === 0) return null;
   return (
-    <dl className="criteria">
-      {criteria.map((criterion, index) => (
-        <div key={criterion}>
-          <dt>{criterion}</dt>
-          <dd>{judgments[index] ? renderInline(judgments[index]) : null}</dd>
-        </div>
+    <div className="criteria">
+      {rows.map(({ criterion, judgment }) => (
+        <ClampText key={criterion} className="judgment">
+          <strong className="lead-in">{/[.:?!]$/.test(criterion.trim()) ? criterion.trim() : `${criterion.trim()}.`}</strong> {renderInline(judgment)}
+        </ClampText>
       ))}
-    </dl>
+    </div>
   );
 }
 
@@ -1066,6 +1015,8 @@ function ShowUnit({
   // text; without one, the venue is the headline as before.
   const modelHeadline = unit.title?.trim() || "";
   const identityName = unit.venue_name || dateLong;
+  const listen = splitListen(shows("listen") ? unit.listen : [], playableQueue);
+  const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
   const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets;
   const initialOpen = wantsSetlistOpen && tabs.some((tab) => tab.id === "setlist") ? "setlist" : null;
 
@@ -1074,25 +1025,29 @@ function ShowUnit({
       {modelHeadline ? (
         <>
           <IdRow type="Show" />
-          <div className="identity">
-            <p className="identity-name">
-              <span>{unit.venue_name || dateLong}</span>
-              {unit.venue_name ? <span>{dateLong}</span> : null}
-            </p>
-            <Meta parts={[unit.location, guestsNode]} />
-          </div>
-          <CardHeading className="overview">{modelHeadline}</CardHeading>
+          <CardHead primary={primary}>
+            <div className="identity">
+              <p className="identity-name">
+                <span>{unit.venue_name || dateLong}</span>
+                {unit.venue_name ? <span>{dateLong}</span> : null}
+              </p>
+              <Meta parts={[unit.location, guestsNode]} />
+            </div>
+            <CardHeading className="overview">{modelHeadline}</CardHeading>
+          </CardHead>
         </>
       ) : (
         <>
           <IdRow type="Show" when={dateLong} />
-          <CardHeading>{identityName}</CardHeading>
-          <Meta parts={[unit.location, guestsNode]} />
+          <CardHead primary={primary}>
+            <CardHeading>{identityName}</CardHeading>
+            <Meta parts={[unit.location, guestsNode]} />
+          </CardHead>
         </>
       )}
-      {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
+      {unit.note && <ClampText className="unit-note">{renderInline(unit.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={unit.judgments} />
-      {shows("listen") && <ListenActionList actions={unit.listen} playableQueue={playableQueue} />}
+      <ListenLinks actions={listen.restActions} plays={listen.restPlays} leadsListening={!primary} />
       {highlights.length > 0 && (
         <ListenFor items={highlights.map((song) => ({ key: song.performance_id, title: song.title, url: song.listen_url }))} />
       )}
@@ -1207,7 +1162,7 @@ function AlbumUnit({
           <Meta parts={[kindLine]} />
         </>
       )}
-      {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       <ListenActionList actions={block.listen} />
       {highlightedTracks.length > 0 && (
@@ -1236,12 +1191,25 @@ function PerformanceUnit({
   onFollowUp: (prompt: string) => void;
 }) {
   const rightParts = [block.set_label, block.position_in_set ? `Song ${block.position_in_set}` : null].filter(Boolean) as string[];
+  // The card's performance is the current track: its title, venue and date
+  // name it in the now-playing bar. The show's tape, when the card carries
+  // it, queues after it and plays for a full-show action.
+  const showQueue = useMemo(
+    () => (block.show_tracks ?? []).map((track) => toTrack(track, { showDate: block.show_date, venueName: block.venue_name })),
+    [block.show_tracks, block.show_date, block.venue_name]
+  );
+  const standalone = (url: string): PlayerTrack =>
+    toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: url }, { showDate: block.show_date, venueName: block.venue_name });
+  const listen = splitListen(block.listen, showQueue, standalone);
+  const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
   return (
     <article className={`card performance-unit emphasis-${block.emphasis}`}>
       <IdRow type="Performance" when={rightParts.length > 0 ? rightParts.join(" · ") : null} />
-      <CardHeading>{block.song_title}</CardHeading>
-      <Meta parts={[block.venue_name, formatShowDateLong(block.show_date), block.location]} />
-      {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      <CardHead primary={primary}>
+        <CardHeading>{block.song_title}</CardHeading>
+        <Meta parts={[block.venue_name, formatShowDateLong(block.show_date), block.location]} />
+      </CardHead>
+      {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       {(block.previous || block.next) && (() => {
         // Three consecutive setlist lines with this performance lit, numbered
@@ -1274,7 +1242,7 @@ function PerformanceUnit({
           </p>
         );
       })()}
-      <ListenActionList actions={block.listen} />
+      <ListenLinks actions={listen.restActions} plays={listen.restPlays} leadsListening={!primary} />
       {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
         <footer className="unit-footer">
           <GoDeeper sources={block.sources} />
@@ -1403,7 +1371,7 @@ function SongOverviewUnit({
       <IdRow type="Song" when={`${block.known_performance_count} performance${block.known_performance_count === 1 ? "" : "s"}`} />
       <CardHeading>{block.title}</CardHeading>
       <Meta parts={[block.original_artist ? `Originally by ${block.original_artist}` : null]} />
-      {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+      {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       {representatives.length > 0 && (
         <section className="song-representatives">
@@ -1455,7 +1423,7 @@ function Block({
         <section className="era-unit">
           <IdRow type="Era" when={block.span} />
           <CardHeading>{block.title}</CardHeading>
-          {block.note && <p className="unit-note">{renderInline(block.note)}</p>}
+          {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
           <ul className="era-performances">
             {block.performances.map((performance) => (
               <li key={performance.performance_id}>
@@ -1717,6 +1685,10 @@ function Block({
           <p>{block.message}</p>
         </aside>
       );
+    case "listening_hero":
+      return <ListeningHero block={block} />;
+    case "pull_quote":
+      return <PullQuote block={block} />;
   }
 }
 
@@ -1738,13 +1710,19 @@ function ComposedPage({
   // A primary unit's facets start open only when it is the page's sole unit;
   // typography blocks (era_unit, editorial, and the rest) do not count.
   const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
+  // A listening hero the model placed first leads the page, above the title.
+  const firstBlock = groups[0]?.blocks[0];
+  const hero = firstBlock?.type === "listening_hero" ? firstBlock : null;
+  const bodyGroups = hero ? [{ ...groups[0], blocks: groups[0].blocks.slice(1) }, ...groups.slice(1)] : groups;
   return (
     <>
+      {hero && <ListeningHero block={hero} />}
       <div className="content-heading">
         <h1 id="answer-title" tabIndex={-1}>{title}</h1>
       </div>
       {lead && <p className="answer-lead">{renderInline(lead)}</p>}
-      {groups.map((group, groupIndex) => {
+      {bodyGroups.map((group, groupIndex) => {
+        if (hero && groupIndex === 0 && group.blocks.length === 0) return null;
         const groupTitle = group.blocks.length === 1 && sameHeading(group.title, blockHeading(group.blocks[0])) ? null : group.title;
         return (
         <section className={`experience-group group-${group.presentation}${groupTitle ? " has-heading" : ""}`} key={groupIndex}>
@@ -2376,6 +2354,7 @@ function App() {
 export default function AppWithPlayer() {
   return (
     <PlayerProvider>
+      <Rosettes />
       <App />
     </PlayerProvider>
   );
