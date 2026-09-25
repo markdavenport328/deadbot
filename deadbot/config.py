@@ -61,8 +61,9 @@ def _as_int(value: str | None, default: int) -> int:
 class Settings:
     """Configuration shared by the graph and model-provider layer."""
 
-    data_store: str = "postgres"
+    data_store: str = "sqlite"
     database_url: str | None = None
+    sqlite_path: Path | None = None
     model_provider: str = "ollama"
     ollama_model: str = "qwen3:8b"
     ollama_base_url: str = "http://127.0.0.1:11434"
@@ -103,7 +104,8 @@ class Settings:
         model_provider = value("DEADBOT_MODEL_PROVIDER", "ollama") or "ollama"
 
         return cls(
-            data_store=(value("DEADBOT_DATA_STORE", "postgres") or "postgres").strip().lower(),
+            data_store=(value("DEADBOT_DATA_STORE", "sqlite") or "sqlite").strip().lower(),
+            sqlite_path=Path(sqlite_path) if (sqlite_path := value("DEADBOT_SQLITE_PATH")) else None,
             database_url=database_url,
             model_provider=model_provider,
             ollama_model=value("DEADBOT_OLLAMA_MODEL", "qwen3:8b") or "qwen3:8b",

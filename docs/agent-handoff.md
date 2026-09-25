@@ -26,18 +26,10 @@ Use this guide when joining the Deadbot project midstream.
 - The broad canonical spine currently spans 1965–1995 with 2,358 shows and
   39,774 ordered performances. Enrichment depth is intentionally uneven and
   must be described with coverage metadata.
-- CSV remains the reviewed source of truth. `deadbot/postgres_import.py` imports
-  all 21 canonical tables into the versioned PostgreSQL schema and records an
-  immutable `sha256:...` canonical snapshot plus append-only import ledger;
-  `deadbot/postgres.py` supplies the interchangeable read store.
-- `DEADBOT_DATA_STORE=postgres` is the code default, and it is the only
-  runtime store `deadbot/storage.py` will start with: it raises if the store
-  is anything but `postgres`, or if `DEADBOT_DATABASE_URL`/`DATABASE_URL` is
-  unset. CSV is never a serving fallback; it is the reviewed source of truth
-  the database is rebuilt from, and tests use the CSV `CanonicalStore`
-  directly. This local checkout has an ignored `.env` that selects its Docker
-  PostgreSQL database. PostgreSQL configuration and the `deadbot db-import`
-  command are documented in `README.md`.
+- CSV remains the reviewed source of truth. `deadbot/sqlite_build.py` builds
+  `build/deadbot.sqlite` from the canonical CSVs on deploy and on local runs;
+  `deadbot/sqlite_store.py` serves it read-only. `DEADBOT_DATA_STORE=sqlite`
+  is the default, and tests use the CSV `CanonicalStore` directly.
 - Driver-independent importer, store-parity, CLI, API, and retrieval tests are
   implemented. See `docs/handoff-2026-09-02.md` for current test status,
   production behavior, and outstanding cutover work.
@@ -53,7 +45,7 @@ PYTHONPATH=. .venv/bin/python -m pytest -q
 .venv/bin/deadbot chat
 ```
 
-The tests do not require Ollama. The chat command requires a running local Ollama service and the configured model. Start with `qwen3:8b` in non-thinking mode; use real evaluation questions before changing model parameters. One test needs a database; set `DEADBOT_DATABASE_URL` (local Docker example `postgresql://deadbot:deadbot@localhost:5432/deadbot`) and `DEADBOT_DATA_STORE=postgres` for a fully green run.
+The tests do not require Ollama. The chat command requires a running local Ollama service and the configured model. Start with `qwen3:8b` in non-thinking mode; use real evaluation questions before changing model parameters. The suite builds its own SQLite file; no database server is needed.
 
 ## How the agent works
 
@@ -108,10 +100,11 @@ while collection continues elsewhere.
 
 | Need | Primary location |
 | --- | --- |
-| Domain schema | `schema/postgres.sql` |
+| Domain schema | `schema/sqlite.sql` |
 | Data/retrieval rollout | `docs/data-and-retrieval-roadmap.md` |
 | Question-driven enrichment | `docs/question-driven-enrichment.md` |
 | PostgreSQL importer/store | `deadbot/postgres_import.py`, `deadbot/postgres.py` |
+| SQLite builder/store | `deadbot/sqlite_build.py`, `deadbot/sqlite_store.py` |
 | Canonical-data conventions | `data/canonical/README.md` |
 | Source policy | `docs/provenance-policy.md` |
 | Data sources | `docs/data-sources.md` |

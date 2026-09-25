@@ -1,9 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm --prefix web ci && npm --prefix web run build",
+  "buildCommand": "python3 -m deadbot.sqlite_build --output build/deadbot.sqlite && npm --prefix web ci && npm --prefix web run build",
   "functions": {
     "app.py": {
-      "includeFiles": "{web/dist/index.html,web/dist/assets/**,web/dist/fonts/**}",
+      "includeFiles": "{web/dist/index.html,web/dist/assets/**,web/dist/fonts/**,build/deadbot.sqlite}",
+      "excludeFiles": "{data/raw/**,evals/**,tests/**}",
       "maxDuration": 60
     }
   }

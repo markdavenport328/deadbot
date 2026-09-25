@@ -455,6 +455,41 @@ def _listen_url(performance: dict[str, Any]) -> str | None:
     return None
 
 
+def _truthy(value: Any) -> bool:
+    """Parse the canonical store's string-boolean convention (``"true"``/``"false"``).
+
+    Both the CSV and PostgreSQL stores normalize booleans to these two
+    strings (see ``deadbot.postgres._string_value``), so this is the one
+    place that convention needs decoding.
+    """
+
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().casefold() == "true"
+
+
+def _show_recording_identifier(payload: dict[str, Any]) -> str | None:
+    """The Internet Archive item behind this show's playable setlist tracks.
+
+    Read off the first performance carrying an archive track link, rather
+    than the show's separate recording index, so the in-page player's tape
+    link and thumbnail always name the recording that is actually playing.
+    """
+
+    performances = payload.get("performances")
+    if not isinstance(performances, list):
+        return None
+    for performance in performances:
+        if not isinstance(performance, dict):
+            continue
+        listen = performance.get("listen")
+        if isinstance(listen, dict):
+            identifier = listen.get("archive_identifier")
+            if isinstance(identifier, str) and identifier:
+                return identifier
+    return None
+
+
 def _setlist_sections(
     payload: dict[str, Any],
     store: CanonicalStore,
@@ -479,6 +514,9 @@ def _setlist_sections(
         if not title or not performance.get("performance_id"):
             continue
         label = performance.get("set_label") or "Set"
+        listen = performance.get("listen") if isinstance(performance.get("listen"), dict) else {}
+        audio_url = listen.get("archive_track_url")
+        duration_seconds = listen.get("archive_track_duration_seconds")
         grouped.setdefault(label, []).append(
             SetlistSong(
                 performance_id=performance["performance_id"],
@@ -487,6 +525,9 @@ def _setlist_sections(
                 position_in_set=performance.get("position_in_set") or None,
                 highlighted=performance["performance_id"] in highlighted,
                 listen_url=_listen_url(performance),
+                audio_url=audio_url if isinstance(audio_url, str) and audio_url else None,
+                duration_seconds=duration_seconds if isinstance(duration_seconds, int) else None,
+                segue_into_next=_truthy(performance.get("segue_into_next")),
             )
         )
     return [SetlistSection(label=label, songs=songs[:40]) for label, songs in list(grouped.items())[:4]]
@@ -633,6 +674,7 @@ def _show_unit(
     listen, listen_sources = _show_listen_actions(payload, store, preferred_recording_id)
     recordings = _show_recordings(payload, store) if "recordings" in facets else []
     venue = payload.get("venue")
+    recording_identifier = _show_recording_identifier(payload) if "setlist" in facets else None
     block = ShowUnitBlock(
         type="show_unit",
         show_id=show["show_id"],
@@ -647,6 +689,8 @@ def _show_unit(
         setlist_disclosure=setlist_disclosure,
         sets=_setlist_sections(payload, store, highlighted) if "setlist" in facets else [],
         setlist_note=(show.get("setlist_note") or None) if "setlist" in facets else None,
+        recording_identifier=recording_identifier,
+        recording_details_url=f"https://archive.org/details/{recording_identifier}" if recording_identifier else None,
         guests=_guest_items(payload, store) if "guests" in facets else [],
         lineup=_show_lineup(payload, store) if "lineup" in facets else [],
         recordings=recordings,

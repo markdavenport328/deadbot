@@ -2,7 +2,7 @@ import csv
 import json
 from pathlib import Path
 
-from deadbot.data import CanonicalStore
+from deadbot.data import CanonicalStore, _archive_identifier
 from deadbot.deadnet import MetadataRecord, ResearchResult, ResultState
 from deadbot.people_names import QUALIFIER
 import deadbot.tools as tools_module
@@ -29,6 +29,30 @@ def tool_by_name(store: CanonicalStore, name: str):
     return next(tool for tool in build_tools(store) if tool.name == name)
 
 
+def test_archive_identifier_parses_a_download_track_url():
+    url = "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t02.mp3"
+    assert _archive_identifier(url) == "gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448"
+
+
+def test_archive_identifier_accepts_a_www_host():
+    assert _archive_identifier("https://www.archive.org/download/gd1977-05-08.sbd/file.mp3") == "gd1977-05-08.sbd"
+
+
+def test_archive_identifier_rejects_a_non_archive_host():
+    assert _archive_identifier("https://example.com/download/gd1977-05-08.sbd/file.mp3") is None
+
+
+def test_archive_identifier_ignores_a_details_url():
+    # /details/ is the recording's own page, not a download track link, and
+    # carries no file segment after the identifier for this parser to trust.
+    assert _archive_identifier("https://archive.org/details/gd1977-05-08.sbd") is None
+
+
+def test_archive_identifier_rejects_a_malformed_url():
+    assert _archive_identifier("not a url") is None
+    assert _archive_identifier("") is None
+
+
 def test_song_context_adds_a_compact_listening_path_per_performance():
     store = CanonicalStore()
     song = store.resolve_song("Deal")
@@ -38,12 +62,16 @@ def test_song_context_adds_a_compact_listening_path_per_performance():
     both_kinds = performances_by_id["gd-1979-11-06-deal-1-11"]
     assert both_kinds["listen"] == {
         "archive_track_url": "https://archive.org/download/gd1979-11-06.137296.sbd.GEMS.flac16/gd1979-11-06s1t17.mp3",
+        "archive_identifier": "gd1979-11-06.137296.sbd.GEMS.flac16",
+        "archive_track_duration_seconds": 401,
         "release_track_url": "https://open.spotify.com/track/5ePRqn1CsdffrUXEvqtEiW",
     }
 
     archive_only = performances_by_id["gd-1971-03-20-deal-1-6"]
     assert archive_only["listen"] == {
         "archive_track_url": "https://archive.org/download/gd71-03-20.sbd.barbella.5582.sbeok.shnf/gd71-03-20d1t06.mp3",
+        "archive_identifier": "gd71-03-20.sbd.barbella.5582.sbeok.shnf",
+        "archive_track_duration_seconds": 179,
     }
     assert "release_track_url" not in archive_only["listen"]
 
@@ -125,7 +153,11 @@ def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
 
 def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
     store = CanonicalStore()
-    payload = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford"}))
+    payload = json.loads(
+        tool_by_name(store, "search_guest_musicians").invoke(
+            {"query": "Branford", "include": ["appearances"]}
+        )
+    )
     assert [guest["name"] for guest in payload["guests"]] == ["Branford Marsalis"]
     branford = payload["guests"][0]
     assert branford["guest_show_count"] == 5
@@ -170,7 +202,9 @@ def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_perso
     """
 
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Marvin Boxley"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Marvin Boxley", "include": ["appearances"]}
+        )
     )
 
     assert [guest["name"] for guest in payload["guests"]] == ["Marvin Boxley"]
@@ -207,7 +241,9 @@ def test_guest_directory_reports_no_person_under_a_qualified_name():
 
 def test_complete_show_qualifier_still_reaches_the_reader_as_a_participation_scope():
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Ned Lagin"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Ned Lagin", "include": ["appearances"]}
+        )
     )
 
     lagin = payload["guests"][0]
@@ -232,7 +268,9 @@ def test_guest_directory_names_the_songs_a_guest_played_when_the_catalog_knows_t
     """A show-level credit says Santana was there; performance_performers says on what."""
 
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Santana"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Santana", "include": ["appearances"]}
+        )
     )
 
     assert [guest["name"] for guest in payload["guests"]] == ["Carlos Santana"]

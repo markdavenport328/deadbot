@@ -5,18 +5,22 @@
 import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock } from "./types";
 import type { StreamEvent } from "./stream-events";
 
-type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean];
+type FixtureAudio = { url: string; durationSeconds?: number; segueIntoNext?: boolean };
+type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean, audio?: FixtureAudio];
 
 const archive = "https://archive.org/details/";
 
 function songs(entries: FixtureSong[]) {
-  return entries.map(([id, title, listen_url, highlighted = false]) => ({
+  return entries.map(([id, title, listen_url, highlighted = false, audio]) => ({
     performance_id: id,
     song_id: `song-${id}`,
     title,
     listen_url,
     highlighted,
-    position_in_set: null
+    position_in_set: null,
+    audio_url: audio?.url ?? null,
+    duration_seconds: audio?.durationSeconds ?? null,
+    segue_into_next: audio?.segueIntoNext ?? false
   }));
 }
 
@@ -36,7 +40,9 @@ function show({
   sources = [],
   lineup = [],
   recordings = [],
-  follow_ups = []
+  follow_ups = [],
+  recording_identifier = null,
+  recording_details_url = null
 }: {
   id: string;
   date: string;
@@ -54,6 +60,8 @@ function show({
   lineup?: ShowUnitBlock["lineup"];
   recordings?: ShowUnitBlock["recordings"];
   follow_ups?: ShowUnitBlock["follow_ups"];
+  recording_identifier?: string | null;
+  recording_details_url?: string | null;
 }): ShowUnitBlock {
   return {
     type: "show_unit",
@@ -68,6 +76,8 @@ function show({
     setlist_disclosure,
     sets,
     setlist_note: null,
+    recording_identifier,
+    recording_details_url,
     guests,
     listen,
     sources,
@@ -231,6 +241,9 @@ const evolution: ExperienceResponse = fixture(
   "sequence"
 );
 
+const cornellIdentifier = "gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448";
+const cornellDownload = `https://archive.org/download/${cornellIdentifier}`;
+
 const cornell: ExperienceResponse = fixture(
   "Is Cornell 5/8/77 really the best show?",
   "Cornell’s case is coherence, not consensus",
@@ -242,7 +255,22 @@ const cornell: ExperienceResponse = fixture(
       note: "Use the second set as the evidence, then decide whether its polished momentum is what you want from this era.",
       listen: [{ label: "Listen to Betty Board recording", provider: "Internet Archive", url: `${archive}gd1977-05-08.sbd.hicks`, is_official: false }],
       sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19770508-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
-      sets: [{ label: "Second set", songs: songs([["cornell-1", "Scarlet Begonias", `${archive}gd1977-05-08.sbd#scarlet`, true], ["cornell-2", "Fire on the Mountain", `${archive}gd1977-05-08.sbd#fire`, true], ["cornell-3", "Estimated Prophet", null], ["cornell-4", "The Other One", `${archive}gd1977-05-08.sbd#otherone`, true], ["cornell-5", "Morning Dew", `${archive}gd1977-05-08.sbd#morningdew`, true]]) }],
+      recording_identifier: cornellIdentifier,
+      recording_details_url: `https://archive.org/details/${cornellIdentifier}`,
+      sets: [
+        {
+          label: "Second set",
+          songs: songs([
+            ["cornell-1", "Scarlet Begonias", `${archive}gd1977-05-08.sbd#scarlet`, true, { url: `${cornellDownload}/gd77-05-08.s2t02.mp3`, durationSeconds: 686, segueIntoNext: true }],
+            ["cornell-2", "Fire on the Mountain", `${archive}gd1977-05-08.sbd#fire`, true, { url: `${cornellDownload}/gd77-05-08.s2t03.mp3`, durationSeconds: 926 }],
+            ["cornell-3", "Estimated Prophet", null, false, { url: `${cornellDownload}/gd77-05-08.s2t04.mp3`, durationSeconds: 525 }],
+            ["cornell-4", "St. Stephen", `${archive}gd1977-05-08.sbd#ststephen1`, false, { url: `${cornellDownload}/gd77-05-08.s2t06.mp3`, durationSeconds: 284, segueIntoNext: true }],
+            ["cornell-5", "Not Fade Away", `${archive}gd1977-05-08.sbd#notfadeaway`, true, { url: `${cornellDownload}/gd77-05-08.s2t07.mp3`, durationSeconds: 983, segueIntoNext: true }],
+            ["cornell-6", "St. Stephen", `${archive}gd1977-05-08.sbd#ststephen2`, false, { url: `${cornellDownload}/gd77-05-08.s2t08.mp3`, durationSeconds: 114, segueIntoNext: true }],
+            ["cornell-7", "Morning Dew", null, true]
+          ])
+        }
+      ],
       follow_ups: [{ label: "May 1977 rivals", question: "Which other May 1977 show makes the strongest counterargument?" }]
     })
   ],

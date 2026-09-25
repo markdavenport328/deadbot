@@ -486,6 +486,7 @@ def test_api_returns_the_validated_experience_contract():
     assert health.json()["performer_assignments"] == "26265"
     assert health.json()["show_equipment_links"] == "2249"
     assert set(health.json()) == {"status", "git_commit", "canonical_shows", "performer_assignments", "show_equipment_links"}
+    assert client.get("/api/version").json() == {"git_commit": health.json()["git_commit"]}
     assert result.status_code == 200
     body = result.json()
     assert body["schema_version"] == "2"
@@ -873,3 +874,15 @@ def test_data_chart_rows_cap_at_two_hundred():
             total=160,
             excluded_count=0,
         )
+
+
+def test_version_check_never_touches_the_store(monkeypatch):
+    # Open tabs ask this whenever they become visible again, so it must stay
+    # cheap: no database work, just the deployed commit.
+    class UntouchableStore(CanonicalStore):
+        def row_count(self, table):
+            raise AssertionError("the version check must not query the store")
+
+    monkeypatch.setenv("VERCEL_GIT_COMMIT_SHA", "abc123")
+    client = TestClient(create_app(settings=Settings(), store=UntouchableStore(), agent=object()))
+    assert client.get("/api/version").json() == {"git_commit": "abc123"}

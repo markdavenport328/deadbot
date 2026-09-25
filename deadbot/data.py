@@ -13,12 +13,31 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from deadbot import aggregation
 
 
 def repository_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def _archive_identifier(url: str) -> str | None:
+    """Parse the Internet Archive item identifier out of a download-track URL.
+
+    A recording-track link looks like
+    ``https://archive.org/download/<identifier>/<file>.mp3``; the identifier is
+    also the details-page slug (``https://archive.org/details/<identifier>``)
+    and the thumbnail slug (``https://archive.org/services/img/<identifier>``).
+    """
+
+    parsed = urlparse(url)
+    if parsed.netloc.casefold().removeprefix("www.") != "archive.org":
+        return None
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) >= 2 and parts[0] == "download":
+        return parts[1]
+    return None
 
 
 @dataclass
@@ -348,7 +367,8 @@ class CanonicalStore:
         }
 
     def _listen_paths(self, performance_ids: set[str]) -> dict[str, dict[str, str]]:
-        """Build a compact per-performance listening path: URLs only.
+        """Build a compact per-performance listening path: URLs, plus what a
+        player needs to play the archive track in place.
 
         An archive track or performance video comes from ``performance_links``;
         a release track link comes from an ``official_release_tracks`` row for
@@ -358,9 +378,15 @@ class CanonicalStore:
         CSV and PostgreSQL stores agree regardless of how their underlying
         rows happen to be ordered. A performance with neither link is
         omitted entirely rather than carrying empty listening keys.
+
+        The archive track's own ``duration_seconds`` and the Internet Archive
+        item identifier parsed from its URL ride along under
+        ``archive_track_duration_seconds`` and ``archive_identifier`` so the
+        in-page player can show elapsed/total time and link to the tape's
+        details page without a second lookup.
         """
 
-        archive_candidates: dict[str, list[tuple[str, str]]] = defaultdict(list)
+        archive_candidates: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
         video_candidates: dict[str, list[tuple[str, str]]] = defaultdict(list)
         for row in self.rows("performance_links"):
             performance_id = row.get("performance_id", "")
@@ -370,7 +396,9 @@ class CanonicalStore:
             if not url:
                 continue
             if row.get("platform") == "archive" and row.get("link_type") == "recording-track":
-                archive_candidates[performance_id].append((row.get("performance_link_id", ""), url))
+                archive_candidates[performance_id].append(
+                    (row.get("performance_link_id", ""), url, row.get("duration_seconds", ""))
+                )
             elif row.get("platform") == "youtube" and row.get("link_type") == "performance-video":
                 video_candidates[performance_id].append((row.get("performance_link_id", ""), url))
 
@@ -387,10 +415,17 @@ class CanonicalStore:
 
         listen: dict[str, dict[str, str]] = {}
         for performance_id in performance_ids:
-            paths: dict[str, str] = {}
+            paths: dict[str, Any] = {}
             archive_options = archive_candidates.get(performance_id)
             if archive_options:
-                paths["archive_track_url"] = min(archive_options)[1]
+                _link_id, archive_url, duration = min(archive_options)
+                paths["archive_track_url"] = archive_url
+                identifier = _archive_identifier(archive_url)
+                if identifier:
+                    paths["archive_identifier"] = identifier
+                duration_text = str(duration).strip()
+                if duration_text.isdigit():
+                    paths["archive_track_duration_seconds"] = int(duration_text)
             release_options = release_candidates.get(performance_id)
             if release_options:
                 paths["release_track_url"] = min(release_options)[2]

@@ -2341,6 +2341,29 @@
       "SetlistSong": {
         "additionalProperties": false,
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "highlighted": {
             "default": false,
             "title": "Highlighted",
@@ -2371,6 +2394,11 @@
               }
             ],
             "title": "Position In Set"
+          },
+          "segue_into_next": {
+            "default": false,
+            "title": "Segue Into Next",
+            "type": "boolean"
           },
           "song_id": {
             "title": "Song Id",
@@ -2550,6 +2578,28 @@
               }
             ],
             "title": "Note"
+          },
+          "recording_details_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Details Url"
+          },
+          "recording_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Identifier"
           },
           "recordings": {
             "items": {
@@ -3157,6 +3207,28 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/version": {
+      "get": {
+        "operationId": "version_api_version_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Version Api Version Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Version"
       }
     }
   }

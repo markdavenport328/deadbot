@@ -1,8 +1,9 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
 import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./components";
+import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
 // rarely a page actually contains a data_chart block, so it loads lazily:
@@ -11,8 +12,54 @@ import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./component
 const DataChart = lazy(() => import("./DataChart").then((module) => ({ default: module.DataChart })));
 
 type SetlistSections = ShowUnitBlock["sets"];
+type SetlistSongType = SetlistSections[number]["songs"][number];
 type ListenActions = ShowUnitBlock["listen"];
 type UnitSources = ShowUnitBlock["sources"];
+
+// The show-level facts a setlist row or a recording's listen action needs to
+// build a PlayerTrack: date/venue for the now-playing bar's meta line, and
+// the one Internet Archive item behind this show's tracks (once per show,
+// not repeated per song) for the tape link and thumbnail.
+type ShowMeta = {
+  showDate?: string | null;
+  venueName?: string | null;
+  recordingDetailsUrl?: string | null;
+  thumbnailUrl?: string | null;
+};
+
+function thumbnailForIdentifier(identifier?: string | null): string | null {
+  return identifier ? `https://archive.org/services/img/${identifier}` : null;
+}
+
+function toPlayerTrack(song: SetlistSongType, meta: ShowMeta): PlayerTrack | null {
+  if (!song.audio_url) return null;
+  return {
+    id: song.performance_id,
+    title: song.title,
+    audioUrl: song.audio_url,
+    durationSeconds: song.duration_seconds ?? null,
+    showDate: meta.showDate ?? null,
+    venueName: meta.venueName ?? null,
+    recordingDetailsUrl: meta.recordingDetailsUrl ?? null,
+    thumbnailUrl: meta.thumbnailUrl ?? null
+  };
+}
+
+function PlayPauseIcon({ playing }: { playing: boolean }) {
+  if (playing) {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="6" y="5" width="4.5" height="14" fill="currentColor" />
+        <rect x="13.5" y="5" width="4.5" height="14" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M7 4.5v15l12-7.5z" />
+    </svg>
+  );
+}
 
 function formatShowDate(iso: string | null | undefined): string {
   if (!iso) return "Undated";
@@ -115,8 +162,17 @@ function createThreadId(): string {
   return `web-${crypto.randomUUID()}`;
 }
 
+// Reload after a deploy, checked only when a tab comes back into view and at
+// most every few minutes. A timer would keep every forgotten background tab
+// calling the server around the clock.
+const VERSION_CHECK_INTERVAL_MS = 5 * 60_000;
+let lastVersionCheck = 0;
+
 async function refreshIfServerChanged(): Promise<void> {
-  const result = await fetch("/api/health", { cache: "no-store" });
+  const now = Date.now();
+  if (now - lastVersionCheck < VERSION_CHECK_INTERVAL_MS) return;
+  lastVersionCheck = now;
+  const result = await fetch("/api/version", { cache: "no-store" });
   if (!result.ok) return;
   const health = await result.json() as { git_commit?: string };
   const current = health.git_commit;
@@ -345,28 +401,72 @@ function glyphForAction(url: string, isOfficial: boolean): GlyphKind {
 // first when none is marked official. It leads the row and renders filled;
 // the rest follow in their given order, outlined. Position and emphasis
 // agree, so the eye lands on the filled button where the row starts.
-function ListenActionList({ actions }: { actions: ListenActions }) {
+//
+// A recording action (archive, not an official release) starts the show's
+// playable queue in-page instead of leaving the site, when the setlist
+// supplied one; an official release or a video link keeps its external
+// destination.
+function ListenActionList({ actions, playableQueue = [] }: { actions: ListenActions; playableQueue?: PlayerTrack[] }) {
+  const player = usePlayer();
   if (actions.length === 0) return null;
   const officialIndex = actions.findIndex((action) => action.is_official);
   const primaryIndex = officialIndex >= 0 ? officialIndex : 0;
   const ordered = [actions[primaryIndex], ...actions.filter((_, index) => index !== primaryIndex)];
   return (
     <ul className="listen-actions" aria-label="Listen">
-      {ordered.map((action, index) => (
-        <li key={action.url}>
-          <a
-            className={index === 0 ? "listen-action primary" : "listen-action"}
-            href={action.url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${action.label} on ${listeningDestination(action.url)} (opens in a new tab)`}
-            title={`Opens ${listeningDestination(action.url)} in a new tab`}
-          >
-            <Glyph kind={glyphForAction(action.url, action.is_official)} />
-            <span className="listen-action-label">{action.label}</span>
-          </a>
-        </li>
-      ))}
+      {ordered.map((action, index) => {
+        const className = index === 0 ? "listen-action primary" : "listen-action";
+        const isArchiveHost = (() => {
+          try {
+            return new URL(action.url).hostname.replace(/^www\./, "") === "archive.org";
+          } catch {
+            return false;
+          }
+        })();
+        const canPlayInPage = !action.is_official && isArchiveHost && playableQueue.length > 0;
+        if (canPlayInPage) {
+          const isThisQueue = Boolean(player.currentTrack) && playableQueue.some((track) => track.id === player.currentTrack?.id);
+          const isPlayingThis = isThisQueue && player.status === "playing";
+          const isLoadingThis = isThisQueue && player.status === "loading";
+          const isErrorThis = isThisQueue && player.status === "error";
+          return (
+            <li key={action.url}>
+              <button
+                type="button"
+                className={className}
+                aria-pressed={isThisQueue}
+                aria-busy={isLoadingThis}
+                disabled={isLoadingThis}
+                onClick={() => {
+                  if (isLoadingThis) return;
+                  if (isPlayingThis) player.pause();
+                  else if (isErrorThis) player.retry();
+                  else if (isThisQueue) player.toggle();
+                  else player.play(playableQueue[0], playableQueue);
+                }}
+              >
+                <PlayPauseIcon playing={isPlayingThis} />
+                <span className="listen-action-label">{action.label}</span>
+              </button>
+            </li>
+          );
+        }
+        return (
+          <li key={action.url}>
+            <a
+              className={className}
+              href={action.url}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${action.label} on ${listeningDestination(action.url)} (opens in a new tab)`}
+              title={`Opens ${listeningDestination(action.url)} in a new tab`}
+            >
+              <Glyph kind={glyphForAction(action.url, action.is_official)} />
+              <span className="listen-action-label">{action.label}</span>
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -470,37 +570,131 @@ function PeopleList({ people }: { people: { key: string; name: string; detail: s
   );
 }
 
+// One playable setlist row: a 44px round play button at left, the title
+// (still a listening link when the library has one), and a right-aligned
+// duration. Segue rows carry a muted " >" and a thin connector down to the
+// next row's button; the current track's row gets a faint gold wash and a
+// progress line along its bottom edge.
+function SetlistRow({
+  song,
+  track,
+  isCurrent,
+  isPlaying,
+  isLoading,
+  isError,
+  position,
+  duration,
+  onPlay
+}: {
+  song: SetlistSongType;
+  track: PlayerTrack | null;
+  isCurrent: boolean;
+  isPlaying: boolean;
+  isLoading: boolean;
+  isError: boolean;
+  position: number;
+  duration: number;
+  onPlay: () => void;
+}) {
+  const className = [
+    song.highlighted ? "hi" : null,
+    isCurrent ? "current" : null,
+    song.segue_into_next ? "segue" : null,
+    isError ? "errored" : null
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const progressPct = isCurrent && duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
+  const playLabel = !track ? `No recording for ${song.title}` : isError ? `Retry ${song.title}` : `${isCurrent && isPlaying ? "Pause" : "Play"} ${song.title}`;
+  return (
+    <li className={className || undefined} role="listitem">
+      <div className="row-play-cell">
+        <button
+          type="button"
+          className={`row-play${isCurrent ? " current" : ""}${track ? "" : " disabled"}${isError ? " errored" : ""}`}
+          onClick={() => {
+            if (isLoading) return;
+            onPlay();
+          }}
+          disabled={!track}
+          aria-busy={isLoading}
+          aria-label={playLabel}
+        >
+          <PlayPauseIcon playing={isCurrent && isPlaying} />
+        </button>
+      </div>
+      <span className="row-title">
+        {song.listen_url ? (
+          <a
+            href={song.listen_url}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`Listen to ${song.title} (opens in a new tab)`}
+            title={`Opens ${listeningDestination(song.listen_url)} in a new tab`}
+          >
+            {song.title}
+          </a>
+        ) : (
+          <span>{song.title}</span>
+        )}
+        {song.segue_into_next && (
+          <span className="segue-mark" aria-hidden="true">
+            {" "}
+            &gt;
+          </span>
+        )}
+      </span>
+      <span className="row-duration">{track || song.duration_seconds ? formatClockTime(song.duration_seconds) : "—"}</span>
+      {isCurrent && <span className="row-progress" style={{ width: `${progressPct}%` }} aria-hidden="true" />}
+    </li>
+  );
+}
+
 // The setlist panel: one column per set, numbering continuing across sets
-// (Set 2 starts at 9 when Set 1 has 8 songs), no play triangles, highlighted
-// songs starred.
-function SetlistPanel({ sets }: { sets: SetlistSections }) {
+// (Set 2 starts at 9 when Set 1 has 8 songs). Clicking a row's play button
+// plays that track and queues the rest of that set (its own playable songs,
+// in order) after it.
+function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMeta: ShowMeta }) {
+  const player = usePlayer();
   let runningCount = 0;
   return (
     <div className="setlist-panel">
       {sets.map((set) => {
         const start = runningCount + 1;
         runningCount += set.songs.length;
+        const setTracks = set.songs.map((song) => toPlayerTrack(song, showMeta));
         return (
           <div key={set.label}>
             <span className="k">{set.label}</span>
-            <ol className="song-list" start={start}>
-              {set.songs.map((song, index) => (
-                <li key={song.performance_id} value={start + index} className={song.highlighted ? "hi" : undefined}>
-                  {song.listen_url ? (
-                    <a
-                      href={song.listen_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label={`Listen to ${song.title} (opens in a new tab)`}
-                      title={`Opens ${listeningDestination(song.listen_url)} in a new tab`}
-                    >
-                      {song.title}
-                    </a>
-                  ) : (
-                    <span>{song.title}</span>
-                  )}
-                </li>
-              ))}
+            <ol className="setlist-rows" start={start} role="list">
+              {set.songs.map((song, index) => {
+                const track = setTracks[index];
+                const isCurrent = Boolean(track && player.currentTrack?.id === track.id);
+                return (
+                  <SetlistRow
+                    key={song.performance_id}
+                    song={song}
+                    track={track}
+                    isCurrent={isCurrent}
+                    isPlaying={isCurrent && player.status === "playing"}
+                    isLoading={isCurrent && player.status === "loading"}
+                    isError={isCurrent && player.status === "error"}
+                    position={player.position}
+                    duration={player.duration}
+                    onPlay={() => {
+                      if (!track) return;
+                      if (isCurrent) {
+                        if (player.status === "playing") player.pause();
+                        else if (player.status === "error") player.retry();
+                        else player.toggle();
+                        return;
+                      }
+                      const queue = setTracks.slice(index).filter((item): item is PlayerTrack => item !== null);
+                      player.play(track, queue);
+                    }}
+                  />
+                );
+              })}
             </ol>
           </div>
         );
@@ -738,6 +932,17 @@ function ShowUnit({
   const dateLong = formatShowDateLong(unit.show_date);
   const highlights = unit.sets.flatMap((set) => set.songs.filter((song) => song.highlighted));
   const totalSongs = unit.sets.reduce((count, set) => count + set.songs.length, 0);
+  const showMeta: ShowMeta = {
+    showDate: unit.show_date,
+    venueName: unit.venue_name,
+    recordingDetailsUrl: unit.recording_details_url,
+    thumbnailUrl: thumbnailForIdentifier(unit.recording_identifier)
+  };
+  const playableQueue = useMemo(
+    () => unit.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, showMeta)).filter((track): track is PlayerTrack => track !== null)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [unit.sets, unit.show_date, unit.venue_name, unit.recording_details_url, unit.recording_identifier]
+  );
 
   // The guest joins the meta line: who was there, not a separate labeled row.
   const guestsNode = shows("guests") && unit.guests.length > 0 ? (
@@ -754,7 +959,7 @@ function ShowUnit({
 
   const tabs: DrawerTab[] = [];
   if (shows("setlist") && unit.setlist_disclosure !== "hidden" && unit.sets.length > 0) {
-    tabs.push({ id: "setlist", label: "Setlist", count: totalSongs, content: <SetlistPanel sets={unit.sets} /> });
+    tabs.push({ id: "setlist", label: "Setlist", count: totalSongs, content: <SetlistPanel sets={unit.sets} showMeta={showMeta} /> });
   }
   if (shows("lineup") && unit.lineup.length > 0) {
     tabs.push({
@@ -822,7 +1027,7 @@ function ShowUnit({
       )}
       {unit.note && <p className="unit-note">{renderInline(unit.note)}</p>}
       <CriteriaTable criteria={criteria} judgments={unit.judgments} />
-      {shows("listen") && <ListenActionList actions={unit.listen} />}
+      {shows("listen") && <ListenActionList actions={unit.listen} playableQueue={playableQueue} />}
       {highlights.length > 0 && (
         <ListenFor items={highlights.map((song) => ({ key: song.performance_id, title: song.title, url: song.listen_url }))} />
       )}
@@ -1544,7 +1749,77 @@ function ComposedPage({
   );
 }
 
-export default function App() {
+// The one shared now-playing bar for the whole app: hidden until something
+// has played, then fixed to the bottom of the answer pane it lives in (never
+// over the left rail, since it renders inside .content-pane). A 44px round
+// gold play/pause button, a real range-input scrubber with tabular-numeral
+// elapsed/total time, and one quiet external link to the tape's own details
+// page — everything else (queueing, position, next/previous within the
+// current queue) is the shared PlayerProvider's job.
+function NowPlayingBar() {
+  const player = usePlayer();
+  const track = player.currentTrack;
+  if (!track) return null;
+  const isPlaying = player.status === "playing";
+  const isLoading = player.status === "loading";
+  const isError = player.status === "error";
+  const duration = player.duration || track.durationSeconds || 0;
+  const position = Math.min(player.position, duration || 0);
+  const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
+  return (
+    <div className="now-playing-bar" role="region" aria-label="Now playing">
+      {track.thumbnailUrl ? (
+        <img className="now-playing-thumb" src={track.thumbnailUrl} alt="" loading="lazy" />
+      ) : (
+        <div className="now-playing-thumb placeholder" aria-hidden="true" />
+      )}
+      <div className="now-playing-info">
+        <p className="now-playing-title">{track.title}</p>
+        {isError ? <p className="now-playing-error">Couldn’t play this track</p> : metaLine ? <p className="now-playing-meta">{metaLine}</p> : null}
+      </div>
+      {isError ? (
+        <button type="button" className="now-playing-retry" onClick={() => player.retry()}>
+          Retry
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="now-playing-toggle"
+          onClick={() => {
+            if (!isLoading) player.toggle();
+          }}
+          aria-label={isPlaying ? "Pause" : "Play"}
+          aria-busy={isLoading}
+          disabled={isLoading}
+        >
+          <PlayPauseIcon playing={isPlaying} />
+        </button>
+      )}
+      <div className="now-playing-scrubber">
+        <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
+        <input
+          type="range"
+          className="now-playing-range"
+          min={0}
+          max={duration || 0}
+          step={1}
+          value={position}
+          aria-label={`Seek within ${track.title}`}
+          aria-valuetext={formatSeekValueText(position, duration)}
+          onChange={(event) => player.seek(Number(event.target.value))}
+        />
+        <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
+      </div>
+      {track.recordingDetailsUrl && (
+        <a className="now-playing-tape" href={track.recordingDetailsUrl} target="_blank" rel="noreferrer">
+          Tape on the Internet Archive
+        </a>
+      )}
+    </div>
+  );
+}
+
+function App() {
   // A named `?fixture=` response is available only in Vite development. It
   // gives visual reviewers the actual app chrome and renderers without a live
   // model request or a testing-only control in the visitor experience.
@@ -1606,8 +1881,11 @@ export default function App() {
   useEffect(() => {
     if (visualFixture || requestedStreamFixture) return;
     void refreshIfServerChanged();
-    const check = window.setInterval(() => void refreshIfServerChanged(), 60_000);
-    return () => window.clearInterval(check);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshIfServerChanged();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [visualFixture]);
 
   useEffect(() => {
@@ -1650,11 +1928,13 @@ export default function App() {
   }, [phase]);
 
   // Move focus to the answer heading once a response actually lands from an
-  // ask (never on a `?fixture=` load, which never sets the ref).
+  // ask (never on a `?fixture=` load, which never sets the ref). The page has
+  // usually streamed in and the visitor may already be reading further down,
+  // so focus moves without scrolling them back to the top.
   useEffect(() => {
     if (!response || !askJustCompletedRef.current) return;
     askJustCompletedRef.current = false;
-    document.getElementById("answer-title")?.focus({ preventScroll: false });
+    document.getElementById("answer-title")?.focus({ preventScroll: true });
   }, [response]);
 
   // The dev `?stream=` fixture replays a canned event sequence through the
@@ -2027,8 +2307,17 @@ export default function App() {
               onFollowUp={chooseFollowUp}
             />
           ) : null}
+          <NowPlayingBar />
         </section>
       </div>
     </main>
+  );
+}
+
+export default function AppWithPlayer() {
+  return (
+    <PlayerProvider>
+      <App />
+    </PlayerProvider>
   );
 }
