@@ -76,27 +76,87 @@ def test_song_by_year(run):
 
 def test_song_set_positions(run):
     song_id = SONGS["Scarlet Begonias"]
-    expected = sum(
-        1 for p in PERFORMANCES
-        if p["song_id"] == song_id and 1980 <= _year(p["show_id"]) <= 1989 and p["set_number"] == "2" and p["position_in_set"] == "1"
-    )
+
+    def in_range(show_id):
+        return 1980 <= _year(show_id) <= 1989
+
+    max_position: dict[tuple[str, str], int] = {}
+    for p in PERFORMANCES:
+        if not p["position_in_set"]:
+            continue
+        key = (p["show_id"], p["set_number"])
+        pos = int(p["position_in_set"])
+        if pos > max_position.get(key, -1):
+            max_position[key] = pos
+
+    opened: Counter = Counter()
+    closed: Counter = Counter()
+    appeared_sets: set[int] = set()
+    for p in PERFORMANCES:
+        if p["song_id"] != song_id or not in_range(p["show_id"]) or not p["position_in_set"]:
+            continue
+        set_number = int(p["set_number"])
+        appeared_sets.add(set_number)
+        pos = int(p["position_in_set"])
+        if pos == 1:
+            opened[set_number] += 1
+        if pos == max_position.get((p["show_id"], p["set_number"])):
+            closed[set_number] += 1
+
     result = run(name="song_set_positions", song="Scarlet Begonias", year_from=1980, year_to=1989)
-    by_set = dict(zip(_column(result, "set_number"), _column(result, "opened")))
-    assert by_set[2] == expected
+    result_sets = _column(result, "set_number")
+    assert set(result_sets) == appeared_sets
+    by_opened = dict(zip(result_sets, _column(result, "opened")))
+    by_closed = dict(zip(result_sets, _column(result, "closed")))
+    assert by_opened == {s: opened.get(s, 0) for s in appeared_sets}
+    assert by_closed == {s: closed.get(s, 0) for s in appeared_sets}
 
 
 def test_song_neighbors(run):
     song_id = SONGS["Scarlet Begonias"]
-    position = {(p["show_id"], p["set_number"], int(p["position_in_set"])): p["song_id"] for p in PERFORMANCES if p["position_in_set"]}
-    after = Counter(
-        position.get((p["show_id"], p["set_number"], int(p["position_in_set"]) + 1))
-        for p in PERFORMANCES if p["song_id"] == song_id and p["position_in_set"]
-    )
-    after.pop(None, None)
-    result = run(name="song_neighbors", song="Scarlet Begonias")
+    by_position = {
+        (p["show_id"], p["set_number"], int(p["position_in_set"])): p
+        for p in PERFORMANCES if p["position_in_set"]
+    }
+
+    after_times: Counter = Counter()
+    after_segued: Counter = Counter()
+    before_times: Counter = Counter()
+    before_segued: Counter = Counter()
+    for p in PERFORMANCES:
+        if p["song_id"] != song_id or not p["position_in_set"]:
+            continue
+        pos = int(p["position_in_set"])
+        nxt = by_position.get((p["show_id"], p["set_number"], pos + 1))
+        if nxt is not None:
+            after_times[nxt["song_id"]] += 1
+            if p["segue_into_next"] == "true":
+                after_segued[nxt["song_id"]] += 1
+        prv = by_position.get((p["show_id"], p["set_number"], pos - 1))
+        if prv is not None:
+            before_times[prv["song_id"]] += 1
+            if prv["segue_into_next"] == "true":
+                before_segued[prv["song_id"]] += 1
+
+    result = run(name="song_neighbors", song="Scarlet Begonias", limit=200)
     rows = [dict(zip(result["columns"], row)) for row in result["rows"]]
-    top_after = next(row for row in rows if row["direction"] == "after")
-    assert top_after["song_id"] == after.most_common(1)[0][0] == SONGS["Fire On The Mountain"]
+    after_rows = {row["song_id"]: row for row in rows if row["direction"] == "after"}
+    before_rows = {row["song_id"]: row for row in rows if row["direction"] == "before"}
+
+    assert set(after_rows) == set(after_times)
+    assert set(before_rows) == set(before_times)
+    assert {sid: row["times"] for sid, row in after_rows.items()} == dict(after_times)
+    assert {sid: row["times"] for sid, row in before_rows.items()} == dict(before_times)
+    assert {sid: row["segued"] for sid, row in after_rows.items()} == {
+        sid: after_segued.get(sid, 0) for sid in after_times
+    }
+    assert {sid: row["segued"] for sid, row in before_rows.items()} == {
+        sid: before_segued.get(sid, 0) for sid in before_times
+    }
+
+    top_after = after_times.most_common(1)[0][0]
+    assert top_after == SONGS["Fire On The Mountain"]
+    assert after_rows[top_after]["segued"] == after_segued[top_after]
 
 
 def test_shows_by_venue(run):

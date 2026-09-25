@@ -87,7 +87,7 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             "AND nxt.position_in_set = cur.position_in_set + 1 "
             "LEFT JOIN songs so ON so.song_id = nxt.song_id "
             "WHERE cur.song_id = :song AND CAST(substr(s.show_date, 1, 4) AS INTEGER) BETWEEN :year_from AND :year_to "
-            "GROUP BY nxt.song_id ORDER BY times DESC LIMIT :limit) "
+            "GROUP BY nxt.song_id ORDER BY times DESC, song_title LIMIT :limit) "
             "UNION ALL SELECT * FROM (SELECT 'before' AS direction, prv.song_id, so.title AS song_title, COUNT(*) AS times, "
             "SUM(prv.segue_into_next = 'true') AS segued FROM performances cur "
             "JOIN shows s ON s.show_id = cur.show_id "
@@ -95,7 +95,7 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             "AND prv.position_in_set = cur.position_in_set - 1 "
             "LEFT JOIN songs so ON so.song_id = prv.song_id "
             "WHERE cur.song_id = :song AND CAST(substr(s.show_date, 1, 4) AS INTEGER) BETWEEN :year_from AND :year_to "
-            "GROUP BY prv.song_id ORDER BY times DESC LIMIT :limit)",
+            "GROUP BY prv.song_id ORDER BY times DESC, song_title LIMIT :limit)",
         ),
         NamedQuery(
             "shows",

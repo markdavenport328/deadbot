@@ -1926,8 +1926,12 @@ def build_tools(
             query = NAMED_QUERIES.get(name)
             if query is None:
                 return _json({"error": "Unknown query", "queries": list(NAMED_QUERIES)})
-            given = {"song": song, "venue": venue, "show": show, "year_from": year_from}
-            if any(not given.get(required) for required in query.requires):
+            given = {"song": song, "venue": venue, "show": show}
+            missing = [
+                required for required in query.requires
+                if (year_from is None if required == "year_from" else not given.get(required))
+            ]
+            if missing:
                 return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
             params: dict[str, Any] = {"venue": venue, "tour": tour, "limit": max(1, min(limit, 200))}
             if song:
@@ -1942,9 +1946,22 @@ def build_tools(
                 params["show"] = resolved_show["show_id"]
             params["year_from"] = year_from if year_from is not None else 1965
             params["year_to"] = year_to if year_to is not None else (year_from if year_from is not None else 1995)
+            if params["year_to"] < params["year_from"]:
+                return _json({"error": "year_to must not be before year_from", "query": name})
             bound = {key: value for key, value in params.items() if f":{key}" in query.sql}
-            result = store.run_catalog_query(query.sql, bound)
-            return _json({"query": name, **result})
+            supplied = [
+                key for key, value in (
+                    ("song", song), ("venue", venue), ("show", show), ("tour", tour),
+                    ("year_from", year_from), ("year_to", year_to),
+                )
+                if value is not None and value != ""
+            ]
+            ignored = [key for key in supplied if key not in bound]
+            result = store.run_catalog_query(query.sql, bound, menu=True)
+            payload = {"query": name, **result}
+            if ignored:
+                payload["ignored"] = ignored
+            return _json(payload)
 
         query_catalog.description = catalog_tool_description()
         tools.append(query_catalog)

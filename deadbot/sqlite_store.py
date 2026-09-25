@@ -187,16 +187,26 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
                 self._cache_connection.close()
                 self._cache_connection = None
 
-    def run_catalog_query(self, sql: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Run one read-only SELECT with a row cap and a time limit.
+    def run_catalog_query(
+        self, sql: str, params: dict[str, Any] | None = None, *, menu: bool = False
+    ) -> dict[str, Any]:
+        """Run one read-only SELECT with a row cap, a value-size cap, and a time limit.
 
         The guardrails protect the service, not the answer: reading is the only
-        permitted action, one statement runs per call, a runaway query is cut
-        off, and errors come back in words the model can act on.
+        permitted action, one statement runs per call, a single oversized value
+        or a runaway query is cut off, and errors come back in words the model
+        can act on. ``menu`` picks the wording of the truncation note: a menu
+        query's caller can narrow the filters it exposes, where free SQL can
+        also add its own ``ORDER BY``/``LIMIT``.
         """
 
         connection = sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro&immutable=1", uri=True)
         try:
+            # Bounds any single string or blob a function call can produce
+            # (e.g. randomblob, printf, zeroblob). The progress handler below
+            # only interrupts between VM opcodes, so it cannot stop one
+            # oversized value computed within a single opcode; this can.
+            connection.setlimit(sqlite3.SQLITE_LIMIT_LENGTH, 60_000)
             connection.set_authorizer(_read_only)
             deadline = time.monotonic() + CATALOG_QUERY_TIMEOUT_SECONDS
             connection.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10_000)
@@ -212,6 +222,8 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
             else:
                 hint = "Check table and column names against the views in the tool description."
             return {"error": message, "hint": hint}
+        except sqlite3.DataError as exc:
+            return {"error": str(exc), "hint": "A value in the result is too large. Aggregate less, or return fewer columns."}
         except (sqlite3.ProgrammingError, sqlite3.Warning) as exc:
             return {"error": str(exc), "hint": "Send one SELECT statement per call."}
         except sqlite3.DatabaseError as exc:
@@ -221,12 +233,24 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
         truncated = len(fetched) > CATALOG_QUERY_MAX_ROWS
         result: dict[str, Any] = {
             "columns": columns,
-            "rows": [list(row) for row in fetched[:CATALOG_QUERY_MAX_ROWS]],
+            "rows": [
+                [value.hex() if isinstance(value, bytes) else value for value in row]
+                for row in fetched[:CATALOG_QUERY_MAX_ROWS]
+            ],
             "row_count": min(len(fetched), CATALOG_QUERY_MAX_ROWS),
             "truncated": truncated,
         }
         if truncated:
-            result["note"] = f"Only the first {CATALOG_QUERY_MAX_ROWS} rows are shown. Aggregate, filter, or add ORDER BY with a LIMIT."
+            if menu:
+                result["note"] = (
+                    f"Only the first {CATALOG_QUERY_MAX_ROWS} rows are shown. "
+                    "Narrow the filters (venue, tour, or the year range) to see fewer."
+                )
+            else:
+                result["note"] = (
+                    f"Only the first {CATALOG_QUERY_MAX_ROWS} rows are shown. "
+                    "Aggregate, filter, or add ORDER BY with a LIMIT."
+                )
         return result
 
     def verify_ready(self) -> None:
