@@ -2,7 +2,7 @@ import csv
 import json
 from pathlib import Path
 
-from deadbot.data import CanonicalStore
+from deadbot.data import CanonicalStore, _archive_identifier
 from deadbot.deadnet import MetadataRecord, ResearchResult, ResultState
 from deadbot.people_names import QUALIFIER
 import deadbot.tools as tools_module
@@ -27,6 +27,30 @@ def store_with_selection_evidence() -> CanonicalStore:
 
 def tool_by_name(store: CanonicalStore, name: str):
     return next(tool for tool in build_tools(store) if tool.name == name)
+
+
+def test_archive_identifier_parses_a_download_track_url():
+    url = "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t02.mp3"
+    assert _archive_identifier(url) == "gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448"
+
+
+def test_archive_identifier_accepts_a_www_host():
+    assert _archive_identifier("https://www.archive.org/download/gd1977-05-08.sbd/file.mp3") == "gd1977-05-08.sbd"
+
+
+def test_archive_identifier_rejects_a_non_archive_host():
+    assert _archive_identifier("https://example.com/download/gd1977-05-08.sbd/file.mp3") is None
+
+
+def test_archive_identifier_ignores_a_details_url():
+    # /details/ is the recording's own page, not a download track link, and
+    # carries no file segment after the identifier for this parser to trust.
+    assert _archive_identifier("https://archive.org/details/gd1977-05-08.sbd") is None
+
+
+def test_archive_identifier_rejects_a_malformed_url():
+    assert _archive_identifier("not a url") is None
+    assert _archive_identifier("") is None
 
 
 def test_song_context_adds_a_compact_listening_path_per_performance():

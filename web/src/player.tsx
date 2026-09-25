@@ -51,6 +51,9 @@ export type PlayerContextValue = {
   seek: (seconds: number) => void;
   next: () => void;
   previous: () => void;
+  // Reload the current track from scratch after an error, rather than
+  // resuming (play() no-ops on an already-loaded track; this bypasses that).
+  retry: () => void;
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -123,12 +126,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const play = useCallback(
     (track: PlayerTrack, queue?: PlayerTrack[]) => {
+      const current = stateRef.current;
+      if (current.index >= 0 && current.queue[current.index]?.id === track.id) {
+        // The requested track is already loaded: resume rather than
+        // reassigning src, which would restart it from zero.
+        audio().play().catch(() => setState((previous) => ({ ...previous, status: "error" })));
+        return;
+      }
       const list = queue && queue.length > 0 ? queue : [track];
       const index = list.findIndex((item) => item.id === track.id);
       loadTrack(track, list, index >= 0 ? index : 0);
     },
     [loadTrack]
   );
+
+  const retry = useCallback(() => {
+    const current = stateRef.current;
+    const track = current.queue[current.index];
+    if (track) loadTrack(track, current.queue, current.index);
+  }, [loadTrack]);
 
   const pause = useCallback(() => {
     audio().pause();
@@ -179,9 +195,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       toggle,
       seek,
       next,
-      previous
+      previous,
+      retry
     }),
-    [state, currentTrack, play, pause, toggle, seek, next, previous]
+    [state, currentTrack, play, pause, toggle, seek, next, previous, retry]
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
@@ -193,4 +210,10 @@ export function formatClockTime(seconds: number | null | undefined): string {
   const minutes = Math.floor(total / 60);
   const secs = total % 60;
   return `${minutes}:${String(secs).padStart(2, "0")}`;
+}
+
+// A scrubber's accessible value text: "2:14 of 11:26", read by a screen
+// reader instead of the raw seconds a range input otherwise announces.
+export function formatSeekValueText(position: number, duration: number): string {
+  return `${formatClockTime(position)} of ${formatClockTime(duration)}`;
 }

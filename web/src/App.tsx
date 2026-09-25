@@ -2,7 +2,7 @@ import { type ComponentProps, type FormEvent, type KeyboardEvent, type ReactNode
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
-import { PlayerProvider, usePlayer, formatClockTime, type PlayerTrack } from "./player";
+import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 
 type SetlistSections = ShowUnitBlock["sets"];
 type SetlistSongType = SetlistSections[number]["songs"][number];
@@ -422,20 +422,26 @@ function ListenActionList({ actions, playableQueue = [] }: { actions: ListenActi
         if (canPlayInPage) {
           const isThisQueue = Boolean(player.currentTrack) && playableQueue.some((track) => track.id === player.currentTrack?.id);
           const isPlayingThis = isThisQueue && player.status === "playing";
+          const isLoadingThis = isThisQueue && player.status === "loading";
+          const isErrorThis = isThisQueue && player.status === "error";
           return (
             <li key={action.url}>
               <button
                 type="button"
                 className={className}
                 aria-pressed={isThisQueue}
+                aria-busy={isLoadingThis}
+                disabled={isLoadingThis}
                 onClick={() => {
+                  if (isLoadingThis) return;
                   if (isPlayingThis) player.pause();
+                  else if (isErrorThis) player.retry();
                   else if (isThisQueue) player.toggle();
                   else player.play(playableQueue[0], playableQueue);
                 }}
               >
-                <Glyph kind={isPlayingThis ? "play" : glyphForAction(action.url, action.is_official)} />
-                <span className="listen-action-label">{isPlayingThis ? "Pause the show" : action.label.replace(/^(Listen to|Stream) the show/, "Play the show")}</span>
+                <PlayPauseIcon playing={isPlayingThis} />
+                <span className="listen-action-label">{action.label}</span>
               </button>
             </li>
           );
@@ -569,6 +575,8 @@ function SetlistRow({
   track,
   isCurrent,
   isPlaying,
+  isLoading,
+  isError,
   position,
   duration,
   onPlay
@@ -577,6 +585,8 @@ function SetlistRow({
   track: PlayerTrack | null;
   isCurrent: boolean;
   isPlaying: boolean;
+  isLoading: boolean;
+  isError: boolean;
   position: number;
   duration: number;
   onPlay: () => void;
@@ -584,20 +594,26 @@ function SetlistRow({
   const className = [
     song.highlighted ? "hi" : null,
     isCurrent ? "current" : null,
-    song.segue_into_next ? "segue" : null
+    song.segue_into_next ? "segue" : null,
+    isError ? "errored" : null
   ]
     .filter(Boolean)
     .join(" ");
   const progressPct = isCurrent && duration > 0 ? Math.min(100, (position / duration) * 100) : 0;
+  const playLabel = !track ? `No recording for ${song.title}` : isError ? `Retry ${song.title}` : `${isCurrent && isPlaying ? "Pause" : "Play"} ${song.title}`;
   return (
-    <li className={className || undefined}>
+    <li className={className || undefined} role="listitem">
       <div className="row-play-cell">
         <button
           type="button"
-          className={`row-play${isCurrent ? " current" : ""}${track ? "" : " disabled"}`}
-          onClick={onPlay}
+          className={`row-play${isCurrent ? " current" : ""}${track ? "" : " disabled"}${isError ? " errored" : ""}`}
+          onClick={() => {
+            if (isLoading) return;
+            onPlay();
+          }}
           disabled={!track}
-          aria-label={track ? `${isCurrent && isPlaying ? "Pause" : "Play"} ${song.title}` : `No recording for ${song.title}`}
+          aria-busy={isLoading}
+          aria-label={playLabel}
         >
           <PlayPauseIcon playing={isCurrent && isPlaying} />
         </button>
@@ -645,7 +661,7 @@ function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMeta: Sho
         return (
           <div key={set.label}>
             <span className="k">{set.label}</span>
-            <ol className="setlist-rows" start={start}>
+            <ol className="setlist-rows" start={start} role="list">
               {set.songs.map((song, index) => {
                 const track = setTracks[index];
                 const isCurrent = Boolean(track && player.currentTrack?.id === track.id);
@@ -656,10 +672,18 @@ function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMeta: Sho
                     track={track}
                     isCurrent={isCurrent}
                     isPlaying={isCurrent && player.status === "playing"}
+                    isLoading={isCurrent && player.status === "loading"}
+                    isError={isCurrent && player.status === "error"}
                     position={player.position}
                     duration={player.duration}
                     onPlay={() => {
                       if (!track) return;
+                      if (isCurrent) {
+                        if (player.status === "playing") player.pause();
+                        else if (player.status === "error") player.retry();
+                        else player.toggle();
+                        return;
+                      }
                       const queue = setTracks.slice(index).filter((item): item is PlayerTrack => item !== null);
                       player.play(track, queue);
                     }}
@@ -1787,7 +1811,10 @@ function NowPlayingBar() {
   const track = player.currentTrack;
   if (!track) return null;
   const isPlaying = player.status === "playing";
+  const isLoading = player.status === "loading";
+  const isError = player.status === "error";
   const duration = player.duration || track.durationSeconds || 0;
+  const position = Math.min(player.position, duration || 0);
   const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
   return (
     <div className="now-playing-bar" role="region" aria-label="Now playing">
@@ -1798,26 +1825,37 @@ function NowPlayingBar() {
       )}
       <div className="now-playing-info">
         <p className="now-playing-title">{track.title}</p>
-        {metaLine && <p className="now-playing-meta">{metaLine}</p>}
+        {isError ? <p className="now-playing-error">Couldn’t play this track</p> : metaLine ? <p className="now-playing-meta">{metaLine}</p> : null}
       </div>
-      <button
-        type="button"
-        className="now-playing-toggle"
-        onClick={() => player.toggle()}
-        aria-label={isPlaying ? "Pause" : "Play"}
-      >
-        <PlayPauseIcon playing={isPlaying} />
-      </button>
+      {isError ? (
+        <button type="button" className="now-playing-retry" onClick={() => player.retry()}>
+          Retry
+        </button>
+      ) : (
+        <button
+          type="button"
+          className="now-playing-toggle"
+          onClick={() => {
+            if (!isLoading) player.toggle();
+          }}
+          aria-label={isPlaying ? "Pause" : "Play"}
+          aria-busy={isLoading}
+          disabled={isLoading}
+        >
+          <PlayPauseIcon playing={isPlaying} />
+        </button>
+      )}
       <div className="now-playing-scrubber">
-        <span className="now-playing-time" aria-hidden="true">{formatClockTime(player.position)}</span>
+        <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
         <input
           type="range"
           className="now-playing-range"
           min={0}
           max={duration || 0}
           step={1}
-          value={Math.min(player.position, duration || 0)}
+          value={position}
           aria-label={`Seek within ${track.title}`}
+          aria-valuetext={formatSeekValueText(position, duration)}
           onChange={(event) => player.seek(Number(event.target.value))}
         />
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>

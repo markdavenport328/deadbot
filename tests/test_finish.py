@@ -851,6 +851,59 @@ def test_show_unit_with_no_selected_facets_stays_compact():
     assert sources == []
 
 
+def test_truthy_parses_the_canonical_store_s_string_boolean_convention():
+    assert composition._truthy("true") is True
+    assert composition._truthy("True") is True
+    assert composition._truthy("false") is False
+    assert composition._truthy("") is False
+    assert composition._truthy(None) is False
+    assert composition._truthy(True) is True
+    assert composition._truthy(False) is False
+
+
+def test_show_unit_setlist_songs_carry_the_player_s_audio_fields():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1977-05-08"))
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="Cornell",
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08", visible_facets=["setlist"])])],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
+    unit = blocks[0]
+    songs = {song.performance_id: song for section in unit.sets for song in section.songs}
+
+    scarlet = songs["gd-1977-05-08-scarlet-begonias-2-1"]
+    assert scarlet.audio_url == "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t02.mp3"
+    assert scarlet.duration_seconds == 686
+    assert scarlet.segue_into_next is True
+
+    fire = songs["gd-1977-05-08-fire-on-the-mountain-2-2"]
+    assert fire.audio_url == "https://archive.org/download/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448/gd77-05-08.s2t03.mp3"
+    assert fire.duration_seconds == 926
+    assert fire.segue_into_next is False
+
+    # The recording behind the playable tracks is named once, on the show
+    # unit, rather than repeated on every song.
+    assert unit.recording_identifier == "gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448"
+    assert unit.recording_details_url == "https://archive.org/details/gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448"
+
+
+def test_show_unit_with_no_archive_links_has_no_recording_identifier():
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1965-05-26"))
+    plan = finish.FinishPlan(
+        chat_answer="x",
+        title="No tapes",
+        groups=[finish.GroupPlan(presentation="collection", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1965-05-26", visible_facets=["setlist"])])],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
+    unit = blocks[0]
+    assert unit.recording_identifier is None
+    assert unit.recording_details_url is None
+    assert unit.sets and all(song.audio_url is None for section in unit.sets for song in section.songs)
+
+
 def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_action():
     store = CanonicalStore()
     show_payload = store.show_context(store.resolve_show("1972-08-27"))
