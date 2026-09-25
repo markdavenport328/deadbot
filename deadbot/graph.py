@@ -66,8 +66,9 @@ narrows the reviewed selection inventory to one song or show. For a guest
 musician, search_guest_musicians lists guests with their show counts and
 years; ask for include=["appearances"] to get a guest's shows with IDs and
 pathways. Call get_show for the shows you will write about so their setlists,
-guests and recordings inform what you say. For a record's
-life on stage, get_album carries each track's live legacy. For a named show,
+guests and recordings inform what you say. get_album summarizes a record's
+shows or songs; ask for include=["tracks"] for the tracklist and
+include=["live_legacy"] for each song's life on stage. For a named show,
 get_show. The full selection inventory (get_selection_signals) serves
 questions about the sources and lists themselves.
 

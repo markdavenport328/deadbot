@@ -939,35 +939,106 @@ def build_tools(
             }
         )
 
-    @tool
-    def get_album(release_id_or_title: str) -> str:
-        """Get one official release: its tracklist, credited personnel, and links.
+    _ALBUM_DETAILS = ("live_legacy", "tracks")
 
-        Covers studio albums and official live releases alike. A track names a
-        canonical song for a studio release and a canonical performance for a
-        live one; an intro, tuning or banter segment names neither. Use the
-        release date against a song's performance history when the question is
-        about how a song lived on stage before or after the record. pathways
-        lists the cataloged lore for each result (resources, source trail,
-        selections) or the research sites to search when nothing is cataloged.
+    @tool
+    def get_album(release_id_or_title: str, include: list[str] | None = None, show: str | None = None) -> str:
+        """Get one official release: a summary first, with detail on request.
+
+        The summary names the release, its date and type, and what is on it:
+        for a live release the shows its tracks come from (date, venue, how many
+        tracks); for a studio album its songs. It carries the IDs you need to
+        place the album, its shows or its songs on the page. `available` lists
+        what the summary left out and how to ask for it. Ask only for what your
+        answer will use:
+        - include=["tracks"]: the full tracklist (each track's song or
+          performance, duration and Spotify link). show="<show id or date>"
+          narrows it to one show's tracks on a multi-show release.
+        - include=["live_legacy"]: each song's life on stage (count, span, count
+          by era, the performances most often issued on official live records).
+        pathways lists the cataloged lore for the release or the research sites
+        to search when nothing is cataloged.
         """
         release = store.resolve_release(release_id_or_title)
         if not release:
             return _json({"error": "Release not found or ambiguous", "query": release_id_or_title})
-        payload = store.album_context(release)
-        legacy = _album_live_legacy([track.get("song_id") for track in payload.get("tracks", [])])
-        if legacy:
-            for track in payload["tracks"]:
-                if track.get("song_id") in legacy:
-                    track["live_legacy"] = legacy[track["song_id"]]
+        wanted = set(include or [])
+        if show:
+            wanted.add("tracks")
+        unknown = wanted - set(_ALBUM_DETAILS)
+        if unknown:
+            return _json({"error": "Unknown include", "valid": list(_ALBUM_DETAILS)})
+
+        context = store.album_context(release)
+        tracks = context.get("tracks", [])
+        performance_ids = {track["performance_id"] for track in tracks if track.get("performance_id")}
+        performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", performance_ids)}
+        shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {p.get("show_id", "") for p in performances.values()})}
+        venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", {s.get("venue_id", "") for s in shows.values()})}
+
+        def show_of(track: dict[str, Any]) -> str:
+            return performances.get(track.get("performance_id") or "", {}).get("show_id", "")
+
+        payload: dict[str, Any] = {
+            "release": context["release"],
+            "track_count": len(tracks),
+            "personnel": context.get("personnel", []),
+        }
+        durations = [int(track["duration_seconds"]) for track in tracks if str(track.get("duration_seconds") or "").isdigit()]
+        if durations:
+            payload["total_duration_seconds"] = sum(durations)
+        song_ids = list(dict.fromkeys(track["song_id"] for track in tracks if track.get("song_id")))
+        if release.get("release_type") == "live":
+            counts: dict[str, int] = {}
+            for track in tracks:
+                if show_of(track):
+                    counts[show_of(track)] = counts.get(show_of(track), 0) + 1
+            ordered = sorted(counts, key=lambda show_id: (shows[show_id].get("show_date", ""), show_id))
+            payload["contents"] = {
+                "shows": [
+                    {
+                        "show_id": show_id,
+                        "show_date": shows[show_id].get("show_date", ""),
+                        "venue_name": venues.get(shows[show_id].get("venue_id", ""), {}).get("name", ""),
+                        "city": venues.get(shows[show_id].get("venue_id", ""), {}).get("city", ""),
+                        "track_count": counts[show_id],
+                    }
+                    for show_id in ordered
+                ],
+                "unattributed_track_count": len(tracks) - sum(counts.values()),
+            }
+        else:
+            titles = {track["song_id"]: track.get("song_title") or track.get("title", "") for track in tracks if track.get("song_id")}
+            payload["contents"] = {"songs": [{"song_id": song_id, "title": titles[song_id]} for song_id in song_ids]}
+
+        if "tracks" in wanted:
+            if show:
+                resolved = store.resolve_show(show)
+                show_id = resolved["show_id"] if resolved else ""
+                if show_id not in {show_of(track) for track in tracks}:
+                    return _json({"error": "Show not on this release", "shows": [entry["show_date"] for entry in payload["contents"].get("shows", [])]})
+                payload["tracks"] = [track for track in tracks if show_of(track) == show_id]
+            else:
+                payload["tracks"] = tracks
+        if "live_legacy" in wanted:
+            payload["live_legacy"] = _album_live_legacy(song_ids)
             payload["live_legacy_note"] = (
-                "live_legacy per track: performance count, span, count by era and the "
+                "live_legacy per song: performance count, span, count by era and the "
                 "performances most often issued on official live records. Call get_song_notable_versions "
                 "for one song's versions with critic, curator and fan signals."
             )
-        payload["pathways"] = pathways_for(store, [("release", release["release_id"])]).get(
-            release["release_id"], {}
-        )
+
+        available: dict[str, Any] = {}
+        if "tracks" not in wanted:
+            ask = 'include=["tracks"]'
+            if len(payload["contents"].get("shows", [])) > 1:
+                ask += f'; narrow to one show with show="{payload["contents"]["shows"][0]["show_date"]}"'
+            available["tracks"] = {"count": len(tracks), "ask": ask}
+        if "live_legacy" not in wanted and song_ids:
+            available["live_legacy"] = {"count": len(song_ids), "ask": 'include=["live_legacy"]: each song\'s stage history'}
+        if available:
+            payload["available"] = available
+        payload["pathways"] = pathways_for(store, [("release", release["release_id"])]).get(release["release_id"], {})
         return _json(payload)
 
     def _album_live_legacy(song_ids: list[str | None]) -> dict[str, dict[str, Any]]:
