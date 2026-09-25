@@ -1,0 +1,61 @@
+{
+  "suite_id": "catalog",
+  "version": 1,
+  "description": "Album summaries and catalog queries: shape, detail on request, tested menu queries, free SQL, guardrails.",
+  "cases": [
+    {
+      "id": "album-summary-lists-shows",
+      "category": "album-summary",
+      "question": "What is on Europe '72: The Complete Recordings?",
+      "tool": "get_album",
+      "arguments": {"release_id_or_title": "release-europe-72-the-complete-recordings-2011"},
+      "expected": {"contains": {"contents.shows": {"show_id": "gd-1972-05-26"}}, "equals": {"available.tracks.count": 578}},
+      "failure_conditions": ["Summary does not list the box set's shows or does not offer its tracks."]
+    },
+    {
+      "id": "album-tracks-for-one-show",
+      "category": "album-detail",
+      "question": "What did they play on the last night of Europe '72?",
+      "tool": "get_album",
+      "arguments": {"release_id_or_title": "release-europe-72-the-complete-recordings-2011", "show": "1972-05-26"},
+      "expected": {"contains": {"tracks": {"performance_id": "gd-1972-05-26-promised-land-1-1"}}},
+      "failure_conditions": ["Narrowing to one show does not return that show's tracks."]
+    },
+    {
+      "id": "menu-releases-covering-1972",
+      "category": "catalog-menu",
+      "question": "Which official releases cover 1972?",
+      "tool": "query_catalog",
+      "arguments": {"name": "releases_covering_years", "year_from": 1972},
+      "expected": {"equals": {"query": "releases_covering_years"}},
+      "failure_conditions": ["The listed query for releases by year does not run."]
+    },
+    {
+      "id": "releases-covering-1972-sql",
+      "category": "catalog-sql",
+      "question": "Which official releases cover 1972?",
+      "tool": "query_catalog",
+      "arguments": {"sql": "SELECT DISTINCT release_id FROM release_track_facts WHERE year = 1972 ORDER BY release_id"},
+      "expected": {"contains": {"rows": ["release-europe-72-the-complete-recordings-2011"]}},
+      "failure_conditions": ["The Europe '72 box is missing from 1972's releases."]
+    },
+    {
+      "id": "most-played-1977-sql",
+      "category": "catalog-sql",
+      "question": "Which songs did they play most in 1977?",
+      "tool": "query_catalog",
+      "arguments": {"sql": "SELECT song_title, COUNT(*) AS times FROM performance_facts WHERE year = 1977 GROUP BY song_id ORDER BY times DESC LIMIT 1"},
+      "expected": {"contains": {"rows": ["Estimated Prophet", 51]}},
+      "failure_conditions": ["The top 1977 song or its count is wrong."]
+    },
+    {
+      "id": "writes-refused",
+      "category": "catalog-guardrail",
+      "question": "(guardrail) a write attempt",
+      "tool": "query_catalog",
+      "arguments": {"sql": "DELETE FROM songs"},
+      "expected": {"equals": {"hint": "Only a single read-only SELECT is allowed."}},
+      "failure_conditions": ["A write was not refused."]
+    }
+  ]
+}

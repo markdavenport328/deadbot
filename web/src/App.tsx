@@ -1721,11 +1721,13 @@ export default function App() {
   }, [phase]);
 
   // Move focus to the answer heading once a response actually lands from an
-  // ask (never on a `?fixture=` load, which never sets the ref).
+  // ask (never on a `?fixture=` load, which never sets the ref). The page has
+  // usually streamed in and the visitor may already be reading further down,
+  // so focus moves without scrolling them back to the top.
   useEffect(() => {
     if (!response || !askJustCompletedRef.current) return;
     askJustCompletedRef.current = false;
-    document.getElementById("answer-title")?.focus({ preventScroll: false });
+    document.getElementById("answer-title")?.focus({ preventScroll: true });
   }, [response]);
 
   // The dev `?stream=` fixture replays a canned event sequence through the

@@ -31,9 +31,16 @@ from deadbot.postgres import query_cache_scope
 from deadbot.progress import describe_tool_call, status_lines
 from deadbot.response_cache import ResponseCache
 from deadbot.storage import create_canonical_store
+from deadbot.turn_metrics import turn_metrics
 
 
 logger = logging.getLogger(__name__)
+
+metrics_logger = logging.getLogger("deadbot.turn_metrics")
+metrics_logger.setLevel(logging.INFO)
+metrics_logger.propagate = False
+if not metrics_logger.handlers:
+    metrics_logger.addHandler(logging.StreamHandler())
 
 UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
 
@@ -235,11 +242,15 @@ def create_app(
             serialized = json.dumps(event, ensure_ascii=False)
             return serialized.encode("utf-8", "replace").decode("utf-8") + "\n"
 
+        started = time.monotonic()
+        first_answer_at: float | None = None
+        error: str | None = None
+        served_from_cache = False
+        messages: list[Any] = []
         try:
             config = run_config(invocation.invocation_thread_id, app.state.settings)
             payload = {"messages": invocation.messages}
             stream = getattr(app.state.agent, "stream", None)
-            messages: list[Any] = []
             # One query cache for the whole request. Each step of this
             # generator may resume in a fresh context copy, so the same dict
             # is re-entered around every graph step and the final resolution.
@@ -247,6 +258,7 @@ def create_app(
             with query_cache_scope(cache):
                 cached = _cached(request, invocation)
             if cached is not None:
+                served_from_cache = True
                 yield line({"type": "status", "text": "Found a recent answer"})
                 yield line({"type": "response", "response": cached.model_dump(mode="json")})
                 return
@@ -270,6 +282,7 @@ def create_app(
                         message_chunk = chunk_payload[0] if isinstance(chunk_payload, tuple) else chunk_payload
                         answer_text = answer_accumulator.feed(message_chunk)
                         if answer_text:
+                            first_answer_at = first_answer_at or time.monotonic()
                             yield line({"type": "answer", "text": answer_text})
                         if answer_accumulator.complete and not composing_page_announced:
                             composing_page_announced = True
@@ -303,6 +316,7 @@ def create_app(
                                     answer_accumulator = AnswerAccumulator()
                                     reset_answer = answer_accumulator.feed(message_chunk)
                                     if reset_answer:
+                                        first_answer_at = first_answer_at or time.monotonic()
                                         yield line({"type": "answer", "text": reset_answer})
                                 yield line({"type": event.type, **event.payload})
                         continue
@@ -328,8 +342,17 @@ def create_app(
             yield line({"type": "response", "response": response.model_dump(mode="json")})
         except Exception:  # The browser receives no model/provider internals.
             logger.exception("Deadbot streamed experience request failed")
+            error = "stream failed"
             yield line({"type": "error", "detail": UNAVAILABLE})
         finally:
+            if not served_from_cache:
+                try:
+                    metrics_logger.info(json.dumps(turn_metrics(
+                        request.question, messages, started=started,
+                        first_answer_at=first_answer_at, finished_at=time.monotonic(), error=error,
+                    )))
+                except Exception:
+                    logger.exception("Turn metrics failed")
             _release(invocation)
 
     @app.post("/api/experience/stream")

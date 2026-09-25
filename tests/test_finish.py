@@ -187,7 +187,7 @@ def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
     from deadbot.tools import build_tools
 
     guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    payload = json.loads(guest_tool.invoke({"query": "Branford"}))
+    payload = json.loads(guest_tool.invoke({"query": "Branford", "include": ["appearances"]}))
     person_id = payload["guests"][0]["person_id"]
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
@@ -199,13 +199,21 @@ def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
 
 
 def test_resolve_body_hydrates_a_person_roster_from_the_turn_payload():
+    """The default (summary) guest payload carries enough to hydrate a roster.
+
+    "u" is a broad enough query to return a roster larger than an editorial
+    grid, and it happens to include John Belushi (used below), while staying
+    well under the tool result ceiling even without ``include=["appearances"]``.
+    """
     store = CanonicalStore()
     from deadbot.tools import build_tools
 
     guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    payload = json.loads(guest_tool.invoke({"query": ""}))
+    payload = json.loads(guest_tool.invoke({"query": "u"}))
     guests = payload["guests"]
     assert len(guests) > 12, "the roster exists for sets larger than an editorial grid"
+    assert "_truncated" not in payload
+    assert all("appearances" not in guest for guest in guests), "this is the summary path"
     grounded = finish.grounded_context([payload])
     entries = [
         finish.PersonRosterEntry(person_id=guest["person_id"], note="cartwheels" if guest["name"] == "John Belushi" else None)
@@ -226,6 +234,79 @@ def test_resolve_body_hydrates_a_person_roster_from_the_turn_payload():
     assert first.name == guests[0]["name"] and first.show_count == guests[0]["guest_show_count"] and first.roles
     assert all(item.first_year and item.last_year for item in block.items)
     assert next(item for item in block.items if item.name == "John Belushi").note == "cartwheels"
+
+
+def test_resolve_body_hydrates_a_person_roster_from_a_summary_record_with_correct_counts():
+    """Fix round 1: a summary-only guest record must not fall back to the
+
+    store's role-agnostic, unfolded show count. Bruce Hornsby's directory
+    summary says 16 shows, 1988-1995; the store's raw show_performers rows
+    for that person_id (pre-qualifier-folding, every role) say something
+    else entirely.
+    """
+    store = CanonicalStore()
+    from deadbot.tools import build_tools
+
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    payload = json.loads(guest_tool.invoke({"query": "Bruce Hornsby"}))
+    hornsby = payload["guests"][0]
+    assert "appearances" not in hornsby
+    grounded = finish.grounded_context([payload])
+    plan = finish.FinishPlan(
+        chat_answer="x", title="t", lead=None,
+        groups=[finish.GroupPlan(presentation="collection", items=[
+            finish.PersonRosterRef(
+                type="person_roster",
+                title="Sat in",
+                entries=[finish.PersonRosterEntry(person_id=hornsby["person_id"])],
+            )
+        ])],
+    )
+    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
+    item = blocks[0].items[0]
+    assert item.show_count == hornsby["guest_show_count"] == 16
+    assert item.first_year == hornsby["first_show_date"][:4] == "1988"
+    assert item.last_year == hornsby["last_show_date"][:4] == "1995"
+    assert set(item.roles) <= set(hornsby["instruments"]) and item.roles
+
+
+def test_resolve_body_prefers_a_payload_with_appearances_over_an_earlier_summary():
+    """Fix round 1: summary-then-detail ordering.
+
+    A turn can carry a broad directory summary (from an earlier tool call)
+    and a later, narrower detail lookup with include=["appearances"]) for the
+    same person. Both the guest_appearance_list and person_roster resolvers
+    must find and use the detail record, not stop at the first (summary)
+    match.
+    """
+    store = CanonicalStore()
+    from deadbot.tools import build_tools
+
+    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
+    summary_payload = json.loads(guest_tool.invoke({"query": ""}))
+    detail_payload = json.loads(
+        guest_tool.invoke({"query": "Bruce Hornsby", "include": ["appearances"]})
+    )
+    person_id = "person-bruce-hornsby"
+    payloads = [summary_payload, detail_payload]
+    grounded = finish.grounded_context(payloads)
+
+    appearance_plan_items = [finish.GuestAppearancesRef(type="guest_appearance_list", person_id=person_id)]
+    blocks, _ = finish.resolve_items(appearance_plan_items, grounded, payloads, store)
+    assert blocks and blocks[0].type == "guest_appearance_list"
+    assert len(blocks[0].items) == 16, "the summary-only record has no appearances to fall back to"
+
+    roster_plan_items = [
+        finish.PersonRosterRef(
+            type="person_roster",
+            title="Sat in",
+            entries=[finish.PersonRosterEntry(person_id=person_id)],
+        )
+    ]
+    blocks, _ = finish.resolve_items(roster_plan_items, grounded, payloads, store)
+    item = blocks[0].items[0]
+    assert item.show_count == 16, "must use the detail record's appearances, not the summary or the store fallback"
+    assert item.first_year == "1988" and item.last_year == "1995"
 
 
 def test_resolve_body_hydrates_a_person_roster_from_the_store_when_the_payload_has_no_guest_record():

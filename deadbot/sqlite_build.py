@@ -34,7 +34,7 @@ from deadbot.canonical_import import (
 
 DEFAULT_SQLITE_PATH = ROOT / "build" / "deadbot.sqlite"
 SQLITE_SCHEMA_PATH = ROOT / "schema" / "sqlite.sql"
-SQLITE_SCHEMA_VERSION = 1
+SQLITE_SCHEMA_VERSION = 2
 
 
 @dataclass(frozen=True)

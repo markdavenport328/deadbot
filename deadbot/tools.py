@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from langchain_core.tools import BaseTool, tool
 
+from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import (
     DeadnetConfig,
@@ -232,8 +233,41 @@ def _astrology_sign(requested_date: date) -> dict[str, str]:
     raise ValueError(f"Could not determine a zodiac sign for {requested_date.isoformat()}.")
 
 
+# The architecture doc's hard ceiling for one tool result (about 20,000
+# tokens). A result over it is transport damage, not an editorial choice:
+# trim the largest list and tell the model how much it did not see.
+TOOL_RESULT_CEILING_CHARS = 80_000
+
+
+def _dumps(value: Any) -> str:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
+
+
+def _largest_list(value: Any, path: str = "") -> tuple[str, list | None, int]:
+    best: tuple[str, list | None, int] = ("", None, 0)
+    if isinstance(value, dict):
+        children = (
+            (f"{path}.{key}" if path else str(key), nested)
+            for key, nested in value.items()
+            if key != "_truncated"
+        )
+    elif isinstance(value, list):
+        if len(value) > 1:
+            best = (path, value, len(_dumps(value)))
+        # Index list children so every path names exactly one list, even
+        # inside a one-item wrapper such as a single matching guest.
+        children = ((f"{path}[{index}]", nested) for index, nested in enumerate(value))
+    else:
+        return best
+    for child_path, nested in children:
+        candidate = _largest_list(nested, child_path)
+        if candidate[2] > best[2]:
+            best = candidate
+    return best
+
+
 def _json(value: Any) -> str:
-    """Serialize a lean tool payload for the local-model context window."""
+    """Serialize a lean tool payload, bounded by the tool result ceiling."""
 
     def compact(item: Any) -> Any:
         if isinstance(item, dict):
@@ -242,7 +276,29 @@ def _json(value: Any) -> str:
             return [compact(nested) for nested in item]
         return item
 
-    return json.dumps(compact(value), ensure_ascii=False, separators=(",", ":"))
+    payload = compact(value)
+    text = _dumps(payload)
+    if len(text) <= TOOL_RESULT_CEILING_CHARS or not isinstance(payload, dict):
+        return text
+    trimmed: dict[str, tuple[list, int]] = {}
+    while len(text) > TOOL_RESULT_CEILING_CHARS:
+        path, items, _ = _largest_list(payload)
+        if items is None:
+            break
+        trimmed.setdefault(path, (items, len(items)))
+        keep = max(1, int(len(items) * TOOL_RESULT_CEILING_CHARS / len(text) * 0.9))
+        if keep >= len(items):
+            keep = len(items) - 1
+        del items[keep:]
+        payload["_truncated"] = [
+            {"path": p, "kept": len(kept_items), "total": total} for p, (kept_items, total) in trimmed.items()
+        ]
+        payload["_truncated_note"] = (
+            "This result was over the size ceiling, so the lists above were shortened. "
+            "To see the rest, narrow the request: a filter, a detail option, a smaller page, or a query_catalog query."
+        )
+        text = _dumps(payload)
+    return text
 
 
 def _adapter_from_reviewed_source(source_id: str, *, needs_search: bool = False) -> DeadnetResearchAdapter | None:
@@ -472,18 +528,28 @@ def build_tools(
         return _json(payload)
 
     @tool
-    def search_guest_musicians(query: str = "") -> str:
-        """Find guest musicians and the Grateful Dead shows they played.
+    def search_guest_musicians(query: str = "", include: list[str] | None = None) -> str:
+        """List guest musicians: who sat in, how often, when, and on what.
 
-        A name or phrase narrows the results. Each appearance includes its show,
-        venue, location, credited instruments, and any known participation scope.
-        Where a source pins the guest to particular songs, the appearance also
-        carries songs: the performances they played on, in set order, each with
-        a note on what happened. An appearance without songs is known at the
-        show level only. pathways lists the cataloged lore for each result
-        (resources, source trail, selections) or the research sites to search
-        when nothing is cataloged.
+        A name or phrase narrows the results. By default each guest is a
+        directory entry: person_id, name, guest_show_count, first_show_date,
+        last_show_date, and the distinct instruments they are credited with.
+        Pass include=["appearances"] to get a guest's shows: each appearance's
+        venue, location, credited instruments, any known participation scope,
+        and (where a source pins the guest to particular songs) the
+        performances they played on in set order with a note on what
+        happened. That call also carries pathways: the cataloged lore for
+        each show (resources, source trail, selections) or the research
+        sites to search when nothing is cataloged. When the question is
+        about a specific guest, ask for include=["appearances"] in the same
+        call rather than looking the guest up twice.
         """
+        include = include or []
+        valid_includes = {"appearances"}
+        unknown = [item for item in include if item not in valid_includes]
+        if unknown:
+            return _json({"error": "Unknown include", "valid": sorted(valid_includes)})
+        want_appearances = "appearances" in include
         needle = query.casefold().strip()
         people = {person["person_id"]: person for person in store.rows("people")}
         shows = {show["show_id"]: show for show in store.rows("shows")}
@@ -622,15 +688,50 @@ def build_tools(
         # Recurring guests first: the shape of the directory shows who became a
         # thread in the band's story before it shows who dropped by once.
         guests.sort(key=lambda guest: (-guest["guest_show_count"], guest["name"].casefold()))
-        show_ids = []
+        if want_appearances:
+            show_ids = []
+            for guest in guests:
+                for appearance in guest["appearances"]:
+                    if appearance["show_id"] not in show_ids:
+                        show_ids.append(appearance["show_id"])
+            pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
+            payload: dict[str, Any] = {"query": query, "guest_count": len(guests), "guests": guests}
+            if pathway_entities:
+                payload["pathways"] = pathways_for(store, pathway_entities)
+            return _json(payload)
+        total_appearances = sum(len(guest["appearances"]) for guest in guests)
+        summaries = []
         for guest in guests:
-            for appearance in guest["appearances"]:
-                if appearance["show_id"] not in show_ids:
-                    show_ids.append(appearance["show_id"])
-        pathway_entities = [("show", show_id) for show_id in show_ids[:8]]
-        payload: dict[str, Any] = {"query": query, "guest_count": len(guests), "guests": guests}
-        if pathway_entities:
-            payload["pathways"] = pathways_for(store, pathway_entities)
+            appearances = guest["appearances"]
+            instruments: list[str] = []
+            for appearance in appearances:
+                for instrument in appearance.get("instruments") or []:
+                    if instrument not in instruments:
+                        instruments.append(instrument)
+            summaries.append(
+                {
+                    "person_id": guest["person_id"],
+                    "name": guest["name"],
+                    "guest_show_count": guest["guest_show_count"],
+                    "first_show_date": appearances[0]["show_date"] if appearances else None,
+                    "last_show_date": appearances[-1]["show_date"] if appearances else None,
+                    "instruments": instruments,
+                }
+            )
+        payload = {
+            "query": query,
+            "guest_count": len(guests),
+            "guests": summaries,
+            "available": {
+                "appearances": {
+                    "count": total_appearances,
+                    "ask": (
+                        "include=[\"appearances\"]: each guest's shows (date, venue, "
+                        "instruments, songs they played on) and pathways"
+                    ),
+                }
+            },
+        }
         return _json(payload)
 
     @tool
@@ -840,35 +941,111 @@ def build_tools(
             }
         )
 
-    @tool
-    def get_album(release_id_or_title: str) -> str:
-        """Get one official release: its tracklist, credited personnel, and links.
+    _ALBUM_DETAILS = ("live_legacy", "tracks")
 
-        Covers studio albums and official live releases alike. A track names a
-        canonical song for a studio release and a canonical performance for a
-        live one; an intro, tuning or banter segment names neither. Use the
-        release date against a song's performance history when the question is
-        about how a song lived on stage before or after the record. pathways
-        lists the cataloged lore for each result (resources, source trail,
-        selections) or the research sites to search when nothing is cataloged.
+    @tool
+    def get_album(release_id_or_title: str, include: list[str] | None = None, show: str | None = None) -> str:
+        """Get one official release: a summary first, with detail on request.
+
+        The summary names the release, its date and type, and what is on it:
+        for a live release the shows its tracks come from (date, venue, how many
+        tracks); for a studio album its songs. It carries the IDs you need to
+        place the album, its shows or its songs on the page. `available` lists
+        what the summary left out and how to ask for it. Ask only for what your
+        answer will use:
+        - include=["tracks"]: the full tracklist (each track's song or
+          performance, duration and Spotify link). show="<show id or date>"
+          narrows it to one show's tracks on a multi-show release.
+        - include=["live_legacy"]: each song's life on stage (count, span, count
+          by era, the performances most often issued on official live records).
+        pathways lists the cataloged lore for the release or the research sites
+        to search when nothing is cataloged.
         """
         release = store.resolve_release(release_id_or_title)
         if not release:
             return _json({"error": "Release not found or ambiguous", "query": release_id_or_title})
-        payload = store.album_context(release)
-        legacy = _album_live_legacy([track.get("song_id") for track in payload.get("tracks", [])])
-        if legacy:
-            for track in payload["tracks"]:
-                if track.get("song_id") in legacy:
-                    track["live_legacy"] = legacy[track["song_id"]]
+        wanted = set(include or [])
+        if show:
+            wanted.add("tracks")
+        unknown = wanted - set(_ALBUM_DETAILS)
+        if unknown:
+            return _json({"error": "Unknown include", "valid": list(_ALBUM_DETAILS)})
+
+        context = store.album_context(release)
+        tracks = context.get("tracks", [])
+        performance_ids = {track["performance_id"] for track in tracks if track.get("performance_id")}
+        performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", performance_ids)}
+        shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {p.get("show_id", "") for p in performances.values()})}
+        venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", {s.get("venue_id", "") for s in shows.values()})}
+
+        def show_of(track: dict[str, Any]) -> str:
+            return performances.get(track.get("performance_id") or "", {}).get("show_id", "")
+
+        payload: dict[str, Any] = {
+            "release": context["release"],
+            "track_count": len(tracks),
+            "personnel": context.get("personnel", []),
+        }
+        durations = [int(track["duration_seconds"]) for track in tracks if str(track.get("duration_seconds") or "").isdigit()]
+        if durations:
+            payload["total_duration_seconds"] = sum(durations)
+        song_ids = list(dict.fromkeys(track["song_id"] for track in tracks if track.get("song_id")))
+        if release.get("release_type") == "live":
+            counts: dict[str, int] = {}
+            for track in tracks:
+                if show_of(track):
+                    counts[show_of(track)] = counts.get(show_of(track), 0) + 1
+            ordered = sorted(counts, key=lambda show_id: (shows[show_id].get("show_date", ""), show_id))
+            payload["contents"] = {
+                "shows": [
+                    {
+                        "show_id": show_id,
+                        "show_date": shows[show_id].get("show_date", ""),
+                        "venue_name": venues.get(shows[show_id].get("venue_id", ""), {}).get("name", ""),
+                        "city": venues.get(shows[show_id].get("venue_id", ""), {}).get("city", ""),
+                        "track_count": counts[show_id],
+                    }
+                    for show_id in ordered
+                ],
+                "unattributed_track_count": len(tracks) - sum(counts.values()),
+            }
+        else:
+            titles = {track["song_id"]: track.get("song_title") or track.get("title", "") for track in tracks if track.get("song_id")}
+            payload["contents"] = {"songs": [{"song_id": song_id, "title": titles[song_id]} for song_id in song_ids]}
+
+        if "tracks" in wanted:
+            if show:
+                resolved = store.resolve_show(show)
+                show_ids_on_release = {show_of(track) for track in tracks if show_of(track)}
+                if not resolved or resolved["show_id"] not in show_ids_on_release:
+                    return _json({"error": "Show not on this release", "shows": [entry["show_date"] for entry in payload["contents"].get("shows", [])]})
+                show_id = resolved["show_id"]
+                payload["tracks"] = [track for track in tracks if show_of(track) == show_id]
+            else:
+                payload["tracks"] = tracks
+                if len(payload["contents"].get("shows", [])) > 1:
+                    payload["tracks_note"] = (
+                        f'narrow to one show with show="{payload["contents"]["shows"][0]["show_date"]}"'
+                    )
+        if "live_legacy" in wanted:
+            payload["live_legacy"] = _album_live_legacy(song_ids)
             payload["live_legacy_note"] = (
-                "live_legacy per track: performance count, span, count by era and the "
+                "live_legacy per song: performance count, span, count by era and the "
                 "performances most often issued on official live records. Call get_song_notable_versions "
                 "for one song's versions with critic, curator and fan signals."
             )
-        payload["pathways"] = pathways_for(store, [("release", release["release_id"])]).get(
-            release["release_id"], {}
-        )
+
+        available: dict[str, Any] = {}
+        if "tracks" not in wanted:
+            ask = 'include=["tracks"]'
+            if len(payload["contents"].get("shows", [])) > 1:
+                ask += f'; narrow to one show with show="{payload["contents"]["shows"][0]["show_date"]}"'
+            available["tracks"] = {"count": len(tracks), "ask": ask}
+        if "live_legacy" not in wanted and song_ids:
+            available["live_legacy"] = {"count": len(song_ids), "ask": 'include=["live_legacy"]: each song\'s stage history'}
+        if available:
+            payload["available"] = available
+        payload["pathways"] = pathways_for(store, [("release", release["release_id"])]).get(release["release_id"], {})
         return _json(payload)
 
     def _album_live_legacy(song_ids: list[str | None]) -> dict[str, dict[str, Any]]:
@@ -1699,7 +1876,7 @@ def build_tools(
         except (ExternalServiceError, ValueError) as error:
             return _json({"error": str(error), "query": show_id_or_date})
 
-    return [
+    tools = [
         search_entities,
         search_guest_musicians,
         search_stored_resources,
@@ -1727,3 +1904,67 @@ def build_tools(
         get_astronomy,
         get_astrology,
     ]
+
+    if callable(getattr(store, "run_catalog_query", None)):
+
+        @tool
+        def query_catalog(
+            name: str = "",
+            song: str = "",
+            venue: str = "",
+            show: str = "",
+            tour: str = "",
+            year_from: int | None = None,
+            year_to: int | None = None,
+            limit: int = 25,
+            sql: str = "",
+        ) -> str:
+            """Find or count things across the catalog."""  # replaced below by catalog_tool_description()
+            if not name and not sql:
+                return _json({"error": "Pass name (a listed query) or sql"})
+            supplied = [
+                key for key, value in (
+                    ("song", song), ("venue", venue), ("show", show), ("tour", tour),
+                    ("year_from", year_from), ("year_to", year_to),
+                )
+                if value is not None and value != ""
+            ]
+            if not name:
+                result = store.run_catalog_query(sql)
+                return _json({**result, "ignored": supplied} if supplied else result)
+            query = NAMED_QUERIES.get(name)
+            if query is None:
+                return _json({"error": "Unknown query", "queries": list(NAMED_QUERIES)})
+            given = {"song": song, "venue": venue, "show": show}
+            missing = [
+                required for required in query.requires
+                if (year_from is None if required == "year_from" else not given.get(required))
+            ]
+            if missing:
+                return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
+            params: dict[str, Any] = {"venue": venue, "tour": tour, "limit": max(1, min(limit, 200))}
+            if song:
+                resolved = store.resolve_song(song)
+                if not resolved:
+                    return _json({"error": "Song not found or ambiguous", "query": song})
+                params["song"] = resolved["song_id"]
+            if show:
+                resolved_show = store.resolve_show(show)
+                if not resolved_show:
+                    return _json({"error": "Show not found", "query": show})
+                params["show"] = resolved_show["show_id"]
+            params["year_from"] = year_from if year_from is not None else 1965
+            params["year_to"] = year_to if year_to is not None else (year_from if year_from is not None else 1995)
+            if params["year_to"] < params["year_from"]:
+                return _json({"error": "year_to must not be before year_from", "query": name})
+            bound = {key: value for key, value in params.items() if f":{key}" in query.sql}
+            ignored = [key for key in supplied if key not in bound] + (["sql"] if sql else [])
+            result = store.run_catalog_query(query.sql, bound, menu=True)
+            payload = {"query": name, **result}
+            if ignored:
+                payload["ignored"] = ignored
+            return _json(payload)
+
+        query_catalog.description = catalog_tool_description()
+        tools.append(query_catalog)
+    return tools
