@@ -5,6 +5,7 @@ import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamF
 import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./components";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
+import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
 // rarely a page actually contains a data_chart block, so it loads lazily:
@@ -200,38 +201,16 @@ function dedupeSources(sources: SourceReference[]): SourceReference[] {
   return result;
 }
 
-function ExternalLink({ href, children, className }: { href: string; children: ReactNode; className?: string }) {
+// A reading link: sources, articles, charts. A URL that is itself an audio
+// track still plays in-page, so no path to a raw archive file leaves the page.
+function ExternalLink({ href, children, className, label }: { href: string; children: ReactNode; className?: string; label?: string }) {
+  if (archiveTrack(href)) {
+    const words = label ?? (typeof children === "string" ? children : "Play this track");
+    return <ListenControl url={href} label={words} className={className}>{children}</ListenControl>;
+  }
   return (
     <a href={href} target="_blank" rel="noreferrer" className={className}>
       {children}
-    </a>
-  );
-}
-
-// Listening links open supplied recordings externally; they do not start playback.
-function listeningDestination(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "the recording site";
-  }
-}
-
-function ListeningLabel({ title, url, className = "" }: { title: string; url?: string | null; className?: string }) {
-  if (!url) return <span className={`listening-label ${className}`.trim()}>{title}</span>;
-  const destination = listeningDestination(url);
-  const actionLabel = `${destination.includes("youtube") ? "Watch" : "Listen to"} ${title} on ${destination} (opens in a new tab)`;
-  return (
-    <a
-      className={`listening-label song-link ${className}`.trim()}
-      href={url}
-      target="_blank"
-      rel="noreferrer"
-      aria-label={actionLabel}
-      title={actionLabel}
-    >
-      <span className="play-mark" aria-hidden="true">▶</span>
-      <span>{title}</span>
     </a>
   );
 }
@@ -262,13 +241,18 @@ function renderEmphasis(text: string, keyPrefix: string): ReactNode[] {
   return nodes;
 }
 
+// The same words without their emphasis markers, for an accessible name.
+function plainText(text: string): string {
+  return text.replace(inlineEmphasis, (_match, _bold, boldText, _italic, italicText) => boldText ?? italicText ?? "");
+}
+
 function renderInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(inlineLink)) {
     const index = match.index ?? 0;
     if (index > last) nodes.push(...renderEmphasis(text.slice(last, index), `t${last}`));
-    nodes.push(<ExternalLink key={`${index}-${match[2]}`} href={match[2]}>{renderEmphasis(match[1], `l${index}`)}</ExternalLink>);
+    nodes.push(<ExternalLink key={`${index}-${match[2]}`} href={match[2]} label={plainText(match[1])}>{renderEmphasis(match[1], `l${index}`)}</ExternalLink>);
     last = index + match[0].length;
   }
   if (last < text.length) nodes.push(...renderEmphasis(text.slice(last), `t${last}`));
@@ -351,58 +335,11 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
   return null;
 }
 
-type GlyphKind = "spotify" | "wave" | "disc" | "play";
-
-// A leading destination glyph replaces the trailing arrow: gold, 14px, and
-// chosen by where the link actually goes rather than by a generic convention.
-function Glyph({ kind }: { kind: GlyphKind }) {
-  if (kind === "wave") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <g fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-          <path d="M3 12v1M7 8v8M11 5v14M15 8v8M19 10v4M23 12v1" />
-        </g>
-      </svg>
-    );
-  }
-  if (kind === "disc") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <g fill="none" stroke="currentColor" strokeWidth={2}>
-          <circle cx={12} cy={12} r={9} />
-          <circle cx={12} cy={12} r={2.2} fill="currentColor" />
-        </g>
-      </svg>
-    );
-  }
-  const path = kind === "spotify"
-    ? "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm4.59 14.42a.62.62 0 0 1-.86.21c-2.35-1.44-5.31-1.76-8.79-.97a.62.62 0 0 1-.28-1.22c3.81-.87 7.08-.5 9.72 1.12.3.18.39.57.21.86zm1.22-2.72a.78.78 0 0 1-1.07.26c-2.69-1.65-6.79-2.13-9.97-1.17a.78.78 0 1 1-.45-1.49c3.63-1.1 8.15-.57 11.24 1.33.36.22.48.7.25 1.07zm.1-2.84c-3.22-1.91-8.54-2.09-11.62-1.16a.94.94 0 1 1-.54-1.79c3.53-1.07 9.4-.87 13.11 1.34a.94.94 0 0 1-.95 1.61z"
-    : "M7 4.5v15l12-7.5z";
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d={path} />
-    </svg>
-  );
-}
-
-function glyphForAction(url: string, isOfficial: boolean): GlyphKind {
-  let host = "";
-  try {
-    host = new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    host = "";
-  }
-  if (host === "open.spotify.com") return "spotify";
-  if (host === "youtube.com" || host === "youtu.be") return "play";
-  if (host === "archive.org" || host === "relisten.net") return "wave";
-  return isOfficial ? "disc" : "wave";
-}
-
 // Listen actions on a card that has no in-page play of its own (a record, a
-// media link): quiet text links, the first carrying the small gold play mark
-// because it is the card's way to hear it.
+// media link): quiet text links, or a quiet play when an action is itself an
+// archive track.
 function ListenActionList({ actions }: { actions: ListenActions }) {
-  return <ListenLinks actions={actions} plays={actions.map(() => null)} leadsListening />;
+  return <ListenLinks actions={actions} plays={actions.map(() => null)} />;
 }
 
 // A card's header: its one in-page play, round and gold, beside the title and
@@ -419,7 +356,9 @@ function CardHead({ primary, children }: { primary: { play: InPagePlay; label: s
 
 // "Listen for" is a sentence, not a labeled row: cream links in muted body
 // text, shown whenever a unit has highlighted songs or tracks.
-function ListenFor({ items: allItems }: { items: { key: string; title: string; url?: string | null }[] }) {
+type ListenItem = { key: string; title: string; url?: string | null; track?: PlayerTrack | null };
+
+function ListenFor({ items: allItems, queue }: { items: ListenItem[]; queue?: PlayerTrack[] }) {
   // A song highlighted twice in one show (a reprise) is named once here; the
   // setlist still stars both.
   const seen = new Set<string>();
@@ -436,19 +375,7 @@ function ListenFor({ items: allItems }: { items: { key: string; title: string; u
       {items.map((item, index) => (
         <span key={item.key}>
           {index > 0 && <span className="sep">·</span>}
-          {item.url ? (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Listen to ${item.title} (opens in a new tab)`}
-              title={`Opens ${listeningDestination(item.url)} in a new tab`}
-            >
-              {item.title}
-            </a>
-          ) : (
-            item.title
-          )}
+          <ListenControl url={item.url} label={item.title} track={item.track} queue={queue} />
         </span>
       ))}
     </p>
@@ -484,17 +411,14 @@ function Meta({ parts }: { parts: ReactNode[] }) {
 }
 
 // A plain "Title · detail" row, used for recordings, on-record albums, and
-// credits inside the drawer. Title links out when a url is given.
-function PlainList({ items }: { items: { key: string; title: string; url?: string | null; detail?: string | null }[] }) {
+// credits inside the drawer. A recording whose tape the card carries plays
+// in-page; any other title links out when a url is given.
+function PlainList({ items }: { items: { key: string; title: string; url?: string | null; queue?: PlayerTrack[]; detail?: string | null }[] }) {
   return (
     <ul className="plain">
       {items.map((item) => (
         <li key={item.key}>
-          {item.url ? (
-            <ExternalLink className="plain-title" href={item.url}>{item.title}</ExternalLink>
-          ) : (
-            <span className="plain-title">{item.title}</span>
-          )}
+          <ListenControl url={item.url} label={item.title} queue={item.queue} scope="queue" className="plain-title" />
           {item.detail ? <span>{item.detail}</span> : null}
         </li>
       ))}
@@ -570,19 +494,8 @@ function SetlistRow({
         </button>
       </div>
       <span className="row-title">
-        {song.listen_url ? (
-          <a
-            href={song.listen_url}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`Listen to ${song.title} (opens in a new tab)`}
-            title={`Opens ${listeningDestination(song.listen_url)} in a new tab`}
-          >
-            {song.title}
-          </a>
-        ) : (
-          <span>{song.title}</span>
-        )}
+        {/* The row's own button plays the track; the title leaves the site only for another destination. */}
+        <ListenControl url={song.listen_url} label={song.title} track={track} playsElsewhere />
         {song.segue_into_next && (
           <span className="segue-mark" aria-hidden="true">
             {" "}
@@ -649,26 +562,26 @@ function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMeta: Sho
   );
 }
 
+// A live record's track, as the tape of the performance it was taken from.
+function albumTrack(track: AlbumUnitBlock["tracks"][number]): PlayerTrack | null {
+  if (!track.audio_url) return null;
+  return toTrack(
+    { performance_id: track.performance_id ?? `track-${track.track_number}`, title: track.title, audio_url: track.audio_url, duration_seconds: track.audio_duration_seconds },
+    { showDate: track.show_date, venueName: track.venue_name }
+  );
+}
+
 // The album tracklist: the same numbered-link styling as the setlist, one
-// column, no set grouping.
+// column, no set grouping. A track whose performance has a tape plays in-page
+// and continues through the record's other playable tracks.
 function TrackList({ tracks }: { tracks: AlbumUnitBlock["tracks"] }) {
+  const playable = tracks.map(albumTrack);
+  const queue = playable.filter((track): track is PlayerTrack => track !== null);
   return (
     <ol className="song-list">
-      {tracks.map((track) => (
+      {tracks.map((track, index) => (
         <li key={track.track_number} value={track.track_number} className={track.highlighted ? "hi" : undefined}>
-          {track.listen_url ? (
-            <a
-              href={track.listen_url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`Listen to ${track.title} (opens in a new tab)`}
-              title={`Opens ${listeningDestination(track.listen_url)} in a new tab`}
-            >
-              {track.title}
-            </a>
-          ) : (
-            <span>{track.title}</span>
-          )}
+          <ListenControl url={track.listen_url} label={track.title} track={playable[index]} queue={queue} />
         </li>
       ))}
     </ol>
@@ -706,16 +619,31 @@ function isUnit(block: ExperienceBlock): block is UnitBlock {
   return block.type === "show_unit" || block.type === "performance_unit" || block.type === "album_unit" || block.type === "song_overview";
 }
 
-function unitIdentity(block: UnitBlock): { title: string; url?: string | null } {
+// A mention's name, and what hearing it means: the unit's own tracks when the
+// block carries them, otherwise its first listen link.
+function unitIdentity(block: UnitBlock): { title: string; url?: string | null; track?: PlayerTrack | null; queue?: PlayerTrack[] } {
   switch (block.type) {
-    case "show_unit":
-      return { title: block.venue_name ? `${block.venue_name} (${formatShowDate(block.show_date)})` : formatShowDate(block.show_date), url: block.listen[0]?.url };
-    case "performance_unit":
-      return { title: `${block.song_title}, ${venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}`, url: block.listen[0]?.url };
+    case "show_unit": {
+      const meta: ShowMeta = { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) };
+      const queue = block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, meta)).filter((track): track is PlayerTrack => track !== null));
+      return { title: block.venue_name ? `${block.venue_name} (${formatShowDate(block.show_date)})` : formatShowDate(block.show_date), url: block.listen[0]?.url, queue };
+    }
+    case "performance_unit": {
+      const meta: TrackMeta = { showDate: block.show_date, venueName: block.venue_name };
+      const url = block.listen[0]?.url;
+      const queue = (block.show_tracks ?? []).map((track) => toTrack(track, meta));
+      const track = url && archiveTrack(url) && !block.listen[0]?.is_official
+        ? queue.find((item) => item.audioUrl === url) ?? toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: url }, meta)
+        : null;
+      return { title: `${block.song_title}, ${venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}`, url, track, queue };
+    }
     case "album_unit":
       return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
-    case "song_overview":
-      return { title: block.title, url: block.representative_performances[0]?.listen_url };
+    case "song_overview": {
+      const first = block.representative_performances[0];
+      const track = first ? trackFor(first, block.title, { showDate: first.show_date, venueName: first.venue_name ?? splitShowLabel(first.show_label).venue }) : null;
+      return { title: block.title, url: first?.listen_url, track };
+    }
   }
 }
 
@@ -724,7 +652,7 @@ function MentionRow({ block }: { block: UnitBlock }) {
   const identity = unitIdentity(block);
   return (
     <li className={`mention emphasis-mention ${block.type}`}>
-      <ListeningLabel title={identity.title} url={identity.url} className="list-item-label" />
+      <ListenControl url={identity.url} label={identity.title} track={identity.track} queue={identity.queue} scope={identity.track ? "start" : "queue"} className="list-item-label" />
       {block.note && <span className="mention-note">{renderInline(block.note)}</span>}
     </li>
   );
@@ -938,6 +866,7 @@ function ShowUnit({
             key: recording.recording_id,
             title: recording.title,
             url: recording.url,
+            queue: recording.archive_identifier && recording.archive_identifier === unit.recording_identifier ? playableQueue : undefined,
             detail: [recording.source_type, recording.archive_identifier].filter(Boolean).join(" · ")
           }))}
         />
@@ -982,9 +911,9 @@ function ShowUnit({
       )}
       {unit.note && <ClampText className="unit-note">{renderInline(unit.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={unit.judgments} />
-      <ListenLinks actions={listen.restActions} plays={listen.restPlays} leadsListening={!primary} />
+      <ListenLinks actions={listen.restActions} plays={listen.restPlays} />
       {highlights.length > 0 && (
-        <ListenFor items={highlights.map((song) => ({ key: song.performance_id, title: song.title, url: song.listen_url }))} />
+        <ListenFor items={highlights.map((song) => ({ key: song.performance_id, title: song.title, url: song.listen_url, track: toPlayerTrack(song, showMeta) }))} queue={playableQueue} />
       )}
       {shows("setlist") && unit.setlist_disclosure !== "hidden" && unit.sets.length === 0 && unit.setlist_note && (
         <p className="coverage-note">{unit.setlist_note}</p>
@@ -1101,7 +1030,7 @@ function AlbumUnit({
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       <ListenActionList actions={block.listen} />
       {highlightedTracks.length > 0 && (
-        <ListenFor items={highlightedTracks.map((track) => ({ key: String(track.track_number), title: track.title, url: track.listen_url }))} />
+        <ListenFor items={highlightedTracks.map((track) => ({ key: String(track.track_number), title: track.title, url: track.listen_url, track: albumTrack(track) }))} />
       )}
       <Drawer tabs={tabs} initialOpen={initialOpen} />
       {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
@@ -1152,13 +1081,15 @@ function PerformanceUnit({
         const parsed = block.position_in_set ? Number(block.position_in_set) : NaN;
         const here = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
         const setName = block.set_label || "the set";
-        const rows: { key: string; n: number | null; title: string; here?: boolean; edge?: boolean }[] = [
+        // A neighbor plays in-page when the card carries the show's tape.
+        const neighborTrack = (performanceId: string) => showQueue.find((track) => track.id === performanceId) ?? null;
+        const rows: { key: string; n: number | null; title: string; here?: boolean; edge?: boolean; track?: PlayerTrack | null }[] = [
           block.previous
-            ? { key: "prev", n: here ? here - 1 : null, title: block.previous.title }
+            ? { key: "prev", n: here ? here - 1 : null, title: block.previous.title, track: neighborTrack(block.previous.performance_id) }
             : { key: "prev", n: null, title: `Opens ${setName}`, edge: true },
           { key: "here", n: here, title: block.song_title, here: true },
           block.next
-            ? { key: "next", n: here ? here + 1 : null, title: block.next.title }
+            ? { key: "next", n: here ? here + 1 : null, title: block.next.title, track: neighborTrack(block.next.performance_id) }
             : { key: "next", n: null, title: `Closes ${setName}`, edge: true }
         ];
         // Each leg is a stop with its trailing arrow, so a narrow card wraps
@@ -1169,7 +1100,7 @@ function PerformanceUnit({
               <span key={row.key} className="leg">
                 <span className={row.here ? "stop here" : row.edge ? "stop edge" : "stop"}>
                   {row.n !== null && <span className="n">{row.n}</span>}
-                  {row.title}
+                  {row.track ? <ListenControl label={row.title} track={row.track} queue={showQueue} /> : row.title}
                 </span>
                 {index < rows.length - 1 && <span className="arrow" aria-hidden="true">→</span>}
               </span>
@@ -1177,7 +1108,7 @@ function PerformanceUnit({
           </p>
         );
       })()}
-      <ListenLinks actions={listen.restActions} plays={listen.restPlays} leadsListening={!primary} />
+      <ListenLinks actions={listen.restActions} plays={listen.restPlays} />
       {(block.sources.length > 0 || (block.follow_ups ?? []).length > 0) && (
         <footer className="unit-footer">
           <GoDeeper sources={block.sources} />
@@ -1199,14 +1130,15 @@ function splitShowLabel(label: string, showDate?: string | null): { venue: strin
   return { venue, date };
 }
 
-type HistoryStop = { performance_id: string; show_label: string; show_date?: string | null; listen_url?: string | null; set_label?: string | null };
+type HistoryStop = { performance_id: string; show_label: string; show_date?: string | null; venue_name?: string | null; listen_url?: string | null; audio_url?: string | null; duration_seconds?: number | null; set_label?: string | null };
 
-function HistoryStop({ stop, label }: { stop: HistoryStop; label: ReactNode }) {
+function HistoryStop({ stop, label, songTitle }: { stop: HistoryStop; label: ReactNode; songTitle: string }) {
   const { venue, date } = splitShowLabel(stop.show_label, stop.show_date);
+  const track = trackFor(stop, songTitle, { showDate: stop.show_date, venueName: stop.venue_name ?? venue });
   return (
     <li>
       <span className="history-year">{label}</span>
-      <ListeningLabel title={venue} url={stop.listen_url} className="entry-title" />
+      <ListenControl url={stop.listen_url} label={venue} track={track} name={[songTitle, venue, date].filter(Boolean).join(", ")} className="entry-title" />
       <span className="entry-detail">{[date, stop.set_label].filter(Boolean).join(" · ")}</span>
     </li>
   );
@@ -1214,17 +1146,17 @@ function HistoryStop({ stop, label }: { stop: HistoryStop; label: ReactNode }) {
 
 // The song's performance history: where it began and ended, then one
 // performance a year across a horizontal strip.
-function HistoryPanel({ history }: { history: NonNullable<SongOverviewBlockT["history"]> }) {
+function HistoryPanel({ history, songTitle }: { history: NonNullable<SongOverviewBlockT["history"]>; songTitle: string }) {
   const byYear = history.by_year ?? [];
   return (
     <div className="history">
       <ol className="history-span">
-        <HistoryStop stop={history.first} label="First" />
-        <HistoryStop stop={history.last} label="Last" />
+        <HistoryStop stop={history.first} label="First" songTitle={songTitle} />
+        <HistoryStop stop={history.last} label="Last" songTitle={songTitle} />
       </ol>
       {byYear.length > 1 && (
         <ol className="history-years" aria-label="One performance a year">
-          {byYear.map((item) => <HistoryStop key={item.performance_id} stop={item} label={item.year} />)}
+          {byYear.map((item) => <HistoryStop key={item.performance_id} stop={item} label={item.year} songTitle={songTitle} />)}
         </ol>
       )}
     </div>
@@ -1251,7 +1183,7 @@ function SongOverviewUnit({
     tabs.push({
       id: "history",
       label: "History",
-      content: <HistoryPanel history={history} />
+      content: <HistoryPanel history={history} songTitle={block.title} />
     });
   }
   if (showsFacet("albums") && block.albums.length > 0) {
@@ -1265,21 +1197,7 @@ function SongOverviewUnit({
             const detail = [capitalize(album.release_type), album.release_date?.slice(0, 4)].filter(Boolean).join(" · ");
             return (
               <li key={album.release_id}>
-                {album.listen_url ? (
-                  <a
-                    className="entry-title record-link"
-                    href={album.listen_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Listen to ${album.title} on ${listeningDestination(album.listen_url)} (opens in a new tab)`}
-                    title={`Opens ${listeningDestination(album.listen_url)} in a new tab`}
-                  >
-                    <Glyph kind={glyphForAction(album.listen_url, true)} />
-                    {album.title}
-                  </a>
-                ) : (
-                  <span className="entry-title">{album.title}</span>
-                )}
+                <ListenControl url={album.listen_url} label={album.title} className="entry-title" />
                 <span className="entry-detail">{detail}</span>
               </li>
             );
@@ -1313,9 +1231,11 @@ function SongOverviewUnit({
           <ul>
             {representatives.map((performance) => (
               <li key={performance.performance_id}>
-                <ListeningLabel
-                  title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
+                <ListenControl
                   url={performance.listen_url}
+                  label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
+                  track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
+                  name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
                   className="list-item-label"
                 />
                 {performance.set_label && <span>{performance.set_label}</span>}
@@ -1362,9 +1282,15 @@ function Block({
           <ul className="era-performances">
             {block.performances.map((performance) => (
               <li key={performance.performance_id}>
-                <ListeningLabel
-                  title={venueFirstShowLabel(performance.show_date, null, performance.show_label)}
+                <ListenControl
                   url={performance.listen?.url}
+                  label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
+                  track={trackFor(
+                    { performance_id: performance.performance_id, audio_url: performance.audio_url, duration_seconds: performance.duration_seconds, listen_url: performance.listen?.is_official ? null : performance.listen?.url },
+                    performance.song_title,
+                    { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue }
+                  )}
+                  name={`${performance.song_title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
                   className="list-item-label"
                 />
                 <span>{[performance.song_title, performance.set_label].filter(Boolean).join(" · ")}</span>
@@ -1413,7 +1339,13 @@ function Block({
           <ol className="entry-list two-up">
             {block.items.map((item) => (
               <li key={item.show_id}>
-                <span className="entry-title">{item.venue_name}</span>
+                <ListenControl
+                  label={item.venue_name}
+                  queue={(item.tracks ?? []).map((track) => toTrack(track, { showDate: item.show_date, venueName: item.venue_name, recordingDetailsUrl: item.recording_identifier ? `https://archive.org/details/${item.recording_identifier}` : null }))}
+                  scope="queue"
+                  name={`${item.venue_name}, ${formatShowDateLong(item.show_date)}`}
+                  className="entry-title"
+                />
                 <span className="entry-detail">{[formatShowDateLong(item.show_date), item.location].filter(Boolean).join(" · ")}</span>
               </li>
             ))}
@@ -1433,9 +1365,21 @@ function Block({
                 <span className="entry-detail">
                   {[item.venue_name ? formatShowDateLong(item.show_date) : null, item.location, item.instruments.join(", "), item.participation_scope].filter(Boolean).join(" · ")}
                 </span>
-                {item.songs && item.songs.length > 0 && (
-                  <span className="entry-detail">{item.songs.map((song) => song.song_title).join(", ")}</span>
-                )}
+                {item.songs && item.songs.length > 0 && (() => {
+                  const meta: TrackMeta = { showDate: item.show_date, venueName: item.venue_name };
+                  const tracks = item.songs.map((song) => trackFor(song, song.song_title, meta));
+                  const queue = tracks.filter((track): track is PlayerTrack => track !== null);
+                  return (
+                    <span className="entry-detail">
+                      {item.songs.map((song, index) => (
+                        <span key={song.performance_id}>
+                          {index > 0 && ", "}
+                          <ListenControl label={song.song_title} track={tracks[index]} queue={queue} />
+                        </span>
+                      ))}
+                    </span>
+                  );
+                })()}
               </li>
             ))}
           </ol>
@@ -1582,7 +1526,7 @@ function Block({
                   </dd>
                 )}
                 {item.detail && <dd className="fact-detail">{renderInline(item.detail)}</dd>}
-                {item.link && <dd className="fact-link"><ExternalLink href={item.link.url}>{item.link.label}</ExternalLink></dd>}
+                {item.link && <dd className="fact-link"><ExternalLink href={item.link.url} label={item.link.label}>{item.link.label}</ExternalLink></dd>}
                 {(item.follow_ups ?? []).length > 0 && <dd className="fact-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></dd>}
               </div>
             ))}
@@ -1599,7 +1543,7 @@ function Block({
                 {item.marker && <span className="timeline-marker">{item.marker}</span>}
                 <strong>{renderInline(item.title)}</strong>
                 {item.detail && <span className="timeline-detail">{renderInline(item.detail)}</span>}
-                {item.link && <ExternalLink className="timeline-link" href={item.link.url}>{item.link.label}</ExternalLink>}
+                {item.link && <ExternalLink className="timeline-link" href={item.link.url} label={item.link.label}>{item.link.label}</ExternalLink>}
                 {(item.follow_ups ?? []).length > 0 && <span className="timeline-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></span>}
               </li>
             ))}

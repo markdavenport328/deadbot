@@ -34,6 +34,29 @@
       "AlbumTrackItem": {
         "additionalProperties": false,
         "properties": {
+          "audio_duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Duration Seconds"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
           "duration_seconds": {
             "anyOf": [
               {
@@ -73,6 +96,17 @@
             ],
             "title": "Performance Id"
           },
+          "show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Date"
+          },
           "song_id": {
             "anyOf": [
               {
@@ -92,6 +126,17 @@
             "minimum": 1.0,
             "title": "Track Number",
             "type": "integer"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
           }
         },
         "required": [
@@ -418,6 +463,29 @@
       "ComparisonStripItem": {
         "additionalProperties": false,
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "listen_url": {
             "anyOf": [
               {
@@ -473,6 +541,17 @@
           "show_label": {
             "title": "Show Label",
             "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
           },
           "year": {
             "title": "Year",
@@ -1066,6 +1145,29 @@
       "EraPerformanceItem": {
         "additionalProperties": false,
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "listen": {
             "anyOf": [
               {
@@ -1117,6 +1219,17 @@
           "song_title": {
             "title": "Song Title",
             "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
           }
         },
         "required": [
@@ -1628,6 +1741,29 @@
         "additionalProperties": false,
         "description": "One song a guest is credited on, from performance_performers.",
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "note": {
             "anyOf": [
               {
@@ -1961,6 +2097,29 @@
       "PerformanceListItem": {
         "additionalProperties": false,
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "listen_url": {
             "anyOf": [
               {
@@ -2016,6 +2175,17 @@
           "show_label": {
             "title": "Show Label",
             "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
           }
         },
         "required": [
@@ -2777,6 +2947,17 @@
             ],
             "title": "Location"
           },
+          "recording_identifier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Identifier"
+          },
           "show_date": {
             "title": "Show Date",
             "type": "string"
@@ -2784,6 +2965,14 @@
           "show_id": {
             "title": "Show Id",
             "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "maxItems": 60,
+            "title": "Tracks",
+            "type": "array"
           },
           "venue_name": {
             "title": "Venue Name",
@@ -3225,6 +3414,29 @@
         "additionalProperties": false,
         "description": "A model-chosen rendition that gives a song unit an immediate listening path.",
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "listen_url": {
             "anyOf": [
               {
@@ -3269,6 +3481,17 @@
           "show_label": {
             "title": "Show Label",
             "type": "string"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
           }
         },
         "required": [

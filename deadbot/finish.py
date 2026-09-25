@@ -937,7 +937,7 @@ def _resolve_reference(
 
     if kind == "guest_appearance_list":
         guest = _find_guest_record(payloads, item.person_id)
-        blocks = composition._guest_appearance_blocks({"guests": [guest]}) if guest else []
+        blocks = composition._guest_appearance_blocks({"guests": [guest]}, store) if guest else []
         return (blocks[0], []) if blocks else (None, [])
 
     if kind == "person_roster":
@@ -945,7 +945,7 @@ def _resolve_reference(
 
     if kind == "show_selection":
         selection = _find_in_payloads(payloads, "show_selections", "selection_id", item.selection_id)
-        blocks, selection_sources = composition._show_selection_blocks({"show_selections": [selection]}) if selection else ([], [])
+        blocks, selection_sources = composition._show_selection_blocks({"show_selections": [selection]}, store) if selection else ([], [])
         return (_retitle(blocks[0], item.title), selection_sources) if blocks else (None, [])
 
     if kind == "arrangement_search":
