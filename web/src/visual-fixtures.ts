@@ -244,11 +244,39 @@ const evolution: ExperienceResponse = fixture(
 const cornellIdentifier = "gd1977-05-08.148737.SBD.Betty.Anon.Noel.t-flac2448";
 const cornellDownload = `https://archive.org/download/${cornellIdentifier}`;
 
-const cornell: ExperienceResponse = fixture(
-  "Is Cornell 5/8/77 really the best show?",
-  "Cornell’s case is coherence, not consensus",
-  "Cornell earns its reputation because the whole evening feels unusually assured. That does not make it the only 1977 show worth hearing—or a universal winner.",
-  [
+const cornellSecondSet: [string, string, string, number][] = [
+  ["gd-1977-05-08-scarlet-begonias-2-1", "Scarlet Begonias", "gd77-05-08.s2t02.mp3", 686],
+  ["gd-1977-05-08-fire-on-the-mountain-2-2", "Fire on the Mountain", "gd77-05-08.s2t03.mp3", 926],
+  ["gd-1977-05-08-estimated-prophet-2-3", "Estimated Prophet", "gd77-05-08.s2t04.mp3", 525],
+  ["gd-1977-05-08-st-stephen-2-4", "St. Stephen", "gd77-05-08.s2t06.mp3", 284],
+  ["gd-1977-05-08-not-fade-away-2-5", "Not Fade Away", "gd77-05-08.s2t07.mp3", 983],
+  ["gd-1977-05-08-st-stephen-2-6", "St. Stephen", "gd77-05-08.s2t08.mp3", 114]
+];
+
+const cornellHero: ExperienceBlock = {
+  type: "listening_hero",
+  show_id: "gd-1977-05-08",
+  release_id: "release-cornell-1977-05-08",
+  venue_name: "Barton Hall, Cornell University",
+  location: "Ithaca, NY",
+  show_date: "1977-05-08",
+  release_title: null,
+  release_date: null,
+  line: "Betty Board soundboard · the tape most people mean when they say “Cornell”",
+  play_label: "Play the second set",
+  queue: cornellSecondSet.map(([performance_id, title, file, duration_seconds]) => ({
+    performance_id, title, audio_url: `${cornellDownload}/${file}`, duration_seconds, set_label: "Set 2"
+  })),
+  start_index: 0,
+  play_url: null,
+  recording_identifier: cornellIdentifier,
+  recording_details_url: `https://archive.org/details/${cornellIdentifier}`,
+  image_url: "https://coverartarchive.org/release/3e4aecfb-bfcc-49fb-abf6-7afae378c3a0/front-500",
+  image_alt: "Cover of Cornell 5/8/77, the official release of Barton Hall, Cornell University, May 8, 1977",
+  link: { url: "https://open.spotify.com/album/3T9UKU0jMIyrRD0PtKXqPJ", label: "Official 2017 release on Spotify" }
+};
+
+const cornellArgument: ExperienceBlock[] = [
     { type: "editorial", presentation: "narrative", eyebrow: "The argument", title: "What people mean by “best”", paragraphs: ["The case is not that every song is the era’s longest or strangest. It is that **Scarlet > Fire**, the second-set transitions, and the playing’s collective confidence make a persuasive complete-night experience."], items: [] },
     show({
       id: "fixture-1977-05-08", date: "1977-05-08", venue: "Barton Hall, Cornell University", location: "Ithaca, NY", emphasis: "primary", title: "A remarkably complete night",
@@ -273,13 +301,30 @@ const cornell: ExperienceResponse = fixture(
       ],
       follow_ups: [{ label: "May 1977 rivals", question: "Which other May 1977 show makes the strongest counterargument?" }]
     })
-  ],
-  "argument",
-  {
-    title: "The case for Cornell",
-    lead: "A complete night can be persuasive without settling the question for everyone."
-  }
-);
+];
+
+const cornell: ExperienceResponse = {
+  ...fixture(
+    "Is Cornell 5/8/77 really the best show?",
+    "Cornell’s case is coherence, not consensus",
+    "Its reputation rests on how the whole night holds together, and on a soundboard tape clean enough that everyone could hear it. Plenty of fans would put 5/9 in Buffalo, or another May ’77 night, just as high.",
+    [
+      cornellHero,
+      { type: "pull_quote", text: "No one song is the era’s longest or strangest. The case is that the second set never lets go." },
+      ...cornellArgument
+    ]
+  ),
+  groups: [
+    { presentation: "collection", criteria: [], title: null, lead: null, block_indexes: [0, 1] },
+    {
+      presentation: "argument",
+      criteria: [],
+      title: "The case for Cornell",
+      lead: "A complete night can be persuasive without settling the question for everyone.",
+      block_indexes: cornellArgument.map((_, index) => index + 2)
+    }
+  ]
+};
 
 const shakedown: ExperienceResponse = fixture(
   "Give me three Shakedown Street recommendations.",
@@ -566,6 +611,50 @@ const album: ExperienceResponse = fixture(
   { title: "The record" }
 );
 
+const terrapinDownload = "https://archive.org/download/gd1977-06-09.sbd.dauria.3372.shnf";
+const terrapinTracks: [string, string, string, number, string][] = [
+  ["gd-1977-06-09-mississippi-half-step-1-1", "Mississippi Half Step", "gd77-06-09d1t01.mp3", 400, "Set 1"],
+  ["gd-1977-06-09-jack-straw-1-2", "Jack Straw", "gd77-06-09d1t02.mp3", 352, "Set 1"],
+  ["gd-1977-06-09-estimated-prophet-2-9", "Estimated Prophet", "gd77-06-09d3t02.mp3", 540, "Set 2"],
+  ["gd-1977-06-09-terrapin-station-2-10", "Terrapin Station", "gd77-06-09d3t03.mp3", 432, "Set 2"],
+  ["gd-1977-06-09-playing-in-the-band-2-11", "Playing in the Band", "gd77-06-09d3t04.mp3", 610, "Set 2"]
+];
+
+const terrapin: ExperienceResponse = {
+  ...fixture(
+    "Is the Winterland Terrapin from June 1977 worth hearing?",
+    "The Winterland Terrapin is the song arriving whole",
+    "Four months after its debut, the June 9 Terrapin already has the shape it would keep, played with the patience of a band that had just spent a spring on the road.",
+    [
+      {
+        type: "performance_unit", performance_id: "gd-1977-06-09-terrapin-station-2-10", song_id: "song-terrapin-station", song_title: "Terrapin Station",
+        show_id: "gd-1977-06-09", show_date: "1977-06-09", show_label: "1977-06-09 — Winterland", venue_name: "Winterland", location: "San Francisco, CA",
+        set_label: "Set 2", position_in_set: "10", emphasis: "primary", visible_facets: ["setlist", "listen", "sources"],
+        note: "The last night of the spring tour, at home, with the suite still new enough that every section is played as though the band is listening to it for the first time. The Lady with a Fan opening is unhurried, and the instrumental climb into the Terrapin theme builds without any of the later arrangement's orchestral weight, so the song's architecture is easy to hear.",
+        judgments: [
+          "It is one of the earliest performances where the whole suite holds together from the opening verse through the final instrumental climb, and the band sounds confident rather than careful, which is what the spring of 1977 is remembered for.",
+          "Warm and spacious soundboard, with Garcia's guitar forward and Keith's piano filling the long sustained chords underneath; the vocals are relaxed rather than pushed.",
+          "Start at the song itself, then keep the tape running into Playing in the Band to hear how the second set opens out."
+        ],
+        previous: { performance_id: "gd-1977-06-09-estimated-prophet-2-9", title: "Estimated Prophet" },
+        next: { performance_id: "gd-1977-06-09-playing-in-the-band-2-11", title: "Playing in the Band" },
+        listen: [
+          { label: "Listen to Terrapin Station", provider: "archive", url: `${terrapinDownload}/gd77-06-09d3t03.mp3`, is_official: false },
+          { label: "Hear the full show", provider: "archive", url: "https://archive.org/details/gd1977-06-09.sbd.dauria.3372.shnf", is_official: false },
+          { label: "Hear it on Spotify", provider: "spotify", url: "https://open.spotify.com/album/0", is_official: true }
+        ],
+        show_tracks: terrapinTracks.map(([performance_id, title, file, duration_seconds, set_label]) => ({
+          performance_id, title, audio_url: `${terrapinDownload}/${file}`, duration_seconds, set_label
+        })),
+        sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19770609-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
+        follow_ups: [{ label: "Terrapin in 1977", question: "How did Terrapin Station change over 1977?" }]
+      }
+    ] as ExperienceBlock[],
+    "comparison"
+  )
+};
+terrapin.groups = [{ presentation: "comparison", criteria: ["Why it stands out", "Listening character", "Where to start"], title: null, lead: null, block_indexes: [0] }];
+
 // One primary performance_unit judged on four criteria, with its set
 // neighbors, so the labeled groups and the before/after strip can be reviewed
 // at full width.
@@ -717,11 +806,11 @@ const blocks: ExperienceResponse = fixture(
   ]
 );
 
-export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance", "blocks"] as const;
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance", "blocks"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, views, album, performance, blocks };
+const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, views, album, performance, blocks };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
