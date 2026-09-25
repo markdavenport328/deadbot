@@ -725,37 +725,18 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .hero-link:hover, .more-toggle:hover { color: var(--cream); text-decoration-color: var(--cream); }
 }
 
-/* Text that sits directly on the ground keeps AA contrast where a rosette
-   passes behind it: a feathered ground scrim under the text block only. */
-.hero-body > p, .content-heading h1, .group-heading h2, .masthead > p { width: fit-content; }
-.hero-body > p { align-self: flex-start; }
-:is(.hero-body > p, .hero-link, .content-heading h1, .answer-lead, .pull-quote > *, .group-heading > *, .typography-block, .era-unit, .mention-list, .sources-footer, .masthead-row > :not(button), .masthead > p, .message.assistant, .view-answer-link) { position: relative; }
-:is(.hero-body > p, .hero-link, .content-heading h1, .answer-lead, .pull-quote > *, .group-heading > *, .typography-block, .era-unit, .mention-list, .sources-footer, .masthead-row > :not(button), .masthead > p, .message.assistant, .view-answer-link)::after {
-  content: "";
-  position: absolute;
-  inset: -12px -16px;
-  z-index: -1;
-  pointer-events: none;
-  /* Painted only where a rosette is: the gradients are fixed to the
-     viewport, the same discs the rosettes fill, so bare ground and its green
-     glow show through unchanged. The mask feathers the block's edges. */
-  background-image:
-    radial-gradient(circle at 100% 0, var(--scrim) 0 var(--warm-reach), transparent calc(var(--warm-reach) + 40px)),
-    radial-gradient(circle at 0 100%, var(--scrim) 0 var(--cool-reach), transparent calc(var(--cool-reach) + 40px));
-  background-attachment: fixed;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent), linear-gradient(to bottom, transparent, #000 12px, #000 calc(100% - 12px), transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent), linear-gradient(to bottom, transparent, #000 12px, #000 calc(100% - 12px), transparent);
-  mask-composite: intersect;
+/* Text that sits directly on the ground keeps its contrast where a rosette
+   passes behind it: a soft halo of the ground colour around the letters,
+   invisible on bare ground and without a box edge over the dye. */
+:is(.hero-body, .hero-link, .content-heading h1, .answer-lead, .pull-quote, .group-heading, .typography-block, .era-unit, .mention-list, .sources-footer, .masthead-row, .masthead > p, .message.assistant, .view-answer-link) {
+  text-shadow: 0 0 2px var(--ground), 0 0 8px var(--ground), 0 0 18px var(--ground), 0 0 32px rgba(20, 34, 27, 0.85);
 }
-:root { --warm-reach: 470px; --cool-reach: 410px; }
 /* A scrim's feathered edge may reach past the viewport on a phone; it never
    makes the page scroll sideways. */
 .app-shell { overflow-x: clip; }
 /* The one control on the ground at the rail's top edge gets the ground under
    it, so a rosette never shows through its label. */
 .new-chat-button { background-color: var(--ground); }
-@media (max-width: 520px) { :root { --warm-reach: 240px; --cool-reach: 210px; } }
 /* A card's tint sits on the same ground scrim, so a rosette behind a card
    never lowers the contrast of the card's quiet labels. On bare ground the
    scrim is the ground itself and the card looks as it did. */
