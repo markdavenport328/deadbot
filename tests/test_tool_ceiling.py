@@ -23,3 +23,13 @@ def test_nested_lists_are_found_by_path():
     payload = {"live_legacy": {"song-a": {"versions": ["v" * 100] * 3000}}}
     result = json.loads(_json(payload))
     assert result["_truncated"][0]["path"] == "live_legacy.song-a.versions"
+
+
+def test_a_big_list_inside_a_one_item_list_is_trimmed_not_crashed():
+    payload = {"guests": [{"name": "One guest", "appearances": [{"show": "x" * 200}] * 2000}]}
+    text = _json(payload)
+    result = json.loads(text)
+    assert len(text) <= TOOL_RESULT_CEILING_CHARS
+    entry = result["_truncated"][0]
+    assert entry["path"] == "guests[0].appearances" and entry["total"] == 2000
+    assert len(result["guests"][0]["appearances"]) == entry["kept"]

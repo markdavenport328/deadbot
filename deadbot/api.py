@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 metrics_logger = logging.getLogger("deadbot.turn_metrics")
 metrics_logger.setLevel(logging.INFO)
+metrics_logger.propagate = False
 if not metrics_logger.handlers:
     metrics_logger.addHandler(logging.StreamHandler())
 

@@ -246,11 +246,17 @@ def _dumps(value: Any) -> str:
 def _largest_list(value: Any, path: str = "") -> tuple[str, list | None, int]:
     best: tuple[str, list | None, int] = ("", None, 0)
     if isinstance(value, dict):
-        children = ((f"{path}.{key}" if path else str(key), nested) for key, nested in value.items())
+        children = (
+            (f"{path}.{key}" if path else str(key), nested)
+            for key, nested in value.items()
+            if key != "_truncated"
+        )
     elif isinstance(value, list):
         if len(value) > 1:
             best = (path, value, len(_dumps(value)))
-        children = ((path, nested) for nested in value)
+        # Index list children so every path names exactly one list, even
+        # inside a one-item wrapper such as a single matching guest.
+        children = ((f"{path}[{index}]", nested) for index, nested in enumerate(value))
     else:
         return best
     for child_path, nested in children:
@@ -274,30 +280,25 @@ def _json(value: Any) -> str:
     text = _dumps(payload)
     if len(text) <= TOOL_RESULT_CEILING_CHARS or not isinstance(payload, dict):
         return text
-    totals: dict[str, int] = {}
+    trimmed: dict[str, tuple[list, int]] = {}
     while len(text) > TOOL_RESULT_CEILING_CHARS:
         path, items, _ = _largest_list(payload)
         if items is None:
             break
-        totals.setdefault(path, len(items))
+        trimmed.setdefault(path, (items, len(items)))
         keep = max(1, int(len(items) * TOOL_RESULT_CEILING_CHARS / len(text) * 0.9))
         if keep >= len(items):
             keep = len(items) - 1
         del items[keep:]
-        payload["_truncated"] = [{"path": p, "kept": len(_value_at(payload, p)), "total": t} for p, t in totals.items()]
+        payload["_truncated"] = [
+            {"path": p, "kept": len(kept_items), "total": total} for p, (kept_items, total) in trimmed.items()
+        ]
         payload["_truncated_note"] = (
             "This result was over the size ceiling, so the lists above were shortened. "
             "To see the rest, narrow the request: a filter, a detail option, a smaller page, or a query_catalog query."
         )
         text = _dumps(payload)
     return text
-
-
-def _value_at(payload: Any, path: str) -> list:
-    current = payload
-    for part in path.split("."):
-        current = current[part]
-    return current
 
 
 def _adapter_from_reviewed_source(source_id: str, *, needs_search: bool = False) -> DeadnetResearchAdapter | None:
@@ -1921,8 +1922,16 @@ def build_tools(
             """Find or count things across the catalog."""  # replaced below by catalog_tool_description()
             if not name and not sql:
                 return _json({"error": "Pass name (a listed query) or sql"})
+            supplied = [
+                key for key, value in (
+                    ("song", song), ("venue", venue), ("show", show), ("tour", tour),
+                    ("year_from", year_from), ("year_to", year_to),
+                )
+                if value is not None and value != ""
+            ]
             if not name:
-                return _json(store.run_catalog_query(sql))
+                result = store.run_catalog_query(sql)
+                return _json({**result, "ignored": supplied} if supplied else result)
             query = NAMED_QUERIES.get(name)
             if query is None:
                 return _json({"error": "Unknown query", "queries": list(NAMED_QUERIES)})
@@ -1949,14 +1958,7 @@ def build_tools(
             if params["year_to"] < params["year_from"]:
                 return _json({"error": "year_to must not be before year_from", "query": name})
             bound = {key: value for key, value in params.items() if f":{key}" in query.sql}
-            supplied = [
-                key for key, value in (
-                    ("song", song), ("venue", venue), ("show", show), ("tour", tour),
-                    ("year_from", year_from), ("year_to", year_to),
-                )
-                if value is not None and value != ""
-            ]
-            ignored = [key for key in supplied if key not in bound]
+            ignored = [key for key in supplied if key not in bound] + (["sql"] if sql else [])
             result = store.run_catalog_query(query.sql, bound, menu=True)
             payload = {"query": name, **result}
             if ignored:

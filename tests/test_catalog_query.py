@@ -141,3 +141,10 @@ def test_tool_rejects_a_year_range_running_backwards(store):
     run = lambda **args: json.loads(tool.invoke(args))
     result = run(name="most_played_songs", year_from=1980, year_to=1970)
     assert "error" in result
+
+
+def test_tool_reports_parameters_it_did_not_use(store):
+    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    run = lambda **args: json.loads(tool.invoke(args))
+    assert run(sql="SELECT 1 AS n", song="Dark Star")["ignored"] == ["song"]
+    assert "sql" in run(name="most_played_songs", year_from=1977, sql="SELECT 1")["ignored"]
