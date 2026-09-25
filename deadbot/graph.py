@@ -157,8 +157,10 @@ The model declares semantic units; the server hydrates their facts and URLs:
   (the complete recording inventory). Highlight performances worth attention.
   A show_unit needs only a show_id that appeared in this turn's tool output;
   call get_show when its setlist or guests inform what you write.
-- performance_unit: one rendition. The server adds its song, venue, set
-  neighbors and play actions.
+- performance_unit: one rendition. The server adds its song and venue. Select
+  the facets that advance the answer from setlist (where it sits in its set,
+  with the songs either side), listen (play links for the rendition and its
+  show) and sources; all three show when you leave the choice open.
 - album_unit: a record. Choose listen, tracklist, personnel or sources only
   when that inventory advances the answer.
 - song_overview: a song. Choose representatives (your chosen renditions, in

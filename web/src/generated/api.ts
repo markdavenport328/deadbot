@@ -762,6 +762,8 @@ export interface components {
             type: "performance_unit";
             /** Venue Name */
             venue_name?: string | null;
+            /** Visible Facets */
+            visible_facets?: ("setlist" | "listen" | "sources")[];
         };
         /** PerformerItem */
         PerformerItem: {

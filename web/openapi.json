@@ -2065,6 +2065,19 @@
               }
             ],
             "title": "Venue Name"
+          },
+          "visible_facets": {
+            "items": {
+              "enum": [
+                "setlist",
+                "listen",
+                "sources"
+              ],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Visible Facets",
+            "type": "array"
           }
         },
         "required": [

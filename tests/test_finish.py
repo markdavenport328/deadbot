@@ -1305,3 +1305,67 @@ def test_performance_unit_still_carries_set_neighbors():
     unit = blocks[0]
     assert unit.type == "performance_unit"
     assert unit.previous is not None or unit.next is not None
+
+
+def test_a_performance_unit_with_chosen_facets_survives_the_streamed_and_final_paths():
+    # The item shape from the "overlooked Sugaree" log: a comparison card that
+    # selects its facets the way show, album and song cards do.
+    import json
+
+    from langchain_core.messages import AIMessageChunk
+
+    from deadbot.plan_stream import PlanStreamer
+
+    store = CanonicalStore()
+    payloads = _veneta_payloads(store)
+    grounded = finish.grounded_context(payloads)
+    performance_id = payloads[0]["performances"][2]["performance_id"]
+    item = {
+        "type": "performance_unit",
+        "performance_id": performance_id,
+        "title": "The Veneta Sugaree",
+        "emphasis": "supporting",
+        "judgments": ["Unhurried", "Short solo"],
+        "note": "A point of contrast.",
+        "visible_facets": ["listen"],
+    }
+    plan_args = {
+        "chat_answer": "x",
+        "title": "t",
+        "lead": None,
+        "groups": [{"title": "A useful point of contrast", "presentation": "comparison", "criteria": ["Pace", "Solo"], "items": [item]}],
+    }
+
+    def resolve(items):
+        blocks, _ = finish.resolve_items(items, grounded, payloads, store)
+        return blocks
+
+    streamer = PlanStreamer(resolve)
+    text = json.dumps(plan_args)
+    chunk = AIMessageChunk(
+        content="", tool_call_chunks=[{"name": "finish_response", "args": text, "id": "f1", "index": 0, "type": "tool_call_chunk"}]
+    )
+    streamed = [event.payload["block"] for event in streamer.feed(chunk) if event.type == "block"]
+
+    plan = finish.FinishPlan.model_validate(plan_args)
+    assert len(plan.groups) == 1 and len(plan.groups[0].items) == 1
+    final, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
+
+    assert len(streamed) == 1 and len(final) == 1
+    unit = final[0]
+    assert unit.type == "performance_unit" and unit.performance_id == performance_id
+    assert unit.visible_facets == ["listen"]
+    assert unit.listen, "the selected facet is hydrated"
+    assert unit.previous is None and unit.next is None and unit.sources == [], "unselected facets stay out"
+    assert streamed[0] == unit.model_dump(mode="json")
+
+
+def test_a_performance_unit_without_facets_keeps_its_whole_card():
+    store = CanonicalStore()
+    show_payload = store.show_context(store.resolve_show("1972-08-27"))
+    performance_id = show_payload["performances"][2]["performance_id"]
+    blocks, _ = finish.resolve_items(
+        [finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id)], finish.grounded_context([show_payload]), [show_payload], store
+    )
+    assert blocks[0].visible_facets == ["setlist", "listen", "sources"]
+    assert blocks[0].previous and blocks[0].next and blocks[0].listen

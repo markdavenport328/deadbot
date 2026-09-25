@@ -646,6 +646,7 @@ def _performance_unit(
     emphasis: Emphasis = "supporting",
     judgments: list[str] | None = None,
     note: str | None = None,
+    visible_facets: list[str] | None = None,
     sources: list[UnitSource] | None = None,
     follow_ups: list[FollowUpTopic] | None = None,
 ) -> PerformanceUnitBlock | None:
@@ -656,11 +657,12 @@ def _performance_unit(
         return None
     if not performance.get("performance_id") or not song.get("song_id") or not show.get("show_id") or not song.get("title"):
         return None
-    previous, next_ = _set_neighbors(context, store)
+    facets = frozenset(("setlist", "listen", "sources") if visible_facets is None else visible_facets)
+    previous, next_ = _set_neighbors(context, store) if "setlist" in facets else (None, None)
     listen_paths = context.get("listen") if isinstance(context.get("listen"), dict) else {}
     tape = listen_paths.get("archive_identifier")
     show_tracks: list[Any] = []
-    if isinstance(tape, str) and tape:
+    if "listen" in facets and isinstance(tape, str) and tape:
         from deadbot.listening import playable_show_tracks
 
         show_tracks, _ = playable_show_tracks(show["show_id"], store, tape)
@@ -681,11 +683,12 @@ def _performance_unit(
         emphasis=emphasis,
         judgments=list(judgments or [])[:5],
         note=(note or "").strip() or None,
+        visible_facets=sorted(facets, key=["setlist", "listen", "sources"].index),
         previous=previous,
         next=next_,
-        listen=_performance_listen_actions(context),
+        listen=_performance_listen_actions(context) if "listen" in facets else [],
         show_tracks=show_tracks,
-        sources=(sources or [])[:4],
+        sources=(sources or [])[:4] if "sources" in facets else [],
         follow_ups=_clean_follow_ups(follow_ups),
     )
 

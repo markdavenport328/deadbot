@@ -69,6 +69,7 @@ class SetlistSection(ExperienceModel):
 Emphasis = Literal["primary", "supporting", "mention"]
 ShowFacet = Literal["guests", "listen", "setlist", "sources", "lineup", "recordings"]
 SongFacet = Literal["credits", "albums", "history", "representatives"]
+PerformanceFacet = Literal["setlist", "listen", "sources"]
 SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
 GroupPresentation = Literal["collection", "sequence", "comparison", "argument"]
 
@@ -237,6 +238,7 @@ class PerformanceUnitBlock(ExperienceModel):
     emphasis: Emphasis = "supporting"
     judgments: list[str] = Field(default_factory=list, max_length=5)
     note: str | None = None
+    visible_facets: list[PerformanceFacet] = Field(default_factory=lambda: ["setlist", "listen", "sources"], max_length=3)
     previous: PerformanceSpineNeighbor | None = None
     next: PerformanceSpineNeighbor | None = None
     listen: list[ListenAction] = Field(default_factory=list, max_length=3)
