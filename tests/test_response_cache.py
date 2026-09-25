@@ -76,3 +76,14 @@ def test_a_disabled_cache_never_touches_the_database():
     cache.remember("Q", _response())
     assert cache.lookup("Q", thread_id="t") is None
     assert len(connection.statements) == before
+
+
+def test_a_local_checkout_keys_cached_answers_to_its_commit(monkeypatch):
+    # Without a deploy variable the key used to read "unknown", so a local
+    # server kept serving answers cached by earlier code.
+    from deadbot import response_cache
+
+    monkeypatch.delenv("VERCEL_GIT_COMMIT_SHA", raising=False)
+    monkeypatch.delenv("DEADBOT_GIT_COMMIT", raising=False)
+    commit = response_cache.deployed_commit()
+    assert commit != "unknown" and len(commit) == 40

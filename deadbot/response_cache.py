@@ -14,9 +14,12 @@ cache methods (the CSV store, test doubles) simply disables the feature.
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import re
+import subprocess
+from pathlib import Path
 from typing import Any
 
 from deadbot.experience import ExperienceResponse
@@ -35,7 +38,29 @@ def question_key(question: str) -> str:
 
 
 def deployed_commit() -> str:
-    return os.getenv("VERCEL_GIT_COMMIT_SHA") or os.getenv("DEADBOT_GIT_COMMIT") or "unknown"
+    return os.getenv("VERCEL_GIT_COMMIT_SHA") or os.getenv("DEADBOT_GIT_COMMIT") or _local_commit() or "unknown"
+
+
+@functools.cache
+def _local_commit() -> str | None:
+    """The checked-out commit when running from a git checkout.
+
+    A local server has no deploy variable, so without this every code change
+    kept serving answers cached by the previous code.
+    """
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=Path(__file__).resolve().parent,
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return result.stdout.strip() or None
 
 
 class ResponseCache:
