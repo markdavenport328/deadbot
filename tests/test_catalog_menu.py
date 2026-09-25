@@ -59,21 +59,6 @@ def test_releases_with_show(run):
     assert set(_column(run(name="releases_with_show", show="1972-08-27"), "release_id")) == expected
 
 
-def test_most_played_songs(run):
-    counts = Counter(p["song_id"] for p in PERFORMANCES if _year(p["show_id"]) == 1977)
-    top_song, top_count = counts.most_common(1)[0]
-    result = run(name="most_played_songs", year_from=1977, limit=5)
-    assert (_column(result, "song_id")[0], _column(result, "times_played")[0]) == (top_song, top_count)
-    assert _column(result, "shows_in_range")[0] == sum(1 for show_id in SHOWS if _year(show_id) == 1977)
-
-
-def test_song_by_year(run):
-    song_id = SONGS["Dark Star"]
-    counts = Counter(_year(p["show_id"]) for p in PERFORMANCES if p["song_id"] == song_id)
-    result = run(name="song_by_year", song="Dark Star")
-    assert dict(zip(_column(result, "year"), _column(result, "times_played"))) == dict(counts)
-
-
 def test_song_set_positions(run):
     song_id = SONGS["Scarlet Begonias"]
 

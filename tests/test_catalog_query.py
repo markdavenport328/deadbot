@@ -125,21 +125,21 @@ def test_tool_runs_free_sql_and_explains_bad_calls(store):
     assert run(sql="SELECT COUNT(*) AS n FROM show_facts")["rows"][0][0] > 2000
     assert run()["error"].startswith("Pass name")
     assert "queries" in run(name="nope")
-    assert run(name="most_played_songs")["requires"] == ["year_from"]
-    assert run(name="song_by_year", song="Not A Real Song")["error"].startswith("Song not found")
+    assert run(name="releases_covering_years")["requires"] == ["year_from"]
+    assert run(name="song_set_positions", song="Not A Real Song")["error"].startswith("Song not found")
 
 
 def test_tool_reports_a_parameter_the_named_query_ignores(store):
     tool = next(t for t in build_tools(store) if t.name == "query_catalog")
     run = lambda **args: json.loads(tool.invoke(args))
-    result = run(name="most_played_songs", year_from=1977, venue="Winterland")
+    result = run(name="releases_covering_years", year_from=1977, venue="Winterland")
     assert result["ignored"] == ["venue"]
 
 
 def test_tool_rejects_a_year_range_running_backwards(store):
     tool = next(t for t in build_tools(store) if t.name == "query_catalog")
     run = lambda **args: json.loads(tool.invoke(args))
-    result = run(name="most_played_songs", year_from=1980, year_to=1970)
+    result = run(name="releases_covering_years", year_from=1980, year_to=1970)
     assert "error" in result
 
 
@@ -147,4 +147,4 @@ def test_tool_reports_parameters_it_did_not_use(store):
     tool = next(t for t in build_tools(store) if t.name == "query_catalog")
     run = lambda **args: json.loads(tool.invoke(args))
     assert run(sql="SELECT 1 AS n", song="Dark Star")["ignored"] == ["song"]
-    assert "sql" in run(name="most_played_songs", year_from=1977, sql="SELECT 1")["ignored"]
+    assert "sql" in run(name="releases_covering_years", year_from=1977, sql="SELECT 1")["ignored"]

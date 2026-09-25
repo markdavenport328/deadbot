@@ -1990,7 +1990,7 @@ def build_tools(
             limit: int = 25,
             sql: str = "",
         ) -> str:
-            """Find or count things across the catalog."""  # replaced below by catalog_tool_description()
+            """Find or list things across the catalog."""  # replaced below by catalog_tool_description()
             if not name and not sql:
                 return _json({"error": "Pass name (a listed query) or sql"})
             supplied = [

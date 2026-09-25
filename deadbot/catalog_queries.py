@@ -48,22 +48,6 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             "FROM release_track_facts WHERE show_id = :show GROUP BY release_id ORDER BY release_date, release_title",
         ),
         NamedQuery(
-            "most_played_songs",
-            "songs played most in year_from–year_to: times played, shows, total shows in range (includes Drums/Space)",
-            ("year_from",),
-            "SELECT song_id, song_title, COUNT(*) AS times_played, COUNT(DISTINCT show_id) AS shows, "
-            f"(SELECT COUNT(*) FROM show_facts WHERE {_YEARS}) AS shows_in_range FROM performance_facts "
-            f"WHERE {_YEARS} GROUP BY song_id ORDER BY times_played DESC, song_title LIMIT :limit",
-        ),
-        NamedQuery(
-            "song_by_year",
-            "one song's performances per year, with that year's show count",
-            ("song",),
-            "SELECT year, COUNT(*) AS times_played, COUNT(DISTINCT show_id) AS shows, "
-            "(SELECT COUNT(*) FROM show_facts sf WHERE sf.year = pf.year) AS shows_that_year "
-            "FROM performance_facts pf WHERE song_id = :song GROUP BY year ORDER BY year",
-        ),
-        NamedQuery(
             "song_set_positions",
             "where a song sat in year_from–year_to: per set, times it opened, closed, and appeared",
             ("song",),
@@ -124,7 +108,9 @@ def catalog_tool_description() -> str:
         for query in NAMED_QUERIES.values()
     )
     return (
-        "Find or count things across the catalog. Use a listed query when one fits "
+        "Find or list things across the catalog. For how many times, the most, or change "
+        "over the years, use aggregate_data instead: its results can become a chart. "
+        "Use a listed query when one fits "
         "(song and show accept a title, ID or date; one year: set year_from only). "
         "When none fits, pass sql: one read-only SQLite SELECT. Then look up the few items "
         "your answer will feature for depth.\n"

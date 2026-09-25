@@ -459,6 +459,15 @@ def validate_body_item(raw: Any, *, where: str) -> Any | None:
 
     if isinstance(raw, BaseModel):
         return raw
+    if (
+        isinstance(raw, dict)
+        and "type" not in raw
+        and isinstance(raw.get("title"), str)
+        and any(key in raw for key in ("value", "detail", "marker"))
+    ):
+        # A fact row written without its type is an editorial row; the
+        # editorial block lifts it into a one-item block.
+        raw = {**raw, "type": "editorial"}
     try:
         return _BODY_ITEM_ADAPTER.validate_python(raw)
     except ValidationError as error:

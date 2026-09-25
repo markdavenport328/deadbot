@@ -678,9 +678,9 @@ class EditorialBlock(ExperienceModel):
     paragraphs: list[str] = Field(default_factory=list, max_length=4)
     items: list[EditorialItem] = Field(
         default_factory=list,
-        max_length=12,
+        max_length=40,
         description=(
-            "Up to twelve items: a fact_grid or timeline is a designed comparison of a small set. "
+            "The items of a fact_grid or timeline, in reading order: a set judged on shared terms, a ranking, or a sequence. "
             "A complete set of people belongs in a person_roster, which holds the whole list."
         ),
     )

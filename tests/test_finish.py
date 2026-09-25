@@ -1650,3 +1650,27 @@ def test_resolve_groups_leaves_a_data_chart_unchanged_in_a_comparison_group_with
     chart_block = next(block for block in blocks if block.type == "data_chart")
     assert not hasattr(chart_block, "judgments")
     assert chart_block.aggregation_id == agg_payload["aggregation_id"]
+
+
+def test_a_ranked_editorial_list_longer_than_twelve_survives():
+    # "What are the most played songs" wrote fifteen ranked rows; the old
+    # twelve-item cap dropped the whole list and left one song card.
+    rows = [{"marker": str(rank), "title": f"Song {rank}", "value": f"{800 - rank} performances"} for rank in range(1, 16)]
+    item = finish.validate_body_item({"type": "editorial", "presentation": "fact_grid", "items": rows}, where="planned")
+    assert item is not None and len(item.items) == 15
+
+
+def test_a_fact_row_written_without_its_type_becomes_an_editorial_row():
+    # The "How did Eyes of the World evolve?" log: rows carried
+    # detail/marker/title/value and no type, and the whole group emptied.
+    row = {"marker": "1973", "title": "A new song with a large orbit", "value": "Debut year", "detail": "Expansive jams."}
+    item = finish.validate_body_item(row, where="planned")
+    assert item is not None and item.type == "editorial"
+    assert [entry.title for entry in item.items] == ["A new song with a large orbit"]
+
+
+def test_the_catalog_query_tool_sends_counts_and_rankings_to_aggregate_data():
+    from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
+
+    assert "most_played_songs" not in NAMED_QUERIES and "song_by_year" not in NAMED_QUERIES
+    assert "aggregate_data" in catalog_tool_description()

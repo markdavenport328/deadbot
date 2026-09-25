@@ -357,7 +357,7 @@ export interface components {
             eyebrow?: string | null;
             /**
              * Items
-             * @description Up to twelve items: a fact_grid or timeline is a designed comparison of a small set. A complete set of people belongs in a person_roster, which holds the whole list.
+             * @description The items of a fact_grid or timeline, in reading order: a set judged on shared terms, a ranking, or a sequence. A complete set of people belongs in a person_roster, which holds the whole list.
              */
             items?: components["schemas"]["EditorialItem"][];
             /** Paragraphs */
