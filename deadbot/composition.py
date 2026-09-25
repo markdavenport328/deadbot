@@ -358,7 +358,9 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
                 show_label=show_label,
                 set_label=performance.get("set_label") or None,
                 position_in_set=performance.get("position_in_set") or None,
+                venue_name=venue_name,
                 listen_url=_listen_url(performance),
+                **_audio(performance.get("listen")),
             )
         )
     return items
@@ -387,7 +389,10 @@ def _song_history(performances: list[dict[str, Any]], store: CanonicalStore) -> 
             show_label=first_per_year[year].show_label,
             set_label=first_per_year[year].set_label,
             position_in_set=first_per_year[year].position_in_set,
+            venue_name=first_per_year[year].venue_name,
             listen_url=first_per_year[year].listen_url,
+            audio_url=first_per_year[year].audio_url,
+            duration_seconds=first_per_year[year].duration_seconds,
         )
         for year in years
     ]
@@ -440,6 +445,43 @@ def _set_neighbors(
         neighbor(same_set[current_index - 1] if current_index > 0 else None),
         neighbor(same_set[current_index + 1] if current_index + 1 < len(same_set) else None),
     )
+
+
+def _audio(listen: Any) -> dict[str, Any]:
+    """The in-page player's track and length from a performance's listening path."""
+
+    if not isinstance(listen, dict):
+        return {"audio_url": None, "duration_seconds": None}
+    url = listen.get("archive_track_url")
+    duration = listen.get("archive_track_duration_seconds")
+    return {
+        "audio_url": url if isinstance(url, str) and url else None,
+        "duration_seconds": duration if isinstance(duration, int) and duration >= 0 else None,
+    }
+
+
+def _archive_tracks(performance_ids: list[str], store: CanonicalStore) -> dict[str, dict[str, Any]]:
+    """Each performance's Internet Archive track and length, chosen the way the store's listening paths choose.
+
+    For blocks whose payload carries performance IDs without listening paths
+    (a guest's credited songs, a record's live tracks). One query for all of them.
+    """
+
+    ids = [performance_id for performance_id in dict.fromkeys(performance_ids) if performance_id]
+    if not ids:
+        return {}
+    chosen: dict[str, tuple[str, str, str]] = {}
+    for link in store.rows_in("performance_links", "performance_id", ids):
+        if link.get("platform") != "archive" or link.get("link_type") != "recording-track" or not link.get("url"):
+            continue
+        performance_id = link.get("performance_id") or ""
+        candidate = (link.get("performance_link_id") or "", link["url"], str(link.get("duration_seconds") or "").strip())
+        if performance_id not in chosen or candidate < chosen[performance_id]:
+            chosen[performance_id] = candidate
+    return {
+        performance_id: {"audio_url": url, "duration_seconds": int(duration) if duration.isdigit() else None}
+        for performance_id, (_link_id, url, duration) in chosen.items()
+    }
 
 
 def _listen_url(performance: dict[str, Any]) -> str | None:
@@ -819,7 +861,9 @@ def _era_performance_item(context: dict[str, Any], store: CanonicalStore) -> Era
         show_date=show_date,
         show_label=show_label,
         set_label=performance.get("set_label") or None,
+        venue_name=venue.get("name") if venue else None,
         listen=play,
+        **_audio(context.get("listen")),
     )
 
 
@@ -845,6 +889,29 @@ def _era_unit(
         sources=(sources or [])[:4],
         follow_ups=_clean_follow_ups(follow_ups),
     )
+
+
+def _album_track_audio(tracks: list[dict[str, Any]], store: CanonicalStore) -> dict[str, dict[str, Any]]:
+    """A live record's tracks mapped to their performances' archive tracks and shows."""
+
+    performance_ids = [str(track.get("performance_id") or "") for track in tracks]
+    audio = _archive_tracks(performance_ids, store)
+    if not audio:
+        return {}
+    performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", list(audio))}
+    shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", [row.get("show_id", "") for row in performances.values()])}
+    venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", [row.get("venue_id", "") for row in shows.values() if row.get("venue_id")])}
+    result: dict[str, dict[str, Any]] = {}
+    for performance_id, entry in audio.items():
+        show = shows.get((performances.get(performance_id) or {}).get("show_id", ""), {})
+        venue = venues.get(show.get("venue_id", ""), {})
+        result[performance_id] = {
+            "audio_url": entry["audio_url"],
+            "audio_duration_seconds": entry["duration_seconds"],
+            "show_date": show.get("show_date") or None,
+            "venue_name": venue.get("name") or None,
+        }
+    return result
 
 
 def _album_unit(
@@ -877,6 +944,10 @@ def _album_unit(
     highlighted = frozenset(sid for sid in (highlighted_song_ids or []) if sid in own_song_ids)
     facets = frozenset({"listen", "tracklist", "personnel", "sources"} if visible_facets is None else visible_facets)
 
+    listed_tracks = [
+        track for track in payload_tracks if isinstance(track, dict) and isinstance(track.get("track_number"), int)
+    ][:30] if "tracklist" in facets else []
+    track_audio = _album_track_audio(listed_tracks, store)
     tracks = [
         AlbumTrackItem(
             track_number=track["track_number"],
@@ -886,10 +957,10 @@ def _album_unit(
             duration_seconds=track.get("duration_seconds"),
             highlighted=track.get("song_id") in highlighted,
             listen_url=track.get("spotify_track_url"),
+            **track_audio.get(track.get("performance_id") or "", {}),
         )
-        for track in payload_tracks
-        if isinstance(track, dict) and isinstance(track.get("track_number"), int)
-    ][:30] if "tracklist" in facets else []
+        for track in listed_tracks
+    ]
 
     personnel = [
         AlbumCreditItem(
@@ -993,8 +1064,14 @@ def _unit_sources(
     return items[:4], sources[:4]
 
 
-def _show_selection_blocks(payload: dict[str, Any]) -> tuple[list[ShowSelectionBlock], list[SourceReference]]:
-    """Project source-attributed show selections into safe browser blocks."""
+def _show_selection_blocks(
+    payload: dict[str, Any], store: CanonicalStore | None = None
+) -> tuple[list[ShowSelectionBlock], list[SourceReference]]:
+    """Project source-attributed show selections into safe browser blocks.
+
+    With a store, each show carries one tape's playable tracks so its row can
+    play in-page.
+    """
 
     selections = payload.get("show_selections")
     if not isinstance(selections, list):
@@ -1020,12 +1097,20 @@ def _show_selection_blocks(payload: dict[str, Any]) -> tuple[list[ShowSelectionB
             show_id, show_date, venue_name = item.get("show_id"), item.get("show_date"), item.get("venue_name")
             if not all(isinstance(value, str) and value for value in (show_id, show_date, venue_name)):
                 continue
+            tracks: list[Any] = []
+            identifier: str | None = None
+            if store is not None and len(items) < 24:
+                from deadbot.listening import playable_show_tracks
+
+                tracks, identifier = playable_show_tracks(show_id, store)
             items.append(
                 ShowSelectionItem(
                     show_id=show_id,
                     show_date=show_date,
                     venue_name=venue_name,
                     location=item.get("location") if isinstance(item.get("location"), str) and item.get("location") else None,
+                    tracks=tracks,
+                    recording_identifier=identifier,
                 )
             )
         if not items:
@@ -1230,7 +1315,10 @@ def _song_overview(
                 show_date=item.show_date,
                 show_label=item.show_label,
                 set_label=item.set_label,
+                venue_name=item.venue_name,
                 listen_url=item.listen_url,
+                audio_url=item.audio_url,
+                duration_seconds=item.duration_seconds,
             )
             for performance_id in (representative_performance_ids or [])
             if (item := performance_items.get(performance_id)) is not None
@@ -1340,8 +1428,11 @@ def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) ->
     )
 
 
-def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceListBlock]:
-    """Project resolved guest-credit relationships into browser-safe blocks."""
+def _guest_appearance_blocks(payload: dict[str, Any], store: CanonicalStore | None = None) -> list[GuestAppearanceListBlock]:
+    """Project resolved guest-credit relationships into browser-safe blocks.
+
+    With a store, each credited song carries its archive track so it can play in-page.
+    """
 
     raw_guests = payload.get("guests")
     if not isinstance(raw_guests, list):
@@ -1415,4 +1506,12 @@ def _guest_appearance_blocks(payload: dict[str, Any]) -> list[GuestAppearanceLis
                 items=items[:24],
             )
         )
+    if store is not None:
+        songs_to_play = [song for block in blocks for item in block.items for song in item.songs]
+        audio = _archive_tracks([song.performance_id for song in songs_to_play], store)
+        for song in songs_to_play:
+            track = audio.get(song.performance_id)
+            if track:
+                song.audio_url = track["audio_url"]
+                song.duration_seconds = track["duration_seconds"]
     return blocks

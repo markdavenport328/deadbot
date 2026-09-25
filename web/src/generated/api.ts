@@ -92,6 +92,10 @@ export interface components {
         };
         /** AlbumTrackItem */
         AlbumTrackItem: {
+            /** Audio Duration Seconds */
+            audio_duration_seconds?: number | null;
+            /** Audio Url */
+            audio_url?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /**
@@ -103,12 +107,16 @@ export interface components {
             listen_url?: string | null;
             /** Performance Id */
             performance_id?: string | null;
+            /** Show Date */
+            show_date?: string | null;
             /** Song Id */
             song_id?: string | null;
             /** Title */
             title: string;
             /** Track Number */
             track_number: number;
+            /** Venue Name */
+            venue_name?: string | null;
         };
         /**
          * AlbumUnitBlock
@@ -218,6 +226,10 @@ export interface components {
         };
         /** ComparisonStripItem */
         ComparisonStripItem: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /** Listen Url */
             listen_url?: string | null;
             /** Performance Id */
@@ -232,6 +244,8 @@ export interface components {
             show_id: string;
             /** Show Label */
             show_label: string;
+            /** Venue Name */
+            venue_name?: string | null;
             /** Year */
             year: number;
         };
@@ -484,6 +498,10 @@ export interface components {
         };
         /** EraPerformanceItem */
         EraPerformanceItem: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             listen?: components["schemas"]["ListenAction"] | null;
             /** Performance Id */
             performance_id: string;
@@ -499,6 +517,8 @@ export interface components {
             song_id: string;
             /** Song Title */
             song_title: string;
+            /** Venue Name */
+            venue_name?: string | null;
         };
         /**
          * EraUnitBlock
@@ -651,6 +671,10 @@ export interface components {
          * @description One song a guest is credited on, from performance_performers.
          */
         GuestAppearanceSong: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /** Note */
             note?: string | null;
             /** Performance Id */
@@ -755,6 +779,10 @@ export interface components {
         };
         /** PerformanceListItem */
         PerformanceListItem: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /** Listen Url */
             listen_url?: string | null;
             /** Performance Id */
@@ -769,6 +797,8 @@ export interface components {
             show_id: string;
             /** Show Label */
             show_label: string;
+            /** Venue Name */
+            venue_name?: string | null;
         };
         /** PerformanceSpineNeighbor */
         PerformanceSpineNeighbor: {
@@ -1034,10 +1064,14 @@ export interface components {
         ShowSelectionItem: {
             /** Location */
             location?: string | null;
+            /** Recording Identifier */
+            recording_identifier?: string | null;
             /** Show Date */
             show_date: string;
             /** Show Id */
             show_id: string;
+            /** Tracks */
+            tracks?: components["schemas"]["PlayableTrack"][];
             /** Venue Name */
             venue_name: string;
         };
@@ -1175,6 +1209,10 @@ export interface components {
          * @description A model-chosen rendition that gives a song unit an immediate listening path.
          */
         SongRepresentativePerformance: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /** Listen Url */
             listen_url?: string | null;
             /** Performance Id */
@@ -1187,6 +1225,8 @@ export interface components {
             show_id: string;
             /** Show Label */
             show_label: string;
+            /** Venue Name */
+            venue_name?: string | null;
         };
         /** SourceReference */
         SourceReference: {

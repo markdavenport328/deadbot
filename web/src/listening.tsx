@@ -1,15 +1,17 @@
 // Listening primitives: the page's listening hero, the pulled line, the card
 // play button and quiet listen links, the "More" expander for long model
-// prose, and the rosette background. Gold means "hear this": every gold mark
-// in this file is a control that plays or leads to a recording.
+// prose, and the rosette background. Gold means "plays here": every gold mark
+// in this file is a control that plays in-page (see listen-control.tsx).
 import { type ReactNode, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ExperienceBlock } from "./types";
-import { usePlayer, type PlayerTrack } from "./player";
+import type { PlayerTrack } from "./player";
+import { ListenControl, PlayGlyph, archiveThumbnail, inPagePlay, toTrack, usePlayControl, type InPagePlay, type TrackMeta } from "./listen-control";
 import warmRosette from "./assets/rosette-warm.svg";
 import coolRosette from "./assets/rosette-cool.svg";
 
+export { archiveTrack, archiveThumbnail, inPagePlay, toTrack, type InPagePlay, type TrackMeta } from "./listen-control";
+
 type ListenAction = { label: string; url: string; provider: string; is_official?: boolean };
-type PlayableTrack = { performance_id: string; title: string; audio_url: string; duration_seconds?: number | null; set_label?: string | null };
 type ListeningHeroBlock = Extract<ExperienceBlock, { type: "listening_hero" }>;
 type PullQuoteBlock = Extract<ExperienceBlock, { type: "pull_quote" }>;
 
@@ -23,108 +25,6 @@ function longDate(iso?: string | null): string | null {
   return month ? `${month} ${Number(match[3])}, ${match[1]}` : iso;
 }
 
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
-
-// Internet Archive URLs, told apart by host and path, never by the label.
-// A /download/<item>/<file> URL is one audio file the browser can play; any
-// other archive.org page (a /details/ item, a search) is a recording page.
-export function archiveTrack(url: string): { identifier: string } | null {
-  try {
-    const parsed = new URL(url);
-    if (parsed.hostname.replace(/^www\./, "") !== "archive.org") return null;
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    if (parts[0] !== "download" || parts.length < 3) return null;
-    return /\.(mp3|ogg|m4a|flac|wav)$/i.test(parts[parts.length - 1]) ? { identifier: parts[1] } : null;
-  } catch {
-    return null;
-  }
-}
-
-function isArchivePage(url: string): boolean {
-  return hostOf(url) === "archive.org" && !archiveTrack(url);
-}
-
-export function archiveThumbnail(identifier?: string | null): string | null {
-  return identifier ? `https://archive.org/services/img/${identifier}` : null;
-}
-
-export type TrackMeta = { showDate?: string | null; venueName?: string | null; recordingDetailsUrl?: string | null; thumbnailUrl?: string | null };
-
-export function toTrack(track: PlayableTrack, meta: TrackMeta): PlayerTrack {
-  const identifier = archiveTrack(track.audio_url)?.identifier;
-  return {
-    id: track.performance_id,
-    title: track.title,
-    audioUrl: track.audio_url,
-    durationSeconds: track.duration_seconds ?? null,
-    showDate: meta.showDate ?? null,
-    venueName: meta.venueName ?? null,
-    recordingDetailsUrl: meta.recordingDetailsUrl ?? (identifier ? `https://archive.org/details/${identifier}` : null),
-    thumbnailUrl: meta.thumbnailUrl ?? archiveThumbnail(identifier)
-  };
-}
-
-// What an action plays in-page, when it can: a track URL plays that track
-// (continuing through the show when the card carries its tape), and a
-// recording page plays the card's queue from the top.
-export type InPagePlay = { start: PlayerTrack; queue: PlayerTrack[] };
-
-export function inPagePlay(
-  action: ListenAction,
-  queue: PlayerTrack[],
-  standalone?: (url: string) => PlayerTrack | null
-): InPagePlay | null {
-  if (action.is_official) return null;
-  if (archiveTrack(action.url)) {
-    const index = queue.findIndex((track) => track.audioUrl === action.url);
-    if (index >= 0) return { start: queue[index], queue };
-    const track = standalone?.(action.url) ?? null;
-    return track ? { start: track, queue: [track] } : null;
-  }
-  if (isArchivePage(action.url) && queue.length > 0) return { start: queue[0], queue };
-  return null;
-}
-
-function PlayGlyph({ playing }: { playing: boolean }) {
-  return playing ? (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="6" y="5" width="4.5" height="14" fill="currentColor" />
-      <rect x="13.5" y="5" width="4.5" height="14" fill="currentColor" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M7 4.5v15l12-7.5z" />
-    </svg>
-  );
-}
-
-// The shared player's state for one in-page play, and the click that
-// starts, pauses, resumes or retries it.
-function usePlayControl(play: InPagePlay | null, scope: "start" | "queue") {
-  const player = usePlayer();
-  const current = player.currentTrack;
-  const mine = Boolean(
-    play && current && (scope === "start" ? current.id === play.start.id && current.audioUrl === play.start.audioUrl : play.queue.some((track) => track.id === current.id))
-  );
-  const playing = mine && player.status === "playing";
-  const loading = mine && player.status === "loading";
-  const errored = mine && player.status === "error";
-  function onClick() {
-    if (!play || loading) return;
-    if (playing) player.pause();
-    else if (errored) player.retry();
-    else if (mine) player.toggle();
-    else player.play(play.start, play.queue);
-  }
-  return { mine, playing, loading, onClick };
-}
-
 // The one primary listen control on a card: a round gold button in the card's
 // header, beside the title. The action's own label is its accessible name.
 export function CardPlayButton({ play, label }: { play: InPagePlay; label: string }) {
@@ -133,7 +33,8 @@ export function CardPlayButton({ play, label }: { play: InPagePlay; label: strin
     <button
       type="button"
       className={`card-play${control.mine ? " current" : ""}`}
-      aria-label={control.playing ? `Pause: ${label}` : label}
+      data-playable="in-page"
+      aria-label={control.errored ? `Retry: ${label}` : control.playing ? `Pause: ${label}` : label}
       title={label}
       aria-pressed={control.mine}
       aria-busy={control.loading}
@@ -144,49 +45,17 @@ export function CardPlayButton({ play, label }: { play: InPagePlay; label: strin
   );
 }
 
-function QuietPlay({ play, label }: { play: InPagePlay; label: string }) {
-  const control = usePlayControl(play, "queue");
-  return (
-    <button type="button" className="listen-link" aria-pressed={control.mine} aria-busy={control.loading} onClick={control.onClick}>
-      {label}
-    </button>
-  );
-}
-
-function destination(url: string): string {
-  return hostOf(url) || "the recording site";
-}
-
-// Every listen action but the header's play, as quiet text in one line. When
-// nothing on the card plays in-page, the first action leads with the small
-// gold play mark: it is still the card's one way to hear it.
-export function ListenLinks({ actions, plays, leadsListening }: { actions: ListenAction[]; plays: (InPagePlay | null)[]; leadsListening: boolean }) {
+// Every listen action but the header's play, as quiet text in one line: an
+// action that plays in-page is a quiet play control; the rest leave the site.
+export function ListenLinks({ actions, plays }: { actions: ListenAction[]; plays: (InPagePlay | null)[] }) {
   if (actions.length === 0) return null;
   return (
     <ul className="listen-links" aria-label="Listen">
-      {actions.map((action, index) => {
-        const play = plays[index];
-        const lead = leadsListening && index === 0;
-        return (
-          <li key={action.url}>
-            {play ? (
-              <QuietPlay play={play} label={action.label} />
-            ) : (
-              <a
-                className={`listen-link${lead ? " lead" : ""}`}
-                href={action.url}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${action.label} on ${destination(action.url)} (opens in a new tab)`}
-                title={`Opens ${destination(action.url)} in a new tab`}
-              >
-                {lead && <span className="play-mark" aria-hidden="true">▶</span>}
-                {action.label}
-              </a>
-            )}
-          </li>
-        );
-      })}
+      {actions.map((action, index) => (
+        <li key={action.url}>
+          <ListenControl url={action.url} label={action.label} play={plays[index] ?? undefined} scope="queue" />
+        </li>
+      ))}
     </ul>
   );
 }
@@ -285,6 +154,7 @@ export function ListeningHero({ block }: { block: ListeningHeroBlock }) {
             <button
               type="button"
               className="hero-play"
+              data-playable="in-page"
               aria-label={control.playing ? `Pause: ${label}` : undefined}
               aria-pressed={control.mine}
               aria-busy={control.loading}
@@ -294,22 +164,9 @@ export function ListeningHero({ block }: { block: ListeningHeroBlock }) {
               <span>{label}</span>
             </button>
           ) : block.play_url ? (
-            <a
-              className="hero-play"
-              href={block.play_url}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`${label} on ${destination(block.play_url)} (opens in a new tab)`}
-            >
-              <PlayGlyph playing={false} />
-              <span>{label}</span>
-            </a>
+            <ListenControl url={block.play_url} label={label} className="hero-link" />
           ) : null}
-          {block.link && (
-            <a className="hero-link" href={block.link.url} target="_blank" rel="noreferrer">
-              {block.link.label}
-            </a>
-          )}
+          {block.link && <ListenControl url={block.link.url} label={block.link.label} className="hero-link" />}
         </div>
       </div>
     </section>

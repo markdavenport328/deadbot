@@ -124,6 +124,10 @@ class ShowSelectionItem(ExperienceModel):
     show_date: str
     venue_name: str
     location: str | None = None
+    # One tape's playable tracks for the show, in show order, so the row can
+    # play the show in-page. Empty when the library has no archive track.
+    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=60)
+    recording_identifier: str | None = None
 
 
 class ShowSelectionBlock(ExperienceModel):
@@ -161,9 +165,14 @@ class PerformanceListItem(ExperienceModel):
     show_label: str
     set_label: str | None = None
     position_in_set: str | None = None
+    venue_name: str | None = None
     # The library's track link for this rendition, when it has one; the
     # performance's label links there.
     listen_url: str | None = None
+    # The Internet Archive track the in-page player plays for this rendition,
+    # when the library has one, and its length.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
 
 
 class ComparisonStripItem(ExperienceModel):
@@ -174,7 +183,12 @@ class ComparisonStripItem(ExperienceModel):
     show_label: str
     set_label: str | None = None
     position_in_set: str | None = None
+    venue_name: str | None = None
     listen_url: str | None = None
+    # The Internet Archive track the in-page player plays for this rendition,
+    # when the library has one, and its length.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
 
 
 class SongHistory(ExperienceModel):
@@ -258,7 +272,12 @@ class EraPerformanceItem(ExperienceModel):
     show_date: str | None = None
     show_label: str
     set_label: str | None = None
+    venue_name: str | None = None
     listen: ListenAction | None = None
+    # The Internet Archive track the in-page player plays for this rendition,
+    # when the library has one, and its length.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
 
 
 class EraUnitBlock(ExperienceModel):
@@ -281,6 +300,12 @@ class AlbumTrackItem(ExperienceModel):
     duration_seconds: int | None = Field(default=None, ge=0)
     highlighted: bool = False
     listen_url: str | None = None
+    # A live record's track, when its performance has an Internet Archive
+    # track: what the in-page player plays, its length, and the show it is from.
+    audio_url: str | None = None
+    audio_duration_seconds: int | None = Field(default=None, ge=0)
+    show_date: str | None = None
+    venue_name: str | None = None
 
 
 class AlbumCreditItem(ExperienceModel):
@@ -320,6 +345,10 @@ class GuestAppearanceSong(ExperienceModel):
     performance_id: str
     song_title: str
     note: str | None = None
+    # The Internet Archive track the in-page player plays for this rendition,
+    # when the library has one, and its length.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
 
 
 class GuestAppearanceItem(ExperienceModel):
@@ -434,7 +463,12 @@ class SongRepresentativePerformance(ExperienceModel):
     show_date: str | None = None
     show_label: str
     set_label: str | None = None
+    venue_name: str | None = None
     listen_url: str | None = None
+    # The Internet Archive track the in-page player plays for this rendition,
+    # when the library has one, and its length.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
 
 
 class SongOverviewBlock(ExperienceModel):

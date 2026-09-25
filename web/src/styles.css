@@ -289,11 +289,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .ask-chip { display: inline-flex; align-items: baseline; max-width: 100%; border: 1px solid rgba(88, 148, 214, 0.55); border-radius: var(--r); background: transparent; color: var(--cream); font-size: 0.86rem; font-weight: 500; line-height: 1.4; padding: 0.55rem 0.85rem; text-align: left; transition: border-color 120ms ease, background 120ms ease; }
 .ask-chip:focus-visible { border-color: var(--ask); background: rgba(63, 149, 220, 0.12); }
 /* Listening navigates to a recording; asking starts a conversation turn. */
-.listening-label { min-width: 0; line-height: 1.5; overflow-wrap: anywhere; }
-.listening-label.list-item-label { display: inline; }
-.song-link { color: #f1efdf; text-decoration: none; }
-.song-link:focus-visible { color: #f7e7b5; text-decoration: underline; text-underline-offset: 0.16em; }
-.play-mark { display: inline-block; margin-right: 0.4rem; color: var(--listen); font-size: 0.62em; transform: translateY(-0.08em); }
 .view-answer-link { display: none; }
 #answer-title { scroll-margin-top: var(--space-content); }
 /* One label style: every small-caps label on the page, card or otherwise. */
@@ -486,7 +481,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .timeline-ask { grid-column: 2; }
 .era-performances { margin: 1.25rem 0 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
 .era-performances li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.1rem; }
-.era-performances li > span:not(.listening-label) { color: var(--muted); font-size: 0.88rem; }
+.era-performances li > span:not(.list-item-label) { color: var(--muted); font-size: 0.88rem; }
 
 /* The song listen zone: representative performances, cream links with the
    small gold play mark already carried by ListeningLabel. */
@@ -498,8 +493,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .history-years { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 1.1rem 1.5rem; }
 .history-year { display: block; margin-bottom: 0.2rem; color: var(--quiet); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.6; font-variant-numeric: tabular-nums; }
 .history .entry-title { display: inline-flex; align-items: baseline; gap: 0.35rem; }
-.record-link { display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; }
-.record-link svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--listen); }
 .song-representatives ul { margin: 0; padding: 0; list-style: none; }
 .song-representatives li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.65rem; padding: 0.2rem 0; }
 .song-representatives li > span { color: var(--muted); font-size: 0.88rem; }
@@ -606,7 +599,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 
 @media (pointer: coarse) {
-  .song-link { padding: 0.35rem 0; }
   .listen-link, .ask-chip, .tab, .view-answer-link { min-height: 44px; }
 }
 
@@ -647,12 +639,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .question-field button[type="submit"]:hover:not(:disabled) { background: var(--ask-deep-hover); }
   .qs button:hover { color: var(--cream); text-decoration-color: var(--ask); }
   .ask-chip:hover { border-color: var(--ask); background: rgba(63, 149, 220, 0.12); }
-  .song-link:hover { color: #f7e7b5; text-decoration: underline; text-underline-offset: 0.16em; }
   .listen-for a:hover { text-decoration-color: var(--listen); }
   .tab:hover { color: var(--cream); }
   .song-list li a:hover { color: var(--cream); text-decoration-color: var(--listen); }
   .plain a:hover { text-decoration-color: var(--cream); }
-  .record-link:hover { text-decoration: underline; text-decoration-color: var(--listen); }
   .reading-title a:hover { text-decoration: underline; text-decoration-thickness: 1px; }
   .sources-footer a:hover { color: var(--cream); }
 }
@@ -671,8 +661,32 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* Every other listen action is quiet text in one line. */
 .listen-links { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 1.4rem; margin: var(--space-part) 0 0; padding: 0; list-style: none; }
 .listen-link { display: inline-flex; align-items: baseline; gap: 0.1rem; border: 0; background: none; padding: 0.2rem 0; color: var(--muted); font-size: 0.9rem; font-weight: 500; text-align: left; text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; text-decoration-thickness: 1px; overflow-wrap: anywhere; }
-.listen-link.lead { color: var(--cream); font-weight: 600; text-decoration-color: var(--listen-soft); }
 .listen-link[aria-pressed="true"] { color: var(--cream); }
+
+/* A row that plays in-page (listen-control.tsx): the words in cream, led by
+   the small gold play mark, which turns to pause while its track plays. Gold
+   appears only here and on the card and hero plays. */
+.listen-play { display: inline-flex; align-items: baseline; gap: 0.4rem; max-width: 100%; border: 0; background: none; padding: 0.15rem 0; color: var(--cream); font: inherit; font-weight: 600; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.listen-play-mark { display: inline-flex; flex-shrink: 0; align-self: center; width: 0.72em; height: 0.72em; color: var(--listen); }
+.listen-play-mark svg { width: 100%; height: 100%; }
+.listen-play-label { min-width: 0; text-decoration: underline; text-decoration-color: var(--listen-soft); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+.listen-play.current .listen-play-label { text-decoration-color: var(--listen); }
+.listen-play.loading .listen-play-mark { opacity: 0.55; }
+.listen-play.errored .listen-play-mark { color: var(--read); }
+.listen-play-error { color: var(--quiet); font-size: 0.8rem; font-weight: 400; }
+.listen-links .listen-play { font-size: 0.9rem; font-weight: 500; }
+.listen-for .listen-play { font-weight: 600; }
+.set-excerpt .listen-play { font-weight: inherit; }
+@media (prefers-reduced-motion: no-preference) {
+  .listen-play.loading .listen-play-mark { animation: listen-pulse 1s ease-in-out infinite alternate; }
+}
+@keyframes listen-pulse { from { opacity: 0.35; } to { opacity: 1; } }
+@media (hover: hover) {
+  .listen-play:hover .listen-play-label { text-decoration-color: var(--listen); }
+}
+@media (pointer: coarse) {
+  .listen-play { min-height: 44px; align-items: center; }
+}
 .media-card .listen-links { margin-top: 1rem; }
 
 /* Long model prose: about three lines, with More when it runs over. */
@@ -721,7 +735,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 @media (hover: hover) {
   .listen-link:hover { color: var(--cream); text-decoration-color: var(--cream); }
-  .listen-link.lead:hover { text-decoration-color: var(--listen); }
   .hero-link:hover, .more-toggle:hover { color: var(--cream); text-decoration-color: var(--cream); }
 }
 
