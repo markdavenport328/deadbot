@@ -76,6 +76,18 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
         return "Checking Jerry's gear"
     if name in {"get_historical_weather", "get_astronomy", "get_astrology"}:
         return "Adding context for the night"
+    if name == "aggregate_data":
+        dataset = args.get("dataset")
+        measure = args.get("measure")
+        labels = {
+            ("shows", "count"): "Counting shows",
+            ("performances", "count"): "Counting performances",
+            ("performances", "distinct_shows"): "Counting shows with a performance",
+            ("performances", "distinct_songs"): "Counting distinct songs performed",
+            ("guest_appearances", "count"): "Counting guest appearances",
+            ("guest_appearances", "distinct_shows"): "Counting shows with a guest appearance",
+        }
+        return labels.get((dataset, measure), "Counting the catalog")
     return name.replace("_", " ").capitalize()
 
 

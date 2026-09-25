@@ -802,7 +802,64 @@ const blocks: ExperienceResponse = fixture(
     { type: "coverage", title: "What the library holds for this show", message: "The library has the complete soundboard, the film's setlist, and two contemporary reviews. Attendance figures come from newspaper accounts, not ticket records." },
     { type: "provenance_note", source_ids: ["fixture-deadnet"], text: "Temperature and attendance are as reported by the Eugene Register-Guard the following day." },
     { type: "gap_state", message: "No equipment records exist for the third set; the film shows a guitar change that the catalog does not document." },
-    { type: "media_link", title: "Sunshine Daydream on Spotify", url: "https://open.spotify.com/album/0", provider: "Spotify", link_type: "official-release", is_official: true, embed_kind: "spotify", embed_id: "album/0" }
+    { type: "media_link", title: "Sunshine Daydream on Spotify", url: "https://open.spotify.com/album/0", provider: "Spotify", link_type: "official-release", is_official: true, embed_kind: "spotify", embed_id: "album/0" },
+    // Temporal (year) example, for reviewing the vertical/upward-bar
+    // orientation next to the categorical example below.
+    {
+      type: "data_chart",
+      aggregation_id: "agg-dark-star-by-year",
+      chart: "bar",
+      columns: [
+        { key: "year", label: "Year", type: "temporal" },
+        { key: "value", label: "Performances", type: "quantitative" }
+      ],
+      date_range: { from: 1968, to: 1974 },
+      empty_reason: null,
+      excluded_count: 0,
+      metric_label: "Performances",
+      note: "A few undated tapes aren't counted here.",
+      orientation: "vertical",
+      rows: [
+        { year: 1968, value: 9 },
+        { year: 1969, value: 27 },
+        { year: 1970, value: 14 },
+        { year: 1971, value: 6 },
+        { year: 1972, value: 22 },
+        { year: 1973, value: 31 },
+        { year: 1974, value: 18 }
+      ],
+      title: "Dark Star nearly vanished in 1971, then peaked in 1973",
+      total: 127
+    },
+    // Categorical (ranked) example, transposed to the horizontal/rightward-bar
+    // orientation, with a long venue name to exercise axis-label truncation.
+    {
+      type: "data_chart",
+      aggregation_id: "agg-dark-star-venues",
+      chart: "bar",
+      columns: [
+        { key: "label", label: "Venue", type: "categorical" },
+        { key: "value", label: "Performances", type: "quantitative" }
+      ],
+      date_range: null,
+      empty_reason: null,
+      excluded_count: 19,
+      metric_label: "Performances",
+      note: null,
+      orientation: "horizontal",
+      rows: [
+        { label: "Winterland Arena", value: 11 },
+        { label: "Fillmore West", value: 8 },
+        { label: "Nassau Veterans Memorial Coliseum", value: 6 },
+        { label: "Madison Square Garden", value: 5 },
+        { label: "Boston Music Hall", value: 4 }
+      ],
+      title: "Winterland Arena hosted Dark Star more than anywhere else",
+      // total is computed server-side over the full, unlimited result set
+      // (all 24 venues), not just these top five (34) -- the 19 excluded
+      // venues account for the remainder.
+      total: 127
+    }
   ]
 );
 

@@ -20,6 +20,9 @@ dist/
 build/
 .coverage
 htmlcov/
+*.tsbuildinfo
+web/vite.config.js
+web/vite.config.d.ts
 
 # Local harness config
 .claude/launch.json

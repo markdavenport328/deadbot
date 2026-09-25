@@ -768,6 +768,114 @@ def test_a_well_formed_editorial_block_is_left_alone():
     assert block.title == "What changed" and len(block.items) == 1 and block.items[0].title == "Tempo"
 
 
+def _data_chart_columns():
+    return [
+        experience.DataChartColumn(key="year", label="Year", type="temporal"),
+        experience.DataChartColumn(key="value", label="Shows", type="quantitative"),
+    ]
+
+
+def test_data_chart_block_validates_a_full_record():
+    block = experience.DataChartBlock(
+        type="data_chart",
+        aggregation_id="agg-1",
+        title="Shows per year",
+        note="1972 was the busiest year.",
+        chart="bar",
+        orientation="vertical",
+        columns=_data_chart_columns(),
+        rows=[{"year": 1972, "value": 84}, {"year": 1973, "value": 76}],
+        metric_label="Shows",
+        total=160,
+        excluded_count=0,
+        date_range={"from": 1972, "to": 1973},
+    )
+    assert block.rows[0] == {"year": 1972, "value": 84}
+    assert block.date_range == {"from": 1972, "to": 1973}
+
+
+def test_data_chart_block_rejects_an_unrecognized_field():
+    try:
+        experience.DataChartBlock.model_validate(
+            {
+                "type": "data_chart",
+                "aggregation_id": "agg-1",
+                "title": "Shows per year",
+                "chart": "bar",
+                "orientation": "vertical",
+                "columns": [c.model_dump() for c in _data_chart_columns()],
+                "rows": [],
+                "metric_label": "Shows",
+                "total": 160,
+                "excluded_count": 0,
+                "bogus_field": "not allowed",
+            }
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("An unrecognized field on DataChartBlock must be rejected")
+
+
+def test_data_chart_block_rejects_a_non_bar_chart_value():
+    try:
+        experience.DataChartBlock.model_validate(
+            {
+                "type": "data_chart",
+                "aggregation_id": "agg-1",
+                "title": "Shows per year",
+                "chart": "stacked_bar",
+                "orientation": "vertical",
+                "columns": [c.model_dump() for c in _data_chart_columns()],
+                "rows": [],
+                "metric_label": "Shows",
+                "total": 160,
+                "excluded_count": 0,
+            }
+        )
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("chart is a closed vocabulary of exactly one value: bar")
+
+
+def test_data_chart_columns_must_be_exactly_two():
+    base = dict(
+        type="data_chart",
+        aggregation_id="agg-1",
+        title="Shows per year",
+        chart="bar",
+        orientation="vertical",
+        rows=[],
+        metric_label="Shows",
+        total=160,
+        excluded_count=0,
+    )
+    with pytest.raises(ValidationError):
+        experience.DataChartBlock(**base, columns=_data_chart_columns()[:1])
+    with pytest.raises(ValidationError):
+        experience.DataChartBlock(
+            **base,
+            columns=_data_chart_columns() + [experience.DataChartColumn(key="extra", label="Extra", type="categorical")],
+        )
+
+
+def test_data_chart_rows_cap_at_two_hundred():
+    with pytest.raises(ValidationError):
+        experience.DataChartBlock(
+            type="data_chart",
+            aggregation_id="agg-1",
+            title="Shows per year",
+            chart="bar",
+            orientation="vertical",
+            columns=_data_chart_columns(),
+            rows=[{"year": 1900 + n, "value": n} for n in range(201)],
+            metric_label="Shows",
+            total=160,
+            excluded_count=0,
+        )
+
+
 def test_version_check_never_touches_the_store(monkeypatch):
     # Open tabs ask this whenever they become visible again, so it must stay
     # cheap: no database work, just the deployed commit.

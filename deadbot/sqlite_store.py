@@ -104,6 +104,13 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
     # under a burst are closed when returned to a full pool.
     MAX_IDLE_CONNECTIONS = 8
 
+    # aggregate() (the aggregate_data tool) is inherited: its GROUP BY, joins,
+    # label fallbacks and totals are plain SQL both engines run. The show year
+    # is the one dialect-specific piece. show_date is NOT NULL ISO
+    # "YYYY-MM-DD" TEXT here, so the leading four characters are the year,
+    # the same reading the catalog views in schema/sqlite.sql use.
+    _AGGREGATE_YEAR_SQL = 'CAST(substr(s."show_date", 1, 4) AS INTEGER)'
+
     def __init__(self, path: Path | str, *, response_cache_path: Path | str | None = None) -> None:
         self.path = Path(path)
         if not self.path.is_file():

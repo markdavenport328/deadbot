@@ -1,15 +1,55 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from datetime import date, datetime
 from typing import Any
 
 import pytest
 
+from deadbot import aggregation
 from deadbot.data import CanonicalStore
 from deadbot.postgres import PostgresCanonicalStore, PostgresStore, PostgreSQLCanonicalStore
 from deadbot.tools import build_tools
+
+
+# PostgresCanonicalStore.aggregate() emits genuine PostgreSQL syntax
+# (EXTRACT(YEAR FROM ...) and the `::type` cast operator) that this test's
+# SQLite-backed Connection mock cannot execute at all -- not "different
+# results", a parser-level syntax error, confirmed against a bare sqlite3
+# connection. `::` is not valid SQLite syntax anywhere, and EXTRACT(... FROM
+# ...) is not a SQLite function/syntax either. Every table in this mock
+# stores show_date as ISO "YYYY-MM-DD" TEXT (as does the real CSV/Postgres
+# schema), so a SUBSTR/CAST gives the same year as PostgreSQL's EXTRACT for
+# every value these tests exercise. This translation is applied only to the
+# SQL text sent to the underlying sqlite3 cursor below; postgres.py's actual
+# SQL (and the copy recorded in `statements` for assertions) is untouched --
+# it remains genuine PostgreSQL syntax, verified correct by the real-data
+# parity tests, not weakened to satisfy this mock.
+#
+# This regex is deliberately narrow: it strips a `::type` cast only when it
+# directly follows one of aggregate()'s three EXTRACT(YEAR FROM
+# s."show_date") shapes (bare, MIN(...)-wrapped, MAX(...)-wrapped -- the
+# only call sites that emit this construct today, in _aggregate_dimension_sql,
+# _aggregate_predicates, and aggregate()'s date-range query). A `::cast` on
+# any other expression (e.g. postgres.py's selection_signal_rows, which casts
+# `e."payload"::text`) is left alone, so a future PostgreSQL-only construct
+# elsewhere fails loudly under this mock instead of silently "working" here
+# when it wouldn't on real PostgreSQL.
+_YEAR_EXTRACT_CAST = re.compile(
+    r'(EXTRACT\(YEAR FROM s\."show_date"\)'
+    r'|MIN\(EXTRACT\(YEAR FROM s\."show_date"\)\)'
+    r'|MAX\(EXTRACT\(YEAR FROM s\."show_date"\)\))::\w+'
+)
+
+
+def _sqlite_compatible_sql(sql: str) -> str:
+    sql = _YEAR_EXTRACT_CAST.sub(r"\1", sql)
+    return sql.replace(
+        'EXTRACT(YEAR FROM s."show_date")',
+        'CAST(SUBSTR(s."show_date", 1, 4) AS INTEGER)',
+    )
 
 
 TABLES: dict[str, list[dict[str, Any]]] = {
@@ -163,7 +203,17 @@ TABLES: dict[str, list[dict[str, Any]]] = {
             "person_id": "person-garcia",
             "role": "member",
             "instrument": "guitar, vocals",
-        }
+        },
+        # A "guest" role row (distinct from the "member" row above) so the
+        # toy-fixture aggregate() parity pass has a non-empty
+        # guest_appearances dataset to exercise across every group_by.
+        {
+            "show_performer_id": "sp-2",
+            "show_id": "show-1966-10-08-a",
+            "person_id": "person-hunter",
+            "role": "guest",
+            "instrument": "",
+        },
     ],
     "equipment": [
         {
@@ -265,7 +315,8 @@ class Cursor:
 
     def execute(self, operation: str, parameters: tuple[Any, ...] = ()):
         self.statements.append((operation, parameters))
-        return self.cursor.execute(operation.replace("%s", "?"), parameters)
+        sqlite_sql = _sqlite_compatible_sql(operation.replace("%s", "?"))
+        return self.cursor.execute(sqlite_sql, parameters)
 
     def fetchall(self):
         return self.cursor.fetchall()
@@ -581,3 +632,392 @@ def test_database_scalar_types_match_csv_string_semantics():
             "count": "7",
         }
     ]
+
+
+# ---- aggregate() parity: PostgresCanonicalStore's SQL grouping vs
+# CanonicalStore.aggregate's pure-Python reference implementation. Both feed
+# the same raw grouped rows through deadbot.aggregation.assemble_result, so
+# any difference here is a bug in the SQL this task added, not in shaping.
+
+
+@pytest.fixture
+def real_store(real_connection):
+    return PostgresCanonicalStore(real_connection, schema="canonical")
+
+
+@pytest.fixture
+def real_csv_store(real_tables):
+    result = CanonicalStore()
+    result.__dict__["tables"] = real_tables
+    return result
+
+
+def _every_combo() -> list:
+    """Every valid (dataset, group_by, measure) triple, read live from Task
+    1's table (never hand-copied) so this test can't silently drift from it."""
+
+    return [
+        pytest.param(dataset, group_by, measure, id=f"{dataset}-{group_by}-{measure}")
+        for (dataset, group_by), measures in sorted(aggregation._MEASURES_BY_COMBO.items())
+        for measure in sorted(measures)
+    ]
+
+
+def _representative_request(dataset: str, group_by: str, measure: str) -> aggregation.AggregationRequest:
+    return aggregation.AggregationRequest(
+        dataset=dataset,
+        group_by=group_by,
+        measure=measure,
+        limit=50,
+        fill_missing=(group_by == "year"),
+    )
+
+
+@pytest.mark.parametrize("dataset, group_by, measure", _every_combo())
+def test_aggregate_toy_fixture_matches_csv_for_every_valid_combo(store, csv_store, dataset, group_by, measure):
+    """Quick pass against the toy TABLES fixture.
+
+    PostgresCanonicalStore.aggregate() emits genuine PostgreSQL syntax
+    (EXTRACT(YEAR FROM ...)::int) that this test's SQLite-backed Connection
+    mock cannot parse at all -- confirmed as a parser-level syntax error
+    against bare sqlite3, not merely a different result. The mock's
+    Cursor.execute (see _sqlite_compatible_sql above) rewrites just that
+    construct into a SQLite-executable equivalent before running it against
+    the toy in-memory database; the SQL text postgres.py actually builds, and
+    the copy recorded in `connection.statements`, is untouched. This is a
+    real SQLite/PostgreSQL incompatibility, not one this test's toy data
+    happens to dodge -- see the real-data pass below for the test that
+    actually proves the SQL is correct.
+    """
+
+    request = _representative_request(dataset, group_by, measure)
+    assert store.aggregate(request).to_payload() == csv_store.aggregate(request).to_payload()
+
+
+@pytest.mark.parametrize("dataset, group_by, measure", _every_combo())
+def test_aggregate_real_data_matches_csv_for_every_valid_combo(real_store, real_csv_store, dataset, group_by, measure):
+    """The test that actually proves the hand-written SQL is correct: every
+    valid combo against the full ~40k-row production dataset."""
+
+    request = _representative_request(dataset, group_by, measure)
+    assert real_store.aggregate(request).to_payload() == real_csv_store.aggregate(request).to_payload()
+
+
+def test_aggregate_filtered_requests_match_csv(real_store, real_csv_store):
+    dark_star_by_year = aggregation.AggregationRequest(
+        dataset="performances",
+        group_by="year",
+        measure="count",
+        limit=50,
+        fill_missing=True,
+        filters={"song_id": "song-dark-star"},
+    )
+    assert real_store.aggregate(dark_star_by_year).to_payload() == real_csv_store.aggregate(
+        dark_star_by_year
+    ).to_payload()
+
+    jack_casady_by_year = aggregation.AggregationRequest(
+        dataset="guest_appearances",
+        group_by="year",
+        measure="distinct_shows",
+        limit=50,
+        filters={"guest_id": "person-jack-casady"},
+    )
+    assert real_store.aggregate(jack_casady_by_year).to_payload() == real_csv_store.aggregate(
+        jack_casady_by_year
+    ).to_payload()
+
+    shows_year_range = aggregation.AggregationRequest(
+        dataset="shows",
+        group_by="year",
+        measure="count",
+        limit=50,
+        filters={"year_from": 1972, "year_to": 1974},
+    )
+    assert real_store.aggregate(shows_year_range).to_payload() == real_csv_store.aggregate(
+        shows_year_range
+    ).to_payload()
+
+
+def test_aggregate_city_fallback_matches_csv_for_a_real_blank_city_venue(real_store, real_csv_store):
+    """COALESCE(NULLIF(v."city", ''), 'Unknown') must match CanonicalStore's
+    `venue.get("city") or "Unknown"` against a venue that actually has a
+    blank city in the real data, not just the toy fixture's synthetic one."""
+
+    blank_city_venues = [
+        venue for venue in real_csv_store.rows("venues") if not (venue.get("city") or "").strip()
+    ]
+    assert blank_city_venues, "expected at least one real venue with a blank city"
+    venue_id = blank_city_venues[0]["venue_id"]
+
+    request = aggregation.AggregationRequest(
+        dataset="shows", group_by="city", measure="count", limit=50, filters={"venue_id": venue_id}
+    )
+    payload = real_store.aggregate(request).to_payload()
+    assert payload == real_csv_store.aggregate(request).to_payload()
+    assert payload["rows"] and payload["rows"][0]["id"] == "Unknown"
+
+
+def test_aggregate_zero_match_filter_does_not_crash_the_date_range(real_store, real_csv_store):
+    """A request whose filters match zero rows must not raise while computing
+    the date range.
+
+    _query stringifies every DB value (see PostgresCanonicalStore._query /
+    _string_value), so MIN/MAX over zero matching rows comes back as SQL
+    NULL -> "" here, never Python None. aggregate() must treat both as "no
+    data" rather than passing "" to int().
+    """
+
+    request = aggregation.AggregationRequest(
+        dataset="shows",
+        group_by="venue",
+        measure="count",
+        limit=50,
+        filters={"venue_id": "venue-unknown-", "year": 1800},
+    )
+    payload = real_store.aggregate(request).to_payload()
+    assert payload == real_csv_store.aggregate(request).to_payload()
+    assert payload["rows"] == []
+    assert "date_range" not in payload
+
+
+# ---- total: the measure over the whole filtered set, not a row sum --------
+# (Task A / A2). The toy fixture's Dark Star performances all fall in a
+# single show/year, so distinct_songs/distinct_shows never actually
+# double-count anything there -- these need the real ~40k-row dataset to
+# prove total is strictly less than the naive per-group sum.
+
+
+def test_aggregate_total_distinct_songs_by_year_beats_the_naive_row_sum_on_real_data(real_store, real_csv_store):
+    request = aggregation.AggregationRequest(
+        dataset="performances", group_by="year", measure="distinct_songs", limit=50, fill_missing=True,
+    )
+    pg_payload = real_store.aggregate(request).to_payload()
+    assert pg_payload == real_csv_store.aggregate(request).to_payload()
+    naive_row_sum = sum(row["value"] for row in pg_payload["rows"])
+    assert pg_payload["total"] < naive_row_sum
+
+
+def test_aggregate_total_distinct_shows_by_song_beats_the_naive_row_sum_on_real_data(real_store, real_csv_store):
+    request = aggregation.AggregationRequest(
+        dataset="performances", group_by="song", measure="distinct_shows", limit=50, sort="value_desc",
+    )
+    pg_payload = real_store.aggregate(request).to_payload()
+    assert pg_payload == real_csv_store.aggregate(request).to_payload()
+    naive_row_sum = sum(row["value"] for row in pg_payload["rows"])
+    assert pg_payload["total"] < naive_row_sum
+
+
+def test_aggregate_total_count_by_song_still_equals_all_performances_on_real_data(real_store, real_csv_store):
+    """count never double-counts a fact across groups, so its total is
+    unaffected by this task: unchanged from before, and equal between both
+    stores regardless of how the toy-fixture tests above exercise it."""
+
+    request = aggregation.AggregationRequest(
+        dataset="performances", group_by="song", measure="count", limit=50, sort="value_desc",
+    )
+    pg_payload = real_store.aggregate(request).to_payload()
+    assert pg_payload == real_csv_store.aggregate(request).to_payload()
+    assert pg_payload["total"] == len(real_csv_store.rows("performances"))
+
+
+# ---- setlist_coverage (Task A / A4) ----------------------------------------
+
+
+def test_setlist_coverage_appears_only_on_performances_results(real_store, real_csv_store):
+    performances_request = aggregation.AggregationRequest(
+        dataset="performances", group_by="year", measure="count", limit=50,
+    )
+    payload = real_store.aggregate(performances_request).to_payload()
+    assert payload == real_csv_store.aggregate(performances_request).to_payload()
+    coverage = payload["setlist_coverage"]
+    assert coverage["shows_on_record"] > 0
+    assert 0 < coverage["shows_with_setlist"] <= coverage["shows_on_record"]
+    assert coverage["by_year"], "expected at least one year bucket"
+    for entry in coverage["by_year"]:
+        assert entry["shows_with_setlist"] <= entry["shows_on_record"]
+    years = [entry["year"] for entry in coverage["by_year"]]
+    assert years == sorted(years)
+
+    for dataset, group_by in (("shows", "year"), ("guest_appearances", "year")):
+        other_request = aggregation.AggregationRequest(dataset=dataset, group_by=group_by, measure="count", limit=50)
+        other_payload = real_store.aggregate(other_request).to_payload()
+        assert other_payload == real_csv_store.aggregate(other_request).to_payload()
+        assert "setlist_coverage" not in other_payload
+
+
+def test_setlist_coverage_ignores_song_id_and_show_id_filters(real_store, real_csv_store):
+    """setlist_coverage is computed over the show-level filters only
+    (venue_id/year/year_from/year_to); song_id/show_id don't change whether a
+    setlist survives, so two requests differing only in song_id must report
+    identical coverage."""
+
+    base = aggregation.AggregationRequest(
+        dataset="performances", group_by="year", measure="count", limit=50,
+        filters={"song_id": "song-dark-star"},
+    )
+    other = aggregation.AggregationRequest(
+        dataset="performances", group_by="year", measure="count", limit=50,
+        filters={"song_id": "song-truckin"},
+    )
+    base_payload = real_store.aggregate(base).to_payload()
+    assert base_payload == real_csv_store.aggregate(base).to_payload()
+    other_payload = real_store.aggregate(other).to_payload()
+    assert other_payload == real_csv_store.aggregate(other).to_payload()
+    assert base_payload["setlist_coverage"] == other_payload["setlist_coverage"]
+
+
+# ---- A3: LEFT JOIN dimension tables so a missing/blank dimension record ----
+# survives instead of silently disappearing (Postgres used to inner-join and
+# drop it; CSV always kept it). A separate small tables dict, not the shared
+# TABLES fixture above, so these extra rows don't perturb the exact row
+# counts the other tests in this file assert against.
+
+
+def _missing_record_tables() -> dict[str, list[dict[str, Any]]]:
+    tables = {table: [dict(row) for row in rows] for table, rows in TABLES.items()}
+    tables["shows"] = tables["shows"] + [
+        {
+            "show_id": "show-missing-venue",
+            "show_date": "1970-01-01",
+            "venue_id": "venue-not-in-venues",
+            "tour_name": "",
+            "event_name": "",
+            "notes": "",
+        },
+        {
+            "show_id": "show-blank-venue",
+            "show_date": "1970-01-02",
+            "venue_id": "",
+            "tour_name": "",
+            "event_name": "",
+            "notes": "",
+        },
+        {
+            "show_id": "show-whitespace-venue-name",
+            "show_date": "1970-01-03",
+            "venue_id": "venue-whitespace-name",
+            "tour_name": "",
+            "event_name": "",
+            "notes": "",
+        },
+    ]
+    tables["venues"] = tables["venues"] + [
+        {
+            "venue_id": "venue-whitespace-name",
+            "name": "  Fillmore West  ",
+            "city": "",
+            "state_region": "",
+        },
+    ]
+    tables["performances"] = tables["performances"] + [
+        {
+            "performance_id": "performance-missing-song",
+            "show_id": "show-1966-10-08-b",
+            "song_id": "song-not-in-songs",
+            "set_number": "1",
+            "set_label": "Set 1",
+            "position_in_set": "1",
+            "encore": "false",
+            "segue_into_next": "false",
+        },
+    ]
+    tables["show_performers"] = tables["show_performers"] + [
+        {
+            "show_performer_id": "sp-3",
+            "show_id": "show-1966-10-08-b",
+            "person_id": "person-missing",
+            "role": "guest",
+            "instrument": "",
+        },
+    ]
+    return tables
+
+
+@pytest.fixture
+def missing_record_tables() -> dict[str, list[dict[str, Any]]]:
+    return _missing_record_tables()
+
+
+@pytest.fixture
+def missing_record_store(missing_record_tables):
+    return PostgresCanonicalStore(Connection(missing_record_tables), schema="canonical")
+
+
+@pytest.fixture
+def missing_record_csv_store(missing_record_tables):
+    result = CanonicalStore()
+    result.__dict__["tables"] = missing_record_tables
+    return result
+
+
+@pytest.mark.parametrize(
+    "dataset, group_by, measure",
+    [
+        ("shows", "venue", "count"),
+        ("shows", "city", "count"),
+        ("performances", "song", "count"),
+        ("guest_appearances", "guest", "count"),
+    ],
+)
+def test_aggregate_missing_dimension_records_match_between_stores(
+    missing_record_store, missing_record_csv_store, dataset, group_by, measure
+):
+    """A show whose venue_id points at no venues row, a show with a blank
+    venue_id, a performance whose song_id points at no songs row, and a guest
+    row whose person_id points at no people row: none of them should vanish
+    from either store, and both stores must agree on the resulting rows and
+    totals."""
+
+    request = aggregation.AggregationRequest(dataset=dataset, group_by=group_by, measure=measure, limit=50)
+    pg_payload = missing_record_store.aggregate(request).to_payload()
+    csv_payload = missing_record_csv_store.aggregate(request).to_payload()
+    assert pg_payload == csv_payload
+
+
+def test_aggregate_venue_grouping_falls_back_to_id_then_unknown(missing_record_store, missing_record_csv_store):
+    request = aggregation.AggregationRequest(dataset="shows", group_by="venue", measure="count", limit=50)
+    payload = missing_record_store.aggregate(request).to_payload()
+    assert payload == missing_record_csv_store.aggregate(request).to_payload()
+    rows_by_id = {row["id"]: row["label"] for row in payload["rows"]}
+    # venue-not-in-venues has an id but no venues row: label falls back to the id.
+    assert rows_by_id["venue-not-in-venues"] == "venue-not-in-venues"
+    # show-blank-venue's venue_id is itself blank: label falls all the way to "Unknown".
+    assert rows_by_id[""] == "Unknown"
+
+
+def test_aggregate_venue_grouping_trims_a_whitespace_only_padded_name(missing_record_store, missing_record_csv_store):
+    """A venue name that is only leading/trailing whitespace around real
+    content ("  Fillmore West  ") must render trimmed on both sides, matching
+    data.py's label_with_fallback (which calls .strip() on the name before
+    falling back to id then "Unknown"). Before this fix, Postgres's
+    NULLIF(name, '') check saw the padded string as non-empty and rendered it
+    literally, while the CSV path stripped it first."""
+
+    request = aggregation.AggregationRequest(
+        dataset="shows", group_by="venue", measure="count", limit=50,
+        filters={"venue_id": "venue-whitespace-name"},
+    )
+    payload = missing_record_store.aggregate(request).to_payload()
+    assert payload == missing_record_csv_store.aggregate(request).to_payload()
+    assert payload["rows"] and payload["rows"][0]["label"] == "Fillmore West"
+
+
+def test_aggregate_song_grouping_falls_back_to_id_when_the_song_record_is_missing(
+    missing_record_store, missing_record_csv_store
+):
+    request = aggregation.AggregationRequest(dataset="performances", group_by="song", measure="count", limit=50)
+    payload = missing_record_store.aggregate(request).to_payload()
+    assert payload == missing_record_csv_store.aggregate(request).to_payload()
+    rows_by_id = {row["id"]: row["label"] for row in payload["rows"]}
+    assert rows_by_id["song-not-in-songs"] == "song-not-in-songs"
+
+
+def test_aggregate_guest_grouping_falls_back_to_id_when_the_person_record_is_missing(
+    missing_record_store, missing_record_csv_store
+):
+    request = aggregation.AggregationRequest(dataset="guest_appearances", group_by="guest", measure="count", limit=50)
+    payload = missing_record_store.aggregate(request).to_payload()
+    assert payload == missing_record_csv_store.aggregate(request).to_payload()
+    rows_by_id = {row["id"]: row["label"] for row in payload["rows"]}
+    assert rows_by_id["person-missing"] == "person-missing"

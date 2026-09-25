@@ -506,6 +506,39 @@ class ArrangementSearchBlock(ExperienceModel):
     items: list[ArrangementSearchItem] = Field(min_length=1, max_length=20)
 
 
+class DataChartColumn(ExperienceModel):
+    key: str
+    label: str
+    type: Literal["temporal", "categorical", "quantitative"]
+
+
+class DataChartBlock(ExperienceModel):
+    """A model-selected chart, hydrated entirely from one verified
+    aggregate_data result.
+
+    Every number here is server-computed from that exact result; the
+    model chose only which aggregation to reference and how to frame it
+    (title/note). The server derives orientation from the dimension
+    column's type (temporal -> vertical, else horizontal) and finds the
+    dimension column itself (the one whose key isn't "value") at render
+    time, so no field mapping travels through this block at all.
+    """
+
+    type: Literal["data_chart"]
+    aggregation_id: str
+    title: str
+    note: str | None = None
+    chart: Literal["bar"]
+    orientation: Literal["vertical", "horizontal"]
+    columns: list[DataChartColumn] = Field(min_length=2, max_length=2)
+    rows: list[dict[str, object]] = Field(default_factory=list, max_length=200)
+    metric_label: str
+    total: int
+    excluded_count: int
+    date_range: dict[str, int] | None = None
+    empty_reason: str | None = None
+
+
 class ProvenanceNoteBlock(ExperienceModel):
     type: Literal["provenance_note"]
     text: str
@@ -670,6 +703,7 @@ ExperienceBlock = Annotated[
     | CoverageBlock
     | ArrangementBlock
     | ArrangementSearchBlock
+    | DataChartBlock
     | ProvenanceNoteBlock
     | GapStateBlock
     | EditorialBlock

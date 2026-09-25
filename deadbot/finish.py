@@ -178,6 +178,28 @@ class ResourceListRef(_Ref):
     resource_ids: list[str] = Field(min_length=1, max_length=8)
 
 
+_NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
+
+
+class DataChartRef(_Ref):
+    """A chart of one aggregate_data result from this turn. The server
+    draws it: bars over time for a year result, ranked bars for a song,
+    venue, city or guest result. Your title names the pattern; your note
+    says what it means.
+    """
+
+    type: Literal["data_chart"]
+    aggregation_id: str
+    title: str | None = Field(
+        default=None,
+        description=(
+            'The pattern the visitor should see -- "Dark Star\'s 1969 peak" -- not the metric it came from '
+            '("Performances by year"). Omit it and the aggregation\'s own metric label is the title.'
+        ),
+    )
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+
+
 # --- semantic units ---------------------------------------------------------
 #
 # A unit declares what the visitor should perceive as one meaningful object in
@@ -219,7 +241,6 @@ _JUDGMENTS_DESCRIPTION = (
     "For a unit inside a comparison group: your one-line judgment for each of the group's criteria, in the same order. "
     "Leave an entry empty when you have nothing grounded to say."
 )
-_NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
 _SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
 _FOLLOW_UPS_DESCRIPTION = (
     "Up to three topics the visitor might want more about, each a short label plus the specific question it opens. "
@@ -408,7 +429,8 @@ BodyItem = Annotated[
     | ArrangementRef
     | ArrangementSearchRef
     | MediaLinkRef
-    | ResourceListRef,
+    | ResourceListRef
+    | DataChartRef,
     Field(discriminator="type"),
 ]
 
@@ -541,7 +563,8 @@ class FinishPlan(BaseModel):
             "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
             "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
             "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
-            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list. A listening_hero "
+            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list, "
+            "data_chart (a chart built from one aggregate_data result). A listening_hero "
             "leads the page when the visitor wants to hear a show or recording: place it first. A pull_quote sets one sentence of yours large, "
             "for the idea the visitor should carry away. An answer that needs no main body leaves groups empty."
         ),
@@ -599,6 +622,13 @@ def _find_research_resource(payloads: list[dict[str, Any]], resource_id: str) ->
                 projected = composition._research_resource(candidate)
                 if projected and projected["resource_id"] == resource_id:
                     return projected
+    return None
+
+
+def _find_aggregation_payload(payloads: list[dict[str, Any]], aggregation_id: str) -> dict[str, Any] | None:
+    for payload in payloads:
+        if payload.get("aggregation_id") == aggregation_id:
+            return payload
     return None
 
 
@@ -975,6 +1005,19 @@ def _resolve_reference(
         if not rows:
             return None, []
         return ResourceListBlock(type="resource_list", title=(item.title or "Reading and listening").strip(), items=rows[:8]), sources
+
+    if kind == "data_chart":
+        if item.aggregation_id not in grounded.ids:
+            return None, []
+        payload = _find_aggregation_payload(payloads, item.aggregation_id)
+        if payload is None:
+            return None, []
+        block = composition._data_chart(
+            payload,
+            title=item.title,
+            note=item.note,
+        )
+        return (block, []) if block else (None, [])
 
     return None, []
 

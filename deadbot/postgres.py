@@ -20,6 +20,7 @@ import json
 import re
 from typing import Any, Protocol
 
+from deadbot import aggregation
 from deadbot.data import CanonicalStore
 
 
@@ -70,6 +71,34 @@ class DBAPIConnection(Protocol):
 ConnectionFactory = Callable[[], DBAPIConnection]
 
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+# aggregate()'s internal, literal (never request-derived) spec tables. Table
+# and column names reaching SQL come only from these dicts (passed through
+# _identifier/_qualified_table) or from _aggregate_dimension_sql's own
+# literal branches below -- never directly from request.dataset/group_by/
+# filters. Every value from request.filters becomes a bound %s parameter.
+
+# filter name -> (table alias in the aggregate query, column name)
+_AGGREGATE_FILTER_COLUMNS: dict[str, dict[str, tuple[str, str]]] = {
+    "shows": {"venue_id": ("s", "venue_id")},
+    "performances": {
+        "song_id": ("p", "song_id"),
+        "show_id": ("p", "show_id"),
+        "venue_id": ("s", "venue_id"),
+    },
+    "guest_appearances": {
+        "guest_id": ("g", "person_id"),
+        "show_id": ("g", "show_id"),
+        "venue_id": ("s", "venue_id"),
+    },
+}
+
+# measure -> SQL aggregate expression (table aliases match the FROM clauses below)
+_AGGREGATE_MEASURE_SQL: dict[str, str] = {
+    "count": "COUNT(*)",
+    "distinct_shows": 'COUNT(DISTINCT s."show_id")',
+    "distinct_songs": 'COUNT(DISTINCT p."song_id")',
+}
 
 # These keys reproduce the deterministic ordering of the tracked canonical
 # exports. They also make entity disambiguation and setlist rendering stable
@@ -808,6 +837,202 @@ class PostgresCanonicalStore(CanonicalStore):
             ),
         }
         return CanonicalStore.performance_context(self._projection(tables), performance_id)
+
+    # ---- model-selected aggregation --------------------------------------
+    # Grouping/counting happens in SQL; deadbot.aggregation shapes the raw
+    # grouped rows (zero-fill, sort, limit, totals) identically for both this
+    # store and CanonicalStore.aggregate's Python reference implementation.
+
+    # The show year as an integer SQL expression over the aggregate query's
+    # ``s`` alias. It is the only dialect-specific piece of aggregate(), so
+    # SqliteCanonicalStore overrides just this and inherits the rest.
+    _AGGREGATE_YEAR_SQL = 'EXTRACT(YEAR FROM s."show_date")::int'
+
+    def _aggregate_from_clause(self, dataset: str) -> tuple[str, list[Any]]:
+        shows = self._qualified_table("shows")
+        if dataset == "shows":
+            return f"{shows} s", []
+        if dataset == "performances":
+            performances = self._qualified_table("performances")
+            return f'{performances} p JOIN {shows} s ON s."show_id" = p."show_id"', []
+        show_performers = self._qualified_table("show_performers")
+        return (
+            f'(SELECT DISTINCT "show_id", "person_id" FROM {show_performers} WHERE "role" = %s) g '
+            f'JOIN {shows} s ON s."show_id" = g."show_id"',
+            ["guest"],
+        )
+
+    def _aggregate_dimension_sql(self, group_by: str) -> tuple[str, str, str, str]:
+        if group_by == "year":
+            expr = self._AGGREGATE_YEAR_SQL
+            return expr, expr, expr, ""
+        if group_by == "venue":
+            venues = self._qualified_table("venues")
+            # Label fallback: the venue's name -> its id -> "Unknown" when the
+            # id itself is blank. LEFT JOIN (not JOIN) so a show whose
+            # venue_id has no matching venues row survives instead of
+            # disappearing -- data.py's dimension() falls back identically.
+            # TRIM the name before the blank check so a whitespace-only or
+            # whitespace-padded name is treated the same as data.py's
+            # label_with_fallback, which calls .strip() on the name before
+            # falling back -- otherwise a padded name would pass this
+            # NULLIF(..., '') check (non-empty) and render un-trimmed here
+            # while the CSV path strips it down to empty and falls through.
+            label_expr = "COALESCE(NULLIF(TRIM(v.\"name\"), ''), NULLIF(s.\"venue_id\", ''), 'Unknown')"
+            return (
+                's."venue_id"', label_expr, 's."venue_id", v."name"',
+                f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id"',
+            )
+        if group_by == "city":
+            venues = self._qualified_table("venues")
+            # venues.city is nullable; COALESCE to match CanonicalStore.aggregate's
+            # `venue.get("city") or "Unknown"` in data.py exactly, or the
+            # CSV/Postgres parity test fails on any blank city. LEFT JOIN so a
+            # show whose venue record is entirely missing still counts (as
+            # "Unknown") instead of disappearing.
+            city_expr = "COALESCE(NULLIF(v.\"city\", ''), 'Unknown')"
+            return city_expr, city_expr, city_expr, f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id"'
+        if group_by == "song":
+            songs = self._qualified_table("songs")
+            # TRIM before the blank check, matching data.py's label_with_fallback
+            # (.strip() on the name before falling back to id then "Unknown") --
+            # see the venue case above for why.
+            label_expr = "COALESCE(NULLIF(TRIM(so.\"title\"), ''), NULLIF(p.\"song_id\", ''), 'Unknown')"
+            return (
+                'p."song_id"', label_expr, 'p."song_id", so."title"',
+                f'LEFT JOIN {songs} so ON so."song_id" = p."song_id"',
+            )
+        people = self._qualified_table("people")
+        # TRIM before the blank check, matching data.py's label_with_fallback --
+        # see the venue case above for why.
+        label_expr = "COALESCE(NULLIF(TRIM(pe.\"name\"), ''), NULLIF(g.\"person_id\", ''), 'Unknown')"
+        return (
+            'g."person_id"', label_expr, 'g."person_id", pe."name"',
+            f'LEFT JOIN {people} pe ON pe."person_id" = g."person_id"',
+        )
+
+    def _aggregate_predicates(self, dataset: str, filters: aggregation.AggregationFilters) -> tuple[list[str], list[Any]]:
+        predicates: list[str] = []
+        params: list[Any] = []
+        filter_columns = _AGGREGATE_FILTER_COLUMNS[dataset]
+        for name in ("song_id", "venue_id", "guest_id", "show_id"):
+            value = getattr(filters, name)
+            if value is None or name not in filter_columns:
+                continue
+            alias, column = filter_columns[name]
+            predicates.append(f"{alias}.{_identifier(column)} = %s")
+            params.append(value)
+        if filters.year is not None:
+            predicates.append(f"{self._AGGREGATE_YEAR_SQL} = %s")
+            params.append(filters.year)
+        if filters.year_from is not None:
+            predicates.append(f"{self._AGGREGATE_YEAR_SQL} >= %s")
+            params.append(filters.year_from)
+        if filters.year_to is not None:
+            predicates.append(f"{self._AGGREGATE_YEAR_SQL} <= %s")
+            params.append(filters.year_to)
+        return predicates, params
+
+    def aggregate(self, request: aggregation.AggregationRequest) -> aggregation.AggregationResult:
+        dataset, group_by = request.dataset, request.group_by
+        from_sql, base_params = self._aggregate_from_clause(dataset)
+        dim_id_sql, dim_label_sql, dim_group_sql, join_sql = self._aggregate_dimension_sql(group_by)
+        measure_sql = _AGGREGATE_MEASURE_SQL[request.measure]
+        predicates, filter_params = self._aggregate_predicates(dataset, request.filters)
+
+        grouped_predicates = list(predicates)
+        if group_by == "year":
+            grouped_predicates.append('s."show_date" IS NOT NULL')
+        where_sql = f"WHERE {' AND '.join(grouped_predicates)}" if grouped_predicates else ""
+        sql = (
+            f"SELECT {dim_id_sql} AS dim_id, {dim_label_sql} AS dim_label, {measure_sql} AS value "
+            f"FROM {from_sql} {join_sql} {where_sql} GROUP BY {dim_group_sql}"
+        )
+        grouped = self._query(sql, tuple(base_params + filter_params))
+
+        range_predicates = list(predicates) + ['s."show_date" IS NOT NULL']
+        range_where_sql = f"WHERE {' AND '.join(range_predicates)}"
+        range_sql = (
+            f"SELECT MIN({self._AGGREGATE_YEAR_SQL}) AS min_year, "
+            f"MAX({self._AGGREGATE_YEAR_SQL}) AS max_year "
+            f"FROM {from_sql} {range_where_sql}"
+        )
+        range_rows = self._query(range_sql, tuple(base_params + filter_params))
+        min_year = range_rows[0].get("min_year") if range_rows else None
+        max_year = range_rows[0].get("max_year") if range_rows else None
+        # _query stringifies every value (see _string_value), so a SQL NULL
+        # from MIN/MAX over zero matching rows comes back as "" here, never
+        # Python None -- guard against both or int("") raises ValueError.
+        date_range = (
+            {"from": int(min_year), "to": int(max_year)}
+            if min_year not in (None, "") and max_year not in (None, "")
+            else None
+        )
+
+        raw_rows = []
+        for row in grouped:
+            value = int(row["value"] or 0)
+            if group_by == "year":
+                raw_rows.append(aggregation.AggregationRow(year=int(row["dim_id"]), value=value))
+            else:
+                raw_rows.append(aggregation.AggregationRow(id=row["dim_id"], label=row["dim_label"] or row["dim_id"], value=value))
+
+        # total is the measure over the whole filtered set, computed with the
+        # same where_sql/params as the grouped query above (so it sees the
+        # same rows) rather than summed from `grouped` -- summing per-group
+        # distinct_shows/distinct_songs would double-count a fact that
+        # appears in more than one group. join_sql is unused by measure_sql
+        # itself (it only ever references the base from_sql aliases s/p/g)
+        # but is included for a query shaped like the grouped one above.
+        total_sql = f"SELECT {measure_sql} AS total FROM {from_sql} {join_sql} {where_sql}"
+        total_rows = self._query(total_sql, tuple(base_params + filter_params))
+        total = int(total_rows[0]["total"] or 0) if total_rows else 0
+
+        setlist_coverage = None
+        if dataset == "performances":
+            setlist_coverage = self._setlist_coverage(request.filters)
+
+        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_coverage)
+
+    def _setlist_coverage(self, filters: aggregation.AggregationFilters) -> dict[str, Any]:
+        """Coverage over the show-level filters only (venue_id/year/year_from/
+        year_to) -- reusing `_aggregate_predicates("shows", filters)` gives
+        exactly that subset, since song_id/show_id aren't in
+        _AGGREGATE_FILTER_COLUMNS["shows"] and so are silently dropped
+        whether or not the caller's (performances) filters carry them.
+        """
+
+        shows = self._qualified_table("shows")
+        performances = self._qualified_table("performances")
+        predicates, params = self._aggregate_predicates("shows", filters)
+        setlist_join = (
+            f'LEFT JOIN (SELECT DISTINCT "show_id" FROM {performances}) sl ON sl."show_id" = s."show_id"'
+        )
+
+        where_sql = f"WHERE {' AND '.join(predicates)}" if predicates else ""
+        totals_sql = (
+            'SELECT COUNT(*) AS shows_on_record, COUNT(sl."show_id") AS shows_with_setlist '
+            f'FROM {shows} s {setlist_join} {where_sql}'
+        )
+        totals_rows = self._query(totals_sql, tuple(params))
+        shows_on_record = int(totals_rows[0]["shows_on_record"] or 0) if totals_rows else 0
+        shows_with_setlist = int(totals_rows[0]["shows_with_setlist"] or 0) if totals_rows else 0
+
+        by_year_predicates = predicates + ['s."show_date" IS NOT NULL']
+        by_year_where_sql = f"WHERE {' AND '.join(by_year_predicates)}"
+        by_year_sql = (
+            f"SELECT {self._AGGREGATE_YEAR_SQL} AS year, COUNT(*) AS shows_on_record, "
+            'COUNT(sl."show_id") AS shows_with_setlist '
+            f'FROM {shows} s {setlist_join} {by_year_where_sql} '
+            f"GROUP BY {self._AGGREGATE_YEAR_SQL}"
+        )
+        by_year_rows = self._query(by_year_sql, tuple(params))
+        by_year = [
+            (int(row["year"]), int(row["shows_on_record"] or 0), int(row["shows_with_setlist"] or 0))
+            for row in by_year_rows
+        ]
+
+        return aggregation.build_setlist_coverage(shows_on_record, shows_with_setlist, by_year)
 
 
 # A spelling-friendly alias for callers that prefer the expanded initialism.

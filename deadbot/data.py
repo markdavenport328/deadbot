@@ -15,6 +15,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from deadbot import aggregation
+
 
 def repository_root() -> Path:
     return Path(__file__).resolve().parents[1]
@@ -773,3 +775,194 @@ class CanonicalStore:
         if listen:
             context["listen"] = listen
         return context
+
+    def aggregate(self, request: aggregation.AggregationRequest) -> aggregation.AggregationResult:
+        """Compute a constrained aggregation entirely from loaded canonical rows.
+
+        Mirrors PostgresCanonicalStore.aggregate's grouping/measure semantics so
+        both stores return identical shaped rows for the same request; only the
+        fetch strategy (Python loop vs SQL GROUP BY) differs.
+        """
+
+        filters = request.filters
+        shows_by_id = self.by_id.get("shows", {})
+        venues_by_id = self.by_id.get("venues", {})
+        songs_by_id = self.by_id.get("songs", {})
+        people_by_id = self.by_id.get("people", {})
+
+        def show_year(show: dict[str, str] | None) -> int | None:
+            date = (show or {}).get("show_date", "")
+            return int(date[:4]) if len(date) >= 4 and date[:4].isdigit() else None
+
+        def show_matches(show: dict[str, str] | None) -> bool:
+            if show is None:
+                return False
+            if filters.venue_id is not None and show.get("venue_id") != filters.venue_id:
+                return False
+            year = show_year(show)
+            if filters.year is not None and year != filters.year:
+                return False
+            if filters.year_from is not None and (year is None or year < filters.year_from):
+                return False
+            if filters.year_to is not None and (year is None or year > filters.year_to):
+                return False
+            return True
+
+        facts: list[dict[str, object]] = []
+        if request.dataset == "shows":
+            for show in self.rows("shows"):
+                if not show_matches(show):
+                    continue
+                facts.append({"show_id": show["show_id"], "year": show_year(show), "venue_id": show.get("venue_id")})
+        elif request.dataset == "performances":
+            for performance in self.rows("performances"):
+                if filters.song_id is not None and performance.get("song_id") != filters.song_id:
+                    continue
+                if filters.show_id is not None and performance.get("show_id") != filters.show_id:
+                    continue
+                show = shows_by_id.get(performance.get("show_id", ""))
+                if not show_matches(show):
+                    continue
+                facts.append({
+                    "show_id": performance["show_id"],
+                    "year": show_year(show),
+                    "venue_id": show.get("venue_id"),
+                    "song_id": performance.get("song_id"),
+                })
+        else:  # guest_appearances
+            seen: set[tuple[str, str]] = set()
+            for assignment in self.rows("show_performers"):
+                if assignment.get("role") != "guest":
+                    continue
+                pair = (assignment.get("show_id", ""), assignment.get("person_id", ""))
+                if pair in seen:
+                    continue
+                if filters.guest_id is not None and assignment.get("person_id") != filters.guest_id:
+                    continue
+                if filters.show_id is not None and assignment.get("show_id") != filters.show_id:
+                    continue
+                show = shows_by_id.get(assignment.get("show_id", ""))
+                if not show_matches(show):
+                    continue
+                seen.add(pair)
+                facts.append({
+                    "show_id": assignment["show_id"],
+                    "year": show_year(show),
+                    "venue_id": show.get("venue_id"),
+                    "person_id": assignment.get("person_id"),
+                })
+
+        years = [fact["year"] for fact in facts if fact["year"] is not None]
+        date_range = {"from": min(years), "to": max(years)} if years else None
+
+        def label_with_fallback(name: str | None, record_id: str | None) -> str:
+            # Name/title -> id -> "Unknown" when the id itself is blank. A
+            # blank cell reads as "" from the CSV, same as a SQL NULL coming
+            # back through Postgres's _query, so both stores treat "" as
+            # blank identically here.
+            return (name or "").strip() or (record_id or "").strip() or "Unknown"
+
+        def dimension(fact: dict[str, object]) -> tuple[str, str]:
+            if request.group_by == "year":
+                return (str(fact["year"]), str(fact["year"]))
+            if request.group_by == "venue":
+                venue_id = fact["venue_id"]
+                venue = venues_by_id.get(venue_id) or {}
+                return (venue_id, label_with_fallback(venue.get("name"), venue_id))
+            if request.group_by == "city":
+                venue = venues_by_id.get(fact["venue_id"]) or {}
+                city = (venue.get("city") or "").strip() or "Unknown"
+                return (city, city)
+            if request.group_by == "song":
+                song_id = fact["song_id"]
+                song = songs_by_id.get(song_id) or {}
+                return (song_id, label_with_fallback(song.get("title"), song_id))
+            person_id = fact["person_id"]
+            person = people_by_id.get(person_id) or {}
+            return (person_id, label_with_fallback(person.get("name"), person_id))
+
+        # Matches the Postgres side's `WHERE s."show_date" IS NOT NULL` for
+        # group_by="year": a fact with no derivable year has no year bucket
+        # to join, so it enters neither a group nor the total. Other
+        # group_bys (venue/city/song/guest) don't depend on the date, so they
+        # keep facts with a null year in both.
+        included_facts = [
+            fact for fact in facts if not (request.group_by == "year" and fact["year"] is None)
+        ]
+
+        groups: dict[str, dict[str, object]] = {}
+        for fact in included_facts:
+            dim_id, dim_label = dimension(fact)
+            group = groups.setdefault(dim_id, {"label": dim_label, "show_ids": set(), "song_ids": set(), "count": 0})
+            group["count"] += 1
+            group["show_ids"].add(fact["show_id"])
+            if fact.get("song_id"):
+                group["song_ids"].add(fact["song_id"])
+
+        raw_rows = []
+        for dim_id, group in groups.items():
+            if request.measure == "count":
+                value = group["count"]
+            elif request.measure == "distinct_shows":
+                value = len(group["show_ids"])
+            else:  # distinct_songs
+                value = len(group["song_ids"])
+            if request.group_by == "year":
+                raw_rows.append(aggregation.AggregationRow(year=int(dim_id), value=value))
+            else:
+                raw_rows.append(aggregation.AggregationRow(id=dim_id, label=group["label"], value=value))
+
+        # total is the measure over the *whole* filtered set (every included
+        # fact, not just the ones that survived `limit`), never a sum of the
+        # per-group values above -- see aggregation.assemble_result.
+        if request.measure == "count":
+            total = len(included_facts)
+        elif request.measure == "distinct_shows":
+            total = len({fact["show_id"] for fact in included_facts})
+        else:  # distinct_songs
+            total = len({fact["song_id"] for fact in included_facts if fact.get("song_id")})
+
+        setlist_coverage = None
+        if request.dataset == "performances":
+            setlist_coverage = self._setlist_coverage(shows_by_id, show_matches, show_year)
+
+        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_coverage)
+
+    def _setlist_coverage(
+        self,
+        shows_by_id: dict[str, dict[str, str]],
+        show_matches,
+        show_year,
+    ) -> dict[str, object]:
+        """Coverage over the show-level filters only (venue_id/year/year_from/
+        year_to) -- song_id/show_id don't change whether a setlist survives,
+        so they play no part here even though this is only ever called for a
+        performances-dataset request that may carry them.
+        """
+
+        show_ids_with_setlist = {
+            performance["show_id"] for performance in self.rows("performances") if performance.get("show_id")
+        }
+        shows_on_record = 0
+        shows_with_setlist = 0
+        by_year_counts: dict[int, list[int]] = {}
+        for show in shows_by_id.values():
+            if not show_matches(show):
+                continue
+            shows_on_record += 1
+            has_setlist = show["show_id"] in show_ids_with_setlist
+            if has_setlist:
+                shows_with_setlist += 1
+            year = show_year(show)
+            if year is None:
+                continue
+            counts = by_year_counts.setdefault(year, [0, 0])
+            counts[0] += 1
+            if has_setlist:
+                counts[1] += 1
+
+        return aggregation.build_setlist_coverage(
+            shows_on_record,
+            shows_with_setlist,
+            [(year, counts[0], counts[1]) for year, counts in by_year_counts.items()],
+        )

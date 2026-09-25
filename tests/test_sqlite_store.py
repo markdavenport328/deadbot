@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import stat
@@ -5,9 +6,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
+from deadbot import aggregation
 from deadbot.data import CanonicalStore
 from deadbot.sqlite_build import SQLITE_SCHEMA_VERSION
 from deadbot.sqlite_store import SqliteCanonicalStore
+from deadbot.tools import build_tools
 
 
 @pytest.fixture(scope="module")
@@ -141,3 +144,58 @@ def test_opens_from_a_read_only_directory(built_sqlite, tmp_path):
     finally:
         os.chmod(folder, stat.S_IRWXU)
         os.chmod(database, stat.S_IRUSR | stat.S_IWUSR)
+
+
+# ---- aggregate() parity: the SQLite store's SQL GROUP BY vs
+# CanonicalStore.aggregate's pure-Python reference implementation, over the
+# real catalog. Both feed raw grouped rows through
+# deadbot.aggregation.assemble_result, so any difference is a bug in the SQL.
+
+
+def _every_aggregate_combo() -> list:
+    return [
+        pytest.param(dataset, group_by, measure, id=f"{dataset}-{group_by}-{measure}")
+        for (dataset, group_by), measures in sorted(aggregation._MEASURES_BY_COMBO.items())
+        for measure in sorted(measures)
+    ]
+
+
+@pytest.mark.parametrize("dataset, group_by, measure", _every_aggregate_combo())
+def test_aggregate_matches_the_csv_store_for_every_valid_combo(store, csv_store, dataset, group_by, measure):
+    request = aggregation.AggregationRequest(
+        dataset=dataset, group_by=group_by, measure=measure, limit=50, fill_missing=(group_by == "year"),
+    )
+    assert store.aggregate(request).to_payload() == csv_store.aggregate(request).to_payload()
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"dataset": "performances", "group_by": "year", "measure": "count", "fill_missing": True,
+         "filters": {"song_id": "song-dark-star"}},
+        {"dataset": "guest_appearances", "group_by": "year", "measure": "distinct_shows",
+         "filters": {"guest_id": "person-jack-casady"}},
+        {"dataset": "shows", "group_by": "year", "measure": "count", "fill_missing": True,
+         "filters": {"year_from": 1972, "year_to": 1974}},
+        {"dataset": "performances", "group_by": "song", "measure": "count", "filters": {"year": 1977}},
+        {"dataset": "shows", "group_by": "venue", "measure": "count",
+         "filters": {"venue_id": "venue-unknown-", "year": 1800}},
+    ],
+    ids=["dark-star-by-year", "guest-by-year", "shows-year-range", "songs-in-1977", "zero-match"],
+)
+def test_filtered_aggregates_match_the_csv_store(store, csv_store, payload):
+    request = aggregation.parse_request({"limit": 50, **payload})
+    assert store.aggregate(request).to_payload() == csv_store.aggregate(request).to_payload()
+
+
+def test_aggregate_data_tool_ranks_most_played_songs_from_sqlite(store, csv_store):
+    tool = next(item for item in build_tools(store) if item.name == "aggregate_data")
+    result = json.loads(
+        tool.invoke({"dataset": "performances", "group_by": "song", "measure": "count", "limit": 10})
+    )
+    assert "error" not in result
+    assert len(result["rows"]) == 10
+    values = [row["value"] for row in result["rows"]]
+    assert values == sorted(values, reverse=True) and values[0] > 0
+    assert result["total"] == len(csv_store.rows("performances"))
+    assert result["setlist_coverage"]["shows_with_setlist"] > 0

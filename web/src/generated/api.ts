@@ -284,6 +284,71 @@ export interface components {
             type: "credit_list";
         };
         /**
+         * DataChartBlock
+         * @description A model-selected chart, hydrated entirely from one verified
+         *     aggregate_data result.
+         *
+         *     Every number here is server-computed from that exact result; the
+         *     model chose only which aggregation to reference and how to frame it
+         *     (title/note). The server derives orientation from the dimension
+         *     column's type (temporal -> vertical, else horizontal) and finds the
+         *     dimension column itself (the one whose key isn't "value") at render
+         *     time, so no field mapping travels through this block at all.
+         */
+        DataChartBlock: {
+            /** Aggregation Id */
+            aggregation_id: string;
+            /**
+             * Chart
+             * @constant
+             */
+            chart: "bar";
+            /** Columns */
+            columns: components["schemas"]["DataChartColumn"][];
+            /** Date Range */
+            date_range?: {
+                [key: string]: number;
+            } | null;
+            /** Empty Reason */
+            empty_reason?: string | null;
+            /** Excluded Count */
+            excluded_count: number;
+            /** Metric Label */
+            metric_label: string;
+            /** Note */
+            note?: string | null;
+            /**
+             * Orientation
+             * @enum {string}
+             */
+            orientation: "vertical" | "horizontal";
+            /** Rows */
+            rows?: {
+                [key: string]: unknown;
+            }[];
+            /** Title */
+            title: string;
+            /** Total */
+            total: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data_chart";
+        };
+        /** DataChartColumn */
+        DataChartColumn: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "temporal" | "categorical" | "quantitative";
+        };
+        /**
          * EditorialBlock
          * @description Flexible model-shaped material rendered in one of several visual forms.
          */
@@ -495,7 +560,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */

@@ -12,9 +12,12 @@ only decides how a chosen component is shaped.
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import Iterable
 from typing import Any, Literal
 from urllib.parse import parse_qs, urlparse
+
+from pydantic import ValidationError
 
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
@@ -25,6 +28,8 @@ from deadbot.experience import (
     ArrangementSearchBlock,
     ArrangementSearchItem,
     CreditItem,
+    DataChartBlock,
+    DataChartColumn,
     Emphasis,
     EquipmentItem,
     EquipmentListBlock,
@@ -219,6 +224,106 @@ def _media_block(link: dict[str, Any]) -> MediaLinkBlock | None:
         embed_kind=embed_kind,
         embed_id=embed_id,
     )
+
+
+def _data_chart(
+    payload: dict[str, Any],
+    *,
+    title: str | None,
+    note: str | None,
+) -> DataChartBlock | None:
+    """Hydrate a data_chart block from a verified aggregate_data payload.
+
+    ``payload`` is the exact JSON an aggregate_data tool call returned
+    this turn; nothing here re-derives or re-computes a number. The model
+    chooses only which aggregation to reference and how to frame it
+    (title/note); chart, orientation and the field mapping are derived
+    entirely from the payload's own columns, never asked of the model.
+    Returns None for any structurally invalid payload (a malformed
+    columns/rows shape or a non-finite value) so an invalid reference is
+    dropped exactly like any other unresolvable reference. A genuinely
+    empty but well-formed aggregation (rows == [], empty_reason set)
+    still hydrates.
+    """
+    columns = payload.get("columns")
+    rows = payload.get("rows")
+    aggregation_id = payload.get("aggregation_id")
+    metric_label = payload.get("metric_label")
+    total = payload.get("total")
+    excluded_count = payload.get("excluded_count")
+    if (
+        not isinstance(aggregation_id, str)
+        or not isinstance(columns, list)
+        or len(columns) != 2
+        or not isinstance(rows, list)
+        or len(rows) > 200
+        or not isinstance(metric_label, str)
+        or not isinstance(total, int)
+        or isinstance(total, bool)
+        or not isinstance(excluded_count, int)
+        or isinstance(excluded_count, bool)
+    ):
+        return None
+
+    parsed_columns: list[DataChartColumn] = []
+    for column in columns:
+        if not isinstance(column, dict):
+            return None
+        try:
+            parsed_columns.append(DataChartColumn.model_validate(column))
+        except ValidationError:
+            return None
+
+    dimension_column = next((column for column in parsed_columns if column.key != "value"), None)
+    if dimension_column is None:
+        return None
+    # The one structural fact this aggregation contract encodes: a temporal
+    # dimension (a year series) reads as bars growing upward over time;
+    # any other dimension (song, venue, city, guest) reads as ranked bars
+    # growing rightward. This is derived, never a model choice.
+    orientation = "vertical" if dimension_column.type == "temporal" else "horizontal"
+
+    for row in rows:
+        if not isinstance(row, dict):
+            return None
+        value = row.get("value")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            return None
+
+    date_range = payload.get("date_range")
+    if date_range is not None and not (
+        isinstance(date_range, dict)
+        and isinstance(date_range.get("from"), int)
+        and isinstance(date_range.get("to"), int)
+    ):
+        return None
+    empty_reason = payload.get("empty_reason")
+    if empty_reason is not None and not isinstance(empty_reason, str):
+        return None
+
+    resolved_title = (title or "").strip() or metric_label
+    try:
+        return DataChartBlock(
+            type="data_chart",
+            aggregation_id=aggregation_id,
+            title=resolved_title,
+            note=note,
+            chart="bar",
+            orientation=orientation,
+            columns=parsed_columns,
+            rows=rows,
+            metric_label=metric_label,
+            total=total,
+            excluded_count=excluded_count,
+            date_range=date_range,
+            empty_reason=empty_reason,
+        )
+    except ValidationError:
+        # Closes the whole class of malformed-but-structurally-plausible
+        # shapes (an extra key in date_range, a non-string row/column key
+        # from a hand-built payload) in one place instead of a bespoke check
+        # per possible malformed shape.
+        return None
 
 
 def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore) -> list[PerformanceListItem]:
