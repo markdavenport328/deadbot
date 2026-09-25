@@ -108,9 +108,9 @@ def test_search_entities_resolves_ace_despite_show_matches_crowding_the_cap():
     assert any(item["id"] == "release-ace" for item in releases)
 
 
-def test_get_album_returns_the_tracklist():
+def test_get_album_returns_the_tracklist_on_request():
     store = CanonicalStore()
-    payload = json.loads(_tool_by_name(store, "get_album").invoke({"release_id_or_title": "American Beauty"}))
+    payload = json.loads(_tool_by_name(store, "get_album").invoke({"release_id_or_title": "American Beauty", "include": ["tracks"]}))
     assert payload["release"]["release_type"] == "studio"
     assert any(track["song_id"] == "song-truckin" for track in payload["tracks"])
 

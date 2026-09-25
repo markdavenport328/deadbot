@@ -153,7 +153,11 @@ def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
 
 def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
     store = CanonicalStore()
-    payload = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford"}))
+    payload = json.loads(
+        tool_by_name(store, "search_guest_musicians").invoke(
+            {"query": "Branford", "include": ["appearances"]}
+        )
+    )
     assert [guest["name"] for guest in payload["guests"]] == ["Branford Marsalis"]
     branford = payload["guests"][0]
     assert branford["guest_show_count"] == 5
@@ -198,7 +202,9 @@ def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_perso
     """
 
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Marvin Boxley"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Marvin Boxley", "include": ["appearances"]}
+        )
     )
 
     assert [guest["name"] for guest in payload["guests"]] == ["Marvin Boxley"]
@@ -235,7 +241,9 @@ def test_guest_directory_reports_no_person_under_a_qualified_name():
 
 def test_complete_show_qualifier_still_reaches_the_reader_as_a_participation_scope():
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Ned Lagin"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Ned Lagin", "include": ["appearances"]}
+        )
     )
 
     lagin = payload["guests"][0]
@@ -260,7 +268,9 @@ def test_guest_directory_names_the_songs_a_guest_played_when_the_catalog_knows_t
     """A show-level credit says Santana was there; performance_performers says on what."""
 
     payload = json.loads(
-        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke({"query": "Santana"})
+        tool_by_name(CanonicalStore(), "search_guest_musicians").invoke(
+            {"query": "Santana", "include": ["appearances"]}
+        )
     )
 
     assert [guest["name"] for guest in payload["guests"]] == ["Carlos Santana"]

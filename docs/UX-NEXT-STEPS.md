@@ -383,8 +383,8 @@ those next.
 
 Live finish-call timing, 2026-09-09: three questions run once each against this
 worktree's code, provider openai, model gpt-5.6-luna, using the main checkout's
-`.env` for `OPENAI_API_KEY` and `DEADBOT_DATABASE_URL` (this shell has neither
-on its own).
+`.env` for `OPENAI_API_KEY` (this shell has none
+of its own).
 
 | Question | Finish call wall time since the last tool result (s) | Finish call output tokens | Total wall time (s) |
 | --- | --- | --- | --- |

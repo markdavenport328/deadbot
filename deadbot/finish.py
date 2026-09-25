@@ -619,28 +619,71 @@ def _person_facts_from_store(person_ids: list[str], store: CanonicalStore) -> di
     return facts
 
 
-def _person_facts_from_payloads(person_id: str, payloads: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """A guest record from search_guest_musicians already carries canonical appearances."""
+def _find_guest_record(payloads: list[dict[str, Any]], person_id: str) -> dict[str, Any] | None:
+    """The same guest can appear in more than one payload this turn — a broad
 
-    guest = _find_in_payloads(payloads, "guests", "person_id", person_id)
-    if not guest or not isinstance(guest.get("appearances"), list):
-        return None
-    roles: list[str] = []
-    years: list[str] = []
-    show_ids: set[str] = set()
-    for appearance in guest["appearances"]:
-        if not isinstance(appearance, dict):
+    directory summary from an earlier call and a narrower detail lookup
+    (include=["appearances"]) for this person. Prefer whichever record
+    carries appearances; a summary-only record is still usable (see
+    ``_person_facts_from_payloads``), but a detail record is strictly richer.
+    """
+
+    first_match: dict[str, Any] | None = None
+    for payload in payloads:
+        raw_guests = payload.get("guests")
+        if not isinstance(raw_guests, list):
             continue
-        for instrument in appearance.get("instruments") or []:
-            if isinstance(instrument, str) and instrument and instrument not in roles:
-                roles.append(instrument)
-        date = appearance.get("show_date") or ""
+        for record in raw_guests:
+            if isinstance(record, dict) and record.get("person_id") == person_id:
+                if isinstance(record.get("appearances"), list):
+                    return record
+                if first_match is None:
+                    first_match = record
+    return first_match
+
+
+def _person_facts_from_payloads(person_id: str, payloads: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """A guest record from search_guest_musicians already carries canonical facts.
+
+    With include=["appearances"], the record carries every show; otherwise
+    it is the directory summary (name, guest_show_count, first/last show
+    date, instruments). Either way, this returns an explicit ``show_count``
+    rather than leaving the caller to derive one from ``show_ids`` — a
+    summary record has no per-show ids to count.
+    """
+
+    guest = _find_guest_record(payloads, person_id)
+    if not guest:
+        return None
+    name = guest.get("name")
+    name = name if isinstance(name, str) and name else person_id
+    appearances = guest.get("appearances")
+    if isinstance(appearances, list):
+        roles: list[str] = []
+        years: list[str] = []
+        show_ids: set[str] = set()
+        for appearance in appearances:
+            if not isinstance(appearance, dict):
+                continue
+            for instrument in appearance.get("instruments") or []:
+                if isinstance(instrument, str) and instrument and instrument not in roles:
+                    roles.append(instrument)
+            date = appearance.get("show_date") or ""
+            if isinstance(date, str) and len(date) >= 4:
+                years.append(date[:4])
+            if isinstance(appearance.get("show_id"), str):
+                show_ids.add(appearance["show_id"])
+        return {"name": name, "roles": roles, "years": years, "show_count": len(show_ids)}
+    # A directory summary: no appearances, but the same facts in aggregate.
+    roles = [item for item in guest.get("instruments") or [] if isinstance(item, str) and item]
+    years = []
+    for key in ("first_show_date", "last_show_date"):
+        date = guest.get(key)
         if isinstance(date, str) and len(date) >= 4:
             years.append(date[:4])
-        if isinstance(appearance.get("show_id"), str):
-            show_ids.add(appearance["show_id"])
-    name = guest.get("name")
-    return {"name": name if isinstance(name, str) and name else person_id, "roles": roles, "show_ids": show_ids, "years": years}
+    show_count = guest.get("guest_show_count")
+    show_count = show_count if isinstance(show_count, int) else 0
+    return {"name": name, "roles": roles, "years": years, "show_count": show_count}
 
 
 def _resolve_person_roster(
@@ -665,12 +708,16 @@ def _resolve_person_roster(
             continue
         seen.add(entry.person_id)
         years = sorted(facts["years"])
+        # A payload-derived record carries an explicit show_count (a summary
+        # has no per-show ids to count); a store-derived record still has
+        # show_ids instead.
+        show_count = facts["show_count"] if "show_count" in facts else len(facts["show_ids"])
         items.append(
             PersonRosterItem(
                 person_id=entry.person_id,
                 name=facts["name"],
                 roles=facts["roles"][:6],
-                show_count=len(facts["show_ids"]),
+                show_count=show_count,
                 first_year=years[0] if years else None,
                 last_year=years[-1] if years else None,
                 note=entry.note.strip() if entry.note and entry.note.strip() else None,
@@ -791,7 +838,7 @@ def _resolve_reference(
         ), sources
 
     if kind == "guest_appearance_list":
-        guest = _find_in_payloads(payloads, "guests", "person_id", item.person_id)
+        guest = _find_guest_record(payloads, item.person_id)
         blocks = composition._guest_appearance_blocks({"guests": [guest]}) if guest else []
         return (blocks[0], []) if blocks else (None, [])
 

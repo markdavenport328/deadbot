@@ -108,10 +108,9 @@ def test_stored_resource_search_ranks_fuller_matches_first():
     )
 
 
-def test_album_tracks_carry_their_live_legacy():
-    payload = json.loads(_tools()["get_album"].invoke({"release_id_or_title": "American Beauty"}))
-    truckin = next(track for track in payload["tracks"] if track["song_id"] == "song-truckin")
-    legacy = truckin["live_legacy"]
+def test_album_live_legacy_on_request():
+    payload = json.loads(_tools()["get_album"].invoke({"release_id_or_title": "American Beauty", "include": ["live_legacy"]}))
+    legacy = payload["live_legacy"]["song-truckin"]
     assert legacy["performance_count"] > 400
     assert legacy["first_performance"] < "1971" < legacy["last_performance"]
     assert sum(legacy["by_era"].values()) == legacy["performance_count"]

@@ -155,8 +155,17 @@ function createThreadId(): string {
   return `web-${crypto.randomUUID()}`;
 }
 
+// Reload after a deploy, checked only when a tab comes back into view and at
+// most every few minutes. A timer would keep every forgotten background tab
+// calling the server around the clock.
+const VERSION_CHECK_INTERVAL_MS = 5 * 60_000;
+let lastVersionCheck = 0;
+
 async function refreshIfServerChanged(): Promise<void> {
-  const result = await fetch("/api/health", { cache: "no-store" });
+  const now = Date.now();
+  if (now - lastVersionCheck < VERSION_CHECK_INTERVAL_MS) return;
+  lastVersionCheck = now;
+  const result = await fetch("/api/version", { cache: "no-store" });
   if (!result.ok) return;
   const health = await result.json() as { git_commit?: string };
   const current = health.git_commit;
@@ -1931,8 +1940,11 @@ function App() {
   useEffect(() => {
     if (visualFixture || requestedStreamFixture) return;
     void refreshIfServerChanged();
-    const check = window.setInterval(() => void refreshIfServerChanged(), 60_000);
-    return () => window.clearInterval(check);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void refreshIfServerChanged();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, [visualFixture]);
 
   useEffect(() => {
@@ -1975,11 +1987,13 @@ function App() {
   }, [phase]);
 
   // Move focus to the answer heading once a response actually lands from an
-  // ask (never on a `?fixture=` load, which never sets the ref).
+  // ask (never on a `?fixture=` load, which never sets the ref). The page has
+  // usually streamed in and the visitor may already be reading further down,
+  // so focus moves without scrolling them back to the top.
   useEffect(() => {
     if (!response || !askJustCompletedRef.current) return;
     askJustCompletedRef.current = false;
-    document.getElementById("answer-title")?.focus({ preventScroll: false });
+    document.getElementById("answer-title")?.focus({ preventScroll: true });
   }, [response]);
 
   // The dev `?stream=` fixture replays a canned event sequence through the

@@ -120,6 +120,19 @@ def _parse_timestamp(value: Any) -> datetime | None:
     return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
+def _fresh_cached_payload(response_text: Any, created_at: Any, max_age_seconds: int) -> dict[str, Any] | None:
+    """A stored answer's payload while it is younger than ``max_age_seconds``."""
+
+    created = _parse_timestamp(created_at)
+    if created is None or (datetime.now(created.tzinfo) - created).total_seconds() > max_age_seconds:
+        return None
+    try:
+        payload = json.loads(response_text)
+    except (TypeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def _identifier(value: str) -> str:
     """Quote a validated SQL identifier.
 
@@ -279,7 +292,13 @@ class PostgresCanonicalStore(CanonicalStore):
         return rows
 
     def _execute(self, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
-        cursor = self._connection().cursor()
+        return self._run(self._connection(), sql, parameters)
+
+    @staticmethod
+    def _run(connection: DBAPIConnection, sql: str, parameters: tuple[Any, ...] = ()) -> list[dict[str, str]]:
+        """Run one read on ``connection`` and return its rows as string dicts."""
+
+        cursor = connection.cursor()
         try:
             cursor.execute(sql, parameters)
             description = cursor.description or ()
@@ -409,14 +428,7 @@ class PostgresCanonicalStore(CanonicalStore):
         )
         if not rows:
             return None
-        created = _parse_timestamp(rows[0].get("created_at", ""))
-        if created is None or (datetime.now(created.tzinfo) - created).total_seconds() > max_age_seconds:
-            return None
-        try:
-            payload = json.loads(rows[0]["response"])
-        except (KeyError, TypeError, json.JSONDecodeError):
-            return None
-        return payload if isinstance(payload, dict) else None
+        return _fresh_cached_payload(rows[0].get("response"), rows[0].get("created_at"), max_age_seconds)
 
     def store_response(self, question_key: str, data_version: str, question: str, response: dict[str, Any]) -> None:
         self._statement(
@@ -441,7 +453,7 @@ class PostgresCanonicalStore(CanonicalStore):
         """Read the complete reviewed source-attributed evidence packet."""
 
         rows = self._query(
-            f"SELECT e.\"selection_evidence_id\", e.\"payload\"::text AS payload, "
+            f"SELECT e.\"selection_evidence_id\", CAST(e.\"payload\" AS TEXT) AS payload, "
             f"r.\"source_url\" AS resource_url, l.\"title\" AS selection_list_title "
             f"FROM {self._qualified_table('selection_evidence')} e "
             f"JOIN {self._qualified_table('resources')} r ON r.\"resource_id\" = e.\"source_resource_id\" "

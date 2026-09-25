@@ -191,3 +191,9 @@ def test_build_agent_compiles_with_a_fake_provider():
 
     compiled = graph.build_agent(Settings(), store=CanonicalStore(), provider=FakeProvider())
     assert compiled is not None
+
+
+def test_prompt_teaches_survey_then_detail_and_querying_sets():
+    assert "Work like a researcher" in graph.SYSTEM_PROMPT
+    assert "query_catalog" in graph.SYSTEM_PROMPT
+    assert 'include=["live_legacy"]' in graph.SYSTEM_PROMPT
