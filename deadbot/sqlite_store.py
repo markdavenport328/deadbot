@@ -21,6 +21,7 @@ import queue
 import sqlite3
 import tempfile
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,24 @@ DEFAULT_RESPONSE_CACHE_PATH = Path(
     os.getenv("DEADBOT_RESPONSE_CACHE_PATH")
     or Path(tempfile.gettempdir()) / "deadbot-response-cache.sqlite"
 )
+
+CATALOG_QUERY_MAX_ROWS = 200
+CATALOG_QUERY_TIMEOUT_SECONDS = 1.5
+
+_READ_ACTIONS = {
+    sqlite3.SQLITE_SELECT,
+    sqlite3.SQLITE_READ,
+    sqlite3.SQLITE_FUNCTION,
+    getattr(sqlite3, "SQLITE_RECURSIVE", 33),
+}
+
+
+def _read_only(action: int, arg1: str | None, arg2: str | None, _db: str | None, _trigger: str | None) -> int:
+    """Allow reading and ordinary functions; deny everything else."""
+
+    if action == sqlite3.SQLITE_FUNCTION and (arg2 or "").lower() == "load_extension":
+        return sqlite3.SQLITE_DENY
+    return sqlite3.SQLITE_OK if action in _READ_ACTIONS else sqlite3.SQLITE_DENY
 
 
 class _Cursor:
@@ -167,6 +186,48 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
             if self._cache_connection is not None:
                 self._cache_connection.close()
                 self._cache_connection = None
+
+    def run_catalog_query(self, sql: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Run one read-only SELECT with a row cap and a time limit.
+
+        The guardrails protect the service, not the answer: reading is the only
+        permitted action, one statement runs per call, a runaway query is cut
+        off, and errors come back in words the model can act on.
+        """
+
+        connection = sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro&immutable=1", uri=True)
+        try:
+            connection.set_authorizer(_read_only)
+            deadline = time.monotonic() + CATALOG_QUERY_TIMEOUT_SECONDS
+            connection.set_progress_handler(lambda: 1 if time.monotonic() > deadline else 0, 10_000)
+            cursor = connection.execute(sql, params or {})
+            columns = [item[0] for item in cursor.description or ()]
+            fetched = cursor.fetchmany(CATALOG_QUERY_MAX_ROWS + 1)
+        except sqlite3.OperationalError as exc:
+            message = str(exc)
+            if "interrupted" in message:
+                hint = f"The query ran past the {CATALOG_QUERY_TIMEOUT_SECONDS}s time limit. Filter earlier, join on keys, or aggregate."
+            elif "not authorized" in message:
+                hint = "Only a single read-only SELECT is allowed."
+            else:
+                hint = "Check table and column names against the views in the tool description."
+            return {"error": message, "hint": hint}
+        except (sqlite3.ProgrammingError, sqlite3.Warning) as exc:
+            return {"error": str(exc), "hint": "Send one SELECT statement per call."}
+        except sqlite3.DatabaseError as exc:
+            return {"error": str(exc), "hint": "Only a single read-only SELECT is allowed."}
+        finally:
+            connection.close()
+        truncated = len(fetched) > CATALOG_QUERY_MAX_ROWS
+        result: dict[str, Any] = {
+            "columns": columns,
+            "rows": [list(row) for row in fetched[:CATALOG_QUERY_MAX_ROWS]],
+            "row_count": min(len(fetched), CATALOG_QUERY_MAX_ROWS),
+            "truncated": truncated,
+        }
+        if truncated:
+            result["note"] = f"Only the first {CATALOG_QUERY_MAX_ROWS} rows are shown. Aggregate, filter, or add ORDER BY with a LIMIT."
+        return result
 
     def verify_ready(self) -> None:
         """Fail closed unless this file was built by the current builder and holds the catalog."""

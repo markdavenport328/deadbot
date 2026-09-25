@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 from langchain_core.tools import BaseTool, tool
 
+from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import (
     DeadnetConfig,
@@ -1874,7 +1875,7 @@ def build_tools(
         except (ExternalServiceError, ValueError) as error:
             return _json({"error": str(error), "query": show_id_or_date})
 
-    return [
+    tools = [
         search_entities,
         search_guest_musicians,
         search_stored_resources,
@@ -1902,3 +1903,49 @@ def build_tools(
         get_astronomy,
         get_astrology,
     ]
+
+    if callable(getattr(store, "run_catalog_query", None)):
+
+        @tool
+        def query_catalog(
+            name: str = "",
+            song: str = "",
+            venue: str = "",
+            show: str = "",
+            tour: str = "",
+            year_from: int | None = None,
+            year_to: int | None = None,
+            limit: int = 25,
+            sql: str = "",
+        ) -> str:
+            """Find or count things across the catalog."""  # replaced below by catalog_tool_description()
+            if not name and not sql:
+                return _json({"error": "Pass name (a listed query) or sql"})
+            if not name:
+                return _json(store.run_catalog_query(sql))
+            query = NAMED_QUERIES.get(name)
+            if query is None:
+                return _json({"error": "Unknown query", "queries": list(NAMED_QUERIES)})
+            given = {"song": song, "venue": venue, "show": show, "year_from": year_from}
+            if any(not given.get(required) for required in query.requires):
+                return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
+            params: dict[str, Any] = {"venue": venue, "tour": tour, "limit": max(1, min(limit, 200))}
+            if song:
+                resolved = store.resolve_song(song)
+                if not resolved:
+                    return _json({"error": "Song not found or ambiguous", "query": song})
+                params["song"] = resolved["song_id"]
+            if show:
+                resolved_show = store.resolve_show(show)
+                if not resolved_show:
+                    return _json({"error": "Show not found", "query": show})
+                params["show"] = resolved_show["show_id"]
+            params["year_from"] = year_from if year_from is not None else 1965
+            params["year_to"] = year_to if year_to is not None else (year_from if year_from is not None else 1995)
+            bound = {key: value for key, value in params.items() if f":{key}" in query.sql}
+            result = store.run_catalog_query(query.sql, bound)
+            return _json({"query": name, **result})
+
+        query_catalog.description = catalog_tool_description()
+        tools.append(query_catalog)
+    return tools
