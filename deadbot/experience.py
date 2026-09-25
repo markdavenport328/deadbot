@@ -52,6 +52,13 @@ class SetlistSong(ExperienceModel):
     # it is the song's link: a setlist entry leads to its recording.
     highlighted: bool = False
     listen_url: str | None = None
+    # The playable Internet Archive track for the in-page player, when the
+    # library has one; distinct from listen_url, which may point to a
+    # Spotify or YouTube destination instead of an audio file the browser
+    # can play directly.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
+    segue_into_next: bool = False
 
 
 class SetlistSection(ExperienceModel):
@@ -188,6 +195,12 @@ class ShowUnitBlock(ExperienceModel):
     setlist_disclosure: SetlistDisclosure = "expanded"
     sets: list[SetlistSection] = Field(default_factory=list, max_length=4)
     setlist_note: str | None = None
+    # The Internet Archive item behind this setlist's playable tracks, once
+    # per show rather than repeated on every song: the in-page player's
+    # thumbnail and its "Tape on the Internet Archive" link are both derived
+    # from this identifier.
+    recording_identifier: str | None = None
+    recording_details_url: str | None = None
     guests: list[PerformerItem] = Field(default_factory=list, max_length=8)
     lineup: list[PerformerItem] = Field(default_factory=list, max_length=24)
     recordings: list[RecordingItem] = Field(default_factory=list, max_length=8)

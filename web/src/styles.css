@@ -164,6 +164,45 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .error { margin: 0 0 0.8rem; border-radius: var(--r); border-left: 4px solid #e17e64; background: #3d2923; color: #f0d6ca; padding: 0.8rem; font-size: 0.86rem; }
 
 .content-pane { min-width: 0; padding: 2rem clamp(1.4rem, 4vw, 4.5rem) 4rem; }
+
+/* The one shared now-playing bar: hidden until something has played, then
+   pinned to the bottom of the answer pane's own column (sticky within
+   .content-pane, so it never draws over the rail and scrolls away with the
+   page it belongs to rather than floating over every screen in the app). */
+.now-playing-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: auto 1fr auto minmax(12rem, 22rem) auto;
+  align-items: center;
+  column-gap: 0.9rem;
+  margin: 2rem calc(-1 * clamp(1.4rem, 4vw, 4.5rem)) calc(-1 * 4rem);
+  padding: 0.7rem clamp(1.4rem, 4vw, 4.5rem);
+  background: rgba(10, 18, 13, 0.94);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--hair);
+}
+.now-playing-thumb { width: 40px; height: 40px; border-radius: var(--r); object-fit: cover; background: var(--panel); flex-shrink: 0; }
+.now-playing-thumb.placeholder { background: var(--panel-featured); }
+.now-playing-info { min-width: 0; }
+.now-playing-title { margin: 0; color: var(--cream); font-size: 0.92rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now-playing-meta { margin: 0.1rem 0 0; color: var(--quiet); font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.now-playing-toggle { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: none; background: var(--listen); color: var(--listen-ink); flex-shrink: 0; }
+.now-playing-toggle svg { width: 16px; height: 16px; }
+.now-playing-scrubber { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
+.now-playing-time { color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.now-playing-range { flex: 1; min-width: 0; accent-color: var(--listen); }
+.now-playing-tape { color: var(--quiet); font-size: 0.8rem; text-decoration: underline; text-decoration-color: rgba(231, 185, 78, 0.4); text-underline-offset: 0.16em; white-space: nowrap; }
+.now-playing-tape:hover { color: var(--cream); }
+@media (max-width: 860px) {
+  .now-playing-bar { grid-template-columns: auto 1fr auto; grid-template-areas: "thumb info toggle" "scrub scrub scrub" "tape tape tape"; row-gap: 0.4rem; margin: 1.5rem calc(-1 * 1.25rem) calc(-1 * var(--space-section)); padding: 0.7rem 1.25rem; }
+  .now-playing-thumb { grid-area: thumb; }
+  .now-playing-info { grid-area: info; }
+  .now-playing-toggle { grid-area: toggle; }
+  .now-playing-scrubber { grid-area: scrub; }
+  .now-playing-tape { grid-area: tape; }
+}
 .content-heading { max-width: 780px; margin-bottom: var(--space-part); }
 .content-heading h1 { font-size: clamp(2.2rem, 3.4vw, 3.1rem); font-variation-settings: "SOFT" 40, "opsz" 96; letter-spacing: -0.015em; max-width: 22ch; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
 .content-heading > p:last-child { max-width: 46rem; margin: 1rem 0 0; color: #c3cec3; line-height: 1.6; }
@@ -359,6 +398,31 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .song-list li span { color: var(--muted); }
 .song-list li.hi a { color: var(--cream); font-weight: 600; }
 .song-list li.hi a::after { content: " ★"; color: var(--listen); font-size: 0.7em; }
+
+/* Playable setlist rows: a 44px round play button, the title, and a
+   right-aligned duration. The current track's row gets a faint gold wash
+   and a progress line along its bottom edge; a segue connects down into the
+   next row's button column. */
+.setlist-rows { margin: 0; padding: 0; list-style: none; color: var(--quiet); font-size: 0.93rem; font-variant-numeric: tabular-nums; }
+.setlist-rows li { position: relative; display: grid; grid-template-columns: 2.75rem 1fr auto; align-items: center; column-gap: 0.85rem; padding: 0.3rem 0.5rem; border-radius: var(--r); }
+.setlist-rows li.current { background: linear-gradient(90deg, rgba(231, 185, 78, 0.16), rgba(231, 185, 78, 0.02)); }
+.setlist-rows .row-play-cell { position: relative; display: flex; align-items: center; justify-content: center; }
+.setlist-rows li.segue .row-play-cell::after { content: ""; position: absolute; top: 100%; left: 50%; width: 2px; height: 0.7rem; background: rgba(231, 185, 78, 0.6); transform: translateX(-50%); }
+.row-play { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 1.5px solid var(--listen); background: transparent; color: var(--listen); flex-shrink: 0; }
+.row-play svg { width: 16px; height: 16px; }
+.row-play.current { background: var(--listen); border-color: var(--listen); color: var(--listen-ink); }
+.row-play.disabled { border-color: var(--hair); color: var(--quiet); opacity: 0.5; cursor: not-allowed; }
+.row-title { min-width: 0; overflow-wrap: anywhere; }
+.row-title a { color: var(--text); text-decoration: underline; text-decoration-color: rgba(231, 185, 78, 0.45); text-underline-offset: 0.16em; text-decoration-thickness: 1px; }
+.setlist-rows li.hi .row-title a { color: var(--cream); font-weight: 600; }
+.setlist-rows li.hi .row-title a::after { content: " ★"; color: var(--listen); font-size: 0.7em; }
+.row-title span { color: var(--muted); }
+.segue-mark { color: var(--quiet); }
+.row-duration { color: var(--quiet); font-size: 0.85rem; padding-left: 0.5rem; }
+.row-progress { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--listen); border-radius: var(--r); }
+@media (prefers-reduced-motion: no-preference) {
+  .row-play { transition: background-color 160ms var(--ease-out), color 160ms var(--ease-out); }
+}
 .people { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: 0.35rem 1.5rem; }
 .people li { font-size: 0.93rem; color: var(--cream); line-height: 1.5; }
 .people li span { color: var(--muted); }

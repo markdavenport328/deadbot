@@ -38,12 +38,16 @@ def test_song_context_adds_a_compact_listening_path_per_performance():
     both_kinds = performances_by_id["gd-1979-11-06-deal-1-11"]
     assert both_kinds["listen"] == {
         "archive_track_url": "https://archive.org/download/gd1979-11-06.137296.sbd.GEMS.flac16/gd1979-11-06s1t17.mp3",
+        "archive_identifier": "gd1979-11-06.137296.sbd.GEMS.flac16",
+        "archive_track_duration_seconds": 401,
         "release_track_url": "https://open.spotify.com/track/5ePRqn1CsdffrUXEvqtEiW",
     }
 
     archive_only = performances_by_id["gd-1971-03-20-deal-1-6"]
     assert archive_only["listen"] == {
         "archive_track_url": "https://archive.org/download/gd71-03-20.sbd.barbella.5582.sbeok.shnf/gd71-03-20d1t06.mp3",
+        "archive_identifier": "gd71-03-20.sbd.barbella.5582.sbeok.shnf",
+        "archive_track_duration_seconds": 179,
     }
     assert "release_track_url" not in archive_only["listen"]
 

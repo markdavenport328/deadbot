@@ -813,6 +813,10 @@ export interface components {
         };
         /** SetlistSong */
         SetlistSong: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /**
              * Highlighted
              * @default false
@@ -824,6 +828,11 @@ export interface components {
             performance_id: string;
             /** Position In Set */
             position_in_set?: string | null;
+            /**
+             * Segue Into Next
+             * @default false
+             */
+            segue_into_next: boolean;
             /** Song Id */
             song_id: string;
             /** Title */
@@ -892,6 +901,10 @@ export interface components {
             location?: string | null;
             /** Note */
             note?: string | null;
+            /** Recording Details Url */
+            recording_details_url?: string | null;
+            /** Recording Identifier */
+            recording_identifier?: string | null;
             /** Recordings */
             recordings?: components["schemas"]["RecordingItem"][];
             /**
