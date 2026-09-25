@@ -1014,12 +1014,17 @@ def build_tools(
         if "tracks" in wanted:
             if show:
                 resolved = store.resolve_show(show)
-                show_id = resolved["show_id"] if resolved else ""
-                if show_id not in {show_of(track) for track in tracks}:
+                show_ids_on_release = {show_of(track) for track in tracks if show_of(track)}
+                if not resolved or resolved["show_id"] not in show_ids_on_release:
                     return _json({"error": "Show not on this release", "shows": [entry["show_date"] for entry in payload["contents"].get("shows", [])]})
+                show_id = resolved["show_id"]
                 payload["tracks"] = [track for track in tracks if show_of(track) == show_id]
             else:
                 payload["tracks"] = tracks
+                if len(payload["contents"].get("shows", [])) > 1:
+                    payload["tracks_note"] = (
+                        f'narrow to one show with show="{payload["contents"]["shows"][0]["show_date"]}"'
+                    )
         if "live_legacy" in wanted:
             payload["live_legacy"] = _album_live_legacy(song_ids)
             payload["live_legacy_note"] = (

@@ -46,6 +46,14 @@ def test_tracks_on_request_and_narrowed_to_one_show(album):
         assert len(full["tracks"]) == full["track_count"]
     assert 0 < len(one["tracks"]) < full["track_count"]
     assert "tracks" not in one["available"]
+    assert "narrow to one show" in full["tracks_note"]
+
+
+def test_unresolvable_show_errors_rather_than_returning_unattributed_tracks(album):
+    payload = album(release_id_or_title=BOX, show="not-a-real-show-xyz")
+    assert payload["error"] == "Show not on this release"
+    assert "1972-04-07" in payload["shows"]
+    assert "tracks" not in payload
 
 
 def test_live_legacy_on_request_keyed_by_song(album):
