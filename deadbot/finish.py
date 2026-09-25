@@ -21,7 +21,7 @@ from typing import Annotated, Any, Literal
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from deadbot import composition
+from deadbot import composition, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     ConversationTurn,
@@ -198,6 +198,28 @@ class DataChartRef(_Ref):
         ),
     )
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+
+
+class VersionStripRef(_Ref):
+    """Chosen nights of one song pairing from get_segue_pairing, drawn to one
+    clock. Each row is a night: its venue and date, the two songs' tape-track
+    lengths as one bar, and a play button that plays both tracks in turn. The
+    server supplies every length, track, venue and date.
+    """
+
+    type: Literal["version_strip"]
+    pairing_id: str = Field(description="The pairing_id from a get_segue_pairing result this turn.")
+    pair_ids: list[str] = Field(
+        min_length=1,
+        max_length=60,
+        description="The nights to draw, as pair_ids from that result, in the order you want them read.",
+    )
+    title: str | None = Field(default=None, description="What the visitor should see across these nights, in a few words.")
+    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    show_year_counts: bool = Field(
+        default=False,
+        description="Add a small strip of how many nights the pairing was played each year, when its rise, gaps or fade matter here.",
+    )
 
 
 # --- semantic units ---------------------------------------------------------
@@ -430,7 +452,8 @@ BodyItem = Annotated[
     | ArrangementSearchRef
     | MediaLinkRef
     | ResourceListRef
-    | DataChartRef,
+    | DataChartRef
+    | VersionStripRef,
     Field(discriminator="type"),
 ]
 
@@ -564,7 +587,8 @@ class FinishPlan(BaseModel):
             "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
             "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
             "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list, "
-            "data_chart (a chart built from one aggregate_data result). A listening_hero "
+            "data_chart (a chart built from one aggregate_data result), version_strip (chosen nights of one get_segue_pairing result drawn to one clock, "
+            "each row playing both songs). A listening_hero "
             "leads the page when the visitor wants to hear a show or recording: place it first. A pull_quote sets one sentence of yours large, "
             "for the idea the visitor should carry away. An answer that needs no main body leaves groups empty."
         ),
@@ -1019,6 +1043,18 @@ def _resolve_reference(
         )
         return (block, []) if block else (None, [])
 
+    if kind == "version_strip":
+        block = sequences.version_strip_block(
+            store,
+            grounded.ids,
+            pairing=item.pairing_id,
+            pair_ids=item.pair_ids,
+            title=item.title,
+            note=item.note,
+            show_year_counts=item.show_year_counts,
+        )
+        return (block, []) if block else (None, [])
+
     return None, []
 
 
@@ -1110,7 +1146,8 @@ def build_finish_tool() -> BaseTool:
             "chat_answer gives the conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, with "
             "listening and source actions attached to the objects they belong to. Compose groups (collection, sequence, comparison, argument) of semantic "
             "units with an emphasis, a note, selected facets, highlights and sources, plus your own narrative, fact grids or timelines for what spans the "
-            "units. A listening_hero leads a page that is best heard, and a pull_quote sets apart the one line worth remembering. IDs must have appeared "
+            "units. A listening_hero leads a page that is best heard, a version_strip lays chosen nights of a song pairing on one clock, and a pull_quote "
+            "sets apart the one line worth remembering. IDs must have appeared "
             "in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,

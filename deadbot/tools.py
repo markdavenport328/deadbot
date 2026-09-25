@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 from langchain_core.tools import BaseTool, tool
 from pydantic import ValidationError
 
-from deadbot import aggregation
+from deadbot import aggregation, sequences
 from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import (
@@ -1879,6 +1879,60 @@ def build_tools(
             return _json({"error": str(error), "query": show_id_or_date})
 
     @tool
+    def get_segue_pairing(
+        first_song: str,
+        second_song: str,
+        transition: str = "segue",
+        include: list[str] | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+    ) -> str:
+        """Every night one song led straight into another: a pairing fans hear as one piece.
+
+        first_song and second_song take a song ID or title, in playing order
+        (China Cat Sunflower, then I Know You Rider). transition="segue" (the
+        default) counts nights the first song segued into the second;
+        transition="any" also counts nights the second simply came next in the
+        same set. Call again with the songs swapped for the reverse order.
+
+        The result carries the pairing_id, the count (with both the segue and
+        the followed-without-segue counts), the span, versions per year (years
+        without one kept as zero) with each year's median length for both
+        halves, the same by era, the longest and shortest version of each half
+        and of the two together, and how many versions have both tape tracks.
+        Each version names its night (show_id, date, venue, place, set), its
+        pair_id, both performance IDs, both lengths in seconds and both archive
+        track URLs. A short pairing lists every version; a long one lists them
+        on request with include=["versions"], narrowed by year_from and year_to.
+        A version_strip in finish_response draws the versions you choose, by
+        pair_id, to one clock.
+        """
+        if transition not in sequences.TRANSITIONS:
+            return _json({"error": "Unknown transition", "valid": list(sequences.TRANSITIONS)})
+        wanted = set(include or [])
+        if wanted - {"versions"}:
+            return _json({"error": "Unknown include", "valid": ["versions"]})
+        first = store.resolve_song(first_song)
+        if not first:
+            return _json({"error": "Song not found or ambiguous", "query": first_song})
+        second = store.resolve_song(second_song)
+        if not second:
+            return _json({"error": "Song not found or ambiguous", "query": second_song})
+        found = sequences.versions(store, first["song_id"], second["song_id"])
+        return _json(
+            sequences.pairing_payload(
+                first,
+                second,
+                found,
+                transition=transition,
+                include_versions="versions" in wanted,
+                year_from=year_from,
+                year_to=year_to,
+                era_of=_era_label,
+            )
+        )
+
+    @tool
     def aggregate_data(
         dataset: str,
         group_by: str,
@@ -1974,6 +2028,7 @@ def build_tools(
         get_astronomy,
         get_astrology,
         aggregate_data,
+        get_segue_pairing,
     ]
 
     if callable(getattr(store, "run_catalog_query", None)):

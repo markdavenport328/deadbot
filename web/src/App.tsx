@@ -5,6 +5,7 @@ import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamF
 import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./components";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
+import { VersionStrip } from "./VersionStrip";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
 // rarely a page actually contains a data_chart block, so it loads lazily:
@@ -1630,6 +1631,8 @@ function Block({
           <DataChart block={block} />
         </Suspense>
       );
+    case "version_strip":
+      return <VersionStrip block={block} />;
   }
 }
 

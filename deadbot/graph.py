@@ -79,7 +79,9 @@ shows or songs; ask for include=["tracks"] for the tracklist and
 include=["live_legacy"] for each song's life on stage. For releases, shows or
 songs by year, venue or tour, query_catalog first, then get_album or get_show
 for the few you will feature. For a named show, get_show. The full selection inventory (get_selection_signals) serves
-questions about the sources and lists themselves.
+questions about the sources and lists themselves. For a pairing or segue that
+fans hear as one piece, get_segue_pairing shows how its two halves changed
+across the nights it was played.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call
@@ -220,7 +222,10 @@ a heading you choose, and data_chart when a quantitative comparison,
 distribution, or change over time is the point — call aggregate_data first
 and reference its aggregation_id; prefer a chart to a long numeric list when
 the pattern matters more than any single number, and take every number in
-the chart directly from that aggregation.
+the chart directly from that aggregation. A version_strip draws nights you
+choose from one get_segue_pairing result to one clock, each row playing that
+night's two songs in turn, so the visitor can see and hear how the pairing
+grew.
 
 Two primitives shape how a page opens and what it leaves with the visitor. A
 listening_hero leads the page when the visitor wants to hear a show or

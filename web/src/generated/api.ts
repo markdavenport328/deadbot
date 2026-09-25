@@ -560,7 +560,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -1228,6 +1228,78 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VersionStripBlock
+         * @description Chosen nights of one song pairing, drawn to one clock.
+         *
+         *     The model chose the pairing, the nights, their order and the framing; the
+         *     server hydrated each night's venue, date, tape-track lengths and playable
+         *     tracks from the library, and the per-year counts when the model asked for
+         *     them.
+         */
+        VersionStripBlock: {
+            first_song: components["schemas"]["VersionStripSong"];
+            /** Note */
+            note?: string | null;
+            /** Pairing Id */
+            pairing_id: string;
+            /** Rows */
+            rows: components["schemas"]["VersionStripRow"][];
+            second_song: components["schemas"]["VersionStripSong"];
+            /** Title */
+            title?: string | null;
+            /** Total Count */
+            total_count: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "version_strip";
+            /** Year Counts */
+            year_counts?: components["schemas"]["VersionStripYear"][];
+        };
+        /**
+         * VersionStripRow
+         * @description One night's pairing: the two tape tracks the row plays in turn.
+         */
+        VersionStripRow: {
+            /** First Performance Id */
+            first_performance_id: string;
+            /** First Seconds */
+            first_seconds?: number | null;
+            first_track?: components["schemas"]["PlayableTrack"] | null;
+            /** Location */
+            location?: string | null;
+            /** Pair Id */
+            pair_id: string;
+            /** Second Performance Id */
+            second_performance_id: string;
+            /** Second Seconds */
+            second_seconds?: number | null;
+            second_track?: components["schemas"]["PlayableTrack"] | null;
+            /** Segue */
+            segue: boolean;
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+            /** Venue Name */
+            venue_name: string;
+        };
+        /** VersionStripSong */
+        VersionStripSong: {
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+        };
+        /** VersionStripYear */
+        VersionStripYear: {
+            /** Count */
+            count: number;
+            /** Year */
+            year: number;
         };
     };
     responses: never;
