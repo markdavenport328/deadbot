@@ -34,6 +34,7 @@ from deadbot.experience import (
     PersonRosterBlock,
     PersonRosterItem,
     ResourceListBlock,
+    PerformanceFacet,
     ShowFacet,
     ShowUnitBlock,
     SongFacet,
@@ -274,6 +275,15 @@ class PerformanceUnitRef(_Ref):
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
     judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    visible_facets: list[PerformanceFacet] = Field(
+        default_factory=lambda: ["setlist", "listen", "sources"],
+        max_length=3,
+        description=(
+            "The parts of this performance worth showing: setlist (where it sits in its set, with the songs either side), "
+            "listen (play links for this rendition and its show), sources (your supporting sources). Identity and your note "
+            "are always shown. Omit the field to show all three."
+        ),
+    )
     supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
 
@@ -751,9 +761,18 @@ def _resolve_reference(
         context = store.performance_context(item.performance_id)
         if not context:
             return None, []
-        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
+        unit_sources, sources = composition._unit_sources(
+            item.supporting_sources if "sources" in item.visible_facets else [], grounded.urls, payloads
+        )
         block = composition._performance_unit(
-            context, store, emphasis=_emphasis_for(item), judgments=item.judgments, note=item.note, sources=unit_sources, follow_ups=item.follow_ups
+            context,
+            store,
+            emphasis=_emphasis_for(item),
+            judgments=item.judgments,
+            note=item.note,
+            visible_facets=item.visible_facets,
+            sources=unit_sources,
+            follow_ups=item.follow_ups,
         )
         return block, sources
 

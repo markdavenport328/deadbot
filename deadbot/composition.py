@@ -642,6 +642,7 @@ def _performance_unit(
     emphasis: Emphasis = "supporting",
     judgments: list[str] | None = None,
     note: str | None = None,
+    visible_facets: list[str] | None = None,
     sources: list[UnitSource] | None = None,
     follow_ups: list[FollowUpTopic] | None = None,
 ) -> PerformanceUnitBlock | None:
@@ -652,7 +653,8 @@ def _performance_unit(
         return None
     if not performance.get("performance_id") or not song.get("song_id") or not show.get("show_id") or not song.get("title"):
         return None
-    previous, next_ = _set_neighbors(context, store)
+    facets = frozenset(("setlist", "listen", "sources") if visible_facets is None else visible_facets)
+    previous, next_ = _set_neighbors(context, store) if "setlist" in facets else (None, None)
     venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
     show_label = " — ".join(part for part in [show.get("show_date"), venue.get("name") if venue else None] if part) or show["show_id"]
     return PerformanceUnitBlock(
@@ -670,10 +672,11 @@ def _performance_unit(
         emphasis=emphasis,
         judgments=list(judgments or [])[:5],
         note=(note or "").strip() or None,
+        visible_facets=sorted(facets, key=["setlist", "listen", "sources"].index),
         previous=previous,
         next=next_,
-        listen=_performance_listen_actions(context),
-        sources=(sources or [])[:4],
+        listen=_performance_listen_actions(context) if "listen" in facets else [],
+        sources=(sources or [])[:4] if "sources" in facets else [],
         follow_ups=_clean_follow_ups(follow_ups),
     )
 
