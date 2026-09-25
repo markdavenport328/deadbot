@@ -928,6 +928,17 @@ class CanonicalStore:
 
         return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_coverage)
 
+    def sequence_pairs(self, first_song_id: str, second_song_id: str) -> list[dict[str, str]]:
+        """Nights song A was followed by song B in one set (see deadbot.sequences).
+
+        The CSV reference implementation; the SQL stores override it with one
+        query and return the same rows in the same order.
+        """
+
+        from deadbot import sequences
+
+        return sequences.csv_sequence_pairs(self, first_song_id, second_song_id)
+
     def _setlist_coverage(
         self,
         shows_by_id: dict[str, dict[str, str]],

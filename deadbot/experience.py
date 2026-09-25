@@ -539,6 +539,54 @@ class DataChartBlock(ExperienceModel):
     empty_reason: str | None = None
 
 
+class VersionStripSong(ExperienceModel):
+    song_id: str
+    title: str
+
+
+class VersionStripRow(ExperienceModel):
+    """One night's pairing: the two tape tracks the row plays in turn."""
+
+    pair_id: str
+    show_id: str
+    show_date: str
+    # A show is named by its venue and date together.
+    venue_name: str
+    location: str | None = None
+    segue: bool
+    first_performance_id: str
+    second_performance_id: str
+    first_seconds: int | None = Field(default=None, ge=0)
+    second_seconds: int | None = Field(default=None, ge=0)
+    first_track: PlayableTrack | None = None
+    second_track: PlayableTrack | None = None
+
+
+class VersionStripYear(ExperienceModel):
+    year: int
+    count: int = Field(ge=0)
+
+
+class VersionStripBlock(ExperienceModel):
+    """Chosen nights of one song pairing, drawn to one clock.
+
+    The model chose the pairing, the nights, their order and the framing; the
+    server hydrated each night's venue, date, tape-track lengths and playable
+    tracks from the library, and the per-year counts when the model asked for
+    them.
+    """
+
+    type: Literal["version_strip"]
+    pairing_id: str
+    title: str | None = None
+    note: str | None = None
+    first_song: VersionStripSong
+    second_song: VersionStripSong
+    total_count: int = Field(ge=0)
+    rows: list[VersionStripRow] = Field(min_length=1, max_length=60)
+    year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=40)
+
+
 class ProvenanceNoteBlock(ExperienceModel):
     type: Literal["provenance_note"]
     text: str
@@ -704,6 +752,7 @@ ExperienceBlock = Annotated[
     | ArrangementBlock
     | ArrangementSearchBlock
     | DataChartBlock
+    | VersionStripBlock
     | ProvenanceNoteBlock
     | GapStateBlock
     | EditorialBlock

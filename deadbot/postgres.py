@@ -838,6 +838,35 @@ class PostgresCanonicalStore(CanonicalStore):
         }
         return CanonicalStore.performance_context(self._projection(tables), performance_id)
 
+    # ---- song pairings ---------------------------------------------------
+    # One self-join finds song A at position p and song B at p + 1 in the same
+    # set. The SQL is plain enough for PostgreSQL and SQLite alike: positions
+    # compare as integers through CAST (a no-op on the typed columns, and what
+    # makes text-typed test tables agree), and segue_into_next comes back as
+    # "true"/"false" through _string_value whether the column is BOOLEAN or
+    # TEXT. deadbot.sequences shapes the rows the same way for every store.
+
+    def sequence_pairs(self, first_song_id: str, second_song_id: str) -> list[dict[str, str]]:
+        from deadbot import sequences
+
+        performances = self._qualified_table("performances")
+        shows = self._qualified_table("shows")
+        venues = self._qualified_table("venues")
+        sql = (
+            'SELECT a."performance_id" AS first_performance_id, b."performance_id" AS second_performance_id, '
+            's."show_id" AS show_id, s."show_date" AS show_date, a."set_number" AS set_number, '
+            'a."set_label" AS set_label, a."position_in_set" AS position_in_set, a."segue_into_next" AS segue, '
+            'v."name" AS venue_name, v."city" AS city, v."state_region" AS state_region '
+            f"FROM {performances} a "
+            f'JOIN {performances} b ON b."show_id" = a."show_id" '
+            'AND CAST(b."set_number" AS INTEGER) = CAST(a."set_number" AS INTEGER) '
+            'AND CAST(b."position_in_set" AS INTEGER) = CAST(a."position_in_set" AS INTEGER) + 1 '
+            f'JOIN {shows} s ON s."show_id" = a."show_id" '
+            f'LEFT JOIN {venues} v ON v."venue_id" = s."venue_id" '
+            'WHERE a."song_id" = %s AND b."song_id" = %s'
+        )
+        return sequences.sort_pair_rows(self._query(sql, (first_song_id, second_song_id)))
+
     # ---- model-selected aggregation --------------------------------------
     # Grouping/counting happens in SQL; deadbot.aggregation shapes the raw
     # grouped rows (zero-fill, sort, limit, totals) identically for both this

@@ -68,7 +68,8 @@ export type ExperienceBlock =
   | FixedEditorialBlock
   | Require<components["schemas"]["ListeningHeroBlock"], "queue">
   | components["schemas"]["PullQuoteBlock"]
-  | FixedDataChartBlock;
+  | FixedDataChartBlock
+  | Require<components["schemas"]["VersionStripBlock"], "year_counts">;
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],

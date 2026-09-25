@@ -1328,7 +1328,8 @@
                   "resource_list": "#/components/schemas/ResourceListBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_unit": "#/components/schemas/ShowUnitBlock",
-                  "song_overview": "#/components/schemas/SongOverviewBlock"
+                  "song_overview": "#/components/schemas/SongOverviewBlock",
+                  "version_strip": "#/components/schemas/VersionStripBlock"
                 },
                 "propertyName": "type"
               },
@@ -1383,6 +1384,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/DataChartBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/VersionStripBlock"
                 },
                 {
                   "$ref": "#/components/schemas/ProvenanceNoteBlock"
@@ -3398,6 +3402,220 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VersionStripBlock": {
+        "additionalProperties": false,
+        "description": "Chosen nights of one song pairing, drawn to one clock.\n\nThe model chose the pairing, the nights, their order and the framing; the\nserver hydrated each night's venue, date, tape-track lengths and playable\ntracks from the library, and the per-year counts when the model asked for\nthem.",
+        "properties": {
+          "first_song": {
+            "$ref": "#/components/schemas/VersionStripSong"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "pairing_id": {
+            "title": "Pairing Id",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/VersionStripRow"
+            },
+            "maxItems": 60,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          },
+          "second_song": {
+            "$ref": "#/components/schemas/VersionStripSong"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "total_count": {
+            "minimum": 0.0,
+            "title": "Total Count",
+            "type": "integer"
+          },
+          "type": {
+            "const": "version_strip",
+            "title": "Type",
+            "type": "string"
+          },
+          "year_counts": {
+            "items": {
+              "$ref": "#/components/schemas/VersionStripYear"
+            },
+            "maxItems": 40,
+            "title": "Year Counts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "type",
+          "pairing_id",
+          "first_song",
+          "second_song",
+          "total_count",
+          "rows"
+        ],
+        "title": "VersionStripBlock",
+        "type": "object"
+      },
+      "VersionStripRow": {
+        "additionalProperties": false,
+        "description": "One night's pairing: the two tape tracks the row plays in turn.",
+        "properties": {
+          "first_performance_id": {
+            "title": "First Performance Id",
+            "type": "string"
+          },
+          "first_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seconds"
+          },
+          "first_track": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayableTrack"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "pair_id": {
+            "title": "Pair Id",
+            "type": "string"
+          },
+          "second_performance_id": {
+            "title": "Second Performance Id",
+            "type": "string"
+          },
+          "second_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Second Seconds"
+          },
+          "second_track": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayableTrack"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "segue": {
+            "title": "Segue",
+            "type": "boolean"
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "venue_name": {
+            "title": "Venue Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "pair_id",
+          "show_id",
+          "show_date",
+          "venue_name",
+          "segue",
+          "first_performance_id",
+          "second_performance_id"
+        ],
+        "title": "VersionStripRow",
+        "type": "object"
+      },
+      "VersionStripSong": {
+        "additionalProperties": false,
+        "properties": {
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title"
+        ],
+        "title": "VersionStripSong",
+        "type": "object"
+      },
+      "VersionStripYear": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "count"
+        ],
+        "title": "VersionStripYear",
         "type": "object"
       }
     }

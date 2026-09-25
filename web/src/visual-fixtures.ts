@@ -863,11 +863,72 @@ const blocks: ExperienceResponse = fixture(
   ]
 );
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance", "blocks"] as const;
+// China Cat Sunflower > I Know You Rider: eight real nights from the library,
+// with each night's Internet Archive tape tracks, drawn by a version_strip.
+const chinaRiderNights: [string, string, string, string, number, number, string, string][] = [
+  ["1969-12-26", "McFarlin Auditorium, Southern Methodist University (SMU)", "Dallas, TX", "2:4", 246, 338, "gd1969-12-26.136636.electric.sbd.mr.cass.sirmick.flac1648/gd1969-12-26t04.mp3", "gd1969-12-26.136636.electric.sbd.mr.cass.sirmick.flac1648/gd1969-12-26t05.mp3"],
+  ["1971-04-22", "Bangor Auditorium", "Bangor, ME", "2:1", 333, 350, "gd1971-04-22.167465.sbd.anon.gems.flac1644/12%20China%20Cat%20Sunflower.mp3", "gd1971-04-22.167465.sbd.anon.gems.flac1644/13%20I%20Know%20You%20Rider.mp3"],
+  ["1972-05-18", "Kongresssaal, Deutsches Museum", "Munich", "1:8", 373, 425, "gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d1t08.mp3", "gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d1t09.mp3"],
+  ["1973-11-14", "San Diego Sports Arena", "San Diego, CA", "1:14", 548, 316, "gd1973-11-14.170772.sbd.flegel.fixed.flac16/14%20China%20Cat%20Sunflower.mp3", "gd1973-11-14.170772.sbd.flegel.fixed.flac16/15%20I%20Know%20You%20Rider.mp3"],
+  ["1974-06-26", "Providence Civic Center", "Providence, RI", "2:5", 784, 365, "gd1974-06-26.140081.sbd.miller.patched.flac1644/20ChinaCatSunflower.mp3", "gd1974-06-26.140081.sbd.miller.patched.flac1644/21IKnowYouRider.mp3"],
+  ["1979-12-04", "Uptown Theatre", "Chicago, IL", "2:1", 416, 428, "gd1979-12-04.sbd.130387.MrBill.flac16/gd1979-12-04d2t01.mp3", "gd1979-12-04.sbd.130387.MrBill.flac16/gd1979-12-04d2t02.mp3"],
+  ["1989-07-17", "Alpine Valley Music Theatre", "East Troy, WI", "2:1", 383, 362, "gd1989-07-17.138345.sbd.miller.flac24/12ChinaCatSunflower.mp3", "gd1989-07-17.138345.sbd.miller.flac24/13IKnowYouRider.mp3"],
+  ["1995-06-28", "The Palace", "Auburn Hills, MI", "2:1", 518, 359, "gd1995-06-28.119109.nak304.thunich.48kHz.flac1648/gd95-06-28s2t02.mp3", "gd1995-06-28.119109.nak304.thunich.48kHz.flac1648/gd95-06-28s2t03.mp3"]
+];
+
+const chinaRiderYears: Record<number, number> = {
+  1969: 25, 1970: 64, 1971: 34, 1972: 65, 1973: 54, 1974: 21, 1975: 0, 1976: 0, 1977: 1, 1978: 0, 1979: 19, 1980: 29, 1981: 24, 1982: 19,
+  1983: 21, 1984: 17, 1985: 16, 1986: 9, 1987: 18, 1988: 18, 1989: 15, 1990: 16, 1991: 16, 1992: 10, 1993: 14, 1994: 11, 1995: 8
+};
+
+const chinaRiderStrip: ExperienceBlock = {
+  type: "version_strip",
+  pairing_id: "pairing:song-china-cat-sunflower>song-i-know-you-rider",
+  title: null,
+  note: null,
+  first_song: { song_id: "song-china-cat-sunflower", title: "China Cat Sunflower" },
+  second_song: { song_id: "song-i-know-you-rider", title: "I Know You Rider" },
+  total_count: 544,
+  rows: chinaRiderNights.map(([date, venue, location, slot, first, second, firstFile, secondFile]) => {
+    const [set, position] = slot.split(":").map(Number);
+    const showId = `gd-${date}`;
+    const firstId = `${showId}-china-cat-sunflower-${set}-${position}`;
+    const secondId = `${showId}-i-know-you-rider-${set}-${position + 1}`;
+    return {
+      pair_id: `${showId}:${slot}`,
+      show_id: showId,
+      show_date: date,
+      venue_name: venue,
+      location,
+      segue: true,
+      first_performance_id: firstId,
+      second_performance_id: secondId,
+      first_seconds: first,
+      second_seconds: second,
+      first_track: { performance_id: firstId, title: "China Cat Sunflower", audio_url: `https://archive.org/download/${firstFile}`, duration_seconds: first, set_label: `Set ${set}` },
+      second_track: { performance_id: secondId, title: "I Know You Rider", audio_url: `https://archive.org/download/${secondFile}`, duration_seconds: second, set_label: `Set ${set}` }
+    };
+  }),
+  year_counts: Object.entries(chinaRiderYears).map(([year, count]) => ({ year: Number(year), count }))
+};
+
+const chinarider: ExperienceResponse = fixture(
+  "Why do people love China Cat > Rider so much?",
+  "One song in two halves, and the first half kept growing",
+  "Because it’s really one piece in two halves: the jam that carries China Cat into I Know You Rider is the payoff. The pairing ran for 26 years, and in 1973–74 the China side grew into its own long ride. Start with Providence, June 1974.",
+  [chinaRiderStrip],
+  "collection",
+  {
+    title: null,
+    lead: "Every bar is one night’s China Cat Sunflower running straight into I Know You Rider, drawn to the same clock. It vanished from 1975 to 1978, bar one 1977 night."
+  }
+);
+
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "views", "album", "performance", "blocks", "chinarider"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, views, album, performance, blocks };
+const fixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, views, album, performance, blocks, chinarider };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

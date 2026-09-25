@@ -1021,3 +1021,27 @@ def test_aggregate_guest_grouping_falls_back_to_id_when_the_person_record_is_mis
     assert payload == missing_record_csv_store.aggregate(request).to_payload()
     rows_by_id = {row["id"]: row["label"] for row in payload["rows"]}
     assert rows_by_id["person-missing"] == "person-missing"
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [
+        ("song-china-cat-sunflower", "song-i-know-you-rider"),
+        ("song-playing-in-the-band", "song-uncle-john-s-band"),
+        ("song-i-know-you-rider", "song-china-cat-sunflower"),
+    ],
+)
+def test_sequence_pairs_match_csv_on_real_data(real_store, real_csv_store, first, second):
+    from deadbot import sequences
+
+    assert real_store.sequence_pairs(first, second) == real_csv_store.sequence_pairs(first, second)
+    assert sequences.versions(real_store, first, second) == sequences.versions(real_csv_store, first, second)
+
+
+def test_sequence_pairs_is_one_bounded_query(real_store, real_connection):
+    real_connection.statements.clear()
+    real_store.sequence_pairs("song-china-cat-sunflower", "song-i-know-you-rider")
+    assert len(real_connection.statements) == 1
+    sql, parameters = real_connection.statements[0]
+    assert parameters == ("song-china-cat-sunflower", "song-i-know-you-rider")
+    assert 'WHERE a."song_id" = %s AND b."song_id" = %s' in sql
