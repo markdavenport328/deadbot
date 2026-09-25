@@ -484,3 +484,48 @@ CREATE INDEX selection_evidence_source_resource_idx
     ON selection_evidence (source_resource_id);
 CREATE INDEX selection_evidence_list_idx
     ON selection_evidence (selection_list_id);
+
+-- Catalog views for query_catalog: each pre-joins what set questions usually
+-- need, so most queries are one table with WHERE, GROUP BY and ORDER BY.
+-- year is the integer year of show_date.
+
+CREATE VIEW show_facts AS
+SELECT s.show_id, s.show_date, CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
+       s.venue_id, v.name AS venue_name, v.city, v.state_region, v.country,
+       s.tour_name, s.event_name,
+       (SELECT COUNT(*) FROM performances p WHERE p.show_id = s.show_id) AS performance_count
+FROM shows s
+LEFT JOIN venues v ON v.venue_id = s.venue_id;
+
+CREATE VIEW performance_facts AS
+SELECT p.performance_id, p.song_id, so.title AS song_title, p.show_id, s.show_date,
+       CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
+       s.venue_id, v.name AS venue_name, v.city, s.tour_name,
+       p.set_number, p.set_label, p.position_in_set, p.encore, p.segue_into_next
+FROM performances p
+JOIN shows s ON s.show_id = p.show_id
+LEFT JOIN songs so ON so.song_id = p.song_id
+LEFT JOIN venues v ON v.venue_id = s.venue_id;
+
+CREATE VIEW release_track_facts AS
+SELECT t.release_id, r.title AS release_title, r.release_type, r.release_date,
+       t.track_number, t.track_title,
+       COALESCE(t.song_id, p.song_id) AS song_id, so.title AS song_title,
+       t.performance_id, p.show_id, s.show_date,
+       CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
+       s.venue_id, v.name AS venue_name, v.city
+FROM official_release_tracks t
+JOIN official_releases r ON r.release_id = t.release_id
+LEFT JOIN performances p ON p.performance_id = t.performance_id
+LEFT JOIN songs so ON so.song_id = COALESCE(t.song_id, p.song_id)
+LEFT JOIN shows s ON s.show_id = p.show_id
+LEFT JOIN venues v ON v.venue_id = s.venue_id;
+
+CREATE VIEW guest_appearances AS
+SELECT sp.show_id, s.show_date, CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
+       sp.person_id, pe.name AS person_name, sp.instrument, v.name AS venue_name, v.city
+FROM show_performers sp
+JOIN shows s ON s.show_id = sp.show_id
+LEFT JOIN people pe ON pe.person_id = sp.person_id
+LEFT JOIN venues v ON v.venue_id = s.venue_id
+WHERE sp.role = 'guest';
