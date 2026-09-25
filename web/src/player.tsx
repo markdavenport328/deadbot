@@ -72,6 +72,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // play() rejects with AbortError when a newer load interrupts it (a quick
+  // second click); that is not a playback failure, so only real rejections
+  // mark the track as errored.
+  function onPlayRejected(error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") return;
+    setState((previous) => ({ ...previous, status: "error" }));
+  }
+
   function audio(): HTMLAudioElement {
     if (!audioRef.current) {
       audioRef.current = new Audio();
@@ -85,7 +93,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     element.src = track.audioUrl;
     element.currentTime = 0;
     setState({ queue, index, status: "loading", position: 0, duration: track.durationSeconds ?? 0 });
-    element.play().catch(() => setState((previous) => ({ ...previous, status: "error" })));
+    element.play().catch(onPlayRejected);
   }, []);
 
   useEffect(() => {
@@ -130,7 +138,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (current.index >= 0 && current.queue[current.index]?.id === track.id) {
         // The requested track is already loaded: resume rather than
         // reassigning src, which would restart it from zero.
-        audio().play().catch(() => setState((previous) => ({ ...previous, status: "error" })));
+        audio().play().catch(onPlayRejected);
         return;
       }
       const list = queue && queue.length > 0 ? queue : [track];
@@ -156,7 +164,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (current.status === "playing" || current.status === "loading") {
       element.pause();
     } else if (current.queue[current.index]) {
-      element.play().catch(() => setState((previous) => ({ ...previous, status: "error" })));
+      element.play().catch(onPlayRejected);
     }
   }, []);
 
