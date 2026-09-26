@@ -66,6 +66,9 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 a { color: var(--read); text-underline-offset: 0.18em; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* A heading the app focuses after an answer loads (tabindex="-1") is a
+   reading position, not a control: it takes focus without a ring. */
+[tabindex="-1"]:focus, [tabindex="-1"]:focus-visible { outline: none; }
 /* Standard screen-reader-only utility: present in the accessibility tree,
    removed from visual layout and painting. Used by DataChart's aria-describedby
    text and its full-data-table caption. */
