@@ -125,16 +125,28 @@ export interface components {
         AlbumUnitBlock: {
             /** Artist Name */
             artist_name?: string | null;
+            /** Cover Url */
+            cover_url?: string | null;
+            /**
+             * Disclosure
+             * @default expanded
+             * @enum {string}
+             */
+            disclosure: "collapsed" | "expanded";
             /**
              * Emphasis
              * @default supporting
              * @enum {string}
              */
             emphasis: "primary" | "supporting" | "mention";
+            /** First Show Date */
+            first_show_date?: string | null;
             /** Follow Ups */
             follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Judgments */
             judgments?: string[];
+            /** Last Show Date */
+            last_show_date?: string | null;
             /** Listen */
             listen?: components["schemas"]["ListenAction"][];
             /** Note */
@@ -149,6 +161,15 @@ export interface components {
             release_title?: string | null;
             /** Release Type */
             release_type: string;
+            /**
+             * Show Count
+             * @default 0
+             */
+            show_count: number;
+            /** Show Location */
+            show_location?: string | null;
+            /** Show Venue Name */
+            show_venue_name?: string | null;
             /** Sources */
             sources?: components["schemas"]["UnitSource"][];
             /** Title */
@@ -364,21 +385,19 @@ export interface components {
         };
         /**
          * EditorialBlock
-         * @description Flexible model-shaped material rendered in one of several visual forms.
+         * @description Prose, viewpoints and comparisons in the model's own words, rendered in one of several forms.
          */
         EditorialBlock: {
             /** Eyebrow */
             eyebrow?: string | null;
-            /**
-             * Items
-             * @description The items of a fact_grid or timeline, in reading order: a set judged on shared terms, a ranking, or a sequence. A complete set of people belongs in a person_roster, which holds the whole list.
-             */
+            /** Items */
             items?: components["schemas"]["EditorialItem"][];
             /** Paragraphs */
             paragraphs?: string[];
             /**
              * Presentation
              * @description narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.
+             * @default narrative
              * @enum {string}
              */
             presentation: "narrative" | "fact_grid" | "timeline";
@@ -390,7 +409,10 @@ export interface components {
              */
             type: "editorial";
         };
-        /** EditorialItem */
+        /**
+         * EditorialItem
+         * @description One editorial item as the browser receives it.
+         */
         EditorialItem: {
             /**
              * Detail
@@ -402,7 +424,7 @@ export interface components {
              * @description Up to three topics the visitor might want more about, each a short label plus the specific question it opens when pressed, rendered as chips under 'More about'.
              */
             follow_ups?: components["schemas"]["FollowUpTopic"][];
-            /** @description An outbound link for this item; kept only when its URL appeared in a tool result this turn. */
+            /** @description A link to an outside article or page this item draws on. For a show, performance or record, name it by ID instead and the server links it. */
             link?: components["schemas"]["EditorialLink"] | null;
             /**
              * Marker
@@ -411,12 +433,14 @@ export interface components {
             marker?: string | null;
             /**
              * Title
-             * @description The specific subject of this item, rendered as its heading: a song, show, person, place, fact, or claim. Put measurements and assessments in value or detail.
+             * @description The specific subject of this item, rendered as its heading: a claim, a viewpoint, a place, a person, or a record you name. Put your assessment in value or detail.
              */
             title: string;
+            /** Tracks */
+            tracks?: components["schemas"]["PlayableTrack"][];
             /**
              * Value
-             * @description The concise measurement or assessment for the subject, such as '330 performances, 1972–1995' or 'Track six'. A short value renders as display type; a sentence renders as text.
+             * @description Your concise assessment of the subject, such as 'The high-water mark' or 'Looser, faster'. A short value renders as display type; a sentence renders as text.
              */
             value?: string | null;
         };
@@ -580,7 +604,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -812,6 +836,16 @@ export interface components {
          * @description One rendition as a primary object, with its set context and listening actions.
          */
         PerformanceUnitBlock: {
+            /** Audio Url */
+            audio_url?: string | null;
+            /**
+             * Disclosure
+             * @default expanded
+             * @enum {string}
+             */
+            disclosure: "collapsed" | "expanded";
+            /** Duration Seconds */
+            duration_seconds?: number | null;
             /**
              * Emphasis
              * @default supporting
@@ -959,6 +993,47 @@ export interface components {
              */
             type: "pull_quote";
         };
+        /**
+         * RankedListBlock
+         * @description The top rows of one aggregate_data result, ranked, with the model's notes on the rows it chose.
+         */
+        RankedListBlock: {
+            /** Aggregation Id */
+            aggregation_id: string;
+            /** Dimension Label */
+            dimension_label: string;
+            /** Metric Label */
+            metric_label: string;
+            /**
+             * More Count
+             * @default 0
+             */
+            more_count: number;
+            /** Note */
+            note?: string | null;
+            /** Rows */
+            rows: components["schemas"]["RankedListRow"][];
+            /** Title */
+            title: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "ranked_list";
+        };
+        /** RankedListRow */
+        RankedListRow: {
+            /** Id */
+            id?: string | null;
+            /** Label */
+            label: string;
+            /** Note */
+            note?: string | null;
+            /** Rank */
+            rank: number;
+            /** Value */
+            value: number;
+        };
         /** RecordingItem */
         RecordingItem: {
             /** Archive Identifier */
@@ -1085,6 +1160,12 @@ export interface components {
          */
         ShowUnitBlock: {
             /**
+             * Disclosure
+             * @default expanded
+             * @enum {string}
+             */
+            disclosure: "collapsed" | "expanded";
+            /**
              * Emphasis
              * @default supporting
              * @enum {string}
@@ -1128,6 +1209,8 @@ export interface components {
             sources?: components["schemas"]["UnitSource"][];
             /** Title */
             title?: string | null;
+            /** Tracks */
+            tracks?: components["schemas"]["PlayableTrack"][];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -1157,11 +1240,19 @@ export interface components {
             /** Credits */
             credits?: components["schemas"]["CreditItem"][];
             /**
+             * Disclosure
+             * @default expanded
+             * @enum {string}
+             */
+            disclosure: "collapsed" | "expanded";
+            /**
              * Emphasis
              * @default supporting
              * @enum {string}
              */
             emphasis: "primary" | "supporting" | "mention";
+            /** First Year */
+            first_year?: number | null;
             /** Follow Ups */
             follow_ups?: components["schemas"]["FollowUpTopic"][];
             history?: components["schemas"]["SongHistory"] | null;
@@ -1169,6 +1260,8 @@ export interface components {
             judgments?: string[];
             /** Known Performance Count */
             known_performance_count: number;
+            /** Last Year */
+            last_year?: number | null;
             /** Note */
             note?: string | null;
             /** Original Artist */
@@ -1189,7 +1282,9 @@ export interface components {
              */
             type: "song_overview";
             /** Visible Facets */
-            visible_facets?: ("credits" | "albums" | "history" | "representatives")[];
+            visible_facets?: ("credits" | "albums" | "history" | "representatives" | "by_year")[];
+            /** Year Counts */
+            year_counts?: components["schemas"]["SongYearCount"][];
         };
         /** SongReleaseItem */
         SongReleaseItem: {
@@ -1227,6 +1322,16 @@ export interface components {
             show_label: string;
             /** Venue Name */
             venue_name?: string | null;
+        };
+        /**
+         * SongYearCount
+         * @description How many times a song was played in one year; a year with none is zero.
+         */
+        SongYearCount: {
+            /** Count */
+            count: number;
+            /** Year */
+            year: number;
         };
         /** SourceReference */
         SourceReference: {

@@ -32,6 +32,7 @@ const MAX_TICK_LABEL_LENGTH = 18;
 // year-series row counts are naturally bounded (a handful of years), so
 // there's nothing to scale for.
 const VERTICAL_CHART_HEIGHT = 320;
+const EMBEDDED_CHART_HEIGHT = 220;
 const HORIZONTAL_ROW_HEIGHT = 28;
 const HORIZONTAL_CHART_BASE_HEIGHT = 48;
 const HORIZONTAL_CHART_MIN_HEIGHT = 240;
@@ -78,7 +79,9 @@ function CoverageDetail({ block, dimensionLabel, shownCount }: { block: DataChar
   );
 }
 
-export function DataChart({ block }: { block: DataChartBlock }) {
+// ``embedded`` draws the chart inside a card that already names its subject:
+// no heading of its own, and a shorter plot.
+export function DataChart({ block, embedded = false }: { block: DataChartBlock; embedded?: boolean }) {
   const titleId = useId();
   const descId = useId();
 
@@ -112,13 +115,17 @@ export function DataChart({ block }: { block: DataChartBlock }) {
   // orientation="horizontal" -> bars grow rightward, one per row (a ranked
   // category) -> recharts' layout="vertical".
   const isVertical = block.orientation === "vertical";
-  const plotHeight = isVertical ? VERTICAL_CHART_HEIGHT : horizontalChartHeight(rows.length);
+  const plotHeight = isVertical ? (embedded ? EMBEDDED_CHART_HEIGHT : VERTICAL_CHART_HEIGHT) : horizontalChartHeight(rows.length);
 
   return (
-    <figure className="data-chart-figure" aria-labelledby={titleId} aria-describedby={descId}>
-      <CardHeading id={titleId} className="data-chart-title">
-        {block.title}
-      </CardHeading>
+    <figure className={embedded ? "data-chart-figure embedded" : "data-chart-figure"} aria-labelledby={titleId} aria-describedby={descId}>
+      {embedded ? (
+        <figcaption id={titleId} className="visually-hidden">{block.title}</figcaption>
+      ) : (
+        <CardHeading id={titleId} className="data-chart-title">
+          {block.title}
+        </CardHeading>
+      )}
       <p id={descId} className="visually-hidden">
         {chartDescription(block)}
       </p>

@@ -161,6 +161,26 @@
             ],
             "title": "Artist Name"
           },
+          "cover_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cover Url"
+          },
+          "disclosure": {
+            "default": "expanded",
+            "enum": [
+              "collapsed",
+              "expanded"
+            ],
+            "title": "Disclosure",
+            "type": "string"
+          },
           "emphasis": {
             "default": "supporting",
             "enum": [
@@ -171,11 +191,22 @@
             "title": "Emphasis",
             "type": "string"
           },
+          "first_show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Show Date"
+          },
           "follow_ups": {
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Follow Ups",
             "type": "array"
           },
@@ -183,15 +214,26 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
+            "maxItems": 1000,
             "title": "Judgments",
             "type": "array"
+          },
+          "last_show_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Show Date"
           },
           "listen": {
             "items": {
               "$ref": "#/components/schemas/ListenAction"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Listen",
             "type": "array"
           },
@@ -210,7 +252,7 @@
             "items": {
               "$ref": "#/components/schemas/AlbumCreditItem"
             },
-            "maxItems": 20,
+            "maxItems": 1000,
             "title": "Personnel",
             "type": "array"
           },
@@ -244,11 +286,39 @@
             "title": "Release Type",
             "type": "string"
           },
+          "show_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Show Count",
+            "type": "integer"
+          },
+          "show_location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Location"
+          },
+          "show_venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Venue Name"
+          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/UnitSource"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Sources",
             "type": "array"
           },
@@ -260,7 +330,7 @@
             "items": {
               "$ref": "#/components/schemas/AlbumTrackItem"
             },
-            "maxItems": 30,
+            "maxItems": 1000,
             "title": "Tracks",
             "type": "array"
           },
@@ -323,7 +393,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 1000,
             "title": "Progressions",
             "type": "array"
           },
@@ -377,7 +447,7 @@
             "items": {
               "$ref": "#/components/schemas/ArrangementSearchItem"
             },
-            "maxItems": 20,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -649,7 +719,7 @@
             "items": {
               "$ref": "#/components/schemas/CreditItem"
             },
-            "maxItems": 12,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -658,7 +728,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Source Ids",
             "type": "array"
@@ -823,8 +893,7 @@
         "type": "object"
       },
       "EditorialBlock": {
-        "additionalProperties": false,
-        "description": "Flexible model-shaped material rendered in one of several visual forms.",
+        "description": "Prose, viewpoints and comparisons in the model's own words, rendered in one of several forms.",
         "properties": {
           "eyebrow": {
             "anyOf": [
@@ -838,11 +907,10 @@
             "title": "Eyebrow"
           },
           "items": {
-            "description": "The items of a fact_grid or timeline, in reading order: a set judged on shared terms, a ranking, or a sequence. A complete set of people belongs in a person_roster, which holds the whole list.",
             "items": {
               "$ref": "#/components/schemas/EditorialItem"
             },
-            "maxItems": 40,
+            "maxItems": 1000,
             "title": "Items",
             "type": "array"
           },
@@ -850,11 +918,12 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Paragraphs",
             "type": "array"
           },
           "presentation": {
+            "default": "narrative",
             "description": "narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.",
             "enum": [
               "narrative",
@@ -882,14 +951,13 @@
           }
         },
         "required": [
-          "type",
-          "presentation"
+          "type"
         ],
         "title": "EditorialBlock",
         "type": "object"
       },
       "EditorialItem": {
-        "additionalProperties": false,
+        "description": "One editorial item as the browser receives it.",
         "properties": {
           "detail": {
             "anyOf": [
@@ -908,7 +976,7 @@
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Follow Ups",
             "type": "array"
           },
@@ -921,7 +989,7 @@
                 "type": "null"
               }
             ],
-            "description": "An outbound link for this item; kept only when its URL appeared in a tool result this turn."
+            "description": "A link to an outside article or page this item draws on. For a show, performance or record, name it by ID instead and the server links it."
           },
           "marker": {
             "anyOf": [
@@ -936,9 +1004,17 @@
             "title": "Marker"
           },
           "title": {
-            "description": "The specific subject of this item, rendered as its heading: a song, show, person, place, fact, or claim. Put measurements and assessments in value or detail.",
+            "description": "The specific subject of this item, rendered as its heading: a claim, a viewpoint, a place, a person, or a record you name. Put your assessment in value or detail.",
             "title": "Title",
             "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "maxItems": 1000,
+            "title": "Tracks",
+            "type": "array"
           },
           "value": {
             "anyOf": [
@@ -949,7 +1025,7 @@
                 "type": "null"
               }
             ],
-            "description": "The concise measurement or assessment for the subject, such as '330 performances, 1972\u20131995' or 'Track six'. A short value renders as display type; a sentence renders as text.",
+            "description": "Your concise assessment of the subject, such as 'The high-water mark' or 'Looser, faster'. A short value renders as display type; a sentence renders as text.",
             "title": "Value"
           }
         },
@@ -960,7 +1036,6 @@
         "type": "object"
       },
       "EditorialLink": {
-        "additionalProperties": false,
         "description": "An outbound link the model attaches to something it wrote.\n\nThe server keeps a link only when its URL appeared in material the tools\nreturned during the same turn; anything else is dropped before rendering.",
         "properties": {
           "label": {
@@ -986,7 +1061,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 1000,
             "title": "Details",
             "type": "array"
           },
@@ -1114,7 +1189,7 @@
             "items": {
               "$ref": "#/components/schemas/EquipmentItem"
             },
-            "maxItems": 16,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -1250,7 +1325,7 @@
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Follow Ups",
             "type": "array"
           },
@@ -1269,7 +1344,7 @@
             "items": {
               "$ref": "#/components/schemas/EraPerformanceItem"
             },
-            "maxItems": 6,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Performances",
             "type": "array"
@@ -1278,7 +1353,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitSource"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Sources",
             "type": "array"
           },
@@ -1319,7 +1394,7 @@
             "items": {
               "type": "integer"
             },
-            "maxItems": 12,
+            "maxItems": 200,
             "minItems": 1,
             "title": "Block Indexes",
             "type": "array"
@@ -1328,7 +1403,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
+            "maxItems": 1000,
             "title": "Criteria",
             "type": "array"
           },
@@ -1438,6 +1513,7 @@
                   "person_roster": "#/components/schemas/PersonRosterBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
                   "pull_quote": "#/components/schemas/PullQuoteBlock",
+                  "ranked_list": "#/components/schemas/RankedListBlock",
                   "resource_list": "#/components/schemas/ResourceListBlock",
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_unit": "#/components/schemas/ShowUnitBlock",
@@ -1515,10 +1591,13 @@
                 },
                 {
                   "$ref": "#/components/schemas/PullQuoteBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/RankedListBlock"
                 }
               ]
             },
-            "maxItems": 32,
+            "maxItems": 200,
             "title": "Blocks",
             "type": "array"
           },
@@ -1545,7 +1624,7 @@
             "items": {
               "$ref": "#/components/schemas/ExperienceGroup"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "title": "Groups",
             "type": "array"
           },
@@ -1568,7 +1647,7 @@
             "items": {
               "$ref": "#/components/schemas/SourceReference"
             },
-            "maxItems": 64,
+            "maxItems": 1000,
             "title": "Sources",
             "type": "array"
           },
@@ -1590,7 +1669,6 @@
         "type": "object"
       },
       "FollowUpTopic": {
-        "additionalProperties": false,
         "description": "A short topic chip the visitor can press, and the full question it stands for.\n\nThe chip shows only the label under \"More about\"; pressing it sends the\nquestion, in the visitor's voice, to start a new turn. Only the composer\nwrites these; the server never generates one.",
         "properties": {
           "label": {
@@ -1636,7 +1714,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Instruments",
             "type": "array"
@@ -1675,7 +1753,7 @@
             "items": {
               "$ref": "#/components/schemas/GuestAppearanceSong"
             },
-            "maxItems": 12,
+            "maxItems": 1000,
             "title": "Songs",
             "type": "array"
           },
@@ -1707,7 +1785,7 @@
             "items": {
               "$ref": "#/components/schemas/GuestAppearanceItem"
             },
-            "maxItems": 24,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -1922,7 +2000,7 @@
             "items": {
               "$ref": "#/components/schemas/PlayableTrack"
             },
-            "maxItems": 60,
+            "maxItems": 1000,
             "title": "Queue",
             "type": "array"
           },
@@ -2223,6 +2301,38 @@
         "additionalProperties": false,
         "description": "One rendition as a primary object, with its set context and listening actions.",
         "properties": {
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          },
+          "disclosure": {
+            "default": "expanded",
+            "enum": [
+              "collapsed",
+              "expanded"
+            ],
+            "title": "Disclosure",
+            "type": "string"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds"
+          },
           "emphasis": {
             "default": "supporting",
             "enum": [
@@ -2237,7 +2347,7 @@
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Follow Ups",
             "type": "array"
           },
@@ -2245,7 +2355,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
+            "maxItems": 1000,
             "title": "Judgments",
             "type": "array"
           },
@@ -2253,7 +2363,7 @@
             "items": {
               "$ref": "#/components/schemas/ListenAction"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Listen",
             "type": "array"
           },
@@ -2348,7 +2458,7 @@
             "items": {
               "$ref": "#/components/schemas/PlayableTrack"
             },
-            "maxItems": 60,
+            "maxItems": 1000,
             "title": "Show Tracks",
             "type": "array"
           },
@@ -2364,7 +2474,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitSource"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Sources",
             "type": "array"
           },
@@ -2393,7 +2503,7 @@
               ],
               "type": "string"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Visible Facets",
             "type": "array"
           }
@@ -2416,7 +2526,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Instruments",
             "type": "array"
@@ -2455,7 +2565,7 @@
             "items": {
               "$ref": "#/components/schemas/PersonRosterItem"
             },
-            "maxItems": 200,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -2538,7 +2648,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 1000,
             "title": "Roles",
             "type": "array"
           },
@@ -2611,7 +2721,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Source Ids",
             "type": "array"
@@ -2635,12 +2745,10 @@
         "type": "object"
       },
       "PullQuoteBlock": {
-        "additionalProperties": false,
         "description": "One sentence the model sets apart, large, as the page's pulled line.",
         "properties": {
           "text": {
             "description": "One sentence, in your voice, that states the idea the visitor should carry away.",
-            "maxLength": 400,
             "minLength": 1,
             "title": "Text",
             "type": "string"
@@ -2656,6 +2764,116 @@
           "text"
         ],
         "title": "PullQuoteBlock",
+        "type": "object"
+      },
+      "RankedListBlock": {
+        "additionalProperties": false,
+        "description": "The top rows of one aggregate_data result, ranked, with the model's notes on the rows it chose.",
+        "properties": {
+          "aggregation_id": {
+            "title": "Aggregation Id",
+            "type": "string"
+          },
+          "dimension_label": {
+            "title": "Dimension Label",
+            "type": "string"
+          },
+          "metric_label": {
+            "title": "Metric Label",
+            "type": "string"
+          },
+          "more_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "More Count",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/RankedListRow"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "const": "ranked_list",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "aggregation_id",
+          "title",
+          "dimension_label",
+          "metric_label",
+          "rows"
+        ],
+        "title": "RankedListBlock",
+        "type": "object"
+      },
+      "RankedListRow": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "rank": {
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "rank",
+          "label",
+          "value"
+        ],
+        "title": "RankedListRow",
         "type": "object"
       },
       "RecordingItem": {
@@ -2760,7 +2978,7 @@
             "items": {
               "$ref": "#/components/schemas/ResourceItem"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -2794,7 +3012,7 @@
             "items": {
               "$ref": "#/components/schemas/SetlistSong"
             },
-            "maxItems": 40,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Songs",
             "type": "array"
@@ -2898,7 +3116,7 @@
             "items": {
               "$ref": "#/components/schemas/ShowSelectionItem"
             },
-            "maxItems": 24,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Items",
             "type": "array"
@@ -2974,7 +3192,7 @@
             "items": {
               "$ref": "#/components/schemas/PlayableTrack"
             },
-            "maxItems": 60,
+            "maxItems": 1000,
             "title": "Tracks",
             "type": "array"
           },
@@ -2995,6 +3213,15 @@
         "additionalProperties": false,
         "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (emphasis, note, highlights,\npreferred recording, sources, follow-up topics); date, venue, setlist, guests and\nlistening actions come from canonical data.",
         "properties": {
+          "disclosure": {
+            "default": "expanded",
+            "enum": [
+              "collapsed",
+              "expanded"
+            ],
+            "title": "Disclosure",
+            "type": "string"
+          },
           "emphasis": {
             "default": "supporting",
             "enum": [
@@ -3009,7 +3236,7 @@
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Follow Ups",
             "type": "array"
           },
@@ -3017,7 +3244,7 @@
             "items": {
               "$ref": "#/components/schemas/PerformerItem"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "title": "Guests",
             "type": "array"
           },
@@ -3025,7 +3252,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
+            "maxItems": 1000,
             "title": "Judgments",
             "type": "array"
           },
@@ -3033,7 +3260,7 @@
             "items": {
               "$ref": "#/components/schemas/PerformerItem"
             },
-            "maxItems": 24,
+            "maxItems": 1000,
             "title": "Lineup",
             "type": "array"
           },
@@ -3041,7 +3268,7 @@
             "items": {
               "$ref": "#/components/schemas/ListenAction"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Listen",
             "type": "array"
           },
@@ -3093,7 +3320,7 @@
             "items": {
               "$ref": "#/components/schemas/RecordingItem"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "title": "Recordings",
             "type": "array"
           },
@@ -3122,7 +3349,7 @@
             "items": {
               "$ref": "#/components/schemas/SetlistSection"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Sets",
             "type": "array"
           },
@@ -3138,7 +3365,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitSource"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Sources",
             "type": "array"
           },
@@ -3152,6 +3379,14 @@
               }
             ],
             "title": "Title"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "maxItems": 1000,
+            "title": "Tracks",
+            "type": "array"
           },
           "type": {
             "const": "show_unit",
@@ -3181,7 +3416,7 @@
               ],
               "type": "string"
             },
-            "maxItems": 6,
+            "maxItems": 1000,
             "title": "Visible Facets",
             "type": "array"
           }
@@ -3202,7 +3437,7 @@
             "items": {
               "$ref": "#/components/schemas/ComparisonStripItem"
             },
-            "maxItems": 12,
+            "maxItems": 1000,
             "title": "By Year",
             "type": "array"
           },
@@ -3233,7 +3468,7 @@
             "items": {
               "$ref": "#/components/schemas/SongReleaseItem"
             },
-            "maxItems": 6,
+            "maxItems": 1000,
             "title": "Albums",
             "type": "array"
           },
@@ -3241,9 +3476,18 @@
             "items": {
               "$ref": "#/components/schemas/CreditItem"
             },
-            "maxItems": 12,
+            "maxItems": 1000,
             "title": "Credits",
             "type": "array"
+          },
+          "disclosure": {
+            "default": "expanded",
+            "enum": [
+              "collapsed",
+              "expanded"
+            ],
+            "title": "Disclosure",
+            "type": "string"
           },
           "emphasis": {
             "default": "supporting",
@@ -3255,11 +3499,22 @@
             "title": "Emphasis",
             "type": "string"
           },
+          "first_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Year"
+          },
           "follow_ups": {
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Follow Ups",
             "type": "array"
           },
@@ -3277,13 +3532,24 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 5,
+            "maxItems": 1000,
             "title": "Judgments",
             "type": "array"
           },
           "known_performance_count": {
             "title": "Known Performance Count",
             "type": "integer"
+          },
+          "last_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Year"
           },
           "note": {
             "anyOf": [
@@ -3311,7 +3577,7 @@
             "items": {
               "$ref": "#/components/schemas/SongRepresentativePerformance"
             },
-            "maxItems": 3,
+            "maxItems": 1000,
             "title": "Representative Performances",
             "type": "array"
           },
@@ -3323,7 +3589,7 @@
             "items": {
               "type": "string"
             },
-            "maxItems": 8,
+            "maxItems": 1000,
             "title": "Source Ids",
             "type": "array"
           },
@@ -3331,7 +3597,7 @@
             "items": {
               "$ref": "#/components/schemas/UnitSource"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Sources",
             "type": "array"
           },
@@ -3350,12 +3616,21 @@
                 "credits",
                 "albums",
                 "history",
-                "representatives"
+                "representatives",
+                "by_year"
               ],
               "type": "string"
             },
-            "maxItems": 4,
+            "maxItems": 1000,
             "title": "Visible Facets",
+            "type": "array"
+          },
+          "year_counts": {
+            "items": {
+              "$ref": "#/components/schemas/SongYearCount"
+            },
+            "maxItems": 1000,
+            "title": "Year Counts",
             "type": "array"
           }
         },
@@ -3506,6 +3781,27 @@
         "title": "SongRepresentativePerformance",
         "type": "object"
       },
+      "SongYearCount": {
+        "additionalProperties": false,
+        "description": "How many times a song was played in one year; a year with none is zero.",
+        "properties": {
+          "count": {
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "count"
+        ],
+        "title": "SongYearCount",
+        "type": "object"
+      },
       "SourceReference": {
         "additionalProperties": false,
         "properties": {
@@ -3653,7 +3949,7 @@
             "items": {
               "$ref": "#/components/schemas/VersionStripRow"
             },
-            "maxItems": 60,
+            "maxItems": 1000,
             "minItems": 1,
             "title": "Rows",
             "type": "array"
@@ -3686,7 +3982,7 @@
             "items": {
               "$ref": "#/components/schemas/VersionStripYear"
             },
-            "maxItems": 40,
+            "maxItems": 1000,
             "title": "Year Counts",
             "type": "array"
           }

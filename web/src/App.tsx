@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
@@ -692,7 +692,11 @@ function unitKey(block: UnitBlock): string {
 // element when the final response replaces the draft; other blocks and mention
 // lists are keyed by position. A repeated identity gets a numbered suffix.
 function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
-  const out: Array<{ kind: "mentions"; key: string; blocks: UnitBlock[] } | { kind: "block"; key: string; block: ExperienceBlock }> = [];
+  const out: Array<
+    | { kind: "mentions"; key: string; blocks: UnitBlock[] }
+    | { kind: "collapsed"; key: string; blocks: UnitBlock[] }
+    | { kind: "block"; key: string; block: ExperienceBlock }
+  > = [];
   const seen = new Map<string, number>();
   const uniqueKey = (base: string) => {
     const times = seen.get(base) ?? 0;
@@ -701,7 +705,12 @@ function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
   };
   for (const block of blocks) {
     if (!block) continue;
-    if (isUnit(block) && block.emphasis === "mention") {
+    if (isUnit(block) && block.disclosure === "collapsed") {
+      // Consecutive collapsed cards read as one list, one row each, down the page.
+      const last = out[out.length - 1];
+      if (last && last.kind === "collapsed") last.blocks.push(block);
+      else out.push({ kind: "collapsed", key: uniqueKey(`collapsed-${out.length}`), blocks: [block] });
+    } else if (isUnit(block) && block.emphasis === "mention") {
       const last = out[out.length - 1];
       if (last && last.kind === "mentions") last.blocks.push(block);
       else out.push({ kind: "mentions", key: uniqueKey(`mentions-${out.length}`), blocks: [block] });
@@ -711,6 +720,121 @@ function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
     }
   }
   return out;
+}
+
+// What a collapsed card's row shows, all of it from the library: the record's
+// name, one line of key facts, a cover for a record, and the one thing it
+// plays in-page, when it plays.
+function collapsedFacts(block: UnitBlock): { title: string; meta: (string | null | undefined)[]; cover?: string | null; play: InPagePlay | null } {
+  const playOf = (queue: PlayerTrack[]): InPagePlay | null => (queue.length > 0 ? { start: queue[0], queue } : null);
+  switch (block.type) {
+    case "show_unit": {
+      const meta: TrackMeta = { showDate: block.show_date, venueName: block.venue_name };
+      const queue = (block.tracks ?? []).map((track) => toTrack(track, meta));
+      return { title: block.venue_name || formatShowDateLong(block.show_date), meta: [block.venue_name ? formatShowDateLong(block.show_date) : null, block.location], play: playOf(queue) };
+    }
+    case "album_unit": {
+      const year = block.release_date?.slice(0, 4);
+      const shows = block.show_count === 1
+        ? [block.show_venue_name, formatShowDateLong(block.first_show_date)].filter(Boolean).join(", ")
+        : block.show_count > 1
+          ? `${countLabel(block.show_count, "show")}, ${formatShowDate(block.first_show_date)}–${formatShowDate(block.last_show_date)}`
+          : null;
+      const queue = block.tracks.map(albumTrack).filter((track): track is PlayerTrack => track !== null);
+      return { title: block.release_title?.trim() || block.title, meta: [year, formatReleaseType(block.release_type), shows], cover: block.cover_url, play: playOf(queue) };
+    }
+    case "performance_unit": {
+      const track = block.audio_url
+        ? toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: block.audio_url, duration_seconds: block.duration_seconds }, { showDate: block.show_date, venueName: block.venue_name })
+        : null;
+      return {
+        title: block.song_title,
+        meta: [block.venue_name, formatShowDateLong(block.show_date), block.duration_seconds ? formatClockTime(block.duration_seconds) : null],
+        play: track ? { start: track, queue: [track] } : null
+      };
+    }
+    case "song_overview": {
+      const span = block.first_year && block.last_year ? (block.first_year === block.last_year ? String(block.first_year) : `${block.first_year}–${block.last_year}`) : null;
+      return { title: block.title, meta: [countLabel(block.known_performance_count, "performance"), span], play: null };
+    }
+  }
+}
+
+// A collapsed card: one row of key facts with its play control, and a quiet
+// control that opens the full card in place beneath the row.
+function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFollowUp: (prompt: string) => void; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [coverFailed, setCoverFailed] = useState(false);
+  const cardId = useId();
+  const facts = collapsedFacts(block);
+  const metaLine = facts.meta.filter(Boolean).join(" · ");
+  return (
+    <li className={`collapsed-row ${block.type}${open ? " open" : ""}`}>
+      <div className="collapsed-head">
+        {block.type === "album_unit" && (
+          facts.cover && !coverFailed
+            ? <img className="collapsed-cover" src={facts.cover} alt="" loading="lazy" width={56} height={56} onError={() => setCoverFailed(true)} />
+            : <span className="collapsed-cover placeholder" aria-hidden="true" />
+        )}
+        <div className="collapsed-text">
+          {block.type === "album_unit" ? (
+            <button type="button" className="collapsed-title ask-title" title={`Ask about ${facts.title}`} onClick={() => onFollowUp(`Tell me about ${facts.title}.`)}>
+              {facts.title}
+            </button>
+          ) : (
+            <p className="collapsed-title">{facts.title}</p>
+          )}
+          {metaLine && <p className="collapsed-meta">{metaLine}</p>}
+          {block.note && <p className="collapsed-note">{renderInline(block.note)}</p>}
+        </div>
+        <div className="collapsed-actions">
+          {facts.play && <CardPlayButton play={facts.play} label={`Play ${facts.title}`} />}
+          <button type="button" className="collapsed-toggle" aria-expanded={open} aria-controls={cardId} onClick={() => setOpen((value) => !value)}>
+            {open ? "Less" : "More"}
+            <span className="visually-hidden"> about {facts.title}</span>
+          </button>
+        </div>
+      </div>
+      <div id={cardId} className="collapsed-card" hidden={!open}>
+        {open ? children : null}
+      </div>
+    </li>
+  );
+}
+
+// The top rows of one aggregate_data result: rank, name, count, and the
+// model's note where it wrote one. One column, numbers aligned.
+function RankedList({ block }: { block: Extract<ExperienceBlock, { type: "ranked_list" }> }) {
+  return (
+    <section className="typography-block ranked-list">
+      <CardHeading>{block.title}</CardHeading>
+      {block.note && <p className="ranked-lead">{renderInline(block.note)}</p>}
+      <ol className="ranked-rows">
+        {block.rows.map((row) => (
+          <li key={`${row.rank}-${row.id ?? row.label}`}>
+            <span className="ranked-rank">{row.rank}</span>
+            <span className="ranked-label">
+              {row.label}
+              {row.note && <span className="ranked-note">{renderInline(row.note)}</span>}
+            </span>
+            <span className="ranked-value">{row.value.toLocaleString()}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="ranked-meta">
+        {block.metric_label}
+        {block.more_count > 0 ? ` · ${block.more_count.toLocaleString()} more in the result` : ""}
+      </p>
+    </section>
+  );
+}
+
+// An editorial item's title; when the item names a show or performance the
+// library can play, the title plays it in-page.
+function EditorialTitle({ item }: { item: Extract<ExperienceBlock, { type: "editorial" }>["items"][number] }) {
+  const queue = (item.tracks ?? []).map((track) => toTrack(track, {}));
+  if (queue.length === 0) return <>{renderInline(item.title)}</>;
+  return <ListenControl label={plainText(item.title)} track={queue[0]} queue={queue} scope="queue">{renderInline(item.title)}</ListenControl>;
 }
 
 // The roles, show count and years line under a roster name; blank parts dropped.
@@ -1164,6 +1288,30 @@ function HistoryPanel({ history, songTitle }: { history: NonNullable<SongOvervie
   );
 }
 
+// A song's plays per year, as the same bar chart an aggregate_data result
+// draws: years along the bottom, a year it was not played an empty slot.
+function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { type: "data_chart" }> {
+  const rows = (block.year_counts ?? []).map((entry) => ({ year: entry.year, value: entry.count }));
+  return {
+    type: "data_chart",
+    aggregation_id: `song-years:${block.song_id}`,
+    title: `${block.title} by year`,
+    note: null,
+    chart: "bar",
+    orientation: "vertical",
+    columns: [
+      { key: "year", label: "Year", type: "temporal" },
+      { key: "value", label: "Performances", type: "quantitative" }
+    ],
+    rows,
+    metric_label: "Performances",
+    total: rows.reduce((sum, row) => sum + row.value, 0),
+    excluded_count: 0,
+    date_range: null,
+    empty_reason: null
+  };
+}
+
 function SongOverviewUnit({
   block,
   criteria,
@@ -1227,6 +1375,11 @@ function SongOverviewUnit({
       <Meta parts={[block.original_artist ? `Originally by ${block.original_artist}` : null]} />
       {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
+      {showsFacet("by_year") && (block.year_counts ?? []).length > 0 && (
+        <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
+          <DataChart block={songYearChart(block)} embedded />
+        </Suspense>
+      )}
       {representatives.length > 0 && (
         <section className="song-representatives">
           <ul>
@@ -1519,8 +1672,8 @@ function Block({
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
-                {item.marker ? <dt>{item.marker}</dt> : <dt className="fact-subject">{renderInline(item.title)}</dt>}
-                {item.marker && <dd className="fact-subject">{renderInline(item.title)}</dd>}
+                {item.marker ? <dt>{item.marker}</dt> : <dt className="fact-subject"><EditorialTitle item={item} /></dt>}
+                {item.marker && <dd className="fact-subject"><EditorialTitle item={item} /></dd>}
                 {item.value && (
                   <dd className={item.value.trim().length <= 20 ? "fact-value display" : "fact-value"}>
                     {renderInline(item.value)}
@@ -1542,7 +1695,7 @@ function Block({
             {block.items.map((item, index) => (
               <li key={`${item.marker ?? item.title}-${index}`}>
                 {item.marker && <span className="timeline-marker">{item.marker}</span>}
-                <strong>{renderInline(item.title)}</strong>
+                <strong><EditorialTitle item={item} /></strong>
                 {item.detail && <span className="timeline-detail">{renderInline(item.detail)}</span>}
                 {item.link && <ExternalLink className="timeline-link" href={item.link.url} label={item.link.label}>{item.link.label}</ExternalLink>}
                 {(item.follow_ups ?? []).length > 0 && <span className="timeline-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></span>}
@@ -1569,6 +1722,8 @@ function Block({
       return <ListeningHero block={block} />;
     case "pull_quote":
       return <PullQuote block={block} />;
+    case "ranked_list":
+      return <RankedList block={block} />;
     case "data_chart":
       return (
         <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
@@ -1633,6 +1788,20 @@ function ComposedPage({
                 entry.kind === "mentions" ? (
                   <ul className="mention-list" key={entry.key}>
                     {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
+                  </ul>
+                ) : entry.kind === "collapsed" ? (
+                  <ul className="collapsed-list" key={entry.key}>
+                    {entry.blocks.map((block, index) => (
+                      <CollapsedRow key={`${block.type}-${unitKey(block)}-${index}`} block={block} onFollowUp={onFollowUp}>
+                        <Block
+                          block={block}
+                          sources={sources}
+                          criteria={group.presentation === "comparison" ? group.criteria : []}
+                          soleUnit={false}
+                          onFollowUp={onFollowUp}
+                        />
+                      </CollapsedRow>
+                    ))}
                   </ul>
                 ) : (
                   <Block

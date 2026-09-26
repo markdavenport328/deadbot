@@ -4,6 +4,13 @@
 // `/?fixture=branford`. The available names are exported below.
 import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock } from "./types";
 import type { StreamEvent } from "./stream-events";
+// Built from the real library by scripts/export_list_fixtures.py: the same
+// resolution the service runs, over real query_catalog and aggregate_data results.
+import releases1972Json from "./fixtures/releases1972.json";
+import shows1977Json from "./fixtures/shows1977.json";
+import harrisburgJson from "./fixtures/harrisburg.json";
+import darkstarJson from "./fixtures/darkstar.json";
+import mostplayedJson from "./fixtures/mostplayed.json";
 
 type FixtureAudio = { url: string; durationSeconds?: number; segueIntoNext?: boolean };
 type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean, audio?: FixtureAudio];
@@ -64,7 +71,7 @@ function show({
   recording_details_url?: string | null;
 }): ShowUnitBlock {
   return {
-    type: "show_unit",
+    type: "show_unit", disclosure: "expanded",
     show_id: id,
     show_date: date,
     venue_name: venue,
@@ -208,7 +215,7 @@ const evolution: ExperienceResponse = fixture(
       sources: [], follow_ups: [{ label: "Branford’s entrance", question: "What should I listen for when Branford enters this version?" }]
     },
     {
-      type: "song_overview", song_id: "song-eyes-of-the-world", title: "Eyes of the World", original_artist: null, known_performance_count: 382,
+      type: "song_overview", disclosure: "expanded", song_id: "song-eyes-of-the-world", title: "Eyes of the World", original_artist: null, known_performance_count: 382,
       emphasis: "primary",
       note: "Across two decades the song moved from a floating, conversational groove to a tighter, more propulsive vehicle, then opened up again to welcome guest voices.",
       representative_performances: [], credits: [], source_ids: ["canonical:song-eyes-of-the-world"],
@@ -332,7 +339,7 @@ const fact: ExperienceResponse = {
   ],
   blocks: [
     {
-      type: "album_unit",
+      type: "album_unit", disclosure: "expanded", show_count: 0,
       release_id: "release-american-beauty",
       title: "American Beauty",
       release_date: "1970-11-01",
@@ -368,7 +375,7 @@ const legacy: ExperienceResponse = {
   ],
   blocks: [
     {
-      type: "song_overview", song_id: "song-sugar-magnolia", title: "Sugar Magnolia", original_artist: null, known_performance_count: 606,
+      type: "song_overview", disclosure: "expanded", song_id: "song-sugar-magnolia", title: "Sugar Magnolia", original_artist: null, known_performance_count: 606,
       emphasis: "supporting", note: "A compact studio song became one of the band's recurring celebratory vehicles.",
       representative_performances: [{ performance_id: "fixture-sugar", show_id: "fixture-1972-08-27", show_date: "1972-08-27", show_label: "1972-08-27 — Oregon Country Fair", set_label: "Second set", listen_url: `${archive}gd1972-08-27#sugar-magnolia` }],
       credits: [{ person_id: "bob-weir", name: "Bob Weir", role: "music" }, { person_id: "robert-hunter", name: "Robert Hunter", role: "lyrics" }], source_ids: ["canonical:song-sugar-magnolia"],
@@ -395,35 +402,35 @@ const legacy: ExperienceResponse = {
       follow_ups: []
     },
     {
-      type: "song_overview", song_id: "song-truckin", title: "Truckin'", original_artist: null, known_performance_count: 538,
+      type: "song_overview", disclosure: "expanded", song_id: "song-truckin", title: "Truckin'", original_artist: null, known_performance_count: 538,
       emphasis: "supporting", note: "Its travel narrative became a durable live setlist engine across the documented touring span.",
       representative_performances: [{ performance_id: "fixture-truckin", show_id: "fixture-1970-11-08", show_date: "1970-11-08", show_label: "1970-11-08 — Capitol Theatre", set_label: "Second set", listen_url: `${archive}gd1970-11-08#truckin` }],
       credits: [], source_ids: ["canonical:song-truckin"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
-      type: "song_overview", song_id: "song-friend-of-the-devil", title: "Friend of the Devil", original_artist: null, known_performance_count: 308,
+      type: "song_overview", disclosure: "expanded", song_id: "song-friend-of-the-devil", title: "Friend of the Devil", original_artist: null, known_performance_count: 308,
       emphasis: "supporting", note: "It survived the acoustic period by repeatedly changing shape inside the band's larger concert sound.",
       representative_performances: [{ performance_id: "fixture-friend", show_id: "fixture-1978-04-16", show_date: "1978-04-16", show_label: "1978-04-16 — Huntington Civic Center", set_label: "First set", listen_url: `${archive}gd1978-04-16#friend-of-the-devil` }],
       credits: [], source_ids: ["canonical:song-friend-of-the-devil"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
-      type: "song_overview", song_id: "song-brokedown-palace", title: "Brokedown Palace", original_artist: null, known_performance_count: 287,
+      type: "song_overview", disclosure: "expanded", song_id: "song-brokedown-palace", title: "Brokedown Palace", original_artist: null, known_performance_count: 287,
       emphasis: "supporting", note: "Its theatrical emotional arc made it a recurring Garcia showcase rather than a fixed studio replica.",
       representative_performances: [{ performance_id: "fixture-brokedown", show_id: "fixture-1989-10-09", show_date: "1989-10-09", show_label: "1989-10-09 — Hampton Coliseum", set_label: "Encore", listen_url: `${archive}gd1989-10-09#brokedown-palace` }],
       credits: [], source_ids: ["canonical:song-brokedown-palace"], albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: ["representatives"], judgments: [], history: null, follow_ups: []
     },
     {
-      type: "song_overview", song_id: "song-candyman", title: "Candyman", original_artist: null, known_performance_count: 114,
+      type: "song_overview", disclosure: "expanded", song_id: "song-candyman", title: "Candyman", original_artist: null, known_performance_count: 114,
       emphasis: "mention", note: "Candyman found only occasional space in the sets after the mid-1970s, well below the album's other songs.",
       representative_performances: [], credits: [], source_ids: ["canonical:song-candyman"],
       albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
       visible_facets: [], judgments: [], history: null, follow_ups: []
     },
     {
-      type: "song_overview", song_id: "song-attics-of-my-life", title: "Attics of My Life", original_artist: null, known_performance_count: 24,
+      type: "song_overview", disclosure: "expanded", song_id: "song-attics-of-my-life", title: "Attics of My Life", original_artist: null, known_performance_count: 24,
       emphasis: "mention", note: "Attics of My Life stopped appearing for most of the 1970s and 1980s, returning only briefly late in the band's touring history.",
       representative_performances: [], credits: [], source_ids: ["canonical:song-attics-of-my-life"],
       albums: [{ release_id: "release-american-beauty", title: "American Beauty", release_date: "1970-11-01", release_type: "studio" }], sources: [],
@@ -453,7 +460,7 @@ const legacy: ExperienceResponse = {
 // scrolling between unrelated fixtures.
 const viewsBlocks: ExperienceBlock[] = [
   {
-    type: "performance_unit", performance_id: "fixture-1995-07-09-so-many-roads", song_id: "song-so-many-roads", song_title: "So Many Roads",
+    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1995-07-09-so-many-roads", song_id: "song-so-many-roads", song_title: "So Many Roads",
     show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
     set_label: "Second set", position_in_set: "3", emphasis: "supporting",
     note: "Garcia's voice is worn, but the song's slow build still lands as a real emotional high point of the second set.",
@@ -467,7 +474,7 @@ const viewsBlocks: ExperienceBlock[] = [
     follow_ups: []
   },
   {
-    type: "performance_unit", performance_id: "fixture-1995-07-09-black-muddy-river", song_id: "song-black-muddy-river", song_title: "Black Muddy River",
+    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1995-07-09-black-muddy-river", song_id: "song-black-muddy-river", song_title: "Black Muddy River",
     show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
     set_label: "Encore", position_in_set: "1", emphasis: "supporting",
     note: "A warm, unhurried reading that many listeners point to as evidence the band still had something to give.",
@@ -481,7 +488,7 @@ const viewsBlocks: ExperienceBlock[] = [
     follow_ups: []
   },
   {
-    type: "performance_unit", performance_id: "fixture-1995-07-09-box-of-rain", song_id: "song-box-of-rain", song_title: "Box of Rain",
+    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1995-07-09-box-of-rain", song_id: "song-box-of-rain", song_title: "Box of Rain",
     show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
     set_label: "Encore", position_in_set: "2", emphasis: "supporting",
     note: "The closing song of the band's final show, delivered without much fanfare at the time.",
@@ -544,7 +551,7 @@ const album: ExperienceResponse = fixture(
   "Workingman's Dead gave the band a second repertoire engine: concise, character-driven songs that could anchor a set without limiting the improvisation around them.",
   [
     {
-      type: "album_unit",
+      type: "album_unit", disclosure: "expanded", show_count: 0,
       release_id: "workingmans-dead",
       title: "Where the second repertoire engine started",
       release_title: "Workingman's Dead",
@@ -608,7 +615,7 @@ const terrapin: ExperienceResponse = {
     "Four months after its debut, the June 9 Terrapin already has the shape it would keep, played with the patience of a band that had just spent a spring on the road.",
     [
       {
-        type: "performance_unit", performance_id: "gd-1977-06-09-terrapin-station-2-10", song_id: "song-terrapin-station", song_title: "Terrapin Station",
+        type: "performance_unit", disclosure: "expanded", performance_id: "gd-1977-06-09-terrapin-station-2-10", song_id: "song-terrapin-station", song_title: "Terrapin Station",
         show_id: "gd-1977-06-09", show_date: "1977-06-09", show_label: "1977-06-09 — Winterland", venue_name: "Winterland", location: "San Francisco, CA",
         set_label: "Set 2", position_in_set: "10", emphasis: "primary", visible_facets: ["setlist", "listen", "sources"],
         note: "The last night of the spring tour, at home, with the suite still new enough that every section is played as though the band is listening to it for the first time. The Lady with a Fan opening is unhurried, and the instrumental climb into the Terrapin theme builds without any of the later arrangement's orchestral weight, so the song's architecture is easy to hear.",
@@ -641,7 +648,7 @@ terrapin.groups = [{ presentation: "comparison", criteria: ["Why it stands out",
 // at full width.
 const performanceBlocks: ExperienceBlock[] = [
   {
-    type: "performance_unit", performance_id: "fixture-1968-02-14-dark-star", song_id: "song-dark-star", song_title: "Dark Star",
+    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1968-02-14-dark-star", song_id: "song-dark-star", song_title: "Dark Star",
     show_id: "fixture-1968-02-14", show_date: "1968-02-14", show_label: "1968-02-14 — Carousel Ballroom", venue_name: "Carousel Ballroom", location: "San Francisco, CA",
     set_label: "Set 1", position_in_set: "3", emphasis: "primary",
     note: "A useful early comparison: the 1968 approach is more compressed and eventful, with abrupt changes of color and intensity.",
@@ -690,7 +697,7 @@ const playing: ExperienceResponse = fixture(
   "How did Playing in the Band change over the years?",
   "Playing in the Band kept getting wider, then tighter",
   "Playing in the Band started as a compact song and became the band's longest open jam by 1973, before settling into a shorter second-set vehicle.",
-  [{"type": "song_overview", "song_id": "song-playing-in-the-band", "title": "Playing In The Band", "original_artist": null, "known_performance_count": 750, "emphasis": "primary", "judgments": [], "visible_facets": ["representatives", "history", "albums"], "history": {"known_count": 750, "first": {"performance_id": "gd-1971-02-18-playing-in-the-band-2-2", "show_id": "gd-1971-02-18", "show_date": "1971-02-18", "show_label": "1971-02-18 — Capitol Theatre", "set_label": "Set 2", "position_in_set": "2", "venue_name": "Capitol Theatre", "listen_url": null, "audio_url": null, "duration_seconds": null}, "last": {"performance_id": "gd-1995-07-05-playing-in-the-band-2-2", "show_id": "gd-1995-07-05", "show_date": "1995-07-05", "show_label": "1995-07-05 — Riverport Amphitheatre", "set_label": "Set 2", "position_in_set": "2", "venue_name": "Riverport Amphitheatre", "listen_url": "https://archive.org/download/gd1995-07-05.sbd.larson.35170.flac16/gd95-07-05sbdd1t09.mp3", "audio_url": "https://archive.org/download/gd1995-07-05.sbd.larson.35170.flac16/gd95-07-05sbdd1t09.mp3", "duration_seconds": 636}, "by_year": [{"performance_id": "gd-1971-02-18-playing-in-the-band-2-2", "show_id": "gd-1971-02-18", "year": 1971, "show_date": "1971-02-18", "show_label": "1971-02-18 — Capitol Theatre", "set_label": "Set 2", "position_in_set": "2", "venue_name": "Capitol Theatre", "listen_url": null, "audio_url": null, "duration_seconds": null}, {"performance_id": "gd-1973-02-09-playing-in-the-band-1-13", "show_id": "gd-1973-02-09", "year": 1973, "show_date": "1973-02-09", "show_label": "1973-02-09 — Roscoe Maples Pavilion, Stanford University", "set_label": "Set 1", "position_in_set": "13", "venue_name": "Roscoe Maples Pavilion, Stanford University", "listen_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "audio_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "duration_seconds": 1114}, {"performance_id": "gd-1976-06-04-playing-in-the-band-2-1", "show_id": "gd-1976-06-04", "year": 1976, "show_date": "1976-06-04", "show_label": "1976-06-04 — Paramount Theatre", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Paramount Theatre", "listen_url": "https://archive.org/download/gd1976-06-04.143064.set1-pset2.sbd.miller.flac2496/10PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1976-06-04.143064.set1-pset2.sbd.miller.flac2496/10PlayingInTheBand.mp3", "duration_seconds": 970}, {"performance_id": "gd-1978-01-06-playing-in-the-band-2-1", "show_id": "gd-1978-01-06", "year": 1978, "show_date": "1978-01-06", "show_label": "1978-01-06 — Swing Auditorium", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Swing Auditorium", "listen_url": "https://archive.org/download/gd1978-01-06.153175.sbd.menke.sirmick.flac16/gd1978-01-06s2t02.mp3", "audio_url": "https://archive.org/download/gd1978-01-06.153175.sbd.menke.sirmick.flac16/gd1978-01-06s2t02.mp3", "duration_seconds": 1412}, {"performance_id": "gd-1980-01-13-playing-in-the-band-1-7", "show_id": "gd-1980-01-13", "year": 1980, "show_date": "1980-01-13", "show_label": "1980-01-13 — Oakland-Alameda County Coliseum Arena", "set_label": "Set 1", "position_in_set": "7", "venue_name": "Oakland-Alameda County Coliseum Arena", "listen_url": "https://archive.org/download/gd1980-01-13.sbd.miller.106517.flac16/gd80-01-13d2t01.mp3", "audio_url": "https://archive.org/download/gd1980-01-13.sbd.miller.106517.flac16/gd80-01-13d2t01.mp3", "duration_seconds": 662}, {"performance_id": "gd-1982-02-16-playing-in-the-band-2-3", "show_id": "gd-1982-02-16", "year": 1982, "show_date": "1982-02-16", "show_label": "1982-02-16 — Warfield Theatre", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Warfield Theatre", "listen_url": null, "audio_url": null, "duration_seconds": null}, {"performance_id": "gd-1985-02-20-playing-in-the-band-2-3", "show_id": "gd-1985-02-20", "year": 1985, "show_date": "1985-02-20", "show_label": "1985-02-20 — Henry J. Kaiser Convention Center", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Henry J. Kaiser Convention Center", "listen_url": null, "audio_url": null, "duration_seconds": null}, {"performance_id": "gd-1987-03-24-playing-in-the-band-2-3", "show_id": "gd-1987-03-24", "year": 1987, "show_date": "1987-03-24", "show_label": "1987-03-24 — Hampton Coliseum", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Hampton Coliseum", "listen_url": "https://archive.org/download/gd1987-03-24.140805.sbd.miller.flac2496/13PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1987-03-24.140805.sbd.miller.flac2496/13PlayingInTheBand.mp3", "duration_seconds": 505}, {"performance_id": "gd-1989-02-05-playing-in-the-band-2-4", "show_id": "gd-1989-02-05", "year": 1989, "show_date": "1989-02-05", "show_label": "1989-02-05 — Henry J. Kaiser Convention Center", "set_label": "Set 2", "position_in_set": "4", "venue_name": "Henry J. Kaiser Convention Center", "listen_url": "https://archive.org/download/gd1989-02-05.139649.s2.sbd.mixed.miller.flac24/05PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1989-02-05.139649.s2.sbd.mixed.miller.flac24/05PlayingInTheBand.mp3", "duration_seconds": 783}, {"performance_id": "gd-1991-02-21-playing-in-the-band-2-1", "show_id": "gd-1991-02-21", "year": 1991, "show_date": "1991-02-21", "show_label": "1991-02-21 — Oakland-Alameda County Coliseum Arena", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Oakland-Alameda County Coliseum Arena", "listen_url": "https://archive.org/download/gd1991-02-21.141771.sbd.miller.flac2496/11PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1991-02-21.141771.sbd.miller.flac2496/11PlayingInTheBand.mp3", "duration_seconds": 930}, {"performance_id": "gd-1993-01-24-playing-in-the-band-2-1", "show_id": "gd-1993-01-24", "year": 1993, "show_date": "1993-01-24", "show_label": "1993-01-24 — Oakland-Alameda County Coliseum Arena", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Oakland-Alameda County Coliseum Arena", "listen_url": "https://archive.org/download/gd1993-01-24.142854.sbd.miller.flac2496/07PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1993-01-24.142854.sbd.miller.flac2496/07PlayingInTheBand.mp3", "duration_seconds": 477}, {"performance_id": "gd-1995-02-20-playing-in-the-band-2-3", "show_id": "gd-1995-02-20", "year": 1995, "show_date": "1995-02-20", "show_label": "1995-02-20 — Delta Center", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Delta Center", "listen_url": null, "audio_url": null, "duration_seconds": null}]}, "note": "The song grew from a four-minute Ace track into the band's widest-open jam, then folded back into a tight second-set vehicle.", "representative_performances": [{"performance_id": "gd-1972-08-27-playing-in-the-band", "show_id": "gd-1972-08-27", "show_date": "1972-08-27", "show_label": "1972-08-27 — Old Renaissance Faire Grounds", "set_label": "Set 2", "venue_name": "Old Renaissance Faire Grounds", "listen_url": "https://archive.org/download/gd1972-08-27.sbd.latvala-eaton-lutch-dankseed.4682.shnf/gd72-08-27d2t01.mp3", "audio_url": "https://archive.org/download/gd1972-08-27.sbd.latvala-eaton-lutch-dankseed.4682.shnf/gd72-08-27d2t01.mp3", "duration_seconds": null}, {"performance_id": "gd-1973-02-09-playing-in-the-band-1-13", "show_id": "gd-1973-02-09", "show_date": "1973-02-09", "show_label": "1973-02-09 — Roscoe Maples Pavilion, Stanford University", "set_label": "Set 1", "venue_name": "Roscoe Maples Pavilion, Stanford University", "listen_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "audio_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "duration_seconds": 1114}], "credits": [], "source_ids": ["canonical:song-playing-in-the-band"], "albums": [{"release_id": "release-ace", "title": "Ace", "release_date": "1972-05-01", "release_type": "studio", "listen_url": "https://open.spotify.com/album/5T5wlwOxqtPVIqxoY9MjzT"}, {"release_id": "release-grateful-dead-1971", "title": "Grateful Dead", "release_date": "1971-09-24", "release_type": "live", "listen_url": "https://open.spotify.com/album/0ObxRAQTpVO1u7bT3VxrIN"}, {"release_id": "release-daves-picks-volume-4-1976-09-24", "title": "Dave’s Picks, Volume 4: College of William & Mary, Williamsburg, VA · 9/24/76", "release_date": "1976-09-24", "release_type": "live", "listen_url": null}, {"release_id": "release-hundred-year-hall-1995", "title": "Hundred Year Hall", "release_date": "1995-09-26", "release_type": "live", "listen_url": "https://open.spotify.com/album/1iZbyAj4kT1U8lXtu4t415"}, {"release_id": "release-dicks-picks-volume-7-1974-09-10", "title": "Dick’s Picks, Volume 7: Alexandra Palace, London, England, September 1974", "release_date": "1997-03-04", "release_type": "live", "listen_url": "https://open.spotify.com/album/2tDQBnR5OrbHg8mfGbetxf"}, {"release_id": "release-dicks-picks-volume-11-1972-09-27", "title": "Dick’s Picks, Volume 11: Stanley Theater 9/27/72", "release_date": "1998-06-09", "release_type": "live", "listen_url": "https://open.spotify.com/album/2pPrEb0IJFk3W6NoQSMnZM"}], "sources": [], "follow_ups": []}] as ExperienceBlock[]
+  [{"type": "song_overview", "disclosure": "expanded", "song_id": "song-playing-in-the-band", "title": "Playing In The Band", "original_artist": null, "known_performance_count": 750, "emphasis": "primary", "judgments": [], "visible_facets": ["representatives", "history", "albums"], "history": {"known_count": 750, "first": {"performance_id": "gd-1971-02-18-playing-in-the-band-2-2", "show_id": "gd-1971-02-18", "show_date": "1971-02-18", "show_label": "1971-02-18 — Capitol Theatre", "set_label": "Set 2", "position_in_set": "2", "venue_name": "Capitol Theatre", "listen_url": null, "audio_url": null, "duration_seconds": null}, "last": {"performance_id": "gd-1995-07-05-playing-in-the-band-2-2", "show_id": "gd-1995-07-05", "show_date": "1995-07-05", "show_label": "1995-07-05 — Riverport Amphitheatre", "set_label": "Set 2", "position_in_set": "2", "venue_name": "Riverport Amphitheatre", "listen_url": "https://archive.org/download/gd1995-07-05.sbd.larson.35170.flac16/gd95-07-05sbdd1t09.mp3", "audio_url": "https://archive.org/download/gd1995-07-05.sbd.larson.35170.flac16/gd95-07-05sbdd1t09.mp3", "duration_seconds": 636}, "by_year": [{"performance_id": "gd-1971-02-18-playing-in-the-band-2-2", "show_id": "gd-1971-02-18", "year": 1971, "show_date": "1971-02-18", "show_label": "1971-02-18 — Capitol Theatre", "set_label": "Set 2", "position_in_set": "2", "venue_name": "Capitol Theatre", "listen_url": null, "audio_url": null, "duration_seconds": null}, {"performance_id": "gd-1973-02-09-playing-in-the-band-1-13", "show_id": "gd-1973-02-09", "year": 1973, "show_date": "1973-02-09", "show_label": "1973-02-09 — Roscoe Maples Pavilion, Stanford University", "set_label": "Set 1", "position_in_set": "13", "venue_name": "Roscoe Maples Pavilion, Stanford University", "listen_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "audio_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "duration_seconds": 1114}, {"performance_id": "gd-1976-06-04-playing-in-the-band-2-1", "show_id": "gd-1976-06-04", "year": 1976, "show_date": "1976-06-04", "show_label": "1976-06-04 — Paramount Theatre", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Paramount Theatre", "listen_url": "https://archive.org/download/gd1976-06-04.143064.set1-pset2.sbd.miller.flac2496/10PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1976-06-04.143064.set1-pset2.sbd.miller.flac2496/10PlayingInTheBand.mp3", "duration_seconds": 970}, {"performance_id": "gd-1978-01-06-playing-in-the-band-2-1", "show_id": "gd-1978-01-06", "year": 1978, "show_date": "1978-01-06", "show_label": "1978-01-06 — Swing Auditorium", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Swing Auditorium", "listen_url": "https://archive.org/download/gd1978-01-06.153175.sbd.menke.sirmick.flac16/gd1978-01-06s2t02.mp3", "audio_url": "https://archive.org/download/gd1978-01-06.153175.sbd.menke.sirmick.flac16/gd1978-01-06s2t02.mp3", "duration_seconds": 1412}, {"performance_id": "gd-1980-01-13-playing-in-the-band-1-7", "show_id": "gd-1980-01-13", "year": 1980, "show_date": "1980-01-13", "show_label": "1980-01-13 — Oakland-Alameda County Coliseum Arena", "set_label": "Set 1", "position_in_set": "7", "venue_name": "Oakland-Alameda County Coliseum Arena", "listen_url": "https://archive.org/download/gd1980-01-13.sbd.miller.106517.flac16/gd80-01-13d2t01.mp3", "audio_url": "https://archive.org/download/gd1980-01-13.sbd.miller.106517.flac16/gd80-01-13d2t01.mp3", "duration_seconds": 662}, {"performance_id": "gd-1982-02-16-playing-in-the-band-2-3", "show_id": "gd-1982-02-16", "year": 1982, "show_date": "1982-02-16", "show_label": "1982-02-16 — Warfield Theatre", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Warfield Theatre", "listen_url": null, "audio_url": null, "duration_seconds": null}, {"performance_id": "gd-1985-02-20-playing-in-the-band-2-3", "show_id": "gd-1985-02-20", "year": 1985, "show_date": "1985-02-20", "show_label": "1985-02-20 — Henry J. Kaiser Convention Center", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Henry J. Kaiser Convention Center", "listen_url": null, "audio_url": null, "duration_seconds": null}, {"performance_id": "gd-1987-03-24-playing-in-the-band-2-3", "show_id": "gd-1987-03-24", "year": 1987, "show_date": "1987-03-24", "show_label": "1987-03-24 — Hampton Coliseum", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Hampton Coliseum", "listen_url": "https://archive.org/download/gd1987-03-24.140805.sbd.miller.flac2496/13PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1987-03-24.140805.sbd.miller.flac2496/13PlayingInTheBand.mp3", "duration_seconds": 505}, {"performance_id": "gd-1989-02-05-playing-in-the-band-2-4", "show_id": "gd-1989-02-05", "year": 1989, "show_date": "1989-02-05", "show_label": "1989-02-05 — Henry J. Kaiser Convention Center", "set_label": "Set 2", "position_in_set": "4", "venue_name": "Henry J. Kaiser Convention Center", "listen_url": "https://archive.org/download/gd1989-02-05.139649.s2.sbd.mixed.miller.flac24/05PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1989-02-05.139649.s2.sbd.mixed.miller.flac24/05PlayingInTheBand.mp3", "duration_seconds": 783}, {"performance_id": "gd-1991-02-21-playing-in-the-band-2-1", "show_id": "gd-1991-02-21", "year": 1991, "show_date": "1991-02-21", "show_label": "1991-02-21 — Oakland-Alameda County Coliseum Arena", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Oakland-Alameda County Coliseum Arena", "listen_url": "https://archive.org/download/gd1991-02-21.141771.sbd.miller.flac2496/11PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1991-02-21.141771.sbd.miller.flac2496/11PlayingInTheBand.mp3", "duration_seconds": 930}, {"performance_id": "gd-1993-01-24-playing-in-the-band-2-1", "show_id": "gd-1993-01-24", "year": 1993, "show_date": "1993-01-24", "show_label": "1993-01-24 — Oakland-Alameda County Coliseum Arena", "set_label": "Set 2", "position_in_set": "1", "venue_name": "Oakland-Alameda County Coliseum Arena", "listen_url": "https://archive.org/download/gd1993-01-24.142854.sbd.miller.flac2496/07PlayingInTheBand.mp3", "audio_url": "https://archive.org/download/gd1993-01-24.142854.sbd.miller.flac2496/07PlayingInTheBand.mp3", "duration_seconds": 477}, {"performance_id": "gd-1995-02-20-playing-in-the-band-2-3", "show_id": "gd-1995-02-20", "year": 1995, "show_date": "1995-02-20", "show_label": "1995-02-20 — Delta Center", "set_label": "Set 2", "position_in_set": "3", "venue_name": "Delta Center", "listen_url": null, "audio_url": null, "duration_seconds": null}]}, "note": "The song grew from a four-minute Ace track into the band's widest-open jam, then folded back into a tight second-set vehicle.", "representative_performances": [{"performance_id": "gd-1972-08-27-playing-in-the-band", "show_id": "gd-1972-08-27", "show_date": "1972-08-27", "show_label": "1972-08-27 — Old Renaissance Faire Grounds", "set_label": "Set 2", "venue_name": "Old Renaissance Faire Grounds", "listen_url": "https://archive.org/download/gd1972-08-27.sbd.latvala-eaton-lutch-dankseed.4682.shnf/gd72-08-27d2t01.mp3", "audio_url": "https://archive.org/download/gd1972-08-27.sbd.latvala-eaton-lutch-dankseed.4682.shnf/gd72-08-27d2t01.mp3", "duration_seconds": null}, {"performance_id": "gd-1973-02-09-playing-in-the-band-1-13", "show_id": "gd-1973-02-09", "show_date": "1973-02-09", "show_label": "1973-02-09 — Roscoe Maples Pavilion, Stanford University", "set_label": "Set 1", "venue_name": "Roscoe Maples Pavilion, Stanford University", "listen_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "audio_url": "https://archive.org/download/gd1973-02-09.134398.sbd.menke-lee-smith.flac16/gd1973-02-09s1t14.mp3", "duration_seconds": 1114}], "credits": [], "source_ids": ["canonical:song-playing-in-the-band"], "albums": [{"release_id": "release-ace", "title": "Ace", "release_date": "1972-05-01", "release_type": "studio", "listen_url": "https://open.spotify.com/album/5T5wlwOxqtPVIqxoY9MjzT"}, {"release_id": "release-grateful-dead-1971", "title": "Grateful Dead", "release_date": "1971-09-24", "release_type": "live", "listen_url": "https://open.spotify.com/album/0ObxRAQTpVO1u7bT3VxrIN"}, {"release_id": "release-daves-picks-volume-4-1976-09-24", "title": "Dave’s Picks, Volume 4: College of William & Mary, Williamsburg, VA · 9/24/76", "release_date": "1976-09-24", "release_type": "live", "listen_url": null}, {"release_id": "release-hundred-year-hall-1995", "title": "Hundred Year Hall", "release_date": "1995-09-26", "release_type": "live", "listen_url": "https://open.spotify.com/album/1iZbyAj4kT1U8lXtu4t415"}, {"release_id": "release-dicks-picks-volume-7-1974-09-10", "title": "Dick’s Picks, Volume 7: Alexandra Palace, London, England, September 1974", "release_date": "1997-03-04", "release_type": "live", "listen_url": "https://open.spotify.com/album/2tDQBnR5OrbHg8mfGbetxf"}, {"release_id": "release-dicks-picks-volume-11-1972-09-27", "title": "Dick’s Picks, Volume 11: Stanley Theater 9/27/72", "release_date": "1998-06-09", "release_type": "live", "listen_url": "https://open.spotify.com/album/2pPrEb0IJFk3W6NoQSMnZM"}], "sources": [], "follow_ups": []}] as ExperienceBlock[]
 );
 
 // Every typography block on one page, for reviewing the open-block anatomy.
@@ -915,11 +922,17 @@ const chinarider: ExperienceResponse = fixture(
   }
 );
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider"] as const;
+const releases1972 = releases1972Json as unknown as ExperienceResponse;
+const shows1977 = shows1977Json as unknown as ExperienceResponse;
+const harrisburg = harrisburgJson as unknown as ExperienceResponse;
+const darkstar = darkstarJson as unknown as ExperienceResponse;
+const mostplayed = mostplayedJson as unknown as ExperienceResponse;
+
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

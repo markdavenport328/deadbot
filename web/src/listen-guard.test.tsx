@@ -75,6 +75,12 @@ async function renderFixture(name: string, response: ExperienceResponse) {
 // Open every tab of every drawer in turn: a closed panel is not in the DOM.
 function eachDrawerState(where: string) {
   assertListenAffordances(where);
+  // A collapsed card renders its full card only once opened. The first few of
+  // a long list stand for the rest: every row is the same card type.
+  for (const toggle of [...document.querySelectorAll<HTMLButtonElement>(".collapsed-toggle")].slice(0, 6)) {
+    if (toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
+  }
+  if (document.querySelector(".collapsed-toggle")) assertListenAffordances(`${where} › collapsed cards open`);
   const tabs = [...document.querySelectorAll<HTMLButtonElement>(".drawer .tab")];
   for (const tab of tabs) {
     if (tab.getAttribute("aria-expanded") !== "true") fireEvent.click(tab);
@@ -164,5 +170,25 @@ describe("era and song cards play in-page", () => {
     const ace = within(card).getByRole("link", { name: "Ace on open.spotify.com (opens in a new tab)" });
     expect(ace).toHaveClass("listen-link");
     expect(ace.querySelector(".listen-play-mark, svg")).toBeNull();
+  });
+});
+
+describe("collapsed cards", () => {
+  it("list every release down one column and open the full card in place", async () => {
+    await renderFixture("releases1972", visualFixtures.releases1972);
+    const rows = document.querySelectorAll(".collapsed-list > .collapsed-row");
+    expect(rows.length).toBe(visualFixtures.releases1972.blocks.length);
+    expect(document.querySelectorAll(".collapsed-list").length).toBe(1);
+    const first = rows[0] as HTMLElement;
+    expect(first.querySelector("article")).toBeNull();
+    fireEvent.click(within(first).getByRole("button", { name: /^More/ }));
+    expect(first.querySelector("article.album-unit")).not.toBeNull();
+    expect(within(first).getByRole("button", { name: /^Less/ })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("show two expanded shows as full cards", async () => {
+    await renderFixture("harrisburg", visualFixtures.harrisburg);
+    expect(document.querySelectorAll("article.show-unit").length).toBe(2);
+    expect(document.querySelector(".collapsed-list")).toBeNull();
   });
 });

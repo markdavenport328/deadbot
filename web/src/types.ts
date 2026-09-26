@@ -69,7 +69,8 @@ export type ExperienceBlock =
   | Require<components["schemas"]["ListeningHeroBlock"], "queue">
   | components["schemas"]["PullQuoteBlock"]
   | FixedDataChartBlock
-  | Require<components["schemas"]["VersionStripBlock"], "year_counts">;
+  | Require<components["schemas"]["VersionStripBlock"], "year_counts">
+  | components["schemas"]["RankedListBlock"];
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],
