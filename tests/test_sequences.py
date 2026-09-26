@@ -156,9 +156,11 @@ def test_a_version_strip_drops_nights_the_tools_did_not_return(csv_store):
     assert blocks[0].year_counts == []
 
     only_ungrounded = finish.validate_body_item(_strip_item(pair_ids=[outside_the_range]), where="planned")
-    assert finish.resolve_items([only_ungrounded], grounded, payloads, csv_store)[0] == []
+    # With no night to draw, the model's own words for the strip remain.
+    (kept,) = finish.resolve_items([only_ungrounded], grounded, payloads, csv_store)[0]
+    assert kept.type == "editorial" and kept.title == "The China half kept growing"
     unretrieved_pairing = finish.validate_body_item(_strip_item(pairing_id=sequences.pairing_id(RIDER, CHINA)), where="planned")
-    assert finish.resolve_items([unretrieved_pairing], grounded, payloads, csv_store)[0] == []
+    assert [block.type for block in finish.resolve_items([unretrieved_pairing], grounded, payloads, csv_store)[0]] == ["editorial"]
 
 
 def test_a_version_strip_survives_the_streamed_and_final_paths(csv_store):

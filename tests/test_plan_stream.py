@@ -96,7 +96,7 @@ def test_chunks_from_other_tool_calls_are_ignored():
     assert [event.type for event in events] == ["page_head"]
 
 
-def test_invalid_items_are_skipped_and_judgments_are_truncated_to_criteria():
+def test_an_item_with_nothing_to_show_is_skipped_and_judgments_are_kept():
     plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "comparison", "criteria": ["A"], "items": [
         {"type": "not_a_block"},
         {"type": "show_unit", "show_id": "gd-1972-08-27", "judgments": ["one", "two"]},
@@ -114,7 +114,7 @@ def test_invalid_items_are_skipped_and_judgments_are_truncated_to_criteria():
     events = streamer.feed(chunk(json.dumps(plan), name="finish_response"))
     blocks = [event for event in events if event.type == "block"]
     assert len(blocks) == 1
-    assert blocks[0].payload["block"] == {"judgments": ["one"]}
+    assert blocks[0].payload["block"] == {"judgments": ["one", "two"]}
 
 
 def test_group_leads_run_through_link_grounding():
@@ -155,13 +155,13 @@ def test_a_failing_item_is_skipped_without_disabling_the_streamer():
     assert streamer.disabled is False
 
 
-def test_items_past_the_group_limit_are_not_streamed():
+def test_every_planned_item_is_streamed():
     items = [{"type": "show_unit", "show_id": f"gd-1990-03-{day:02d}"} for day in range(1, 24)]
     plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": items}]}
     events = drive(json.dumps(plan), 7)
     blocks = [event for event in events if event.type == "block"]
-    assert len(blocks) == 20
-    assert blocks[-1].payload["block"]["id"] == "gd-1990-03-20"
+    assert len(blocks) == 23
+    assert blocks[-1].payload["block"]["id"] == "gd-1990-03-23"
 
 
 def test_indented_json_gives_identical_events_to_compact_json():

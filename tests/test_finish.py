@@ -113,7 +113,7 @@ def test_resolve_body_drops_references_the_tools_did_not_return():
     assert blocks[0].show_id == "gd-1972-08-27"
 
 
-def test_resolve_body_keeps_editorial_blocks_and_strips_ungrounded_links():
+def test_resolve_body_keeps_editorial_blocks_and_their_outside_links():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
     grounded = finish.grounded_context(payloads)
@@ -144,7 +144,8 @@ def test_resolve_body_keeps_editorial_blocks_and_strips_ungrounded_links():
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
     block = blocks[0]
     assert block.paragraphs[0] == f"Start with the [soundboard]({good_url}) or this."
-    assert block.items[0].link is not None and block.items[1].link is None
+    # An item's link to an outside page is the model's to give; it only has to be a web URL.
+    assert block.items[0].link.url == good_url and block.items[1].link.url == "https://example.com/no"
 
 
 def test_resolve_body_keeps_a_song_payload_listening_link_and_strips_an_unreturned_one():
@@ -609,7 +610,7 @@ def test_finish_plan_accepts_semantic_units():
     assert plan.groups[0].items[2].supporting_sources[0].url == "https://example.org/x"
 
 
-def test_resolve_groups_preserves_order_criteria_and_truncates_judgments():
+def test_resolve_groups_preserves_order_criteria_and_judgments():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
     plan = finish.FinishPlan(
@@ -631,7 +632,7 @@ def test_resolve_groups_preserves_order_criteria_and_truncates_judgments():
     blocks, groups, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
     assert [block.type for block in blocks] == ["show_unit", "song_overview"]
     assert groups[0].presentation == "comparison" and groups[0].criteria == ["Pace", "Jam"]
-    assert blocks[0].emphasis == "primary" and blocks[0].judgments == ["Relaxed", "Long"]
+    assert blocks[0].emphasis == "primary" and blocks[0].judgments == ["Relaxed", "Long", "Extra"]
     assert blocks[1].emphasis == "supporting" and blocks[1].judgments == ["Steady"]
 
 
@@ -650,7 +651,7 @@ def _show_item(show_id: str) -> dict:
     return {"type": "show_unit", "show_id": show_id}
 
 
-def test_an_item_that_does_not_fit_its_schema_is_dropped_and_the_plan_still_validates():
+def test_extra_keys_are_ignored_and_an_item_with_nothing_to_show_is_skipped():
     plan = finish.FinishPlan.model_validate({
         "chat_answer": "x",
         "title": "T",
@@ -661,14 +662,17 @@ def test_an_item_that_does_not_fit_its_schema_is_dropped_and_the_plan_still_vali
             _show_item("gd-1977-05-08"),
         ]}],
     })
-    assert [item.show_id for item in plan.groups[0].items] == ["gd-1972-08-27", "gd-1977-05-08"]
+    assert [item.type for item in plan.groups[0].items] == ["show_unit", "song_overview", "show_unit"]
+    assert plan.groups[0].items[1].song_id == "song-ripple"
 
 
-def test_a_group_keeps_only_its_first_twenty_items():
+def test_a_group_keeps_every_item_the_model_planned():
     items = [_show_item(f"gd-1990-03-{day:02d}") for day in range(1, 24)]
-    plan = finish.FinishPlan.model_validate({"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": items}]})
-    assert len(plan.groups[0].items) == finish.GROUP_ITEM_LIMIT == 20
-    assert plan.groups[0].items[-1].show_id == "gd-1990-03-20"
+    groups = [{"presentation": "collection", "items": items} for _ in range(10)]
+    plan = finish.FinishPlan.model_validate({"chat_answer": "x", "title": "T", "groups": groups})
+    assert len(plan.groups) == 10
+    assert len(plan.groups[0].items) == 23
+    assert plan.groups[0].items[-1].show_id == "gd-1990-03-23"
 
 
 def test_a_group_left_with_no_usable_items_is_dropped_not_fatal():
@@ -1074,7 +1078,9 @@ def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
         ],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    assert [block.type for block in blocks] == ["era_unit"]
+    # An era with nothing grounded keeps the model's words for it.
+    assert [block.type for block in blocks] == ["era_unit", "editorial"]
+    assert blocks[1].title == "Nothing grounded"
     era = blocks[0]
     assert era.title == "Early Sugarees" and era.span == "1971–72"
     assert [item.performance_id for item in era.performances] == [performance["performance_id"] for performance in with_listen]
@@ -1510,19 +1516,9 @@ def test_finish_plan_accepts_a_data_chart_ref_in_a_group():
     assert plan.groups[0].items[0].aggregation_id == "agg:handbuilt0000"
 
 
-def test_data_chart_ref_rejects_an_unrecognized_field():
-    from pydantic import ValidationError
-
-    try:
-        finish.DataChartRef(
-            type="data_chart",
-            aggregation_id="agg:handbuilt0000",
-            chart="bar",
-        )
-    except ValidationError:
-        pass
-    else:
-        raise AssertionError("chart is no longer part of DataChartRef's schema")
+def test_data_chart_ref_ignores_an_unrecognized_field():
+    ref = finish.DataChartRef(type="data_chart", aggregation_id="agg:handbuilt0000", chart="bar")
+    assert ref.aggregation_id == "agg:handbuilt0000" and not hasattr(ref, "chart")
 
 
 def test_resolve_body_resolves_a_data_chart_from_the_turn_s_aggregate_data_payload():

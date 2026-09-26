@@ -113,6 +113,7 @@ def catalog_tool_description() -> str:
         "Use a listed query when one fits "
         "(song and show accept a title, ID or date; one year: set year_from only). "
         "When none fits, pass sql: one read-only SQLite SELECT. Then look up the few items "
-        "your answer will feature for depth.\n"
+        "your answer will feature for depth. Each result carries a result_id; a unit's from_result "
+        "puts every record in it on the page.\n"
         f"Queries:\n{menu}\n{_GUIDE}"
     )

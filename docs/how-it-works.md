@@ -92,7 +92,7 @@ Model calls finish_response (terminal tool)
     ↓
 Composition: resolve references → PostgreSQL
     ↓
-Grounding check: drop anything not in tool output
+Grounding check: records not in tool output keep only the model's words
     ↓
 Validated ExperienceResponse → browser
 ```
@@ -198,9 +198,9 @@ When the model has gathered enough material, it calls `finish_response` — a te
 - **`chat_answer`** — the direct text answer for the conversation pane.
 - **`title`** — the page headline.
 - **`lead`** — optional expansion of the central finding.
-- **`groups`** — up to 8 groups, each containing items (semantic unit references and editorial blocks).
+- **`groups`** — groups, each containing items (semantic unit references and editorial blocks).
 
-The model writes this plan from what it retrieved. Every reference (a show ID, a song ID, a performance ID) must trace to a tool result from the same conversation. References that don't are silently dropped during resolution — the answer can only contain things the model actually looked up.
+The model writes this plan from what it retrieved. Every reference (a show ID, a song ID, a performance ID) must trace to a tool result from the same conversation. A reference that doesn't resolve keeps the model's own words for it as a narrative block, without a hydrated record — the page only shows records the model actually looked up.
 
 ### Semantic units
 
@@ -208,7 +208,7 @@ The building blocks of a page are **semantic units** — typed, data-rich compon
 
 **Show unit** — a full show card. The model provides a `show_id` and chooses which facets to display (setlist, guests, lineup, recordings, listen actions). The server hydrates it with the venue, date, full setlist with set labels and positions, performer names and instruments, recording identifiers, and streaming links. The setlist can be expanded, collapsed, or hidden. The model can highlight specific performances and prefer a specific recording.
 
-**Song overview** — a composition across its entire life. The server provides the performance count, a history strip (first performance, last performance, by-year counts), representative versions the model selected, writing credits, and official releases the song appears on. The model chooses which facets to show and which performances best represent the song.
+**Song overview** — a composition across its entire life. The server provides the performance count, a history strip (first performance, last performance, one rendition a year), a by-year bar chart of how often it was played, representative versions the model selected, writing credits, and official releases the song appears on. The model chooses which facets to show and which performances best represent the song.
 
 **Performance unit** — one rendition of one song at one show. The server provides the song, venue, date, set label, position in set, the previous and next songs in the same set (so you see the flow), and listening links. This is where a specific version lives — not the song in general, but this version on this night.
 
@@ -235,7 +235,11 @@ Units don't just stack in a list. The model organizes them into **groups**, each
 - **Comparison** — items judged on shared criteria, rendered in aligned columns. The model names the criteria (e.g., "energy," "improvisation," "recording quality") and writes a judgment for each unit on each axis.
 - **Argument** — a claim as the group heading, with evidence beneath.
 
-Groups can carry titles, leads, and up to 20 items. A page can hold up to eight groups. This gives the model a real editorial vocabulary — it's choosing structure, not just listing results.
+Groups can carry titles, leads, and as many items as the answer needs. This gives the model a real editorial vocabulary — it's choosing structure, not just listing results.
+
+### Collapsed cards and lists of records
+
+Every show, performance, album and song unit starts **expanded** (the full card) or **collapsed**: one compact row the server fills in — a show's venue, date and city; a record's cover, title, year, type and shows; a performance's song, venue, date and length; a song's count and span — with its one play control and a cue that opens the full card in place. The model chooses, from how many there are and what the visitor asked. For a long set, one unit can carry a `from_result` (a `query_catalog` `result_id` or an `aggregation_id`) instead of an ID, and the server makes one card per row in the result's order. A `ranked_list` shows the top rows of one `aggregate_data` result with its counts and the model's notes.
 
 ### Editorial blocks
 
@@ -245,7 +249,7 @@ Alongside the data-hydrated units, the model can write its own material as **edi
 - **Fact grid** — compact label-value pairs for cross-comparison, including attributed viewpoints from critics or fans.
 - **Timeline** — chronological entries with markers, titles, and detail text.
 
-These are where the model's synthesis and voice live. But every link in an editorial block must trace to a URL the tools actually returned, or it's stripped before rendering. The model can write; it can't invent sources.
+These are where the model's synthesis and voice live: prose, viewpoints and comparisons. Records belong in the reference-based items, which carry their facts from the library; an editorial item about a show, performance or record names it by ID, and the server links it or makes its title play.
 
 ### Other block types
 
@@ -281,9 +285,9 @@ If the model's plan fails validation, it can retry — the streamer emits a `pag
 
 The composition layer (`deadbot/finish.py`) builds a `GroundedContext` from every tool result in the conversation — a frozen set of every entity ID and every URL that appeared in tool output. During resolution:
 
-- Every entity reference (show ID, song ID, performance ID) is checked against this set. Ungrounded references are silently dropped.
-- Every URL in an editorial block or supporting source is checked. Ungrounded links are stripped.
-- The finish plan's own validators enforce structural limits: max 8 groups, max 20 items per group, valid presentation modes.
-- Items that fail schema validation are dropped individually — they don't reject the whole response.
+- Every entity reference (show ID, song ID, performance ID) is checked against this set. A reference that does not resolve renders the model's own text for that item, without the hydrated record.
+- A markdown link in prose or a supporting source is kept only when its URL came from a tool result; otherwise it is unwrapped to its words. An editorial item's link to an outside article only has to be a web URL; a link to a show, performance or record comes from the item naming it by ID.
+- Items are read leniently: extra keys are ignored, a bad list entry or optional field is removed and the rest kept, a missing `type` is inferred when the shape says editorial, and an unknown presentation reads as a collection. Nothing caps how many groups or items the model plans; only transport ceilings far above normal use (1,000 entries per list, 200 blocks per page) truncate, with a log line.
+- The streamer and the final response read and resolve every item through the same functions (`validate_body_item`, `resolve_items`), so a block that streamed is in the delivered page.
 
 The result is a validated `ExperienceResponse` that the React client renders as deterministic application code. The model chose what to show and how to frame it. The system guarantees that everything it chose is real.

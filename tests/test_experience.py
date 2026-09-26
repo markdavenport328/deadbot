@@ -694,17 +694,17 @@ def test_album_credits_take_a_free_text_role_and_one_instrument():
     assert credit.instrument == "lead guitar"
 
 
-def test_album_unit_caps_its_tracklist():
+def test_album_unit_carries_a_long_tracklist_up_to_the_transport_ceiling():
+    tracks = [experience.AlbumTrackItem(track_number=n, title=f"t{n}", highlighted=False) for n in range(1, 80)]
+    block = experience.AlbumUnitBlock(type="album_unit", release_id="release-x", title="X", release_type="live", tracks=tracks)
+    assert len(block.tracks) == 79
     with pytest.raises(ValidationError):
         experience.AlbumUnitBlock(
             type="album_unit",
             release_id="release-x",
             title="X",
-            release_type="studio",
-            tracks=[
-                experience.AlbumTrackItem(track_number=n, title=f"t{n}", highlighted=False)
-                for n in range(1, 32)
-            ],
+            release_type="live",
+            tracks=[experience.AlbumTrackItem(track_number=n, title=f"t{n}") for n in range(1, experience.LIST_CEILING + 2)],
         )
 
 

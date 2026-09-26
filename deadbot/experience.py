@@ -10,18 +10,48 @@ can pass browser code, raw HTML, or arbitrary embeds to the client.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
+logger = logging.getLogger(__name__)
+
+
 ExperienceMode = Literal["answer", "gap"]
+
+# Transport ceilings. They sit far above any real answer and exist only so a
+# runaway plan or record cannot produce an unbounded payload; code that fills a
+# list truncates to them with a log line (see ``fit``). They are not editorial
+# limits on how much the model may show.
+LIST_CEILING = 1000
+PAGE_BLOCK_CEILING = 200
+
+
+def fit(items: list[Any], what: str) -> list[Any]:
+    """``items`` within ``LIST_CEILING``, logging when anything is cut."""
+
+    if len(items) <= LIST_CEILING:
+        return items
+    logger.warning("Truncated %d %s to the transport ceiling of %d", len(items), what, LIST_CEILING)
+    return items[:LIST_CEILING]
 
 
 class ExperienceModel(BaseModel):
     """Base model that rejects unrecognized browser-facing fields."""
 
     model_config = ConfigDict(extra="forbid")
+
+
+class ModelAuthored(ExperienceModel):
+    """A browser model the finish plan also uses as written by the model.
+
+    A key the schema does not name is ignored rather than failing the item,
+    so an extra field the model adds never costs the visitor its content.
+    """
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class SourceReference(ExperienceModel):
@@ -37,7 +67,7 @@ class EntityCardBlock(ExperienceModel):
     entity_id: str
     title: str
     subtitle: str | None = None
-    details: list[str] = Field(default_factory=list, max_length=6)
+    details: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     source_id: str
     follow_up: str | None = None
 
@@ -63,14 +93,17 @@ class SetlistSong(ExperienceModel):
 
 class SetlistSection(ExperienceModel):
     label: str
-    songs: list[SetlistSong] = Field(min_length=1, max_length=40)
+    songs: list[SetlistSong] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 Emphasis = Literal["primary", "supporting", "mention"]
 ShowFacet = Literal["guests", "listen", "setlist", "sources", "lineup", "recordings"]
-SongFacet = Literal["credits", "albums", "history", "representatives"]
+SongFacet = Literal["credits", "albums", "history", "representatives", "by_year"]
 PerformanceFacet = Literal["setlist", "listen", "sources"]
 SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
+# How a record card starts: expanded is the full card; collapsed is one
+# compact row the server fills in, which opens into the full card in place.
+CardDisclosure = Literal["collapsed", "expanded"]
 GroupPresentation = Literal["collection", "sequence", "comparison", "argument"]
 
 
@@ -92,7 +125,7 @@ class UnitSource(ExperienceModel):
     note: str | None = None
 
 
-class FollowUpTopic(ExperienceModel):
+class FollowUpTopic(ModelAuthored):
     """A short topic chip the visitor can press, and the full question it stands for.
 
     The chip shows only the label under "More about"; pressing it sends the
@@ -126,7 +159,7 @@ class ShowSelectionItem(ExperienceModel):
     location: str | None = None
     # One tape's playable tracks for the show, in show order, so the row can
     # play the show in-page. Empty when the library has no archive track.
-    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=60)
+    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
     recording_identifier: str | None = None
 
 
@@ -139,7 +172,7 @@ class ShowSelectionBlock(ExperienceModel):
     selector_name: str
     coverage_note: str
     source_id: str
-    items: list[ShowSelectionItem] = Field(min_length=1, max_length=24)
+    items: list[ShowSelectionItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class RecordingItem(ExperienceModel):
@@ -155,7 +188,7 @@ class PerformerItem(ExperienceModel):
     person_id: str
     name: str
     role: Literal["performer", "guest"]
-    instruments: list[str] = Field(min_length=1, max_length=8)
+    instruments: list[str] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class PerformanceListItem(ExperienceModel):
@@ -197,7 +230,7 @@ class SongHistory(ExperienceModel):
     known_count: int = Field(ge=1)
     first: PerformanceListItem
     last: PerformanceListItem
-    by_year: list[ComparisonStripItem] = Field(default_factory=list, max_length=12)
+    by_year: list[ComparisonStripItem] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class ShowUnitBlock(ExperienceModel):
@@ -215,10 +248,14 @@ class ShowUnitBlock(ExperienceModel):
     venue_name: str | None = None
     location: str | None = None
     emphasis: Emphasis = "supporting"
+    disclosure: CardDisclosure = "expanded"
+    # The show's playable tape, in show order, for the collapsed row's one
+    # play control. Filled only when the card starts collapsed.
+    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
-    visible_facets: list[ShowFacet] = Field(default_factory=list, max_length=6)
+    visible_facets: list[ShowFacet] = Field(default_factory=list, max_length=LIST_CEILING)
     setlist_disclosure: SetlistDisclosure = "expanded"
-    sets: list[SetlistSection] = Field(default_factory=list, max_length=4)
+    sets: list[SetlistSection] = Field(default_factory=list, max_length=LIST_CEILING)
     setlist_note: str | None = None
     # The Internet Archive item behind this setlist's playable tracks, once
     # per show rather than repeated on every song: the in-page player's
@@ -226,13 +263,13 @@ class ShowUnitBlock(ExperienceModel):
     # from this identifier.
     recording_identifier: str | None = None
     recording_details_url: str | None = None
-    guests: list[PerformerItem] = Field(default_factory=list, max_length=8)
-    lineup: list[PerformerItem] = Field(default_factory=list, max_length=24)
-    recordings: list[RecordingItem] = Field(default_factory=list, max_length=8)
-    judgments: list[str] = Field(default_factory=list, max_length=5)
-    listen: list[ListenAction] = Field(default_factory=list, max_length=4)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
+    guests: list[PerformerItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    lineup: list[PerformerItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    recordings: list[RecordingItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+    listen: list[ListenAction] = Field(default_factory=list, max_length=LIST_CEILING)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class PerformanceUnitBlock(ExperienceModel):
@@ -250,18 +287,22 @@ class PerformanceUnitBlock(ExperienceModel):
     set_label: str | None = None
     position_in_set: str | None = None
     emphasis: Emphasis = "supporting"
-    judgments: list[str] = Field(default_factory=list, max_length=5)
+    disclosure: CardDisclosure = "expanded"
+    # This rendition's own Internet Archive track and length, when the library has one.
+    audio_url: str | None = None
+    duration_seconds: int | None = Field(default=None, ge=0)
+    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
-    visible_facets: list[PerformanceFacet] = Field(default_factory=lambda: ["setlist", "listen", "sources"], max_length=3)
+    visible_facets: list[PerformanceFacet] = Field(default_factory=lambda: ["setlist", "listen", "sources"], max_length=LIST_CEILING)
     previous: PerformanceSpineNeighbor | None = None
     next: PerformanceSpineNeighbor | None = None
-    listen: list[ListenAction] = Field(default_factory=list, max_length=3)
+    listen: list[ListenAction] = Field(default_factory=list, max_length=LIST_CEILING)
     # The show's playable tracks from the same tape as this rendition, in show
     # order, so a full-show action on the Internet Archive can play in-page.
     # Empty when the library has no archive track for this performance.
-    show_tracks: list[PlayableTrack] = Field(default_factory=list, max_length=60)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
+    show_tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class EraPerformanceItem(ExperienceModel):
@@ -287,9 +328,9 @@ class EraUnitBlock(ExperienceModel):
     title: str
     span: str | None = None
     note: str | None = None
-    performances: list[EraPerformanceItem] = Field(min_length=1, max_length=6)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
+    performances: list[EraPerformanceItem] = Field(min_length=1, max_length=LIST_CEILING)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class AlbumTrackItem(ExperienceModel):
@@ -330,13 +371,22 @@ class AlbumUnitBlock(ExperienceModel):
     release_date: str | None = None
     release_type: str
     emphasis: Emphasis = "supporting"
-    judgments: list[str] = Field(default_factory=list, max_length=5)
+    disclosure: CardDisclosure = "expanded"
+    cover_url: str | None = None
+    # The shows the record draws on: one show names its venue and date; more
+    # give their count and span. Zero for a studio record.
+    show_count: int = Field(default=0, ge=0)
+    first_show_date: str | None = None
+    last_show_date: str | None = None
+    show_venue_name: str | None = None
+    show_location: str | None = None
+    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
-    tracks: list[AlbumTrackItem] = Field(default_factory=list, max_length=30)
-    personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=20)
-    listen: list[ListenAction] = Field(default_factory=list, max_length=3)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
+    tracks: list[AlbumTrackItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    listen: list[ListenAction] = Field(default_factory=list, max_length=LIST_CEILING)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class GuestAppearanceSong(ExperienceModel):
@@ -356,10 +406,10 @@ class GuestAppearanceItem(ExperienceModel):
     show_date: str
     venue_name: str | None = None
     location: str | None = None
-    instruments: list[str] = Field(min_length=1, max_length=8)
+    instruments: list[str] = Field(min_length=1, max_length=LIST_CEILING)
     participation_scope: str | None = None
     # Empty when the credit is known only at the show level.
-    songs: list[GuestAppearanceSong] = Field(default_factory=list, max_length=12)
+    songs: list[GuestAppearanceSong] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class GuestAppearanceListBlock(ExperienceModel):
@@ -369,7 +419,7 @@ class GuestAppearanceListBlock(ExperienceModel):
     person_id: str
     person_name: str
     known_show_count: int = Field(ge=1)
-    items: list[GuestAppearanceItem] = Field(min_length=1, max_length=24)
+    items: list[GuestAppearanceItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class PersonRosterItem(ExperienceModel):
@@ -377,7 +427,7 @@ class PersonRosterItem(ExperienceModel):
 
     person_id: str
     name: str
-    roles: list[str] = Field(default_factory=list, max_length=6)
+    roles: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     show_count: int = Field(ge=0)
     first_year: str | None = None
     last_year: str | None = None
@@ -395,7 +445,7 @@ class PersonRosterBlock(ExperienceModel):
     type: Literal["person_roster"]
     title: str
     lead: str | None = None
-    items: list[PersonRosterItem] = Field(min_length=1, max_length=200)
+    items: list[PersonRosterItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class EquipmentItem(ExperienceModel):
@@ -414,7 +464,7 @@ class EquipmentListBlock(ExperienceModel):
     type: Literal["equipment_list"]
     show_id: str
     title: str
-    items: list[EquipmentItem] = Field(min_length=1, max_length=16)
+    items: list[EquipmentItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class ResourceItem(ExperienceModel):
@@ -430,7 +480,7 @@ class ResourceItem(ExperienceModel):
 class ResourceListBlock(ExperienceModel):
     type: Literal["resource_list"]
     title: str
-    items: list[ResourceItem] = Field(min_length=1, max_length=8)
+    items: list[ResourceItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class CreditItem(ExperienceModel):
@@ -442,8 +492,8 @@ class CreditItem(ExperienceModel):
 class CreditListBlock(ExperienceModel):
     type: Literal["credit_list"]
     title: str
-    items: list[CreditItem] = Field(min_length=1, max_length=12)
-    source_ids: list[str] = Field(min_length=1, max_length=8)
+    items: list[CreditItem] = Field(min_length=1, max_length=LIST_CEILING)
+    source_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class SongReleaseItem(ExperienceModel):
@@ -471,23 +521,35 @@ class SongRepresentativePerformance(ExperienceModel):
     duration_seconds: int | None = Field(default=None, ge=0)
 
 
+class SongYearCount(ExperienceModel):
+    """How many times a song was played in one year; a year with none is zero."""
+
+    year: int
+    count: int = Field(ge=0)
+
+
 class SongOverviewBlock(ExperienceModel):
     type: Literal["song_overview"]
     song_id: str
     title: str
     original_artist: str | None = None
     known_performance_count: int
+    first_year: int | None = None
+    last_year: int | None = None
     emphasis: Emphasis = "supporting"
-    judgments: list[str] = Field(default_factory=list, max_length=5)
-    visible_facets: list[SongFacet] = Field(default_factory=lambda: ["representatives"], max_length=4)
+    disclosure: CardDisclosure = "expanded"
+    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+    visible_facets: list[SongFacet] = Field(default_factory=lambda: ["representatives"], max_length=LIST_CEILING)
     history: SongHistory | None = None
+    # Every year from the song's first performance to its last, zero years included.
+    year_counts: list[SongYearCount] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
-    representative_performances: list[SongRepresentativePerformance] = Field(default_factory=list, max_length=3)
-    credits: list[CreditItem] = Field(default_factory=list, max_length=12)
-    source_ids: list[str] = Field(default_factory=list, max_length=8)
-    albums: list[SongReleaseItem] = Field(default_factory=list, max_length=6)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=4)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3)
+    representative_performances: list[SongRepresentativePerformance] = Field(default_factory=list, max_length=LIST_CEILING)
+    credits: list[CreditItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    source_ids: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+    albums: list[SongReleaseItem] = Field(default_factory=list, max_length=LIST_CEILING)
+    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class MediaLinkBlock(ExperienceModel):
@@ -517,7 +579,7 @@ class ArrangementBlock(ExperienceModel):
     capo: str | None = None
     tuning: str | None = None
     notes: str | None = None
-    progressions: list[str] = Field(default_factory=list, max_length=6)
+    progressions: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class ArrangementSearchItem(ExperienceModel):
@@ -537,7 +599,7 @@ class ArrangementSearchBlock(ExperienceModel):
     title: str
     key_signature: str
     coverage_note: str
-    items: list[ArrangementSearchItem] = Field(min_length=1, max_length=20)
+    items: list[ArrangementSearchItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class DataChartColumn(ExperienceModel):
@@ -617,14 +679,14 @@ class VersionStripBlock(ExperienceModel):
     first_song: VersionStripSong
     second_song: VersionStripSong
     total_count: int = Field(ge=0)
-    rows: list[VersionStripRow] = Field(min_length=1, max_length=60)
-    year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=40)
+    rows: list[VersionStripRow] = Field(min_length=1, max_length=LIST_CEILING)
+    year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class ProvenanceNoteBlock(ExperienceModel):
     type: Literal["provenance_note"]
     text: str
-    source_ids: list[str] = Field(min_length=1, max_length=8)
+    source_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class GapStateBlock(ExperienceModel):
@@ -632,7 +694,7 @@ class GapStateBlock(ExperienceModel):
     message: str
 
 
-class EditorialLink(ExperienceModel):
+class EditorialLink(ModelAuthored):
     """An outbound link the model attaches to something it wrote.
 
     The server keeps a link only when its URL appeared in material the tools
@@ -663,7 +725,7 @@ class ListeningHeroBlock(ExperienceModel):
     line: str | None = None
     play_label: str | None = None
     # The in-page queue, in listening order, and where playback starts in it.
-    queue: list[PlayableTrack] = Field(default_factory=list, max_length=60)
+    queue: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
     start_index: int = Field(default=0, ge=0)
     # Where Play goes when nothing is playable in-page: the official release
     # or the show's stream.
@@ -675,18 +737,19 @@ class ListeningHeroBlock(ExperienceModel):
     link: EditorialLink | None = None
 
 
-class PullQuoteBlock(ExperienceModel):
+class PullQuoteBlock(ModelAuthored):
     """One sentence the model sets apart, large, as the page's pulled line."""
 
     type: Literal["pull_quote"]
     text: str = Field(
         min_length=1,
-        max_length=400,
         description="One sentence, in your voice, that states the idea the visitor should carry away.",
     )
 
 
-class EditorialItem(ExperienceModel):
+class EditorialItemText(ModelAuthored):
+    """The words of one editorial item, as the model writes them."""
+
     # Everything but the title is optional with a default, because this model
     # doubles as the finish_response tool schema: when the optional fields were
     # required-but-nullable, the model's first finish call regularly omitted one
@@ -696,11 +759,11 @@ class EditorialItem(ExperienceModel):
         description="A short label that classifies or indexes this item and renders as small type above the subject: a year, a date, a set position, or a category such as 'The skeptical view'. Never the subject itself.",
     )
     title: str = Field(
-        description="The specific subject of this item, rendered as its heading: a song, show, person, place, fact, or claim. Put measurements and assessments in value or detail."
+        description="The specific subject of this item, rendered as its heading: a claim, a viewpoint, a place, a person, or a record you name. Put your assessment in value or detail."
     )
     value: str | None = Field(
         default=None,
-        description="The concise measurement or assessment for the subject, such as '330 performances, 1972–1995' or 'Track six'. A short value renders as display type; a sentence renders as text.",
+        description="Your concise assessment of the subject, such as 'The high-water mark' or 'Looser, faster'. A short value renders as display type; a sentence renders as text.",
     )
     detail: str | None = Field(
         default=None,
@@ -710,7 +773,7 @@ class EditorialItem(ExperienceModel):
     # sends. Only the composer writes these; the server never generates one.
     follow_ups: list[FollowUpTopic] = Field(
         default_factory=list,
-        max_length=3,
+        max_length=LIST_CEILING,
         description=(
             "Up to three topics the visitor might want more about, each a short label plus the specific question it "
             "opens when pressed, rendered as chips under 'More about'."
@@ -718,54 +781,83 @@ class EditorialItem(ExperienceModel):
     )
     link: EditorialLink | None = Field(
         default=None,
-        description="An outbound link for this item; kept only when its URL appeared in a tool result this turn.",
+        description="A link to an outside article or page this item draws on. For a show, performance or record, name it by ID instead and the server links it.",
     )
 
 
-class EditorialBlock(ExperienceModel):
-    """Flexible model-shaped material rendered in one of several visual forms."""
+class EditorialItem(EditorialItemText):
+    """One editorial item as the browser receives it."""
+
+    # A show's or performance's playable tape tracks, when the item names one
+    # and the library has them; the item's title plays them in-page.
+    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
+
+
+def read_editorial_shape(data: Any) -> Any:
+    """A fact-grid row written as a whole block becomes that block's one item,
+    and a block without a presentation gets one from its shape.
+
+    In a comparison the model sometimes writes each row as its own editorial
+    block, with the item fields (value, detail, marker) beside the title. The
+    row's fields move into one item, so the material the model meant survives
+    in both the streamed and the delivered page.
+    """
+
+    if not isinstance(data, dict):
+        return data
+    row_keys = [key for key in ("value", "detail", "marker") if key in data]
+    title = data.get("title")
+    if row_keys and not data.get("items") and isinstance(title, str) and title.strip():
+        item = {"title": title, **{key: data[key] for key in row_keys}}
+        data = {key: value for key, value in data.items() if key not in row_keys}
+        data["items"] = [item]
+        data.setdefault("presentation", "fact_grid")
+    if not data.get("presentation"):
+        # Items alone read as a fact grid; anything else as a narrative.
+        data = {**data, "presentation": "fact_grid" if data.get("items") and not data.get("paragraphs") else "narrative"}
+    return data
+
+
+class EditorialBlock(ModelAuthored):
+    """Prose, viewpoints and comparisons in the model's own words, rendered in one of several forms."""
 
     @model_validator(mode="before")
     @classmethod
-    def _lift_a_row_written_as_a_block(cls, data: Any) -> Any:
-        """A fact-grid row the model wrote as a whole block becomes that block's one item.
-
-        In a comparison the model sometimes writes each row as its own
-        editorial block, with the item fields (value, detail, marker) beside
-        the title. Read as written, every row fails the schema and the group
-        empties. The row's fields move into one item, so the material the
-        model meant survives in both the streamed and the delivered page.
-        """
-
-        if not isinstance(data, dict):
-            return data
-        row_keys = [key for key in ("value", "detail", "marker") if key in data]
-        if not row_keys or data.get("items"):
-            return data
-        title = data.get("title")
-        if not isinstance(title, str) or not title.strip():
-            return data
-        item = {"title": title, **{key: data[key] for key in row_keys}}
-        lifted = {key: value for key, value in data.items() if key not in row_keys}
-        lifted["items"] = [item]
-        lifted.setdefault("presentation", "fact_grid")
-        return lifted
+    def _read_shape(cls, data: Any) -> Any:
+        return read_editorial_shape(data)
 
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
+        default="narrative",
         description="narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence."
     )
     eyebrow: str | None = None
     title: str | None = None
-    paragraphs: list[str] = Field(default_factory=list, max_length=4)
-    items: list[EditorialItem] = Field(
-        default_factory=list,
-        max_length=40,
-        description=(
-            "The items of a fact_grid or timeline, in reading order: a set judged on shared terms, a ranking, or a sequence. "
-            "A complete set of people belongs in a person_roster, which holds the whole list."
-        ),
-    )
+    paragraphs: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+    items: list[EditorialItem] = Field(default_factory=list, max_length=LIST_CEILING)
+
+
+class RankedListRow(ExperienceModel):
+    rank: int = Field(ge=1)
+    # The row's record ID (a song, venue or guest), when the result has one.
+    id: str | None = None
+    label: str
+    value: int
+    note: str | None = None
+
+
+class RankedListBlock(ExperienceModel):
+    """The top rows of one aggregate_data result, ranked, with the model's notes on the rows it chose."""
+
+    type: Literal["ranked_list"]
+    aggregation_id: str
+    title: str
+    note: str | None = None
+    dimension_label: str
+    metric_label: str
+    rows: list[RankedListRow] = Field(min_length=1, max_length=LIST_CEILING)
+    # Rows of the result not shown.
+    more_count: int = Field(default=0, ge=0)
 
 
 ExperienceBlock = Annotated[
@@ -791,7 +883,8 @@ ExperienceBlock = Annotated[
     | GapStateBlock
     | EditorialBlock
     | ListeningHeroBlock
-    | PullQuoteBlock,
+    | PullQuoteBlock
+    | RankedListBlock,
     Field(discriminator="type"),
 ]
 
@@ -820,8 +913,8 @@ class ExperienceGroup(ExperienceModel):
     title: str | None = None
     lead: str | None = None
     presentation: GroupPresentation
-    criteria: list[str] = Field(default_factory=list, max_length=5)
-    block_indexes: list[int] = Field(min_length=1, max_length=12)
+    criteria: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+    block_indexes: list[int] = Field(min_length=1, max_length=PAGE_BLOCK_CEILING)
 
 
 class ExperienceResponse(ExperienceModel):
@@ -832,8 +925,8 @@ class ExperienceResponse(ExperienceModel):
     body_lead: str | None = None
     mode: ExperienceMode = "answer"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
-    blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=32)
-    groups: list[ExperienceGroup] = Field(default_factory=list, max_length=8)
+    blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=PAGE_BLOCK_CEILING)
+    groups: list[ExperienceGroup] = Field(default_factory=list, max_length=LIST_CEILING)
     # A 32-block exploratory response can legitimately reference more than one
     # source per block (for example, show identity plus a recording path).
-    sources: list[SourceReference] = Field(default_factory=list, max_length=64)
+    sources: list[SourceReference] = Field(default_factory=list, max_length=LIST_CEILING)

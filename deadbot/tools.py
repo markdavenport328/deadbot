@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from datetime import date, datetime, time, timezone
@@ -420,6 +421,13 @@ def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
         return stored_selection_entries(store)
     except SelectionSignalError:
         return None
+
+
+def _catalog_result_id(sql: str, params: dict[str, Any]) -> str:
+    """A stable ID for one catalog query and its parameters, which a page item can point at."""
+
+    digest = hashlib.sha256(json.dumps({"sql": sql, "params": params}, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    return f"query:{digest[:16]}"
 
 
 def build_tools(
@@ -2056,7 +2064,7 @@ def build_tools(
                 if value is not None and value != ""
             ]
             if not name:
-                result = store.run_catalog_query(sql)
+                result = {**store.run_catalog_query(sql), "result_id": _catalog_result_id(sql, {})}
                 return _json({**result, "ignored": supplied} if supplied else result)
             query = NAMED_QUERIES.get(name)
             if query is None:
@@ -2086,7 +2094,7 @@ def build_tools(
             bound = {key: value for key, value in params.items() if f":{key}" in query.sql}
             ignored = [key for key in supplied if key not in bound] + (["sql"] if sql else [])
             result = store.run_catalog_query(query.sql, bound, menu=True)
-            payload = {"query": name, **result}
+            payload = {"query": name, "result_id": _catalog_result_id(query.sql, bound), **result}
             if ignored:
                 payload["ignored"] = ignored
             return _json(payload)

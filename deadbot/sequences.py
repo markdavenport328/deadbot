@@ -17,6 +17,7 @@ from statistics import median
 from typing import Any, Callable, Iterable
 
 from deadbot.data import CanonicalStore
+from deadbot.experience import fit
 
 TRANSITIONS = ("segue", "any")
 
@@ -381,7 +382,7 @@ def version_strip_block(
             first_track=playable(version.first_performance_id, first_title, version.first_track, version.set_label),
             second_track=playable(version.second_performance_id, second_title, version.second_track, version.set_label),
         )
-        for version in chosen[:60]
+        for version in fit(chosen, "version strip nights")
     ]
     # The count and year strip describe the same relationship the rows show:
     # segued nights when every chosen night is a segue, otherwise every night
@@ -396,5 +397,5 @@ def version_strip_block(
         second_song=VersionStripSong(song_id=songs[1], title=second_title),
         total_count=len(counted),
         rows=rows,
-        year_counts=[VersionStripYear(**entry) for entry in year_counts(counted)][:40] if show_year_counts else [],
+        year_counts=[VersionStripYear(**entry) for entry in year_counts(counted)] if show_year_counts else [],
     )

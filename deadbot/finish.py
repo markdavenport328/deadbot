@@ -12,6 +12,7 @@ missing plan is a logged, diagnosable failure.
 
 from __future__ import annotations
 
+import copy
 import logging
 import re
 from collections.abc import Iterable
@@ -21,11 +22,14 @@ from typing import Annotated, Any, Literal
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from deadbot import composition, sequences
+from deadbot import composition, record_refs, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
+    PAGE_BLOCK_CEILING,
     ConversationTurn,
     EditorialBlock,
+    EditorialItem,
+    EditorialItemText,
     Emphasis,
     ExperienceGroup,
     EditorialLink,
@@ -41,17 +45,14 @@ from deadbot.experience import (
     ShowUnitBlock,
     SongFacet,
     SourceReference,
+    fit,
+    read_editorial_shape,
 )
 
 
 logger = logging.getLogger(__name__)
 
 FINISH_TOOL_NAME = "finish_response"
-
-# The most items one group carries. Applied identically by the finish tool's
-# plan validation and by the progressive streamer, so the page the visitor
-# watches compose is the page that is delivered.
-GROUP_ITEM_LIMIT = 20
 
 # The ways a group can relate its items. An unknown value reads as a
 # collection in both paths rather than failing the plan.
@@ -72,6 +73,13 @@ class GroundedContext:
 
 
 def _walk(value: Any, ids: set[str], urls: set[str], key: str | None = None) -> None:
+    if isinstance(value, dict) and isinstance(value.get("columns"), list) and isinstance(value.get("rows"), list):
+        # A query_catalog result: each row is a list, named by the columns.
+        names = [name if isinstance(name, str) else None for name in value["columns"]]
+        for row in value["rows"]:
+            if isinstance(row, list):
+                for name, cell in zip(names, row):
+                    _walk(cell, ids, urls, name)
     if isinstance(value, dict):
         for child_key, child in value.items():
             _walk(child, ids, urls, child_key)
@@ -108,7 +116,7 @@ def keep_grounded_links(text: str, urls: frozenset[str]) -> str:
 class _Ref(BaseModel):
     """A library component referenced by canonical ID, optionally retitled."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     title: str | None = None
 
 
@@ -125,7 +133,7 @@ class GuestAppearancesRef(_Ref):
 class PersonRosterEntry(BaseModel):
     """One person in a roster, by ID, with an optional phrase from the model."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     person_id: str = Field(description="A person_id that appeared in a tool result this turn.")
     note: str | None = Field(
         default=None,
@@ -147,8 +155,6 @@ class PersonRosterRef(_Ref):
     title: str = Field(description="The heading that names this section of people: a scene, role, era or pattern, in a few words.")
     lead: str | None = Field(default=None, description="One sentence on what unites these people, when the heading alone does not say it.")
     entries: list[PersonRosterEntry] = Field(
-        min_length=1,
-        max_length=200,
         description="Everyone who belongs in this section, in the order you want them read. Across the page's rosters, every person appears once.",
     )
 
@@ -175,7 +181,7 @@ class MediaLinkRef(_Ref):
 
 class ResourceListRef(_Ref):
     type: Literal["resource_list"]
-    resource_ids: list[str] = Field(min_length=1, max_length=8)
+    resource_ids: list[str]
 
 
 _NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretation, not the facts the server already shows."
@@ -210,8 +216,6 @@ class VersionStripRef(_Ref):
     type: Literal["version_strip"]
     pairing_id: str = Field(description="The pairing_id from a get_segue_pairing result this turn.")
     pair_ids: list[str] = Field(
-        min_length=1,
-        max_length=60,
         description="The nights to draw, as pair_ids from that result, in the order you want them read.",
     )
     title: str | None = Field(default=None, description="What the visitor should see across these nights, in a few words.")
@@ -220,6 +224,59 @@ class VersionStripRef(_Ref):
         default=False,
         description="Add a small strip of how many nights the pairing was played each year, when its rise, gaps or fade matter here.",
     )
+
+
+class EditorialItemPlan(EditorialItemText):
+    """One editorial item as the model writes it: its words, and the record it is about when it names one."""
+
+    show_id: str | None = Field(default=None, description="A show this item is about, from this turn; the server makes its title play the show.")
+    performance_id: str | None = Field(default=None, description="A performance this item is about, from this turn; the server makes its title play it.")
+    release_id: str | None = Field(default=None, description="An official record this item is about, from this turn; the server links it.")
+
+
+class EditorialPlan(BaseModel):
+    """Prose, viewpoints and comparisons in your own words: narrative, fact_grid or timeline.
+
+    Records belong in the reference-based items (the units and ranked_list),
+    where the server supplies their facts.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_shape(cls, data: Any) -> Any:
+        return read_editorial_shape(data)
+
+    type: Literal["editorial"]
+    presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
+        default="narrative",
+        description="narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.",
+    )
+    eyebrow: str | None = None
+    title: str | None = None
+    paragraphs: list[str] = Field(default_factory=list)
+    items: list[EditorialItemPlan] = Field(
+        default_factory=list,
+        description="The items of a fact_grid or timeline, in reading order: viewpoints or claims judged on shared terms, or the steps of a sequence.",
+    )
+
+
+class RankedRowNote(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    key: str = Field(description="The row's id, or its label or year, as the aggregate_data result gives it.")
+    note: str = Field(description="Your short note on this row.")
+
+
+class RankedListRef(_Ref):
+    """The top rows of one aggregate_data result as a ranked list, with every number from the result."""
+
+    type: Literal["ranked_list"]
+    aggregation_id: str = Field(description="The aggregation_id of an aggregate_data result this turn.")
+    count: int | None = Field(default=None, description="How many rows to show from the top; omit it to show every row of the result.")
+    title: str | None = Field(default=None, description="What the ranking shows, in a few words.")
+    note: str | None = None
+    notes: list[RankedRowNote] = Field(default_factory=list, description="Notes on the rows that deserve one.")
 
 
 # --- semantic units ---------------------------------------------------------
@@ -233,7 +290,7 @@ class VersionStripRef(_Ref):
 class SupportingSource(BaseModel):
     """Evidence the composer attaches to a unit, cited by a URL a tool returned this turn."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     url: str = Field(description="A URL that appeared in a tool result this turn: a resource, research record, search hit, read page or archive review.")
     note: str | None = Field(default=None, description="What this source says about the unit, in a sentence, with attribution.")
 
@@ -245,9 +302,8 @@ class FollowUpTopic(BaseModel):
     question, in the visitor's voice, to start a new turn.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     label: str = Field(
-        max_length=40,
         description="Two or three words naming the topic as it will appear on the chip, e.g. 'Guest musicians', 'Spring 1990', 'Jazz and the Dead'.",
     )
     question: str = Field(description="The full question, in the visitor's voice, that the chip sends when pressed.")
@@ -272,6 +328,20 @@ _FOLLOW_UPS_DESCRIPTION = (
 )
 
 
+_DISCLOSURE_DESCRIPTION = (
+    "collapsed renders this record as one compact row the server fills in, with its play control and a cue that opens "
+    "the full card in place; expanded renders the full card."
+)
+
+
+def _from_result_description(record: str, column: str) -> str:
+    return (
+        f"Instead of one {column}: the result_id of a query_catalog result, or the aggregation_id of an aggregate_data "
+        f"result, whose rows carry {column}. The server makes one {record} card per row, in the result's order, each with "
+        "the settings on this item."
+    )
+
+
 class ShowUnitRef(_Ref):
     """One show as a primary object of the answer. The server supplies date, venue, setlist, guests and listening."""
 
@@ -284,14 +354,15 @@ class ShowUnitRef(_Ref):
         ),
     )
     type: Literal["show_unit"]
-    show_id: str
+    show_id: str | None = None
+    from_result: str | None = Field(default=None, description=_from_result_description("show", "show_id"))
+    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     visible_facets: list[ShowFacet] = Field(
         default_factory=list,
-        max_length=6,
         description=(
             "The facets worth showing for this show. guests, listen, setlist and sources as before; lineup is the full "
             "performer list; recordings is the complete recording inventory. Identity and your note are always shown."
@@ -303,34 +374,34 @@ class ShowUnitRef(_Ref):
     )
     highlighted_performance_ids: list[str] = Field(
         default_factory=list,
-        max_length=12,
         description="Performances in this show that deserve attention; the setlist marks them and offers them first.",
     )
     preferred_recording_id: str | None = Field(default=None, description="The recording of this show to lead with, when you have a reason to prefer one.")
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class PerformanceUnitRef(_Ref):
     """One rendition as a primary object. The server supplies song, show, set context and listening."""
 
     type: Literal["performance_unit"]
-    performance_id: str
+    performance_id: str | None = None
+    from_result: str | None = Field(default=None, description=_from_result_description("performance", "performance_id"))
+    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     visible_facets: list[PerformanceFacet] = Field(
         default_factory=lambda: ["setlist", "listen", "sources"],
-        max_length=3,
         description=(
             "The parts of this performance worth showing: setlist (where it sits in its set, with the songs either side), "
             "listen (play links for this rendition and its show), sources (your supporting sources). Identity and your note "
             "are always shown. Omit the field to show all three."
         ),
     )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class EraUnitRef(_Ref):
@@ -340,9 +411,9 @@ class EraUnitRef(_Ref):
     title: str = Field(description="The stage, in your words: '1973–74: spacious and exploratory'.")
     span: str | None = Field(default=None, description="The years or dates this stage covers.")
     note: str | None = Field(default=None, description="What changed in this stage and how you know.")
-    representative_performance_ids: list[str] = Field(min_length=1, max_length=6, description="Performances that show this stage; each becomes a listening path.")
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
+    representative_performance_ids: list[str] = Field(description="Performances that show this stage; each becomes a listening path.")
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class AlbumUnitRef(_Ref):
@@ -357,48 +428,49 @@ class AlbumUnitRef(_Ref):
         ),
     )
     type: Literal["album_unit"]
-    release_id: str
+    release_id: str | None = None
+    from_result: str | None = Field(default=None, description=_from_result_description("record", "release_id"))
+    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
     visible_facets: list[Literal["listen", "tracklist", "personnel", "sources"]] = Field(
         default_factory=list,
-        max_length=4,
         description=(
             "The record details that materially advance this answer. Select deliberately: tracklist and personnel hydrate the complete available lists, "
             "so omit them when the record is only context. Identity and your note are always shown."
         ),
     )
-    highlighted_song_ids: list[str] = Field(default_factory=list, max_length=12)
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
+    highlighted_song_ids: list[str] = Field(default_factory=list)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class SongOverviewRef(_Ref):
     """One song as a primary object, with model-chosen representative performances."""
 
     type: Literal["song_overview"]
-    song_id: str
+    song_id: str | None = None
+    from_result: str | None = Field(default=None, description=_from_result_description("song", "song_id"))
+    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
     role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, max_length=5, description=_JUDGMENTS_DESCRIPTION)
+    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     visible_facets: list[SongFacet] = Field(
         default_factory=lambda: ["representatives"],
-        max_length=4,
         description=(
             "The song facets worth showing: representatives (your chosen renditions), credits, albums, history (first "
-            "and last performances, the count, and one rendition per year with listening links)."
+            "and last performances, the count, and one rendition per year with listening links), by_year (how often the song was played each year)."
         ),
     )
     representative_performance_ids: list[str] = Field(
         default_factory=list,
-        max_length=3,
         description="Representative performances for this song, in the listening order you chose. Retrieve concrete rendition IDs first; each known direct recording link remains attached.",
     )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, max_length=4, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=3, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
 
 
 class ListeningHeroRef(BaseModel):
@@ -409,7 +481,7 @@ class ListeningHeroRef(BaseModel):
     supplies identity, the image and the playable queue.
     """
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="ignore")
     type: Literal["listening_hero"]
     show_id: str | None = Field(default=None, description="The show to play: a show_id that appeared in a tool result this turn.")
     release_id: str | None = Field(
@@ -436,7 +508,7 @@ def _emphasis_for(ref: Any) -> Emphasis:
 
 
 BodyItem = Annotated[
-    EditorialBlock
+    EditorialPlan
     | PullQuoteBlock
     | ListeningHeroRef
     | ShowUnitRef
@@ -453,7 +525,8 @@ BodyItem = Annotated[
     | MediaLinkRef
     | ResourceListRef
     | DataChartRef
-    | VersionStripRef,
+    | VersionStripRef
+    | RankedListRef,
     Field(discriminator="type"),
 ]
 
@@ -471,42 +544,133 @@ def _describe_validation_error(error: ValidationError) -> str:
     return f"{location or 'item'}: {first.get('msg', 'invalid')}"
 
 
-def validate_body_item(raw: Any, *, where: str) -> Any | None:
-    """One body item, or ``None`` when it does not fit its schema.
+# The keys whose text a model item carries, in the order the fallback reads them.
+_TEXT_TITLE_KEYS = ("title", "heading", "name", "label")
+_TEXT_BODY_KEYS = ("note", "lead", "text", "line", "span", "value", "detail")
 
-    The one rule for a body item, shared by the finish tool's plan validation
-    and the progressive streamer: an item that does not fit is dropped and
-    logged, never a reason to reject the plan around it. Both paths apply it
-    to the same text, so the draft page and the delivered page agree.
+
+def model_text_block(raw: Any) -> EditorialBlock | None:
+    """The model's own words from an item, as a narrative block, or ``None`` when it wrote none.
+
+    Used when an item cannot be read as its type or its reference does not
+    resolve: the visitor still gets what the model wrote, without the record.
+    """
+
+    data = raw.model_dump() if isinstance(raw, BaseModel) else raw
+    if not isinstance(data, dict):
+        return None
+    title = next((data[key].strip() for key in _TEXT_TITLE_KEYS if isinstance(data.get(key), str) and data[key].strip()), None)
+    paragraphs = [data[key].strip() for key in _TEXT_BODY_KEYS if isinstance(data.get(key), str) and data[key].strip()]
+    if not title and not paragraphs:
+        return None
+    return EditorialBlock(type="editorial", presentation="narrative", title=title, paragraphs=paragraphs)
+
+
+def _remove_at(data: Any, path: tuple[Any, ...]) -> bool:
+    """Remove the value at ``path`` inside ``data``; ``True`` when something was removed."""
+
+    parent = data
+    for step in path[:-1]:
+        try:
+            parent = parent[step]
+        except (KeyError, IndexError, TypeError):
+            return False
+    last = path[-1]
+    if isinstance(parent, dict) and last in parent:
+        del parent[last]
+        return True
+    if isinstance(parent, list) and isinstance(last, int) and 0 <= last < len(parent):
+        del parent[last]
+        return True
+    return False
+
+
+def _path_order(path: tuple[Any, ...]) -> list[tuple[int, Any]]:
+    return [(0, step) if isinstance(step, int) else (1, str(step)) for step in path]
+
+
+def _without_invalid_parts(data: dict[str, Any], error: ValidationError) -> dict[str, Any] | None:
+    """``data`` minus the parts the error names, or ``None`` when the item itself is wrong.
+
+    A bad list entry is removed from its list; a bad optional field is removed
+    so its default applies; a missing required field removes the nested object
+    that needed it. What remains is validated again.
+    """
+
+    repaired = copy.deepcopy(data)
+    paths: set[tuple[Any, ...]] = set()
+    for problem in error.errors():
+        location = tuple(problem.get("loc", ()))
+        if location and location[0] == data.get("type"):
+            location = location[1:]  # A discriminated union names the tag first.
+        indexes = [position for position, step in enumerate(location) if isinstance(step, int)]
+        if indexes:
+            path = location[: indexes[-1] + 1]
+        elif problem.get("type") == "missing":
+            path = location[:-1]
+        else:
+            path = location
+        if not path or path == ("type",):
+            return None
+        paths.add(path)
+    removed = False
+    # Deepest and last first, so removing one list entry does not shift another.
+    for path in sorted(paths, key=_path_order, reverse=True):
+        removed = _remove_at(repaired, path) or removed
+    return repaired if removed else None
+
+
+def validate_body_item(raw: Any, *, where: str) -> Any | None:
+    """One body item read leniently, or ``None`` when it carries nothing to show.
+
+    The one reading of a body item, shared by the finish tool's plan
+    validation and the progressive streamer, so the draft page and the
+    delivered page agree. Extra keys are ignored by the schemas; a missing
+    ``type`` is inferred when the item's shape says it is editorial; a bad
+    entry or optional field is removed and the rest kept. An item that still
+    cannot be read as its type keeps the model's own words as a narrative.
     """
 
     if isinstance(raw, BaseModel):
         return raw
-    if (
-        isinstance(raw, dict)
-        and "type" not in raw
-        and isinstance(raw.get("title"), str)
-        and any(key in raw for key in ("value", "detail", "marker"))
-    ):
-        # A fact row written without its type is an editorial row; the
-        # editorial block lifts it into a one-item block.
-        raw = {**raw, "type": "editorial"}
-    try:
-        return _BODY_ITEM_ADAPTER.validate_python(raw)
-    except ValidationError as error:
-        kind = raw.get("type") if isinstance(raw, dict) else type(raw).__name__
-        keys = sorted(raw.keys()) if isinstance(raw, dict) else []
-        logger.warning(
-            "Dropped a %s %s item that did not fit its schema (%s); it carried keys %s", where, kind, _describe_validation_error(error), keys
-        )
+    if not isinstance(raw, dict):
+        logger.info("Skipped a %s body item that was not an object", where)
         return None
+    if "type" not in raw and any(key in raw for key in ("value", "detail", "marker", "paragraphs", "items")):
+        # Prose or a fact row written without its type is editorial.
+        raw = {**raw, "type": "editorial"}
+    candidate: dict[str, Any] = raw
+    for _ in range(6):
+        try:
+            return _BODY_ITEM_ADAPTER.validate_python(candidate)
+        except ValidationError as error:
+            reason = _describe_validation_error(error)
+            repaired = _without_invalid_parts(candidate, error)
+            if repaired is None:
+                break
+            logger.info("Read a %s %s item without an invalid part (%s)", where, raw.get("type"), reason)
+            candidate = repaired
+    fallback = model_text_block(raw)
+    logger.warning("A %s %s item did not fit its schema; %s", where, raw.get("type"), "kept its text" if fallback else "it had no text")
+    return fallback
+
+
+def clean_criteria(raw: Any) -> list[str]:
+    """A group's comparison criteria: its non-blank strings, trimmed."""
+
+    return [entry.strip() for entry in raw if isinstance(entry, str) and entry.strip()] if isinstance(raw, list) else []
+
+
+def group_presentation(raw: Any) -> str:
+    """A group's presentation; an unknown or missing one reads as a collection."""
+
+    return raw if raw in PRESENTATIONS else "collection"
 
 
 class GroupPlan(BaseModel):
     """A model-selected editorial relationship among body items."""
 
-    # A key the schema does not name is ignored, as the streamer ignores it;
-    # the items inside keep their own strict schemas (see validate_body_item).
+    # A key the schema does not name is ignored, as the streamer ignores it.
     model_config = ConfigDict(extra="ignore")
     title: str | None = Field(
         default=None,
@@ -517,18 +681,17 @@ class GroupPlan(BaseModel):
     )
     lead: str | None = Field(default=None, description="A brief relationship, claim, or shared basis that adds to the page lead. Omit it rather than restating the same framing.")
     presentation: Literal["collection", "sequence", "comparison", "argument"] = Field(
+        default="collection",
         description="collection for peers, sequence for a development or route, comparison for items judged on shared terms, argument for evidence supporting a claim."
     )
     criteria: list[str] = Field(
         default_factory=list,
-        max_length=5,
         description="For a comparison only: the shared terms the items are judged on, in order, as short labels such as 'Tempo' or 'Second-set jam'.",
     )
     items: list[BodyItem] = Field(
         min_length=1,
-        max_length=GROUP_ITEM_LIMIT,
         description=(
-            "Only the items that earn a place in the answer, in exact reading order, up to twenty. "
+            "Only the items that earn a place in the answer, in exact reading order. "
             "Retrieved or related does not mean included."
         ),
     )
@@ -541,46 +704,36 @@ class FinishPlan(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _apply_body_rules(cls, data: Any) -> Any:
-        """Body rules the streamer applies too, so both paths deliver one page.
+    def _read_groups_leniently(cls, data: Any) -> Any:
+        """Read every group and item the way the streamer reads them.
 
-        A group keeps its first ``GROUP_ITEM_LIMIT`` items; an item that does
-        not fit its schema is dropped; a group left with no items is dropped;
-        the page keeps its first eight groups; an unknown presentation reads
-        as a collection and criteria keep only their strings. Sizes truncate
-        and bad values fall back instead of failing the whole plan, because a
-        failed plan makes the model retry with a different plan after the
-        visitor has already watched the first one compose. What the plan must
-        still get right is the answer and the title.
+        Each item goes through ``validate_body_item``; a group keeps whatever
+        of its items carry something to show, and a group with none is left
+        out. An unknown presentation reads as a collection. Nothing here caps
+        how many groups or items the model plans, and nothing fails the plan
+        around a bad item: a failed plan makes the model start over after the
+        visitor has already watched the first one compose.
         """
 
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
             return data
-        raw_groups = data["groups"]
-        if len(raw_groups) > 8:
-            logger.warning("finish_response planned %d groups; keeping the first 8", len(raw_groups))
-            raw_groups = raw_groups[:8]
         groups: list[Any] = []
-        for group in raw_groups:
+        for group in data["groups"]:
+            if isinstance(group, GroupPlan):
+                groups.append(group)
+                continue
             if not isinstance(group, dict) or not isinstance(group.get("items"), list):
-                groups.append(group)  # Ordinary validation reports what is wrong with it.
+                logger.info("finish_response planned a group without an items list; leaving it out")
                 continue
-            raw_items = group["items"]
-            if len(raw_items) > GROUP_ITEM_LIMIT:
-                logger.warning("finish_response planned %d items in one group; keeping the first %d", len(raw_items), GROUP_ITEM_LIMIT)
-                raw_items = raw_items[:GROUP_ITEM_LIMIT]
-            items = [item for item in (validate_body_item(raw, where="planned") for raw in raw_items) if item is not None]
+            items = [item for item in (validate_body_item(raw, where="planned") for raw in group["items"]) if item is not None]
             if not items:
-                logger.warning("finish_response planned a group with no usable items (title=%r); dropping it", group.get("title"))
+                logger.info("finish_response planned a group with nothing to show (title=%r)", group.get("title"))
                 continue
-            presentation = group.get("presentation")
-            if presentation not in PRESENTATIONS:
-                logger.warning("finish_response planned a group with presentation %r; reading it as a collection", presentation)
-                presentation = "collection"
-            criteria = group.get("criteria")
-            criteria = [entry for entry in criteria if isinstance(entry, str)][:5] if isinstance(criteria, list) else []
-            groups.append({**group, "presentation": presentation, "criteria": criteria, "items": items})
+            groups.append(
+                {**group, "presentation": group_presentation(group.get("presentation")), "criteria": clean_criteria(group.get("criteria")), "items": items}
+            )
         return {**data, "groups": groups}
+
     chat_answer: str = Field(
         description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. May use markdown links to URLs the tools returned this turn."
     )
@@ -588,15 +741,16 @@ class FinishPlan(BaseModel):
     lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
     groups: list[GroupPlan] = Field(
         default_factory=list,
-        max_length=8,
         description=(
             "The edited main body as groups, each one a distinct relationship: collection for peers, sequence for a development or route, "
             "comparison for items judged on shared criteria, argument for evidence under a claim. Inside a group, semantic units declare the "
             "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
-            "Give each object an emphasis. Editorial blocks you write (narrative, fact_grid, timeline) carry what spans the units. "
+            "Give each object an emphasis, and a disclosure: collapse cards when the visitor wants to scan a set, expand the few they came for; "
+            "from_result lists every record in a tool result. Editorial blocks you write (narrative, fact_grid, timeline) carry prose, "
+            "viewpoints and comparisons in your words. "
             "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
             "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list, "
-            "data_chart (a chart built from one aggregate_data result), version_strip (chosen nights of one get_segue_pairing result drawn to one clock, "
+            "data_chart (a chart built from one aggregate_data result), ranked_list (the top rows of one aggregate_data result), version_strip (chosen nights of one get_segue_pairing result drawn to one clock, "
             "each row playing both songs). A listening_hero "
             "leads the page when the visitor wants to hear a show or recording: place it first. A pull_quote sets one sentence of yours large, "
             "for the idea the visitor should carry away. An answer that needs no main body leaves groups empty."
@@ -610,16 +764,50 @@ def _retitle(block: Any, title: str | None) -> Any:
     return block
 
 
-def _sanitize_editorial(block: EditorialBlock, urls: frozenset[str]) -> EditorialBlock:
-    items = [
-        item.model_copy(update={"link": item.link if item.link and item.link.url in urls else None})
-        for item in block.items
-    ]
-    return block.model_copy(
-        update={
-            "paragraphs": [keep_grounded_links(paragraph, urls) for paragraph in block.paragraphs],
-            "items": items,
-        }
+def _external_link(link: Any) -> EditorialLink | None:
+    url = getattr(link, "url", None)
+    label = (getattr(link, "label", None) or "").strip()
+    if isinstance(url, str) and url.startswith(("http://", "https://")) and label:
+        return EditorialLink(url=url, label=label)
+    return None
+
+
+def _sanitize_editorial(
+    block: Any,
+    grounded: GroundedContext,
+    payloads: list[dict[str, Any]],
+    store: CanonicalStore,
+) -> EditorialBlock:
+    """The browser's editorial block: the model's words, with each named record linked by the server."""
+
+    items: list[EditorialItem] = []
+    for item in block.items:
+        link = _external_link(item.link)
+        tracks: list[Any] = []
+        for kind in ("performance", "show", "release"):
+            record_id = getattr(item, f"{kind}_id", None)
+            if record_id and record_id in grounded.ids:
+                record_link, tracks = record_refs.record_link(kind, record_id, store)
+                link = record_link or link
+                break
+        items.append(
+            EditorialItem(
+                marker=item.marker,
+                title=item.title,
+                value=item.value,
+                detail=item.detail,
+                follow_ups=composition._clean_follow_ups(item.follow_ups),
+                link=link,
+                tracks=tracks,
+            )
+        )
+    return EditorialBlock(
+        type="editorial",
+        presentation=block.presentation,
+        eyebrow=block.eyebrow,
+        title=block.title,
+        paragraphs=[keep_grounded_links(paragraph, grounded.urls) for paragraph in block.paragraphs],
+        items=items,
     )
 
 
@@ -819,7 +1007,7 @@ def _resolve_person_roster(
             PersonRosterItem(
                 person_id=entry.person_id,
                 name=facts["name"],
-                roles=facts["roles"][:6],
+                roles=facts["roles"],
                 show_count=show_count,
                 first_year=years[0] if years else None,
                 last_year=years[-1] if years else None,
@@ -832,7 +1020,7 @@ def _resolve_person_roster(
         type="person_roster",
         title=item.title.strip() or "People",
         lead=keep_grounded_links(item.lead.strip(), grounded.urls) if item.lead and item.lead.strip() else None,
-        items=items[:200],
+        items=fit(items, "roster people"),
     )
 
 
@@ -1037,7 +1225,7 @@ def _resolve_reference(
                     sources.append(source)
         if not rows:
             return None, []
-        return ResourceListBlock(type="resource_list", title=(item.title or "Reading and listening").strip(), items=rows[:8]), sources
+        return ResourceListBlock(type="resource_list", title=(item.title or "Reading and listening").strip(), items=rows), sources
 
     if kind == "data_chart":
         if item.aggregation_id not in grounded.ids:
@@ -1051,6 +1239,13 @@ def _resolve_reference(
             note=item.note,
         )
         return (block, []) if block else (None, [])
+
+    if kind == "ranked_list":
+        payload = _find_aggregation_payload(payloads, item.aggregation_id)
+        if payload is None:
+            return None, []
+        notes = {entry.key.strip(): entry.note.strip() for entry in item.notes if entry.key.strip() and entry.note.strip()}
+        return record_refs.ranked_list_block(payload, count=item.count, title=item.title, note=item.note, row_notes=notes), []
 
     if kind == "version_strip":
         block = sequences.version_strip_block(
@@ -1067,34 +1262,85 @@ def _resolve_reference(
     return None, []
 
 
+def resolve_item(
+    item: Any,
+    grounded: GroundedContext,
+    payloads: list[dict[str, Any]],
+    store: CanonicalStore,
+) -> tuple[ExperienceBlock | None, list[SourceReference]]:
+    """One read body item as a block, with the sources it cites.
+
+    A reference that does not resolve to a record from this turn keeps the
+    model's own words for it; only an item with nothing to show is skipped.
+    """
+
+    if isinstance(item, (EditorialPlan, EditorialBlock)):
+        return _sanitize_editorial(item, grounded, payloads, store), []
+    if isinstance(item, PullQuoteBlock):
+        text = _MARKDOWN_LINK.sub(lambda match: match.group(1), item.text).strip()
+        return (item.model_copy(update={"text": text}) if text else None), []
+    try:
+        block, sources = _resolve_reference(item, grounded, payloads, store)
+    except Exception:  # One item that fails to hydrate must not cost the page.
+        logger.exception("A %s item failed to hydrate; keeping its text", getattr(item, "type", "body"))
+        block, sources = None, []
+    if block is None:
+        logger.info("A %s reference did not resolve to this turn's records; keeping its text", getattr(item, "type", "body"))
+        fallback = model_text_block(item)
+        return (_sanitize_editorial(fallback, grounded, payloads, store) if fallback else None), []
+    disclosure = getattr(item, "disclosure", None)
+    if disclosure and hasattr(block, "disclosure"):
+        update: dict[str, Any] = {"disclosure": disclosure}
+        if disclosure == "collapsed" and isinstance(block, ShowUnitBlock):
+            from deadbot.listening import playable_show_tracks
+
+            update["tracks"] = playable_show_tracks(block.show_id, store)[0]
+        block = block.model_copy(update=update)
+    return block, sources
+
+
+# The ID field of each record unit, which a ``from_result`` fills row by row.
+_UNIT_ID_FIELDS = {"show_unit": "show_id", "performance_unit": "performance_id", "album_unit": "release_id", "song_overview": "song_id"}
+
+
+def expand_item(item: Any, payloads: list[dict[str, Any]]) -> list[Any]:
+    """A unit that points at a tool result becomes one unit per row, in the result's order."""
+
+    field = _UNIT_ID_FIELDS.get(getattr(item, "type", ""))
+    if not field or getattr(item, field, None) or not getattr(item, "from_result", None):
+        return [item]
+    ids = record_refs.result_ids(payloads, item.from_result, field)
+    if not ids:
+        logger.info("A %s pointed at %r, which has no %s rows this turn", item.type, item.from_result, field)
+        return [item]
+    return [item.model_copy(update={field: record_id, "from_result": None}) for record_id in ids]
+
+
+def _add_sources(into: list[SourceReference], new: Iterable[SourceReference]) -> None:
+    seen = {existing.source_id for existing in into}
+    for source in new:
+        if source.source_id not in seen:
+            seen.add(source.source_id)
+            into.append(source)
+
+
 def resolve_items(
     items: list[Any],
     grounded: GroundedContext,
     payloads: list[dict[str, Any]],
     store: CanonicalStore,
 ) -> tuple[list[ExperienceBlock], list[SourceReference]]:
-    """Resolve a list of body items into validated blocks, dropping what was not retrieved."""
+    """Resolve body items into blocks in order; the streamer and the final page both use this."""
 
     blocks: list[ExperienceBlock] = []
     sources: list[SourceReference] = []
-    for item in items:
-        if isinstance(item, EditorialBlock):
-            blocks.append(_sanitize_editorial(item, grounded.urls))
-            continue
-        if isinstance(item, PullQuoteBlock):
-            text = _MARKDOWN_LINK.sub(lambda match: match.group(1), item.text).strip()
-            if text:
-                blocks.append(item.model_copy(update={"text": text}))
-            continue
-        block, block_sources = _resolve_reference(item, grounded, payloads, store)
-        if block is None:
-            logger.info("Dropped ungrounded or unresolvable reference: %s", item.model_dump())
-            continue
-        blocks.append(block)
-        for source in block_sources:
-            if source.source_id not in {existing.source_id for existing in sources}:
-                sources.append(source)
-    return blocks[:32], sources[:64]
+    for planned in items:
+        for item in expand_item(planned, payloads):
+            block, block_sources = resolve_item(item, grounded, payloads, store)
+            if block is not None:
+                blocks.append(block)
+                _add_sources(sources, block_sources)
+    return blocks, sources
 
 
 def resolve_groups(
@@ -1111,18 +1357,12 @@ def resolve_groups(
 
     for group in plan.groups:
         group_blocks, group_sources = resolve_items(group.items, grounded, payloads, store)
+        room = PAGE_BLOCK_CEILING - len(blocks)
+        if len(group_blocks) > room:
+            logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
+            group_blocks = group_blocks[: max(room, 0)]
         if not group_blocks:
             continue
-        remaining = 32 - len(blocks)
-        if remaining <= 0:
-            break
-        group_blocks = group_blocks[:remaining]
-        criteria = [c.strip() for c in group.criteria if c.strip()][:5]
-        criteria_count = len(criteria)
-        group_blocks = [
-            block.model_copy(update={"judgments": list(block.judgments)[:criteria_count]}) if hasattr(block, "judgments") else block
-            for block in group_blocks
-        ]
         start = len(blocks)
         blocks.extend(group_blocks)
         groups.append(
@@ -1130,14 +1370,12 @@ def resolve_groups(
                 title=(group.title or "").strip() or None,
                 lead=keep_grounded_links(group.lead.strip(), grounded.urls) if group.lead and group.lead.strip() else None,
                 presentation=group.presentation,
-                criteria=criteria,
+                criteria=clean_criteria(group.criteria),
                 block_indexes=list(range(start, len(blocks))),
             )
         )
-        for source in group_sources:
-            if source.source_id not in {existing.source_id for existing in sources}:
-                sources.append(source)
-    return blocks, groups, sources[:64]
+        _add_sources(sources, group_sources)
+    return blocks, groups, fit(sources, "page sources")
 
 
 def _deliver(**_: Any) -> str:

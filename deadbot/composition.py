@@ -57,8 +57,10 @@ from deadbot.experience import (
     SongOverviewBlock,
     SongRepresentativePerformance,
     SongReleaseItem,
+    SongYearCount,
     SourceReference,
     UnitSource,
+    fit,
 )
 
 
@@ -572,7 +574,7 @@ def _setlist_sections(
                 segue_into_next=_truthy(performance.get("segue_into_next")),
             )
         )
-    return [SetlistSection(label=label, songs=songs[:40]) for label, songs in list(grouped.items())[:4]]
+    return [SetlistSection(label=label, songs=fit(songs, "setlist songs")) for label, songs in grouped.items()]
 
 
 # --- semantic units ---------------------------------------------------------
@@ -657,12 +659,12 @@ def _show_listen_actions(
     video = by_type.get("full-show-video")
     if video:
         add(ListenAction(label="Watch the show", url=video["url"], provider=_provider_for(video["url"], video.get("platform"))))
-    return actions[:4], sources
+    return actions, sources
 
 
 def _guest_items(payload: dict[str, Any], store: CanonicalStore) -> list[PerformerItem]:
     performers = _show_lineup(payload, store)
-    return [item for item in performers if item.role == "guest"][:8]
+    return [item for item in performers if item.role == "guest"]
 
 
 def _clean_follow_ups(follow_ups: list[Any] | None) -> list[FollowUpTopic]:
@@ -674,7 +676,7 @@ def _clean_follow_ups(follow_ups: list[Any] | None) -> list[FollowUpTopic]:
         question = (getattr(entry, "question", None) or "").strip()
         if label and question:
             cleaned.append(FollowUpTopic(label=label, question=question))
-    return cleaned[:3]
+    return cleaned
 
 
 def _show_unit(
@@ -725,7 +727,7 @@ def _show_unit(
         venue_name=venue.get("name") if isinstance(venue, dict) else None,
         location=_venue_location(venue),
         emphasis=emphasis,
-        judgments=list(judgments or [])[:5],
+        judgments=list(judgments or []),
         note=(note or "").strip() or None,
         visible_facets=sorted(facets, key=["guests", "listen", "setlist", "sources", "lineup", "recordings"].index),
         setlist_disclosure=setlist_disclosure,
@@ -737,7 +739,7 @@ def _show_unit(
         lineup=_show_lineup(payload, store) if "lineup" in facets else [],
         recordings=recordings,
         listen=listen if "listen" in facets else [],
-        sources=(sources or [])[:4] if "sources" in facets else [],
+        sources=list(sources or []) if "sources" in facets else [],
         follow_ups=_clean_follow_ups(follow_ups),
     )
     result_sources = list(listen_sources) if "listen" in facets else []
@@ -783,7 +785,7 @@ def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
             if isinstance(link, dict) and link.get("link_type") == "streaming-show-page" and link.get("url"):
                 add(ListenAction(label="Hear the full show", url=link["url"], provider=_provider_for(link["url"], link.get("platform"))))
                 break
-    return actions[:3]
+    return actions
 
 
 def _performance_unit(
@@ -828,14 +830,15 @@ def _performance_unit(
         set_label=performance.get("set_label") or None,
         position_in_set=performance.get("position_in_set") or None,
         emphasis=emphasis,
-        judgments=list(judgments or [])[:5],
+        **_audio(context.get("listen")),
+        judgments=list(judgments or []),
         note=(note or "").strip() or None,
         visible_facets=sorted(facets, key=["setlist", "listen", "sources"].index),
         previous=previous,
         next=next_,
         listen=_performance_listen_actions(context) if "listen" in facets else [],
         show_tracks=show_tracks,
-        sources=(sources or [])[:4] if "sources" in facets else [],
+        sources=list(sources or []) if "sources" in facets else [],
         follow_ups=_clean_follow_ups(follow_ups),
     )
 
@@ -885,8 +888,8 @@ def _era_unit(
         title=title.strip(),
         span=(span or "").strip() or None,
         note=(note or "").strip() or None,
-        performances=items[:6],
-        sources=(sources or [])[:4],
+        performances=items,
+        sources=list(sources or []),
         follow_ups=_clean_follow_ups(follow_ups),
     )
 
@@ -946,7 +949,8 @@ def _album_unit(
 
     listed_tracks = [
         track for track in payload_tracks if isinstance(track, dict) and isinstance(track.get("track_number"), int)
-    ][:30] if "tracklist" in facets else []
+    ] if "tracklist" in facets else []
+    listed_tracks = fit(listed_tracks, "album tracks")
     track_audio = _album_track_audio(listed_tracks, store)
     tracks = [
         AlbumTrackItem(
@@ -971,7 +975,7 @@ def _album_unit(
         )
         for entry in (payload.get("personnel") or [])
         if isinstance(entry, dict) and entry.get("person_id")
-    ][:20] if "personnel" in facets else []
+    ] if "personnel" in facets else []
 
     listen: list[ListenAction] = []
     album_url = release.get("spotify_album_url") or release.get("source_url")
@@ -985,6 +989,10 @@ def _album_unit(
             )
         )
 
+    from deadbot.record_refs import cover_thumbnail, release_shows
+
+    shows = release_shows(release["release_id"], store)
+    single_venue = shows[0].get("venue") if len(shows) == 1 else None
     block = AlbumUnitBlock(
         type="album_unit",
         release_id=release["release_id"],
@@ -994,12 +1002,18 @@ def _album_unit(
         release_date=release.get("release_date") or None,
         release_type=release.get("release_type") or "studio",
         emphasis=emphasis,
-        judgments=list(judgments or [])[:5],
+        cover_url=cover_thumbnail(release),
+        show_count=len(shows),
+        first_show_date=(shows[0].get("show_date") or None) if shows else None,
+        last_show_date=(shows[-1].get("show_date") or None) if shows else None,
+        show_venue_name=single_venue.get("name") if isinstance(single_venue, dict) else None,
+        show_location=_venue_location(single_venue),
+        judgments=list(judgments or []),
         note=(note or "").strip() or None,
         tracks=tracks,
-        personnel=personnel,
+        personnel=fit(personnel, "album credits"),
         listen=listen,
-        sources=(sources or [])[:4] if "sources" in facets else [],
+        sources=list(sources or []) if "sources" in facets else [],
         follow_ups=_clean_follow_ups(follow_ups),
     )
     return block, []
@@ -1061,7 +1075,7 @@ def _unit_sources(
         note = getattr(entry, "note", None)
         items.append(UnitSource(url=url, label=label[:200], source_name=source_name, note=(note or "").strip() or None))
         sources.append(SourceReference(source_id=f"url:{url}", kind="contextual_resource", label=label[:200], url=url))
-    return items[:4], sources[:4]
+    return items, sources
 
 
 def _show_selection_blocks(
@@ -1099,7 +1113,7 @@ def _show_selection_blocks(
                 continue
             tracks: list[Any] = []
             identifier: str | None = None
-            if store is not None and len(items) < 24:
+            if store is not None:
                 from deadbot.listening import playable_show_tracks
 
                 tracks, identifier = playable_show_tracks(show_id, store)
@@ -1124,7 +1138,7 @@ def _show_selection_blocks(
                 selector_name=selection.get("selector_name") if isinstance(selection.get("selector_name"), str) else "Editorial source",
                 coverage_note=selection.get("coverage_note") if isinstance(selection.get("coverage_note"), str) else "This is a source-attributed selection, not a ranking.",
                 source_id=source_id,
-                items=items[:24],
+                items=fit(items, "selection shows"),
             )
         )
         sources.append(SourceReference(source_id=source_id, kind="contextual_resource", label=title, url=source_url))
@@ -1155,7 +1169,7 @@ def _show_lineup(payload: dict[str, Any], store: CanonicalStore) -> list[Perform
         elif instrument not in item.instruments:
             item.instruments.append(instrument)
 
-    return list(grouped.values())[:24]
+    return fit(list(grouped.values()), "lineup rows")
 
 
 def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
@@ -1211,7 +1225,7 @@ def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
         type="equipment_list",
         show_id=show["show_id"],
         title="Jerry's guitars",
-        items=items[:16],
+        items=items,
     )
 
 
@@ -1250,7 +1264,15 @@ def _show_recordings(payload: dict[str, Any], store: CanonicalStore) -> list[Rec
                 source_id=f"recording:{recording_id}",
             )
         )
-    return items[:8]
+    return items
+
+
+def _song_years(performances: list[dict[str, Any]], store: CanonicalStore) -> list[int]:
+    """The year of each dated performance, sorted, from one query for the shows."""
+
+    shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {row.get("show_id", "") for row in performances if isinstance(row, dict)})}
+    dates = [(shows.get(row.get("show_id", "")) or {}).get("show_date") or "" for row in performances if isinstance(row, dict)]
+    return sorted(int(date[:4]) for date in dates if date[:4].isdigit())
 
 
 def _song_overview(
@@ -1300,7 +1322,7 @@ def _song_overview(
         # truncation never hides the studio record a user is most likely after.
         studio_albums = [album for album in all_albums if album.release_type == "studio"]
         other_albums = [album for album in all_albums if album.release_type != "studio"]
-        albums = (studio_albums + other_albums)[:6]
+        albums = studio_albums + other_albums
 
     representatives: list[SongRepresentativePerformance] = []
     if "representatives" in facets:
@@ -1325,6 +1347,12 @@ def _song_overview(
         ]
 
     history = _song_history(performances, store) if "history" in facets else None
+    years = _song_years(performances, store)
+    year_counts = (
+        [SongYearCount(year=year, count=years.count(year)) for year in range(years[0], years[-1] + 1)]
+        if "by_year" in facets and years
+        else []
+    )
 
     return SongOverviewBlock(
         type="song_overview",
@@ -1332,16 +1360,19 @@ def _song_overview(
         title=song.get("title") or "Untitled song",
         original_artist=song.get("original_artist") or None,
         known_performance_count=len(performances),
+        first_year=years[0] if years else None,
+        last_year=years[-1] if years else None,
         emphasis=emphasis,
-        judgments=list(judgments or [])[:5],
-        visible_facets=sorted(facets, key=["representatives", "history", "credits", "albums"].index),
+        judgments=list(judgments or []),
+        visible_facets=sorted(facets, key=["representatives", "by_year", "history", "credits", "albums"].index),
         history=history,
+        year_counts=year_counts,
         note=(note or "").strip() or None,
-        representative_performances=representatives[:3],
-        credits=credits[:12],
+        representative_performances=representatives,
+        credits=credits,
         source_ids=[f"canonical:{song['song_id']}"],
         albums=albums,
-        sources=(sources or [])[:4],
+        sources=list(sources or []),
         follow_ups=_clean_follow_ups(follow_ups),
     )
 
@@ -1371,7 +1402,7 @@ def _arrangement_block(arrangement_id: str, store: CanonicalStore) -> Arrangemen
         capo=arrangement.get("capo") or None,
         tuning=arrangement.get("tuning") or None,
         notes=arrangement.get("notes") or None,
-        progressions=sections[:6],
+        progressions=sections,
     )
 
 
@@ -1422,7 +1453,7 @@ def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) ->
                 if isinstance(search.get("coverage_note"), str)
                 else "Each arrangement is one source's chart in this key."
             ),
-            items=items[:20],
+            items=items,
         ),
         sources,
     )
@@ -1441,7 +1472,7 @@ def _guest_appearance_blocks(payload: dict[str, Any], store: CanonicalStore | No
     # Keep the candidate packet within the response's global block budget even
     # if the model asks for the full guest directory. A named-person query
     # normally produces one block; broad directory exploration stays bounded.
-    for guest in raw_guests[:8]:
+    for guest in raw_guests:
         if not isinstance(guest, dict):
             continue
         person_id = guest.get("person_id")
@@ -1488,9 +1519,9 @@ def _guest_appearance_blocks(payload: dict[str, Any], store: CanonicalStore | No
                     show_date=show_date,
                     venue_name=venue_name if isinstance(venue_name, str) and venue_name else None,
                     location=location if isinstance(location, str) and location else None,
-                    instruments=instruments[:8],
+                    instruments=instruments,
                     participation_scope=scope if isinstance(scope, str) and scope else None,
-                    songs=songs[:12],
+                    songs=songs,
                 )
             )
         if not items:
@@ -1503,7 +1534,7 @@ def _guest_appearance_blocks(payload: dict[str, Any], store: CanonicalStore | No
                 person_id=person_id,
                 person_name=person_name,
                 known_show_count=count,
-                items=items[:24],
+                items=fit(items, "guest appearances"),
             )
         )
     if store is not None:

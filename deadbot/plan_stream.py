@@ -17,7 +17,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from deadbot.finish import FINISH_TOOL_NAME, GROUP_ITEM_LIMIT, PRESENTATIONS, keep_grounded_links, validate_body_item
+from deadbot.experience import PAGE_BLOCK_CEILING
+from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, validate_body_item
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,7 @@ class PlanStreamer:
         self._lead: str | None = None
         self._groups: dict[int, dict[str, Any]] = {}
         self._head_sent = False
+        self._blocks_sent = 0
         self._disabled = False
         self._done = False
 
@@ -124,15 +126,13 @@ class PlanStreamer:
 
     def _group_payload(self, index: int) -> dict[str, Any]:
         group = self._group(index)
-        criteria = [c.strip() for c in (group.get("criteria") or []) if isinstance(c, str) and c.strip()][:5]
-        presentation = group.get("presentation")
         return {
             "index": index,
             "title": group.get("title"),
             "lead": self._grounded(group.get("lead")),
-            # The same reading finish.FinishPlan gives an unknown presentation.
-            "presentation": presentation if presentation in PRESENTATIONS else "collection",
-            "criteria": criteria,
+            # The same reading finish.FinishPlan gives a group.
+            "presentation": group_presentation(group.get("presentation")),
+            "criteria": clean_criteria(group.get("criteria")),
         }
 
     def _emit_head(self) -> list[PlanEvent]:
@@ -247,12 +247,10 @@ class PlanStreamer:
         return events
 
     def _item_closed(self, group_index: int, position: int, raw: str) -> list[PlanEvent]:
-        # The same two rules the plan's validation applies (finish.FinishPlan):
-        # a group keeps its first GROUP_ITEM_LIMIT items, and an item that does
-        # not fit its schema is dropped.
-        if position >= GROUP_ITEM_LIMIT:
-            logger.warning("Skipped streamed item %d of group %d: past the group limit of %d", position + 1, group_index, GROUP_ITEM_LIMIT)
-            return []
+        # The same reading the plan's validation gives each item
+        # (finish.validate_body_item) and the same resolution the final page
+        # uses (finish.resolve_items), so every block streamed here is in the
+        # delivered page.
         try:
             parsed = json.loads(raw)
         except json.JSONDecodeError as error:
@@ -261,16 +259,18 @@ class PlanStreamer:
         item = validate_body_item(parsed, where="streamed")
         if item is None:
             return []
-        criteria = self._group(group_index).get("criteria")
-        events: list[PlanEvent] = []
         try:
             resolved = self._resolve([item])
         except Exception:  # One bad item must not disable the whole streamer.
             logger.exception("Skipped a streamed item that failed to hydrate")
             return []
+        room = PAGE_BLOCK_CEILING - self._blocks_sent
+        if len(resolved) > room:
+            logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
+            resolved = resolved[: max(room, 0)]
+        self._blocks_sent += len(resolved)
+        events: list[PlanEvent] = []
         for block in resolved:
-            if criteria is not None and hasattr(block, "judgments") and hasattr(block, "model_copy"):
-                block = block.model_copy(update={"judgments": list(block.judgments)[: len(criteria)]})
             payload = block.model_dump(mode="json") if hasattr(block, "model_dump") else block
             events.append(PlanEvent("block", {"group_index": group_index, "block": payload}))
         return events
