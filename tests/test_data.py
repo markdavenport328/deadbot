@@ -75,7 +75,7 @@ def test_song_context_adds_a_compact_listening_path_per_performance():
     }
     assert "release_track_url" not in archive_only["listen"]
 
-    no_links = performances_by_id["gd-1971-02-19-deal-2-5"]
+    no_links = performances_by_id["gd-1971-11-06-deal-1-12"]
     assert "listen" not in no_links
 
 

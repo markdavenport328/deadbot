@@ -9,15 +9,17 @@ decisions into a resolvable URL of the form
 
 which opens the selected audio file rather than the full-show details page.  It works
 entirely from the preserved representative item metadata in
-``data/raw/recordings/internet-archive-*-representatives.jsonl``; it does not
-re-fetch item metadata and never retrieves audio.
+``data/raw/recordings/internet-archive-*-representatives.jsonl`` (and, for
+shows mapped from another recording, ``internet-archive-alternate-items.jsonl``);
+it does not re-fetch item metadata and never retrieves audio.
 
 The file for a track is chosen conservatively:
 
 1. the file's track number must equal the mapped ``track_number``;
 2. the file's title (or, for a derivative that carries no title, the title of
    the lossless original it was derived from) must normalize to the canonical
-   song title with the same alias rules used for the track mapping;
+   song title with the same alias and title-folding rules used for the track
+   mapping;
 3. a single ``VBR MP3`` file is preferred because the web player streams MP3;
    otherwise the lossless original selected by the track-mapping rules is
    used.
@@ -46,7 +48,14 @@ from pathlib import Path
 SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from normalize_internet_archive_tracks import audio_track_files, normalized_title  # noqa: E402
+from normalize_internet_archive_tracks import (  # noqa: E402
+    ALTERNATES_PATH,
+    audio_track_files,
+    normalized_title,
+    parse_duration,
+    read_item_records,
+    title_keys,
+)
 
 ROOT = SCRIPTS_DIR.parent
 CANONICAL = ROOT / "data" / "canonical"
@@ -100,10 +109,21 @@ def track_url(identifier: str, file_name: str) -> str:
     return f"https://archive.org/download/{identifier}/{urllib.parse.quote(file_name, safe='/')}"
 
 
+def titles_agree(source_title: str, canonical_title: str, canonical_song_title: str = "") -> bool:
+    """Same song title, exactly normalized or after the tolerant title folding."""
+
+    if not source_title:
+        return False
+    if normalized_title(source_title) == canonical_title:
+        return True
+    return bool(canonical_song_title) and bool(title_keys(source_title) & title_keys(canonical_song_title))
+
+
 def select_track_file(
     payload: dict,
     track_number: int,
     canonical_title: str,
+    canonical_song_title: str = "",
 ) -> tuple[dict | None, str, str, list[str]]:
     """Return (file, selection_kind, hold_reason, titles_seen) for one track."""
 
@@ -120,7 +140,7 @@ def select_track_file(
             continue
         if title:
             titles_seen.append(title)
-        if title and normalized_title(title) == canonical_title:
+        if titles_agree(title, canonical_title, canonical_song_title):
             mp3_matches.append(record)
     if len(mp3_matches) == 1:
         return mp3_matches[0], "mp3", "", titles_seen
@@ -144,7 +164,7 @@ def select_track_file(
     title = lossless.get("title") or ""
     if title:
         titles_seen.append(title)
-    if title and normalized_title(title) == canonical_title:
+    if titles_agree(title, canonical_title, canonical_song_title):
         return lossless, "lossless", "", titles_seen
     return None, "", "file_title_does_not_match_canonical_song", titles_seen
 
@@ -168,11 +188,9 @@ def load_inputs() -> tuple[dict[str, str], dict[str, str], dict[str, dict], list
 
 def load_representatives(identifiers: set[str]) -> dict[str, dict]:
     representatives: dict[str, dict] = {}
-    for raw_path in sorted(RAW_DIR.glob("internet-archive-*-representatives.jsonl")):
-        for line in raw_path.read_text(encoding="utf-8").splitlines():
-            if not line:
-                continue
-            record = json.loads(line)
+    paths = sorted(RAW_DIR.glob("internet-archive-*-representatives.jsonl")) + [ALTERNATES_PATH]
+    for raw_path in paths:
+        for record in read_item_records(raw_path):
             identifier = record.get("source_record_id")
             if identifier in identifiers and identifier not in representatives:
                 representatives[identifier] = record
@@ -233,7 +251,7 @@ def build_links(
             continue
 
         chosen, kind, reason, titles_seen = select_track_file(
-            record.get("raw_payload", {}), track_number, canonical_title
+            record.get("raw_payload", {}), track_number, canonical_title, songs.get(song_id, "")
         )
         if chosen is None:
             hold(reason, titles_seen)
@@ -250,7 +268,9 @@ def build_links(
                 "url": track_url(identifier, file_name),
                 "title": row.get("track_title") or chosen.get("title") or "",
                 "start_seconds": "",
-                "duration_seconds": row.get("duration_seconds", ""),
+                # The streamed file's own length; the mapped source track's
+                # length when the file carries none.
+                "duration_seconds": parse_duration(chosen.get("length")) or row.get("duration_seconds", ""),
                 "is_official": "false",
                 "notes": (
                     f"Track {track_number} of Internet Archive item {identifier} "
