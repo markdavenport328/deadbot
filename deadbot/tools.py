@@ -354,6 +354,9 @@ def _reviewed_deadcast_adapter() -> DeadnetResearchAdapter | None:
 
 _RELEASE_INVENTORY_CAP = 20
 _RESOURCE_RESULT_CAP = 25
+# get_song keeps its payload lean: the earliest records and the first resources.
+_SONG_RELEASE_CAP = 12
+_SONG_RESOURCE_CAP = 15
 _ERAS = (
     ("1965–1970", "1965", "1970"),
     ("1971–1975", "1971", "1975"),
@@ -428,6 +431,29 @@ def _catalog_result_id(sql: str, params: dict[str, Any]) -> str:
 
     digest = hashlib.sha256(json.dumps({"sql": sql, "params": params}, sort_keys=True, default=str).encode("utf-8")).hexdigest()
     return f"query:{digest[:16]}"
+
+
+# The unit that turns each row of a result into a card, by the ID column the
+# result carries, in the order they are looked for.
+_ROW_UNITS = (("release_id", "album_unit"), ("show_id", "show_unit"), ("performance_id", "performance_unit"), ("song_id", "song_overview"))
+
+
+def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
+    """Say, in the result itself, how its rows can go on the page."""
+
+    columns = result.get("columns")
+    count = result.get("row_count") or len(result.get("rows") or [])
+    if not isinstance(columns, list) or not count or not result.get("result_id"):
+        return result
+    for column, unit in _ROW_UNITS:
+        if column in columns:
+            result["on_the_page"] = (
+                f'One {unit} with from_result="{result["result_id"]}" puts all {count} rows on the page as {unit} cards, '
+                'in this order. With disclosure="collapsed" each is one compact row that opens in place; a note or title '
+                "on that item is written once, above the list, so it speaks for the whole set."
+            )
+            break
+    return result
 
 
 def build_tools(
@@ -829,55 +855,79 @@ def build_tools(
 
     @tool
     def get_song(song_id_or_title: str) -> str:
-        """Get one song's canonical overview, official-release appearances, resources, and arrangements.
+        """Get one song: its writers, how often it was played each year, its records and its resources.
 
-        Use the returned resource URLs for interviews, articles, tabs, or other
-        context. Treat source notes and interviews as attributed material. The
-        `releases` list names every official record carrying this song, earliest
-        first, with its date and track number. `performance_summary` gives the
-        song's span and count on stage; call `list_song_performances` when
-        you need concrete rendition IDs and listening paths rather than loading
-        the full history into an otherwise album- or song-focused answer.
-        pathways lists the cataloged lore for each result (resources, source
-        trail, selections) or the research sites to search when nothing is
-        cataloged.
+        `plays_by_year` counts the song's performances in every year from its
+        first to its last, with the years it was not played as zero; a
+        song_overview with the by_year facet draws exactly these counts as a
+        bar chart. `performance_summary` gives the count, first and last
+        performances and the songs it most often followed and led into; call
+        `list_song_performances` for concrete rendition IDs and listening
+        paths. `releases` names the official records carrying the song,
+        earliest first. `resources` are articles, essays and interviews about
+        it, attributed to their sources. pathways lists the cataloged lore
+        (resources, source trail, selections) or the research sites to search
+        when nothing is cataloged.
         """
+        from deadbot.composition import _song_years
+
         song = store.resolve_song(song_id_or_title)
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
         context = store.song_context(song)
         profile = store.song_performance_profile(song)
         releases = context["releases"]
+        people = {row["person_id"]: row for row in store.rows_in("people", "person_id", {w.get("person_id", "") for w in context["writers"]})}
+        years = _song_years(context.get("performances") or [], store)
         payload: dict[str, Any] = {
-            "song": context["song"],
-            "writers": context["writers"],
-            "release_count": len(releases),
-            # A widely released song (Sugar Magnolia: 135 records) turned this
-            # payload into 35,000 characters. The earliest records stay here;
-            # get_song_notable_versions lists live records by performance.
-            "releases": releases[:_RELEASE_INVENTORY_CAP],
+            "song": {key: context["song"].get(key) for key in ("song_id", "title", "original_artist")},
+            "writers": [
+                {"person_id": writer["person_id"], "name": (people.get(writer["person_id"]) or {}).get("name"), "writer_role": writer.get("writer_role")}
+                for writer in context["writers"]
+                if writer.get("person_id")
+            ],
+            "performance_summary": {
+                key: profile[key]
+                for key in (
+                    "performance_count",
+                    "first_performance",
+                    "last_performance",
+                    "immediate_predecessors",
+                    "immediate_successors",
+                )
+            },
         }
-        if len(releases) > _RELEASE_INVENTORY_CAP:
+        if years:
+            payload["plays_by_year"] = [
+                {"year": year, "count": years.count(year)} for year in range(years[0], years[-1] + 1)
+            ]
+            payload["plays_by_year_chart"] = (
+                "A song_overview for this song with visible_facets including by_year draws these counts as a bar chart, "
+                "years along the bottom, the years it was not played left empty."
+            )
+        payload["release_count"] = len(releases)
+        # A widely released song (Sugar Magnolia: 135 records) turned this
+        # payload into 35,000 characters. The earliest records stay here;
+        # get_song_notable_versions lists live records by performance.
+        payload["releases"] = [
+            {key: release.get(key) for key in ("release_id", "title", "release_date", "release_type", "spotify_album_url")}
+            for release in releases[:_SONG_RELEASE_CAP]
+        ]
+        if len(releases) > _SONG_RELEASE_CAP:
             payload["releases_note"] = (
-                f"Showing the earliest {_RELEASE_INVENTORY_CAP} of {len(releases)} records. "
+                f"Showing the earliest {_SONG_RELEASE_CAP} of {len(releases)} records. "
                 "Call get_song_notable_versions for the live records that carry specific performances."
             )
-        payload.update(
-            {
-                "resources": context["resources"],
-                "arrangements": context["arrangements"],
-                "performance_summary": {
-                    key: profile[key]
-                    for key in (
-                        "performance_count",
-                        "first_performance",
-                        "last_performance",
-                        "immediate_predecessors",
-                        "immediate_successors",
-                    )
-                },
-            }
-        )
+        resources = context["resources"]
+        payload["resource_count"] = len(resources)
+        payload["resources"] = [
+            {key: resource.get(key) for key in ("resource_id", "title", "creator", "source_name", "resource_type", "published_date", "source_url")}
+            for resource in resources[:_SONG_RESOURCE_CAP]
+        ]
+        if len(resources) > _SONG_RESOURCE_CAP:
+            payload["resources_note"] = f"Showing {_SONG_RESOURCE_CAP} of {len(resources)}; search_stored_resources finds the rest by topic."
+        if context["arrangements"]:
+            payload["arrangements"] = context["arrangements"]
         payload["pathways"] = pathways_for(store, [("song", song["song_id"])]).get(song["song_id"], {})
         return _json(payload)
 
@@ -1908,12 +1958,15 @@ def build_tools(
         without one kept as zero) with each year's median length for both
         halves, the same by era, the longest and shortest version of each half
         and of the two together, and how many versions have both tape tracks.
-        Each version names its night (show_id, date, venue, place, set), its
-        pair_id, both performance IDs, both lengths in seconds and both archive
-        track URLs. A short pairing lists every version; a long one lists them
-        on request with include=["versions"], narrowed by year_from and year_to.
-        A version_strip in finish_response draws the versions you choose, by
-        pair_id, to one clock.
+        candidate_nights is a spread to choose from: the first and last
+        nights, the longest and shortest together, and the longest of each
+        era, each with why it is there. Each night names its show_id, date,
+        venue, place and set, its pair_id, both lengths in seconds, and
+        whether both tape tracks exist to play. A short pairing lists every
+        version; a long one lists them on request with include=["versions"]
+        as one compact table, narrowed by year_from and year_to. A
+        version_strip in finish_response draws the nights you choose, by
+        pair_id, to one clock, each row playing both songs.
         """
         if transition not in sequences.TRANSITIONS:
             return _json({"error": "Unknown transition", "valid": list(sequences.TRANSITIONS)})
@@ -1946,6 +1999,7 @@ def build_tools(
         group_by: str,
         measure: str,
         song_id: str | None = None,
+        exclude_song_ids: list[str] | None = None,
         venue_id: str | None = None,
         guest_id: str | None = None,
         show_id: str | None = None,
@@ -1968,7 +2022,15 @@ def build_tools(
         Every ID filter (song_id, venue_id, guest_id, show_id) takes a
         canonical ID only, never a name — resolve a name to an ID with
         search_entities or search_guest_musicians first. year, year_from,
-        year_to filter by show year.
+        year_to filter by show year. exclude_song_ids (performances only)
+        leaves the named songs out of the count entirely — the rows, the
+        total and anything drawn from the result — so a ranking can count
+        exactly what your words say it counts. Setlists list Drums and Space
+        as their own entries (song-drums, song-space).
+
+        sort is "value_desc" (the default for a ranking), "value_asc",
+        "label", or for years "chronological" (the default). limit caps a
+        ranking's rows (up to 50).
 
         The response's rows and metric_label are the actual computed
         aggregate: never estimate, extrapolate, or restate these numbers from
@@ -1985,7 +2047,8 @@ def build_tools(
         share of shows from that era could even show up in it.
         """
         filters = {
-            "song_id": song_id, "venue_id": venue_id, "guest_id": guest_id,
+            "song_id": song_id, "exclude_song_ids": exclude_song_ids or None,
+            "venue_id": venue_id, "guest_id": guest_id,
             "show_id": show_id,
             "year": year, "year_from": year_from, "year_to": year_to,
         }
@@ -2006,7 +2069,13 @@ def build_tools(
             return _json({"error": "Invalid aggregation request", "detail": str(error)})
         except ValueError as error:
             return _json({"error": "Aggregation failed", "detail": str(error)})
-        return _json(result.to_payload())
+        result_payload = result.to_payload()
+        result_payload["on_the_page"] = (
+            "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars; "
+            "a ranked_list lists them in order with their counts and your notes on the rows that deserve one. "
+            "Both show exactly these numbers, so the words around them can quote them as they stand."
+        )
+        return _json(result_payload)
 
     tools = [
         search_entities,
@@ -2064,7 +2133,7 @@ def build_tools(
                 if value is not None and value != ""
             ]
             if not name:
-                result = {**store.run_catalog_query(sql), "result_id": _catalog_result_id(sql, {})}
+                result = _with_row_units({**store.run_catalog_query(sql), "result_id": _catalog_result_id(sql, {})})
                 return _json({**result, "ignored": supplied} if supplied else result)
             query = NAMED_QUERIES.get(name)
             if query is None:
@@ -2094,7 +2163,7 @@ def build_tools(
             bound = {key: value for key, value in params.items() if f":{key}" in query.sql}
             ignored = [key for key in supplied if key not in bound] + (["sql"] if sql else [])
             result = store.run_catalog_query(query.sql, bound, menu=True)
-            payload = {"query": name, "result_id": _catalog_result_id(query.sql, bound), **result}
+            payload = _with_row_units({"query": name, "result_id": _catalog_result_id(query.sql, bound), **result})
             if ignored:
                 payload["ignored"] = ignored
             return _json(payload)

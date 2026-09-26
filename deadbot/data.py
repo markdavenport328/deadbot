@@ -815,8 +815,11 @@ class CanonicalStore:
                     continue
                 facts.append({"show_id": show["show_id"], "year": show_year(show), "venue_id": show.get("venue_id")})
         elif request.dataset == "performances":
+            excluded = set(filters.exclude_song_ids or [])
             for performance in self.rows("performances"):
                 if filters.song_id is not None and performance.get("song_id") != filters.song_id:
+                    continue
+                if performance.get("song_id") in excluded:
                     continue
                 if filters.show_id is not None and performance.get("show_id") != filters.show_id:
                     continue

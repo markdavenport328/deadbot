@@ -46,7 +46,7 @@ _MEASURES_BY_COMBO: dict[tuple[Dataset, GroupBy], frozenset[Measure]] = {
 
 _DATASET_FILTERS: dict[Dataset, frozenset[str]] = {
     "shows": frozenset({"venue_id", "year", "year_from", "year_to"}),
-    "performances": frozenset({"song_id", "venue_id", "show_id", "year", "year_from", "year_to"}),
+    "performances": frozenset({"song_id", "exclude_song_ids", "venue_id", "show_id", "year", "year_from", "year_to"}),
     "guest_appearances": frozenset({"guest_id", "venue_id", "show_id", "year", "year_from", "year_to"}),
 }
 
@@ -73,6 +73,8 @@ _GROUP_BY_LABELS: dict[GroupBy, str] = {
 class AggregationFilters(BaseModel):
     model_config = ConfigDict(extra="forbid")
     song_id: str | None = None
+    # Songs left out of a performances count: the rows, the total and the chart.
+    exclude_song_ids: list[str] | None = None
     venue_id: str | None = None
     guest_id: str | None = None
     show_id: str | None = None
@@ -111,8 +113,8 @@ class AggregationRequest(BaseModel):
             )
         provided = {
             name for name in
-            ("song_id", "venue_id", "guest_id", "show_id", "year", "year_from", "year_to")
-            if getattr(self.filters, name) is not None
+            ("song_id", "exclude_song_ids", "venue_id", "guest_id", "show_id", "year", "year_from", "year_to")
+            if getattr(self.filters, name) not in (None, [])
         }
         allowed_filters = _DATASET_FILTERS.get(self.dataset, frozenset())
         invalid = provided - allowed_filters

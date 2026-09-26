@@ -951,6 +951,10 @@ class PostgresCanonicalStore(CanonicalStore):
             alias, column = filter_columns[name]
             predicates.append(f"{alias}.{_identifier(column)} = %s")
             params.append(value)
+        excluded = [song_id for song_id in (filters.exclude_song_ids or []) if song_id]
+        if excluded and dataset == "performances":
+            predicates.append(f'p."song_id" NOT IN ({", ".join("%s" for _ in excluded)})')
+            params.extend(excluded)
         if filters.year is not None:
             predicates.append(f"{self._AGGREGATE_YEAR_SQL} = %s")
             params.append(filters.year)

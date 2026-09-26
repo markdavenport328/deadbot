@@ -71,7 +71,7 @@ def test_selections_for_a_show_and_a_bad_entity_type():
 def test_get_song_caps_a_long_release_inventory_and_points_onward():
     payload = json.loads(_tools()["get_song"].invoke({"song_id_or_title": "Sugar Magnolia"}))
     assert payload["release_count"] > 20
-    assert len(payload["releases"]) == 20
+    assert len(payload["releases"]) == 12
     assert "get_song_notable_versions" in payload["releases_note"]
     assert payload["releases"][0]["release_type"] == "studio"
 
