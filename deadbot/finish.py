@@ -338,7 +338,7 @@ def _from_result_description(record: str, column: str) -> str:
     return (
         f"Instead of one {column}: the result_id of a query_catalog result, or the aggregation_id of an aggregate_data "
         f"result, whose rows carry {column}. The server makes one {record} card per row, in the result's order, each with "
-        "the settings on this item."
+        "this item's emphasis, disclosure and facets; this item's title and note speak for the whole set and appear once, above the cards."
     )
 
 
@@ -1097,6 +1097,9 @@ def _resolve_reference(
         if not release:
             return None, []
         selected_facets = frozenset(item.visible_facets)
+        # A collapsed record's row plays the record, and opening it shows the
+        # record itself: its listen control and its tracklist.
+        facets = list(dict.fromkeys([*item.visible_facets, "listen", "tracklist"])) if item.disclosure == "collapsed" else item.visible_facets
         unit_sources, sources = composition._unit_sources(
             item.supporting_sources if "sources" in selected_facets else [], grounded.urls, payloads
         )
@@ -1107,7 +1110,7 @@ def _resolve_reference(
             judgments=item.judgments,
             note=item.note,
             title=item.title,
-            visible_facets=item.visible_facets,
+            visible_facets=facets,
             highlighted_song_ids=item.highlighted_song_ids,
             sources=unit_sources,
             follow_ups=item.follow_ups,
@@ -1313,7 +1316,20 @@ def expand_item(item: Any, payloads: list[dict[str, Any]]) -> list[Any]:
     if not ids:
         logger.info("A %s pointed at %r, which has no %s rows this turn", item.type, item.from_result, field)
         return [item]
-    return [item.model_copy(update={field: record_id, "from_result": None}) for record_id in ids]
+    # The model wrote one title and note for the whole set. Copied onto every
+    # row they read as the same sentence sixty times; they belong once, above
+    # the list. Topics and sources about the set are not repeated per row.
+    title = (getattr(item, "title", None) or "").strip()
+    note = (getattr(item, "note", None) or "").strip()
+    header: list[Any] = []
+    if title or note:
+        header.append(EditorialBlock(type="editorial", presentation="narrative", title=title or None, paragraphs=[note] if note else []))
+    shared = {"title": None, "note": None, "follow_ups": [], "supporting_sources": []}
+    rows = [
+        item.model_copy(update={field: record_id, "from_result": None, **{key: value for key, value in shared.items() if hasattr(item, key)}})
+        for record_id in ids
+    ]
+    return [*header, *rows]
 
 
 def _add_sources(into: list[SourceReference], new: Iterable[SourceReference]) -> None:

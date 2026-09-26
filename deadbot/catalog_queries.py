@@ -30,7 +30,7 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             ("year_from",),
             "SELECT release_id, release_title, release_type, release_date, COUNT(DISTINCT show_id) AS shows_in_range, "
             "MIN(show_date) AS first_show, MAX(show_date) AS last_show FROM release_track_facts "
-            f"WHERE {_YEARS} GROUP BY release_id ORDER BY release_date, release_title",
+            f"WHERE {_YEARS} GROUP BY release_id ORDER BY release_date IS NULL, release_date, release_title",
         ),
         NamedQuery(
             "releases_from_venue",
@@ -38,7 +38,7 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             ("venue",),
             "SELECT release_id, release_title, release_type, release_date, venue_name, COUNT(DISTINCT show_id) AS shows_there, "
             "MIN(show_date) AS first_show, MAX(show_date) AS last_show FROM release_track_facts "
-            "WHERE venue_name LIKE '%' || :venue || '%' GROUP BY release_id, venue_name ORDER BY release_date, release_title",
+            "WHERE venue_name LIKE '%' || :venue || '%' GROUP BY release_id, venue_name ORDER BY release_date IS NULL, release_date, release_title",
         ),
         NamedQuery(
             "releases_with_show",

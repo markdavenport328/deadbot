@@ -977,8 +977,11 @@ def _album_unit(
         if isinstance(entry, dict) and entry.get("person_id")
     ] if "personnel" in facets else []
 
+    # A record plays in-page when its tracks map to taped performances (the
+    # tracks carry that); otherwise its streaming album is the listen link.
+    # The catalog page it was sourced from (MusicBrainz) is not a place to listen.
     listen: list[ListenAction] = []
-    album_url = release.get("spotify_album_url") or release.get("source_url")
+    album_url = release.get("spotify_album_url")
     if "listen" in facets and isinstance(album_url, str) and album_url:
         listen.append(
             ListenAction(
