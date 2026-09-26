@@ -49,6 +49,24 @@ only uniquely ordered source tracks to canonical performances and writes held
 alignment decisions to a review JSONL; it does not infer playback start times
 or download audio.
 
+For shows the strict pass leaves without any mapped track, the same script
+runs a fallback pass (review rows carry `"pass": "fallback"`). It compares
+titles after removing file-name prefixes, segue marks and parenthetical
+annotations, skips untitled, non-setlist and combined tracks, and links a
+track only when every longest in-order alignment agrees on it; out-of-order
+and unsettled repeated-song tracks stay unlinked with a logged reason, and an
+item whose song tracks mostly do not align is held. Candidates are the
+representative item plus any items preserved by
+`collect/fetch_internet_archive_alternates.py` in
+`data/raw/recordings/internet-archive-alternate-items.jsonl`; one item is
+chosen per show (the first that aligns every performance, else the one with
+the most settled tracks). That collector fetches metadata only for shows the
+fallback pass could not fully align, at most `--per-show` items each (default
+3), sequentially with a delay and retries, and resumes where it stopped. Run
+order: `normalize_internet_archive_tracks.py`, the collector,
+`normalize_internet_archive_tracks.py` again, then
+`normalize_internet_archive_track_links.py`.
+
 `collect/fetch_jerrybase_performers.py` collects source-reviewed musicians,
 guests, and instrument strings for canonical Grateful Dead shows. Run it for a
 year or use `--all` for 1965–1995; batch mode continues past held years and

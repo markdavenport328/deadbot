@@ -182,3 +182,21 @@ def test_merge_links_leaves_unregenerated_managed_row_untouched():
     assert merged == existing
     assert review == []
     assert dict(counts) == {}
+
+
+def test_track_file_title_matches_after_prefix_and_spelling_folding():
+    title = "gd66-07-03 t07 Sittin' On Top Of The World"
+    payload = {
+        "files": [
+            {"name": "t07.flac", "source": "original", "format": "Flac", "track": "7", "title": title, "length": "151.17"},
+            {"name": "t07.mp3", "source": "derivative", "format": "VBR MP3", "track": "7", "title": title,
+             "length": "151.2", "original": "t07.flac"},
+        ]
+    }
+    canonical = "Sitting On Top Of The World"
+
+    chosen, kind, reason, _ = ia_links.select_track_file(payload, 7, ia_links.normalized_title(canonical), canonical)
+
+    assert chosen is not None and chosen["name"] == "t07.mp3"
+    assert kind == "mp3"
+    assert reason == ""
