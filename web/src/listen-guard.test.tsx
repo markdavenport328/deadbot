@@ -176,13 +176,24 @@ describe("era and song cards play in-page", () => {
 describe("collapsed cards", () => {
   it("list every release down one column and open the full card in place", async () => {
     await renderFixture("releases1972", visualFixtures.releases1972);
+    const albums = visualFixtures.releases1972.blocks.filter((block) => block.type === "album_unit");
     const rows = document.querySelectorAll(".collapsed-list > .collapsed-row");
-    expect(rows.length).toBe(visualFixtures.releases1972.blocks.length);
+    expect(rows.length).toBe(albums.length);
     expect(document.querySelectorAll(".collapsed-list").length).toBe(1);
+    // The model's note for the whole set is written once, not on every row.
+    expect(document.querySelectorAll(".collapsed-note").length).toBe(0);
+    // A record's listen link is never its MusicBrainz page.
+    expect(document.querySelector('a[href*="musicbrainz.org"]')).toBeNull();
     const first = rows[0] as HTMLElement;
     expect(first.querySelector("article")).toBeNull();
     fireEvent.click(within(first).getByRole("button", { name: /^More/ }));
-    expect(first.querySelector("article.album-unit")).not.toBeNull();
+    // One object growing in place: the row keeps its header and its one play
+    // control; the tracklist opens beneath it with no second card or title.
+    expect(first.querySelector("article")).toBeNull();
+    expect(first.querySelector(".row-body.album-unit")).not.toBeNull();
+    expect(first.querySelectorAll(".collapsed-card .id-row, .collapsed-card h2, .collapsed-card h3").length).toBe(0);
+    expect(first.querySelector(".collapsed-actions .card-play")).not.toBeNull();
+    expect(within(first).getByRole("button", { name: /Tracklist/ })).toHaveAttribute("aria-expanded", "true");
     expect(within(first).getByRole("button", { name: /^Less/ })).toHaveAttribute("aria-expanded", "true");
   });
 

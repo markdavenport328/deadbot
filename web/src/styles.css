@@ -651,9 +651,16 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .collapsed-toggle[aria-expanded="true"]::after { content: " \25B4"; }
 .collapsed-card { padding: 0 0 1.25rem; }
 .collapsed-card > .card { margin: 0; }
+/* An opened row: its details sit under the row's own header, aligned with its
+   text, inside the same row. No second frame, title or type label. */
+.row-body { display: flex; flex-direction: column; gap: 0.75rem; }
+.collapsed-row.album_unit .row-body { padding-left: calc(56px + 1rem); }
+.row-body .overview { margin: 0; font-size: 1.05rem; }
+.collapsed-listen { font-size: 0.9rem; }
 @media (max-width: 560px) {
   .collapsed-head { gap: 0.75rem; }
   .collapsed-cover { width: 44px; height: 44px; }
+  .collapsed-row.album_unit .row-body { padding-left: 0; }
 }
 
 /* A ranking from one aggregate_data result: rank, name, count, one column. */

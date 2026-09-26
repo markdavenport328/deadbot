@@ -616,6 +616,19 @@ function GoDeeper({ sources }: { sources: UnitSources }) {
 
 type UnitBlock = Extract<ExperienceBlock, { type: "show_unit" | "performance_unit" | "album_unit" | "song_overview" }>;
 
+// A unit's container. As a card it is its own framed object; opened inside a
+// collapsed row it is the row's body, so the row and its details are one
+// object: the row's header stays and this opens beneath it.
+function UnitFrame({ inRow, className, children }: { inRow: boolean; className: string; children: ReactNode }) {
+  return inRow ? <div className={`row-body ${className}`}>{children}</div> : <article className={`card ${className}`}>{children}</article>;
+}
+
+// A record plays in-page when its tracks carry tape; otherwise its first
+// listen action (the streaming album) is the way to hear it.
+function albumQueue(block: AlbumUnitBlock): PlayerTrack[] {
+  return block.tracks.map(albumTrack).filter((track): track is PlayerTrack => track !== null);
+}
+
 function isUnit(block: ExperienceBlock): block is UnitBlock {
   return block.type === "show_unit" || block.type === "performance_unit" || block.type === "album_unit" || block.type === "song_overview";
 }
@@ -725,7 +738,14 @@ function chunkMentions(blocks: (ExperienceBlock | undefined)[]) {
 // What a collapsed card's row shows, all of it from the library: the record's
 // name, one line of key facts, a cover for a record, and the one thing it
 // plays in-page, when it plays.
-function collapsedFacts(block: UnitBlock): { title: string; meta: (string | null | undefined)[]; cover?: string | null; play: InPagePlay | null } {
+function collapsedFacts(block: UnitBlock): {
+  title: string;
+  meta: (string | null | undefined)[];
+  cover?: string | null;
+  play: InPagePlay | null;
+  // Where to hear it when nothing plays in-page: a streaming album.
+  link?: { url: string; label: string } | null;
+} {
   const playOf = (queue: PlayerTrack[]): InPagePlay | null => (queue.length > 0 ? { start: queue[0], queue } : null);
   switch (block.type) {
     case "show_unit": {
@@ -740,8 +760,14 @@ function collapsedFacts(block: UnitBlock): { title: string; meta: (string | null
         : block.show_count > 1
           ? `${countLabel(block.show_count, "show")}, ${formatShowDate(block.first_show_date)}–${formatShowDate(block.last_show_date)}`
           : null;
-      const queue = block.tracks.map(albumTrack).filter((track): track is PlayerTrack => track !== null);
-      return { title: block.release_title?.trim() || block.title, meta: [year, formatReleaseType(block.release_type), shows], cover: block.cover_url, play: playOf(queue) };
+      const queue = albumQueue(block);
+      return {
+        title: block.release_title?.trim() || block.title,
+        meta: [year, formatReleaseType(block.release_type), shows],
+        cover: block.cover_url,
+        play: playOf(queue),
+        link: queue.length === 0 ? block.listen[0] ?? null : null
+      };
     }
     case "performance_unit": {
       const track = block.audio_url
@@ -788,7 +814,11 @@ function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFol
           {block.note && <p className="collapsed-note">{renderInline(block.note)}</p>}
         </div>
         <div className="collapsed-actions">
-          {facts.play && <CardPlayButton play={facts.play} label={`Play ${facts.title}`} />}
+          {facts.play ? (
+            <CardPlayButton play={facts.play} label={`Play ${facts.title}`} />
+          ) : facts.link ? (
+            <ListenControl url={facts.link.url} label={facts.title} className="collapsed-listen">Listen</ListenControl>
+          ) : null}
           <button type="button" className="collapsed-toggle" aria-expanded={open} aria-controls={cardId} onClick={() => setOpen((value) => !value)}>
             {open ? "Less" : "More"}
             <span className="visually-hidden"> about {facts.title}</span>
@@ -922,12 +952,14 @@ function ShowUnit({
   unit,
   criteria,
   soleUnit,
-  onFollowUp
+  onFollowUp,
+  inRow = false
 }: {
   unit: ShowUnitBlock;
   criteria: string[];
   soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
+  inRow?: boolean;
 }) {
   const shows = (facet: ShowUnitBlock["visible_facets"][number]) => unit.visible_facets.includes(facet);
   const openFacets = unit.emphasis === "primary" && soleUnit;
@@ -1006,12 +1038,14 @@ function ShowUnit({
   const identityName = unit.venue_name || dateLong;
   const listen = splitListen(shows("listen") ? unit.listen : [], playableQueue);
   const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
-  const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets;
+  const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets || inRow;
   const initialOpen = wantsSetlistOpen && tabs.some((tab) => tab.id === "setlist") ? "setlist" : null;
 
   return (
-    <article className={`card show-unit emphasis-${unit.emphasis}`}>
-      {modelHeadline ? (
+    <UnitFrame inRow={inRow} className={`show-unit emphasis-${unit.emphasis}`}>
+      {inRow ? (
+        modelHeadline ? <CardHeading className="overview">{modelHeadline}</CardHeading> : null
+      ) : modelHeadline ? (
         <>
           <IdRow type="Show" />
           <CardHead primary={primary}>
@@ -1034,7 +1068,7 @@ function ShowUnit({
           </CardHead>
         </>
       )}
-      {unit.note && <ClampText className="unit-note">{renderInline(unit.note)}</ClampText>}
+      {unit.note && !inRow && <ClampText className="unit-note">{renderInline(unit.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={unit.judgments} />
       <ListenLinks actions={listen.restActions} plays={listen.restPlays} />
       {highlights.length > 0 && (
@@ -1050,7 +1084,7 @@ function ShowUnit({
           <MoreAbout topics={unit.follow_ups} onFollowUp={onFollowUp} />
         </footer>
       )}
-    </article>
+    </UnitFrame>
   );
 }
 
@@ -1091,14 +1125,21 @@ function AlbumUnit({
   block,
   criteria,
   soleUnit,
-  onFollowUp
+  onFollowUp,
+  inRow = false
 }: {
   block: AlbumUnitBlock;
   criteria: string[];
   soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
+  inRow?: boolean;
 }) {
-  const openFacets = block.emphasis === "primary" && soleUnit;
+  const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
+  // One primary way to hear the record: its tape in-page, or else its
+  // streaming album. A row already shows that control in its header.
+  const queue = albumQueue(block);
+  const primary = queue.length > 0 ? { play: { start: queue[0], queue }, label: `Play ${block.release_title?.trim() || block.title}` } : null;
+  const otherListen = primary ? block.listen : inRow ? block.listen.slice(1) : block.listen;
   const highlightedTracks = block.tracks.filter((track) => track.highlighted);
   const personnel = groupPersonnel(block.personnel);
   const typeLabel = block.artist_name && block.artist_name !== "Grateful Dead" ? `Album · ${block.artist_name}` : "Album";
@@ -1134,26 +1175,32 @@ function AlbumUnit({
   const kindLine = formatReleaseType(block.release_type);
 
   return (
-    <article className={`card album-unit emphasis-${block.emphasis}`}>
-      {modelHeadline ? (
+    <UnitFrame inRow={inRow} className={`album-unit emphasis-${block.emphasis}`}>
+      {inRow ? (
+        modelHeadline ? <CardHeading className="overview">{modelHeadline}</CardHeading> : null
+      ) : modelHeadline ? (
         <>
           <IdRow type={typeLabel} />
-          <div className="identity">
-            <p className="identity-name">{recordName}</p>
-            <Meta parts={[kindLine, releaseLong ? `Released ${releaseLong}` : null]} />
-          </div>
-          <CardHeading className="overview">{modelHeadline}</CardHeading>
+          <CardHead primary={primary}>
+            <div className="identity">
+              <p className="identity-name">{recordName}</p>
+              <Meta parts={[kindLine, releaseLong ? `Released ${releaseLong}` : null]} />
+            </div>
+            <CardHeading className="overview">{modelHeadline}</CardHeading>
+          </CardHead>
         </>
       ) : (
         <>
           <IdRow type={typeLabel} when={releaseLong ? `Released ${releaseLong}` : null} />
-          <CardHeading>{recordName}</CardHeading>
-          <Meta parts={[kindLine]} />
+          <CardHead primary={primary}>
+            <CardHeading>{recordName}</CardHeading>
+            <Meta parts={[kindLine]} />
+          </CardHead>
         </>
       )}
-      {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
+      {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
-      <ListenActionList actions={block.listen} />
+      <ListenActionList actions={otherListen} />
       {highlightedTracks.length > 0 && (
         <ListenFor items={highlightedTracks.map((track) => ({ key: String(track.track_number), title: track.title, url: track.listen_url, track: albumTrack(track) }))} />
       )}
@@ -1164,7 +1211,7 @@ function AlbumUnit({
           <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
         </footer>
       )}
-    </article>
+    </UnitFrame>
   );
 }
 
@@ -1173,11 +1220,13 @@ type PerformanceUnitBlockT = Extract<ExperienceBlock, { type: "performance_unit"
 function PerformanceUnit({
   block,
   criteria,
-  onFollowUp
+  onFollowUp,
+  inRow = false
 }: {
   block: PerformanceUnitBlockT;
   criteria: string[];
   onFollowUp: (prompt: string) => void;
+  inRow?: boolean;
 }) {
   const rightParts = [block.set_label, block.position_in_set ? `Song ${block.position_in_set}` : null].filter(Boolean) as string[];
   // The card's performance is the current track: its title, venue and date
@@ -1192,13 +1241,17 @@ function PerformanceUnit({
   const listen = splitListen(block.listen, showQueue, standalone);
   const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
   return (
-    <article className={`card performance-unit emphasis-${block.emphasis}`}>
-      <IdRow type="Performance" when={rightParts.length > 0 ? rightParts.join(" · ") : null} />
-      <CardHead primary={primary}>
-        <CardHeading>{block.song_title}</CardHeading>
-        <Meta parts={[block.venue_name, formatShowDateLong(block.show_date), block.location]} />
-      </CardHead>
-      {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
+    <UnitFrame inRow={inRow} className={`performance-unit emphasis-${block.emphasis}`}>
+      {!inRow && (
+        <>
+          <IdRow type="Performance" when={rightParts.length > 0 ? rightParts.join(" · ") : null} />
+          <CardHead primary={primary}>
+            <CardHeading>{block.song_title}</CardHeading>
+            <Meta parts={[block.venue_name, formatShowDateLong(block.show_date), block.location]} />
+          </CardHead>
+        </>
+      )}
+      {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       {(block.previous || block.next) && (() => {
         // Three consecutive setlist lines with this performance lit, numbered
@@ -1240,7 +1293,7 @@ function PerformanceUnit({
           <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
         </footer>
       )}
-    </article>
+    </UnitFrame>
   );
 }
 
@@ -1316,14 +1369,16 @@ function SongOverviewUnit({
   block,
   criteria,
   soleUnit,
-  onFollowUp
+  onFollowUp,
+  inRow = false
 }: {
   block: SongOverviewBlockT;
   criteria: string[];
   soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
+  inRow?: boolean;
 }) {
-  const openFacets = block.emphasis === "primary" && soleUnit;
+  const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
   const showsFacet = (facet: SongOverviewBlockT["visible_facets"][number]) => block.visible_facets.includes(facet);
 
   const tabs: DrawerTab[] = [];
@@ -1369,11 +1424,15 @@ function SongOverviewUnit({
   const representatives = showsFacet("representatives") ? block.representative_performances : [];
 
   return (
-    <article className={`card song-overview emphasis-${block.emphasis}`}>
-      <IdRow type="Song" when={`${block.known_performance_count} performance${block.known_performance_count === 1 ? "" : "s"}`} />
-      <CardHeading>{block.title}</CardHeading>
-      <Meta parts={[block.original_artist ? `Originally by ${block.original_artist}` : null]} />
-      {block.note && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
+    <UnitFrame inRow={inRow} className={`song-overview emphasis-${block.emphasis}`}>
+      {!inRow && (
+        <>
+          <IdRow type="Song" when={`${block.known_performance_count} performance${block.known_performance_count === 1 ? "" : "s"}`} />
+          <CardHeading>{block.title}</CardHeading>
+          <Meta parts={[block.original_artist ? `Originally by ${block.original_artist}` : null]} />
+        </>
+      )}
+      {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
       {showsFacet("by_year") && (block.year_counts ?? []).length > 0 && (
         <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
@@ -1405,7 +1464,7 @@ function SongOverviewUnit({
           <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />
         </footer>
       )}
-    </article>
+    </UnitFrame>
   );
 }
 
@@ -1414,19 +1473,23 @@ function Block({
   sources,
   criteria,
   soleUnit,
-  onFollowUp
+  onFollowUp,
+  inRow = false
 }: {
   block: ExperienceBlock;
   sources: SourceReference[];
   criteria: string[];
   soleUnit: boolean;
   onFollowUp: (prompt: string) => void;
+  // Rendered inside a collapsed row that the visitor opened: the row keeps
+  // its header, so the unit shows only what opens beneath it.
+  inRow?: boolean;
 }) {
   switch (block.type) {
     case "show_unit":
-      return <ShowUnit unit={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
+      return <ShowUnit unit={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} inRow={inRow} />;
     case "performance_unit":
-      return <PerformanceUnit block={block} criteria={criteria} onFollowUp={onFollowUp} />;
+      return <PerformanceUnit block={block} criteria={criteria} onFollowUp={onFollowUp} inRow={inRow} />;
     case "era_unit":
       return (
         <section className="era-unit">
@@ -1460,7 +1523,7 @@ function Block({
         </section>
       );
     case "album_unit":
-      return <AlbumUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
+      return <AlbumUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} inRow={inRow} />;
     case "entity_card": {
       const typeLabel = block.entity_type === "song" ? "Song" : block.entity_type === "show" ? "Show" : "Performance";
       return (
@@ -1576,7 +1639,7 @@ function Block({
         </section>
       );
     case "song_overview":
-      return <SongOverviewUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} />;
+      return <SongOverviewUnit block={block} criteria={criteria} soleUnit={soleUnit} onFollowUp={onFollowUp} inRow={inRow} />;
     case "resource_list":
       return (
         <section className="typography-block resource-list">
@@ -1799,6 +1862,7 @@ function ComposedPage({
                           criteria={group.presentation === "comparison" ? group.criteria : []}
                           soleUnit={false}
                           onFollowUp={onFollowUp}
+                          inRow
                         />
                       </CollapsedRow>
                     ))}

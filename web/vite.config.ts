@@ -5,7 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/api": "http://127.0.0.1:8000"
+      // DEADBOT_API_URL points the dev server at an API on another port.
+      "/api": process.env.DEADBOT_API_URL ?? "http://127.0.0.1:8000"
     }
   },
   test: {
