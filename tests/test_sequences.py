@@ -68,18 +68,43 @@ def test_the_summary_names_the_extremes_and_asks_before_listing_every_version(cs
     assert longest["pair_id"] == PROVIDENCE
     assert (longest["first_seconds"], longest["second_seconds"]) == (784, 365)
     assert longest["venue_name"] == "Providence Civic Center"
-    assert longest["first_track_url"].endswith("20ChinaCatSunflower.mp3")
+    assert longest["tape"] is True and "first_track_url" not in longest
     assert payload["lengths"]["first_song"]["shortest"]["first_seconds"] > 0
     assert [row["era"] for row in payload["by_era"]][0] == "1965–1970"
     assert all("median_first_seconds" in row for row in payload["by_era"])
 
 
+def _versions(payload):
+    table = payload["versions"]
+    return [dict(zip(table["columns"], row)) for row in table["rows"]]
+
+
+def test_the_default_result_offers_a_spread_of_nights_to_draw(csv_store):
+    payload = _pairing(csv_store)
+    nights = payload["candidate_nights"]
+    assert len(nights) <= 12
+    reasons = {night["pair_id"]: night["why"] for night in nights}
+    assert "longest together" in reasons[PROVIDENCE]
+    assert any(why == "first night" for why in reasons.values())
+    assert any(why.startswith("longest of 1991") for why in reasons.values())
+    assert [night["show_date"] for night in nights] == sorted(night["show_date"] for night in nights)
+    assert "version_strip" in payload["on_the_page"]
+    assert len(json.dumps(payload)) < 12_000
+
+
 def test_versions_arrive_on_request_and_narrow_by_year(csv_store):
     payload = _pairing(csv_store, include=["versions"], year_from=1974, year_to=1974)
     assert payload["year_range"] == {"from": 1974, "to": 1974, "count": 21}
-    assert len(payload["versions"]) == 21
-    assert {version["show_date"][:4] for version in payload["versions"]} == {"1974"}
-    assert PROVIDENCE in {version["pair_id"] for version in payload["versions"]}
+    versions = _versions(payload)
+    assert len(versions) == 21
+    assert {version["show_date"][:4] for version in versions} == {"1974"}
+    assert PROVIDENCE in {version["pair_id"] for version in versions}
+
+
+def test_every_version_fits_in_one_untruncated_result(csv_store):
+    payload = _pairing(csv_store, include=["versions"])
+    assert len(payload["versions"]["rows"]) == 544
+    assert "_truncated" not in payload
 
 
 def test_transition_any_counts_nights_the_second_song_only_followed(csv_store):
@@ -88,7 +113,7 @@ def test_transition_any_counts_nights_the_second_song_only_followed(csv_store):
     assert segue["counts"]["followed_without_segue"] > 0
     assert every["count"] == segue["counts"]["segue"] + segue["counts"]["followed_without_segue"]
     assert every["count"] > segue["count"]
-    assert {version["segue"] for version in every["versions"]} == {True, False}
+    assert {version["segue"] for version in _versions(every)} == {True, False}
 
 
 def test_bad_arguments_return_errors_naming_what_is_valid(csv_store):

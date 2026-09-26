@@ -86,7 +86,18 @@ class Version:
     def location(self) -> str:
         return ", ".join(value for value in (self.city, self.state_region) if value)
 
+    @property
+    def playable(self) -> bool:
+        return self.first_track is not None and self.second_track is not None
+
     def to_payload(self) -> dict[str, Any]:
+        """One night, briefly: enough to name it, time it and draw it by pair_id.
+
+        The tape URLs stay out: a version_strip or a show_unit hydrates them
+        from the library, and 544 nights of URLs pushed the result past the
+        tool ceiling.
+        """
+
         return {
             "pair_id": self.pair_id,
             "show_id": self.show_id,
@@ -95,13 +106,27 @@ class Version:
             "location": self.location,
             "set_label": self.set_label,
             "segue": self.segue,
-            "first_performance_id": self.first_performance_id,
-            "second_performance_id": self.second_performance_id,
             "first_seconds": self.first_seconds,
             "second_seconds": self.second_seconds,
-            "first_track_url": self.first_track.url if self.first_track else None,
-            "second_track_url": self.second_track.url if self.second_track else None,
+            "tape": self.playable,
         }
+
+
+# The full version list, when asked for, is one compact table.
+VERSION_COLUMNS = ["pair_id", "show_date", "venue_name", "set_label", "segue", "first_seconds", "second_seconds", "tape"]
+
+
+def version_row(version: "Version") -> list[Any]:
+    return [
+        version.pair_id,
+        version.show_date,
+        version.venue_name,
+        version.set_label,
+        version.segue,
+        version.first_seconds,
+        version.second_seconds,
+        version.playable,
+    ]
 
 
 def _number(value: Any, missing: int = 10**9) -> int:
@@ -254,6 +279,43 @@ def year_counts(versions: list[Version]) -> list[dict[str, int]]:
     return [{"year": year, "count": counts.get(year, 0)} for year in range(min(counts), max(counts) + 1)]
 
 
+def candidate_nights(versions: list[Version], era_of: Callable[[str], str]) -> list[dict[str, Any]]:
+    """A small, well-spread set of nights to choose from without the full list.
+
+    The first and last nights, the longest and shortest pairing overall, and
+    the longest in each era, each marked with why it is here. Nights with both
+    tape tracks are preferred, since those are the ones a strip can play.
+    """
+
+    if not versions:
+        return []
+    playable = [version for version in versions if version.playable] or versions
+    picks: list[tuple[str, Version]] = [("first night", versions[0]), ("last night", versions[-1])]
+    timed = [version for version in playable if _total_seconds(version) is not None]
+    if timed:
+        picks.append(("longest together", max(timed, key=lambda version: (_total_seconds(version), version.show_date))))
+        picks.append(("shortest together", min(timed, key=lambda version: (_total_seconds(version), version.show_date))))
+    by_era: dict[str, list[Version]] = defaultdict(list)
+    for version in timed:
+        by_era[era_of(version.show_date)].append(version)
+    for era, members in by_era.items():
+        picks.append((f"longest of {era}", max(members, key=lambda version: (_total_seconds(version), version.show_date))))
+    chosen: dict[str, dict[str, Any]] = {}
+    for why, version in picks:
+        if version.pair_id in chosen:
+            chosen[version.pair_id]["why"] += f"; {why}"
+        else:
+            chosen[version.pair_id] = {"why": why, **version.to_payload()}
+    return sorted(chosen.values(), key=lambda night: night["show_date"])
+
+
+STRIP_NOTE = (
+    "Any pair_id in this result can go on the page: a version_strip in finish_response with this pairing_id and the "
+    "pair_ids you choose draws those nights to one clock, both songs' lengths as one bar, each row playing that "
+    "night's two songs in turn; show_year_counts adds the nights-per-year strip."
+)
+
+
 def pairing_payload(
     first_song: dict[str, str],
     second_song: dict[str, str],
@@ -307,15 +369,17 @@ def pairing_payload(
         "together": _extremes(in_range, _total_seconds),
     }
     payload["lengths_note"] = LENGTHS_NOTE
+    payload["candidate_nights"] = candidate_nights(in_range, era_of)
     if include_versions or len(in_range) <= VERSION_LIST_THRESHOLD:
-        payload["versions"] = [version.to_payload() for version in in_range]
+        payload["versions"] = {"columns": VERSION_COLUMNS, "rows": [version_row(version) for version in in_range]}
     else:
         payload["available"] = {
             "versions": {
                 "count": len(in_range),
-                "ask": 'include=["versions"] for every version; narrow with year_from and year_to',
+                "ask": 'include=["versions"] for every version as a table; narrow with year_from and year_to',
             }
         }
+    payload["on_the_page"] = STRIP_NOTE
     return payload
 
 
