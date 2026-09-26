@@ -56,9 +56,9 @@ elsewhere.
 7. **Retrieve a bounded evidence packet.** Resolve the question, traverse only
    relevant relationships, rank or aggregate outside the model, and return
    compact facts, graph paths, provenance, coverage, and gaps.
-8. **Compose the explanation at request time.** Let the model decide what is
-   relevant and how approved blocks should be ordered, while deterministic
-   validation prevents invented facts, links, and unsupported completeness.
+8. **Compose the explanation at request time.** The model decides what is
+   relevant and how the page is composed; code supplies records' facts from
+   the store and links only URLs the tools returned (ADR-014).
 9. **Evaluate, correct, and recompute.** A canonical correction creates a new
    input revision. Recompute affected observations and compare representative
    answers before promoting the new snapshot.

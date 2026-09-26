@@ -1,12 +1,12 @@
 # Experience and composition architecture
 
-This document defines the durable architecture for Deadbot's user-facing experience. It supplements the product vision and agent-harness documents: it describes how a retrieved answer becomes an explorable interface without allowing a model to invent interface code or embed untrusted media.
+This document defines the durable architecture for Deadbot's user-facing experience. It supplements the product vision and agent-harness documents: it describes how the model's answer becomes an explorable interface. Code guards facts and transport; the model owns every editorial choice (ADR-014, `AGENTS.md`).
 
 ## Decision summary
 
 Deadbot will use a FastAPI application as its HTTP backend and a React + TypeScript client for its interactive interface. In production, FastAPI may serve the compiled client, so the product remains one deployable application.
 
-The interface is schema-driven. A model may choose and order a small catalog of content blocks, but it does not generate HTML, CSS, JavaScript, iframe markup, or arbitrary URLs. The server validates the resulting response before the client renders it.
+The interface is built from a palette of typed components. The model composes the page from them and from its own editorial writing, naming records by ID; the server fills in their facts from the store and builds players and links from stored or tool-returned URLs. Because the palette carries the structure, the model writes no HTML, CSS, JavaScript, or embed markup. The server reads the model's plan leniently and keeps its work on the page.
 
 ## Why this shape
 
@@ -26,10 +26,10 @@ FastAPI experience endpoint
 agent loop: read-only tools ... finish_response(plan)
       |
       v
-plan resolution (references → validated blocks; ungrounded links dropped)
+plan resolution (references → hydrated blocks; model's text kept when a reference misses)
       |
       v
-validated experience response (answer + typed blocks + sources)
+experience response (answer + typed blocks + sources)
       |
       v
 React block renderer
@@ -39,29 +39,29 @@ One model owns the turn. It decides which tools to use, reads their results,
 and ends by calling `finish_response`, whose arguments are the chat answer,
 title, lead, mode, and a body that mixes model-written editorial blocks with
 library components referenced by canonical ID. `deadbot/finish.py` resolves
-those references against the store, keeps only links whose URLs the tools
-returned this turn, and produces the validated response. The renderer is
-deterministic application code.
+those references against the store, links only URLs the tools returned this
+turn, and produces the response. The renderer is application code that draws
+what the model chose.
 
 This separation is intentional:
 
 - Research determines what the system knows and which connections it can offer.
-- The plan determines the concise visible answer and which approved
-  presentation patterns best help a person explore the supporting material.
+- The plan is the model's editorial decision: the concise visible answer and
+  which components best help a person explore the supporting material.
 - Rendering determines how those patterns look and behave in the browser.
 
 Neither plan resolution nor rendering may alter canonical data or make an unapproved external request.
 
 ## Experience response contract
 
-The backend will expose a versioned Pydantic response model. Its top-level shape will contain the latest answer, a bounded experience mode, a browser-safe conversation transcript, optional page metadata, a sequence of typed blocks, and a source/provenance registry. The exact field names may evolve, but the following constraints are durable:
+The backend exposes a versioned Pydantic response model. Its top-level shape contains the latest answer, an experience mode, a browser-safe conversation transcript, optional page metadata, a sequence of typed blocks, and a source/provenance registry. The exact field names may evolve, but the following constraints are durable:
 
-- Every block has an explicit, allowlisted `type`.
+- Every block has an explicit `type` from the palette; a model item that fits no component is kept as prose.
 - Entity-oriented blocks refer to canonical IDs and/or server-supplied display data; the client does not resolve free-form model text into entities.
 - Resources and media refer to approved stored records or server-validated external URLs.
 - A block that relies on an outside perspective keeps its source linked and identifiable without making attribution the headline when it adds no value to the visitor.
 - The client handles an unknown block type safely and visibly rather than attempting to interpret it.
-- The response schema is versioned, tested, and validated on the server before it is returned to a browser.
+- The response schema is versioned and tested. Model-authored plan input is read leniently (unknown keys ignored, a bad field removed and the item kept); the server-built response is what the schema describes.
 - The transcript contains only visible human and final assistant text; it never exposes tool requests, tool payloads, internal prompts, or model reasoning.
 
 An illustrative response is:
@@ -116,9 +116,9 @@ is the exception rather than the rule. See
 
 ## Block catalog
 
-The catalog combines flexible editorial patterns with richer domain components. New visual patterns require a schema, renderer, accessibility review, and tests before the model can reference them in a plan; they are capabilities for the model, never routes tied to question wording. Several of the domain components below also serve as child renderers inside semantic units (the setlist, recording and set-context projections in particular).
+The catalog combines flexible editorial patterns with richer domain components. Components are shapes that help the model structure an answer: each matches a way a fan thinks about the music, and lets the model name records while code supplies their facts. Add or reshape one when the model has a relationship or pattern to express that the palette cannot hold, and design it for the family of questions that need it. A new component needs a schema, renderer, accessibility review, and tests; it is a capability the model chooses, never a route tied to question wording. Several of the domain components below also serve as child renderers inside semantic units (the setlist, recording and set-context projections in particular).
 
-| Block | Purpose | Grounding and constraints |
+| Block | Purpose | What code supplies and what the component means |
 | --- | --- | --- |
 | Answer text | Concise direct answer with source references. | Must distinguish canonical facts from source-attributed context. |
 | Narrative | Connect facts into a short, readable explanation. | Model-written from the grounded packet; never a fixed article template. |
@@ -163,13 +163,17 @@ canonical ID that appeared in this turn's tool output, including a search
 result, and the server then fetches the full component from the store — the
 model does not have to re-retrieve an entity in full before it can show it.
 
-Application code enforces only the response shape: it resolves referenced
-component IDs against the store, drops any link whose URL the tools did not
-return this turn, and rejects a call that does not fit the schema so the
-model can correct it. It does not require an omission ledger, veto coverage
-or provenance choices, select components from keywords, or substitute an
-unedited database packet as though it were a finished experience. Editorial
-failures are diagnosed at the model boundary and improved through context,
+Application code guards facts and transport only. It resolves referenced
+component IDs against the store and fills in their facts, links only URLs the
+tools returned this turn, and reads the plan leniently: unknown keys are
+ignored, a bad field is removed and the item kept, a reference that does not
+resolve renders the model's own text, and an item that fits no component
+becomes prose. Size ceilings sit far above normal use and trim with a log.
+Streamed and delivered pages share one path. A `finish_response` call whose
+structure cannot be read at all returns to the model to correct. Code leaves
+relevance, coverage, provenance emphasis, and component choice to the model,
+and never substitutes an unedited database packet for a finished experience.
+Editorial failures are diagnosed at the model boundary and improved through context,
 tools, prompting, palette design, and evaluations.
 
 Research resources resolve differently from stored components. A reviewed

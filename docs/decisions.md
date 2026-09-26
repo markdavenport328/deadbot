@@ -68,6 +68,10 @@
 
 ## ADR-011 — FastAPI experience layer and schema-driven composition
 
+**Status:** The FastAPI + React decision stands. Its composition rules (the
+allowlist framing, the deterministic adapter first, validation that rejects
+model output) are superseded by ADR-014.
+
 **Decision:** Build Deadbot's user-facing application with FastAPI and a React + TypeScript client. The agent's grounded retrieval output is transformed into a versioned, validated response containing an answer, source metadata, and a sequence of allowlisted content blocks. The client renders those blocks with deterministic application code.
 
 **Reasoning:** Deadbot needs an explorable music-and-research experience, not a plain chat transcript. Reusable cards, source lists, media players, and provenance notes allow the application to present different kinds of grounded information clearly. FastAPI fits the current Python and LangGraph runtime, keeps model and data access server-side, and can serve the compiled client in one deployable application. React is a suitable client for composing and testing these interactive reusable patterns.
@@ -122,3 +126,38 @@ entire history before shipping useful, clearly bounded insights.
 transition. PostgreSQL is the operational projection and query surface. A
 dedicated graph database is still deferred until measured traversals show that
 relational joins and indexes are insufficient.
+
+## ADR-014 — Code guards facts; the model owns judgment
+
+**Decision:** Divide the experience layer's work in two. Code guards facts and
+transport: it resolves referenced IDs to stored records, fills cards' facts
+from the store, builds players and links from stored or tool-returned URLs,
+parses the streamed plan, and renders it. The model owns every editorial
+choice: what to say, what to show and omit, depth, order, grouping, disclosure,
+and the split between chat and page. Code reads the model's plan leniently and
+keeps its work on the page; it does not reject or strip output for editorial
+reasons.
+
+**Reasoning:** Deadbot's quality comes from the model's judgment. The earlier
+safety-first framing (an allowlist the model "may select from," validation
+that rejects a call, caps on list and group sizes) accumulated checks that
+silently removed the model's work: whole lists dropped over an item cap, cards
+dropped over one extra key, and components that streamed and then vanished from
+the finished page. Each check was written to fix one example and broke the
+next. The same principle governs the CFP and AKF assistants.
+
+**Components as freedom:** Deadbot is a software interface over a structured
+music library, not an open-ended knowledge base, so it leans into components
+more than a general assistant would. The right component for a task gives the
+model freedom: a show, a performance, a song's stage life, an era, a version
+strip, a ranked list, a chart. The model names records and chooses
+facets and disclosure; code supplies the facts. A new component is added when
+the model has a relationship or pattern to express that the palette cannot
+hold, and it is designed for the family of questions that need it.
+
+**Implementation note:** Plan items ignore unknown keys; a bad field is removed
+and the item kept; a reference that does not resolve renders the model's own
+text; an item that fits no component becomes prose; size ceilings sit far above
+normal use and truncate with a log. Streamed and final pages share one path.
+Before adding a check, ask whether it protects a fact or the transport; if it
+only polices the model, leave it out. See `AGENTS.md`.
