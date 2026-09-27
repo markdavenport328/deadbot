@@ -182,3 +182,20 @@ def test_criteria_listed_after_items_still_reach_group_close():
     closes = [event for event in events if event.type == "group_close"]
     assert opens[0].payload["criteria"] == []
     assert closes[0].payload["criteria"] == ["Pace"]
+
+
+def test_a_second_groups_list_continues_the_first_in_the_stream_and_the_plan():
+    from deadbot.finish import FinishPlan, read_joining_repeats
+
+    text = (
+        '{"chat_answer": "a", "title": "t", "groups": ['
+        '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}], '
+        '"groups": [{"title": "Two", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27"}]}]}'
+    )
+    events = drive(text, 5)
+    opened = [event.payload["index"] for event in events if event.type == "group_open"]
+    blocks = [event.payload["group_index"] for event in events if event.type == "block"]
+    assert opened == [0, 1] and blocks == [0, 1]
+    plan = FinishPlan.model_validate(read_joining_repeats(text))
+    assert [group.title for group in plan.groups] == ["One", "Two"]
+    assert json.loads(text)["groups"][0]["title"] == "Two"  # what a plain parse would have kept

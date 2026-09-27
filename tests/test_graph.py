@@ -219,3 +219,15 @@ def test_prompt_teaches_survey_then_detail_and_querying_sets():
     assert "Work like a researcher" in graph.SYSTEM_PROMPT
     assert "query_catalog" in graph.SYSTEM_PROMPT
     assert 'include=["live_legacy"]' in graph.SYSTEM_PROMPT
+
+
+def test_a_streamed_finish_call_keeps_both_groups_lists():
+    from langchain_core.messages import AIMessageChunk
+
+    from deadbot.graph import repair_finish_arguments
+
+    first = AIMessageChunk(content="", tool_call_chunks=[{"name": "finish_response", "args": '{"title": "t", "groups": [{"title": "One"}],', "id": "c1", "index": 0}])
+    rest = AIMessageChunk(content="", tool_call_chunks=[{"name": None, "args": ' "groups": [{"title": "Two"}]}', "id": None, "index": 0}])
+    message = repair_finish_arguments(first + rest)
+    assert [group["title"] for group in message.tool_calls[0]["args"]["groups"]] == ["One", "Two"]
+    assert message.tool_calls[0]["id"] == "c1"

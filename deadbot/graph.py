@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import logging
 
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, SystemMessage
+from langchain_core.messages.utils import message_chunk_to_message
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -17,7 +18,7 @@ from langgraph.prebuilt import ToolNode
 
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore
-from deadbot.finish import FINISH_TOOL_NAME, build_finish_tool
+from deadbot.finish import FINISH_TOOL_NAME, build_finish_tool, read_joining_repeats
 from deadbot.models import ModelProvider, create_model_provider
 from deadbot.storage import create_canonical_store
 from deadbot.tools import build_tools
@@ -81,8 +82,10 @@ songs by year, venue or tour, query_catalog first, then get_album or get_show
 for the few you will feature. For a named show, get_show. The full selection inventory (get_selection_signals) serves
 questions about the sources and lists themselves. For a pairing or segue that
 fans hear as one piece, get_segue_pairing shows how its two halves changed
-across the nights it was played, and a version_strip of the nights you pick
-from it lets the visitor hear that change for themselves.
+across the nights it was played. An answer about a pairing lets the visitor
+hear it: a version_strip of nights you pick from that result puts the handoff
+itself under their hands, one play per night, while your words say what to
+listen for.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call
@@ -312,6 +315,24 @@ overwhelmed.
 """
 
 
+def repair_finish_arguments(full: AIMessageChunk) -> AIMessage:
+    """The streamed message as a whole message, with finish_response read from its raw text."""
+
+    message = message_chunk_to_message(full)
+    raw_by_id = {chunk.get("id"): chunk.get("args") or "" for chunk in full.tool_call_chunks or [] if chunk.get("id")}
+    repaired = []
+    for call in getattr(message, "tool_calls", None) or []:
+        if call.get("name") == FINISH_TOOL_NAME and call.get("id") in raw_by_id:
+            args = read_joining_repeats(raw_by_id[call["id"]])
+            if isinstance(args, dict) and args != call.get("args"):
+                logger.info("finish_response repeated a key; joined the repeats as the streamed page showed them")
+                call = {**call, "args": args}
+        repaired.append(call)
+    if repaired:
+        message = message.model_copy(update={"tool_calls": repaired})
+    return message
+
+
 def agent_tools(store: CanonicalStore) -> list[BaseTool]:
     """Read-only library tools plus the one tool that delivers the response."""
 
@@ -362,8 +383,20 @@ def build_agent(
         model = model.bind(stream=False)
 
     def call_model(state: MessagesState):
-        response = model.invoke([SystemMessage(content=SYSTEM_PROMPT), *state["messages"]])
-        return {"messages": [response]}
+        prompt = [SystemMessage(content=SYSTEM_PROMPT), *state["messages"]]
+        if not settings.model_streaming:
+            return {"messages": [model.invoke(prompt)]}
+        # Streamed, the finish_response arguments arrive as raw JSON text. The
+        # model sometimes writes the "groups" key twice; a plain JSON parse
+        # keeps only the last one and the page loses everything before it,
+        # while the visitor already watched it stream. Read the raw text so
+        # repeated lists join, the way the streamed draft shows them.
+        full: AIMessageChunk | None = None
+        for chunk in model.stream(prompt):
+            full = chunk if full is None else full + chunk
+        if full is None:
+            return {"messages": [model.invoke(prompt)]}
+        return {"messages": [repair_finish_arguments(full)]}
 
     graph = StateGraph(MessagesState)
     graph.add_node("agent", call_model)

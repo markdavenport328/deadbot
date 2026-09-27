@@ -177,16 +177,33 @@ class DumpingAgent:
     def stream(self, payload: dict[str, Any], config: dict[str, Any], **kwargs: Any):
         self._collector.lines.clear()
         messages: list[Any] = []
+        # The finish_response arguments as they streamed, per tool-call index,
+        # to compare with the arguments the graph recorded.
+        streamed: dict[str, dict[str, Any]] = {}
         for item in self._agent.stream(payload, config, **kwargs):
             if isinstance(item, tuple) and len(item) == 2 and item[0] == "values":
                 messages = list(item[1].get("messages", []))
+            elif isinstance(item, tuple) and len(item) == 2 and item[0] == "messages":
+                chunk = item[1][0] if isinstance(item[1], tuple) else item[1]
+                for part in getattr(chunk, "tool_call_chunks", None) or []:
+                    key = f"{getattr(chunk, 'id', '')}#{part.get('index')}"
+                    entry = streamed.setdefault(key, {"name": None, "ids": set(), "chunks": 0, "args": ""})
+                    entry["name"] = entry["name"] or part.get("name")
+                    if part.get("id"):
+                        entry["ids"].add(part["id"])
+                    entry["chunks"] += 1
+                    entry["args"] += part.get("args") or ""
             yield item
         question = ""
         for message in messages:
             if getattr(message, "type", None) == "human":
                 question = str(message.content)
         dump = turn_dump(question, messages, list(self._collector.lines))
-        path = self._out / f"{time.strftime('%H%M%S')}-{_slug(question)}.json"
+        dump["streamed_tool_calls"] = [
+            {"key": key, "name": entry["name"], "ids": sorted(entry["ids"]), "chunks": entry["chunks"], "chars": len(entry["args"]), "args": entry["args"]}
+            for key, entry in streamed.items()
+        ]
+        path = self._out / f"{time.strftime('%H%M%S')}-{os.getpid()}-{_slug(question)}.json"
         path.write_text(json.dumps(dump, ensure_ascii=False, indent=1, default=str), encoding="utf-8")
         self.last_path = path
         print(f"[live_check] turn dump: {path}", file=sys.stderr)

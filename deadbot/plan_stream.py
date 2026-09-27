@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING
-from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, drop_repeated_records, group_presentation, keep_grounded_links, validate_body_item
+from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, drop_repeated_records, group_presentation, keep_grounded_links, read_joining_repeats, validate_body_item
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,9 @@ class PlanStreamer:
         self._blocks_sent = 0
         # The records each group already shows, so a repeat is left out as the final page leaves it out.
         self._group_records: dict[int, set[tuple[str, str]]] = {}
+        # The model can write "groups" more than once; later lists continue the first.
+        self._groups_lists = 0
+        self._group_offset = 0
         self._disabled = False
         self._done = False
 
@@ -116,7 +119,11 @@ class PlanStreamer:
         return self._stack[-1] if self._stack else None
 
     def _path(self) -> list[Any]:
-        return [frame.key if frame.kind == "object" else frame.index for frame in self._stack]
+        path = [frame.key if frame.kind == "object" else frame.index for frame in self._stack]
+        if len(path) >= 2 and path[0] == "groups" and isinstance(path[1], int):
+            # A second "groups" list continues the first, as the delivered plan reads it.
+            path[1] += self._group_offset
+        return path
 
     def _group(self, index: int) -> dict[str, Any]:
         return self._groups.setdefault(index, {})
@@ -219,6 +226,9 @@ class PlanStreamer:
         path = self._path()
         self._stack.append(_Frame(kind="object" if ch == "{" else "array", start=self._pos))
         if path == ["groups"] and ch == "[":
+            if self._groups_lists:
+                self._group_offset = max(self._groups) + 1 if self._groups else 0
+            self._groups_lists += 1
             return self._emit_head()
         if len(path) == 3 and path[0] == "groups" and path[2] == "items" and ch == "[":
             return [PlanEvent("group_open", self._group_payload(path[1]))]
@@ -253,10 +263,10 @@ class PlanStreamer:
         # (finish.validate_body_item) and the same resolution the final page
         # uses (finish.resolve_items), so every block streamed here is in the
         # delivered page.
-        try:
-            parsed = json.loads(raw)
-        except json.JSONDecodeError as error:
-            logger.info("Skipped a streamed item that was not JSON: %s", error)
+        # Read the way the delivered plan is read (finish.read_joining_repeats).
+        parsed = read_joining_repeats(raw)
+        if parsed is None:
+            logger.info("Skipped a streamed item that was not JSON")
             return []
         item = validate_body_item(parsed, where="streamed")
         if item is None:

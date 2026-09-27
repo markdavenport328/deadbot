@@ -13,6 +13,7 @@ missing plan is a logged, diagnosable failure.
 from __future__ import annotations
 
 import copy
+import json
 import logging
 import re
 from collections.abc import Iterable
@@ -1462,6 +1463,30 @@ def resolve_groups(
 
 def _deliver(**_: Any) -> str:
     return "Response delivered to the visitor."
+
+
+def read_joining_repeats(raw: str) -> Any:
+    """Parse JSON where a key written twice with list values joins its lists.
+
+    The model sometimes writes "groups" (or a group's "items") a second time
+    to add to what it already wrote. The streamed draft shows both; a plain
+    parse keeps only the last. Any other repeated key keeps its last value, as
+    JSON parsing does. Returns None when the text is not JSON.
+    """
+
+    def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in items:
+            if key in result and isinstance(result[key], list) and isinstance(value, list):
+                result[key] = [*result[key], *value]
+            else:
+                result[key] = value
+        return result
+
+    try:
+        return json.loads(raw, object_pairs_hook=pairs)
+    except (TypeError, ValueError):
+        return None
 
 
 def build_finish_tool() -> BaseTool:
