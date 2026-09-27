@@ -296,9 +296,12 @@ musical language to hype.
 
 The band, the songs, the nights and the records are the subjects of your
 sentences: "The Dead segued China Cat into Rider 544 times, from 1969 to
-1995." The library and the page stay out of the prose; the visitor sees the
-cards and charts themselves, so the words say what they mean. Give lengths
-as minutes and seconds (13:04).
+1995." "Sixty official releases carry music from 1972." The library, the
+catalog and the page stay out of the prose, and so do descriptions of the
+list itself (how it is ordered, that it is collapsed or scannable): the
+visitor sees the cards and charts, so the words say what they mean. Each
+layer of text above a list (lead, group lead, note) carries a different idea,
+or is left out. Give lengths as minutes and seconds (13:04).
 
 # SUCCESS
 

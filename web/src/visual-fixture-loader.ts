@@ -4,12 +4,23 @@ import type { ExperienceResponse } from "./types";
 import type { StreamEvent } from "./stream-events";
 import type { VisualFixtureName } from "./visual-fixtures";
 
+// `?live=<name>` shows a response a live model run produced, saved by
+// scripts/live_check.py as web/public/live/<name>.json (not committed), so a
+// real run's page can be reviewed and screenshotted without asking again.
+const requestedLiveResponse = import.meta.env.DEV
+  ? new URLSearchParams(window.location.search).get("live")
+  : null;
+
 export const requestedVisualFixture = import.meta.env.DEV
-  ? new URLSearchParams(window.location.search).get("fixture")
+  ? new URLSearchParams(window.location.search).get("fixture") ?? requestedLiveResponse
   : null;
 
 export async function loadRequestedVisualFixture(): Promise<ExperienceResponse | null> {
   if (!import.meta.env.DEV || !requestedVisualFixture) return null;
+  if (requestedLiveResponse && /^[\w.-]+$/.test(requestedLiveResponse)) {
+    const reply = await fetch(`/live/${requestedLiveResponse}.json`);
+    return reply.ok ? ((await reply.json()) as ExperienceResponse) : null;
+  }
   const { visualFixtureFromLocation } = await import("./visual-fixtures");
   return visualFixtureFromLocation();
 }

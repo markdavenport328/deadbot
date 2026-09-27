@@ -50,3 +50,6 @@ temp/
 exports/
 eval-results/
 .neon
+
+# Live-run responses saved for local review
+web/public/live/
