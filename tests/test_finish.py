@@ -1698,3 +1698,17 @@ def test_a_from_result_note_is_written_once_above_the_cards():
     assert expanded[0].type == "editorial" and expanded[0].paragraphs == ["All of 1972."] and expanded[0].title == "Every record"
     assert [unit.release_id for unit in expanded[1:]] == ["release-europe-72-1972", "release-europe-72-volume-2-2011"]
     assert all(unit.note is None and unit.title is None for unit in expanded[1:])
+
+
+def test_a_record_already_listed_by_from_result_is_shown_once_in_its_group():
+    store = CanonicalStore()
+    payloads = [{"result_id": "query:h", "columns": ["show_id"], "rows": [["gd-1983-06-22"], ["gd-1984-06-23"]]}]
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "a", "title": "t",
+        "groups": [{"presentation": "collection", "items": [
+            {"type": "show_unit", "from_result": "query:h", "disclosure": "collapsed"},
+            {"type": "show_unit", "show_id": "gd-1984-06-23", "note": "The return visit."},
+        ]}],
+    })
+    blocks, _, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
+    assert [block.show_id for block in blocks] == ["gd-1983-06-22", "gd-1984-06-23"]

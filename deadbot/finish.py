@@ -211,6 +211,10 @@ class VersionStripRef(_Ref):
     clock. Each row is a night: its venue and date, the two songs' tape-track
     lengths as one bar, and a play button that plays both tracks in turn. The
     server supplies every length, track, venue and date.
+
+    The place where nights of a pairing are heard and compared side by side:
+    the visitor sees how long each half ran and plays the handoff. A show_unit
+    adds one night's whole setlist when that night deserves it.
     """
 
     type: Literal["version_strip"]
@@ -1377,6 +1381,35 @@ def resolve_items(
     return blocks, sources
 
 
+def block_record_key(block: Any) -> tuple[str, str] | None:
+    """The record a unit block shows, so a group can show each record once."""
+
+    field = _UNIT_ID_FIELDS.get(getattr(block, "type", ""))
+    value = getattr(block, field, None) if field else None
+    return (block.type, value) if isinstance(value, str) and value else None
+
+
+def drop_repeated_records(blocks: list[Any], seen: set[tuple[str, str]]) -> list[Any]:
+    """Leave out a unit whose record the group already shows.
+
+    The model sometimes lists a result with from_result and then names one of
+    its records again; the visitor would see the same show twice in one list.
+    The first appearance stays. The streamer and the final page both apply
+    this, group by group, so the streamed page is the delivered page.
+    """
+
+    kept: list[Any] = []
+    for block in blocks:
+        key = block_record_key(block)
+        if key is not None and key in seen:
+            logger.info("Left out a repeat of %s %s in the same group", *key)
+            continue
+        if key is not None:
+            seen.add(key)
+        kept.append(block)
+    return kept
+
+
 def _is_grid_row(block: Any, *, merged_ok: bool = False) -> bool:
     """A fact-grid row the model wrote as a block of its own (see read_editorial_shape).
 
@@ -1405,6 +1438,7 @@ def resolve_groups(
 
     for group in plan.groups:
         group_blocks, group_sources = resolve_items(group.items, grounded, payloads, store)
+        group_blocks = drop_repeated_records(group_blocks, set())
         room = PAGE_BLOCK_CEILING - len(blocks)
         if len(group_blocks) > room:
             logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)

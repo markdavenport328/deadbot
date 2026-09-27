@@ -449,8 +449,8 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
         if column in columns:
             result["on_the_page"] = (
                 f'One {unit} with from_result="{result["result_id"]}" puts all {count} rows on the page as {unit} cards, '
-                'in this order. With disclosure="collapsed" each is one compact row that opens in place. The group\'s '
-                "title and lead introduce the whole list."
+                'in this order. disclosure="expanded" shows each as its full card; "collapsed" makes each one compact row '
+                "that opens in place, for a long list to scan. The group's title and lead introduce the whole list."
             )
             break
     return result

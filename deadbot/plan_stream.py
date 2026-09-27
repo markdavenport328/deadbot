@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING
-from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, validate_body_item
+from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, drop_repeated_records, group_presentation, keep_grounded_links, validate_body_item
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +69,8 @@ class PlanStreamer:
         self._groups: dict[int, dict[str, Any]] = {}
         self._head_sent = False
         self._blocks_sent = 0
+        # The records each group already shows, so a repeat is left out as the final page leaves it out.
+        self._group_records: dict[int, set[tuple[str, str]]] = {}
         self._disabled = False
         self._done = False
 
@@ -264,6 +266,7 @@ class PlanStreamer:
         except Exception:  # One bad item must not disable the whole streamer.
             logger.exception("Skipped a streamed item that failed to hydrate")
             return []
+        resolved = drop_repeated_records(resolved, self._group_records.setdefault(group_index, set()))
         room = PAGE_BLOCK_CEILING - self._blocks_sent
         if len(resolved) > room:
             logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
