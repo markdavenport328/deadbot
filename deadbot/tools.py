@@ -2072,8 +2072,9 @@ def build_tools(
         result_payload = result.to_payload()
         result_payload["on_the_page"] = (
             "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars; "
-            "a ranked_list lists them in order with their counts and your notes on the rows that deserve one. "
-            "Both show exactly these numbers, so the words around them can quote them as they stand."
+            "a ranked_list lists them in order with their counts, with your note on each row that deserves one "
+            "(what the song did in a show, why two tie). Both show exactly these numbers, so the words around "
+            "them can quote them as they stand."
         )
         return _json(result_payload)
 

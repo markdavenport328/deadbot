@@ -244,7 +244,8 @@ and reference its aggregation_id; prefer a chart to a long numeric list when
 the pattern matters more than any single number, and take every number in
 the chart directly from that aggregation. A ranked_list shows the top rows of
 one aggregate_data result with its counts, and your notes on the rows that
-deserve one. A version_strip draws nights you
+deserve one; it is where a ranking and your reading of its rows live
+together. A version_strip draws nights you
 choose from one get_segue_pairing result to one clock, each row playing that
 night's two songs in turn, so the visitor can see and hear how the pairing
 grew.

@@ -238,7 +238,9 @@ class EditorialPlan(BaseModel):
     """Prose, viewpoints and comparisons in your own words: narrative, fact_grid or timeline.
 
     Records belong in the reference-based items (the units and ranked_list),
-    where the server supplies their facts.
+    where the server supplies their facts. Counts from an aggregate_data result
+    reach the page through its ranked_list or data_chart; what you would say
+    about each ranked row goes in the ranked_list's row notes.
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -269,14 +271,22 @@ class RankedRowNote(BaseModel):
 
 
 class RankedListRef(_Ref):
-    """The top rows of one aggregate_data result as a ranked list, with every number from the result."""
+    """The top rows of one aggregate_data result as a ranked list, with every number from the result.
+
+    The home for a ranking and for what you say about it: the server writes
+    each row's rank, name and count; your row notes say what the rows mean
+    (what a song did in a show, why two songs tie).
+    """
 
     type: Literal["ranked_list"]
     aggregation_id: str = Field(description="The aggregation_id of an aggregate_data result this turn.")
     count: int | None = Field(default=None, description="How many rows to show from the top; omit it to show every row of the result.")
     title: str | None = Field(default=None, description="What the ranking shows, in a few words.")
     note: str | None = None
-    notes: list[RankedRowNote] = Field(default_factory=list, description="Notes on the rows that deserve one.")
+    notes: list[RankedRowNote] = Field(
+        default_factory=list,
+        description="Your commentary on the rows that deserve it, one short note each, keyed by the row's id or label.",
+    )
 
 
 # --- semantic units ---------------------------------------------------------
