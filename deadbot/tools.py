@@ -2069,7 +2069,15 @@ def build_tools(
             return _json({"error": "Invalid aggregation request", "detail": str(error)})
         except ValueError as error:
             return _json({"error": "Aggregation failed", "detail": str(error)})
-        result_payload = result.to_payload()
+        result_payload: dict[str, Any] = {}
+        for key, value in result.to_payload().items():
+            result_payload[key] = value
+            if key == "excluded_count":
+                # A live run read this as the number of Drums and Space entries.
+                result_payload["excluded_count_is"] = (
+                    "how many more rows the ranking has past the limit, not shown here"
+                    + ("; the songs in exclude_song_ids are not counted anywhere in this result" if exclude_song_ids else "")
+                )
         result_payload["on_the_page"] = (
             "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars; "
             "a ranked_list lists them in order with their counts, with your note on each row that deserves one "
