@@ -539,7 +539,13 @@ def process_group(
     date_note = ""
     if not release_date:
         candidates = sorted(full_date(release.get("date", "")) for release in releases if full_date(release.get("date", "")))
-        if candidates:
+        partial = group.get("first_release_date", "") or ""
+        if partial and (not candidates or partial < candidates[0][: len(partial)]):
+            # A reissue's full date is not the record's release date: Europe '72
+            # came out in 1972-11, not with its 2003 reissue. Keep the partial date.
+            release_date = partial
+            date_note = f"release date is the release group's first release date '{partial}' (partial); later reissues carry full dates"
+        elif candidates:
             release_date = candidates[0]
             date_note = f"release date from earliest fully dated release in the group (release-group first release date is '{group.get('first_release_date', '')}')"
         else:
