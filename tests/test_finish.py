@@ -1670,3 +1670,31 @@ def test_the_catalog_query_tool_sends_counts_and_rankings_to_aggregate_data():
 
     assert "most_played_songs" not in NAMED_QUERIES and "song_by_year" not in NAMED_QUERIES
     assert "aggregate_data" in catalog_tool_description()
+
+
+def test_an_item_written_straight_into_groups_stands_as_its_own_group():
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "a", "title": "t",
+        "groups": [{"type": "editorial", "presentation": "narrative", "title": "Listen for it", "paragraphs": ["The handoff."]}],
+    })
+    assert len(plan.groups) == 1 and plan.groups[0].items[0].title == "Listen for it"
+
+
+def test_grid_rows_written_as_separate_blocks_read_as_one_grid():
+    rows = [{"type": "editorial", "presentation": "fact_grid", "title": f"Row {n}", "value": "v", "detail": "d"} for n in range(3)]
+    plan = finish.FinishPlan.model_validate({"chat_answer": "a", "title": "t", "groups": [{"presentation": "argument", "items": rows}]})
+    blocks, groups, _ = finish.resolve_groups(plan, finish.GroundedContext(frozenset(), frozenset()), [], CanonicalStore())
+    assert len(blocks) == 1 and blocks[0].title is None
+    assert [item.title for item in blocks[0].items] == ["Row 0", "Row 1", "Row 2"]
+
+
+def test_a_from_result_note_is_written_once_above_the_cards():
+    payloads = [{"result_id": "query:x", "columns": ["release_id"], "rows": [["release-europe-72-1972"], ["release-europe-72-volume-2-2011"]]}]
+    item = finish.validate_body_item(
+        {"type": "album_unit", "from_result": "query:x", "disclosure": "collapsed", "note": "All of 1972.", "title": "Every record"},
+        where="planned",
+    )
+    expanded = finish.expand_item(item, payloads)
+    assert expanded[0].type == "editorial" and expanded[0].paragraphs == ["All of 1972."] and expanded[0].title == "Every record"
+    assert [unit.release_id for unit in expanded[1:]] == ["release-europe-72-1972", "release-europe-72-volume-2-2011"]
+    assert all(unit.note is None and unit.title is None for unit in expanded[1:])

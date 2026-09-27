@@ -722,6 +722,10 @@ class FinishPlan(BaseModel):
             if isinstance(group, GroupPlan):
                 groups.append(group)
                 continue
+            if isinstance(group, dict) and "items" not in group and isinstance(group.get("type"), str):
+                # A body item written straight into groups: the model meant it
+                # to stand as its own group, so it keeps its place on the page.
+                group = {"presentation": "collection", "items": [group]}
             if not isinstance(group, dict) or not isinstance(group.get("items"), list):
                 logger.info("finish_response planned a group without an items list; leaving it out")
                 continue
@@ -1354,9 +1358,27 @@ def resolve_items(
         for item in expand_item(planned, payloads):
             block, block_sources = resolve_item(item, grounded, payloads, store)
             if block is not None:
-                blocks.append(block)
+                if _is_grid_row(block) and blocks and _is_grid_row(blocks[-1], merged_ok=True):
+                    previous = blocks[-1]
+                    blocks[-1] = previous.model_copy(update={"title": None, "items": [*previous.items, *block.items]})
+                else:
+                    blocks.append(block)
                 _add_sources(sources, block_sources)
     return blocks, sources
+
+
+def _is_grid_row(block: Any, *, merged_ok: bool = False) -> bool:
+    """A fact-grid row the model wrote as a block of its own (see read_editorial_shape).
+
+    Consecutive rows are one grid: the model wrote a comparison row by row.
+    ``merged_ok`` also accepts a grid already assembled from such rows.
+    """
+
+    if not isinstance(block, EditorialBlock) or block.presentation != "fact_grid" or block.paragraphs:
+        return False
+    if len(block.items) == 1:
+        return block.title is not None and block.title == block.items[0].title
+    return merged_ok and block.title is None and len(block.items) > 1
 
 
 def resolve_groups(

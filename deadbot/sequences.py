@@ -350,6 +350,10 @@ def pairing_payload(
     if not chosen:
         return payload
     payload["span"] = {"first_date": chosen[0].show_date, "last_date": chosen[-1].show_date}
+    # The nights to hear, and how they go on the page, lead the result: what
+    # comes first in a tool result is what the model builds the page from.
+    payload["on_the_page"] = STRIP_NOTE
+    payload["candidate_nights"] = candidate_nights(in_range, era_of)
     by_year: dict[int, list[Version]] = defaultdict(list)
     for version in chosen:
         if version.year is not None:
@@ -369,7 +373,6 @@ def pairing_payload(
         "together": _extremes(in_range, _total_seconds),
     }
     payload["lengths_note"] = LENGTHS_NOTE
-    payload["candidate_nights"] = candidate_nights(in_range, era_of)
     if include_versions or len(in_range) <= VERSION_LIST_THRESHOLD:
         payload["versions"] = {"columns": VERSION_COLUMNS, "rows": [version_row(version) for version in in_range]}
     else:
@@ -379,7 +382,6 @@ def pairing_payload(
                 "ask": 'include=["versions"] for every version as a table; narrow with year_from and year_to',
             }
         }
-    payload["on_the_page"] = STRIP_NOTE
     return payload
 
 

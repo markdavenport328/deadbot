@@ -81,7 +81,8 @@ songs by year, venue or tour, query_catalog first, then get_album or get_show
 for the few you will feature. For a named show, get_show. The full selection inventory (get_selection_signals) serves
 questions about the sources and lists themselves. For a pairing or segue that
 fans hear as one piece, get_segue_pairing shows how its two halves changed
-across the nights it was played.
+across the nights it was played, and a version_strip of the nights you pick
+from it lets the visitor hear that change for themselves.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call
