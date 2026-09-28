@@ -1468,17 +1468,20 @@ def _deliver(**_: Any) -> str:
 def read_joining_repeats(raw: str) -> Any:
     """Parse JSON where a key written twice with list values joins its lists.
 
-    The model sometimes writes "groups" (or a group's "items") a second time
-    to add to what it already wrote. The streamed draft shows both; a plain
-    parse keeps only the last. Any other repeated key keeps its last value, as
-    JSON parsing does. Returns None when the text is not JSON.
+    The model sometimes writes "groups" a second time. Seen in live runs: the
+    second list restates the first and adds a group, or holds only a closing
+    group, or repeats the first exactly. Joining the lists and leaving out an
+    entry already present reads all three the way the model meant them; a
+    plain parse keeps only the last list and can drop the whole body. Any
+    other repeated key keeps its last value, as JSON parsing does. Returns
+    None when the text is not JSON.
     """
 
     def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result and isinstance(result[key], list) and isinstance(value, list):
-                result[key] = [*result[key], *value]
+                result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
             else:
                 result[key] = value
         return result

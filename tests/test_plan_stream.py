@@ -199,3 +199,21 @@ def test_a_second_groups_list_continues_the_first_in_the_stream_and_the_plan():
     plan = FinishPlan.model_validate(read_joining_repeats(text))
     assert [group.title for group in plan.groups] == ["One", "Two"]
     assert json.loads(text)["groups"][0]["title"] == "Two"  # what a plain parse would have kept
+
+
+def test_a_second_groups_list_that_restates_the_first_adds_only_its_new_group():
+    from deadbot.finish import FinishPlan, read_joining_repeats
+
+    one = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
+    two = '{"title": "Two", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27"}]}'
+    for text, titles in (
+        ('{"chat_answer": "a", "title": "t", "groups": [' + one + '], "groups": [' + one + ", " + two + "]}", ["One", "Two"]),
+        ('{"chat_answer": "a", "title": "t", "groups": [' + one + '], "groups": [' + one + '], "groups": [' + one + "]}", ["One"]),
+    ):
+        events = drive(text, 7)
+        opened = [event.payload["title"] for event in events if event.type == "group_open"]
+        indexes = [event.payload["index"] for event in events if event.type == "group_open"]
+        blocks = [event.payload["group_index"] for event in events if event.type == "block"]
+        plan = FinishPlan.model_validate(read_joining_repeats(text))
+        assert opened == titles == [group.title for group in plan.groups]
+        assert indexes == list(range(len(titles))) and blocks == list(range(len(titles)))

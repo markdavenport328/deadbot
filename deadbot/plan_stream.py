@@ -71,9 +71,16 @@ class PlanStreamer:
         self._blocks_sent = 0
         # The records each group already shows, so a repeat is left out as the final page leaves it out.
         self._group_records: dict[int, set[tuple[str, str]]] = {}
-        # The model can write "groups" more than once; later lists continue the first.
+        # The model can write "groups" more than once; later lists continue the
+        # first. A later list's groups are held until each closes: one that
+        # repeats an earlier group is left out, as finish.read_joining_repeats
+        # leaves it out of the delivered plan; a new one is sent then.
         self._groups_lists = 0
         self._group_offset = 0
+        self._seen_groups: set[str] = set()
+        self._held: dict[int, list[PlanEvent]] = {}
+        self._emitted_index: dict[int, int] = {}
+        self._next_index = 0
         self._disabled = False
         self._done = False
 
@@ -231,8 +238,47 @@ class PlanStreamer:
             self._groups_lists += 1
             return self._emit_head()
         if len(path) == 3 and path[0] == "groups" and path[2] == "items" and ch == "[":
-            return [PlanEvent("group_open", self._group_payload(path[1]))]
+            return self._in_group(path[1], [PlanEvent("group_open", self._group_payload(path[1]))])
         return []
+
+    def _in_group(self, index: int, events: list[PlanEvent]) -> list[PlanEvent]:
+        """Send a group's events now, or hold them while a later groups list is read."""
+
+        if self._groups_lists > 1:
+            self._held.setdefault(index, []).extend(events)
+            return []
+        return events
+
+    def _group_closed(self, index: int, raw: str) -> list[PlanEvent]:
+        parsed = read_joining_repeats(raw)
+        canonical = json.dumps(parsed, sort_keys=True) if parsed is not None else raw
+        opened: list[PlanEvent] = []
+        if isinstance(parsed, dict) and "items" not in parsed and isinstance(parsed.get("type"), str):
+            # A body item written straight into groups stands as its own
+            # collection, as finish.FinishPlan reads it; its title is the item's.
+            self._groups[index] = {"presentation": "collection"}
+            open_event = PlanEvent("group_open", self._group_payload(index))
+            item_events = self._item_closed(index, 0, raw)
+            if self._groups_lists > 1:
+                self._held[index] = [open_event, *self._held.get(index, [])]
+            else:
+                opened = [open_event, *item_events]
+        close = PlanEvent("group_close", self._group_payload(index))
+        if self._groups_lists <= 1:
+            self._seen_groups.add(canonical)
+            self._next_index = max(self._next_index, index + 1)
+            return [*opened, close]
+        held = [*self._held.pop(index, []), close]
+        if canonical in self._seen_groups:
+            self._blocks_sent -= sum(1 for event in held if event.type == "block")
+            return []
+        self._seen_groups.add(canonical)
+        emitted = self._next_index
+        self._next_index += 1
+        for event in held:
+            key = "group_index" if event.type == "block" else "index"
+            event.payload[key] = emitted
+        return held
 
     def _container_closed(self, pos: int, ch: str) -> list[PlanEvent]:
         if not self._stack:
@@ -249,7 +295,7 @@ class PlanStreamer:
         elif len(path) == 3 and path[0] == "groups" and path[2] == "criteria" and frame.kind == "array":
             self._group(path[1])["criteria"] = [entry for entry in json.loads(raw) if isinstance(entry, str)]
         elif len(path) == 2 and path[0] == "groups" and frame.kind == "object":
-            events.append(PlanEvent("group_close", self._group_payload(path[1])))
+            events.extend(self._group_closed(path[1], raw))
         elif not self._stack:
             self._done = True
             events.extend(self._emit_head())
@@ -286,4 +332,4 @@ class PlanStreamer:
         for block in resolved:
             payload = block.model_dump(mode="json") if hasattr(block, "model_dump") else block
             events.append(PlanEvent("block", {"group_index": group_index, "block": payload}))
-        return events
+        return self._in_group(group_index, events)
