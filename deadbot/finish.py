@@ -1465,23 +1465,41 @@ def _deliver(**_: Any) -> str:
     return "Response delivered to the visitor."
 
 
-def read_joining_repeats(raw: str) -> Any:
-    """Parse JSON where a key written twice with list values joins its lists.
+def _first_group_title(groups: list[Any]) -> str | None:
+    first = groups[0] if groups else None
+    title = first.get("title") if isinstance(first, dict) else None
+    return title.strip() if isinstance(title, str) and title.strip() else None
 
-    The model sometimes writes "groups" a second time. Seen in live runs: the
-    second list restates the first and adds a group, or holds only a closing
-    group, or repeats the first exactly. Joining the lists and leaving out an
-    entry already present reads all three the way the model meant them; a
-    plain parse keeps only the last list and can drop the whole body. Any
-    other repeated key keeps its last value, as JSON parsing does. Returns
-    None when the text is not JSON.
+
+def is_groups_revision(earlier: list[Any], later: list[Any]) -> bool:
+    """A later groups list that opens with the earlier list's first group restates the page."""
+
+    title = _first_group_title(earlier)
+    return title is not None and title == _first_group_title(later)
+
+
+def read_joining_repeats(raw: str) -> Any:
+    """Parse JSON, reading a list key the model wrote twice the way it meant it.
+
+    The model sometimes writes "groups" a second time. Seen in live runs: a
+    revision that restates the page from its first group (sometimes several
+    times, the last one final), or a continuation that holds only a closing
+    group. A later "groups" list that opens with the same group title as the
+    earlier one is a revision and replaces it; any other later list continues
+    it, leaving out entries already present. A plain parse keeps only the last
+    list, which drops the body before a continuation. Other repeated keys keep
+    their last value, as JSON parsing does. Returns None when the text is not
+    JSON.
     """
 
     def pairs(items: list[tuple[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result and isinstance(result[key], list) and isinstance(value, list):
-                result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
+                if key == "groups" and is_groups_revision(result[key], value):
+                    result[key] = value
+                else:
+                    result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
             else:
                 result[key] = value
         return result

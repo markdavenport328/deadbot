@@ -81,6 +81,11 @@ class PlanStreamer:
         self._held: dict[int, list[PlanEvent]] = {}
         self._emitted_index: dict[int, int] = {}
         self._next_index = 0
+        # How the current later groups list reads: "pending" until its first
+        # group's title arrives, then "revision" (it restates the page and
+        # replaces the draft's groups) or "continuation" (it adds to them).
+        self._list_mode = "first"
+        self._first_title: str | None = None
         self._disabled = False
         self._done = False
 
@@ -227,7 +232,42 @@ class PlanStreamer:
             self._lead = value
         elif len(path) == 3 and path[0] == "groups" and path[2] in ("title", "lead", "presentation"):
             self._group(path[1])[path[2]] = value
+            if path[2] == "title":
+                return self._title_seen(path[1], value)
         return []
+
+    def _title_seen(self, index: int, title: Any) -> list[PlanEvent]:
+        """Decide how a later groups list reads once its first group names itself."""
+
+        title = title.strip() if isinstance(title, str) else None
+        if self._list_mode == "first":
+            if index == 0:
+                self._first_title = title or None
+            return []
+        if self._list_mode != "pending" or index != self._group_offset:
+            return []
+        if title and title == self._first_title:
+            # A revision: the draft starts its groups over and this list's
+            # groups stream as the page's groups, from index 0.
+            self._list_mode = "revision"
+            self._seen_groups = set()
+            self._next_index = 0
+            self._group_records = {}
+            return [PlanEvent("groups_reset", {}), *self._flush_held_in_order()]
+        self._list_mode = "continuation"
+        return []
+
+    def _flush_held_in_order(self) -> list[PlanEvent]:
+        """In a revision, events held for this list so far are sent as they are."""
+
+        events: list[PlanEvent] = []
+        for index in sorted(self._held):
+            for event in self._held[index]:
+                key = "group_index" if event.type == "block" else "index"
+                event.payload[key] = event.payload[key] - self._group_offset
+                events.append(event)
+        self._held = {}
+        return events
 
     def _container_opened(self, ch: str) -> list[PlanEvent]:
         path = self._path()
@@ -235,6 +275,7 @@ class PlanStreamer:
         if path == ["groups"] and ch == "[":
             if self._groups_lists:
                 self._group_offset = max(self._groups) + 1 if self._groups else 0
+                self._list_mode = "pending"
             self._groups_lists += 1
             return self._emit_head()
         if len(path) == 3 and path[0] == "groups" and path[2] == "items" and ch == "[":
@@ -244,6 +285,11 @@ class PlanStreamer:
     def _in_group(self, index: int, events: list[PlanEvent]) -> list[PlanEvent]:
         """Send a group's events now, or hold them while a later groups list is read."""
 
+        if self._list_mode == "revision":
+            for event in events:
+                key = "group_index" if event.type == "block" else "index"
+                event.payload[key] = index - self._group_offset
+            return events
         if self._groups_lists > 1:
             self._held.setdefault(index, []).extend(events)
             return []
@@ -259,11 +305,17 @@ class PlanStreamer:
             self._groups[index] = {"presentation": "collection"}
             open_event = PlanEvent("group_open", self._group_payload(index))
             item_events = self._item_closed(index, 0, raw)
-            if self._groups_lists > 1:
+            if self._list_mode == "revision":
+                open_event.payload["index"] = index - self._group_offset
+                opened = [open_event, *item_events]
+            elif self._groups_lists > 1:
                 self._held[index] = [open_event, *self._held.get(index, [])]
             else:
                 opened = [open_event, *item_events]
         close = PlanEvent("group_close", self._group_payload(index))
+        if self._list_mode == "revision":
+            close.payload["index"] = index - self._group_offset
+            return [*opened, close]
         if self._groups_lists <= 1:
             self._seen_groups.add(canonical)
             self._next_index = max(self._next_index, index + 1)

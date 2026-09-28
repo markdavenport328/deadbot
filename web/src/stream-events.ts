@@ -7,7 +7,9 @@ export type PageEvent =
   | { type: "page_head"; title: string; lead: string | null }
   | { type: "group_open" | "group_close"; index: number; title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[] }
   | { type: "block"; group_index: number; block: ExperienceBlock }
-  | { type: "page_reset" };
+  | { type: "page_reset" }
+  // The model restated the page's groups: the draft's groups start over.
+  | { type: "groups_reset" };
 
 export type StreamEvent =
   | { type: "status"; text: string }

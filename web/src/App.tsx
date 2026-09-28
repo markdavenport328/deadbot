@@ -899,6 +899,7 @@ function emptyGroup(): RenderGroup {
 // heard of yet gets a provisional group; group_close fills the heading in.
 function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
   if (event.type === "page_reset") return null;
+  if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;
   if (event.type === "page_head") return { title: event.title, lead: event.lead, groups: draft?.groups ?? [] };
   const current: Draft = draft ?? { title: "", lead: null, groups: [] };
   const groups = current.groups.slice();
@@ -928,7 +929,7 @@ type StreamHandlers = {
 // event into the matching handler call. Error throws; everything else is
 // handed to the caller's handlers, including the response, which the network
 // reader captures and the replay applies immediately.
-const PAGE_EVENT_TYPES = new Set(["page_head", "group_open", "group_close", "block", "page_reset"]);
+const PAGE_EVENT_TYPES = new Set(["page_head", "group_open", "group_close", "block", "page_reset", "groups_reset"]);
 
 function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void {
   if (event.type === "status") handlers.onStatus(event.text);

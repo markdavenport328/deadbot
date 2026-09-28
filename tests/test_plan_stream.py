@@ -201,7 +201,7 @@ def test_a_second_groups_list_continues_the_first_in_the_stream_and_the_plan():
     assert json.loads(text)["groups"][0]["title"] == "Two"  # what a plain parse would have kept
 
 
-def test_a_second_groups_list_that_restates_the_first_adds_only_its_new_group():
+def test_a_second_groups_list_that_restates_the_page_replaces_it():
     from deadbot.finish import FinishPlan, read_joining_repeats
 
     one = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
@@ -210,10 +210,15 @@ def test_a_second_groups_list_that_restates_the_first_adds_only_its_new_group():
         ('{"chat_answer": "a", "title": "t", "groups": [' + one + '], "groups": [' + one + ", " + two + "]}", ["One", "Two"]),
         ('{"chat_answer": "a", "title": "t", "groups": [' + one + '], "groups": [' + one + '], "groups": [' + one + "]}", ["One"]),
     ):
-        events = drive(text, 7)
-        opened = [event.payload["title"] for event in events if event.type == "group_open"]
-        indexes = [event.payload["index"] for event in events if event.type == "group_open"]
-        blocks = [event.payload["group_index"] for event in events if event.type == "block"]
+        # The draft as the browser builds it: groups_reset starts its groups over.
+        draft: dict[int, dict] = {}
+        for event in drive(text, 7):
+            if event.type == "groups_reset":
+                draft = {}
+            elif event.type == "group_open":
+                draft[event.payload["index"]] = {"title": event.payload["title"], "blocks": 0}
+            elif event.type == "block":
+                draft[event.payload["group_index"]]["blocks"] += 1
         plan = FinishPlan.model_validate(read_joining_repeats(text))
-        assert opened == titles == [group.title for group in plan.groups]
-        assert indexes == list(range(len(titles))) and blocks == list(range(len(titles)))
+        assert [draft[index]["title"] for index in sorted(draft)] == titles == [group.title for group in plan.groups]
+        assert sorted(draft) == list(range(len(titles))) and all(group["blocks"] == 1 for group in draft.values())
