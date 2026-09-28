@@ -15,6 +15,10 @@ Use this guide when joining the Deadbot project midstream.
 7. `docs/provenance-policy.md`, `docs/graph-scope.md`, and `docs/model-retrieval.md` before changing data or retrieval behavior.
 8. `docs/agent-harness.md` before changing the LangGraph runtime.
 9. `docs/experience-architecture.md` before changing the FastAPI API, the `finish_response` plan and its resolution, or frontend blocks.
+10. `docs/graph-traversal-assessment-2026-09-21.md` before changing tools, the
+   Postgres store, or plan hydration: measured query counts per tool, ranked
+   traversal inefficiencies, and the agreed fix order. Rerun
+   `scripts/measure_traversal_queries.py` after such changes.
 
 ## Current state
 
