@@ -357,6 +357,8 @@ _RESOURCE_RESULT_CAP = 25
 # get_song keeps its payload lean: the earliest records and the first resources.
 _SONG_RELEASE_CAP = 12
 _SONG_RESOURCE_CAP = 15
+# Setlists list the drum segment and the free improvisation after it as entries of their own.
+_SETLIST_SEGMENT_IDS = frozenset({"song-drums", "song-space"})
 _ERAS = (
     ("1965–1970", "1965", "1970"),
     ("1971–1975", "1971", "1975"),
@@ -2078,6 +2080,17 @@ def build_tools(
                     "how many more rows the ranking has past the limit, not shown here"
                     + ("; the songs in exclude_song_ids are not counted anywhere in this result" if exclude_song_ids else "")
                 )
+        segment_rows = [
+            row.get("label") for row in result_payload.get("rows") or []
+            if isinstance(row, dict) and row.get("id") in _SETLIST_SEGMENT_IDS
+        ]
+        if segment_rows:
+            # A live run titled a list that led with Drums and Space "conventional songs".
+            result_payload["rows_include"] = (
+                f"{' and '.join(segment_rows)}: the setlist entries for the drum segment and the free improvisation that "
+                "followed it, counted like songs. A ranking of songs without them is this call again with "
+                'exclude_song_ids=["song-drums", "song-space"]; whichever you show, its title says which it counts.'
+            )
         result_payload["on_the_page"] = (
             "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars; "
             "a ranked_list lists them in order with their counts, with your note on each row that deserves one "
