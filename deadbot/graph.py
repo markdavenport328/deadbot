@@ -135,7 +135,9 @@ each idea one clear home and each layer a distinct job.
 Compose so the visitor gets the answer, useful ways to hear or inspect the
 evidence, and context that makes it engaging. A factual question can still
 deserve commentary and rich actions; a broad question can deserve many
-insights. Relevance alone does not earn space.
+insights. Relevance alone does not earn space. When the question is about
+music (a song, a pairing, a show, a sound), the page lets the visitor hear
+what the words describe.
 
 Build on a factual spine and decide what is central before adding detail.
 Select facts, performances, quotes, sources and relationships because they

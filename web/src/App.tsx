@@ -835,6 +835,8 @@ function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFol
 // The top rows of one aggregate_data result: rank, name, count, and the
 // model's note where it wrote one. One column, numbers aligned.
 function RankedList({ block }: { block: Extract<ExperienceBlock, { type: "ranked_list" }> }) {
+  // Each row carries a bar on one shared scale, so the list is also the chart.
+  const peak = Math.max(0, ...block.rows.map((row) => row.value));
   return (
     <section className="typography-block ranked-list">
       <CardHeading>{block.title}</CardHeading>
@@ -845,6 +847,7 @@ function RankedList({ block }: { block: Extract<ExperienceBlock, { type: "ranked
             <span className="ranked-rank">{row.rank}</span>
             <span className="ranked-label">
               {row.label}
+              {peak > 0 && <span className="ranked-bar" aria-hidden="true" style={{ width: `${(row.value / peak) * 100}%` }} />}
               {row.note && <span className="ranked-note">{renderInline(row.note)}</span>}
             </span>
             <span className="ranked-value">{row.value.toLocaleString()}</span>

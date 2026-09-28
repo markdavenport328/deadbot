@@ -105,6 +105,12 @@ def main() -> None:
     if args.command == "serve":
         import uvicorn
 
+        # `kill -USR1 <pid>` prints every thread's stack, so a stuck local
+        # server can be diagnosed without restarting it.
+        import faulthandler
+        import signal
+
+        faulthandler.register(signal.SIGUSR1, all_threads=True)
         uvicorn.run("deadbot.api:app", host=args.host, port=args.port, reload=args.reload)
         return
 
