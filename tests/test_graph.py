@@ -123,12 +123,11 @@ def test_prompt_teaches_data_chart_and_aggregate_data():
     assert "data_chart" in prompt
     assert "aggregate_data" in prompt
     assert (
-        "and data_chart when a quantitative comparison, distribution, or change over time is the point — "
-        "call aggregate_data first and reference its aggregation_id; prefer a chart to a long numeric list "
-        "when the pattern matters more than any single number, and take every number in the chart directly "
-        "from that aggregation."
+        "and data_chart when a quantitative comparison, distribution, or change over time is the point. "
+        "A data_chart draws one aggregate_data result"
         in prompt
     )
+    assert "When the question asks how many or when, the answer is a number or a span" in prompt
     assert (
         "Cross-show patterns. For counts, rankings or trends across many shows, performances or guests — "
         "not any single show or performance — call aggregate_data. Its rows are server-verified: quote them "

@@ -2074,12 +2074,15 @@ def build_tools(
         result_payload: dict[str, Any] = {}
         for key, value in result.to_payload().items():
             result_payload[key] = value
-            if key == "excluded_count":
+            if key == "excluded_count" and isinstance(value, int):
                 # A live run read this as the number of Drums and Space entries.
                 result_payload["excluded_count_is"] = (
                     "how many more rows the ranking has past the limit, not shown here"
                     + ("; the songs in exclude_song_ids are not counted anywhere in this result" if exclude_song_ids else "")
                 )
+                if group_by != "year":
+                    # How many venues, songs, cities or guests there are in all: the answer to "how many venues".
+                    result_payload[f"{group_by}_count"] = len(result_payload.get("rows") or []) + value
         segment_rows = [
             row.get("label") for row in result_payload.get("rows") or []
             if isinstance(row, dict) and row.get("id") in _SETLIST_SEGMENT_IDS
@@ -2092,7 +2095,8 @@ def build_tools(
                 'exclude_song_ids=["song-drums", "song-space"]; whichever you show, its title says which it counts.'
             )
         result_payload["on_the_page"] = (
-            "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars; "
+            "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars "
+            "(one per year for a year result, the picture of when); "
             "a ranked_list lists them in order with their counts, with your note on each row that deserves one "
             "(what the song did in a show, why two tie). Both show exactly these numbers, so the words around "
             "them can quote them as they stand."

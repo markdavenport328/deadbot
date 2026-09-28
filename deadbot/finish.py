@@ -190,9 +190,12 @@ _NOTE_DESCRIPTION = "Why this object matters here, stated briefly. Interpretatio
 
 class DataChartRef(_Ref):
     """A chart of one aggregate_data result from this turn. The server
-    draws it: bars over time for a year result, ranked bars for a song,
-    venue, city or guest result. Your title names the pattern; your note
-    says what it means.
+    draws it: a vertical bar per year for a year result, ranked bars for a
+    song, venue, city or guest result. Your title names the pattern; your
+    note says what it means.
+
+    The picture of how many and when, once a count is large enough that its
+    shape tells the visitor more than the records one by one.
     """
 
     type: Literal["data_chart"]
