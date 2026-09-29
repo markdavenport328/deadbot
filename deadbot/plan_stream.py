@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING
-from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, drop_repeated_records, group_presentation, keep_grounded_links, read_joining_repeats, validate_body_item
+from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, read_joining_repeats, validate_body_item
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +69,6 @@ class PlanStreamer:
         self._groups: dict[int, dict[str, Any]] = {}
         self._head_sent = False
         self._blocks_sent = 0
-        # The records each group already shows, so a repeat is left out as the final page leaves it out.
-        self._group_records: dict[int, set[tuple[str, str]]] = {}
         # The model can write "groups" more than once; later lists continue the
         # first. A later list's groups are held until each closes: one that
         # repeats an earlier group is left out, as finish.read_joining_repeats
@@ -252,7 +250,6 @@ class PlanStreamer:
             self._list_mode = "revision"
             self._seen_groups = set()
             self._next_index = 0
-            self._group_records = {}
             return [PlanEvent("groups_reset", {}), *self._flush_held_in_order()]
         self._list_mode = "continuation"
         return []
@@ -374,7 +371,6 @@ class PlanStreamer:
         except Exception:  # One bad item must not disable the whole streamer.
             logger.exception("Skipped a streamed item that failed to hydrate")
             return []
-        resolved = drop_repeated_records(resolved, self._group_records.setdefault(group_index, set()))
         room = PAGE_BLOCK_CEILING - self._blocks_sent
         if len(resolved) > room:
             logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
