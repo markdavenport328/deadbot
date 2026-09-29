@@ -1700,7 +1700,7 @@ def test_a_from_result_note_is_written_once_above_the_cards():
     assert all(unit.note is None and unit.title is None for unit in expanded[1:])
 
 
-def test_a_record_already_listed_by_from_result_is_shown_once_in_its_group():
+def test_a_record_the_model_names_again_after_from_result_stays_on_the_page():
     store = CanonicalStore()
     payloads = [{"result_id": "query:h", "columns": ["show_id"], "rows": [["gd-1983-06-22"], ["gd-1984-06-23"]]}]
     plan = finish.FinishPlan.model_validate({
@@ -1711,4 +1711,4 @@ def test_a_record_already_listed_by_from_result_is_shown_once_in_its_group():
         ]}],
     })
     blocks, _, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
-    assert [block.show_id for block in blocks] == ["gd-1983-06-22", "gd-1984-06-23"]
+    assert [block.show_id for block in blocks] == ["gd-1983-06-22", "gd-1984-06-23", "gd-1984-06-23"]
