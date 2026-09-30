@@ -456,15 +456,32 @@ def test_show_tool_merges_one_performers_multiple_instrument_rows():
     assert set(kreutzmann) == {"person_id", "name", "role", "instruments"}
 
 
-def test_show_tool_compacts_recordings_to_a_count_and_a_few_ids():
+def test_show_tool_compacts_recordings_to_a_count_and_lists_ids_only_when_few():
     store = CanonicalStore()
     show = store.resolve_show("1990-03-29")
     full_recording_count = len(store.show_context(show)["recordings"])
     result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1990-03-29"}))
     assert result["recordings"]["count"] == full_recording_count
-    # Every id stays (grounding is id-level); only per-recording metadata goes.
-    assert len(result["recordings"]["recording_ids"]) == full_recording_count
-    assert "recordings_note" in result
+    # A long inventory is a count; get_recording_reviews lists its tapes with their IDs.
+    assert full_recording_count > 8 and "recording_ids" not in result["recordings"]
+    assert "get_recording_reviews" in result["recordings_note"]
+    veneta = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"}))
+    assert "recording-gd-1972-08-27-sbd-4682" in veneta["recordings"]["recording_ids"]
+
+
+def test_show_tool_setlist_rows_carry_real_booleans_and_an_audio_length_not_track_urls():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"}))
+    rows = {row["performance_id"]: row for row in result["performances"]}
+    assert rows["gd-1972-08-27-china-cat-sunflower"]["segue_into_next"] is True
+    assert "segue_into_next" not in rows["gd-1972-08-27-sugaree"]
+    assert rows["gd-1972-08-27-one-more-saturday-night"]["encore"] is True
+    assert all("listen" not in row and "archive_track_url" not in row for row in result["performances"])
+    assert any(row.get("audio_seconds") or row.get("audio") for row in result["performances"])
+    assert all("notes" not in resource and "relationships" not in resource for resource in result["resources"])
+    assert all("notes" not in link for link in result["show_links"])
+    # Every member of the band that night is among the performers, so the membership rows are left out.
+    assert "band_memberships" not in result
 
 
 def test_show_tool_returns_named_guitar_claims():

@@ -402,16 +402,66 @@ def _place(venue: dict[str, str] | None) -> str:
     return ", ".join(value for value in (venue.get("city"), venue.get("state_region")) if value)
 
 
-def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
-    """Trim a show's recording list to a count and its IDs.
+# A show with this many recordings or fewer lists their IDs in get_show; a
+# larger inventory (the famous nights run to 20-38 tapes) is a count, and
+# get_recording_reviews lists its tapes by listener rating, with their IDs.
+_SHOW_RECORDING_ID_LIMIT = 8
 
-    A show can carry dozens of recording rows whose metadata the model rarely
-    needs (get_performance and get_recording_reviews cover it); the IDs let
-    the model name a preferred recording for a show_unit.
+
+def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
+    """Trim a show's recording list to a count, its source types and, when short, its IDs.
+
+    Per-recording metadata stays out (get_performance and get_recording_reviews
+    cover it). The IDs let the model name a preferred recording for a
+    show_unit; a long list of them is noise, so it goes to a count.
     """
 
     ids = [row["recording_id"] for row in recordings if row.get("recording_id")]
-    return {"count": len(recordings), "recording_ids": ids}
+    compact: dict[str, Any] = {"count": len(recordings)}
+    by_type: dict[str, int] = {}
+    for row in recordings:
+        if row.get("source_type"):
+            by_type[row["source_type"]] = by_type.get(row["source_type"], 0) + 1
+    if by_type:
+        compact["known_source_types"] = by_type
+    if len(ids) <= _SHOW_RECORDING_ID_LIMIT:
+        compact["recording_ids"] = ids
+    return compact
+
+
+def _flag(value: Any) -> bool:
+    return str(value).strip().lower() == "true"
+
+
+def _compact_setlist_row(row: dict[str, Any]) -> dict[str, Any]:
+    """One setlist entry for the model: its IDs, place, real booleans and whether it can be heard.
+
+    The page's show_unit fills in every listening link from the library, so
+    the model needs only that a track exists and how long it runs, not the
+    archive.org track URL and tape identifier for each song.
+    """
+
+    compact: dict[str, Any] = {
+        "performance_id": row.get("performance_id"),
+        "song_id": row.get("song_id"),
+        "set_number": row.get("set_number"),
+        "position_in_set": row.get("position_in_set"),
+    }
+    label = row.get("set_label")
+    if label and label != f"Set {row.get('set_number')}":
+        compact["set_label"] = label
+    if _flag(row.get("encore")):
+        compact["encore"] = True
+    if _flag(row.get("segue_into_next")):
+        compact["segue_into_next"] = True
+    listen = row.get("listen") or {}
+    if listen.get("archive_track_url"):
+        seconds = listen.get("archive_track_duration_seconds")
+        compact["audio_seconds" if isinstance(seconds, int) else "audio"] = seconds if isinstance(seconds, int) else True
+    for key in ("release_track_url", "video_url"):
+        if listen.get(key):
+            compact[key] = listen[key]
+    return compact
 
 
 def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1547,7 +1597,10 @@ def build_tools(
 
     @tool
     def get_show(show_id_or_date: str) -> str:
-        """Get a show's canonical data, lineup, named guitar/equipment claims, venue, ordered performances, recording metadata, and links.
+        """Get a show's canonical data, lineup, named guitar/equipment claims, venue, setlist, recordings summary, and links.
+
+        Each setlist entry says whether it has a playable track (audio_seconds
+        gives its length); the page fills in the listening links itself.
 
         Use a canonical show ID returned by another tool, or an unambiguous
         date explicitly supplied by the visitor. Never use a date or show ID
@@ -1562,9 +1615,31 @@ def build_tools(
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
         payload = store.show_context(show)
+        payload["performances"] = [_compact_setlist_row(row) for row in payload.get("performances", [])]
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
-        payload["recordings_note"] = "tapes ranked by listener reviews: get_recording_reviews; the full list on the page: the show_unit recordings facet"
+        payload["recordings_note"] = (
+            "get_recording_reviews ranks this show's tapes by listener reviews, with their recording_ids; "
+            "the show_unit recordings facet puts the full list on the page"
+        )
         payload["performers"] = _compact_performers(payload.get("performers", []))
+        members = {row.get("person_id") for row in payload.get("band_memberships") or []}
+        if members <= {row["person_id"] for row in payload["performers"]}:
+            # The lineup already names every member; the membership rows would repeat it.
+            payload.pop("band_memberships", None)
+        venue = payload.get("venue")
+        if isinstance(venue, dict):
+            payload["venue"] = {key: value for key, value in venue.items() if key not in {"notes", "latitude", "longitude"}}
+        payload["resources"] = [
+            {key: value for key, value in resource.items() if key not in {"notes", "relationships"}}
+            for resource in payload.get("resources") or []
+        ]
+        payload["show_links"] = [
+            {
+                **{key: link[key] for key in ("platform", "link_type", "url", "title") if link.get(key)},
+                **({"is_official": True} if _flag(link.get("is_official")) else {}),
+            }
+            for link in payload.get("show_links") or []
+        ]
         payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
         return _json(payload)
 
