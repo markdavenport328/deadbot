@@ -132,7 +132,7 @@ class PersonRosterEntry(BaseModel):
     """One person in a roster, by ID, with an optional phrase from the model."""
 
     model_config = ConfigDict(extra="ignore")
-    person_id: str = Field(description="A person_id that appeared in a tool result this turn.")
+    person_id: str
     note: str | None = Field(
         default=None,
         description="A short phrase on what makes this person worth knowing here, when you have one grounded in the research. The server supplies name, roles, show count and years.",
@@ -216,7 +216,7 @@ class VersionStripRef(_Ref):
     """
 
     type: Literal["version_strip"]
-    pairing_id: str = Field(description="The pairing_id from a get_segue_pairing result this turn.")
+    pairing_id: str = Field(description="The pairing_id from a get_segue_pairing result.")
     pair_ids: list[str] = Field(
         description="The nights to draw, as pair_ids from that result, in the order you want them read.",
     )
@@ -231,9 +231,9 @@ class VersionStripRef(_Ref):
 class EditorialItemPlan(EditorialItemText):
     """One editorial item as the model writes it: its words, and the record it is about when it names one."""
 
-    show_id: str | None = Field(default=None, description="A show this item is about, from this turn; the server makes its title play the show.")
-    performance_id: str | None = Field(default=None, description="A performance this item is about, from this turn; the server makes its title play it.")
-    release_id: str | None = Field(default=None, description="An official record this item is about, from this turn; the server links it.")
+    show_id: str | None = Field(default=None, description="A show this item is about; the server makes its title play the show.")
+    performance_id: str | None = Field(default=None, description="A performance this item is about; the server makes its title play it.")
+    release_id: str | None = Field(default=None, description="An official record this item is about; the server links it.")
 
 
 class EditorialPlan(BaseModel):
@@ -281,7 +281,7 @@ class RankedListRef(_Ref):
     """
 
     type: Literal["ranked_list"]
-    aggregation_id: str = Field(description="The aggregation_id of an aggregate_data result this turn.")
+    aggregation_id: str
     count: int | None = Field(default=None, description="How many rows to show from the top; omit it to show every row of the result.")
     title: str | None = Field(default=None, description="What the ranking shows, in a few words.")
     note: str | None = None
@@ -377,8 +377,9 @@ class ShowUnitRef(_Ref):
     visible_facets: list[ShowFacet] = Field(
         default_factory=list,
         description=(
-            "The facets worth showing for this show. guests, listen, setlist and sources as before; lineup is the full "
-            "performer list; recordings is the complete recording inventory. Identity and your note are always shown."
+            "The facets worth showing for this show: guests, listen (play links for the show), setlist, sources (your supporting "
+            "sources), lineup (the full performer list) and recordings (the complete recording inventory). Identity and your "
+            "note are always shown."
         ),
     )
     setlist_disclosure: Literal["expanded", "collapsed", "hidden"] = Field(
@@ -493,10 +494,10 @@ class ListeningHeroRef(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
     type: Literal["listening_hero"]
-    show_id: str | None = Field(default=None, description="The show to play: a show_id that appeared in a tool result this turn.")
+    show_id: str | None = Field(default=None, description="The show to play.")
     release_id: str | None = Field(
         default=None,
-        description="The official record to lead with: a release_id from this turn. With a show_id, its cover leads the show.",
+        description="The official record to lead with. With a show_id, its cover leads the show.",
     )
     line: str | None = Field(default=None, description="One short line under the name: what the visitor is about to hear.")
     play_label: str | None = Field(default=None, description="The Play button's words, such as 'Play the second set'.")
@@ -504,7 +505,7 @@ class ListeningHeroRef(BaseModel):
     start_performance_id: str | None = Field(default=None, description="A performance_id in this show to start from, when one song is the way in.")
     link: EditorialLink | None = Field(
         default=None,
-        description="One quiet secondary link beside Play, such as the official release on Spotify; kept only when its URL appeared in a tool result this turn.",
+        description="One quiet secondary link beside Play, such as the official release on Spotify.",
     )
 
 
@@ -750,25 +751,15 @@ class FinishPlan(BaseModel):
         return {**data, "groups": groups}
 
     chat_answer: str = Field(
-        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. May use markdown links to URLs the tools returned this turn."
+        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. Markdown links allowed."
     )
     title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
     lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
     groups: list[GroupPlan] = Field(
         default_factory=list,
         description=(
-            "The edited main body as groups, each one a distinct relationship: collection for peers, sequence for a development or route, "
-            "comparison for items judged on shared criteria, argument for evidence under a claim. Inside a group, semantic units declare the "
-            "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
-            "Give each object an emphasis, and a disclosure: collapse cards when the visitor wants to scan a set, expand the few they came for; "
-            "from_result lists every record in a tool result. Editorial blocks you write (narrative, fact_grid, timeline) carry prose, "
-            "viewpoints and comparisons in your words. "
-            "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
-            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list, "
-            "data_chart (a chart built from one aggregate_data result), ranked_list (the top rows of one aggregate_data result), version_strip (chosen nights of one get_segue_pairing result drawn to one clock, "
-            "each row playing both songs). A listening_hero "
-            "leads the page when the visitor wants to hear a show or recording: place it first. A pull_quote sets one sentence of yours large, "
-            "for the idea the visitor should carry away. An answer that needs no main body leaves groups empty."
+            "The edited main body as groups, each one a distinct relationship among the items it holds. "
+            "An answer that needs no main body leaves groups empty."
         ),
     )
 
@@ -1513,14 +1504,13 @@ def build_finish_tool() -> BaseTool:
         func=_deliver,
         name=FINISH_TOOL_NAME,
         description=(
-            "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer gives the conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, with "
-            "listening and source actions attached to the objects they belong to. Compose groups (collection, sequence, comparison, argument) of semantic "
-            "units with an emphasis, a note, selected facets, highlights and sources, plus your own narrative, fact grids or timelines for what spans the "
-            "units. A listening_hero leads a page that is best heard, a version_strip lays chosen nights of a song pairing on one clock, and a pull_quote "
-            "sets apart the one line worth remembering. The fields the units share (emphasis, disclosure, note, judgments, "
-            "from_result, supporting_sources, follow_ups) are described once, on show_unit, and mean the same on every unit. IDs must have appeared "
-            "in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
+            "Deliver the finished response to the visitor. Call this once, when your research is done. chat_answer gives the "
+            "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
+            "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
+            "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
+            "mean the same on every unit. Every ID and URL in the plan must have appeared in a tool result this turn: the "
+            "server hydrates each ID from the library, keeps your words where one does not resolve, and keeps a link only "
+            "when its URL came from a tool result."
         ),
         args_schema=FinishPlan,
     )
