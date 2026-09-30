@@ -201,7 +201,7 @@ class DataChartRef(_Ref):
             '("Performances by year"). Omit it and the aggregation\'s own metric label is the title.'
         ),
     )
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    note: str | None = None
 
 
 class VersionStripRef(_Ref):
@@ -221,7 +221,7 @@ class VersionStripRef(_Ref):
         description="The nights to draw, as pair_ids from that result, in the order you want them read.",
     )
     title: str | None = Field(default=None, description="What the visitor should see across these nights, in a few words.")
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    note: str | None = None
     show_year_counts: bool = Field(
         default=False,
         description="Add a small strip of how many nights the pairing was played each year, when its rise, gaps or fade matter here.",
@@ -299,26 +299,24 @@ class RankedListRef(_Ref):
 # object's own facts from the store.
 
 
-class SupportingSource(BaseModel):
-    """Evidence the composer attaches to a unit, cited by a URL a tool returned this turn."""
+# Shared unit fields are described once, on ShowUnitRef (the first unit in the
+# plan schema). The schema inlines a sub-model at every use, so these carry no
+# descriptions of their own; the finish_response description says so.
 
+
+class SupportingSource(BaseModel):
+    # Evidence attached to a unit, cited by a URL a tool returned.
     model_config = ConfigDict(extra="ignore")
-    url: str = Field(description="A URL that appeared in a tool result this turn: a resource, research record, search hit, read page or archive review.")
-    note: str | None = Field(default=None, description="What this source says about the unit, in a sentence, with attribution.")
+    url: str
+    note: str | None = None
 
 
 class FollowUpTopic(BaseModel):
-    """A short topic chip the visitor can press, and the full question it stands for.
-
-    The chip shows only the label under "More about"; pressing it sends the
-    question, in the visitor's voice, to start a new turn.
-    """
-
+    # A topic chip under "More about": the label it shows, and the question,
+    # in the visitor's voice, that pressing it sends to start a new turn.
     model_config = ConfigDict(extra="ignore")
-    label: str = Field(
-        description="Two or three words naming the topic as it will appear on the chip, e.g. 'Guest musicians', 'Spring 1990', 'Jazz and the Dead'.",
-    )
-    question: str = Field(description="The full question, in the visitor's voice, that the chip sends when pressed.")
+    label: str
+    question: str
 
 
 _EMPHASIS_DESCRIPTION = (
@@ -330,12 +328,17 @@ _JUDGMENTS_DESCRIPTION = (
     "For a unit inside a comparison group: your one-line judgment for each of the group's criteria, in the same order. "
     "Leave an entry empty when you have nothing grounded to say."
 )
-_SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
+_SOURCES_DESCRIPTION = (
+    "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording): "
+    "each a url from a tool result (a resource, research record, search hit, read page or archive review) and a note "
+    "on what it says, with attribution."
+)
 _FOLLOW_UPS_DESCRIPTION = (
-    "Up to three topics the visitor might want more about, each a short label plus the specific question it opens. "
-    "Draw them from relationships or implications found in this research: explanation, comparison, history, lore or "
-    "evidence. This object's listening links already cover hearing it, so topics open understanding rather than "
-    "playback. Include only topics that create a worthwhile continuation."
+    "Up to three topic chips under \"More about\", each a label of two or three words and the full question, in the "
+    "visitor's voice, that pressing it sends: label 'Ken Kesey at Veneta', question 'What did Ken Kesey remember about "
+    "the heat at Veneta?'. Draw them from relationships or implications found in this research: explanation, comparison, "
+    "history, lore or evidence. This object's listening links already cover hearing it, so topics open understanding "
+    "rather than playback. Include only topics that create a worthwhile continuation."
 )
 
 
@@ -396,11 +399,11 @@ class PerformanceUnitRef(_Ref):
 
     type: Literal["performance_unit"]
     performance_id: str | None = None
-    from_result: str | None = Field(default=None, description=_from_result_description("performance", "performance_id"))
-    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    from_result: str | None = None
+    disclosure: Literal["collapsed", "expanded"] = "expanded"
+    emphasis: Emphasis | None = None
+    judgments: list[str] = Field(default_factory=list)
+    note: str | None = None
     visible_facets: list[PerformanceFacet] = Field(
         default_factory=lambda: ["setlist", "listen", "sources"],
         description=(
@@ -409,8 +412,8 @@ class PerformanceUnitRef(_Ref):
             "are always shown. Omit the field to show all three."
         ),
     )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class EraUnitRef(_Ref):
@@ -421,8 +424,8 @@ class EraUnitRef(_Ref):
     span: str | None = Field(default=None, description="The years or dates this stage covers.")
     note: str | None = Field(default=None, description="What changed in this stage and how you know.")
     representative_performance_ids: list[str] = Field(description="Performances that show this stage; each becomes a listening path.")
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class AlbumUnitRef(_Ref):
@@ -438,10 +441,10 @@ class AlbumUnitRef(_Ref):
     )
     type: Literal["album_unit"]
     release_id: str | None = None
-    from_result: str | None = Field(default=None, description=_from_result_description("record", "release_id"))
-    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
+    from_result: str | None = None
+    disclosure: Literal["collapsed", "expanded"] = "expanded"
+    emphasis: Emphasis | None = None
+    judgments: list[str] = Field(default_factory=list)
     note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
     visible_facets: list[Literal["listen", "tracklist", "personnel", "sources"]] = Field(
         default_factory=list,
@@ -451,8 +454,8 @@ class AlbumUnitRef(_Ref):
         ),
     )
     highlighted_song_ids: list[str] = Field(default_factory=list)
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class SongOverviewRef(_Ref):
@@ -460,11 +463,11 @@ class SongOverviewRef(_Ref):
 
     type: Literal["song_overview"]
     song_id: str | None = None
-    from_result: str | None = Field(default=None, description=_from_result_description("song", "song_id"))
-    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    from_result: str | None = None
+    disclosure: Literal["collapsed", "expanded"] = "expanded"
+    emphasis: Emphasis | None = None
+    judgments: list[str] = Field(default_factory=list)
+    note: str | None = None
     visible_facets: list[SongFacet] = Field(
         default_factory=lambda: ["representatives"],
         description=(
@@ -476,8 +479,8 @@ class SongOverviewRef(_Ref):
         default_factory=list,
         description="Representative performances for this song, in the listening order you chose. Retrieve concrete rendition IDs first; each known direct recording link remains attached.",
     )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class ListeningHeroRef(BaseModel):
@@ -1515,7 +1518,8 @@ def build_finish_tool() -> BaseTool:
             "listening and source actions attached to the objects they belong to. Compose groups (collection, sequence, comparison, argument) of semantic "
             "units with an emphasis, a note, selected facets, highlights and sources, plus your own narrative, fact grids or timelines for what spans the "
             "units. A listening_hero leads a page that is best heard, a version_strip lays chosen nights of a song pairing on one clock, and a pull_quote "
-            "sets apart the one line worth remembering. IDs must have appeared "
+            "sets apart the one line worth remembering. The fields the units share (emphasis, disclosure, note, judgments, "
+            "from_result, supporting_sources, follow_ups) are described once, on show_unit, and mean the same on every unit. IDs must have appeared "
             "in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
         ),
         args_schema=FinishPlan,

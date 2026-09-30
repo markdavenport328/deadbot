@@ -1017,6 +1017,19 @@ def test_follow_up_contract_reserves_ask_for_exploration():
     assert "explanation, comparison, history, lore or evidence" in description
 
 
+def test_shared_unit_fields_are_described_once_in_the_tool_schema():
+    import json
+
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
+    for description in (finish._FOLLOW_UPS_DESCRIPTION, finish._EMPHASIS_DESCRIPTION, finish._DISCLOSURE_DESCRIPTION,
+                        finish._SOURCES_DESCRIPTION, finish._JUDGMENTS_DESCRIPTION, finish._from_result_description("show", "show_id"),
+                        finish._NOTE_DESCRIPTION):
+        assert text.count(json.dumps(description)) == 1, description[:40]
+    assert "described once, on show_unit" in finish.build_finish_tool().description
+
+
 def test_show_unit_follow_ups_carry_label_and_question_and_drop_a_blank_label():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
