@@ -116,3 +116,16 @@ def test_album_live_legacy_on_request():
     assert sum(legacy["by_era"].values()) == legacy["performance_count"]
     assert legacy["most_released_performances"][0]["release_titles"]
     assert "get_song_notable_versions" in payload["live_legacy_note"]
+
+
+def test_selection_results_leave_out_pipeline_bookkeeping_but_keep_held_signals_visible():
+    tools = _tools(store_with_selection_evidence())
+    everything = json.loads(tools["get_selection_signals"].invoke({}))["selection_signals"]
+    for signal in everything:
+        assert not {"signal_id", "resolution_state", "collection_state", "identity_state", "source_provenance"} & set(signal)
+    assert any("held" in signal for signal in everything)
+    payload = json.loads(tools["get_selections_for"].invoke({"entity_type": "song", "entity_id_or_name": "Dark Star"}))
+    renditions = [p for signal in payload["selection_signals"] for p in signal.get("candidate_performances", [])]
+    assert renditions and all("show_id" not in p for p in renditions)
+    # A Dark Star needs only its ID on Dark Star's own results; the song is the subject.
+    assert any(set(p) == {"performance_id"} and "dark-star" in p["performance_id"] for p in renditions)

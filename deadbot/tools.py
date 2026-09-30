@@ -486,6 +486,43 @@ def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]
     return [merged[person_id] for person_id in order]
 
 
+# Selection-pipeline bookkeeping the model does not use to answer: the
+# signal's internal ID, how the evidence was collected and who identified it.
+_SIGNAL_INTERNAL_FIELDS = frozenset({"signal_id", "resolution_state", "collection_state", "identity_state", "source_provenance"})
+
+
+def _lean_signal(signal: dict[str, Any], *, song_id: str | None = None) -> dict[str, Any]:
+    """One selection signal as the model reads it.
+
+    A resolved signal says nothing about its resolution; a held one (its
+    source names a show with two renditions, an ambiguous date, an era) says
+    why, so it is never read as a definite pick. Candidate performances keep
+    their IDs; the show is in candidate_shows, and on a song's own results the
+    song is the subject, so neither repeats on every performance.
+    """
+
+    lean = {key: value for key, value in signal.items() if key not in _SIGNAL_INTERNAL_FIELDS}
+    state = signal.get("resolution_state") or ""
+    if state.startswith("held_"):
+        lean["held"] = state.removeprefix("held_").replace("_", " ")
+    performances = signal.get("candidate_performances")
+    if isinstance(performances, list):
+        lean["candidate_performances"] = []
+        for performance in performances:
+            if not isinstance(performance, dict):
+                continue
+            # On a song's own results, a rendition of that song needs only its ID.
+            keep = ("performance_id",) if song_id and performance.get("song_id") == song_id else ("performance_id", "song_id", "song_title")
+            lean["candidate_performances"].append({key: performance[key] for key in keep if performance.get(key)})
+    return lean
+
+
+_SIGNALS_NOTE = (
+    "Source-attributed signals, not one combined score or an objective best-of ranking. "
+    "held marks a signal its source could not pin to one show or performance."
+)
+
+
 def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
     """The reviewed selection evidence, or None when this store cannot serve it."""
 
@@ -1328,7 +1365,7 @@ def build_tools(
             signal = {
                 "source": entry.get("source"),
                 "signal_type": entry.get("signal_type"),
-                "resolution_state": entry.get("resolution_state"),
+                "held": (entry.get("resolution_state") or "").removeprefix("held_").replace("_", " ") if str(entry.get("resolution_state") or "").startswith("held_") else None,
                 "label": entry.get("selection_label") or entry.get("source_label") or entry.get("title"),
                 "source_url": entry.get("source_url"),
             }
@@ -1438,10 +1475,11 @@ def build_tools(
                 return None
 
         matched = []
+        song_id = subject.get("song_id") if kind == "song" else None
         for signal in inventory:
             reason = match(signal)
             if reason:
-                matched.append({**signal, "matches": reason})
+                matched.append({**_lean_signal(signal, song_id=song_id), "matches": reason})
         return _json(
             {
                 "subject": subject,
@@ -1661,8 +1699,9 @@ def build_tools(
     def get_selection_signals() -> str:
         """Get the complete reviewed critic, fan, official, and curator selection inventory.
 
-        It retains each source's signal type, source/access constraint, and
-        canonical resolution state. Use it to investigate a recommendation,
+        It retains each source's signal type and source/access constraint, and
+        marks a signal held when its source could not be pinned to one show or
+        performance. Use it to investigate a recommendation,
         performance-version, release, or individual-curator question. It is
         evidence from distinct sources, never a combined score, consensus, or
         automatic ranking. Fully resolved editorial show selections are also
@@ -1670,6 +1709,8 @@ def build_tools(
         """
         try:
             payload = load_selection_signals(store)
+            payload["selection_signals"] = [_lean_signal(signal) for signal in payload["selection_signals"]]
+            payload["coverage_note"] = _SIGNALS_NOTE
             payload["show_selections"] = load_show_selections(store)
             return _json(payload)
         except SelectionSignalError as error:
