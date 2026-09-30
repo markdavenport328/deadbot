@@ -59,9 +59,6 @@ FINISH_TOOL_NAME = "finish_response"
 # collection in both paths rather than failing the plan.
 PRESENTATIONS = frozenset({"collection", "sequence", "comparison", "argument"})
 
-# Deprecated plan vocabulary, accepted for one release and mapped to emphasis.
-UnitRole = Literal["anchor", "supporting", "contrast", "turning_point", "outlier", "culmination", "overlooked", "representative"]
-
 _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
 
 
@@ -329,7 +326,6 @@ _EMPHASIS_DESCRIPTION = (
     "selected facets open. supporting: a peer or piece of evidence; renders as a compact card with its note, listening "
     "and highlights. mention: a name the visitor may want to follow; renders as one line with a listen link."
 )
-_ROLE_DESCRIPTION = "Deprecated. Use emphasis. anchor maps to primary; every other value maps to supporting."
 _JUDGMENTS_DESCRIPTION = (
     "For a unit inside a comparison group: your one-line judgment for each of the group's criteria, in the same order. "
     "Leave an entry empty when you have nothing grounded to say."
@@ -372,7 +368,6 @@ class ShowUnitRef(_Ref):
     show_id: str | None = None
     from_result: str | None = Field(default=None, description=_from_result_description("show", "show_id"))
     disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
     judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
@@ -403,7 +398,6 @@ class PerformanceUnitRef(_Ref):
     performance_id: str | None = None
     from_result: str | None = Field(default=None, description=_from_result_description("performance", "performance_id"))
     disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
     judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
@@ -446,7 +440,6 @@ class AlbumUnitRef(_Ref):
     release_id: str | None = None
     from_result: str | None = Field(default=None, description=_from_result_description("record", "release_id"))
     disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
     judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
@@ -469,7 +462,6 @@ class SongOverviewRef(_Ref):
     song_id: str | None = None
     from_result: str | None = Field(default=None, description=_from_result_description("song", "song_id"))
     disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
     judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
@@ -514,12 +506,13 @@ class ListeningHeroRef(BaseModel):
 
 
 def _emphasis_for(ref: Any) -> Emphasis:
-    """The rendered emphasis for a unit ref: explicit emphasis, else the deprecated role mapped."""
+    """The rendered emphasis for a unit ref: its emphasis, else supporting.
 
-    explicit = getattr(ref, "emphasis", None)
-    if explicit:
-        return explicit
-    return "primary" if getattr(ref, "role", None) == "anchor" else "supporting"
+    The retired ``role`` field is an unknown key now, so an older plan that
+    still sends it validates and the value is ignored.
+    """
+
+    return getattr(ref, "emphasis", None) or "supporting"
 
 
 BodyItem = Annotated[

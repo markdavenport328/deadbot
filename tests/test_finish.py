@@ -62,14 +62,20 @@ def test_finish_plan_rejects_removed_single_dimension_references():
         raise AssertionError(f"{kind} should no longer be accepted")
 
 
-def test_role_maps_to_emphasis_when_emphasis_is_omitted():
-    anchor = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor")
-    contrast = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="contrast")
-    explicit = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor", emphasis="mention")
-    assert finish._emphasis_for(anchor) == "primary"
-    assert finish._emphasis_for(contrast) == "supporting"
+def test_emphasis_defaults_to_supporting_and_a_retired_role_is_ignored():
+    # role was retired after its deprecation release; an older plan that still
+    # sends it must validate, with the value ignored.
+    legacy = finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1972-08-27", "role": "anchor"})
+    explicit = finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1972-08-27", "role": "bold", "emphasis": "mention"})
+    assert not hasattr(legacy, "role")
+    assert finish._emphasis_for(legacy) == "supporting"
     assert finish._emphasis_for(explicit) == "mention"
-    assert finish._emphasis_for(finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")) == "supporting"
+    assert finish._emphasis_for(finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", emphasis="primary")) == "primary"
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "a", "title": "t",
+        "groups": [{"items": [{"type": "song_overview", "song_id": "song-dark-star", "role": "contrast"}]}],
+    })
+    assert plan.groups[0].items[0].type == "song_overview"
 
 
 def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
@@ -634,17 +640,6 @@ def test_resolve_groups_preserves_order_criteria_and_judgments():
     assert groups[0].presentation == "comparison" and groups[0].criteria == ["Pace", "Jam"]
     assert blocks[0].emphasis == "primary" and blocks[0].judgments == ["Relaxed", "Long", "Extra"]
     assert blocks[1].emphasis == "supporting" and blocks[1].judgments == ["Steady"]
-
-
-def test_finish_plan_rejects_an_unknown_role():
-    from pydantic import ValidationError
-
-    try:
-        finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1990-03-29", "role": "bold"})
-    except ValidationError:
-        pass
-    else:
-        raise AssertionError("roles are a closed vocabulary")
 
 
 def _show_item(show_id: str) -> dict:
