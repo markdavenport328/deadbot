@@ -8,14 +8,14 @@ import re
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
-from typing import Any
+from typing import Annotated, Any, get_args
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from langchain_core.tools import BaseTool, tool
-from pydantic import ValidationError
+from pydantic import ValidationError, WithJsonSchema
 
 from deadbot import aggregation, sequences
 from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
@@ -234,6 +234,25 @@ def _astrology_sign(requested_date: date) -> dict[str, str]:
         if start <= month_day <= end:
             return {"sign": name, "element": element, "modality": modality, "traditional_ruler": ruler}
     raise ValueError(f"Could not determine a zodiac sign for {requested_date.isoformat()}.")
+
+
+def _one_of(values: tuple[str, ...] | list[str]) -> WithJsonSchema:
+    """An enum the provider sees in the tool schema, while the tool still reads any string.
+
+    A value outside the list reaches the tool, whose own error names the valid
+    values, rather than failing argument validation before the tool runs.
+    """
+
+    return WithJsonSchema({"type": "string", "enum": list(values)})
+
+
+_DatasetArg = Annotated[str, _one_of(get_args(aggregation.Dataset))]
+_GroupByArg = Annotated[str, _one_of(get_args(aggregation.GroupBy))]
+_MeasureArg = Annotated[str, _one_of(get_args(aggregation.Measure))]
+_SortArg = Annotated[str | None, _one_of(get_args(aggregation.Sort))]
+_SongOrShowArg = Annotated[str, _one_of(("song", "show"))]
+_ShowOrPerformanceArg = Annotated[str, _one_of(("show", "performance"))]
+_TransitionArg = Annotated[str, _one_of(sequences.TRANSITIONS)]
 
 
 # The architecture doc's hard ceiling for one tool result (about 20,000
@@ -1327,11 +1346,10 @@ def build_tools(
         return _json(payload)
 
     @tool
-    def get_selections_for(entity_type: str, entity_id_or_name: str) -> str:
+    def get_selections_for(entity_type: _SongOrShowArg, entity_id_or_name: str) -> str:
         """Get only the reviewed critic, curator, official and fan selection signals about one song or show.
 
-        entity_type is "song" or "show". A song matches signals that name one
-        of its performances, plus show-level selections of a show where it was
+        A song matches signals that name one of its performances, plus show-level selections of a show where it was
         played (each result says which). Use it instead of the full inventory
         when the question is about one song or show. Signals stay
         source-attributed: distinct voices, not a combined score.
@@ -1475,7 +1493,7 @@ def build_tools(
         })
 
     @tool
-    def get_lore_source_trails(entity_type: str, entity_id_or_name: str) -> str:
+    def get_lore_source_trails(entity_type: _SongOrShowArg, entity_id_or_name: str) -> str:
         """Return reviewed, metadata-only lore links for one canonical song or show.
 
         Use after resolving an entity when the visitor's question invites
@@ -1764,11 +1782,10 @@ def build_tools(
         return _json(context)
 
     @tool
-    def get_media_links(entity_type: str, entity_id: str) -> str:
+    def get_media_links(entity_type: _ShowOrPerformanceArg, entity_id: str) -> str:
         """Get listening and viewing links for a canonical show or performance.
 
-        entity_type must be either 'show' or 'performance'. For a show, use a
-        canonical ID or unambiguous date such as 1972-08-27. URLs are external
+        For a show, use a canonical ID or unambiguous date such as 1972-08-27. URLs are external
         link-outs; do not claim they prove facts beyond their stored metadata.
         """
         if entity_type == "show":
@@ -1940,7 +1957,7 @@ def build_tools(
     def get_segue_pairing(
         first_song: str,
         second_song: str,
-        transition: str = "segue",
+        transition: _TransitionArg = "segue",
         include: list[str] | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
@@ -1948,10 +1965,9 @@ def build_tools(
         """Every night one song led straight into another: a pairing fans hear as one piece.
 
         first_song and second_song take a song ID or title, in playing order
-        (China Cat Sunflower, then I Know You Rider). transition="segue" (the
-        default) counts nights the first song segued into the second;
-        transition="any" also counts nights the second simply came next in the
-        same set. Call again with the songs swapped for the reverse order.
+        (China Cat Sunflower, then I Know You Rider). transition "segue" (the
+        default) counts nights the first song segued into the second; "any"
+        also counts nights the second simply came next in the same set. Call again with the songs swapped for the reverse order.
 
         The result carries the pairing_id, the count (with both the segue and
         the followed-without-segue counts), the span, versions per year (years
@@ -1995,9 +2011,9 @@ def build_tools(
 
     @tool
     def aggregate_data(
-        dataset: str,
-        group_by: str,
-        measure: str,
+        dataset: _DatasetArg,
+        group_by: _GroupByArg,
+        measure: _MeasureArg,
         song_id: str | None = None,
         exclude_song_ids: list[str] | None = None,
         venue_id: str | None = None,
@@ -2006,18 +2022,14 @@ def build_tools(
         year: int | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
-        sort: str | None = None,
+        sort: _SortArg = None,
         limit: int = 20,
         fill_missing: bool = False,
     ) -> str:
         """Count or group canonical Deadbot rows with a constrained, verified aggregation.
 
-        dataset is one of "shows", "performances", "guest_appearances".
-        group_by is one of "year", "song", "venue", "city", "guest" — only
-        some combinations are valid per dataset (an invalid combination
-        returns an error naming what's wrong, not a guess). measure is one of
-        "count", "distinct_shows", "distinct_songs" (also only valid for some
-        combinations).
+        Only some dataset, group_by and measure combinations are valid; an
+        invalid one returns an error naming what's wrong, not a guess.
 
         Every ID filter (song_id, venue_id, guest_id, show_id) takes a
         canonical ID only, never a name — resolve a name to an ID with
@@ -2028,9 +2040,8 @@ def build_tools(
         exactly what your words say it counts. Setlists list Drums and Space
         as their own entries (song-drums, song-space).
 
-        sort is "value_desc" (the default for a ranking), "value_asc",
-        "label", or for years "chronological" (the default). limit caps a
-        ranking's rows (up to 50).
+        sort defaults to value_desc for a ranking and chronological for years.
+        limit caps a ranking's rows (up to 50).
 
         The response's rows and metric_label are the actual computed
         aggregate: never estimate, extrapolate, or restate these numbers from
