@@ -387,10 +387,8 @@ def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
     """Trim a show's recording list to a count and its IDs.
 
     A show can carry dozens of recording rows whose metadata the model rarely
-    needs (get_performance and get_recording_reviews cover it), but grounding
-    is id-level: a recording the model names in a recording_list or as a
-    preferred recording must have appeared in this turn's tool output, so
-    every ID stays.
+    needs (get_performance and get_recording_reviews cover it); the IDs let
+    the model name a preferred recording for a show_unit.
     """
 
     ids = [row["recording_id"] for row in recordings if row.get("recording_id")]
@@ -1547,7 +1545,7 @@ def build_tools(
             return _json(_unresolved_show_payload(store, show_id_or_date))
         payload = store.show_context(show)
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
-        payload["recordings_note"] = "full recording metadata: get_performance or the recording_list component"
+        payload["recordings_note"] = "tapes ranked by listener reviews: get_recording_reviews; the full list on the page: the show_unit recordings facet"
         payload["performers"] = _compact_performers(payload.get("performers", []))
         payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
         return _json(payload)
