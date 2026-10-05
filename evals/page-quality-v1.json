@@ -1,0 +1,25 @@
+{
+  "suite_id": "page-quality",
+  "version": "v1",
+  "description": "Representative questions whose delivered pages are scored for the writing (repeats of the chat answer, catalog talk, narrating the page, stock hedges, word count) and, where the answer has an expected shape, for that shape. Run with scripts/page_eval.py; each case is one live model turn.",
+  "cases": [
+    {"id": "dark-star-years", "question": "When was Dark Star played?",
+     "expect": {"any_of": [{"type": "song_overview", "facet": "by_year"}, {"type": "data_chart"}]}},
+    {"id": "releases-1972", "question": "Which official releases cover 1972?",
+     "expect": {"any_of": [{"type": "album_unit", "disclosure": "collapsed", "min": 20}]}},
+    {"id": "most-played", "question": "What are the most played songs?",
+     "expect": {"any_of": [{"type": "ranked_list"}, {"type": "data_chart"}]}},
+    {"id": "china-rider", "question": "Why do people love China Cat > Rider?",
+     "expect": {"any_of": [{"type": "version_strip"}]}},
+    {"id": "cornell", "question": "Why is Cornell '77 so famous?",
+     "expect": {"any_of": [{"type": "show_unit"}, {"type": "listening_hero"}]}},
+    {"id": "harrisburg", "question": "When did the Dead play Harrisburg PA?",
+     "expect": {"any_of": [{"type": "show_unit", "disclosure": "expanded", "min": 2}]}},
+    {"id": "shows-1977", "question": "What shows did the Dead play in 1977?",
+     "expect": {"any_of": [{"type": "show_unit", "disclosure": "collapsed", "min": 20}]}},
+    {"id": "best-scarlet-fire", "question": "What's the best Scarlet > Fire?",
+     "expect": {"any_of": [{"type": "performance_unit"}, {"type": "version_strip"}, {"type": "show_unit"}, {"type": "listening_hero"}]}},
+    {"id": "branford", "question": "What happened when Branford Marsalis sat in with the Dead?"},
+    {"id": "europe-72", "question": "Tell me about the Europe '72 tour."}
+  ]
+}
