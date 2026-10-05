@@ -91,14 +91,14 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "avoid first-person singular" in prompt
     assert "each item's title names its subject" in prompt
     assert "Song_overview units are the home for individual song stories and listening actions.".casefold() in prompt.casefold()
-    for job in ("unit formation", "grouping", "completion", "segregation", "global organization"):
-        assert job in prompt.casefold()
+    # The abstract "Five Jobs of Gestalt" list was retired; its ideas are stated concretely elsewhere.
+    assert "gestalt" not in prompt.casefold()
 
 
 def test_prompt_batches_independent_research_and_uses_positive_composition_guidance():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "Request independent lookups together in the same turn so they run in parallel." in prompt
-    assert "Give each idea one clear home." in prompt
+    assert prompt.count("Give each idea one clear home") == 1
     assert "do not" not in prompt.casefold()
 
 
@@ -111,8 +111,8 @@ def test_prompt_teaches_pathways_and_show_unit_hydration():
         in prompt
     )
     assert (
-        "A show_unit needs only a show_id that appeared in this turn's tool output; "
-        "call get_show when its setlist or guests inform what you write."
+        "A show you only name or place on the page needs no lookup: a show_unit needs only a show_id that "
+        "appeared in a tool result, and the server fills in its card."
         in prompt
     )
     assert "do not" not in prompt.casefold()
@@ -137,6 +137,15 @@ def test_prompt_teaches_data_chart_and_aggregate_data():
         in prompt
     )
     assert "do not" not in prompt.casefold()
+
+
+def test_prompt_states_each_repeated_rule_once():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "Ken Kesey" not in prompt  # the follow-up example lives on the follow_ups field
+    assert "Drums and Space" not in prompt  # aggregate_data says how to count without them
+    assert prompt.count("stay out of the prose") == 1
+    assert prompt.count("this turn") == 1
+    assert "at least one" not in prompt.split("Every entity result carries pathways")[1].split("Separate facts")[0]
 
 
 def test_persona_tells_the_model_that_albums_are_held():

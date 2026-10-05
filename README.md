@@ -34,7 +34,7 @@ Around these sit recordings, external resources, curated selection signals, sour
 
 ### Retrieval
 
-A user's question enters a **LangGraph agent loop** where the language model alternates between deciding what to look up and executing the lookups — up to eight rounds. It has 26 read-only tools: catalog tools that query the SQLite catalog (search, show lookup, song lookup, performance context, album details, recording reviews, selection signals) and external tools that fetch articles, interviews, and lore from the web. Search is structured SQL text matching, not vector/semantic — the Dead domain has bounded vocabulary and the model formulates specific terms.
+A user's question enters a **LangGraph agent loop** where the language model alternates between deciding what to look up and executing the lookups — up to eight rounds. It has 29 read-only tools: catalog tools that query the SQLite catalog (search, show lookup, song lookup, performance context, album details, recording reviews, selection signals, counts for charts, and read-only catalog queries) and external tools that fetch articles, interviews, and lore from the web. Search is structured SQL text matching, not vector/semantic — the Dead domain has bounded vocabulary and the model formulates specific terms.
 
 ### Experience composition
 

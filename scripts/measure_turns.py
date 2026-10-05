@@ -67,14 +67,22 @@ def measure(questions: list[str], *, app: Any, pause_seconds: float = 0.0) -> li
     return rows
 
 
+def _cell(value: Any) -> str:
+    return "" if value is None else str(value)
+
+
 def table(rows: list[dict[str, Any]]) -> str:
-    header = "| Question | Calls | Peak input | Total input | Largest tool result | First answer (s) | Total (s) | Truncated | Error |"
-    lines = [header, "|" + "---|" * 9]
+    header = (
+        "| Question | Calls | Research rounds | Peak input | Total input | Cached input | Total output | Reasoning | "
+        "Largest tool result | First answer (s) | Total (s) | Truncated | Error |"
+    )
+    lines = [header, "|" + "---|" * 13]
     for row in rows:
         truncated = sum(1 for tool in row.get("tools", []) if tool.get("truncated"))
         lines.append(
-            f"| {row.get('question', '')} | {row.get('model_calls', '')} | {row.get('peak_input_tokens', '')} | "
-            f"{row.get('total_input_tokens', '')} | {row.get('largest_tool_result_chars', '')} | "
+            f"| {row.get('question', '')} | {row.get('model_calls', '')} | {_cell(row.get('research_rounds'))} | "
+            f"{row.get('peak_input_tokens', '')} | {row.get('total_input_tokens', '')} | {_cell(row.get('total_cached_input_tokens'))} | "
+            f"{_cell(row.get('total_output_tokens'))} | {_cell(row.get('total_reasoning_tokens'))} | {row.get('largest_tool_result_chars', '')} | "
             f"{row.get('seconds_to_first_answer', '')} | {row.get('seconds_total', '')} | {truncated} | {row.get('error') or ''} |"
         )
     return "\n".join(lines)

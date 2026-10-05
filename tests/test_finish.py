@@ -62,14 +62,20 @@ def test_finish_plan_rejects_removed_single_dimension_references():
         raise AssertionError(f"{kind} should no longer be accepted")
 
 
-def test_role_maps_to_emphasis_when_emphasis_is_omitted():
-    anchor = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor")
-    contrast = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="contrast")
-    explicit = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", role="anchor", emphasis="mention")
-    assert finish._emphasis_for(anchor) == "primary"
-    assert finish._emphasis_for(contrast) == "supporting"
+def test_emphasis_defaults_to_supporting_and_a_retired_role_is_ignored():
+    # role was retired after its deprecation release; an older plan that still
+    # sends it must validate, with the value ignored.
+    legacy = finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1972-08-27", "role": "anchor"})
+    explicit = finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1972-08-27", "role": "bold", "emphasis": "mention"})
+    assert not hasattr(legacy, "role")
+    assert finish._emphasis_for(legacy) == "supporting"
     assert finish._emphasis_for(explicit) == "mention"
-    assert finish._emphasis_for(finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")) == "supporting"
+    assert finish._emphasis_for(finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", emphasis="primary")) == "primary"
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "a", "title": "t",
+        "groups": [{"items": [{"type": "song_overview", "song_id": "song-dark-star", "role": "contrast"}]}],
+    })
+    assert plan.groups[0].items[0].type == "song_overview"
 
 
 def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
@@ -636,17 +642,6 @@ def test_resolve_groups_preserves_order_criteria_and_judgments():
     assert blocks[1].emphasis == "supporting" and blocks[1].judgments == ["Steady"]
 
 
-def test_finish_plan_rejects_an_unknown_role():
-    from pydantic import ValidationError
-
-    try:
-        finish.ShowUnitRef.model_validate({"type": "show_unit", "show_id": "gd-1990-03-29", "role": "bold"})
-    except ValidationError:
-        pass
-    else:
-        raise AssertionError("roles are a closed vocabulary")
-
-
 def _show_item(show_id: str) -> dict:
     return {"type": "show_unit", "show_id": show_id}
 
@@ -1020,6 +1015,19 @@ def test_follow_up_contract_reserves_ask_for_exploration():
     description = finish.ShowUnitRef.model_fields["follow_ups"].description or ""
     assert "listening links already cover hearing it" in description
     assert "explanation, comparison, history, lore or evidence" in description
+
+
+def test_shared_unit_fields_are_described_once_in_the_tool_schema():
+    import json
+
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
+    for description in (finish._FOLLOW_UPS_DESCRIPTION, finish._EMPHASIS_DESCRIPTION, finish._DISCLOSURE_DESCRIPTION,
+                        finish._SOURCES_DESCRIPTION, finish._JUDGMENTS_DESCRIPTION, finish._from_result_description("show", "show_id"),
+                        finish._NOTE_DESCRIPTION):
+        assert text.count(json.dumps(description)) == 1, description[:40]
+    assert "described once, on show_unit" in finish.build_finish_tool().description
 
 
 def test_show_unit_follow_ups_carry_label_and_question_and_drop_a_blank_label():

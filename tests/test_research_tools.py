@@ -237,3 +237,24 @@ def test_aggregate_data_response_has_no_scope_note():
         )
     )
     assert "scope_note" not in payload
+
+
+def test_enum_parameters_reach_the_tool_schema_and_bad_values_still_get_the_tools_own_error():
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    store = CanonicalStore()
+    parameters = convert_to_openai_tool(_tool_by_name(store, "aggregate_data"))["function"]["parameters"]["properties"]
+    assert parameters["dataset"]["enum"] == ["shows", "performances", "guest_appearances"]
+    assert parameters["group_by"]["enum"] == ["year", "song", "venue", "city", "guest"]
+    assert parameters["measure"]["enum"] == ["count", "distinct_shows", "distinct_songs"]
+    assert "value_desc" in parameters["sort"]["enum"]
+    for name, field, values in (
+        ("get_selections_for", "entity_type", ["song", "show"]),
+        ("get_media_links", "entity_type", ["show", "performance"]),
+        ("get_segue_pairing", "transition", ["segue", "any"]),
+    ):
+        schema = convert_to_openai_tool(_tool_by_name(store, name))["function"]["parameters"]["properties"]
+        assert schema[field]["enum"] == values
+    # A value outside the enum still reaches the tool, whose error names the valid values.
+    payload = json.loads(_tool_by_name(store, "get_media_links").invoke({"entity_type": "venue", "entity_id": "x"}))
+    assert payload["error"] == "entity_type must be 'show' or 'performance'"

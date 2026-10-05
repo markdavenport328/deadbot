@@ -59,9 +59,6 @@ FINISH_TOOL_NAME = "finish_response"
 # collection in both paths rather than failing the plan.
 PRESENTATIONS = frozenset({"collection", "sequence", "comparison", "argument"})
 
-# Deprecated plan vocabulary, accepted for one release and mapped to emphasis.
-UnitRole = Literal["anchor", "supporting", "contrast", "turning_point", "outlier", "culmination", "overlooked", "representative"]
-
 _MARKDOWN_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
 
 
@@ -135,7 +132,7 @@ class PersonRosterEntry(BaseModel):
     """One person in a roster, by ID, with an optional phrase from the model."""
 
     model_config = ConfigDict(extra="ignore")
-    person_id: str = Field(description="A person_id that appeared in a tool result this turn.")
+    person_id: str
     note: str | None = Field(
         default=None,
         description="A short phrase on what makes this person worth knowing here, when you have one grounded in the research. The server supplies name, roles, show count and years.",
@@ -207,7 +204,7 @@ class DataChartRef(_Ref):
             '("Performances by year"). Omit it and the aggregation\'s own metric label is the title.'
         ),
     )
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    note: str | None = None
 
 
 class VersionStripRef(_Ref):
@@ -222,12 +219,12 @@ class VersionStripRef(_Ref):
     """
 
     type: Literal["version_strip"]
-    pairing_id: str = Field(description="The pairing_id from a get_segue_pairing result this turn.")
+    pairing_id: str = Field(description="The pairing_id from a get_segue_pairing result.")
     pair_ids: list[str] = Field(
         description="The nights to draw, as pair_ids from that result, in the order you want them read.",
     )
     title: str | None = Field(default=None, description="What the visitor should see across these nights, in a few words.")
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    note: str | None = None
     show_year_counts: bool = Field(
         default=False,
         description="Add a small strip of how many nights the pairing was played each year, when its rise, gaps or fade matter here.",
@@ -237,9 +234,9 @@ class VersionStripRef(_Ref):
 class EditorialItemPlan(EditorialItemText):
     """One editorial item as the model writes it: its words, and the record it is about when it names one."""
 
-    show_id: str | None = Field(default=None, description="A show this item is about, from this turn; the server makes its title play the show.")
-    performance_id: str | None = Field(default=None, description="A performance this item is about, from this turn; the server makes its title play it.")
-    release_id: str | None = Field(default=None, description="An official record this item is about, from this turn; the server links it.")
+    show_id: str | None = Field(default=None, description="A show this item is about; the server makes its title play the show.")
+    performance_id: str | None = Field(default=None, description="A performance this item is about; the server makes its title play it.")
+    release_id: str | None = Field(default=None, description="An official record this item is about; the server links it.")
 
 
 class EditorialPlan(BaseModel):
@@ -287,7 +284,7 @@ class RankedListRef(_Ref):
     """
 
     type: Literal["ranked_list"]
-    aggregation_id: str = Field(description="The aggregation_id of an aggregate_data result this turn.")
+    aggregation_id: str
     count: int | None = Field(default=None, description="How many rows to show from the top; omit it to show every row of the result.")
     title: str | None = Field(default=None, description="What the ranking shows, in a few words.")
     note: str | None = None
@@ -305,26 +302,24 @@ class RankedListRef(_Ref):
 # object's own facts from the store.
 
 
-class SupportingSource(BaseModel):
-    """Evidence the composer attaches to a unit, cited by a URL a tool returned this turn."""
+# Shared unit fields are described once, on ShowUnitRef (the first unit in the
+# plan schema). The schema inlines a sub-model at every use, so these carry no
+# descriptions of their own; the finish_response description says so.
 
+
+class SupportingSource(BaseModel):
+    # Evidence attached to a unit, cited by a URL a tool returned.
     model_config = ConfigDict(extra="ignore")
-    url: str = Field(description="A URL that appeared in a tool result this turn: a resource, research record, search hit, read page or archive review.")
-    note: str | None = Field(default=None, description="What this source says about the unit, in a sentence, with attribution.")
+    url: str
+    note: str | None = None
 
 
 class FollowUpTopic(BaseModel):
-    """A short topic chip the visitor can press, and the full question it stands for.
-
-    The chip shows only the label under "More about"; pressing it sends the
-    question, in the visitor's voice, to start a new turn.
-    """
-
+    # A topic chip under "More about": the label it shows, and the question,
+    # in the visitor's voice, that pressing it sends to start a new turn.
     model_config = ConfigDict(extra="ignore")
-    label: str = Field(
-        description="Two or three words naming the topic as it will appear on the chip, e.g. 'Guest musicians', 'Spring 1990', 'Jazz and the Dead'.",
-    )
-    question: str = Field(description="The full question, in the visitor's voice, that the chip sends when pressed.")
+    label: str
+    question: str
 
 
 _EMPHASIS_DESCRIPTION = (
@@ -332,17 +327,21 @@ _EMPHASIS_DESCRIPTION = (
     "selected facets open. supporting: a peer or piece of evidence; renders as a compact card with its note, listening "
     "and highlights. mention: a name the visitor may want to follow; renders as one line with a listen link."
 )
-_ROLE_DESCRIPTION = "Deprecated. Use emphasis. anchor maps to primary; every other value maps to supporting."
 _JUDGMENTS_DESCRIPTION = (
     "For a unit inside a comparison group: your one-line judgment for each of the group's criteria, in the same order. "
     "Leave an entry empty when you have nothing grounded to say."
 )
-_SOURCES_DESCRIPTION = "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording)."
+_SOURCES_DESCRIPTION = (
+    "Sources whose evidence is about this object specifically (a quote about this show, a review of this recording): "
+    "each a url from a tool result (a resource, research record, search hit, read page or archive review) and a note "
+    "on what it says, with attribution."
+)
 _FOLLOW_UPS_DESCRIPTION = (
-    "Up to three topics the visitor might want more about, each a short label plus the specific question it opens. "
-    "Draw them from relationships or implications found in this research: explanation, comparison, history, lore or "
-    "evidence. This object's listening links already cover hearing it, so topics open understanding rather than "
-    "playback. Include only topics that create a worthwhile continuation."
+    "Up to three topic chips under \"More about\", each a label of two or three words and the full question, in the "
+    "visitor's voice, that pressing it sends: label 'Ken Kesey at Veneta', question 'What did Ken Kesey remember about "
+    "the heat at Veneta?'. Draw them from relationships or implications found in this research: explanation, comparison, "
+    "history, lore or evidence. This object's listening links already cover hearing it, so topics open understanding "
+    "rather than playback. Include only topics that create a worthwhile continuation."
 )
 
 
@@ -376,15 +375,15 @@ class ShowUnitRef(_Ref):
     show_id: str | None = None
     from_result: str | None = Field(default=None, description=_from_result_description("show", "show_id"))
     disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
     emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
     judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
     note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
     visible_facets: list[ShowFacet] = Field(
         default_factory=list,
         description=(
-            "The facets worth showing for this show. guests, listen, setlist and sources as before; lineup is the full "
-            "performer list; recordings is the complete recording inventory. Identity and your note are always shown."
+            "The facets worth showing for this show: guests, listen (play links for the show), setlist, sources (your supporting "
+            "sources), lineup (the full performer list) and recordings (the complete recording inventory). Identity and your "
+            "note are always shown."
         ),
     )
     setlist_disclosure: Literal["expanded", "collapsed", "hidden"] = Field(
@@ -405,12 +404,11 @@ class PerformanceUnitRef(_Ref):
 
     type: Literal["performance_unit"]
     performance_id: str | None = None
-    from_result: str | None = Field(default=None, description=_from_result_description("performance", "performance_id"))
-    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
-    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    from_result: str | None = None
+    disclosure: Literal["collapsed", "expanded"] = "expanded"
+    emphasis: Emphasis | None = None
+    judgments: list[str] = Field(default_factory=list)
+    note: str | None = None
     visible_facets: list[PerformanceFacet] = Field(
         default_factory=lambda: ["setlist", "listen", "sources"],
         description=(
@@ -419,8 +417,8 @@ class PerformanceUnitRef(_Ref):
             "are always shown. Omit the field to show all three."
         ),
     )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class EraUnitRef(_Ref):
@@ -431,8 +429,8 @@ class EraUnitRef(_Ref):
     span: str | None = Field(default=None, description="The years or dates this stage covers.")
     note: str | None = Field(default=None, description="What changed in this stage and how you know.")
     representative_performance_ids: list[str] = Field(description="Performances that show this stage; each becomes a listening path.")
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class AlbumUnitRef(_Ref):
@@ -448,11 +446,10 @@ class AlbumUnitRef(_Ref):
     )
     type: Literal["album_unit"]
     release_id: str | None = None
-    from_result: str | None = Field(default=None, description=_from_result_description("record", "release_id"))
-    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
-    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
+    from_result: str | None = None
+    disclosure: Literal["collapsed", "expanded"] = "expanded"
+    emphasis: Emphasis | None = None
+    judgments: list[str] = Field(default_factory=list)
     note: str | None = Field(default=None, description="Why this record matters to the question, in your voice.")
     visible_facets: list[Literal["listen", "tracklist", "personnel", "sources"]] = Field(
         default_factory=list,
@@ -462,8 +459,8 @@ class AlbumUnitRef(_Ref):
         ),
     )
     highlighted_song_ids: list[str] = Field(default_factory=list)
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class SongOverviewRef(_Ref):
@@ -471,12 +468,11 @@ class SongOverviewRef(_Ref):
 
     type: Literal["song_overview"]
     song_id: str | None = None
-    from_result: str | None = Field(default=None, description=_from_result_description("song", "song_id"))
-    disclosure: Literal["collapsed", "expanded"] = Field(default="expanded", description=_DISCLOSURE_DESCRIPTION)
-    role: UnitRole | None = Field(default=None, description=_ROLE_DESCRIPTION)
-    emphasis: Emphasis | None = Field(default=None, description=_EMPHASIS_DESCRIPTION)
-    judgments: list[str] = Field(default_factory=list, description=_JUDGMENTS_DESCRIPTION)
-    note: str | None = Field(default=None, description=_NOTE_DESCRIPTION)
+    from_result: str | None = None
+    disclosure: Literal["collapsed", "expanded"] = "expanded"
+    emphasis: Emphasis | None = None
+    judgments: list[str] = Field(default_factory=list)
+    note: str | None = None
     visible_facets: list[SongFacet] = Field(
         default_factory=lambda: ["representatives"],
         description=(
@@ -488,8 +484,8 @@ class SongOverviewRef(_Ref):
         default_factory=list,
         description="Representative performances for this song, in the listening order you chose. Retrieve concrete rendition IDs first; each known direct recording link remains attached.",
     )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list, description=_SOURCES_DESCRIPTION)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
+    supporting_sources: list[SupportingSource] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class ListeningHeroRef(BaseModel):
@@ -502,10 +498,10 @@ class ListeningHeroRef(BaseModel):
 
     model_config = ConfigDict(extra="ignore")
     type: Literal["listening_hero"]
-    show_id: str | None = Field(default=None, description="The show to play: a show_id that appeared in a tool result this turn.")
+    show_id: str | None = Field(default=None, description="The show to play.")
     release_id: str | None = Field(
         default=None,
-        description="The official record to lead with: a release_id from this turn. With a show_id, its cover leads the show.",
+        description="The official record to lead with. With a show_id, its cover leads the show.",
     )
     line: str | None = Field(default=None, description="One short line under the name: what the visitor is about to hear.")
     play_label: str | None = Field(default=None, description="The Play button's words, such as 'Play the second set'.")
@@ -513,17 +509,18 @@ class ListeningHeroRef(BaseModel):
     start_performance_id: str | None = Field(default=None, description="A performance_id in this show to start from, when one song is the way in.")
     link: EditorialLink | None = Field(
         default=None,
-        description="One quiet secondary link beside Play, such as the official release on Spotify; kept only when its URL appeared in a tool result this turn.",
+        description="One quiet secondary link beside Play, such as the official release on Spotify.",
     )
 
 
 def _emphasis_for(ref: Any) -> Emphasis:
-    """The rendered emphasis for a unit ref: explicit emphasis, else the deprecated role mapped."""
+    """The rendered emphasis for a unit ref: its emphasis, else supporting.
 
-    explicit = getattr(ref, "emphasis", None)
-    if explicit:
-        return explicit
-    return "primary" if getattr(ref, "role", None) == "anchor" else "supporting"
+    The retired ``role`` field is an unknown key now, so an older plan that
+    still sends it validates and the value is ignored.
+    """
+
+    return getattr(ref, "emphasis", None) or "supporting"
 
 
 BodyItem = Annotated[
@@ -758,25 +755,15 @@ class FinishPlan(BaseModel):
         return {**data, "groups": groups}
 
     chat_answer: str = Field(
-        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. May use markdown links to URLs the tools returned this turn."
+        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. Markdown links allowed."
     )
     title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
     lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
     groups: list[GroupPlan] = Field(
         default_factory=list,
         description=(
-            "The edited main body as groups, each one a distinct relationship: collection for peers, sequence for a development or route, "
-            "comparison for items judged on shared criteria, argument for evidence under a claim. Inside a group, semantic units declare the "
-            "objects of the answer and the server hydrates their facts: show_unit, performance_unit, album_unit, song_overview, era_unit. "
-            "Give each object an emphasis, and a disclosure: collapse cards when the visitor wants to scan a set, expand the few they came for; "
-            "from_result lists every record in a tool result. Editorial blocks you write (narrative, fact_grid, timeline) carry prose, "
-            "viewpoints and comparisons in your words. "
-            "Standalone components for objects without a parent unit: equipment_list, guest_appearance_list, person_roster (a complete set of "
-            "people under a heading you choose), show_selection, arrangement, arrangement_search, media_link, resource_list, "
-            "data_chart (a chart built from one aggregate_data result), ranked_list (the top rows of one aggregate_data result), version_strip (chosen nights of one get_segue_pairing result drawn to one clock, "
-            "each row playing both songs). A listening_hero "
-            "leads the page when the visitor wants to hear a show or recording: place it first. A pull_quote sets one sentence of yours large, "
-            "for the idea the visitor should carry away. An answer that needs no main body leaves groups empty."
+            "The edited main body as groups, each one a distinct relationship among the items it holds. "
+            "An answer that needs no main body leaves groups empty."
         ),
     )
 
@@ -1491,13 +1478,13 @@ def build_finish_tool() -> BaseTool:
         func=_deliver,
         name=FINISH_TOOL_NAME,
         description=(
-            "Deliver the finished response to the visitor. Call this once, when your research is done. "
-            "chat_answer gives the conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, with "
-            "listening and source actions attached to the objects they belong to. Compose groups (collection, sequence, comparison, argument) of semantic "
-            "units with an emphasis, a note, selected facets, highlights and sources, plus your own narrative, fact grids or timelines for what spans the "
-            "units. A listening_hero leads a page that is best heard, a version_strip lays chosen nights of a song pairing on one clock, and a pull_quote "
-            "sets apart the one line worth remembering. IDs must have appeared "
-            "in a tool result this turn; links you write are kept only when their URL came from a tool result this turn."
+            "Deliver the finished response to the visitor. Call this once, when your research is done. chat_answer gives the "
+            "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
+            "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
+            "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
+            "mean the same on every unit. Every ID and URL in the plan must have appeared in a tool result this turn: the "
+            "server hydrates each ID from the library, keeps your words where one does not resolve, and keeps a link only "
+            "when its URL came from a tool result."
         ),
         args_schema=FinishPlan,
     )

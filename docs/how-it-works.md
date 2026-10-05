@@ -8,7 +8,7 @@ For the product goals and design philosophy, see [product-vision.md](product-vis
 
 ### What it holds
 
-The PostgreSQL database holds the **canonical catalog** — every fact Deadbot can draw on when answering a question. It's organized around five core entities and the relationships between them.
+The SQLite database holds the **canonical catalog** — every fact Deadbot can draw on when answering a question. It's organized around five core entities and the relationships between them.
 
 **Shows** are the backbone. There are roughly 2,300 of them, each with a date, venue, tour, and full setlist. A **performance** is one song played at one show: it carries the set number, position, segue information, and links to recordings and streaming audio. This is the key join table — it's how "Scarlet Begonias" at Cornell '77 is a different record from "Scarlet Begonias" at Veneta '72.
 
@@ -38,7 +38,7 @@ External sources → collection scripts → raw JSON in data/raw/
                                             ↓
                                     canonical CSVs in data/canonical/
                                             ↓
-                                    deadbot db-import → PostgreSQL
+                                    deadbot db-build → SQLite file (build/deadbot.sqlite)
 ```
 
 **Collection** scripts in `scripts/collect/` pull raw data from external sources: Jerrybase for setlists, MusicBrainz for release metadata, Internet Archive for recording indexes, Relisten for streaming links, Wikidata and Wikipedia for biographical facts, dead.net for official material, and several others. These produce raw JSON files preserved in `data/raw/`.
@@ -59,7 +59,7 @@ Every import records a ledger row in `canonical_imports` for auditability.
 
 The database is **read-only at runtime**. The only write the application ever makes is caching its own answers for repeat questions (in `deadbot_response_cache`). All catalog data enters through the import pipeline.
 
-The app runs on Vercel as a serverless function. A single Postgres connection is created lazily on first query, transparently reopened if it drops (important for serverless cold starts), and shared across requests in that function instance. The database URL comes from Vercel environment variables.
+The app runs on Vercel as a serverless function. The deploy's build step builds the SQLite file from the CSVs (`python3 -m deadbot.sqlite_build`), and the function opens it read-only. The response cache lives in its own small SQLite file in the function's temporary directory. (The older PostgreSQL store and `deadbot db-import` remain for the legacy importer and CI until they are retired.)
 
 There's a **per-request query cache** at the data layer: since the data is read-only, the same SQL query within one request returns the same rows without hitting the database again. This matters because the composition step often re-fetches entities the model already looked up during research.
 
@@ -78,19 +78,19 @@ POST /api/experience/stream
     ↓
 Response cache check (normalized question + data version + code commit)
     ↓  cache miss
-LangGraph agent loop (up to 8 rounds)
+LangGraph agent loop (up to 8 research rounds)
     ↓
     ├─→ Agent node: LLM decides what to look up
     │       ↓
     ├─→ Tools node: executes tool calls
-    │       ├─→ Catalog tools → PostgreSQL queries
+    │       ├─→ Catalog tools → SQLite queries
     │       └─→ External tools → web fetches
     │       ↓
     └─→ Results return to model for next round
     ↓
 Model calls finish_response (terminal tool)
     ↓
-Composition: resolve references → PostgreSQL
+Composition: resolve references → SQLite catalog
     ↓
 Grounding check: records not in tool output keep only the model's words
     ↓
@@ -110,11 +110,11 @@ On a cache miss, the question enters a LangGraph state graph with two nodes that
 
 The routing logic is simple: if the model made tool calls, go to the tools node; if a successful `finish_response` result is in the messages, end the loop; otherwise, return to the agent node for another round. The recursion limit is 8 tool rounds (20 LangGraph steps).
 
-### The 26 tools
+### The 29 research tools
 
-The model has access to 26 read-only tools, all defined in `deadbot/tools.py`. They fall into three groups:
+The model has access to 29 read-only research tools, all defined in `deadbot/tools.py`, plus `finish_response`, which delivers the answer. They fall into three groups:
 
-**Catalog tools** query the PostgreSQL database:
+**Catalog tools** query the SQLite catalog:
 
 | Tool | What it does |
 | --- | --- |
@@ -134,6 +134,9 @@ The model has access to 26 read-only tools, all defined in `deadbot/tools.py`. T
 | `get_media_links` | Listening/viewing links for a show or performance |
 | `find_arrangements` | Song arrangements by key signature |
 | `get_recording_reviews` | Archive.org listener reviews and star ratings |
+| `get_segue_pairing` | How a two-song pairing (China Cat > Rider) changed across the nights it was played |
+| `aggregate_data` | Verified counts and rankings across shows, performances or guests; the source of every chart |
+| `query_catalog` | Named catalog queries or read-only SQL over curated views, for lists by year, venue or tour |
 
 **External research tools** fetch from the web:
 
