@@ -105,7 +105,7 @@ def test_prompt_batches_independent_research_and_uses_positive_composition_guida
 def test_prompt_teaches_pathways_and_show_unit_hydration():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert (
-        "Every entity result carries pathways: the lore already cataloged for it, or the research sites "
+        "Every entity result carries pathways: the lore already gathered for it, or the research sites "
         "worth searching when nothing is. Answer the question directly, then offer the pathways that fit "
         "as links or follow-up topics. When a pathway looks likely to change the answer, open it; otherwise offer it."
         in prompt
@@ -131,9 +131,8 @@ def test_prompt_teaches_data_chart_and_aggregate_data():
     assert (
         "Cross-show patterns. For counts, rankings or trends across many shows, performances or guests — "
         "not any single show or performance — call aggregate_data. Its rows are server-verified: quote them "
-        "exactly as returned. Every aggregate_data result measures how often something was played or "
-        "appeared; state it as performance frequency, keeping it distinct from listener popularity in what "
-        "you say about it."
+        "exactly as returned. Every aggregate_data result counts how often something was played or "
+        "appeared, and the words say exactly that"
         in prompt
     )
     assert "do not" not in prompt.casefold()
@@ -143,7 +142,7 @@ def test_prompt_states_each_repeated_rule_once():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "Ken Kesey" not in prompt  # the follow-up example lives on the follow_ups field
     assert "Drums and Space" not in prompt  # aggregate_data says how to count without them
-    assert prompt.count("stay out of the prose") == 1
+    assert prompt.count("Say each thing once") == 1
     assert prompt.count("this turn") == 1
     assert "at least one" not in prompt.split("Every entity result carries pathways")[1].split("Separate facts")[0]
 

@@ -588,7 +588,7 @@ def build_tools(
         people who appear only in guest credits. Use search_guest_musicians
         when the distinction between a guest credit and the regular lineup is
         material. Returns stable IDs and display names only; it never searches
-        the web. pathways lists the cataloged lore for each result (resources,
+        the web. pathways lists the gathered lore for each result (resources,
         source trail, selections) or the research sites to search when
         nothing is cataloged.
         """
@@ -680,7 +680,7 @@ def build_tools(
         venue, location, credited instruments, any known participation scope,
         and (where a source pins the guest to particular songs) the
         performances they played on in set order with a note on what
-        happened. That call also carries pathways: the cataloged lore for
+        happened. That call also carries pathways: the gathered lore for
         each show (resources, source trail, selections) or the research
         sites to search when nothing is cataloged. When the question is
         about a specific guest, ask for include=["appearances"] in the same
@@ -971,7 +971,7 @@ def build_tools(
         `list_song_performances` for concrete rendition IDs and listening
         paths. `releases` names the official records carrying the song,
         earliest first. `resources` are articles, essays and interviews about
-        it, attributed to their sources. pathways lists the cataloged lore
+        it, attributed to their sources. pathways lists the gathered lore
         (resources, source trail, selections) or the research sites to search
         when nothing is cataloged.
         """
@@ -1124,7 +1124,7 @@ def build_tools(
           narrows it to one show's tracks on a multi-show release.
         - include=["live_legacy"]: each song's life on stage (count, span, count
           by era, the performances most often issued on official live records).
-        pathways lists the cataloged lore for the release or the research sites
+        pathways lists the gathered lore for the release or the research sites
         to search when nothing is cataloged.
         """
         release = store.resolve_release(release_id_or_title)
@@ -1645,7 +1645,7 @@ def build_tools(
         from model memory. For follow-up questions about who played,
         instruments, guests, or Jerry Garcia's named guitars, reuse the most
         recent retrieved show ID/date and call this tool before answering.
-        pathways lists the cataloged lore for each result (resources, source
+        pathways lists the gathered lore for each result (resources, source
         trail, selections) or the research sites to search when nothing is
         cataloged.
         """
