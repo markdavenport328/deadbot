@@ -52,7 +52,7 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
         return f"Charting performances of {_quote(args.get('song_id_or_title'))}".rstrip()
     if name == "get_song_notable_versions":
         return f"Gathering notable versions of {_quote(args.get('song_id_or_title'))}".rstrip()
-    if name == "get_selections_for":
+    if name in {"get_selections_for", "get_selections_in"}:
         return "Consulting critics' and fans' picks"
     if name == "get_performance":
         return "Reading a performance and its set"

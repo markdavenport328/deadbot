@@ -129,3 +129,20 @@ def test_selection_results_leave_out_pipeline_bookkeeping_but_keep_held_signals_
     assert renditions and all("show_id" not in p for p in renditions)
     # A Dark Star needs only its ID on Dark Star's own results; the song is the subject.
     assert any(set(p) == {"performance_id"} and "dark-star" in p["performance_id"] for p in renditions)
+
+
+def test_selections_in_a_span_return_only_signals_about_shows_in_it():
+    tools = _tools(store_with_selection_evidence())
+    everything = json.loads(tools["get_selection_signals"].invoke({}))["selection_signals"]
+    payload = json.loads(tools["get_selections_in"].invoke({"year_from": 1972, "year_to": 1972}))
+    assert 0 < payload["signal_count"] < len(everything)
+    assert payload["span"]["year_from"] == 1972
+    named = [item["show_date"] for signal in payload["selection_signals"] for item in signal.get("candidate_shows", [])]
+    assert named and all(date.startswith("1972") for date in named)
+
+
+def test_selections_in_a_span_can_be_narrowed_to_a_venue_and_need_a_span():
+    tools = _tools(store_with_selection_evidence())
+    payload = json.loads(tools["get_selections_in"].invoke({"venue": "Barton Hall"}))
+    assert payload["signal_count"] > 0
+    assert "error" in json.loads(tools["get_selections_in"].invoke({}))
