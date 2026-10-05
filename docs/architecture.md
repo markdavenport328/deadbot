@@ -64,7 +64,7 @@ Resource metadata and source-specific chord arrangements remain in the canonical
 
 ## Experience composition
 
-The experience layer receives a grounded retrieval result and returns a versioned response composed of an answer, source/provenance metadata, and typed content blocks. A block can represent a song or performance card, an approved media player, a resource list, a quote from a permitted source-reader result, or a gap state. The client renders these blocks deterministically.
+The experience layer receives a grounded retrieval result and returns a versioned response composed of an answer, source/provenance metadata, and typed content blocks. The model decides which blocks appear and how they are ordered and grouped. A block can represent a song or performance card, an approved media player, a resource list, a quote from a permitted source-reader result, or a gap state. The client renders these blocks deterministically.
 
 Composition is deliberately distinct from retrieval and rendering:
 
@@ -72,4 +72,4 @@ Composition is deliberately distinct from retrieval and rendering:
 retrieval/tools → composition plan → validated experience response → UI renderer
 ```
 
-The model may select and order blocks from a small allowlist but cannot generate interface code, iframe markup, or untrusted URLs. The backend validates all references and provider-specific media identifiers. This maintains the existing read-only, provenance-aware architecture while allowing answers to become useful listening and research paths. See `docs/experience-architecture.md`.
+The model composes the page from a palette of typed components and its own editorial writing, naming records by ID; code fills in their facts from the store and builds players and links from stored or tool-returned URLs, so the model never writes interface code or embed markup. Code reads the plan leniently and keeps the model's work on the page (ADR-014). See `docs/experience-architecture.md`.

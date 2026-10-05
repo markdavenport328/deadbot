@@ -157,11 +157,13 @@ These boundaries are intentional and should not be bypassed casually:
 - 2026-09: merged the research and editing models into one loop with a
   `finish_response` tool; removed `deadbot/composer.py`; editorial items can
   carry grounded outbound links.
-- `AGENTS.md` records the project-wide model-first principle: favor richer
-  grounded context, useful tools, a clear persona and goal, and an expressive
-  presentation palette. Deterministic code is transport and structure, not an
-  editorial backstop.
-- A model may not generate browser code, iframe markup, arbitrary embeds, or arbitrary external URLs. The future client must render only server-validated, allowlisted blocks.
+- `AGENTS.md` records the project-wide first principle: code guards facts and
+  transport; the model owns judgment (ADR-014). Favor richer grounded context,
+  useful tools, a clear persona and goal, and well-shaped components.
+- The model composes from the component palette and names records by ID; code
+  fills in facts and builds players and links from stored or tool-returned
+  URLs, so the model writes no browser code or embed markup. Code reads the
+  plan leniently and keeps the model's work on the page.
 
 ## Next work
 
