@@ -2,10 +2,12 @@
 
 ## Start here
 
-Read `AGENTS.md` and this file before continuing UX work. The user approved the
-prioritized plan below and asked for implementation in reviewable batches.
-Preserve model ownership of selection, interpretation, ordering, grouping, and
-omission. One model delivers the whole turn through `finish_response`.
+This is a running log of UX work, begun September 7, 2026. The principles in
+`AGENTS.md` come first and take precedence over any older wording here: code
+guards facts and transport, and the model owns selection, interpretation,
+ordering, grouping, disclosure, and omission. One model delivers the whole turn
+through `finish_response`. Entries below record what was built and why at the
+time; check them against current code before acting on an open item.
 
 ## Repository reconciliation
 

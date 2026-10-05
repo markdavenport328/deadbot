@@ -8,14 +8,14 @@ import re
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
-from typing import Any
+from typing import Annotated, Any, get_args
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from langchain_core.tools import BaseTool, tool
-from pydantic import ValidationError
+from pydantic import ValidationError, WithJsonSchema
 
 from deadbot import aggregation, sequences
 from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
@@ -236,6 +236,25 @@ def _astrology_sign(requested_date: date) -> dict[str, str]:
     raise ValueError(f"Could not determine a zodiac sign for {requested_date.isoformat()}.")
 
 
+def _one_of(values: tuple[str, ...] | list[str]) -> WithJsonSchema:
+    """An enum the provider sees in the tool schema, while the tool still reads any string.
+
+    A value outside the list reaches the tool, whose own error names the valid
+    values, rather than failing argument validation before the tool runs.
+    """
+
+    return WithJsonSchema({"type": "string", "enum": list(values)})
+
+
+_DatasetArg = Annotated[str, _one_of(get_args(aggregation.Dataset))]
+_GroupByArg = Annotated[str, _one_of(get_args(aggregation.GroupBy))]
+_MeasureArg = Annotated[str, _one_of(get_args(aggregation.Measure))]
+_SortArg = Annotated[str | None, _one_of(get_args(aggregation.Sort))]
+_SongOrShowArg = Annotated[str, _one_of(("song", "show"))]
+_ShowOrPerformanceArg = Annotated[str, _one_of(("show", "performance"))]
+_TransitionArg = Annotated[str, _one_of(sequences.TRANSITIONS)]
+
+
 # The architecture doc's hard ceiling for one tool result (about 20,000
 # tokens). A result over it is transport damage, not an editorial choice:
 # trim the largest list and tell the model how much it did not see.
@@ -383,18 +402,66 @@ def _place(venue: dict[str, str] | None) -> str:
     return ", ".join(value for value in (venue.get("city"), venue.get("state_region")) if value)
 
 
-def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
-    """Trim a show's recording list to a count and its IDs.
+# A show with this many recordings or fewer lists their IDs in get_show; a
+# larger inventory (the famous nights run to 20-38 tapes) is a count, and
+# get_recording_reviews lists its tapes by listener rating, with their IDs.
+_SHOW_RECORDING_ID_LIMIT = 8
 
-    A show can carry dozens of recording rows whose metadata the model rarely
-    needs (get_performance and get_recording_reviews cover it), but grounding
-    is id-level: a recording the model names in a recording_list or as a
-    preferred recording must have appeared in this turn's tool output, so
-    every ID stays.
+
+def _compact_recordings(recordings: list[dict[str, Any]]) -> dict[str, Any]:
+    """Trim a show's recording list to a count, its source types and, when short, its IDs.
+
+    Per-recording metadata stays out (get_performance and get_recording_reviews
+    cover it). The IDs let the model name a preferred recording for a
+    show_unit; a long list of them is noise, so it goes to a count.
     """
 
     ids = [row["recording_id"] for row in recordings if row.get("recording_id")]
-    return {"count": len(recordings), "recording_ids": ids}
+    compact: dict[str, Any] = {"count": len(recordings)}
+    by_type: dict[str, int] = {}
+    for row in recordings:
+        if row.get("source_type"):
+            by_type[row["source_type"]] = by_type.get(row["source_type"], 0) + 1
+    if by_type:
+        compact["known_source_types"] = by_type
+    if len(ids) <= _SHOW_RECORDING_ID_LIMIT:
+        compact["recording_ids"] = ids
+    return compact
+
+
+def _flag(value: Any) -> bool:
+    return str(value).strip().lower() == "true"
+
+
+def _compact_setlist_row(row: dict[str, Any]) -> dict[str, Any]:
+    """One setlist entry for the model: its IDs, place, real booleans and whether it can be heard.
+
+    The page's show_unit fills in every listening link from the library, so
+    the model needs only that a track exists and how long it runs, not the
+    archive.org track URL and tape identifier for each song.
+    """
+
+    compact: dict[str, Any] = {
+        "performance_id": row.get("performance_id"),
+        "song_id": row.get("song_id"),
+        "set_number": row.get("set_number"),
+        "position_in_set": row.get("position_in_set"),
+    }
+    label = row.get("set_label")
+    if label and label != f"Set {row.get('set_number')}":
+        compact["set_label"] = label
+    if _flag(row.get("encore")):
+        compact["encore"] = True
+    if _flag(row.get("segue_into_next")):
+        compact["segue_into_next"] = True
+    listen = row.get("listen") or {}
+    if listen.get("archive_track_url"):
+        seconds = listen.get("archive_track_duration_seconds")
+        compact["audio_seconds" if isinstance(seconds, int) else "audio"] = seconds if isinstance(seconds, int) else True
+    for key in ("release_track_url", "video_url"):
+        if listen.get(key):
+            compact[key] = listen[key]
+    return compact
 
 
 def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -417,6 +484,43 @@ def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]
         if instrument and instrument not in merged[person_id]["instruments"]:
             merged[person_id]["instruments"].append(instrument)
     return [merged[person_id] for person_id in order]
+
+
+# Selection-pipeline bookkeeping the model does not use to answer: the
+# signal's internal ID, how the evidence was collected and who identified it.
+_SIGNAL_INTERNAL_FIELDS = frozenset({"signal_id", "resolution_state", "collection_state", "identity_state", "source_provenance"})
+
+
+def _lean_signal(signal: dict[str, Any], *, song_id: str | None = None) -> dict[str, Any]:
+    """One selection signal as the model reads it.
+
+    A resolved signal says nothing about its resolution; a held one (its
+    source names a show with two renditions, an ambiguous date, an era) says
+    why, so it is never read as a definite pick. Candidate performances keep
+    their IDs; the show is in candidate_shows, and on a song's own results the
+    song is the subject, so neither repeats on every performance.
+    """
+
+    lean = {key: value for key, value in signal.items() if key not in _SIGNAL_INTERNAL_FIELDS}
+    state = signal.get("resolution_state") or ""
+    if state.startswith("held_"):
+        lean["held"] = state.removeprefix("held_").replace("_", " ")
+    performances = signal.get("candidate_performances")
+    if isinstance(performances, list):
+        lean["candidate_performances"] = []
+        for performance in performances:
+            if not isinstance(performance, dict):
+                continue
+            # On a song's own results, a rendition of that song needs only its ID.
+            keep = ("performance_id",) if song_id and performance.get("song_id") == song_id else ("performance_id", "song_id", "song_title")
+            lean["candidate_performances"].append({key: performance[key] for key in keep if performance.get(key)})
+    return lean
+
+
+_SIGNALS_NOTE = (
+    "Source-attributed signals, not one combined score or an objective best-of ranking. "
+    "held marks a signal its source could not pin to one show or performance."
+)
 
 
 def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
@@ -484,7 +588,7 @@ def build_tools(
         people who appear only in guest credits. Use search_guest_musicians
         when the distinction between a guest credit and the regular lineup is
         material. Returns stable IDs and display names only; it never searches
-        the web. pathways lists the cataloged lore for each result (resources,
+        the web. pathways lists the gathered lore for each result (resources,
         source trail, selections) or the research sites to search when
         nothing is cataloged.
         """
@@ -576,7 +680,7 @@ def build_tools(
         venue, location, credited instruments, any known participation scope,
         and (where a source pins the guest to particular songs) the
         performances they played on in set order with a note on what
-        happened. That call also carries pathways: the cataloged lore for
+        happened. That call also carries pathways: the gathered lore for
         each show (resources, source trail, selections) or the research
         sites to search when nothing is cataloged. When the question is
         about a specific guest, ask for include=["appearances"] in the same
@@ -867,7 +971,7 @@ def build_tools(
         `list_song_performances` for concrete rendition IDs and listening
         paths. `releases` names the official records carrying the song,
         earliest first. `resources` are articles, essays and interviews about
-        it, attributed to their sources. pathways lists the cataloged lore
+        it, attributed to their sources. pathways lists the gathered lore
         (resources, source trail, selections) or the research sites to search
         when nothing is cataloged.
         """
@@ -1020,7 +1124,7 @@ def build_tools(
           narrows it to one show's tracks on a multi-show release.
         - include=["live_legacy"]: each song's life on stage (count, span, count
           by era, the performances most often issued on official live records).
-        pathways lists the cataloged lore for the release or the research sites
+        pathways lists the gathered lore for the release or the research sites
         to search when nothing is cataloged.
         """
         release = store.resolve_release(release_id_or_title)
@@ -1261,7 +1365,7 @@ def build_tools(
             signal = {
                 "source": entry.get("source"),
                 "signal_type": entry.get("signal_type"),
-                "resolution_state": entry.get("resolution_state"),
+                "held": (entry.get("resolution_state") or "").removeprefix("held_").replace("_", " ") if str(entry.get("resolution_state") or "").startswith("held_") else None,
                 "label": entry.get("selection_label") or entry.get("source_label") or entry.get("title"),
                 "source_url": entry.get("source_url"),
             }
@@ -1329,11 +1433,10 @@ def build_tools(
         return _json(payload)
 
     @tool
-    def get_selections_for(entity_type: str, entity_id_or_name: str) -> str:
+    def get_selections_for(entity_type: _SongOrShowArg, entity_id_or_name: str) -> str:
         """Get only the reviewed critic, curator, official and fan selection signals about one song or show.
 
-        entity_type is "song" or "show". A song matches signals that name one
-        of its performances, plus show-level selections of a show where it was
+        A song matches signals that name one of its performances, plus show-level selections of a show where it was
         played (each result says which). Use it instead of the full inventory
         when the question is about one song or show. Signals stay
         source-attributed: distinct voices, not a combined score.
@@ -1372,10 +1475,11 @@ def build_tools(
                 return None
 
         matched = []
+        song_id = subject.get("song_id") if kind == "song" else None
         for signal in inventory:
             reason = match(signal)
             if reason:
-                matched.append({**signal, "matches": reason})
+                matched.append({**_lean_signal(signal, song_id=song_id), "matches": reason})
         return _json(
             {
                 "subject": subject,
@@ -1477,7 +1581,7 @@ def build_tools(
         })
 
     @tool
-    def get_lore_source_trails(entity_type: str, entity_id_or_name: str) -> str:
+    def get_lore_source_trails(entity_type: _SongOrShowArg, entity_id_or_name: str) -> str:
         """Return reviewed, metadata-only lore links for one canonical song or show.
 
         Use after resolving an entity when the visitor's question invites
@@ -1531,14 +1635,17 @@ def build_tools(
 
     @tool
     def get_show(show_id_or_date: str) -> str:
-        """Get a show's canonical data, lineup, named guitar/equipment claims, venue, ordered performances, recording metadata, and links.
+        """Get a show's canonical data, lineup, named guitar/equipment claims, venue, setlist, recordings summary, and links.
+
+        Each setlist entry says whether it has a playable track (audio_seconds
+        gives its length); the page fills in the listening links itself.
 
         Use a canonical show ID returned by another tool, or an unambiguous
         date explicitly supplied by the visitor. Never use a date or show ID
         from model memory. For follow-up questions about who played,
         instruments, guests, or Jerry Garcia's named guitars, reuse the most
         recent retrieved show ID/date and call this tool before answering.
-        pathways lists the cataloged lore for each result (resources, source
+        pathways lists the gathered lore for each result (resources, source
         trail, selections) or the research sites to search when nothing is
         cataloged.
         """
@@ -1546,9 +1653,31 @@ def build_tools(
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
         payload = store.show_context(show)
+        payload["performances"] = [_compact_setlist_row(row) for row in payload.get("performances", [])]
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
-        payload["recordings_note"] = "full recording metadata: get_performance or the recording_list component"
+        payload["recordings_note"] = (
+            "get_recording_reviews ranks this show's tapes by listener reviews, with their recording_ids; "
+            "the show_unit recordings facet puts the full list on the page"
+        )
         payload["performers"] = _compact_performers(payload.get("performers", []))
+        members = {row.get("person_id") for row in payload.get("band_memberships") or []}
+        if members <= {row["person_id"] for row in payload["performers"]}:
+            # The lineup already names every member; the membership rows would repeat it.
+            payload.pop("band_memberships", None)
+        venue = payload.get("venue")
+        if isinstance(venue, dict):
+            payload["venue"] = {key: value for key, value in venue.items() if key not in {"notes", "latitude", "longitude"}}
+        payload["resources"] = [
+            {key: value for key, value in resource.items() if key not in {"notes", "relationships"}}
+            for resource in payload.get("resources") or []
+        ]
+        payload["show_links"] = [
+            {
+                **{key: link[key] for key in ("platform", "link_type", "url", "title") if link.get(key)},
+                **({"is_official": True} if _flag(link.get("is_official")) else {}),
+            }
+            for link in payload.get("show_links") or []
+        ]
         payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
         return _json(payload)
 
@@ -1570,8 +1699,9 @@ def build_tools(
     def get_selection_signals() -> str:
         """Get the complete reviewed critic, fan, official, and curator selection inventory.
 
-        It retains each source's signal type, source/access constraint, and
-        canonical resolution state. Use it to investigate a recommendation,
+        It retains each source's signal type and source/access constraint, and
+        marks a signal held when its source could not be pinned to one show or
+        performance. Use it to investigate a recommendation,
         performance-version, release, or individual-curator question. It is
         evidence from distinct sources, never a combined score, consensus, or
         automatic ranking. Fully resolved editorial show selections are also
@@ -1579,6 +1709,8 @@ def build_tools(
         """
         try:
             payload = load_selection_signals(store)
+            payload["selection_signals"] = [_lean_signal(signal) for signal in payload["selection_signals"]]
+            payload["coverage_note"] = _SIGNALS_NOTE
             payload["show_selections"] = load_show_selections(store)
             return _json(payload)
         except SelectionSignalError as error:
@@ -1766,11 +1898,10 @@ def build_tools(
         return _json(context)
 
     @tool
-    def get_media_links(entity_type: str, entity_id: str) -> str:
+    def get_media_links(entity_type: _ShowOrPerformanceArg, entity_id: str) -> str:
         """Get listening and viewing links for a canonical show or performance.
 
-        entity_type must be either 'show' or 'performance'. For a show, use a
-        canonical ID or unambiguous date such as 1972-08-27. URLs are external
+        For a show, use a canonical ID or unambiguous date such as 1972-08-27. URLs are external
         link-outs; do not claim they prove facts beyond their stored metadata.
         """
         if entity_type == "show":
@@ -1942,7 +2073,7 @@ def build_tools(
     def get_segue_pairing(
         first_song: str,
         second_song: str,
-        transition: str = "segue",
+        transition: _TransitionArg = "segue",
         include: list[str] | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
@@ -1950,10 +2081,9 @@ def build_tools(
         """Every night one song led straight into another: a pairing fans hear as one piece.
 
         first_song and second_song take a song ID or title, in playing order
-        (China Cat Sunflower, then I Know You Rider). transition="segue" (the
-        default) counts nights the first song segued into the second;
-        transition="any" also counts nights the second simply came next in the
-        same set. Call again with the songs swapped for the reverse order.
+        (China Cat Sunflower, then I Know You Rider). transition "segue" (the
+        default) counts nights the first song segued into the second; "any"
+        also counts nights the second simply came next in the same set. Call again with the songs swapped for the reverse order.
 
         The result carries the pairing_id, the count (with both the segue and
         the followed-without-segue counts), the span, versions per year (years
@@ -1997,9 +2127,9 @@ def build_tools(
 
     @tool
     def aggregate_data(
-        dataset: str,
-        group_by: str,
-        measure: str,
+        dataset: _DatasetArg,
+        group_by: _GroupByArg,
+        measure: _MeasureArg,
         song_id: str | None = None,
         exclude_song_ids: list[str] | None = None,
         venue_id: str | None = None,
@@ -2008,18 +2138,14 @@ def build_tools(
         year: int | None = None,
         year_from: int | None = None,
         year_to: int | None = None,
-        sort: str | None = None,
+        sort: _SortArg = None,
         limit: int = 20,
         fill_missing: bool = False,
     ) -> str:
         """Count or group canonical Deadbot rows with a constrained, verified aggregation.
 
-        dataset is one of "shows", "performances", "guest_appearances".
-        group_by is one of "year", "song", "venue", "city", "guest" — only
-        some combinations are valid per dataset (an invalid combination
-        returns an error naming what's wrong, not a guess). measure is one of
-        "count", "distinct_shows", "distinct_songs" (also only valid for some
-        combinations).
+        Only some dataset, group_by and measure combinations are valid; an
+        invalid one returns an error naming what's wrong, not a guess.
 
         Every ID filter (song_id, venue_id, guest_id, show_id) takes a
         canonical ID only, never a name — resolve a name to an ID with
@@ -2030,9 +2156,8 @@ def build_tools(
         exactly what your words say it counts. Setlists list Drums and Space
         as their own entries (song-drums, song-space).
 
-        sort is "value_desc" (the default for a ranking), "value_asc",
-        "label", or for years "chronological" (the default). limit caps a
-        ranking's rows (up to 50).
+        sort defaults to value_desc for a ranking and chronological for years.
+        limit caps a ranking's rows (up to 50).
 
         The response's rows and metric_label are the actual computed
         aggregate: never estimate, extrapolate, or restate these numbers from
@@ -2074,12 +2199,15 @@ def build_tools(
         result_payload: dict[str, Any] = {}
         for key, value in result.to_payload().items():
             result_payload[key] = value
-            if key == "excluded_count":
+            if key == "excluded_count" and isinstance(value, int):
                 # A live run read this as the number of Drums and Space entries.
                 result_payload["excluded_count_is"] = (
                     "how many more rows the ranking has past the limit, not shown here"
                     + ("; the songs in exclude_song_ids are not counted anywhere in this result" if exclude_song_ids else "")
                 )
+                if group_by != "year":
+                    # How many venues, songs, cities or guests there are in all: the answer to "how many venues".
+                    result_payload[f"{group_by}_count"] = len(result_payload.get("rows") or []) + value
         segment_rows = [
             row.get("label") for row in result_payload.get("rows") or []
             if isinstance(row, dict) and row.get("id") in _SETLIST_SEGMENT_IDS
@@ -2092,7 +2220,8 @@ def build_tools(
                 'exclude_song_ids=["song-drums", "song-space"]; whichever you show, its title says which it counts.'
             )
         result_payload["on_the_page"] = (
-            "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars; "
+            "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars "
+            "(one per year for a year result, the picture of when); "
             "a ranked_list lists them in order with their counts, with your note on each row that deserves one "
             "(what the song did in a show, why two tie). Both show exactly these numbers, so the words around "
             "them can quote them as they stand."

@@ -91,28 +91,28 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "avoid first-person singular" in prompt
     assert "each item's title names its subject" in prompt
     assert "Song_overview units are the home for individual song stories and listening actions.".casefold() in prompt.casefold()
-    for job in ("unit formation", "grouping", "completion", "segregation", "global organization"):
-        assert job in prompt.casefold()
+    # The abstract "Five Jobs of Gestalt" list was retired; its ideas are stated concretely elsewhere.
+    assert "gestalt" not in prompt.casefold()
 
 
 def test_prompt_batches_independent_research_and_uses_positive_composition_guidance():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "Request independent lookups together in the same turn so they run in parallel." in prompt
-    assert "Give each idea one clear home." in prompt
+    assert prompt.count("Give each idea one clear home") == 1
     assert "do not" not in prompt.casefold()
 
 
 def test_prompt_teaches_pathways_and_show_unit_hydration():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert (
-        "Every entity result carries pathways: the lore already cataloged for it, or the research sites "
+        "Every entity result carries pathways: the lore already gathered for it, or the research sites "
         "worth searching when nothing is. Answer the question directly, then offer the pathways that fit "
         "as links or follow-up topics. When a pathway looks likely to change the answer, open it; otherwise offer it."
         in prompt
     )
     assert (
-        "A show_unit needs only a show_id that appeared in this turn's tool output; "
-        "call get_show when its setlist or guests inform what you write."
+        "A show you only name or place on the page needs no lookup: a show_unit needs only a show_id that "
+        "appeared in a tool result, and the server fills in its card."
         in prompt
     )
     assert "do not" not in prompt.casefold()
@@ -123,21 +123,28 @@ def test_prompt_teaches_data_chart_and_aggregate_data():
     assert "data_chart" in prompt
     assert "aggregate_data" in prompt
     assert (
-        "and data_chart when a quantitative comparison, distribution, or change over time is the point — "
-        "call aggregate_data first and reference its aggregation_id; prefer a chart to a long numeric list "
-        "when the pattern matters more than any single number, and take every number in the chart directly "
-        "from that aggregation."
+        "and data_chart when a quantitative comparison, distribution, or change over time is the point. "
+        "A data_chart draws one aggregate_data result"
         in prompt
     )
+    assert "When the question asks how many or when, the answer is a number or a span" in prompt
     assert (
         "Cross-show patterns. For counts, rankings or trends across many shows, performances or guests — "
         "not any single show or performance — call aggregate_data. Its rows are server-verified: quote them "
-        "exactly as returned. Every aggregate_data result measures how often something was played or "
-        "appeared; state it as performance frequency, keeping it distinct from listener popularity in what "
-        "you say about it."
+        "exactly as returned. Every aggregate_data result counts how often something was played or "
+        "appeared, and the words say exactly that"
         in prompt
     )
     assert "do not" not in prompt.casefold()
+
+
+def test_prompt_states_each_repeated_rule_once():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "Ken Kesey" not in prompt  # the follow-up example lives on the follow_ups field
+    assert "Drums and Space" not in prompt  # aggregate_data says how to count without them
+    assert prompt.count("Say each thing once") == 1
+    assert prompt.count("this turn") == 1
+    assert "at least one" not in prompt.split("Every entity result carries pathways")[1].split("Separate facts")[0]
 
 
 def test_persona_tells_the_model_that_albums_are_held():

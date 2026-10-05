@@ -92,7 +92,7 @@
       "question": "Did China Cat Sunflower segue into I Know You Rider at Veneta?",
       "tool": "get_show",
       "arguments": {"show_id_or_date": "1972-08-27"},
-      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-china-cat-sunflower", "segue_into_next": "true"}}},
+      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-china-cat-sunflower", "segue_into_next": true}}},
       "failure_conditions": ["Claims a segue without the canonical sequence flag."]
     },
     {
@@ -101,7 +101,7 @@
       "question": "What were the encores at Veneta?",
       "tool": "get_show",
       "arguments": {"show_id_or_date": "1972-08-27"},
-      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-one-more-saturday-night", "encore": "true", "position_in_set": "6"}}},
+      "expected": {"contains": {"performances": {"performance_id": "gd-1972-08-27-one-more-saturday-night", "encore": true, "position_in_set": "6"}}},
       "failure_conditions": ["Omits one of the two canonical encore rows or puts One More Saturday Night before Casey Jones."]
     },
     {
