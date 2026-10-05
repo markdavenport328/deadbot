@@ -4,7 +4,7 @@
   "functions": {
     "app.py": {
       "includeFiles": "{web/dist/index.html,web/dist/assets/**,web/dist/fonts/**,build/deadbot.sqlite}",
-      "excludeFiles": "{data/raw/**,evals/**,tests/**}",
+      "excludeFiles": "{data/raw/**,data/canonical/**,web/node_modules/**,web/src/**,web/public/**,build/live-runs/**,evals/**,tests/**,docs/**,scripts/**,schema/postgres*,.github/**,.claude/**,.agents/**}",
       "maxDuration": 60
     }
   }
