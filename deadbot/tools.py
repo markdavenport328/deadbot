@@ -1500,7 +1500,8 @@ def build_tools(
         year, a run of years or a venue ("the best of 1979", "great nights at
         the Fillmore"). A signal matches when a show it names, or a show one
         of its named performances belongs to, falls in the years and at the
-        venue you give (a name or part of one). Signals stay
+        venue you give (a name or part of one); the critic's show-level
+        picks in that span come with them. Signals stay
         source-attributed: distinct voices, not a combined score.
         """
         if year_from is None and year_to is None and not venue.strip():
@@ -1528,11 +1529,18 @@ def build_tools(
             show_ids += [item.get("show_id", "") for item in signal.get("candidate_performances", [])]
             if any(in_span(show_id) for show_id in show_ids):
                 matched.append(_lean_signal(signal))
+        # The critic's show-level picks inside the span, so one call covers both.
+        picks = []
+        for selection in load_show_selections(store):
+            items = [item for item in selection["items"] if in_span(item.get("show_id", ""))]
+            if items:
+                picks.append({**selection, "items": items})
         return _json(
             {
                 "span": {"year_from": year_from, "year_to": year_to, "venue": venue.strip()},
                 "signal_count": len(matched),
                 "selection_signals": matched,
+                "show_selections": picks,
                 "coverage_note": (
                     "Reviewed, source-attributed signals only; absence means no reviewed source in the "
                     "library named it, not that it is unremarkable."

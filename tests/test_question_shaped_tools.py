@@ -146,3 +146,10 @@ def test_selections_in_a_span_can_be_narrowed_to_a_venue_and_need_a_span():
     payload = json.loads(tools["get_selections_in"].invoke({"venue": "Barton Hall"}))
     assert payload["signal_count"] > 0
     assert "error" in json.loads(tools["get_selections_in"].invoke({}))
+
+
+def test_selections_in_a_span_carry_the_critics_show_picks_inside_it():
+    tools = _tools(store_with_selection_evidence())
+    payload = json.loads(tools["get_selections_in"].invoke({"year_from": 1977, "year_to": 1977}))
+    dates = [item["show_date"] for pick in payload["show_selections"] for item in pick["items"]]
+    assert dates and all(date.startswith("1977") for date in dates)

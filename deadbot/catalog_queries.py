@@ -82,6 +82,17 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             "GROUP BY prv.song_id ORDER BY times DESC, song_title LIMIT :limit)",
         ),
         NamedQuery(
+            "studio_releases_by_live_plays",
+            "studio records ranked by how often their songs were played live in year_from–year_to: title, date, songs on the record, live performances of them (a song on two records counts for each)",
+            (),
+            "SELECT r.release_id, r.title AS release_title, r.release_date, COUNT(DISTINCT t.song_id) AS songs_on_release, "
+            "COUNT(p.performance_id) AS live_performances FROM official_releases r "
+            "JOIN official_release_tracks t ON t.release_id = r.release_id "
+            "JOIN performances p ON p.song_id = t.song_id JOIN shows s ON s.show_id = p.show_id "
+            "WHERE r.release_type = 'studio' AND CAST(substr(s.show_date, 1, 4) AS INTEGER) BETWEEN :year_from AND :year_to "
+            "GROUP BY r.release_id ORDER BY live_performances DESC, release_title LIMIT :limit",
+        ),
+        NamedQuery(
             "shows",
             "shows filtered by venue, tour and/or year_from–year_to: date, venue, city, tour, setlist length",
             (),

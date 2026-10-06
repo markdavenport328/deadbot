@@ -148,3 +148,15 @@ def test_tool_reports_parameters_it_did_not_use(store):
     run = lambda **args: json.loads(tool.invoke(args))
     assert run(sql="SELECT 1 AS n", song="Dark Star")["ignored"] == ["song"]
     assert "sql" in run(name="releases_covering_years", year_from=1977, sql="SELECT 1")["ignored"]
+
+
+def test_studio_releases_by_live_plays_ranks_records_by_how_often_their_songs_were_played(store):
+    from deadbot.tools import build_tools
+
+    tool = {t.name: t for t in build_tools(store)}["query_catalog"]
+    payload = json.loads(tool.invoke({"name": "studio_releases_by_live_plays", "limit": 5}))
+    columns = payload["columns"]
+    plays = [row[columns.index("live_performances")] for row in payload["rows"]]
+    assert len(plays) == 5 and plays == sorted(plays, reverse=True)
+    narrowed = json.loads(tool.invoke({"name": "studio_releases_by_live_plays", "year_from": 1970, "year_to": 1970, "limit": 5}))
+    assert narrowed["rows"][0][columns.index("live_performances")] < plays[0]
