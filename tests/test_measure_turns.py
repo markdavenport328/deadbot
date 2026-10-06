@@ -31,3 +31,14 @@ def test_default_questions_include_the_opening_and_set_questions():
     assert "What's on Europe '72: The Complete Recordings?" in DEFAULT_QUESTIONS
     assert "Which songs did they play most in 1977?" in DEFAULT_QUESTIONS
     assert len(DEFAULT_QUESTIONS) == 19
+
+
+def test_warm_answers_skips_quietly_without_a_model_key(monkeypatch, tmp_path, capsys):
+    from scripts.warm_answers import build_bundle
+
+    keyless = Settings(model_provider="openai", openai_api_key=None)
+    monkeypatch.setattr(Settings, "from_env", classmethod(lambda cls, *args, **kwargs: keyless))
+    bundle = tmp_path / "bundle.json"
+    assert build_bundle(bundle, ["one"]) == 0
+    assert not bundle.exists()
+    assert "skipping" in capsys.readouterr().out
