@@ -79,8 +79,14 @@ the composed answer to a fresh question in `deadbot_response_cache`, keyed by
 the normalized question, the store's data version and the deployed commit; a
 repeat of an opening question is served in well under a second until an
 import or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
-`scripts/warm_answers.py <base-url>` asks a deployment its opening questions
-so the first visitor after a deploy does not wait.
+On a serverless host that cache lives in each instance's temp folder, so asking
+a running site its questions warms only the instance that answers. Instead the
+build runs `python -m scripts.warm_answers --bundle build/warm-answers.json`
+(see `vercel.json`): it answers each opening question once, ships the answers
+in the deploy, and the app seeds its cache from that file on startup (answers
+made for another data version or commit are ignored). The step skips where no
+model key is configured, such as a preview build, and never fails the build.
+`scripts/warm_answers.py <base-url>` still warms one running server by hand.
 
 ## Provider contract
 

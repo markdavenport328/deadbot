@@ -87,3 +87,37 @@ def test_a_local_checkout_keys_cached_answers_to_its_commit(monkeypatch):
     monkeypatch.delenv("DEADBOT_GIT_COMMIT", raising=False)
     commit = response_cache.deployed_commit()
     assert commit != "unknown" and len(commit) == 40
+
+
+def test_a_bundle_of_exported_answers_seeds_a_fresh_cache(tmp_path):
+    from deadbot.response_cache import ResponseCache as Cache
+
+    _, producer = _postgres_cache()
+    producer.remember("What shows did Branford play on?", _response())
+    entries = producer.export(["What shows did Branford play on?", "A question nobody asked"])
+    assert [entry["question"] for entry in entries] == ["What shows did Branford play on?"]
+
+    bundle = tmp_path / "warm-answers.json"
+    bundle.write_text(json.dumps(entries), encoding="utf-8")
+    _, fresh = _postgres_cache()
+    assert fresh.lookup("What shows did Branford play on?", thread_id="t") is None
+    assert fresh.seed_from_bundle(bundle) == 1
+    hit = fresh.lookup("what shows did branford play on", thread_id="new")
+    assert hit is not None and hit.answer == "Five shows." and hit.thread_id == "new"
+
+
+def test_a_bundle_made_for_another_version_is_ignored(tmp_path):
+    _, producer = _postgres_cache()
+    producer.remember("What shows did Branford play on?", _response())
+    stale = [{**entry, "data_version": "older"} for entry in producer.export(["What shows did Branford play on?"])]
+    _, fresh = _postgres_cache()
+    assert fresh.seed(stale) == 0
+    assert fresh.lookup("What shows did Branford play on?", thread_id="t") is None
+
+
+def test_a_missing_or_broken_bundle_changes_nothing(tmp_path):
+    _, cache = _postgres_cache()
+    assert cache.seed_from_bundle(tmp_path / "absent.json") == 0
+    broken = tmp_path / "broken.json"
+    broken.write_text("{not json", encoding="utf-8")
+    assert cache.seed_from_bundle(broken) == 0

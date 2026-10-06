@@ -1493,6 +1493,62 @@ def build_tools(
         )
 
     @tool
+    def get_selections_in(year_from: int | None = None, year_to: int | None = None, venue: str = "") -> str:
+        """Get only the reviewed critic, curator, official and fan selection signals about shows in a span of years or at a venue.
+
+        Use it instead of the full inventory when the question is about a
+        year, a run of years or a venue ("the best of 1979", "great nights at
+        the Fillmore"). A signal matches when a show it names, or a show one
+        of its named performances belongs to, falls in the years and at the
+        venue you give (a name or part of one); the critic's show-level
+        picks in that span come with them. Signals stay
+        source-attributed: distinct voices, not a combined score.
+        """
+        if year_from is None and year_to is None and not venue.strip():
+            return _json({"error": "Give year_from, year_to or venue; get_selection_signals is the full inventory."})
+        try:
+            inventory = load_selection_signals(store)["selection_signals"]
+        except SelectionSignalError as error:
+            return _json({"selection_signals": [], "error": str(error)})
+        shows = {row["show_id"]: row for row in store.rows("shows")}
+        venue_names = {row["venue_id"]: (row.get("name") or "").casefold() for row in store.rows("venues")}
+        needle = venue.strip().casefold()
+        low = year_from if year_from is not None else (year_to if year_to is not None else 0)
+        high = year_to if year_to is not None else (year_from if year_from is not None else 9999)
+
+        def in_span(show_id: str) -> bool:
+            show = shows.get(show_id)
+            if not show:
+                return False
+            year = int((show.get("show_date") or "0000")[:4] or 0)
+            return low <= year <= high and (not needle or needle in venue_names.get(show.get("venue_id", ""), ""))
+
+        matched = []
+        for signal in inventory:
+            show_ids = [item.get("show_id", "") for item in signal.get("candidate_shows", [])]
+            show_ids += [item.get("show_id", "") for item in signal.get("candidate_performances", [])]
+            if any(in_span(show_id) for show_id in show_ids):
+                matched.append(_lean_signal(signal))
+        # The critic's show-level picks inside the span, so one call covers both.
+        picks = []
+        for selection in load_show_selections(store):
+            items = [item for item in selection["items"] if in_span(item.get("show_id", ""))]
+            if items:
+                picks.append({**selection, "items": items})
+        return _json(
+            {
+                "span": {"year_from": year_from, "year_to": year_to, "venue": venue.strip()},
+                "signal_count": len(matched),
+                "selection_signals": matched,
+                "show_selections": picks,
+                "coverage_note": (
+                    "Reviewed, source-attributed signals only; absence means no reviewed source in the "
+                    "library named it, not that it is unremarkable."
+                ),
+            }
+        )
+
+    @tool
     def get_deadnet_song_context(song_id_or_title: str) -> str:
         """Find the reviewed Dead.net metadata page for one canonical song.
 
@@ -2238,6 +2294,7 @@ def build_tools(
         get_song_performance_profile,
         get_song_notable_versions,
         get_selections_for,
+        get_selections_in,
         get_deadnet_song_context,
         get_deadcast_metadata,
         get_lore_source_trails,

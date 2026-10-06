@@ -15,6 +15,7 @@ cache methods (the CSV store, test doubles) simply disables the feature.
 from __future__ import annotations
 
 import functools
+import json
 import logging
 import os
 import re
@@ -63,6 +64,17 @@ def _local_commit() -> str | None:
     return result.stdout.strip() or None
 
 
+# Answers computed at build time ship with the deploy. A serverless instance
+# starts with an empty cache of its own, so the first visitor to each opening
+# question would otherwise wait for a live turn; seeding from this file serves
+# them at once. The file is optional.
+DEFAULT_BUNDLE_PATH = Path(__file__).resolve().parents[1] / "build" / "warm-answers.json"
+
+
+def bundle_path() -> Path:
+    return Path(os.getenv("DEADBOT_WARM_ANSWERS_PATH") or DEFAULT_BUNDLE_PATH)
+
+
 class ResponseCache:
     def __init__(self, store: Any, *, enabled: bool = True, max_age_seconds: int = 7 * 24 * 60 * 60) -> None:
         self._store = store
@@ -91,6 +103,7 @@ class ResponseCache:
                 self._enabled = False
                 return False
             self._ready = True
+            self.seed_from_bundle()
         return True
 
     def lookup(self, question: str, *, thread_id: str) -> ExperienceResponse | None:
@@ -127,3 +140,49 @@ class ResponseCache:
             self._store.store_response(key, self._version(), question, response.model_dump(mode="json"))
         except Exception:
             logger.exception("Response cache write failed; the answer was still delivered")
+
+
+    def export(self, questions: list[str]) -> list[dict[str, Any]]:
+        """The stored answers to these questions, ready to ship as a bundle."""
+
+        if not self._prepare():
+            return []
+        entries = []
+        for question in questions:
+            key = question_key(question)
+            payload = self._store.cached_response(key, self._version(), self._max_age) if key else None
+            if payload is not None:
+                entries.append(
+                    {"question": question, "question_key": key, "data_version": self._version(), "response": payload}
+                )
+        return entries
+
+    def seed(self, entries: list[dict[str, Any]]) -> int:
+        """Store bundled answers made from this data version and commit; skip the rest."""
+
+        if not self._prepare():
+            return 0
+        version = self._version()
+        stored = 0
+        for entry in entries:
+            if entry.get("data_version") != version or not entry.get("question_key"):
+                continue
+            try:
+                self._store.store_response(entry["question_key"], version, entry.get("question", ""), entry["response"])
+                stored += 1
+            except Exception:
+                logger.exception("Could not seed a bundled answer for %r", entry.get("question_key"))
+        return stored
+
+    def seed_from_bundle(self, path: Path | None = None) -> int:
+        path = path or bundle_path()
+        try:
+            entries = json.loads(path.read_text(encoding="utf-8"))
+        except FileNotFoundError:
+            return 0
+        except (OSError, ValueError):
+            logger.exception("Ignoring an unreadable warm-answers bundle at %s", path)
+            return 0
+        stored = self.seed(entries) if isinstance(entries, list) else 0
+        logger.info("Seeded %d of %d bundled answers from %s", stored, len(entries) if isinstance(entries, list) else 0, path)
+        return stored

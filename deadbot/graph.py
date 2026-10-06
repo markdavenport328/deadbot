@@ -73,7 +73,8 @@ understand one thing deeply or put it on the page, look it up.
 Well-worn routes. For the best or notable versions of a song,
 get_song_notable_versions gathers official releases, critic and curator picks
 and fan votes per rendition with listening links, and get_selections_for
-narrows the reviewed selection inventory to one song or show. For a guest
+narrows the reviewed selection inventory to one song or show and get_selections_in
+to a span of years or a venue. For a guest
 musician, search_guest_musicians lists guests with their show counts and
 years; ask for include=["appearances"] to get a guest's shows with IDs and
 pathways. get_show reads one show in full: call it for the show a question

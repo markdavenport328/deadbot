@@ -111,7 +111,38 @@ def keep_grounded_links(text: str, urls: frozenset[str]) -> str:
     return _MARKDOWN_LINK.sub(replace, text)
 
 
-class _Ref(BaseModel):
+def _without_null_branch(schema: dict[str, Any]) -> dict[str, Any]:
+    """``{"anyOf": [X, {"type": "null"}], "default": null}`` as plain X.
+
+    An optional field is optional because it may be left out; the provider
+    does not need a null branch spelled out on each of the plan's ~60 of them.
+    The Python types stay optional, so a plan that does send null still reads.
+    """
+
+    branches = schema.get("anyOf")
+    if not (isinstance(branches, list) and len(branches) == 2 and {"type": "null"} in branches):
+        return schema
+    other = next(branch for branch in branches if branch != {"type": "null"})
+    rest = {key: value for key, value in schema.items() if key != "anyOf" and not (key == "default" and value is None)}
+    return {**other, **rest}
+
+
+class _PlanModel(BaseModel):
+    """A model the finish_response schema is built from, with its optional fields written compactly."""
+
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: Any) -> dict[str, Any]:
+        schema = handler(core_schema)
+        target = handler.resolve_ref_schema(schema)
+        properties = target.get("properties")
+        if isinstance(properties, dict):
+            for name, value in list(properties.items()):
+                if isinstance(value, dict):
+                    properties[name] = _without_null_branch(value)
+        return schema
+
+
+class _Ref(_PlanModel):
     """A library component referenced by canonical ID, optionally retitled."""
 
     model_config = ConfigDict(extra="ignore")
@@ -128,7 +159,7 @@ class GuestAppearancesRef(_Ref):
     person_id: str
 
 
-class PersonRosterEntry(BaseModel):
+class PersonRosterEntry(_PlanModel):
     """One person in a roster, by ID, with an optional phrase from the model."""
 
     model_config = ConfigDict(extra="ignore")
@@ -231,7 +262,7 @@ class VersionStripRef(_Ref):
     )
 
 
-class EditorialItemPlan(EditorialItemText):
+class EditorialItemPlan(_PlanModel, EditorialItemText):
     """One editorial item as the model writes it: its words, and the record it is about when it names one."""
 
     show_id: str | None = Field(default=None, description="A show this item is about; the server makes its title play the show.")
@@ -239,7 +270,7 @@ class EditorialItemPlan(EditorialItemText):
     release_id: str | None = Field(default=None, description="An official record this item is about; the server links it.")
 
 
-class EditorialPlan(BaseModel):
+class EditorialPlan(_PlanModel):
     """Prose, viewpoints and comparisons in your own words: narrative, fact_grid or timeline.
 
     Records belong in the reference-based items (the units and ranked_list),
@@ -269,7 +300,7 @@ class EditorialPlan(BaseModel):
     )
 
 
-class RankedRowNote(BaseModel):
+class RankedRowNote(_PlanModel):
     model_config = ConfigDict(extra="ignore")
     key: str = Field(description="The row's id, or its label or year, as the aggregate_data result gives it.")
     note: str = Field(description="Your short note on this row.")
@@ -307,14 +338,14 @@ class RankedListRef(_Ref):
 # descriptions of their own; the finish_response description says so.
 
 
-class SupportingSource(BaseModel):
+class SupportingSource(_PlanModel):
     # Evidence attached to a unit, cited by a URL a tool returned.
     model_config = ConfigDict(extra="ignore")
     url: str
     note: str | None = None
 
 
-class FollowUpTopic(BaseModel):
+class FollowUpTopic(_PlanModel):
     # A topic chip under "More about": the label it shows, and the question,
     # in the visitor's voice, that pressing it sends to start a new turn.
     model_config = ConfigDict(extra="ignore")
@@ -488,7 +519,7 @@ class SongOverviewRef(_Ref):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
-class ListeningHeroRef(BaseModel):
+class ListeningHeroRef(_PlanModel):
     """The page's lead when the visitor wants to hear a show or recording.
 
     A cover, the show's venue and date (or the record's title), your line, and
@@ -683,7 +714,7 @@ def group_presentation(raw: Any) -> str:
     return raw if raw in PRESENTATIONS else "collection"
 
 
-class GroupPlan(BaseModel):
+class GroupPlan(_PlanModel):
     """A model-selected editorial relationship among body items."""
 
     # A key the schema does not name is ignored, as the streamer ignores it.

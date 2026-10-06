@@ -122,41 +122,41 @@ const startingPoints = [
   {
     category: "Shows",
     questions: [
-      "Why is Cornell '77 so famous?",
-      "What was the deal with Veneta '72?",
-      "Cornell vs. Buffalo '77"
+      "Best shows of 1979",
+      "What's the story with Veneta?",
+      "Best shows at Madison Square Garden"
     ]
   },
   {
     category: "Songs",
     questions: [
-      "How did Eyes of the World evolve?",
-      "Where should I start with Dark Star?",
-      "Early vs. late Shakedown"
+      "What songs did they play the most?",
+      "When did China-Rider become a combo?",
+      "Which albums most impacted the live repertoire?"
     ]
   },
   {
     category: "Performances",
     questions: [
-      "Find me an overlooked Sugaree",
-      "What's the best Scarlet > Fire of 1977?",
-      "Find me a great 1973 Playing in the Band"
+      "How often did they play Dark Star each year?",
+      "Best Morning Dew?",
+      "Find me a few good Ripples"
     ]
   },
   {
     category: "Recordings",
     questions: [
-      "What shows did Reckoning draw from?",
-      "Best soundboard of Cornell '77?",
-      "Which official releases cover 1972?"
+      "Which Dick's Picks should I start with?",
+      "What's on Europe '72: The Complete Recordings?",
+      "What shows did Reckoning draw from?"
     ]
   },
   {
     category: "Guests",
     questions: [
+      "Best Santana contributions",
       "What shows did Branford play?",
-      "Best songs with Santana",
-      "Which guests changed the music most?"
+      "Who sat in with the Dead?"
     ]
   }
 ];

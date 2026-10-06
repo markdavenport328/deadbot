@@ -1030,6 +1030,20 @@ def test_shared_unit_fields_are_described_once_in_the_tool_schema():
     assert "described once, on show_unit" in finish.build_finish_tool().description
 
 
+def test_optional_plan_fields_have_no_null_branch_in_the_schema_but_still_accept_null():
+    import json
+
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
+    assert text.count('{"type": "null"}') <= 1  # only the top-level lead, which LangChain rebuilds
+    plan = finish.FinishPlan.model_validate({
+        "chat_answer": "a", "title": "t", "lead": None,
+        "groups": [{"title": None, "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "title": None, "note": None, "emphasis": None}]}],
+    })
+    assert plan.groups[0].items[0].note is None and plan.groups[0].title is None
+
+
 def test_show_unit_follow_ups_carry_label_and_question_and_drop_a_blank_label():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
