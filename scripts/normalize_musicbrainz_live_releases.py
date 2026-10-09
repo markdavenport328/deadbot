@@ -540,7 +540,10 @@ def process_group(
     if not release_date:
         candidates = sorted(full_date(release.get("date", "")) for release in releases if full_date(release.get("date", "")))
         partial = group.get("first_release_date", "") or ""
-        if partial and (not candidates or partial < candidates[0][: len(partial)]):
+        # Only a reissue's full date is overruled here: with no fully dated
+        # edition at all, the committed catalog leaves the date blank and says
+        # so in notes (the behaviour the six-record fix of 2026-09-27 shipped).
+        if partial and candidates and partial < candidates[0][: len(partial)]:
             # A reissue's full date is not the record's release date: Europe '72
             # came out in 1972-11, not with its 2003 reissue. Keep the partial date.
             release_date = partial
@@ -679,6 +682,21 @@ def previous_ids(rows: list[dict]) -> dict[str, str]:
     return mapping
 
 
+def carry_forward_spotify_album_urls(new_releases: list[dict], existing_releases: list[dict]) -> None:
+    """Keep a hand-verified Spotify album link that MusicBrainz does not carry.
+
+    The 2026-09-10 catalog sweep verified 63 album links against Spotify's
+    oEmbed title (series, volume, show date) and wrote them into rows this pass
+    owns.  That is a reviewed fact, so a rerun keeps it instead of blanking it.
+    A link MusicBrainz supplies still wins.
+    """
+
+    previous = {row["release_id"]: row.get("spotify_album_url", "") for row in existing_releases if owns_row(row)}
+    for row in new_releases:
+        if not row.get("spotify_album_url") and previous.get(row["release_id"]):
+            row["spotify_album_url"] = previous[row["release_id"]]
+
+
 # --- validation ---
 
 def validate(release_rows: list[dict], track_rows: list[dict], performances_by_show: dict[str, list[dict]], show_of_track: dict[tuple[str, int], str]) -> None:
@@ -689,7 +707,12 @@ def validate(release_rows: list[dict], track_rows: list[dict], performances_by_s
         if not row["title"] or not row["source_url"]:
             raise SystemExit(f"release {row['release_id']} is missing title or source_url")
         if row["release_date"]:
-            date.fromisoformat(row["release_date"])
+            # A partial MusicBrainz date (``1972`` or ``1972-11``) is kept as
+            # is rather than given an invented day; see process_group.
+            if not re.fullmatch(r"\d{4}(?:-\d{2}(?:-\d{2})?)?", row["release_date"]):
+                raise SystemExit(f"release {row['release_id']} has a malformed release_date {row['release_date']!r}")
+            if len(row["release_date"]) == 10:
+                date.fromisoformat(row["release_date"])
     performance_show = {row["performance_id"]: show_id for show_id, rows in performances_by_show.items() for row in rows}
     seen: set[tuple[str, int]] = set()
     for row in track_rows:
@@ -784,11 +807,15 @@ def main() -> None:
             reason_counts[decision["reason"].split(":")[0]] += 1
         decisions.append(decision)
 
+    carry_forward_spotify_album_urls(new_releases, existing_releases)
     new_releases.sort(key=lambda row: row["release_id"])
-    order = {row["release_id"]: index for index, row in enumerate(new_releases)}
+    # File order: hand-curated rows, this pass's rows, then the studio pass's
+    # rows, whichever pass ran last, so a rerun of either leaves order stable.
+    studio_releases = [row for row in kept_releases if STUDIO_MARKER in row.get("notes", "")]
+    all_releases = curated_releases + new_releases + studio_releases
+    order = {row["release_id"]: index for index, row in enumerate(all_releases)}
     new_tracks.sort(key=lambda row: (order[row["release_id"]], int(row["track_number"])))
-    all_releases = kept_releases + new_releases
-    all_tracks = kept_tracks + new_tracks
+    all_tracks = sorted(kept_tracks + new_tracks, key=lambda row: (order[row["release_id"]], int(row["track_number"])))
     validate(all_releases, all_tracks, performances_by_show, show_of_track)
     write_csv(RELEASES_CSV, RELEASE_FIELDS, all_releases)
     write_csv(TRACKS_CSV, TRACK_FIELDS, all_tracks)
