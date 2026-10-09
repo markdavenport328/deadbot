@@ -91,6 +91,18 @@ NAME_REPLACEMENTS = {
     "John Barlow": "John Perry Barlow",
     "Goin'": "Going",
     "Chester Burnett (Howlin' Wolf)": "Howlin' Wolf",
+    # Dead.net's song pages print some writers by surname, and one by a wrong
+    # first name. Each mapping is pinned by the ISWC-registered MusicBrainz work
+    # for the same song, whose credit list names exactly these people: Easy
+    # Answers (work 3f42f391, T-914.475.299-8: Weir, Hunter, Vince Welnick, Rob
+    # Wasserman, Bob Bralove) and Kansas City (work 6a79f7b5: Jerry Leiber,
+    # Mike Stoller). Without them a rerun mints surname-only people rows that
+    # duplicate existing writers (folded 2026-10-09).
+    "Bralove": "Bob Bralove",
+    "Wasserman": "Rob Wasserman",
+    "Bruce Welnick": "Vince Welnick",
+    "Leiber": "Jerry Leiber",
+    "Stoller": "Mike Stoller",
 }
 
 NON_PERSON_CREDITS = {"traditional", "[traditional]", "grateful dead", "unknown", ""}
