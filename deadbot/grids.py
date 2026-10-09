@@ -42,7 +42,7 @@ def year_id(year: int) -> str:
 
 def parse_year(value: str) -> int | None:
     text = str(value).removeprefix(YEAR_PREFIX)
-    return int(text) if text.isdigit() and len(text) == 4 else None
+    return int(text) if text.isascii() and text.isdigit() and len(text) == 4 else None
 
 
 def _trim(items: list[str], ceiling: int, what: str) -> list[str]:
@@ -81,6 +81,8 @@ class GridSpec:
             return None
         rows = [str(item) for item in value.get("row_ids") or [] if str(item).strip()]
         columns = [str(item) for item in value.get("column_ids") or [] if str(item).strip()]
+        if column_kind == "year":
+            columns = [year_id(year) if (year := parse_year(item)) is not None else item for item in columns]
         if not rows or not columns:
             return None
         return cls(
@@ -105,7 +107,7 @@ class Cell:
     set_label: str | None = None
     segue_from: str | None = None
     segue_into: str | None = None
-    length_source: Literal["release", "tape"] | None = None
+    length_source: Literal["release", "tape", "mixed"] | None = None
     tracks: tuple[tuple[str, str, Track], ...] = ()  # (performance_id, set_label, tape track) per pass
     of_shows: int | None = None
 
@@ -166,11 +168,6 @@ def build(store: CanonicalStore, spec: GridSpec) -> GridData:
 # --- show × song -------------------------------------------------------------
 
 
-def _number(value: Any) -> int:
-    text = str(value or "").strip()
-    return int(text) if text.isdigit() else 0
-
-
 def _long_date(show_date: str) -> str:
     """``1972-05-11`` as ``May 11, 1972``; anything else as stored."""
 
@@ -200,14 +197,20 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
     for performance in performances:
         by_show[performance["show_id"]].append(performance)
     for rows in by_show.values():
-        rows.sort(key=lambda row: (_number(row.get("set_number")), _number(row.get("position_in_set"))))
+        # Blank set or position sorts last, as the store orders a night elsewhere.
+        rows.sort(key=lambda row: (
+            int(row["set_number"]) if row.get("set_number", "").isdigit() else 10**9,
+            int(row["position_in_set"]) if row.get("position_in_set", "").isdigit() else 10**9,
+            row.get("performance_id", ""),
+        ))
 
     song_ids = {performance["song_id"] for performance in performances} | set(spec.column_ids)
     songs = {row["song_id"]: row for row in store.rows_in("songs", "song_id", song_ids)}
     column_ids = [song_id for song_id in spec.column_ids if song_id in songs]
+    column_set = set(column_ids)
     title = lambda song_id: songs.get(song_id, {}).get("title") or song_id  # noqa: E731
 
-    wanted = [p["performance_id"] for p in performances if p["song_id"] in set(column_ids)]
+    wanted = [p["performance_id"] for p in performances if p["song_id"] in column_set]
     release = _release_seconds(store, wanted)
     tape = _archive_tracks(store, wanted)
 
@@ -217,7 +220,7 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
         night = by_show.get(show_id, [])
         for index, performance in enumerate(night):
             song_id = performance["song_id"]
-            if song_id not in column_ids:
+            if song_id not in column_set:
                 continue
             key = (show_id, song_id)
             cell = cells.setdefault(key, Cell(state="no_length"))
@@ -242,7 +245,10 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
                 cell.tracks = (*cell.tracks, (performance_id, performance.get("set_label", ""), track))
             if seconds:
                 seconds_by_cell[key] += seconds
-                cell.length_source = cell.length_source or source
+                if cell.length_source not in (None, source):
+                    cell.length_source = "mixed"
+                else:
+                    cell.length_source = source
     # A cell keeps state "no_length" only when no pass has a length.
     for key, cell in cells.items():
         if seconds_by_cell.get(key):
@@ -275,7 +281,7 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
     counts: dict[str, int] = defaultdict(int)
     for show_id in row_ids:
         for song_id in {p["song_id"] for p in by_show.get(show_id, [])}:
-            if song_id not in column_ids:
+            if song_id not in column_set:
                 counts[song_id] += 1
     suggestions = [
         {"id": song_id, "label": title(song_id), "rows_with": count}

@@ -1,5 +1,6 @@
 """Grids: two lists of library things and the fact where each pair meets."""
 
+import dataclasses
 import logging
 
 import pytest
@@ -82,7 +83,100 @@ def test_show_by_song_cells(csv_store):
     assert data.cell("gd-1972-05-07", OTHER_ONE).state == "value"
     assert bickershaw.setlist  # the whole night ships for the row's setlist drawer
     assert data.cell("gd-1972-04-08", OTHER_ONE).state == "none"
-    assert data.cell("gd-1972-05-23", DARK_STAR).state in {"no_length", "value"}
+    dry = data.cell("gd-1972-05-23", DARK_STAR)  # two passes, no release track and no timed tape track
+    assert (dry.state, dry.passes, dry.value, dry.length_source) == ("no_length", 2, None, None)
+
+
+def test_a_cell_with_only_a_tape_length_says_tape(csv_store):
+    spec = grids.GridSpec("show", ("gd-1968-01-17",), "song", (DARK_STAR,))
+    cell = grids.build(csv_store, spec).cell("gd-1968-01-17", DARK_STAR)
+    assert cell.state == "value"
+    assert cell.length_source == "tape"
+    assert cell.tracks
+
+
+class TableStore:
+    """The three reads grids use, over plain dict tables."""
+
+    def __init__(self, **tables):
+        self.tables = tables
+
+    def rows_in(self, table, column, values):
+        wanted = set(values)
+        return [row for row in self.tables.get(table, []) if row.get(column, "") in wanted]
+
+
+def _perf(performance_id, song_id="s1", set_number="1", position="1", **extra):
+    return {"performance_id": performance_id, "show_id": "gd-1", "song_id": song_id, "set_number": set_number,
+            "position_in_set": position, "set_label": "Set 1", "segue_into_next": "false", **extra}
+
+
+def _tape(performance_id, seconds):
+    return {"performance_id": performance_id, "platform": "archive", "link_type": "recording-track",
+            "url": "https://archive.org/x", "performance_link_id": performance_id, "duration_seconds": str(seconds)}
+
+
+def _store(performances, links=(), releases=()):
+    return TableStore(
+        shows=[{"show_id": "gd-1", "show_date": "1970-01-01", "venue_id": "v1"}],
+        venues=[{"venue_id": "v1", "name": "Hall", "city": "Town"}],
+        songs=[{"song_id": "s1", "title": "One"}, {"song_id": "s2", "title": "Two"}],
+        performances=performances,
+        performance_links=list(links),
+        official_release_tracks=list(releases),
+    )
+
+
+def _one_cell(store):
+    return grids.build(store, grids.GridSpec("show", ("gd-1",), "song", ("s1",))).cell("gd-1", "s1")
+
+
+def test_length_source_is_mixed_when_passes_come_from_release_and_tape():
+    store = _store(
+        [_perf("p1", position="1"), _perf("p2", position="2")],
+        links=[_tape("p2", 600)],
+        releases=[{"performance_id": "p1", "duration_seconds": "300"}],
+    )
+    cell = _one_cell(store)
+    assert (cell.state, cell.value, cell.length_source) == ("value", 15, "mixed")
+
+
+def test_length_source_is_release_or_tape_when_every_timed_pass_agrees():
+    release_only = _store([_perf("p1")], links=[_tape("p1", 999)], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    assert _one_cell(release_only).length_source == "release"
+    tape_only = _store([_perf("p1"), _perf("p2", position="2")], links=[_tape("p1", 300), _tape("p2", 300)])
+    assert _one_cell(tape_only).length_source == "tape"
+
+
+def test_untimed_pass_does_not_make_a_cell_mixed():
+    store = _store([_perf("p1"), _perf("p2", position="2")], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    cell = _one_cell(store)
+    assert (cell.passes, cell.length_source) == (2, "release")
+
+
+def test_night_order_puts_blank_set_and_position_last_with_performance_id_as_tiebreaker():
+    store = _store([
+        _perf("p-blank", song_id="s2", set_number="", position=""),
+        _perf("p-b", song_id="s2", position="1"),
+        _perf("p-a", song_id="s1", position="1"),
+        _perf("p-2", song_id="s1", position="2"),
+    ])
+    data = grids.build(store, grids.GridSpec("show", ("gd-1",), "song", ("s1", "s2")))
+    assert [entry["song_id"] for entry in data.row("gd-1").setlist] == ["s1", "s2", "s1", "s2"]
+    assert data.cell("gd-1", "s1").performance_ids == ("p-a", "p-2")
+
+
+def test_parse_year_accepts_ascii_digits_only():
+    assert grids.parse_year("year:1969") == 1969
+    assert grids.parse_year("\uff11\uff19\uff16\uff19") is None
+    assert grids.parse_year("19x9") is None
+
+
+def test_from_json_normalises_year_columns_and_dedupes():
+    spec = grids.GridSpec.from_json(
+        {"row_kind": "song", "row_ids": [DARK_STAR], "column_kind": "year", "column_ids": ["1969", "year:1969", "1970"]}
+    )
+    assert spec.column_ids == ("year:1969", "year:1970")
 
 
 def test_show_by_song_segue_neighbours(csv_store):
@@ -117,3 +211,4 @@ def test_sqlite_matches_csv(csv_store, sqlite_store, spec_factory):
     left = grids.build(csv_store, spec_factory())
     right = grids.build(sqlite_store, spec_factory())
     assert left.to_compact() == right.to_compact()
+    assert dataclasses.asdict(left) == dataclasses.asdict(right)  # segues, lengths, tracks, setlists, suggestions, coverage
