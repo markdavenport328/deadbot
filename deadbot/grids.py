@@ -159,6 +159,47 @@ class GridData:
         }
 
 
+GRID_NOTE = (
+    "A grid in finish_response draws these rows and columns with every cell filled by the library. "
+    "Choose the rows to show and their order, how many open before Show all, the cells worth pointing at "
+    "with a short note each, and what the visitor should know about gaps."
+)
+
+
+def tool_payload(data: GridData) -> dict[str, Any]:
+    """The model's view of a built grid: the filled cells, coverage facts and the spec to rebuild it."""
+
+    compact = data.to_compact()
+    lengths = {"release": 0, "tape": 0, "mixed": 0, "none": 0}
+    for cell in data.cells.values():
+        if cell.state == "value" and cell.length_source:
+            lengths[cell.length_source] += 1
+        elif cell.state == "no_length":
+            lengths["none"] += 1
+    coverage: dict[str, Any] = {}
+    if data.measure == "minutes":
+        coverage["lengths"] = lengths
+    if data.coverage_by_year:
+        coverage["setlists_by_year"] = [
+            {"year": year, "shows_on_record": on_record, "shows_with_setlist": with_setlist}
+            for year, (on_record, with_setlist) in sorted(data.coverage_by_year.items())
+            if with_setlist < on_record
+        ]
+    return {
+        "grid_id": grid_id(data.spec),
+        "rows_are": data.spec.row_kind,
+        "columns_are": data.spec.column_kind,
+        "measure": data.measure,
+        "on_the_page": GRID_NOTE,
+        "rows": compact["rows"],
+        "columns": compact["columns"],
+        "cells": compact["cells"],
+        "coverage": coverage,
+        "column_suggestions": data.suggestions,
+        "spec": data.spec.to_json(),
+    }
+
+
 def build(store: CanonicalStore, spec: GridSpec) -> GridData:
     if spec.measure == "minutes":
         return _show_by_song(store, spec)

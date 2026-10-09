@@ -212,3 +212,35 @@ def test_sqlite_matches_csv(csv_store, sqlite_store, spec_factory):
     right = grids.build(sqlite_store, spec_factory())
     assert left.to_compact() == right.to_compact()
     assert dataclasses.asdict(left) == dataclasses.asdict(right)  # segues, lengths, tracks, setlists, suggestions, coverage
+
+
+def test_tool_payload_order_and_spec(csv_store):
+    data = grids.build(csv_store, europe_spec())
+    payload = grids.tool_payload(data)
+    assert list(payload)[:5] == ["grid_id", "rows_are", "columns_are", "measure", "on_the_page"]
+    assert payload["grid_id"] == grids.grid_id(europe_spec())
+    assert grids.GridSpec.from_json(payload["spec"]) == europe_spec()
+    assert "archive.org" not in str(payload)  # tape URLs stay out of the model's view
+    assert payload["coverage"]["lengths"]["release"] > 0
+    assert list(payload) == [
+        "grid_id", "rows_are", "columns_are", "measure", "on_the_page", "rows", "columns", "cells",
+        "coverage", "column_suggestions", "spec",
+    ]
+
+
+def test_tool_payload_counts_every_length_source():
+    store = _store(
+        [_perf("p1"), _perf("p2", position="2"), _perf("p3", song_id="s2", position="3")],
+        links=[_tape("p2", 600)],
+        releases=[{"performance_id": "p1", "duration_seconds": "300"}],
+    )
+    spec = grids.GridSpec("show", ("gd-1",), "song", ("s1", "s2"))
+    lengths = grids.tool_payload(grids.build(store, spec))["coverage"]["lengths"]
+    assert lengths == {"release": 0, "tape": 0, "mixed": 1, "none": 1}
+
+
+def test_tool_payload_lists_years_whose_setlists_are_incomplete(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, songs_by_year_spec()))
+    assert "lengths" not in payload["coverage"]
+    by_year = {entry["year"]: entry for entry in payload["coverage"]["setlists_by_year"]}
+    assert by_year[1969] == {"year": 1969, "shows_on_record": 149, "shows_with_setlist": 124}

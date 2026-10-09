@@ -89,7 +89,12 @@ The full selection inventory (get_selection_signals) serves questions about
 the sources and lists themselves. For a pairing or segue that fans hear as one
 piece, get_segue_pairing shows how its two halves changed across the nights
 it was played, and a version_strip of the nights you pick lets the visitor
-hear the handoff while your words say what to listen for.
+hear the handoff while your words say what to listen for. When the answer is
+how two lists meet (songs across years, nights across songs), get_grid lays
+them out as one table, and a grid in finish_response draws it with every cell
+filled by the library. Choose the rows that tell the story, open the most
+telling ones first, and point at the cells the visitor should hear or notice,
+each with a short note.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call

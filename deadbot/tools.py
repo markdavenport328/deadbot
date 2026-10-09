@@ -8,7 +8,7 @@ import re
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
-from typing import Annotated, Any, get_args
+from typing import Annotated, Any, Literal, get_args
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 from langchain_core.tools import BaseTool, tool
 from pydantic import ValidationError, WithJsonSchema
 
-from deadbot import aggregation, sequences
+from deadbot import aggregation, grids, sequences
 from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import (
@@ -2181,6 +2181,79 @@ def build_tools(
             )
         )
 
+    def _grid_rows(kind: str, rows: list[str], tour: str | None) -> list[str] | str:
+        if kind == "song":
+            resolved = [store.resolve_song(value) for value in rows]
+            missing = [value for value, song in zip(rows, resolved) if not song]
+            if missing:
+                return _json({"error": "Song not found or ambiguous", "query": missing})
+            return [song["song_id"] for song in resolved if song]
+        if rows:
+            resolved = [store.resolve_show(value) for value in rows]
+            missing = [value for value, show in zip(rows, resolved) if not show]
+            if missing:
+                return _json({"error": "Show not found or ambiguous", "query": missing})
+            return [show["show_id"] for show in resolved if show]
+        if tour:
+            found = sorted(store.rows_in("shows", "tour_name", [tour]), key=lambda row: row.get("show_date", ""))
+            if not found:
+                return _json({"error": "No shows on that tour", "query": tour})
+            return [row["show_id"] for row in found]
+        return _json({"error": "Name the nights as rows, or give a tour"})
+
+    def _grid_columns(kind: str, columns: list[str], year_from: int | None, year_to: int | None) -> list[str] | str:
+        if kind == "year":
+            if year_from and year_to:
+                if year_from > year_to:
+                    return _json({"error": "year_from is after year_to", "year_from": year_from, "year_to": year_to})
+                return [grids.year_id(year) for year in range(year_from, year_to + 1)]
+            years = [grids.parse_year(value) for value in columns]
+            if not columns or None in years:
+                return _json({"error": "Give year columns as year_from and year_to, or as years"})
+            return [grids.year_id(year) for year in years if year]
+        resolved = [store.resolve_song(value) for value in columns]
+        missing = [value for value, song in zip(columns, resolved) if not song]
+        if missing:
+            return _json({"error": "Song not found or ambiguous", "query": missing})
+        return [song["song_id"] for song in resolved if song]
+
+    @tool
+    def get_grid(
+        row_kind: Literal["song", "show"],
+        column_kind: Literal["year", "song"],
+        rows: list[str] | None = None,
+        columns: list[str] | None = None,
+        tour: str | None = None,
+        year_from: int | None = None,
+        year_to: int | None = None,
+    ) -> str:
+        """Two lists of library things and the fact where each pair meets, as one table.
+
+        Songs across years (row_kind "song", column_kind "year"): each cell is
+        how many shows that year had the song, with each year's setlist
+        coverage. Nights across songs (row_kind "show", column_kind "song"):
+        each cell is the minutes that song ran that night, the passes it took,
+        its set, what it came out of and went into, and where the length came
+        from. rows and columns take IDs or titles, in the order you want them.
+        For show rows, tour (a tour name) selects the nights instead of
+        listing them; for year columns, year_from and year_to set the span.
+        The result carries a grid_id for a grid in finish_response, the filled
+        cells as one compact table, coverage facts, and for nights the songs
+        played most on them that are not yet columns.
+        """
+        row_ids = _grid_rows(row_kind, rows or [], tour)
+        if isinstance(row_ids, str):
+            return row_ids
+        column_ids = _grid_columns(column_kind, columns or [], year_from, year_to)
+        if isinstance(column_ids, str):
+            return column_ids
+        spec = grids.GridSpec.from_json(
+            {"row_kind": row_kind, "row_ids": row_ids, "column_kind": column_kind, "column_ids": column_ids}
+        )
+        if spec is None:
+            return _json({"error": "Unsupported grid", "valid": [f"{r} x {c}" for r, c in grids.SUPPORTED_PAIRS]})
+        return _json(grids.tool_payload(grids.build(store, spec)))
+
     @tool
     def aggregate_data(
         dataset: _DatasetArg,
@@ -2314,6 +2387,7 @@ def build_tools(
         get_astrology,
         aggregate_data,
         get_segue_pairing,
+        get_grid,
     ]
 
     if callable(getattr(store, "run_catalog_query", None)):
