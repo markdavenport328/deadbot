@@ -57,8 +57,9 @@ either source.
      `music`, `writer` → `writer`. "Traditional" and "Grateful Dead" credits
      are held as source evidence, not turned into people rows.
    - `people.csv` and `song_writers.csv` are written sorted by their ID
-     columns (`person_id`; `song_id, writer_role, person_id`) so a concurrent
-     agent's appends merge cleanly. No existing row was reordered in a way
+     columns (`person_id`; `song_id, person_id, writer_role`) so a concurrent
+     agent's appends merge cleanly; `resource_songs.csv` keeps its order and
+     gains new rows at the end. No existing row was reordered in a way
      that lost data — every prior row from both files is still present
      (verified by set comparison against the pre-pass files).
 6. **Checked whether any source states an explicit "original artist"** fact
@@ -163,3 +164,17 @@ that a cover's original artist is a separate fact from its writer credit.
 - `data/editorial/song-cohort-candidates.csv` was intentionally left
   unregenerated (see above); a human may want to decide whether to refresh
   it now that more songs carry writer credits.
+
+## 2026-10-09: printed names resolved, reruns reproducible
+
+Dead.net prints some writers by surname or by another name (`Bralove`,
+`Wasserman`, `Bruce Welnick` on Easy Answers; `Leiber`, `Stoller` on Kansas
+City; `Donna Godchaux` on Sunrise). The normalizer's `RESOLVED_CREDIT_NAMES`
+table maps each to the existing person and carries the evidence (the
+MusicBrainz work id and ISWC that name the same writers for that song), and
+the credit row's note records what was printed and why it resolves there. A
+rerun of `scripts/normalize_song_sources_catalog.py` against the committed raw
+files now reproduces `people.csv`, `song_writers.csv`, `resources.csv`,
+`resource_songs.csv` and `songs.csv` byte for byte; before, it reordered two
+files, dropped a period from 234 song notes, and minted
+`person-donna-godchaux`.
