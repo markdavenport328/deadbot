@@ -322,3 +322,28 @@ def test_get_grid_tour_selects_the_same_nights_on_sqlite(built_sqlite, tmp_path)
     finally:
         store.close()
     assert len(result["rows"]) == 22
+
+
+def test_get_grid_kinds_are_an_enum_in_the_schema_and_a_bad_kind_reaches_the_tool():
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    store = CanonicalStore()
+    tool = _tool_by_name(store, "get_grid")
+    properties = convert_to_openai_tool(tool)["function"]["parameters"]["properties"]
+    assert properties["row_kind"]["enum"] == ["song", "show"]
+    assert properties["column_kind"]["enum"] == ["year", "song"]
+    payload = json.loads(tool.invoke({"row_kind": "venue", "column_kind": "song", "rows": ["x"], "columns": ["Dark Star"]}))
+    assert payload["error"] == "Unsupported grid"
+    assert "show x song" in payload["valid"] and "song x year" in payload["valid"]
+
+
+def test_get_grid_misspelled_tour_suggests_known_tours():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {"row_kind": "show", "tour": "Europe 72", "column_kind": "song", "columns": ["Dark Star"]}
+        )
+    )
+    assert payload["error"] == "No shows on that tour"
+    assert "Europe 1972" in payload["closest_tours"]
+    assert len(payload["closest_tours"]) <= 5

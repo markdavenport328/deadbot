@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import difflib
 import hashlib
 import json
 import re
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
-from typing import Annotated, Any, Literal, get_args
+from typing import Annotated, Any, get_args
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -253,6 +254,8 @@ _SortArg = Annotated[str | None, _one_of(get_args(aggregation.Sort))]
 _SongOrShowArg = Annotated[str, _one_of(("song", "show"))]
 _ShowOrPerformanceArg = Annotated[str, _one_of(("show", "performance"))]
 _TransitionArg = Annotated[str, _one_of(sequences.TRANSITIONS)]
+_GridRowKindArg = Annotated[str, _one_of(("song", "show"))]
+_GridColumnKindArg = Annotated[str, _one_of(("year", "song"))]
 
 
 # The architecture doc's hard ceiling for one tool result (about 20,000
@@ -2197,7 +2200,14 @@ def build_tools(
         if tour:
             found = sorted(store.rows_in("shows", "tour_name", [tour]), key=lambda row: row.get("show_date", ""))
             if not found:
-                return _json({"error": "No shows on that tour", "query": tour})
+                known = sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
+                return _json(
+                    {
+                        "error": "No shows on that tour",
+                        "query": tour,
+                        "closest_tours": difflib.get_close_matches(tour, known, n=5, cutoff=0.4),
+                    }
+                )
             return [row["show_id"] for row in found]
         return _json({"error": "Name the nights as rows, or give a tour"})
 
@@ -2219,8 +2229,8 @@ def build_tools(
 
     @tool
     def get_grid(
-        row_kind: Literal["song", "show"],
-        column_kind: Literal["year", "song"],
+        row_kind: _GridRowKindArg,
+        column_kind: _GridColumnKindArg,
         rows: list[str] | None = None,
         columns: list[str] | None = None,
         tour: str | None = None,
@@ -2235,12 +2245,14 @@ def build_tools(
         each cell is the minutes that song ran that night, the passes it took,
         its set, what it came out of and went into, and where the length came
         from. rows and columns take IDs or titles, in the order you want them.
-        For show rows, tour (a tour name) selects the nights instead of
-        listing them; for year columns, year_from and year_to set the span.
+        For show rows, tour (a tour name) selects the nights when rows is
+        empty, and is used only then; for year columns, year_from and year_to set the span.
         The result carries a grid_id for a grid in finish_response, the filled
         cells as one compact table, coverage facts, and for nights the songs
         played most on them that are not yet columns.
         """
+        if (row_kind, column_kind) not in grids.SUPPORTED_PAIRS:
+            return _json({"error": "Unsupported grid", "valid": [f"{r} x {c}" for r, c in grids.SUPPORTED_PAIRS]})
         row_ids = _grid_rows(row_kind, rows or [], tour)
         if isinstance(row_ids, str):
             return row_ids
