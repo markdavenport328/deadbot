@@ -134,6 +134,20 @@ show. Dick's Picks now has 36 releases and 936 tracks, 829 with a performance
 and 909 with a song; all official releases 347, 10,751 tracks, 8,437 with a
 performance, 9,770 with a song.
 
+## 1972-05-23 Dark Star (checked 2026-10-09)
+
+The Lyceum show's setlist has `Dark Star > Drums > Dark Star` (2.2–2.4), and
+neither Dark Star had a duration on any release track or archive link. Europe
+'72: The Complete Recordings (disc 61) and Europe '72 Vol. 19 both carry this
+night, every other track mapped, and both issue the whole sequence as one
+29:54 `Dark Star` track (the same MusicBrainz recording,
+69aee37d-808f-4c73-9a56-1969a6e76c17). No release splits it, so there is
+nothing unmapped to map: a single track cannot honestly name one of the two
+performances. Both tracks keep `song_id` Dark Star and a note listing the
+three performance ids they span, which is what the segment bridge needs to
+give each Dark Star its share. `performance_links.csv` and
+`performance_recordings.csv` have no rows for these three performances.
+
 ## Songs on release tracks: medleys, suites and jams (2026-10-09)
 
 `song_id` on a release track is one song, and it counts: it is how a song's
