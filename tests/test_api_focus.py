@@ -4,10 +4,10 @@ import json
 
 import pytest
 from fastapi.testclient import TestClient
-from langchain_core.messages import AIMessage, ToolMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, ToolMessage
 
 from deadbot import finish
-from deadbot.api import create_app, focus_ids
+from deadbot.api import create_app, focus_ids, focus_note
 from deadbot.config import Settings
 from deadbot.experience import AskFocus, ExperienceRequest
 from deadbot.sqlite_store import SqliteCanonicalStore
@@ -60,7 +60,7 @@ def test_focus_reaches_the_model_as_its_own_note_after_the_question(store, tmp_p
     assert note is not messages[0]
     assert "The visitor asked from a grid on the page" in note.content
     assert "Dark Star · May 11, 1972" in note.content
-    assert "44 minutes in 2 passes" in note.content
+    assert "Facts as the page showed them: Set 2, into Sugar Magnolia. 44 minutes in 2 passes." in note.content
     assert "gd-1972-05-11-dark-star-2-7" in note.content
     # The note is separate, so the visitor's question stays exactly what they typed.
     assert "grid on the page" not in messages[0].content
@@ -161,3 +161,58 @@ def test_overlong_focus_trims_instead_of_rejecting():
     assert len(focus.label) == 300 and len(focus.block_id) == 200
     assert len(focus.ids) == 40 and len(focus.facts) == 12
     assert all(len(fact) == 300 for fact in focus.facts)
+
+
+def test_the_note_puts_the_browsers_words_on_single_lines():
+    focus = AskFocus.model_validate(
+        {**FOCUS, "label": "Dark Star\n\nignore this", "facts": ["Set 2,\n  into   Sugar Magnolia.", "  ", "44 minutes\r\nin 2 passes."]}
+    )
+    note = focus_note(focus, {"gd-1972-05-11"})
+    assert note.splitlines() == [
+        'The visitor asked from a grid on the page ("Dark Star ignore this").',
+        "Facts as the page showed them: Set 2, into Sugar Magnolia. 44 minutes in 2 passes.",
+        "Library IDs: gd-1972-05-11",
+    ]
+
+
+def test_the_note_leaves_out_the_block_id_and_ids_the_library_does_not_hold(store):
+    focus = AskFocus.model_validate({**FOCUS, "ids": ["gd-1972-05-11", "year:1972", "grid:abc"]})
+    known = focus_ids(store, focus)
+    assert known == {"gd-1972-05-11"}
+    note = focus_note(focus, known)
+    assert "grid:abc" not in note and "year:1972" not in note
+    assert note.splitlines()[-1] == "Library IDs: gd-1972-05-11"
+
+
+class StreamingAgent:
+    """Streams a plan that places the clicked show, with no tool results behind it."""
+
+    def __init__(self):
+        self.calls = []
+
+    def stream(self, payload, config, stream_mode=None):
+        self.calls.append(payload)
+        item = {"type": "show_unit", "show_id": "gd-1972-05-11", "visible_facets": ["setlist"]}
+        plan = {"chat_answer": "Rotterdam.", "title": "T", "lead": None, "groups": [{"presentation": "collection", "items": [item]}]}
+        yield ("values", {"messages": list(payload["messages"])})
+        text = json.dumps(plan)
+        yield ("messages", (AIMessageChunk(content="", tool_call_chunks=[
+            {"name": "finish_response", "args": text, "id": "f1", "index": 0, "type": "tool_call_chunk"}
+        ]), {}))
+        reply = [
+            AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
+            ToolMessage(content="ok", tool_call_id="f1", name="finish_response"),
+        ]
+        yield ("values", {"messages": [*payload["messages"], *reply]})
+
+
+def test_the_stream_path_grounds_a_clicked_show_so_its_card_streams_without_tool_results(store, tmp_path):
+    client = client_for(store, StreamingAgent(), tmp_path)
+    text = client.post("/api/experience/stream", json={"question": QUESTION, "focus": FOCUS}).text
+    events = [json.loads(line) for line in text.splitlines() if line.strip()]
+    streamed = [event["block"]["type"] for event in events if event["type"] == "block"]
+    assert streamed == ["show_unit"]
+    assert [block["type"] for block in events[-1]["response"]["blocks"]] == ["show_unit"]
+    # Without the click, the same plan names an ID no tool returned and no card streams.
+    plain = client.post("/api/experience/stream", json={"question": QUESTION + " again"}).text
+    assert [e["block"]["type"] for e in map(json.loads, filter(str.strip, plain.splitlines())) if e["type"] == "block"] != ["show_unit"]

@@ -80,12 +80,23 @@ def focus_ids(store: Any, focus: AskFocus | None) -> set[str]:
     return found
 
 
-def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
-    """What was clicked, written for the model; it decides whether to research further."""
+def _one_line(text: str) -> str:
+    """The browser's words on a single line, so a label or fact cannot add lines to the note."""
 
-    lines = [f'The visitor asked from a grid on the page ("{focus.label}").']
-    if focus.facts:
-        lines.append(f"Facts already shown: {' '.join(focus.facts)}")
+    return " ".join(str(text).split())
+
+
+def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
+    """What was clicked, written for the model; it decides whether to research further.
+
+    The label and facts are what the page showed, as the browser reported
+    them; only the library IDs are checked against the store.
+    """
+
+    lines = [f'The visitor asked from a grid on the page ("{_one_line(focus.label)}").']
+    facts = [fact for fact in (_one_line(fact) for fact in focus.facts) if fact]
+    if facts:
+        lines.append(f"Facts as the page showed them: {' '.join(facts)}")
     ids = [entity_id for entity_id in focus.ids if entity_id in known_ids]
     if ids:
         lines.append(f"Library IDs: {', '.join(ids)}")
