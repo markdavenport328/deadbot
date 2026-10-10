@@ -119,9 +119,12 @@ the song's life on stage year by year, with the performances that stand out
 and why, for building a song_overview timeline or answering how a song changed.
 Payload: song identity, `years` (year, count, typical and longest minutes),
 `standouts` (performance ID, date, venue, fact line), and a one-line note that
-a song_overview's representatives become the timeline's stops. Target size:
-under 8,000 characters for a 300-performance song, measured in tests; Sugar
-Magnolia (about 600) must stay deliverable.
+a song_overview's representatives become the timeline's stops, plus
+`patterns`: rare placements shared by more than five performances, said once
+("opened the show 20 times, 1968–1970") instead of listed. Size: under 9,000
+characters, measured in tests (Terrapin 7,400; Dark Star 8,500; Sugar Magnolia,
+606 performances, 7,700). Standouts stop at 30; within a tier, versions with
+more facts rank first, so the list spans the song's whole life.
 
 ### 3. Plan and page schema
 
