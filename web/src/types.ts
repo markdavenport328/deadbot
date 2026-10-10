@@ -25,6 +25,7 @@ import type { components } from "./generated/api";
 type Require<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 export type SourceReference = components["schemas"]["SourceReference"];
+export type AskFocus = components["schemas"]["AskFocus"];
 export type ExperienceGroup = Require<components["schemas"]["ExperienceGroup"], "criteria">;
 
 type FixedEntityCardBlock = Require<components["schemas"]["EntityCardBlock"], "details">;

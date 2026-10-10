@@ -268,6 +268,28 @@ export interface components {
             /** Url */
             url: string;
         };
+        /**
+         * AskFocus
+         * @description What the visitor was pointing at when they asked: the clicked cell or grid.
+         *
+         *     The browser reports it with the question; the server hands it to the model
+         *     as a note and lets the IDs it names join the turn's grounded IDs.
+         */
+        AskFocus: {
+            /** Block Id */
+            block_id: string;
+            /**
+             * Block Type
+             * @constant
+             */
+            block_type: "grid";
+            /** Facts */
+            facts?: string[];
+            /** Ids */
+            ids?: string[];
+            /** Label */
+            label: string;
+        };
         /** ComparisonStripItem */
         ComparisonStripItem: {
             /** Audio Url */
@@ -617,6 +639,7 @@ export interface components {
         ExperienceRequest: {
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
+            focus?: components["schemas"]["AskFocus"] | null;
             /** Question */
             question: string;
             /** Thread Id */

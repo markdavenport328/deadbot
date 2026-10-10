@@ -23,8 +23,8 @@ from deadbot import composition, finish, grids
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import ExperienceRequest, ExperienceResponse, GridBlock, GridRequest
-from deadbot.finish import FINISH_TOOL_NAME, build_experience_response
+from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest
+from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
 from deadbot.postgres import query_cache_scope
@@ -54,6 +54,44 @@ def _trim_text(text: str | None, ceiling: int, what: str) -> str | None:
     return text
 
 
+# The tables a clicked cell's IDs can name, tried in order.
+FOCUS_TABLES = ("shows", "performances", "songs")
+
+
+def focus_ids(store: Any, focus: AskFocus | None) -> set[str]:
+    """The IDs a visitor's click named that the library holds.
+
+    These join the turn's grounded IDs, so the model can place a card for the
+    clicked night without looking it up again. An ID the library does not hold
+    is dropped; hydration still reads every fact from the store.
+    """
+
+    found: set[str] = set()
+    for entity_id in focus.ids if focus else []:
+        for table in FOCUS_TABLES:
+            try:
+                if store.one(table, entity_id):
+                    found.add(entity_id)
+                    break
+            except Exception:
+                logger.debug("Could not look up focus id %r in %s", entity_id, table, exc_info=True)
+        else:
+            logger.debug("Dropped focus id %r: the library holds no such record", entity_id)
+    return found
+
+
+def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
+    """What was clicked, written for the model; it decides whether to research further."""
+
+    lines = [f'The visitor asked from a grid on the page ("{focus.label}").']
+    if focus.facts:
+        lines.append(f"Facts already shown: {' '.join(focus.facts)}")
+    ids = [entity_id for entity_id in focus.ids if entity_id in known_ids]
+    if ids:
+        lines.append(f"Library IDs: {', '.join(ids)}")
+    return "\n".join(lines)
+
+
 UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
 
 
@@ -68,6 +106,7 @@ class _Invocation:
     thread_id: str
     invocation_thread_id: str
     messages: list[Any]
+    focus_ids: frozenset[str] = frozenset()
 
 
 def create_app(
@@ -168,12 +207,22 @@ def create_app(
             for turn in conversation
         ]
         messages.append(HumanMessage(content=request.question.strip()))
+        grounded_focus = focus_ids(app.state.store, request.focus)
+        if request.focus is not None:
+            # A note of its own after the question: the visitor's transcript
+            # holds only what they typed, and the model reads what they clicked.
+            messages.append(HumanMessage(content=focus_note(request.focus, grounded_focus), name=FOCUS_MESSAGE_NAME))
         # Vercel may route successive requests to different function instances.
         # When the browser supplies its visible transcript, use an isolated
         # invocation thread so the transcript is authoritative and is not
         # duplicated with a warm instance's MemorySaver checkpoint.
         invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
-        return _Invocation(thread_id=thread_id, invocation_thread_id=invocation_thread_id, messages=messages)
+        return _Invocation(
+            thread_id=thread_id,
+            invocation_thread_id=invocation_thread_id,
+            messages=messages,
+            focus_ids=frozenset(grounded_focus),
+        )
 
     def _release(invocation: _Invocation) -> None:
         # The per-request thread is throwaway: it exists only so this
@@ -192,17 +241,20 @@ def create_app(
             thread_id=invocation.thread_id,
             messages=messages,
             store=app.state.store,
+            extra_ids=invocation.focus_ids,
         )
 
     def _cached(request: ExperienceRequest, invocation: _Invocation) -> ExperienceResponse | None:
         """A stored answer for a fresh (no-conversation) repeat of a question."""
 
-        if request.conversation:
+        # A focused ask depends on what was clicked, which the cache key (the
+        # question text) does not capture.
+        if request.conversation or request.focus is not None:
             return None
         return app.state.response_cache.lookup(request.question, thread_id=invocation.thread_id)
 
     def _remember(request: ExperienceRequest, response: ExperienceResponse) -> None:
-        if not request.conversation:
+        if not request.conversation and request.focus is None:
             app.state.response_cache.remember(request.question, response)
 
     @app.post("/api/experience", response_model=ExperienceResponse)
@@ -305,7 +357,7 @@ def create_app(
                             try:
                                 # Research is done by the time the plan starts; ground once.
                                 payloads = composition._tool_payloads(composition._latest_turn(messages))
-                                grounded = finish.grounded_context(payloads)
+                                grounded = finish.grounded_context(payloads, invocation.focus_ids)
                                 plan_streamer = PlanStreamer(
                                     lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0],
                                     grounded_urls=grounded.urls,

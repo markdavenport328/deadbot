@@ -172,16 +172,37 @@ describe("Grid", () => {
     expect(screen.getByRole("button", { name: /ask about this/i })).toBeInTheDocument();
   });
 
-  it("asks about one night, or compares two, with the question written out", () => {
+  it("asks about one night, or compares two, with the question written out and what was clicked", () => {
     const onFollowUp = vi.fn();
     render(<Grid block={europe as GridBlock} onFollowUp={onFollowUp} />);
     fireEvent.click(screen.getByLabelText(/May 11.*Dark Star/i));
     fireEvent.click(screen.getByRole("button", { name: /ask about this/i }));
-    expect(onFollowUp).toHaveBeenLastCalledWith("Tell me about the Dark Star from May 11, 1972 in Rotterdam.");
+    expect(onFollowUp).toHaveBeenLastCalledWith(
+      "Tell me about the Dark Star from May 11, 1972 in Rotterdam.",
+      expect.objectContaining({
+        label: "Dark Star · May 11, 1972",
+        block_type: "grid",
+        block_id: europe.grid_id,
+        ids: ["gd-1972-05-11", "gd-1972-05-11-dark-star-2-7", "gd-1972-05-11-dark-star-2-9", "song-dark-star"],
+      }),
+    );
+    const single = onFollowUp.mock.lastCall![1];
+    expect(single.facts).toHaveLength(1);
+    expect(single.facts[0]).toMatch(/^Set 2, into Sugar Magnolia\. 44 minutes in 2 passes/);
     fireEvent.click(screen.getByLabelText(/April 24.*Dark Star/i), { shiftKey: true });
     expect(screen.getByRole("button", { name: /play both/i })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /compare these/i }));
-    expect(onFollowUp).toHaveBeenLastCalledWith("Compare the Dark Star from May 11, 1972 and the Dark Star from April 24, 1972.");
+    expect(onFollowUp).toHaveBeenLastCalledWith(
+      "Compare the Dark Star from May 11, 1972 and the Dark Star from April 24, 1972.",
+      expect.objectContaining({ block_type: "grid", block_id: europe.grid_id }),
+    );
+    const pair = onFollowUp.mock.lastCall![1];
+    expect(pair.ids).toEqual(
+      expect.arrayContaining(["gd-1972-05-11", "gd-1972-04-24", "gd-1972-04-24-dark-star-2-1", "song-dark-star"]),
+    );
+    expect(new Set(pair.ids).size).toBe(pair.ids.length);
+    expect(pair.facts).toHaveLength(2);
+    expect(pair.facts[1]).toMatch(/April 24, 1972/);
   });
 
   it("keeps at most two cells selected, and Escape clears them", () => {
@@ -435,6 +456,41 @@ describe("Grid reshape", () => {
     await userEvent.click(screen.getByRole("button", { name: /^Remove / }));
     expect(await screen.findByText("Written for the original grid")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /One big jam a night/ })).toBeInTheDocument();
+  });
+
+  it("offers to ask Deadbot about the reshaped grid, and not the original", async () => {
+    const without = reshapedFrom(original, original.columns.map((c) => c.id).slice(0, -1), { grid_id: "grid:reshaped" });
+    fetchMock.mockResolvedValue({ ok: true, json: async () => without });
+    const onFollowUp = vi.fn();
+    render(<Grid block={original} onFollowUp={onFollowUp} />);
+    expect(screen.queryByRole("button", { name: "Ask Deadbot about this grid" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: `Options for ${original.columns.at(-1)!.label}` }));
+    await userEvent.click(screen.getByRole("button", { name: /^Remove / }));
+    const chip = await screen.findByRole("button", { name: "Ask Deadbot about this grid" });
+    expect(chip).toHaveClass("ask-chip");
+    await userEvent.click(chip);
+    expect(onFollowUp).toHaveBeenCalledTimes(1);
+    const [question, focus] = onFollowUp.mock.calls[0];
+    expect(question).toBe("What stands out in this grid?");
+    expect(focus.block_type).toBe("grid");
+    expect(focus.block_id).toBe("grid:reshaped");
+    expect(focus.label).toContain(original.title);
+    expect(focus.ids.length).toBeLessThanOrEqual(40);
+    expect(focus.ids).toEqual(expect.arrayContaining(without.columns.map((c) => c.id)));
+    expect(focus.ids).not.toContain(original.columns.at(-1)!.id);
+    expect(focus.facts.length).toBeGreaterThan(0);
+    expect(focus.facts.length).toBeLessThanOrEqual(12);
+    expect(focus.facts[0]).toMatch(/^Truckin': Played on \d+ of 22 nights/);
+  });
+
+  it("shows the ask-about-this-grid chip even when the model wrote no words for the grid", async () => {
+    const quiet = { ...original, title: null, note: null, coverage: null } as GridBlock;
+    fetchMock.mockResolvedValue({ ok: true, json: async () => reshapedFrom(quiet, quiet.columns.map((c) => c.id).slice(1)) });
+    render(<Grid block={quiet} onFollowUp={() => {}} />);
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(await screen.findByRole("button", { name: "Ask Deadbot about this grid" })).toBeInTheDocument();
+    expect(screen.queryByText("Written for the original grid")).toBeNull();
   });
 
   it("keeps the old grid and says so when the server cannot reshape it", async () => {

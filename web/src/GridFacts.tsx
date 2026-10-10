@@ -23,7 +23,7 @@ function placement(cell: Cell): string | null {
   return parts.length > 0 ? `${parts.join(", ")}.` : null;
 }
 
-function sentence(block: GridBlock, cell: Cell, yearLabel: string): string {
+export function sentence(block: GridBlock, cell: Cell, yearLabel: string): string {
   if (block.row_kind === "song" && block.measure === "shows") {
     if (cell.state === "none")
       return cell.of_shows != null ? `Not played in the ${cell.of_shows} shows with a setlist that year.` : "Not played that year.";

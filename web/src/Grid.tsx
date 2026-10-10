@@ -4,11 +4,12 @@
 // listen controls, which arrive with the cell interactions).
 import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { CardHeading, MoreAbout } from "./components";
-import { GridFacts } from "./GridFacts";
+import type { FollowUp } from "./ask-request";
+import { GridFacts, sentence } from "./GridFacts";
 import { columnSummary, GridReshapeError, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
 import { toTrack } from "./listen-control";
 import { usePlayer } from "./player";
-import type { GridBlock } from "./types";
+import type { AskFocus, GridBlock } from "./types";
 import "./Grid.css";
 
 // Cell strength scales to the block's own maximum, so the strongest cell is
@@ -60,7 +61,46 @@ function askAbout(block: GridBlock, selection: Selection): string | null {
   return `Compare ${named[0].subject} and ${named[1].subject}.`;
 }
 
-export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFollowUp?: (question: string) => void }) {
+// What the visitor clicked, for the model: the library IDs, the facts the page
+// already showed, and the grid it was shown in.
+function clickedFocus(block: GridBlock, selection: Selection): AskFocus | undefined {
+  const cells = selection.flatMap(({ row, column }) => {
+    const source = block.rows[row];
+    const cell = source?.cells?.[column];
+    const col = block.columns[column];
+    if (!cell || !col || (cell.state !== "value" && cell.state !== "no_length")) return [];
+    const isShow = block.row_kind === "show";
+    const { date } = rowParts(source);
+    const title = `${isShow ? col.label : source.label} · ${isShow ? date : (col.sub ?? col.label)}`;
+    return [{ source, col, cell, title, fact: sentence(block, cell, col.sub ?? col.label) }];
+  });
+  if (cells.length === 0) return undefined;
+  const ids = cells.flatMap(({ source, col, cell }) => [
+    source.id,
+    ...(cell.tracks ?? []).map((track) => track.performance_id),
+    col.id,
+  ]);
+  return {
+    label: cells.map(({ title }) => title).join(" and "),
+    block_type: "grid",
+    block_id: block.grid_id,
+    ids: [...new Set(ids)],
+    facts: cells.map(({ title, fact }) => (cells.length > 1 ? `${title}: ${fact}` : fact)),
+  };
+}
+
+// The grid as a whole: its lists and what each column shows.
+function gridFocus(block: GridBlock): AskFocus {
+  return {
+    label: block.title ? `Grid: ${block.title}` : "This grid",
+    block_type: "grid",
+    block_id: block.grid_id,
+    ids: [...new Set([...block.columns.map((column) => column.id), ...block.rows.map((row) => row.id)])].slice(0, 40),
+    facts: block.columns.slice(0, 12).map((column, index) => `${column.label}: ${columnSentence(block, index)}`),
+  };
+}
+
+export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFollowUp?: FollowUp }) {
   // The visitor's reshape replaces what the model drew, until the page sends a different grid.
   const [reshaped, setReshaped] = useState<{ from: GridBlock; block: GridBlock } | null>(null);
   const block = reshaped?.from === original ? reshaped.block : original;
@@ -312,7 +352,16 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
         </div>
         {block.title && <CardHeading className="grid-headline">{block.title}</CardHeading>}
         {block.note && <p className="grid-note">{block.note}</p>}
-        {changed && (block.title || block.note || block.coverage) && <p className="grid-original">Written for the original grid</p>}
+        {changed && (
+          <div className="grid-reshaped">
+            {(block.title || block.note || block.coverage) && <p className="grid-original">Written for the original grid</p>}
+            {onFollowUp && (
+              <button type="button" className="ask-chip" disabled={working} onClick={() => onFollowUp("What stands out in this grid?", gridFocus(block))}>
+                Ask Deadbot about this grid
+              </button>
+            )}
+          </div>
+        )}
       </header>
       <div className={`grid-stage${working ? " is-working" : ""}`} ref={stageRef} aria-busy={working}>
         <div
@@ -609,7 +658,7 @@ function DetailBar({
   block: GridBlock;
   selection: Selection;
   onClear: () => void;
-  onFollowUp?: (question: string) => void;
+  onFollowUp?: FollowUp;
 }) {
   const player = usePlayer();
   const playable = selection.filter(({ row, column }) => (block.rows[row]?.cells?.[column]?.tracks ?? []).length > 0);
@@ -656,7 +705,7 @@ function DetailBar({
           </button>
         )}
         {onFollowUp && question && (
-          <button type="button" className="ask-chip" onClick={() => onFollowUp(question)}>
+          <button type="button" className="ask-chip" onClick={() => onFollowUp(question, clickedFocus(block, selection))}>
             {askable > 1 ? "Compare these" : "Ask about this"}
           </button>
         )}

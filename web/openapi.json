@@ -530,6 +530,50 @@
         "title": "ArrangementSearchItem",
         "type": "object"
       },
+      "AskFocus": {
+        "additionalProperties": false,
+        "description": "What the visitor was pointing at when they asked: the clicked cell or grid.\n\nThe browser reports it with the question; the server hands it to the model\nas a note and lets the IDs it names join the turn's grounded IDs.",
+        "properties": {
+          "block_id": {
+            "maxLength": 200,
+            "title": "Block Id",
+            "type": "string"
+          },
+          "block_type": {
+            "const": "grid",
+            "title": "Block Type",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Facts",
+            "type": "array"
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 40,
+            "title": "Ids",
+            "type": "array"
+          },
+          "label": {
+            "maxLength": 300,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "block_type",
+          "block_id"
+        ],
+        "title": "AskFocus",
+        "type": "object"
+      },
       "ComparisonStripItem": {
         "additionalProperties": false,
         "properties": {
@@ -1457,6 +1501,16 @@
             "maxItems": 50,
             "title": "Conversation",
             "type": "array"
+          },
+          "focus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskFocus"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "question": {
             "maxLength": 2000,

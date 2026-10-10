@@ -55,6 +55,11 @@ logger = logging.getLogger(__name__)
 
 FINISH_TOOL_NAME = "finish_response"
 
+# The note the server sends the model after a visitor's question when they asked
+# from something they clicked. It is a message of its own so the visitor's
+# transcript, which is built from the human messages, can skip it by this name.
+FOCUS_MESSAGE_NAME = "grid_focus"
+
 # The ways a group can relate its items. An unknown value reads as a
 # collection in both paths rather than failing the plan.
 PRESENTATIONS = frozenset({"collection", "sequence", "comparison", "argument"})
@@ -91,10 +96,14 @@ def _walk(value: Any, ids: set[str], urls: set[str], key: str | None = None) -> 
             ids.add(value)
 
 
-def grounded_context(payloads: list[dict[str, Any]]) -> GroundedContext:
-    """Collect every identifier and URL present in this turn's tool output."""
+def grounded_context(payloads: list[dict[str, Any]], extra_ids: Iterable[str] = ()) -> GroundedContext:
+    """Collect every identifier and URL present in this turn's tool output.
 
-    ids: set[str] = set()
+    ``extra_ids`` are library IDs the server already resolved for this turn
+    (what the visitor clicked), which count as grounded like any tool result.
+    """
+
+    ids: set[str] = set(extra_ids)
     urls: set[str] = set()
     for payload in payloads:
         _walk(payload, ids, urls)
@@ -1614,7 +1623,7 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     for message in all_messages:
         message_type = getattr(message, "type", None)
         text = composition._content_text(getattr(message, "content", "")).strip()
-        if message_type == "human" and text:
+        if message_type == "human" and text and getattr(message, "name", None) != FOCUS_MESSAGE_NAME:
             turns.append(ConversationTurn(role="user", text=text[:8_000]))
             answer_index = None
         elif message_type == "ai":
@@ -1639,7 +1648,13 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     return turns[-50:]
 
 
-def build_experience_response(question: str, thread_id: str, messages: Iterable[Any], store: CanonicalStore) -> ExperienceResponse:
+def build_experience_response(
+    question: str,
+    thread_id: str,
+    messages: Iterable[Any],
+    store: CanonicalStore,
+    extra_ids: Iterable[str] = (),
+) -> ExperienceResponse:
     """Assemble the browser response from the agent's latest turn."""
 
     all_messages = list(messages)
@@ -1664,7 +1679,7 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
             sources=[],
         )
 
-    grounded = grounded_context(payloads)
+    grounded = grounded_context(payloads, extra_ids)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
     chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
     lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None

@@ -84,6 +84,8 @@
 .grid-menu button[disabled] { color: var(--quiet); cursor: not-allowed; }
 .grid-stage.is-working .grid-table { opacity: 0.6; transition: opacity 120ms ease; }
 .grid-options:disabled, .grid-add:disabled { cursor: progress; opacity: 0.6; }
+.grid-reshaped { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; }
+.grid-reshaped .ask-chip:disabled { cursor: progress; opacity: 0.6; }
 .grid-original { margin: 0; color: var(--quiet); font-size: 0.78rem; }
 .grid-error:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; padding: 0; border: 0; } /* stays in the page for the live region, out of the layout */
 .grid-error { margin: 0; color: var(--text); font-size: 0.84rem; padding-left: 0.9rem; border-left: 2px solid var(--hair); }
