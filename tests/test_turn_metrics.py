@@ -90,3 +90,17 @@ def test_stream_endpoint_logs_one_metrics_line(caplog):
     lines = [json.loads(record.getMessage()) for record in caplog.records if record.name == "deadbot.turn_metrics"]
     assert len(lines) == 1
     assert lines[0]["question"] == "hello" and lines[0]["peak_input_tokens"] == 900 and lines[0]["error"] is None
+
+
+def test_metrics_count_notebook_reads_and_the_notebook_index_size():
+    index = HumanMessage(content="Research notebook, turn 1: one line", name="research_notebook")
+    messages = [
+        HumanMessage(content="earlier"), AIMessage(content="answer"), index,
+        HumanMessage(content="Compare the Lyceum nights."),
+        AIMessage(content="", tool_calls=[{"name": "read_notebook", "args": {"keys_or_ids": ["k"]}, "id": "n", "type": "tool_call"}],
+                  usage_metadata={"input_tokens": 900, "output_tokens": 10, "total_tokens": 910}),
+        ToolMessage(content='{"notebook_entries":[]}', tool_call_id="n", name="read_notebook"),
+    ]
+    metrics = turn_metrics("Compare the Lyceum nights.", messages, started=0.0, first_answer_at=None, finished_at=1.0, error=None)
+    assert metrics["notebook_reads"] == 1
+    assert metrics["notebook_index_chars"] == len(index.content)
