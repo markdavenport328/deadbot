@@ -70,7 +70,10 @@ export type ExperienceBlock =
   | components["schemas"]["PullQuoteBlock"]
   | FixedDataChartBlock
   | Require<components["schemas"]["VersionStripBlock"], "year_counts">
+  | Require<components["schemas"]["GridBlock"], "suggestions" | "follow_ups">
   | components["schemas"]["RankedListBlock"];
+
+export type GridBlock = Extract<ExperienceBlock, { type: "grid" }>;
 
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],

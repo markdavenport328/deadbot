@@ -2,7 +2,8 @@ import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, use
 import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
-import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./components";
+import { CardHeading, Drawer, HeadingContext, MoreAbout, TopicChips, type DrawerTab, type FollowUpTopic } from "./components";
+import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { VersionStrip } from "./VersionStrip";
@@ -278,34 +279,6 @@ function AskChip({ prompt, onFollowUp }: { prompt: string; onFollowUp: (prompt: 
     <button type="button" className="ask-chip" onClick={() => onFollowUp(prompt)}>
       {prompt}
     </button>
-  );
-}
-
-// Topic chips: the model writes a short label and the full question it stands
-// for. The chip shows the label; pressing it sends the model's question.
-type FollowUpTopic = { label: string; question: string };
-
-function TopicChips({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
-  const items = (topics ?? []).filter((topic) => topic.label.trim() && topic.question.trim());
-  if (items.length === 0) return null;
-  return (
-    <div className="topics">
-      {items.map((topic) => (
-        <button type="button" className="ask-chip" key={topic.label} onClick={() => onFollowUp(topic.question)} title={topic.question}>
-          {topic.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function MoreAbout({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
-  if ((topics ?? []).length === 0) return null;
-  return (
-    <div className="ask-block">
-      <span className="k">More about</span>
-      <TopicChips topics={topics} onFollowUp={onFollowUp} />
-    </div>
   );
 }
 
@@ -1799,6 +1772,8 @@ function Block({
       );
     case "version_strip":
       return <VersionStrip block={block} />;
+    case "grid":
+      return <Grid block={block} onFollowUp={onFollowUp} />;
   }
 }
 

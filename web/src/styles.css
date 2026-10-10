@@ -40,6 +40,7 @@
   --violet: #8b5cf6;
   --serif: Fraunces, Georgia, "Times New Roman", serif;
   --r: 2px;
+  --grid-cell: 243, 240, 226;
   --zone: 2.75rem;
   --item: 0.5rem;
   --featured-start: var(--read);
