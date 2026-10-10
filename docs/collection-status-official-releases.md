@@ -110,6 +110,30 @@ Dick's Picks 1, or bonus material such as the 11/2/77 tracks on Dick's Picks
 34); 59 tracks dated to a day `shows.csv` lacks or with more than one date; 5
 undated tracks that fit two candidate shows.
 
+## Missing volumes: releases with no per-track dates (2026-10-09)
+
+Dick's Picks 4, 20, 25 and 29 were in the raw MusicBrainz snapshot all along,
+held as `multi_show_without_track_attribution`: two dates in the title, none on
+any track. No network request was needed. A release whose title names
+canonical shows is now promoted when the song-and-order matcher maps at least
+one track; seven of the eight held groups qualified.
+
+| Release | Tracks | With a performance | With a song |
+| --- | --- | --- | --- |
+| Dick's Picks 4 (Fillmore East 2/13–14/70) | 18 | 16 | 16 |
+| Dick's Picks 20 (9/25/76, 9/28/76) | 43 | 43 | 43 |
+| Dick's Picks 25 (5/10/78, 5/11/78) | 35 | 33 | 35 |
+| Dick's Picks 29 (5/19/77, 5/21/77) | 47 | 42 | 47 |
+| Dave's Picks 30 (1/2/70, 1/3/70 early and late) | 36 | 28 | 34 |
+| Download Series 9 (4/2–3/89) | 42 | 37 | 41 |
+| RFK Stadium, July 12 & 13, 1989 | 38 | 38 | 38 |
+
+Dick's Picks 4 splits as the release does: Dark Star > That's It for the
+Other One > Lovelight from the 2/13 late show, the rest from the 2/14 late
+show. Dick's Picks now has 36 releases and 936 tracks, 829 with a performance
+and 909 with a song; all official releases 347, 10,751 tracks, 8,437 with a
+performance, 9,770 with a song.
+
 ## Songs on release tracks: medleys, suites and jams (2026-10-09)
 
 `song_id` on a release track is one song, and it counts: it is how a song's
@@ -294,10 +318,13 @@ statement that the album is missing from Spotify.
    most of the Dick's Picks / Dave's Picks gaps; both need credentials and a
    rights review, and matches should be verified against track lists before
    promotion.
-2. **Per-track show attribution for two-show releases.** Dick's Picks 4, 20,
-   25, 29 and Download Series 9 name two dates but their MusicBrainz recordings
-   carry no dates. Dead.net track listings or the release booklets could supply
-   disc-level attribution; until then they stay in the review file.
+2. **Per-track show attribution for two-show releases.** Resolved 2026-10-09:
+   Dick's Picks 4, 20, 25, 29, Download Series 9, Dave's Picks 30 and RFK
+   July 12 & 13 1989 name two dates but their MusicBrainz recordings carry
+   none. They are now promoted, with each track attributed by song and release
+   order among the title's shows (see "Track-mapping rule"). Fare Thee Well
+   (2015) stays held: its dates are outside `shows.csv`. Dead.net track
+   listings or the booklets would confirm the split.
 3. **Early/late shows.** 1970-05-15, 1970-01-02/03, 1969-02-11, 1970-02-11/13/14
    and similar dates have two canonical shows. Attributing these needs a
    set-level source (or a decision to use early/late labels from recording

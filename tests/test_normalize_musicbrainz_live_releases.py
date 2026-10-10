@@ -219,3 +219,23 @@ def test_a_jam_title_alone_never_resolves_a_song_but_spelling_variants_do():
     assert backfill.resolve_song_id("Other One Jam", folded) is None
     assert backfill.resolve_song_id("Other One >", folded) == "song-the-other-one"
     assert backfill.resolve_song_id("We Bid You Goodnight", folded) == "song-and-we-bid-you-good-night"
+
+
+def test_a_two_date_release_with_no_track_dates_is_promoted_by_song_and_order():
+    first, songs = _setlist("gd-1976-09-25", "Bertha", "Sugaree")
+    second, more = _setlist("gd-1976-09-28", "Cold Rain and Snow", "Sugaree")
+    songs.update(more)
+    group = {"id": "rg-20", "title": "Dick’s Picks, Volume 20: Landover 9/25/76, Syracuse 9/28/76", "first_release_date": "2001-02-01"}
+    tracks = [{"position": n, "number": str(n), "title": title, "recording": {"id": f"rec-{n}"}} for n, title in enumerate(["Bertha", "Sugaree", "Cold Rain and Snow", "Sugaree"], 1)]
+    release = {"id": "r-20", "title": group["title"], "status": "official", "date": "2001-02-01", "media": [{"position": 1, "format": "CD", "tracks": tracks}], "url_relations": []}
+    shows_by_date = {"1976-09-25": ["gd-1976-09-25"], "1976-09-28": ["gd-1976-09-28"]}
+
+    decision = mb.process_group(group, [release], shows_by_date, {"gd-1976-09-25": first, "gd-1976-09-28": second}, songs)
+
+    assert decision["status"] == "promoted"
+    assert [row["performance_id"] for row in decision["track_rows"]] == [
+        "gd-1976-09-25-song-bertha-1",
+        "gd-1976-09-25-song-sugaree-2",
+        "gd-1976-09-28-song-cold-rain-and-snow-1",
+        "gd-1976-09-28-song-sugaree-2",
+    ]

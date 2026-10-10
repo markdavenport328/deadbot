@@ -740,7 +740,7 @@ def process_group(
         # date of its own can only be one of these; which one is decided by
         # its song and the release order below, never by the title alone.
         title_show_ids = sorted({show_id for value in title_dates for show_id in shows_by_date.get(value, [])})
-        if not attributed_shows:
+        if not attributed_shows and not title_show_ids:
             decision["reason"] = "multi_show_without_track_attribution"
             decision["unattributed_reasons"] = dict(Counter(reason for _, reason in attribution))
             return decision
