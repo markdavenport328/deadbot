@@ -683,6 +683,79 @@ class VersionStripBlock(ExperienceModel):
     year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
+class GridColumn(ExperienceModel):
+    id: str
+    label: str
+    sub: str | None = None
+
+
+class GridCell(ExperienceModel):
+    """One meeting of a row and a column, every fact from the store."""
+
+    state: Literal["value", "none", "no_length", "unknown"]
+    value: int | None = Field(default=None, ge=0)
+    passes: int = Field(default=0, ge=0)
+    set_label: str | None = None
+    segue_from: str | None = None
+    segue_into: str | None = None
+    length_source: Literal["release", "tape", "mixed"] | None = None
+    of_shows: int | None = Field(default=None, ge=0)
+    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
+    highlight: bool = False
+    note: str | None = None
+
+
+class GridSetlistEntry(ExperienceModel):
+    song_id: str
+    title: str
+    set_label: str
+    segue: bool
+
+
+class GridRow(ExperienceModel):
+    id: str
+    label: str
+    sub: str | None = None
+    total: int | None = None
+    cells: list[GridCell] = Field(default_factory=list, max_length=LIST_CEILING)
+    setlist: list[GridSetlistEntry] = Field(default_factory=list, max_length=LIST_CEILING)
+
+
+class GridSuggestion(ExperienceModel):
+    id: str
+    label: str
+    rows_with: int = Field(ge=0)
+
+
+class GridSpecModel(ExperienceModel):
+    row_kind: Literal["song", "show"]
+    row_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
+    column_kind: Literal["year", "song"]
+    column_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
+
+
+class GridBlock(ExperienceModel):
+    """Two lists and where each pair meets. The model chose the lists, the
+    order, what opens first, the cells to point at and the words; the server
+    filled every cell, track, date and venue from the library."""
+
+    type: Literal["grid"]
+    grid_id: str
+    title: str | None = None
+    note: str | None = None
+    coverage: str | None = None
+    row_kind: Literal["song", "show"]
+    column_kind: Literal["year", "song"]
+    measure: Literal["shows", "minutes"]
+    columns: list[GridColumn] = Field(min_length=1, max_length=LIST_CEILING)
+    rows: list[GridRow] = Field(min_length=1, max_length=LIST_CEILING)
+    open_rows: int | None = Field(default=None, ge=1)
+    max_value: int = Field(ge=0)
+    suggestions: list[GridSuggestion] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
+    spec: GridSpecModel
+
+
 class ProvenanceNoteBlock(ExperienceModel):
     type: Literal["provenance_note"]
     text: str
@@ -879,6 +952,7 @@ ExperienceBlock = Annotated[
     | ArrangementSearchBlock
     | DataChartBlock
     | VersionStripBlock
+    | GridBlock
     | ProvenanceNoteBlock
     | GapStateBlock
     | EditorialBlock

@@ -222,3 +222,28 @@ def test_a_second_groups_list_that_restates_the_page_replaces_it():
         plan = FinishPlan.model_validate(read_joining_repeats(text))
         assert [draft[index]["title"] for index in sorted(draft)] == titles == [group.title for group in plan.groups]
         assert sorted(draft) == list(range(len(titles))) and all(group["blocks"] == 1 for group in draft.values())
+
+
+def test_a_grid_survives_the_streamed_and_final_paths():
+    from deadbot import finish, grids
+    from deadbot.data import CanonicalStore
+
+    store = CanonicalStore()
+    payload = grids.tool_payload(grids.build(store, grids.GridSpec("song", ("song-dark-star",), "year", ("year:1969", "year:1970"))))
+    payloads = [payload]
+    grounded = finish.grounded_context(payloads)
+    plan_args = {
+        "chat_answer": "Dark Star peaked early.",
+        "title": "Dark Star by year",
+        "lead": None,
+        "groups": [{"presentation": "collection", "items": [{"type": "grid", "grid_id": payload["grid_id"], "title": "Peak", "open_rows": 1}]}],
+    }
+
+    def resolve(items):
+        return finish.resolve_items(items, grounded, payloads, store)[0]
+
+    streamed = [event.payload["block"] for event in PlanStreamer(resolve).feed(chunk(json.dumps(plan_args), name="finish_response")) if event.type == "block"]
+    plan = finish.FinishPlan.model_validate(plan_args)
+    final, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
+    assert len(streamed) == 1 and len(final) == 1 and final[0].type == "grid"
+    assert streamed[0] == final[0].model_dump(mode="json")

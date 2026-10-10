@@ -244,3 +244,39 @@ def test_tool_payload_lists_years_whose_setlists_are_incomplete(csv_store):
     assert "lengths" not in payload["coverage"]
     by_year = {entry["year"]: entry for entry in payload["coverage"]["setlists_by_year"]}
     assert by_year[1969] == {"year": 1969, "shows_on_record": 149, "shows_with_setlist": 124}
+
+
+def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
+    block = grids.grid_block(
+        csv_store,
+        payload,
+        row_ids=["gd-1972-05-11", "gd-1972-05-07", "gd-nope"],
+        open_rows=1,
+        highlights=[
+            {"row_id": "gd-1972-05-11", "column_id": DARK_STAR, "note": "The longest of the tour."},
+            {"row_id": "gd-nope", "column_id": DARK_STAR, "note": "ignored"},
+        ],
+        title="One big jam a night",
+        note="They traded it.",
+        coverage=None,
+        follow_ups=[],
+    )
+    assert block.type == "grid"
+    assert [row.id for row in block.rows][:2] == ["gd-1972-05-11", "gd-1972-05-07"]
+    assert len(block.rows) == 22  # rows the model left out follow in payload order
+    assert block.open_rows == 1
+    rotterdam = block.rows[0].cells[0]
+    assert rotterdam.highlight and rotterdam.note == "The longest of the tour."
+    assert rotterdam.tracks and rotterdam.tracks[0].audio_url.startswith("https://archive.org/")
+    assert block.max_value >= rotterdam.value
+
+
+def test_grid_block_none_for_bad_spec(csv_store):
+    assert (
+        grids.grid_block(
+            csv_store, {"grid_id": "grid:x", "spec": {}}, row_ids=None, open_rows=None,
+            highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        )
+        is None
+    )

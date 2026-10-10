@@ -604,7 +604,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -653,6 +653,153 @@ export interface components {
              * @enum {string}
              */
             type: "gap_state";
+        };
+        /**
+         * GridBlock
+         * @description Two lists and where each pair meets. The model chose the lists, the
+         *     order, what opens first, the cells to point at and the words; the server
+         *     filled every cell, track, date and venue from the library.
+         */
+        GridBlock: {
+            /**
+             * Column Kind
+             * @enum {string}
+             */
+            column_kind: "year" | "song";
+            /** Columns */
+            columns: components["schemas"]["GridColumn"][];
+            /** Coverage */
+            coverage?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
+            /** Grid Id */
+            grid_id: string;
+            /** Max Value */
+            max_value: number;
+            /**
+             * Measure
+             * @enum {string}
+             */
+            measure: "shows" | "minutes";
+            /** Note */
+            note?: string | null;
+            /** Open Rows */
+            open_rows?: number | null;
+            /**
+             * Row Kind
+             * @enum {string}
+             */
+            row_kind: "song" | "show";
+            /** Rows */
+            rows: components["schemas"]["GridRow"][];
+            spec: components["schemas"]["GridSpecModel"];
+            /** Suggestions */
+            suggestions?: components["schemas"]["GridSuggestion"][];
+            /** Title */
+            title?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "grid";
+        };
+        /**
+         * GridCell
+         * @description One meeting of a row and a column, every fact from the store.
+         */
+        GridCell: {
+            /**
+             * Highlight
+             * @default false
+             */
+            highlight: boolean;
+            /** Length Source */
+            length_source?: ("release" | "tape" | "mixed") | null;
+            /** Note */
+            note?: string | null;
+            /** Of Shows */
+            of_shows?: number | null;
+            /**
+             * Passes
+             * @default 0
+             */
+            passes: number;
+            /** Segue From */
+            segue_from?: string | null;
+            /** Segue Into */
+            segue_into?: string | null;
+            /** Set Label */
+            set_label?: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "value" | "none" | "no_length" | "unknown";
+            /** Tracks */
+            tracks?: components["schemas"]["PlayableTrack"][];
+            /** Value */
+            value?: number | null;
+        };
+        /** GridColumn */
+        GridColumn: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Sub */
+            sub?: string | null;
+        };
+        /** GridRow */
+        GridRow: {
+            /** Cells */
+            cells?: components["schemas"]["GridCell"][];
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Setlist */
+            setlist?: components["schemas"]["GridSetlistEntry"][];
+            /** Sub */
+            sub?: string | null;
+            /** Total */
+            total?: number | null;
+        };
+        /** GridSetlistEntry */
+        GridSetlistEntry: {
+            /** Segue */
+            segue: boolean;
+            /** Set Label */
+            set_label: string;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+        };
+        /** GridSpecModel */
+        GridSpecModel: {
+            /** Column Ids */
+            column_ids: string[];
+            /**
+             * Column Kind
+             * @enum {string}
+             */
+            column_kind: "year" | "song";
+            /** Row Ids */
+            row_ids: string[];
+            /**
+             * Row Kind
+             * @enum {string}
+             */
+            row_kind: "song" | "show";
+        };
+        /** GridSuggestion */
+        GridSuggestion: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Rows With */
+            rows_with: number;
         };
         /** GuestAppearanceItem */
         GuestAppearanceItem: {

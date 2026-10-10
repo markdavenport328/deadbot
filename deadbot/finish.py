@@ -23,7 +23,7 @@ from typing import Annotated, Any, Literal
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from deadbot import composition, record_refs, sequences
+from deadbot import composition, grids, record_refs, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
@@ -554,6 +554,39 @@ def _emphasis_for(ref: Any) -> Emphasis:
     return getattr(ref, "emphasis", None) or "supporting"
 
 
+class GridHighlightRef(_PlanModel):
+    model_config = ConfigDict(extra="ignore")
+    row_id: str
+    column_id: str
+    note: str | None = Field(default=None, description="What to hear or notice in this cell, in a sentence.")
+
+
+class GridRef(_Ref):
+    """A get_grid result from this turn, drawn as a table: rows down the side,
+    columns across, every cell filled by the server. Hovering a cell shows its
+    facts; clicking plays it or opens the night.
+
+    The place for how two lists meet: which nights carried which songs, how a
+    song's year-by-year life compares with another's.
+    """
+
+    type: Literal["grid"]
+    grid_id: str = Field(description="The grid_id from a get_grid result.")
+    row_ids: list[str] | None = Field(
+        default=None,
+        description="Rows to put first, in reading order. Rows you leave out follow in the result's order.",
+    )
+    open_rows: int | None = Field(default=None, description="How many rows show before Show all, when the rest can wait.")
+    highlights: list[GridHighlightRef] = Field(default_factory=list, description="Cells to point at, by row and column id.")
+    title: str | None = Field(default=None, description="What the visitor should see across the grid, in a few words.")
+    note: str | None = None
+    coverage: str | None = Field(
+        default=None,
+        description="What the visitor should know about gaps in these cells, when it changes how they read them.",
+    )
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
+
+
 BodyItem = Annotated[
     EditorialPlan
     | PullQuoteBlock
@@ -573,6 +606,7 @@ BodyItem = Annotated[
     | ResourceListRef
     | DataChartRef
     | VersionStripRef
+    | GridRef
     | RankedListRef,
     Field(discriminator="type"),
 ]
@@ -890,6 +924,13 @@ def _find_research_resource(payloads: list[dict[str, Any]], resource_id: str) ->
 def _find_aggregation_payload(payloads: list[dict[str, Any]], aggregation_id: str) -> dict[str, Any] | None:
     for payload in payloads:
         if payload.get("aggregation_id") == aggregation_id:
+            return payload
+    return None
+
+
+def _find_grid_payload(payloads: list[dict[str, Any]], wanted: str) -> dict[str, Any] | None:
+    for payload in payloads:
+        if payload.get("grid_id") == wanted and "spec" in payload:
             return payload
     return None
 
@@ -1300,6 +1341,25 @@ def _resolve_reference(
             title=item.title,
             note=item.note,
             show_year_counts=item.show_year_counts,
+        )
+        return (block, []) if block else (None, [])
+
+    if kind == "grid":
+        if item.grid_id not in grounded.ids:
+            return None, []
+        payload = _find_grid_payload(payloads, item.grid_id)
+        if payload is None:
+            return None, []
+        block = grids.grid_block(
+            store,
+            payload,
+            row_ids=item.row_ids,
+            open_rows=item.open_rows,
+            highlights=[h.model_dump() for h in item.highlights],
+            title=item.title,
+            note=item.note,
+            coverage=item.coverage,
+            follow_ups=composition._clean_follow_ups(item.follow_ups),
         )
         return (block, []) if block else (None, [])
 

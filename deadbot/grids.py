@@ -379,3 +379,100 @@ def _song_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
         rows.append(Axis(id=song_id, label=songs[song_id].get("title") or song_id, total=total))
     columns = [Axis(id=year_id(year), label=f"'{str(year)[2:]}", sub=str(year)) for year in years]
     return GridData(spec=spec, rows=rows, columns=columns, cells=cells, coverage_by_year=coverage)
+
+
+def grid_block(
+    store: CanonicalStore,
+    payload: dict[str, Any],
+    *,
+    row_ids: list[str] | None,
+    open_rows: int | None,
+    highlights: list[dict[str, Any]],
+    title: str | None,
+    note: str | None,
+    coverage: str | None,
+    follow_ups: list[Any],
+) -> Any:
+    """Hydrate a model-planned grid from the spec in this turn's get_grid result, or None."""
+
+    from deadbot.experience import (
+        GridBlock,
+        GridCell,
+        GridColumn,
+        GridRow,
+        GridSetlistEntry,
+        GridSpecModel,
+        GridSuggestion,
+        PlayableTrack,
+    )
+
+    spec = GridSpec.from_json(payload.get("spec"))
+    if spec is None or payload.get("grid_id") != grid_id(spec):
+        return None
+    data = build(store, spec)
+    if not data.rows or not data.columns:
+        return None
+    by_id = {row.id: row for row in data.rows}
+    chosen = [row_id for row_id in dict.fromkeys(row_ids or []) if row_id in by_id]
+    chosen_set = set(chosen)
+    ordered = [by_id[row_id] for row_id in chosen] + [row for row in data.rows if row.id not in chosen_set]
+    notes = {
+        (str(h.get("row_id")), str(h.get("column_id"))): (str(h.get("note") or "").strip() or None)
+        for h in highlights
+        if isinstance(h, dict)
+    }
+    column_titles = {column.id: column.label for column in data.columns}
+
+    def cell_model(row: Axis, column: Axis) -> GridCell:
+        cell = data.cell(row.id, column.id)
+        key = (row.id, column.id)
+        return GridCell(
+            state=cell.state,
+            value=cell.value,
+            passes=cell.passes,
+            set_label=cell.set_label,
+            segue_from=cell.segue_from,
+            segue_into=cell.segue_into,
+            length_source=cell.length_source,
+            of_shows=cell.of_shows,
+            tracks=[
+                PlayableTrack(
+                    performance_id=performance_id,
+                    title=column_titles.get(column.id, column.id),
+                    audio_url=track.url,
+                    duration_seconds=track.duration_seconds,
+                    set_label=set_label or None,
+                )
+                for performance_id, set_label, track in cell.tracks
+            ],
+            highlight=key in notes,
+            note=notes.get(key),
+        )
+
+    return GridBlock(
+        type="grid",
+        grid_id=grid_id(spec),
+        title=(title or "").strip() or None,
+        note=(note or "").strip() or None,
+        coverage=(coverage or "").strip() or None,
+        row_kind=spec.row_kind,
+        column_kind=spec.column_kind,
+        measure=spec.measure,
+        columns=[GridColumn(id=c.id, label=c.label, sub=c.sub) for c in data.columns],
+        rows=[
+            GridRow(
+                id=row.id,
+                label=row.label,
+                sub=row.sub,
+                total=row.total,
+                cells=[cell_model(row, column) for column in data.columns],
+                setlist=[GridSetlistEntry(**entry) for entry in row.setlist],
+            )
+            for row in fit(ordered, "grid rows")
+        ],
+        open_rows=open_rows if open_rows and open_rows < len(ordered) else None,
+        max_value=data.max_value(),
+        suggestions=[GridSuggestion(**s) for s in data.suggestions],
+        follow_ups=list(follow_ups),
+        spec=GridSpecModel(**spec.to_json()),
+    )
