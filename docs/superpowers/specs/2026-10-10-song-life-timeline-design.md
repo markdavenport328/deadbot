@@ -79,6 +79,8 @@ reason as text without a Play, never dropped.
 
 Pure functions over the store, using only `rows_in`, `one` and
 `filtered_rows`, which the CSV, SQLite and Postgres stores implement alike.
+Selection signals load only from the SQLite and Postgres stores (production
+uses SQLite); on the CSV store a performance simply carries no picks.
 
 - `life_performances(store, song_id)`: every performance of the song, dated,
   in order, each with performance and show IDs, date, venue, city, set label,
