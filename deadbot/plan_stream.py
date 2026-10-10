@@ -12,6 +12,7 @@ turn while the final response is built exactly as before.
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 from dataclasses import dataclass
@@ -84,6 +85,14 @@ class PlanStreamer:
         # replaces the draft's groups) or "continuation" (it adds to them).
         self._list_mode = "first"
         self._first_title: str | None = None
+        # Body items written beside "groups" stand as one more collection (see
+        # _loose_items_closed). The page keeps them before every group when
+        # they were written ahead of the first groups list, after every group
+        # otherwise; a revision starts the groups over but not these.
+        self._loose_items: list[Any] | None = None
+        self._loose_first = False
+        self._loose_cache: list[PlanEvent] | None = None
+        self._revision_shift = 0
         self._disabled = False
         self._done = False
 
@@ -249,10 +258,19 @@ class PlanStreamer:
             # groups stream as the page's groups, from index 0.
             self._list_mode = "revision"
             self._seen_groups = set()
-            self._next_index = 0
-            return [PlanEvent("groups_reset", {}), *self._flush_held_in_order()]
+            self._revision_shift = 1 if self._loose_first else 0
+            self._next_index = self._revision_shift
+            events = [PlanEvent("groups_reset", {})]
+            if self._loose_first:
+                events.extend(self._loose_group(0))
+            return [*events, *self._flush_held_in_order()]
         self._list_mode = "continuation"
         return []
+
+    def _revision_index(self, index: int) -> int:
+        """A group's place in the page while a revision list is read."""
+
+        return index - self._group_offset + self._revision_shift
 
     def _flush_held_in_order(self) -> list[PlanEvent]:
         """In a revision, events held for this list so far are sent as they are."""
@@ -261,7 +279,7 @@ class PlanStreamer:
         for index in sorted(self._held):
             for event in self._held[index]:
                 key = "group_index" if event.type == "block" else "index"
-                event.payload[key] = event.payload[key] - self._group_offset
+                event.payload[key] = self._revision_index(event.payload[key])
                 events.append(event)
         self._held = {}
         return events
@@ -285,7 +303,7 @@ class PlanStreamer:
         if self._list_mode == "revision":
             for event in events:
                 key = "group_index" if event.type == "block" else "index"
-                event.payload[key] = index - self._group_offset
+                event.payload[key] = self._revision_index(index)
             return events
         if self._groups_lists > 1:
             self._held.setdefault(index, []).extend(events)
@@ -303,7 +321,7 @@ class PlanStreamer:
             open_event = PlanEvent("group_open", self._group_payload(index))
             item_events = self._item_closed(index, 0, raw)
             if self._list_mode == "revision":
-                open_event.payload["index"] = index - self._group_offset
+                open_event.payload["index"] = self._revision_index(index)
                 opened = [open_event, *item_events]
             elif self._groups_lists > 1:
                 self._held[index] = [open_event, *self._held.get(index, [])]
@@ -311,7 +329,8 @@ class PlanStreamer:
                 opened = [open_event, *item_events]
         close = PlanEvent("group_close", self._group_payload(index))
         if self._list_mode == "revision":
-            close.payload["index"] = index - self._group_offset
+            close.payload["index"] = self._revision_index(index)
+            self._next_index = max(self._next_index, close.payload["index"] + 1)
             return [*opened, close]
         if self._groups_lists <= 1:
             self._seen_groups.add(canonical)
@@ -350,6 +369,9 @@ class PlanStreamer:
         elif not self._stack:
             self._done = True
             events.extend(self._emit_head())
+            if self._loose_items and not self._loose_first:
+                events.extend(self._loose_group(self._next_index))
+                self._next_index += 1
         parent = self._top()
         if parent is not None:
             parent.value_start = None
@@ -358,29 +380,44 @@ class PlanStreamer:
     def _loose_items_closed(self, raw: str) -> list[PlanEvent]:
         """Body items written beside ``groups`` stand as one more collection.
 
-        The same reading as finish.loose_items_as_group: before the groups
-        when the list came first, after them otherwise. While a later groups
-        list is still being read, the delivered page carries them instead.
+        The same reading as finish.loose_items_as_group: before every group
+        when the list was written ahead of the first ``groups`` list, after
+        every group otherwise, however many ``groups`` lists follow. Ahead of
+        the groups they stream at once; after them they stream when the plan
+        closes, so a continuation or a revision cannot reorder them.
         """
 
         parsed = read_joining_repeats(raw)
-        if not isinstance(parsed, list) or not parsed or self._groups_lists > 1:
+        if not isinstance(parsed, list) or not parsed or self._loose_items is not None:
             return []
-        events = self._emit_head()
-        if self._groups_lists == 0:
-            index = 0
-            self._group_offset = 1  # the groups written next follow this one
-        else:
-            index = max(self._groups) + 1 if self._groups else 0
-        self._groups[index] = {"presentation": "collection"}
-        events.append(PlanEvent("group_open", self._group_payload(index)))
-        for position, item in enumerate(parsed):
-            events.extend(self._item_closed(index, position, json.dumps(item)))
-        events.append(PlanEvent("group_close", self._group_payload(index)))
-        self._next_index = max(self._next_index, index + 1)
-        return events
+        self._loose_items = parsed
+        if self._groups_lists > 0:
+            return []
+        self._loose_first = True
+        self._groups[0] = {"presentation": "collection"}
+        self._group_offset = 1  # the groups written next follow this one
+        self._next_index = 1
+        return [*self._emit_head(), *self._loose_group(0)]
+
+    def _loose_group(self, index: int) -> list[PlanEvent]:
+        """The loose items as one collection at ``index``; resolved once, placed again on request."""
+
+        if self._loose_cache is None:
+            payload = {"index": 0, "title": None, "lead": None, "presentation": "collection", "criteria": []}
+            events = [PlanEvent("group_open", dict(payload))]
+            for position, item in enumerate(self._loose_items or []):
+                events.extend(self._item_events(0, position, json.dumps(item)))
+            events.append(PlanEvent("group_close", dict(payload)))
+            self._loose_cache = events
+        placed = [PlanEvent(event.type, copy.deepcopy(event.payload)) for event in self._loose_cache]
+        for event in placed:
+            event.payload["group_index" if event.type == "block" else "index"] = index
+        return placed
 
     def _item_closed(self, group_index: int, position: int, raw: str) -> list[PlanEvent]:
+        return self._in_group(group_index, self._item_events(group_index, position, raw))
+
+    def _item_events(self, group_index: int, position: int, raw: str) -> list[PlanEvent]:
         # The same reading the plan's validation gives each item
         # (finish.validate_body_item) and the same resolution the final page
         # uses (finish.resolve_items), so every block streamed here is in the
@@ -407,4 +444,4 @@ class PlanStreamer:
         for block in resolved:
             payload = block.model_dump(mode="json") if hasattr(block, "model_dump") else block
             events.append(PlanEvent("block", {"group_index": group_index, "block": payload}))
-        return self._in_group(group_index, events)
+        return events

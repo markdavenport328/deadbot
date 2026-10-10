@@ -274,3 +274,55 @@ def test_items_written_beside_groups_stand_as_one_more_group_in_the_stream_and_t
         assert events[0].type == "page_head"
         plan = FinishPlan.model_validate(read_joining_repeats(text))
         assert [group.title for group in plan.groups] == titles
+
+
+def _streamed_page(text: str, pieces: int) -> list[tuple[str | None, str | None]]:
+    """The page a browser keeps from the events: each group's title and first block id."""
+
+    draft: dict[int, dict] = {}
+    for event in drive(text, pieces):
+        if event.type == "groups_reset":
+            draft = {}
+        elif event.type == "group_open":
+            draft[event.payload["index"]] = {"title": event.payload["title"], "first": None}
+        elif event.type == "block":
+            group = draft[event.payload["group_index"]]
+            group["first"] = group["first"] or event.payload["block"]["id"]
+    assert sorted(draft) == list(range(len(draft)))
+    return [(draft[index]["title"], draft[index]["first"]) for index in sorted(draft)]
+
+
+def test_loose_items_land_in_the_same_place_streamed_and_delivered_beside_repeated_groups():
+    """Loose items keep their place against the whole merged groups list, in both paths."""
+
+    from deadbot.finish import FinishPlan, read_joining_repeats
+
+    def group(title, song):
+        return json.dumps({"title": title, "items": [{"type": "song_overview", "song_id": song}]})
+
+    a, b, c = group("A", "song-a"), group("B", "song-b"), group("C", "song-c")
+    loose = '[{"type": "show_unit", "show_id": "gd-1972-08-27"}]'
+    head = '{"chat_answer": "a", "title": "t", '
+    cases = {
+        "items then groups": (head + '"items": ' + loose + ', "groups": [' + a + "]}", [(None, "gd-1972-08-27"), ("A", "song-a")]),
+        "groups then items": (head + '"groups": [' + a + '], "items": ' + loose + "}", [("A", "song-a"), (None, "gd-1972-08-27")]),
+        "items only": (head + '"items": ' + loose + "}", [(None, "gd-1972-08-27")]),
+        "items, groups, then a revision": (
+            head + '"items": ' + loose + ', "groups": [' + a + '], "groups": [' + a + ", " + b + "]}",
+            [(None, "gd-1972-08-27"), ("A", "song-a"), ("B", "song-b")],
+        ),
+        "groups, items, then a continuation": (
+            head + '"groups": [' + a + '], "items": ' + loose + ', "groups": [' + c + "]}",
+            [("A", "song-a"), ("C", "song-c"), (None, "gd-1972-08-27")],
+        ),
+        "groups, items, then a revision": (
+            head + '"groups": [' + a + '], "items": ' + loose + ', "groups": [' + a + ", " + b + "]}",
+            [("A", "song-a"), ("B", "song-b"), (None, "gd-1972-08-27")],
+        ),
+    }
+    for name, (text, expected) in cases.items():
+        plan = FinishPlan.model_validate(read_joining_repeats(text))
+        delivered = [(group.title, fake_resolve(group.items)[0]["id"]) for group in plan.groups]
+        assert delivered == expected, name
+        for pieces in (1, 7, len(text)):
+            assert _streamed_page(text, pieces) == expected, (name, pieces)

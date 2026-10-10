@@ -791,9 +791,13 @@ def loose_items_as_group(data: Any) -> Any:
     """Body items written beside ``groups`` rather than inside one stand as one more collection.
 
     The model meant them for the page (live, a grid planned this way was
-    otherwise lost), so they keep the place they were written: before the
-    groups when the list came first, after them otherwise. The plan streamer
-    reads them the same way.
+    otherwise lost), so they keep the place they were written: before every
+    group when ``items`` was written ahead of the first ``groups`` list, after
+    every group otherwise. ``groups`` lists the model wrote more than once are
+    already merged here (``read_joining_repeats``), so the place does not move
+    with a continuation or a revision. The plan streamer follows the same rule:
+    it streams loose items first when they came first, and holds them for the
+    close of the plan when they came after the groups.
     """
 
     if not isinstance(data, dict) or not isinstance(data.get("items"), list) or not data["items"]:
