@@ -88,6 +88,12 @@ def _tool_payloads(messages: Iterable[Any]) -> list[dict[str, Any]]:
     return payloads
 
 
+# Research-notebook lines travel to the model as human messages with this
+# name. The Responses API drops message names, so the model reads only the
+# text; Deadbot uses the name to keep them out of the visible conversation.
+NOTEBOOK_MESSAGE_NAME = "research_notebook"
+
+
 def _latest_turn(messages: list[Any]) -> list[Any]:
     """Return only the most recent user turn and its tool/answer messages.
 
