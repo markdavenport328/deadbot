@@ -313,10 +313,33 @@ def test_without_a_secret_turns_run_without_a_notebook_and_say_so_once(monkeypat
     assert caplog.text.count("DEADBOT_NOTEBOOK_SECRET is not set") == 1
 
 
-def test_a_signed_token_that_inflates_past_the_ceiling_is_ignored():
-    body = base64.urlsafe_b64encode(zlib.compress(b"[" + b"0," * 3_000_000 + b"0]", 9)).decode("ascii")
-    token = f"{notebook.NOTEBOOK_VERSION}.{body}.{notebook._sign(body, SECRET)}"
-    assert notebook.decode(token, SECRET).entries == []
+def _signed(raw: bytes) -> str:
+    body = base64.urlsafe_b64encode(zlib.compress(raw, 9)).decode("ascii")
+    return f"{notebook.NOTEBOOK_VERSION}.{body}.{notebook._sign(body, SECRET)}"
+
+
+def test_a_signed_token_that_inflates_past_the_ceiling_is_ignored(caplog):
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    raw = json.dumps(book.to_json()).encode("utf-8")
+    assert notebook.decode(_signed(raw), SECRET).entries
+    padded = raw + b" " * (notebook.DECOMPRESSED_CEILING + 1_000)
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(_signed(padded), SECRET).entries == []
+    assert "inflates past" in caplog.text
+
+
+def test_a_token_longer_than_the_ceiling_is_ignored_before_any_work(caplog):
+    token = "v1." + "A" * notebook.TOKEN_BYTE_CEILING + ".sig"
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(token, SECRET).entries == []
+    assert "longer than" in caplog.text
+    assert "AAAA" not in caplog.text
+
+
+def test_signed_json_that_cannot_be_parsed_safely_reads_as_an_empty_notebook(caplog):
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(_signed(b"[" * 100_000 + b"]" * 100_000), SECRET).entries == []
+    assert "could not be read" in caplog.text
 
 
 def test_too_many_entries_compact_to_sixty_keeping_the_most_recently_read():

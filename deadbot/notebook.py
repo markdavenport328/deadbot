@@ -681,6 +681,9 @@ def decode(token: str | None, secret: str | None) -> Notebook:
     if not secret:
         note_missing_secret()
         return Notebook()
+    if len(token) > TOKEN_BYTE_CEILING:
+        logger.warning("Ignoring a research notebook longer than %d characters", TOKEN_BYTE_CEILING)
+        return Notebook()
     parts = token.split(".")
     if len(parts) != 3 or parts[0] != NOTEBOOK_VERSION:
         logger.warning("Ignoring a research notebook that is not a v1 token")
@@ -701,6 +704,6 @@ def decode(token: str | None, secret: str | None) -> Notebook:
             logger.warning("Ignoring a research notebook that inflates past %d bytes", DECOMPRESSED_CEILING)
             return Notebook()
         return Notebook.from_json(json.loads(raw.decode("utf-8")))
-    except (ValueError, zlib.error):
+    except (ValueError, TypeError, RecursionError, MemoryError, zlib.error):
         logger.warning("Ignoring a research notebook that could not be read")
         return Notebook()
