@@ -20,6 +20,7 @@
 .grid-headline { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
 .grid-note { margin: 0; max-width: 62ch; color: var(--text); line-height: 1.6; }
 
+.grid-stage { position: relative; min-width: 0; container-type: inline-size; }
 .grid-frame { overflow-x: auto; margin-inline: -4px; padding: 4px; min-width: 0; }
 .grid-table { --grid-sticky-gap: 3px 0 0 var(--grid-sticky); border-collapse: separate; border-spacing: 3px; } /* the shadow fills the 3px spacing beside a sticky cell so scrolled cells do not show through */
 .grid-table th { font-weight: 400; }
@@ -57,7 +58,59 @@
 .grid-aside { display: grid; gap: 0.25rem; padding-left: 0.9rem; border-left: 2px solid var(--hair); color: var(--muted); font-size: 0.84rem; }
 .grid-aside p { max-width: 80ch; margin: 0; }
 
+/* Interaction. Cells select on click or tap; gold marks only a selected cell that will play. */
+.grid-table td[role="gridcell"] { cursor: pointer; }
+.grid-table td:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; z-index: 2; }
+.grid-table td.is-selected { z-index: 2; box-shadow: 0 0 0 2px var(--grid-sticky), 0 0 0 4px var(--cream); }
+.grid-table td.is-selected.is-playable { box-shadow: 0 0 0 2px var(--grid-sticky), 0 0 0 4px var(--listen); }
+
+.grid-sort, .grid-row-toggle { display: block; margin: 0; border: 0; background: none; color: inherit; font: inherit; letter-spacing: inherit; text-align: inherit; cursor: pointer; }
+.grid-sort { width: 100%; padding: 0 0 2px; writing-mode: inherit; white-space: inherit; }
+.grid-sort:hover, .grid-table th.is-sorted .grid-sort { color: var(--cream); }
+.grid-table th.is-sorted .grid-sort { text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; }
+.grid-row-toggle { width: 100%; padding: 0 0.85rem 0 0; }
+.grid-row-toggle::after { content: ""; position: absolute; right: 0.3rem; top: 0.7rem; width: 5px; height: 5px; border-right: 1.5px solid var(--quiet); border-bottom: 1.5px solid var(--quiet); transform: rotate(-45deg); transition: transform 120ms ease; }
+.grid-row-toggle[aria-expanded="true"]::after { transform: rotate(45deg); }
+.grid-row-toggle:hover { color: var(--cream); }
+.grid-table tbody th:has(.grid-row-toggle) { padding-right: 0; }
+.grid-sort:focus-visible, .grid-row-toggle:focus-visible, .grid-clear:focus-visible, .grid-play:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.grid-setlist-row td { height: auto; min-width: 0; padding: 0; text-align: left; border-radius: 0; }
+.grid-setlist { position: sticky; left: 0; box-sizing: border-box; width: min(38rem, 100cqw); /* as wide as the visible frame, so it stays put while the cells scroll beneath */ padding: 0.55rem 0 0.85rem 0.9rem; border-left: 2px solid var(--hair); }
+.grid-setlist ul { display: flex; flex-wrap: wrap; gap: 0.15rem 0.7rem; margin: 0; padding: 0; list-style: none; color: var(--quiet); font-size: 0.8rem; line-height: 1.5; }
+.grid-setlist li.is-column { color: var(--cream); font-weight: 600; }
+.grid-setlist li.grid-set-break { flex-basis: 100%; margin-top: 0.35rem; color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.grid-setlist li.grid-set-break:first-child { margin-top: 0; }
+.grid-segue { color: var(--quiet); font-weight: 400; }
+
+/* The hover card: facts as plain sentences, laid over the grid. */
+.grid-tip { position: absolute; left: 0; top: 0; z-index: 5; box-sizing: border-box; width: max-content; max-width: min(22rem, 100%); padding: 0.7rem 0.85rem; border: 1px solid var(--hair); border-radius: var(--r); background: var(--grid-sticky); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); pointer-events: none; animation: grid-tip-in 120ms ease; }
+@keyframes grid-tip-in { from { opacity: 0; } to { opacity: 1; } }
+.grid-facts { display: grid; gap: 0.2rem; font-size: 0.82rem; line-height: 1.45; color: var(--text); text-align: left; }
+.grid-facts p, .grid-tip p { margin: 0; }
+.grid-facts-title { color: var(--cream); font-weight: 600; }
+.grid-facts-place { color: var(--muted); }
+.grid-facts-line { color: var(--text); }
+.grid-facts-note { margin-top: 0.25rem; color: var(--muted); }
+.grid-facts-note.is-pulled { color: var(--cream); font-family: var(--serif); font-style: italic; font-variation-settings: "SOFT" 40, "opsz" 24; font-size: 0.92rem; line-height: 1.4; }
+
+/* The detail bar: what a tap on a cell says, and the one thing to do with it. */
+.grid-detail { display: grid; gap: 0.9rem; padding: 0.9rem 1rem; border-radius: var(--r); background: rgba(243, 240, 226, 0.05); }
+.grid-detail-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.9rem 1.5rem; }
+.grid-detail-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.grid-play { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0.5rem 1rem; border: 0; border-radius: var(--r); background: var(--listen); color: var(--listen-ink); font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.grid-play svg { width: 14px; height: 14px; }
+.grid-play[aria-busy="true"] { opacity: 0.6; }
+.grid-clear { min-height: 2.5rem; margin-left: auto; padding: 0.5rem 0.4rem; border: 0; background: none; color: var(--quiet); font-size: 0.8rem; cursor: pointer; }
+.grid-clear:hover { color: var(--cream); }
+
+@media (prefers-reduced-motion: reduce) {
+  .grid-tip { animation: none; }
+  .grid-row-toggle::after { transition: none; }
+}
+
 /* On a phone the row labels wrap, so the sticky column leaves room for cells. */
 @media (max-width: 520px) {
+  .grid-play, .grid-detail .ask-chip, .grid-clear { min-height: 44px; }
   .grid-table tbody th { min-width: 7rem; max-width: 8rem; padding-right: 0.5rem; white-space: normal; font-size: 0.8rem; line-height: 1.25; }
 }
