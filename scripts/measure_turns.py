@@ -126,6 +126,14 @@ def measure_sequence(
     return rows
 
 
+def sequence_label(name: str, requested: bool, rows: list[dict[str, Any]]) -> str:
+    """Name a run by what was sent, not by what was asked for."""
+
+    if any(row.get("notebook_bytes") for row in rows):
+        return f"{name}, with the notebook"
+    return f"{name}, notebook requested, none sent" if requested else f"{name}, without the notebook"
+
+
 def _cell(value: Any) -> str:
     return "" if value is None else str(value)
 
@@ -167,10 +175,18 @@ def main(argv: list[str] | None = None) -> None:
     if args.sequence:
         sections = []
         rows = []
-        for name in args.sequence:
-            for use_notebook in ([False, True] if args.compare else [not args.without_notebook]):
-                label = f"{name}, {'with' if use_notebook else 'without'} the notebook"
+        first = True
+        for position, name in enumerate(args.sequence):
+            # Alternate which run goes first so the provider's warm prompt prefix favors neither side.
+            modes = ([False, True] if position % 2 == 0 else [True, False]) if args.compare else [not args.without_notebook]
+            for use_notebook in modes:
+                if not first and args.pause:
+                    time.sleep(args.pause)
+                first = False
                 found = measure_sequence(SEQUENCES[name], app=app, use_notebook=use_notebook, pause_seconds=args.pause)
+                label = sequence_label(name, use_notebook, found)
+                if args.compare and use_notebook and not any(row.get("notebook_bytes") for row in found):
+                    print(f"warning: {label}", file=sys.stderr)
                 sections.append(f"## {label}\n\n{table(found)}")
                 rows.extend({**row, "sequence": label} for row in found)
         rendered = "\n\n".join(sections)
@@ -181,7 +197,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(
-            f"# Turn measurements\n\nModel: {settings.openai_model if settings.model_provider == 'openai' else settings.ollama_model}"
+            f"## Turn measurements\n\nModel: {settings.openai_model if settings.model_provider == 'openai' else settings.ollama_model}"
             f" (reasoning effort: {settings.openai_reasoning_effort or 'default'})\n\n{rendered}\n\n"
             "Raw metrics, one JSON object per question:\n\n```json\n" + "\n".join(json.dumps(row) for row in rows) + "\n```\n",
             encoding="utf-8",

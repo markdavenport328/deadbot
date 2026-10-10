@@ -19,6 +19,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
 from deadbot.composition import NOTEBOOK_MESSAGE_NAME, _content_text
 from deadbot.finish import FINISH_TOOL_NAME
+from deadbot.notebook import READ_TOOL_NAME
 
 
 def _this_turn(messages: list[Any]) -> list[Any]:
@@ -101,7 +102,7 @@ def turn_metrics(
         "total_reasoning_tokens": _total(calls, "reasoning_tokens"),
         "tools": tools,
         "largest_tool_result_chars": max((tool["chars"] for tool in tools), default=0),
-        "notebook_reads": sum(1 for tool in tools if tool["name"] == "read_notebook"),
+        "notebook_reads": sum(1 for tool in tools if tool["name"] == READ_TOOL_NAME),
         "notebook_index_chars": notebook_chars,
         "seconds_to_first_answer": round(first_answer_at - started, 2) if first_answer_at is not None else None,
         "seconds_total": round(finished_at - started, 2),
