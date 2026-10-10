@@ -41,6 +41,7 @@ Rules (also written up in ``docs/collection-status-official-releases.md``):
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import re
 import unicodedata
@@ -253,65 +254,209 @@ def spotify_track_url(urls: list[dict]) -> str:
     return ""
 
 
-# --- setlist alignment (adapted from normalize_internet_archive_tracks.align_tracks) ---
+# --- setlist alignment ---
+#
+# The rule mirrors normalize_internet_archive_tracks.align_tracks_tolerant: a
+# release track takes a performance only when the pairing lies on *every*
+# longest in-order alignment of the release's tracks with the show's setlist.
+# Order is what keeps an undated bonus track from another night out of a gap
+# in the main show: it sits after the encore, so pairing it with an earlier
+# setlist position would cost the alignment more tracks than it gains.  Where
+# the release re-sequences a show, the longest in-order run maps and the rest
+# is held, instead of holding the whole show as the first pass did.
 
-def align_tracks(
-    source_tracks: list[tuple[int, str]], performances: list[dict], songs: dict[str, str]
-) -> tuple[str, dict[int, int], set[int], str]:
-    """Align release tracks with a show's canonical setlist.
+ORDER_CONFLICT = "the release places this title out of setlist order (re-sequenced or bonus material)"
+AMBIGUOUS = "title matches more than one setlist position (ambiguous alignment)"
 
-    Returns ``(status, matches, ambiguous, reason)`` where ``matches`` maps a
-    track index to the performance index that every monotonic alignment agrees
-    on and ``ambiguous`` lists tracks whose position differs between otherwise
-    valid alignments.  A release order that contradicts the setlist holds the
-    whole show group, because an undated bonus track from another show can
-    otherwise be absorbed into a setlist gap.
+
+
+def chain_agreement(nodes: list[tuple[int, int]]) -> tuple[set[tuple[int, int]], set[tuple[int, int]]]:
+    """Longest chains of ``(track, position)`` pairs, strictly increasing in both.
+
+    Returns ``(on_every, on_some)``: the pairs that lie on every longest chain
+    and the pairs that lie on at least one.  Every longest chain takes exactly
+    one pair per chain length, so a pair is on every longest chain when it is
+    the only pair of its length that is on any.
     """
 
-    if not performances:
-        return "held", {}, set(), "show_has_no_canonical_performances"
-    canonical_titles = [normalized_title(songs[row["song_id"]]) for row in performances]
-    states: dict[tuple[int, ...], dict[int, int]] = {(): {}}
-    for track_index, title in source_tracks:
-        normalized_source = normalized_title(title)
-        if not normalized_source:
-            return "held", {}, set(), f"missing_title_for_track_{track_index}"
-        next_states: dict[tuple[int, ...], dict[int, int]] = {}
-        for used_indexes, matches in states.items():
-            last_index = used_indexes[-1] if used_indexes else -1
-            candidates = [
-                index for index in range(last_index + 1, len(performances)) if canonical_titles[index] == normalized_source
-            ]
-            if not candidates:
-                # A title absent from the whole setlist is intro/tuning/banter
-                # or source-only material and leaves the state untouched.  A
-                # title that exists only earlier in the setlist contradicts
-                # this state's order, so the state is dropped; if every state
-                # dies the release order conflicts with the canonical setlist.
-                if normalized_source not in canonical_titles:
-                    next_states[used_indexes] = matches
-                continue
-            for index in candidates:
-                next_states[used_indexes + (index,)] = {**matches, track_index: index}
-        states = next_states
-        if not states:
-            return "held", {}, set(), f"source_order_conflict_at_track_{track_index}:{title}"
-    aligned = [matches for matches in states.values() if matches]
-    if not aligned:
-        return "held", {}, set(), "no_source_titles_match_canonical_setlist"
-    track_indexes = {index for matches in aligned for index in matches}
-    agreed = {
-        index: aligned[0][index]
-        for index in track_indexes
-        if all(index in matches and matches[index] == aligned[0][index] for matches in aligned)
+    nodes = sorted(set(nodes))
+    if not nodes:
+        return set(), set()
+    ending = [1] * len(nodes)
+    for k, (track, position) in enumerate(nodes):
+        for m in range(k):
+            if nodes[m][0] < track and nodes[m][1] < position:
+                ending[k] = max(ending[k], ending[m] + 1)
+    starting = [1] * len(nodes)
+    for k in range(len(nodes) - 1, -1, -1):
+        track, position = nodes[k]
+        for m in range(k + 1, len(nodes)):
+            if nodes[m][0] > track and nodes[m][1] > position:
+                starting[k] = max(starting[k], starting[m] + 1)
+    longest = max(ending)
+    on_some = {node for k, node in enumerate(nodes) if ending[k] + starting[k] - 1 == longest}
+    per_length = Counter(ending[k] for k, node in enumerate(nodes) if node in on_some)
+    on_every = {node for k, node in enumerate(nodes) if node in on_some and per_length[ending[k]] == 1}
+    return on_every, on_some
+
+
+def match_release_tracks(
+    titles: list[str],
+    candidates: list[set[str]],
+    performances_by_show: dict[str, list[dict]],
+    songs: dict[str, str],
+) -> list[dict]:
+    """Map each release track to at most one canonical performance.
+
+    ``candidates[i]`` is the set of shows track ``i`` may belong to: one show
+    for a dated track, the title's shows for an undated track on a multi-show
+    release, both shows for a date with an early and a late show.  Returns one
+    dict per track: ``{"show_id", "performance", "how"}`` when mapped,
+    ``{"held": reason, ...}`` when a candidate was found but not accepted, and
+    ``{}`` when the title names nothing in any candidate setlist.
+
+    Per show, tracks known to be that show (dated, or pinned below) align
+    first, by exact title, keeping only pairs on every longest in-order
+    alignment.  Tracks that could be several shows then align around them.  A
+    track that the release order rules out everywhere but one show is pinned
+    to that show and the shows are solved again, until nothing changes.  A
+    track still placeable at two shows is held.
+    """
+
+    normalized = [normalized_title(title) for title in titles]
+    setlists = {
+        show_id: [normalized_title(songs[row["song_id"]]) for row in performances_by_show.get(show_id, [])]
+        for show_id in sorted({show_id for show_ids in candidates for show_id in show_ids})
     }
-    ambiguous = track_indexes - set(agreed)
-    if not agreed:
-        return "held", {}, set(), f"ambiguous_alignment_{len(aligned)}_ways"
-    if ambiguous:
-        return "accepted_partial", agreed, ambiguous, f"ambiguous_alignment_{len(aligned)}_ways_for_{len(ambiguous)}_tracks"
-    status = "accepted_full" if len(agreed) == len(performances) else "accepted_partial"
-    return status, agreed, set(), ""
+    pinned: dict[int, str] = {}
+    for _ in range(len(titles) + 1):
+        per_show = {
+            show_id: _solve_show(show_id, titles, normalized, candidates, pinned, setlists[show_id], performances_by_show.get(show_id, []), songs)
+            for show_id in setlists
+        }
+        newly_pinned = False
+        for index, show_ids in enumerate(candidates):
+            if len(show_ids) < 2 or index in pinned:
+                continue
+            plausible = [
+                show_id
+                for show_id in sorted(show_ids)
+                if "performance" in per_show[show_id].get(index, {}) or per_show[show_id].get(index, {}).get("held") == AMBIGUOUS
+            ]
+            if len(plausible) == 1 and "performance" not in per_show[plausible[0]].get(index, {}):
+                pinned[index] = plausible[0]
+                newly_pinned = True
+        if not newly_pinned:
+            break
+
+    combined: list[dict] = []
+    for index, show_ids in enumerate(candidates):
+        if index in pinned:
+            show_ids = {pinned[index]}
+        outcomes = [per_show[show_id].get(index, {}) for show_id in sorted(show_ids)]
+        mapped = [outcome for outcome in outcomes if "performance" in outcome]
+        if len(mapped) == 1 and any(outcome.get("held") == AMBIGUOUS for outcome in outcomes):
+            # Another candidate show also played the song at a place the
+            # release order allows, so order alone cannot pick the night.
+            combined.append({"held": "title fits a performance at more than one candidate show in release order"})
+        elif len(mapped) == 1:
+            combined.append(mapped[0])
+        elif len(mapped) > 1:
+            combined.append({"held": f"title fits a performance at more than one candidate show ({', '.join(outcome['show_id'] for outcome in mapped)})"})
+        else:
+            held = [outcome for outcome in outcomes if "held" in outcome]
+            if len(show_ids) > 1 and len(held) > 1:
+                combined.append({"held": "title fits candidate shows but not uniquely in release order"})
+            else:
+                combined.append(held[0] if held else {})
+    return combined
+
+
+def _solve_show(
+    show_id: str,
+    titles: list[str],
+    normalized: list[str],
+    candidates: list[set[str]],
+    pinned: dict[int, str],
+    setlist: list[str],
+    performances: list[dict],
+    songs: dict[str, str],
+) -> dict[int, dict]:
+    """Align the release's tracks with one show's setlist; see match_release_tracks."""
+
+    members = [
+        index
+        for index, show_ids in enumerate(candidates)
+        if show_id in show_ids and pinned.get(index, show_id) == show_id
+    ]
+    results: dict[int, dict] = {}
+    accepted: dict[int, int] = {}
+
+    def exact_nodes(indexes: list[int]) -> list[tuple[int, int]]:
+        return [
+            (index, position)
+            for index in indexes
+            for position, title in enumerate(setlist)
+            if normalized[index] and normalized[index] == title
+        ]
+
+    def neighbours(index: int) -> tuple[int, int]:
+        before = [position for track, position in accepted.items() if track < index]
+        after = [position for track, position in accepted.items() if track > index]
+        return (max(before) if before else -1, min(after) if after else len(setlist))
+
+    def record_unaccepted(nodes: list[tuple[int, int]], on_some: set) -> None:
+        for index in {track for track, _ in nodes}:
+            if index in accepted:
+                continue
+            own = [node for node in nodes if node[0] == index]
+            results[index] = {"held": AMBIGUOUS if any(node in on_some for node in own) else ORDER_CONFLICT}
+
+    # Tracks known to be this show: dated to it, or pinned to it.
+    known = [index for index in members if len(candidates[index]) == 1 or index in pinned]
+    nodes = exact_nodes(known)
+    on_every, on_some = chain_agreement(nodes)
+    accepted.update(dict(on_every))
+    record_unaccepted(nodes, on_some)
+
+    # Tracks that could be this show or another, kept in order with the above.
+    open_tracks = [index for index in members if index not in known]
+    fixed = set(accepted.items())
+    claimed = set(accepted.values())
+    open_nodes = exact_nodes(open_tracks)
+    loose = []
+    for index, position in open_nodes:
+        low, high = neighbours(index)
+        if low < position < high and position not in claimed:
+            loose.append((index, position))
+    on_every, on_some = chain_agreement(list(fixed) + loose)
+    loose_set = set(loose)
+    accepted.update(dict(node for node in on_every if node in loose_set))
+    record_unaccepted(loose, on_some)
+    # A song this show played, at a place the known tracks rule out, is an
+    # order conflict here rather than a second candidate.
+    for index in {track for track, _ in open_nodes} - {track for track, _ in loose}:
+        results[index] = {"held": ORDER_CONFLICT}
+    for index, position in accepted.items():
+        results[index] = {"show_id": show_id, "performance": performances[position], "how": "aligned"}
+
+    # A held track that is the only release track between two mapped
+    # neighbours holds that whole stretch of the setlist.
+    for index, result in results.items():
+        if "held" not in result or index in accepted:
+            continue
+        before = [track for track in accepted if track < index]
+        after = [track for track in accepted if track > index]
+        if not before or not after:
+            continue
+        low, high = accepted[max(before)], accepted[min(after)]
+        between = [track for track in members if max(before) < track < min(after) and track != index]
+        stretch = list(range(low + 1, high))
+        if len(stretch) >= 2 and not between and "spans" not in result["held"]:
+            result["span"] = "setlist positions " + ", ".join(
+                f"{performances[position]['performance_id']} ({songs[performances[position]['song_id']]})" for position in stretch
+            )
+    return results
 
 
 def looks_like_medley(title: str, canonical_titles: set[str]) -> bool:
@@ -493,6 +638,10 @@ def process_group(
                 else:
                     attribution.append(("", f"track date {track_date} {error.replace('_', ' ')}"))
         attributed_shows = sorted({show_id for show_id, _ in attribution if show_id})
+        # The canonical shows the release's own title names.  A track with no
+        # date of its own can only be one of these; which one is decided by
+        # its song and the release order below, never by the title alone.
+        title_show_ids = sorted({show_id for value in title_dates for show_id in shows_by_date.get(value, [])})
         if not attributed_shows:
             decision["reason"] = "multi_show_without_track_attribution"
             decision["unattributed_reasons"] = dict(Counter(reason for _, reason in attribution))
@@ -502,29 +651,56 @@ def process_group(
             f"tracks attributed by track-level dates to {len(attributed_shows)} canonical show(s): {', '.join(attributed_shows)}"
         )
 
-    # Align attributed tracks with each show's canonical setlist.
-    grouped: dict[str, list[tuple[int, str]]] = defaultdict(list)
-    for index, (show_id, _) in enumerate(attribution):
+    # Every show a track could belong to: its attributed show; for an undated
+    # track on a multi-show release, the shows the release title names; for a
+    # track date with an early and a late show, both.
+    track_candidates: list[set[str]] = []
+    for index, (show_id, reason) in enumerate(attribution):
+        dates = per_track_dates[index][0]
         if show_id:
-            grouped[show_id].append((index, tracks[index]["track"].get("title", "")))
-    alignment: dict[int, dict] = {}
-    alignment_notes: dict[str, str] = {}
-    for show_id, source_tracks in grouped.items():
-        status, matches, ambiguous, reason = align_tracks(source_tracks, performances_by_show.get(show_id, []), songs)
-        alignment_notes[show_id] = status if not reason else f"{status}: {reason}"
-        for track_index, performance_index in matches.items():
-            alignment[track_index] = performances_by_show[show_id][performance_index]
-        for track_index in ambiguous:
-            alignment[track_index] = {"held": "title matches more than one setlist position (ambiguous alignment)"}
-        if status == "held":
-            for track_index, _ in source_tracks:
-                alignment.setdefault(track_index, {"held": reason})
+            track_candidates.append({show_id})
+        elif spans_multiple and not dates:
+            track_candidates.append(set(title_show_ids))
+        elif len(dates) == 1 and len(shows_by_date.get(next(iter(dates)), [])) > 1:
+            track_candidates.append(set(shows_by_date[next(iter(dates))]))
+        else:
+            track_candidates.append(set())
 
-    shows_covered = sorted(grouped)
+    titles = [entry["track"].get("title", "") for entry in tracks]
+    matched = match_release_tracks(titles, track_candidates, performances_by_show, songs)
+    grouped: dict[str, list[int]] = defaultdict(list)
+    for index, show_ids in enumerate(track_candidates):
+        for show_id in show_ids:
+            grouped[show_id].append(index)
+    alignment_notes = {
+        show_id: f"{sum(1 for index in indexes if matched[index].get('show_id') == show_id and 'performance' in matched[index])}/{len(indexes)} candidate tracks mapped"
+        for show_id, indexes in sorted(grouped.items())
+    }
+
+    if spans_multiple and not attributed_shows and not any("performance" in result for result in matched):
+        decision["reason"] = "multi_show_without_track_attribution"
+        decision["unattributed_reasons"] = dict(Counter(reason for _, reason in attribution))
+        return decision
+    if spans_multiple:
+        song_attributed = sorted({result["show_id"] for index, result in enumerate(matched) if "performance" in result and not attribution[index][0]})
+        if song_attributed:
+            resolution += (
+                f"; {sum(1 for index, result in enumerate(matched) if 'performance' in result and not attribution[index][0])} "
+                f"more attributed by song and release order to {len(song_attributed)} canonical show(s) named in the title or "
+                f"track date: {', '.join(song_attributed)}"
+            )
+
+    shows_covered = sorted(
+        {show_id for show_id, _ in attribution if show_id}
+        | {result["show_id"] for result in matched if "performance" in result}
+    )
     earliest_date = min(
-        date_value
-        for date_value, show_ids in shows_by_date.items()
-        if len(show_ids) == 1 and show_ids[0] in shows_covered
+        (
+            date_value
+            for date_value, show_ids in shows_by_date.items()
+            if any(show_id in shows_covered for show_id in show_ids)
+        ),
+        default=min(title_dates or all_dates),
     )
 
     # Spotify album URL from any release in the group (primary release preferred).
@@ -554,7 +730,7 @@ def process_group(
         else:
             date_note = f"release date left blank: MusicBrainz gives only '{group.get('first_release_date', '')}'"
 
-    mapped = sum(1 for index in range(len(tracks)) if index in alignment and "held" not in alignment[index])
+    mapped = sum(1 for result in matched if "performance" in result)
     notes = [
         f"MusicBrainz release {primary['id']}",
         f"release group {group['id']}",
@@ -583,27 +759,42 @@ def process_group(
         track = entry["track"]
         medium = entry["medium"]
         recording = track.get("recording", {})
-        show_id, unattributed = attribution[index]
+        attributed_show, unattributed = attribution[index]
+        result = matched[index]
+        show_id = result.get("show_id") or attributed_show
         location = f"disc {medium.get('position')} track {track.get('number') or track.get('position')}"
         length = track.get("length_ms") or recording.get("length_ms")
         performance_id, note = "", ""
-        if show_id and index in alignment and "held" not in alignment[index]:
-            performance_id = alignment[index]["performance_id"]
-            note = f"{location}; MusicBrainz recording {recording.get('id', '')}; title aligned uniquely and monotonically with the {show_id} setlist."
-        elif show_id and index in alignment:
-            reason = alignment[index]["held"]
-            note = f"{location}; MusicBrainz recording {recording.get('id', '')}; no canonical performance mapped: setlist alignment for {show_id} held ({reason})."
-            unmapped_reasons[f"alignment held: {re.sub(r'_at_track_\d+:.*$|_\d+_ways$|_for_track_\d+$', '', reason)}"] += 1
-        elif show_id:
-            canonical_titles = {normalized_title(songs[row["song_id"]]) for row in performances_by_show.get(show_id, [])}
+        prefix = f"{location}; MusicBrainz recording {recording.get('id', '')}"
+        if "performance" in result:
+            performance_id = result["performance"]["performance_id"]
+            note = f"{prefix}; title aligned uniquely and monotonically with the {show_id} setlist."
+            if not attributed_show:
+                others = sorted(track_candidates[index] - {show_id})
+                if others:
+                    note = note[:-1] + (
+                        f"; show attributed by song and release order (the track's own metadata names no single show; "
+                        f"other candidate show{'s' if len(others) != 1 else ''}: {', '.join(others)})."
+                    )
+                else:
+                    note = note[:-1] + "; show from the release title's date (the track has no date of its own)."
+        elif result.get("held"):
+            why = result["held"]
+            if result.get("span"):
+                why += f"; the release has no other track between its neighbours, so it holds {result['span']}"
+            target = f"the {show_id} setlist" if len(track_candidates[index]) <= 1 else f"candidate shows {', '.join(sorted(track_candidates[index]))}"
+            note = f"{prefix}; no canonical performance mapped: {why} ({target})."
+            unmapped_reasons[result["held"].split(" (")[0].split(";")[0]] += 1
+        elif attributed_show:
+            canonical_titles = {normalized_title(songs[row["song_id"]]) for row in performances_by_show.get(attributed_show, [])}
             if looks_like_medley(track.get("title", ""), canonical_titles):
                 why = "track combines more than one canonical performance (medley); needs the segment bridge table"
             else:
                 why = "title is not in the show's canonical setlist (intro, tuning, banter, or source-only segment)"
-            note = f"{location}; MusicBrainz recording {recording.get('id', '')}; no canonical performance mapped: {why}."
+            note = f"{prefix}; no canonical performance mapped: {why}."
             unmapped_reasons[why.split(" (")[0]] += 1
         else:
-            note = f"{location}; MusicBrainz recording {recording.get('id', '')}; no canonical performance mapped: {unattributed}."
+            note = f"{prefix}; no canonical performance mapped: {unattributed}."
             unmapped_reasons[unattributed.split(" (")[0]] += 1
         track_rows.append(
             {
@@ -849,6 +1040,13 @@ def main() -> None:
             indent=1,
         )
     )
+    # This pass writes song_id blank; the song backfill recomputes the whole
+    # column from the mapped performance or the title.  Running it here keeps a
+    # lone rerun of this pass from leaving the catalog without songs.
+    spec = importlib.util.spec_from_file_location("_normalize_release_track_songs", ROOT / "scripts" / "normalize_release_track_songs.py")
+    backfill = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(backfill)
+    backfill.main()
 
 
 if __name__ == "__main__":

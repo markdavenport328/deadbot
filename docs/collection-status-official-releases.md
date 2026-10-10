@@ -78,6 +78,38 @@ Unmapped-track reasons (all recorded per row in `notes`; sums to 2,998):
 
 (Refreshed 2026-09-02 from a fresh run of `scripts/normalize_musicbrainz_live_releases.py` against a scratch copy of `data/`, printed-summary and committed-CSV counts alike: the run is byte-identical to the committed `official_releases.csv` and `official_release_tracks.csv`, confirmed by SHA-256, so the CSVs were not rewritten, only this table. The prior table's 6,993/3,031/409/10,081 figures predated the `Rhythm Devils` → `Drums` alias resolved in open question 9 below; the "releases with every track mapped / some / none" row was independently stale and is corrected here from the same committed tracks table. The unmapped-reasons table now sums to the stated 2,998 total.)
 
+## 2026-10-09: tolerant alignment and undated tracks
+
+Found while building a grid view that makes a blank cell read as "not played":
+433 of 793 Dick's Picks tracks had no `performance_id`. The live normalizer
+now aligns tracks with the rule in "Track-mapping rule" below and attributes
+undated tracks on multi-show releases by song and order. No raw data changed
+and no network was used; the run is deterministic and a second run is
+byte-identical. No track that had a performance lost or changed it.
+
+| Tracks with a `performance_id` | Before | After |
+| --- | --- | --- |
+| Dick's Picks (32 releases, 793 tracks) | 360 | 683 |
+| All live releases (294, 10,045 tracks) | 7,046 | 8,165 |
+| All official releases (340, 10,492 tracks) | 7,046 | 8,165 |
+
+The 1,119 new mappings: 774 tracks on dated show groups that the old rule held
+whole for one out-of-order track, and 345 undated or early/late-show tracks
+attributed by song and order or by the title's single date (Dick's Picks 6,
+14, 17, 18, 19, 26, 28, 33; Dave's Picks 18 and 34; Download Series 7 and 10;
+the 5/15/70 Fillmore East early/late tracks on Road Trips 3.3 and Complete
+Road Trips; single early/late-show tracks on five 30 Days of Dead sets). Every
+new mapping's track title normalizes to its performance's song.
+
+Unmapped after the run (MusicBrainz-managed tracks, 1,879): 762 undated tracks
+on releases whose title names no show (compilations such as 30 Days of Dead);
+609 titles not in the show's setlist (tuning, banter, named jams, songs the
+spine lacks); 171 medleys; 145 tracks whose title fits more than one setlist
+position; 131 tracks out of setlist order (re-sequenced highlights such as
+Dick's Picks 1, or bonus material such as the 11/2/77 tracks on Dick's Picks
+34); 59 tracks dated to a day `shows.csv` lacks or with more than one date; 5
+undated tracks that fit two candidate shows.
+
 ## Show-resolution rule
 
 Dates are extracted from four title-level fields (release-group title and
@@ -95,11 +127,12 @@ normalized first. Two-digit years 65–99 map to the 1900s. Month-only strings
   show. It is promoted only when the date matches exactly one row in
   `shows.csv`; a date with two canonical shows (early/late) or none is held.
 - If more than one date is present, the release **spans more than one show**.
-  Each track is attributed only by its own track-level date, and only when that
-  date matches exactly one canonical show. Tracks without a track-level date
-  are never attributed, even when the title names one main show (bonus tracks
-  are the usual reason for a second date). The release is promoted when at
-  least one track is attributed; `notes` lists the attributed shows.
+  Each track is attributed by its own track-level date when that date matches
+  exactly one canonical show. Since 2026-10-09 a track without a track-level
+  date (or whose date has an early and a late show) is attributed only through
+  the track-mapping rule below: by its song and the release order, among the
+  shows the title names. The release is promoted when at least one track is
+  attributed; `notes` lists the attributed shows.
 - If no date is found anywhere, the release is held.
 
 Which release represents a group: the official release with the best format
@@ -129,18 +162,34 @@ Not Stop on Tracks)`, `The Stranger (Two Souls in Communion)`; every alias
 target is an existing `songs.csv` title). Parentheticals that contain a date
 (`Dark Star (1969-06-05: Fillmore West)`) are stripped before matching.
 
-A track gets a `performance_id` only when every monotonic alignment of the
-show group agrees on its setlist position. Titles absent from the setlist are
-skipped as intro/tuning/banter/source-only material. A title that appears in
-the setlist but only earlier than the alignment has reached kills that
-alignment; when no alignment survives, the whole show group is held. This is
-deliberate: it is what stops an undated bonus track from another show (for
-example the 11/2/77 filler on Dick's Picks 34, or the 5/25/93 tracks on Road
-Trips 2.4) from being absorbed into a gap in the main show's setlist. Suites
-and medleys (`That's It for the Other One`, `Weather Report Suite`, `China Cat
-Sunflower / I Know You Rider`) and segment names that are not song titles
-(`Rhythm Devils`) stay unmapped; `official_release_track_performances` is the
-place for those segments.
+A track gets a `performance_id` only when its pairing with a setlist position
+lies on **every** longest in-order alignment of the show's release tracks with
+the show's setlist (the rule `normalize_internet_archive_tracks.align_tracks_tolerant`
+already used for archive items). Titles absent from the setlist are skipped as
+intro/tuning/banter/source-only material. Order is what stops an undated
+bonus track from another show (for example the 11/2/77 filler on Dick's Picks
+34, or the 5/25/93 tracks on Road Trips 2.4) from being absorbed into a gap in
+the main show's setlist: pairing it with an earlier position would cost the
+alignment more tracks than it gains, so it is held as out of setlist order.
+Until 2026-10-09 any such conflict held the whole show group; now the longest
+in-order run maps and only the conflicting tracks are held, with the reason in
+`notes`. A track that is the only release track between two mapped neighbours
+but whose title fits more than one position (a single `Dark Star` track over
+the setlist's `Dark Star > Drums > Dark Star`) is held, and its note lists the
+performances it spans. Suites and medleys (`That's It for the Other One`,
+`Weather Report Suite`, `China Cat Sunflower / I Know You Rider`) stay
+unmapped; `official_release_track_performances` is the place for those
+segments.
+
+On a release that names several shows, a track with no date of its own may be
+any of the shows the title names, and a track dated to a day with an early and
+a late show may be either. Each candidate show is aligned in turn: tracks
+known to be that show first, then the candidates around them. A track mapped
+at one show whose song the other candidate shows either never played or
+played only where the release order rules it out is attributed to that show
+(`notes` says so); a track that the order rules out everywhere but one show is
+pinned to it and the shows are aligned again; a track that still fits two
+shows is held.
 
 ## Spotify URL coverage
 
