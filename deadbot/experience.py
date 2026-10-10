@@ -756,6 +756,16 @@ class GridBlock(ExperienceModel):
     spec: GridSpecModel
 
 
+class GridRequest(ExperienceModel):
+    """A visitor's reshape of a grid: the lists as they now stand, plus the
+    model's headline and note, which the server hands back unchanged."""
+
+    spec: GridSpecModel
+    title: str | None = Field(default=None, max_length=300)
+    note: str | None = Field(default=None, max_length=2000)
+    open_rows: int | None = Field(default=None, ge=1)
+
+
 class ProvenanceNoteBlock(ExperienceModel):
     type: Literal["provenance_note"]
     text: str

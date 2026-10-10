@@ -19,11 +19,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import composition, finish
+from deadbot import composition, finish, grids
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import ExperienceRequest, ExperienceResponse
+from deadbot.experience import ExperienceRequest, ExperienceResponse, GridBlock, GridRequest
 from deadbot.finish import FINISH_TOOL_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
@@ -364,6 +364,34 @@ def create_app(
             media_type="application/x-ndjson",
             headers={"Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no"},
         )
+
+    @app.post("/api/grid", response_model=GridBlock)
+    def reshape_grid(request: GridRequest, http_request: Request) -> GridBlock:
+        """Rebuild a grid from the library after the visitor adds or removes a list.
+
+        The model's picks (highlights, chips, coverage) belong to the grid it
+        wrote, so they are not part of the rebuilt block.
+        """
+
+        _enforce_rate_limit(http_request)
+        spec = grids.GridSpec.from_json(request.spec.model_dump())
+        if spec is None:
+            raise HTTPException(status_code=422, detail="That pair of lists is not one the library can draw.")
+        block = grids.grid_block(
+            app.state.store,
+            # grid_block builds the data itself; it needs only the spec and its id.
+            {"spec": spec.to_json(), "grid_id": grids.grid_id(spec)},
+            row_ids=None,
+            open_rows=request.open_rows,
+            highlights=[],
+            title=request.title,
+            note=request.note,
+            coverage=None,
+            follow_ups=[],
+        )
+        if block is None:
+            raise HTTPException(status_code=404, detail="The library has nothing to draw for those lists.")
+        return block
 
     if client_dist.is_dir():
         assets = client_dist / "assets"

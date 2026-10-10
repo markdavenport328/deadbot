@@ -3,7 +3,7 @@ import { act, fireEvent, render as renderPlain, screen, within } from "@testing-
 import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 import { PlayerProvider, usePlayer } from "./player";
-import { columnSummary, sortRows } from "./grid-actions";
+import { columnSummary, reshapeGrid, sortRows } from "./grid-actions";
 import europe from "./fixtures/grid-europe72.json";
 import years from "./fixtures/grid-song-years.json";
 import { Grid, cellFill } from "./Grid";
@@ -355,5 +355,141 @@ describe("Grid", () => {
     fireEvent.keyDown(cells[0], { key: "ArrowRight" });
     fireEvent.scroll(screen.getByRole("region"));
     expect(await screen.findByRole("tooltip")).toBeInTheDocument();
+  });
+});
+
+// The block the server sends back after a reshape: the same grid with the
+// columns the request named, every cell taken from the fixture.
+function reshapedFrom(base: GridBlock, columnIds: string[], extra: Partial<GridBlock> = {}): GridBlock {
+  const keep = base.columns.map((column, index) => ({ column, index })).filter(({ column }) => columnIds.includes(column.id));
+  return {
+    ...base,
+    columns: keep.map(({ column }) => column),
+    rows: base.rows.map((row) => ({ ...row, cells: keep.map(({ index }) => row.cells![index]) })),
+    follow_ups: [],
+    ...extra,
+  } as GridBlock;
+}
+
+describe("Grid reshape", () => {
+  const original = europe as GridBlock;
+  const fetchMock = vi.fn();
+  const requestBody = () => JSON.parse(fetchMock.mock.calls.at(-1)![1].body as string);
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  it("asks the server for the grid with the picked column added, and draws what comes back", async () => {
+    const added = { ...original, columns: [...original.columns, { id: "song-mr-charlie", label: "Mr. Charlie" }] } as GridBlock;
+    added.rows = original.rows.map((row) => ({ ...row, cells: [...row.cells!, { state: "none", passes: 0, highlight: false }] })) as GridBlock["rows"];
+    fetchMock.mockResolvedValue({ ok: true, json: async () => added });
+    render(<Grid block={original} />);
+    await userEvent.click(screen.getByRole("button", { name: "Add a column" }));
+    await userEvent.click(screen.getByRole("button", { name: "Mr. Charlie · on 22 of 22 nights" }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/grid");
+    expect(fetchMock.mock.calls[0][1].method).toBe("POST");
+    const body = requestBody();
+    expect(body.spec.column_ids).toEqual([...original.columns.map((c) => c.id), "song-mr-charlie"]);
+    expect(body.spec.row_ids).toEqual(original.rows.map((r) => r.id));
+    expect(body.title).toBe(original.title);
+    expect(body.note).toBe(original.note);
+    expect(await screen.findByRole("button", { name: /sort by mr\. charlie/i })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("puts focus on the new column's header after an add", async () => {
+    const added = { ...original, columns: [...original.columns, { id: "song-mr-charlie", label: "Mr. Charlie" }] } as GridBlock;
+    added.rows = original.rows.map((row) => ({ ...row, cells: [...row.cells!, { state: "none", passes: 0, highlight: false }] })) as GridBlock["rows"];
+    fetchMock.mockResolvedValue({ ok: true, json: async () => added });
+    render(<Grid block={original} />);
+    await userEvent.click(screen.getByRole("button", { name: "Add a column" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Mr\. Charlie/ }));
+    const header = await screen.findByRole("button", { name: /sort by mr\. charlie/i });
+    await vi.waitFor(() => expect(document.activeElement).toBe(header));
+  });
+
+  it("removes a column from its header menu and focuses the neighbouring header", async () => {
+    const without = reshapedFrom(original, original.columns.map((c) => c.id).filter((id) => id !== "song-dark-star"));
+    fetchMock.mockResolvedValue({ ok: true, json: async () => without });
+    render(<Grid block={original} />);
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(requestBody().spec.column_ids).not.toContain("song-dark-star");
+    expect(requestBody().spec.column_ids).toHaveLength(original.columns.length - 1);
+    await vi.waitFor(() => expect(screen.queryByRole("button", { name: /sort by dark star/i })).toBeNull());
+    expect(screen.getAllByRole("columnheader")).toHaveLength(original.columns.length - 1);
+    // Dark Star sat second; the header now in its place is Dark Star's old neighbour, The Other One.
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: /sort by the other one/i })));
+  });
+
+  it("says the headline and note were written for the original grid once it changes, and not before", async () => {
+    const without = reshapedFrom(original, original.columns.map((c) => c.id).slice(0, -1));
+    fetchMock.mockResolvedValue({ ok: true, json: async () => without });
+    render(<Grid block={original} />);
+    expect(screen.queryByText("Written for the original grid")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: `Options for ${original.columns.at(-1)!.label}` }));
+    await userEvent.click(screen.getByRole("button", { name: /^Remove / }));
+    expect(await screen.findByText("Written for the original grid")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /One big jam a night/ })).toBeInTheDocument();
+  });
+
+  it("keeps the old grid and says so when the server cannot reshape it", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    render(<Grid block={original} />);
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(await screen.findByText("Couldn't change the grid. Try again.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sort by dark star/i })).toBeInTheDocument();
+    expect(screen.queryByText("Written for the original grid")).toBeNull();
+    fetchMock.mockRejectedValue(new Error("offline"));
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(await screen.findByText("Couldn't change the grid. Try again.")).toBeInTheDocument();
+  });
+
+  it("cannot remove the last remaining column", async () => {
+    const single = reshapedFrom(original, ["song-dark-star"]);
+    render(<Grid block={single} />);
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    expect(screen.getByRole("button", { name: "Remove Dark Star" })).toBeDisabled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("closes a menu on Escape and returns focus to its button", async () => {
+    render(<Grid block={original} />);
+    const trigger = screen.getByRole("button", { name: "Add a column" });
+    await userEvent.click(trigger);
+    expect(screen.getByRole("button", { name: /Mr\. Charlie/ })).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("button", { name: /Mr\. Charlie/ })).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("offers no Add a column when the library has no songs to suggest", () => {
+    render(<Grid block={years as GridBlock} />);
+    expect(screen.queryByRole("button", { name: "Add a column" })).toBeNull();
+    expect(screen.getByRole("button", { name: /^Options for 1969/ })).toBeInTheDocument();
+  });
+
+  it("posts the rows in the order the grid shows them, and the grid's own open_rows", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => original });
+    const block = { ...original, open_rows: 5 };
+    await reshapeGrid(block, { removeColumn: "song-truckin" });
+    const body = requestBody();
+    expect(body.open_rows).toBe(5);
+    expect(body.spec.row_kind).toBe("show");
+    expect(body.spec.column_kind).toBe("song");
+    expect(body.spec.column_ids).not.toContain("song-truckin");
+    await reshapeGrid(block, { removeRow: "gd-1972-05-11" });
+    expect(requestBody().spec.row_ids).not.toContain("gd-1972-05-11");
+    expect(requestBody().spec.row_ids).toHaveLength(original.rows.length - 1);
+  });
+
+  it("rejects when the server says no", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 404, json: async () => ({ detail: "nothing" }) });
+    await expect(reshapeGrid(original, { addColumn: "song-nope" })).rejects.toThrow();
   });
 });

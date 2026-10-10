@@ -5,7 +5,7 @@
 import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { CardHeading, MoreAbout } from "./components";
 import { GridFacts } from "./GridFacts";
-import { columnSummary, rowParts, rowShowDate, sortRows, type GridRow, type Selection } from "./grid-actions";
+import { columnSummary, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
 import { toTrack } from "./listen-control";
 import { usePlayer } from "./player";
 import type { GridBlock } from "./types";
@@ -24,6 +24,8 @@ const UNIT = { shows: "shows", minutes: "min" } as const;
 const FOCUS_DELAY_MS = 250;
 
 type Tip = { kind: "cell"; row: number; column: number } | { kind: "column"; column: number };
+// The small list under the Add a column button or a column's options button.
+type Menu = { kind: "add" } | { kind: "remove"; column: number };
 
 // A hover card is a mouse convenience; on touch a tap selects and the detail
 // bar carries the same facts.
@@ -58,7 +60,14 @@ function askAbout(block: GridBlock, selection: Selection): string | null {
   return `Compare ${named[0].subject} and ${named[1].subject}.`;
 }
 
-export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (question: string) => void }) {
+export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFollowUp?: (question: string) => void }) {
+  // The visitor's reshape replaces what the model drew, until the page sends a different grid.
+  const [reshaped, setReshaped] = useState<{ from: GridBlock; block: GridBlock } | null>(null);
+  const block = reshaped?.from === original ? reshaped.block : original;
+  const changed = block !== original;
+  const [menu, setMenu] = useState<Menu | null>(null);
+  const [working, setWorking] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const [sortColumn, setSortColumn] = useState<number | null>(null);
   const [selection, setSelection] = useState<Selection>([]);
@@ -73,6 +82,10 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
   const byKeyboard = useRef(false);
   const pending = useRef(false); // a keyboard-focus card is waiting out its delay
   const tipId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTrigger = useRef<HTMLElement | null>(null);
+  const headerRefs = useRef(new Map<string, HTMLButtonElement>());
+  const focusColumn = useRef<string | null>(null); // the header to focus once the reshaped grid is drawn
 
   const canFold = block.open_rows != null && block.open_rows > 0 && block.open_rows < block.rows.length;
   const ordered = useMemo(() => (sortColumn == null ? block.rows : sortRows(block.rows, sortColumn, "desc")), [block.rows, sortColumn]);
@@ -148,6 +161,74 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
     card.style.top = `${above >= 0 ? above : a.bottom - s.top + 6}px`;
   }, [tip]);
 
+  const closeMenu = useCallback((refocus: boolean) => {
+    setMenu(null);
+    if (refocus) menuTrigger.current?.focus();
+  }, []);
+
+  // Escape or a click elsewhere closes the open list; Escape also hands focus back.
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu(true);
+    };
+    const onPointer = (event: Event) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !menuTrigger.current?.contains(target)) closeMenu(false);
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [menu, closeMenu]);
+
+  // Under its button, inside the stage; the first choice takes focus.
+  useLayoutEffect(() => {
+    const list = menuRef.current;
+    const anchor = menuTrigger.current;
+    const stage = stageRef.current;
+    if (!menu || !list || !anchor || !stage) return;
+    const a = anchor.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const left = Math.max(0, Math.min(a.left - s.left, s.width - list.offsetWidth));
+    list.style.left = `${left}px`;
+    list.style.top = `${a.bottom - s.top + 4}px`;
+    list.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+  }, [menu]);
+
+  // After a reshape the grid's columns changed: the sort, the selection and the
+  // roving cell index named the old ones, and focus goes to the header asked for.
+  useLayoutEffect(() => {
+    const id = focusColumn.current;
+    if (!id) return;
+    focusColumn.current = null;
+    headerRefs.current.get(id)?.focus();
+  }, [block]);
+
+  async function reshape(change: GridChange, columnIndex: number | null) {
+    if (working) return;
+    setMenu(null);
+    setWorking(true);
+    setFailed(false);
+    try {
+      const next = await reshapeGrid(block, change);
+      const focusIndex = columnIndex == null ? null : Math.min(columnIndex, next.columns.length - 1);
+      focusColumn.current = change.addColumn ?? (focusIndex != null ? (next.columns[focusIndex]?.id ?? null) : null);
+      hideTip();
+      setSortColumn(null);
+      setSelection([]);
+      setFocus({ row: 0, column: 0 });
+      setReshaped({ from: original, block: next });
+    } catch {
+      setFailed(true);
+      menuTrigger.current?.focus();
+    } finally {
+      setWorking(false);
+    }
+  }
+
   function select(row: number, column: number, additive: boolean) {
     setSelection((current) => {
       const at = current.findIndex((entry) => entry.row === row && entry.column === column);
@@ -219,8 +300,9 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
         </div>
         {block.title && <CardHeading className="grid-headline">{block.title}</CardHeading>}
         {block.note && <p className="grid-note">{block.note}</p>}
+        {changed && (block.title || block.note) && <p className="grid-original">Written for the original grid</p>}
       </header>
-      <div className="grid-stage" ref={stageRef}>
+      <div className="grid-stage" ref={stageRef} aria-busy={working}>
         <div
           className="grid-frame"
           role="region"
@@ -244,22 +326,61 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
                       aria-sort={sorted ? "descending" : undefined}
                       className={`${block.column_kind === "song" ? "is-vertical" : ""}${sorted ? " is-sorted" : ""}`.trim() || undefined}
                     >
-                      <button
-                        type="button"
-                        className="grid-sort"
-                        aria-label={`Sort by ${column.sub ?? column.label}`}
-                        aria-describedby={tip?.kind === "column" && tip.column === columnIndex ? tipId : undefined}
-                        onClick={() => sortBy(columnIndex)}
-                        onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
-                        onMouseLeave={hideTip}
-                        onFocus={(event) => byKeyboard.current && showTip(target, event.currentTarget, FOCUS_DELAY_MS)}
-                        onBlur={hideTip}
-                      >
-                        {column.label}
-                      </button>
+                      <div className="grid-colhead">
+                        <button
+                          type="button"
+                          className="grid-sort"
+                          aria-label={`Sort by ${column.sub ?? column.label}`}
+                          aria-describedby={tip?.kind === "column" && tip.column === columnIndex ? tipId : undefined}
+                          ref={(element) => {
+                            if (element) headerRefs.current.set(column.id, element);
+                            else headerRefs.current.delete(column.id);
+                          }}
+                          onClick={() => sortBy(columnIndex)}
+                          onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
+                          onMouseLeave={hideTip}
+                          onFocus={(event) => byKeyboard.current && showTip(target, event.currentTarget, FOCUS_DELAY_MS)}
+                          onBlur={hideTip}
+                        >
+                          {column.label}
+                        </button>
+                        <button
+                          type="button"
+                          className="grid-options"
+                          aria-label={`Options for ${column.sub ?? column.label}`}
+                          aria-haspopup="true"
+                          aria-expanded={menu?.kind === "remove" && menu.column === columnIndex}
+                          onClick={(event) => {
+                            hideTip();
+                            setFailed(false);
+                            menuTrigger.current = event.currentTarget;
+                            setMenu(menu?.kind === "remove" && menu.column === columnIndex ? null : { kind: "remove", column: columnIndex });
+                          }}
+                        >
+                          <span aria-hidden="true">⋯</span>
+                        </button>
+                      </div>
                     </th>
                   );
                 })}
+                {block.suggestions.length > 0 && (
+                  <td role="presentation" className="grid-add-cell">
+                    <button
+                      type="button"
+                      className="grid-add"
+                      aria-haspopup="true"
+                      aria-expanded={menu?.kind === "add"}
+                      onClick={(event) => {
+                        hideTip();
+                        setFailed(false);
+                        menuTrigger.current = event.currentTarget;
+                        setMenu(menu?.kind === "add" ? null : { kind: "add" });
+                      }}
+                    >
+                      Add a column
+                    </button>
+                  </td>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -367,6 +488,30 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
             </tbody>
           </table>
         </div>
+        {menu && (
+          <div
+            className="grid-menu"
+            ref={menuRef}
+            role="group"
+            aria-label={menu.kind === "add" ? "Add a column" : `Options for ${block.columns[menu.column]?.sub ?? block.columns[menu.column]?.label}`}
+          >
+            {menu.kind === "add" ? (
+              block.suggestions.map((suggestion) => (
+                <button key={suggestion.id} type="button" onClick={() => void reshape({ addColumn: suggestion.id }, null)}>
+                  {suggestion.label} · on {suggestion.rows_with} of {block.rows.length} {rowsLabel}
+                </button>
+              ))
+            ) : (
+              <button
+                type="button"
+                disabled={block.columns.length <= 1}
+                onClick={() => void reshape({ removeColumn: block.columns[menu.column]?.id }, menu.column)}
+              >
+                Remove {block.columns[menu.column]?.sub ?? block.columns[menu.column]?.label}
+              </button>
+            )}
+          </div>
+        )}
         {tip && (
           <div className="grid-tip" role="tooltip" id={tipId} ref={tipRef}>
             {tipCell ? (
@@ -381,6 +526,11 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
         {sortColumn != null &&
           `Sorted by ${block.columns[sortColumn]?.sub ?? block.columns[sortColumn]?.label}. ${columnSentence(block, sortColumn)}`}
       </p>
+      {failed && (
+        <p className="grid-error" role="status">
+          Couldn't change the grid. Try again.
+        </p>
+      )}
       {canFold && (
         <button type="button" className="grid-more" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
           {open ? `Show the first ${block.open_rows}` : `Show all ${block.rows.length}`}

@@ -56,3 +56,36 @@ export function rowParts(row: GridRow): { date: string; city: string | null } {
 export function rowShowDate(row: GridRow): string | null {
   return row.id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? null;
 }
+
+export type GridChange = { addColumn?: string; removeColumn?: string; removeRow?: string };
+
+// The grid as the visitor now sees it, with one change applied: rows and
+// columns in the order on screen, so the server redraws the same grid.
+function reshapedSpec(block: GridBlock, change: GridChange): GridBlock["spec"] {
+  const columnIds = block.columns.map((column) => column.id).filter((id) => id !== change.removeColumn);
+  if (change.addColumn && !columnIds.includes(change.addColumn)) columnIds.push(change.addColumn);
+  return {
+    row_kind: block.spec.row_kind,
+    row_ids: block.rows.map((row) => row.id).filter((id) => id !== change.removeRow),
+    column_kind: block.spec.column_kind,
+    column_ids: columnIds,
+  };
+}
+
+// Ask the server to redraw this grid with one list added or removed. The
+// headline and note go along and come back as they were; the cells, tracks
+// and suggestions are filled fresh from the library.
+export async function reshapeGrid(block: GridBlock, change: GridChange): Promise<GridBlock> {
+  const result = await fetch("/api/grid", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      spec: reshapedSpec(block, change),
+      title: block.title ?? null,
+      note: block.note ?? null,
+      open_rows: block.open_rows ?? null,
+    }),
+  });
+  if (!result.ok) throw new Error(`The grid could not be reshaped (${result.status}).`);
+  return (await result.json()) as GridBlock;
+}

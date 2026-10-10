@@ -2004,6 +2004,56 @@
         "title": "GridColumn",
         "type": "object"
       },
+      "GridRequest": {
+        "additionalProperties": false,
+        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline and note, which the server hands back unchanged.",
+        "properties": {
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "open_rows": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Rows"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/GridSpecModel"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "spec"
+        ],
+        "title": "GridRequest",
+        "type": "object"
+      },
       "GridRow": {
         "additionalProperties": false,
         "properties": {
@@ -4672,6 +4722,45 @@
           }
         },
         "summary": "Experience Stream"
+      }
+    },
+    "/api/grid": {
+      "post": {
+        "description": "Rebuild a grid from the library after the visitor adds or removes a list.\n\nThe model's picks (highlights, chips, coverage) belong to the grid it\nwrote, so they are not part of the rebuilt block.",
+        "operationId": "reshape_grid_api_grid_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GridRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridBlock"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reshape Grid"
       }
     },
     "/api/health": {

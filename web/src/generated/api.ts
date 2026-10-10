@@ -38,6 +38,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/grid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reshape Grid
+         * @description Rebuild a grid from the library after the visitor adds or removes a list.
+         *
+         *     The model's picks (highlights, chips, coverage) belong to the grid it
+         *     wrote, so they are not part of the rebuilt block.
+         */
+        post: operations["reshape_grid_api_grid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -748,6 +771,20 @@ export interface components {
             label: string;
             /** Sub */
             sub?: string | null;
+        };
+        /**
+         * GridRequest
+         * @description A visitor's reshape of a grid: the lists as they now stand, plus the
+         *     model's headline and note, which the server hands back unchanged.
+         */
+        GridRequest: {
+            /** Note */
+            note?: string | null;
+            /** Open Rows */
+            open_rows?: number | null;
+            spec: components["schemas"]["GridSpecModel"];
+            /** Title */
+            title?: string | null;
         };
         /** GridRow */
         GridRow: {
@@ -1655,6 +1692,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reshape_grid_api_grid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GridRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GridBlock"];
                 };
             };
             /** @description Validation Error */
