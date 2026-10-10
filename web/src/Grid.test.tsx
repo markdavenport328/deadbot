@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render as renderPlain, screen, within } from "@testing-library/react";
+import { act, fireEvent, render as renderPlain, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import userEvent from "@testing-library/user-event";
 import { PlayerProvider, usePlayer } from "./player";
@@ -12,13 +12,30 @@ import type { GridBlock } from "./types";
 // The grid plays through the shared player, so it renders inside one.
 const render = (ui: ReactElement) => renderPlain(ui, { wrapper: PlayerProvider });
 
+// The player's queue as track ids and audio URLs, in order.
 function Queue() {
   const player = usePlayer();
-  return <output data-testid="queue">{player.queue.map((track) => track.title).join(" > ")}</output>;
+  return (
+    <>
+      <output data-testid="queue">{player.queue.map((track) => track.id).join(",")}</output>
+      <output data-testid="urls">{player.queue.map((track) => track.audioUrl).join(",")}</output>
+    </>
+  );
 }
 
+type FixtureTrack = { performance_id: string; audio_url: string };
+const tracksOf = (rowId: string, column: number) =>
+  (europe.rows.find((row) => row.id === rowId)!.cells[column].tracks as FixtureTrack[]);
+const DARK_STAR = 1;
+let lastAudio: HTMLMediaElement | null = null;
+const startPlaying = () => act(() => void lastAudio?.dispatchEvent(new Event("playing")));
+
 beforeEach(() => {
-  vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(() => Promise.resolve());
+  lastAudio = null;
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(function (this: HTMLMediaElement) {
+    lastAudio = this;
+    return Promise.resolve();
+  });
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
 });
 
@@ -145,7 +162,7 @@ describe("Grid", () => {
   it("shows a column's summary when the header is hovered", async () => {
     render(<Grid block={europe as GridBlock} />);
     fireEvent.mouseEnter(screen.getByRole("button", { name: /sort by dark star/i }));
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Played on 11 of 22 nights. Longest: May 11, 44 minutes.");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Played on 11 of 22 nights. Longest: May 11, 1972, 44 minutes.");
   });
 
   it("selects on click and offers Play and Ask", () => {
@@ -186,11 +203,13 @@ describe("Grid", () => {
     );
     fireEvent.click(screen.getByLabelText(/May 11.*Dark Star/i));
     fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
-    expect(screen.getByTestId("queue")).toHaveTextContent("Dark Star > Dark Star");
-    expect(screen.getByRole("button", { name: /^(play|pause)$/i })).toBeInTheDocument();
+    const tracks = tracksOf("gd-1972-05-11", DARK_STAR);
+    expect(tracks).toHaveLength(2);
+    expect(screen.getByTestId("queue").textContent).toBe(tracks.map((t) => t.performance_id).join(","));
+    expect(screen.getByTestId("urls").textContent).toBe(tracks.map((t) => t.audio_url).join(","));
   });
 
-  it("plays both selected cells as one queue", () => {
+  it("plays both selected cells as one queue, in selection order", () => {
     render(
       <>
         <Grid block={europe as GridBlock} />
@@ -200,7 +219,38 @@ describe("Grid", () => {
     fireEvent.click(screen.getByLabelText(/May 11.*Dark Star/i));
     fireEvent.click(screen.getByLabelText(/April 24.*Dark Star/i), { shiftKey: true });
     fireEvent.click(screen.getByRole("button", { name: /play both/i }));
-    expect(screen.getByTestId("queue").textContent).toBe("Dark Star > Dark Star > Dark Star > Dark Star");
+    const expected = [...tracksOf("gd-1972-05-11", DARK_STAR), ...tracksOf("gd-1972-04-24", DARK_STAR)];
+    expect(screen.getByTestId("queue").textContent).toBe(expected.map((t) => t.performance_id).join(","));
+    expect(screen.getByTestId("urls").textContent).toBe(expected.map((t) => t.audio_url).join(","));
+  });
+
+  it("plays both after only the first was playing, rather than resuming the one", () => {
+    render(
+      <>
+        <Grid block={europe as GridBlock} />
+        <Queue />
+      </>,
+    );
+    fireEvent.click(screen.getByLabelText(/May 11.*Dark Star/i));
+    fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
+    startPlaying();
+    expect(screen.getByRole("button", { name: /^pause$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText(/April 24.*Dark Star/i), { shiftKey: true });
+    // The player is on a different queue now, so the control offers Play, not Pause.
+    fireEvent.click(screen.getByRole("button", { name: /^play both$/i }));
+    const expected = [...tracksOf("gd-1972-05-11", DARK_STAR), ...tracksOf("gd-1972-04-24", DARK_STAR)];
+    expect(screen.getByTestId("queue").textContent).toBe(expected.map((t) => t.performance_id).join(","));
+  });
+
+  it("pauses when this selection's queue is the one playing", () => {
+    render(<Grid block={europe as GridBlock} />);
+    fireEvent.click(screen.getByLabelText(/May 11.*Dark Star/i));
+    fireEvent.click(screen.getByRole("button", { name: /^play$/i }));
+    startPlaying();
+    const pause = vi.mocked(HTMLMediaElement.prototype.pause);
+    pause.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /^pause$/i }));
+    expect(pause).toHaveBeenCalledTimes(1);
   });
 
   it("offers no Play for a cell with no recording, only its facts", () => {
@@ -260,5 +310,50 @@ describe("Grid", () => {
     expect(sorted.at(-1)?.cells?.[1].state).toBe("none");
     expect(sortRows(block.rows, 1, "asc")[0].cells?.[1].value).toBe(20);
     expect(columnSummary(block, 1)).toMatchObject({ played: 11, longest: { value: 44 }, shortest: { value: 20 } });
+  });
+
+  it("writes the sorted column's summary on the page, and clears it when the order is restored", () => {
+    render(<Grid block={europe as GridBlock} />);
+    const line = document.querySelector(".grid-sorted") as HTMLElement;
+    expect(line).toHaveAttribute("aria-live", "polite");
+    expect(line).toBeEmptyDOMElement();
+    fireEvent.click(screen.getByRole("button", { name: /sort by dark star/i }));
+    expect(line).toHaveTextContent("Sorted by Dark Star. Played on 11 of 22 nights. Longest: May 11, 1972, 44 minutes.");
+    fireEvent.click(screen.getByRole("button", { name: /sort by dark star/i }));
+    expect(line).toBeEmptyDOMElement();
+  });
+
+  it("describes the anchor by the card, and Escape dismisses the card from a header button", async () => {
+    render(<Grid block={europe as GridBlock} />);
+    expect(screen.getByRole("grid")).toHaveAttribute("aria-multiselectable", "true");
+    const header = screen.getByRole("button", { name: /sort by dark star/i });
+    fireEvent.mouseEnter(header);
+    const card = await screen.findByRole("tooltip");
+    expect(header).toHaveAttribute("aria-describedby", card.id);
+    fireEvent.keyDown(header, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(header).not.toHaveAttribute("aria-describedby");
+    const cell = screen.getByLabelText(/May 11.*Dark Star/i);
+    fireEvent.mouseEnter(cell);
+    expect(cell).toHaveAttribute("aria-describedby", (await screen.findByRole("tooltip")).id);
+  });
+
+  it("keeps focus on the sort button after sorting, and on the toggle after Show all", async () => {
+    render(<Grid block={{ ...(europe as GridBlock), open_rows: 5 }} />);
+    const sort = screen.getByRole("button", { name: /sort by dark star/i });
+    await userEvent.click(sort);
+    expect(document.activeElement).toBe(sort);
+    const more = screen.getByRole("button", { name: /show all 22/i });
+    await userEvent.click(more);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /show the first 5/i }));
+  });
+
+  it("still shows the keyboard-focus card when focus scrolls the frame while it waits", async () => {
+    render(<Grid block={europe as GridBlock} />);
+    const cells = screen.getAllByRole("gridcell");
+    cells[0].focus();
+    fireEvent.keyDown(cells[0], { key: "ArrowRight" });
+    fireEvent.scroll(screen.getByRole("region"));
+    expect(await screen.findByRole("tooltip")).toBeInTheDocument();
   });
 });

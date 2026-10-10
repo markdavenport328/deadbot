@@ -42,6 +42,8 @@
 .grid-passes { position: absolute; right: 3px; top: 2px; color: var(--quiet); font-size: 0.55rem; line-height: 1; }
 .is-light .grid-passes { color: color-mix(in srgb, var(--grid-ink) 60%, transparent); }
 
+.grid-sorted { margin: 0; max-width: 62ch; color: var(--muted); font-size: 0.84rem; line-height: 1.5; }
+.grid-sorted:empty { position: absolute; width: 1px; height: 1px; overflow: hidden; } /* stays in the page for the live region, out of the layout */
 .grid-more { justify-self: start; min-height: 2.25rem; padding: 0.55rem 0.8rem; border: 1px solid var(--hair); border-radius: var(--r); background: none; color: var(--text); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 .grid-more:hover { border-color: var(--muted); }
 .grid-more:focus-visible, .grid-frame:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

@@ -2,7 +2,7 @@
 // their order, what opens first, the cells to point at and the words; every
 // cell value comes from the library. Strength is cream only (gold is for
 // listen controls, which arrive with the cell interactions).
-import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { CardHeading, MoreAbout } from "./components";
 import { GridFacts } from "./GridFacts";
 import { columnSummary, rowParts, rowShowDate, sortRows, type GridRow, type Selection } from "./grid-actions";
@@ -38,7 +38,7 @@ function columnSentence(block: GridBlock, columnIndex: number): string {
   const first = isShow ? `Played on ${played} of ${total} nights.` : `${played} of the ${total} songs were played that year.`;
   if (!longest) return first;
   const unit = block.measure === "minutes" ? "minutes" : "shows";
-  const where = rowParts({ label: longest.rowLabel } as GridRow).date.replace(/,\s*\d{4}$/, "");
+  const where = rowParts({ label: longest.rowLabel } as GridRow).date;
   return `${first} ${block.measure === "minutes" ? "Longest" : "Most"}: ${where}, ${longest.value} ${unit}.`;
 }
 
@@ -71,6 +71,8 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
   const tipRef = useRef<HTMLDivElement>(null);
   const timer = useRef<number | undefined>(undefined);
   const byKeyboard = useRef(false);
+  const pending = useRef(false); // a keyboard-focus card is waiting out its delay
+  const tipId = useId();
 
   const canFold = block.open_rows != null && block.open_rows > 0 && block.open_rows < block.rows.length;
   const ordered = useMemo(() => (sortColumn == null ? block.rows : sortRows(block.rows, sortColumn, "desc")), [block.rows, sortColumn]);
@@ -105,17 +107,30 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
 
   const hideTip = useCallback(() => {
     window.clearTimeout(timer.current);
+    pending.current = false;
     setTip(null);
   }, []);
   const showTip = useCallback((target: Tip, anchor: HTMLElement, delay: number) => {
     window.clearTimeout(timer.current);
     const show = () => {
+      pending.current = false;
       anchorRef.current = anchor;
       setTip(target);
     };
+    pending.current = delay > 0;
     if (delay > 0) timer.current = window.setTimeout(show, delay);
     else show();
   }, []);
+
+  // Escape dismisses the card from wherever the pointer or focus is.
+  useEffect(() => {
+    if (!tip) return;
+    const dismiss = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") hideTip();
+    };
+    window.addEventListener("keydown", dismiss);
+    return () => window.removeEventListener("keydown", dismiss);
+  }, [tip, hideTip]);
 
   // Above the anchor, flipped below near the top edge, clamped inside the stage.
   useLayoutEffect(() => {
@@ -211,9 +226,9 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
           role="region"
           tabIndex={0}
           aria-label={block.title ?? `Grid of ${block.rows.length} ${rowsLabel} by ${block.columns.length} ${columnsLabel}`}
-          onScroll={hideTip}
+          onScroll={() => !pending.current && hideTip()}
         >
-          <table className={`grid-table grid-${block.column_kind}`} role="grid">
+          <table className={`grid-table grid-${block.column_kind}`} role="grid" aria-multiselectable="true">
             <thead>
               <tr>
                 <td role="presentation" />
@@ -233,6 +248,7 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
                         type="button"
                         className="grid-sort"
                         aria-label={`Sort by ${column.sub ?? column.label}`}
+                        aria-describedby={tip?.kind === "column" && tip.column === columnIndex ? tipId : undefined}
                         onClick={() => sortBy(columnIndex)}
                         onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
                         onMouseLeave={hideTip}
@@ -315,6 +331,7 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
                             style={cell.state === "value" ? { background: `rgba(var(--grid-cell), ${fill.alpha})` } : undefined}
                             aria-label={label}
                             aria-selected={isSelected}
+                            aria-describedby={tip?.kind === "cell" && tip.row === rowIndex && tip.column === index ? tipId : undefined}
                             tabIndex={active.row === rowIndex && active.column === index ? 0 : -1}
                             onClick={(event: MouseEvent) => select(rowIndex, index, event.shiftKey || event.metaKey || event.ctrlKey)}
                             onKeyDown={(event) => onCellKey(event, rowIndex, index)}
@@ -351,7 +368,7 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
           </table>
         </div>
         {tip && (
-          <div className="grid-tip" role="tooltip" ref={tipRef}>
+          <div className="grid-tip" role="tooltip" id={tipId} ref={tipRef}>
             {tipCell ? (
               <GridFacts block={block} rowIndex={tipCell.row} columnIndex={tipCell.column} />
             ) : (
@@ -360,6 +377,10 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
           </div>
         )}
       </div>
+      <p className="grid-sorted" aria-live="polite">
+        {sortColumn != null &&
+          `Sorted by ${block.columns[sortColumn]?.sub ?? block.columns[sortColumn]?.label}. ${columnSentence(block, sortColumn)}`}
+      </p>
       {canFold && (
         <button type="button" className="grid-more" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
           {open ? `Show the first ${block.open_rows}` : `Show all ${block.rows.length}`}
@@ -438,8 +459,12 @@ function DetailBar({
       toTrack(track, { showDate: rowShowDate(source), venueName: source.sub }),
     );
   });
-  const current = player.currentTrack;
-  const mine = Boolean(current && queue.some((track) => track.id === current.id && track.audioUrl === current.audioUrl));
+  // The player is on this selection only when its queue is this queue, same
+  // tracks in the same order; any other queue starts fresh.
+  const mine =
+    queue.length > 0 &&
+    player.queue.length === queue.length &&
+    queue.every((track, index) => track.id === player.queue[index].id && track.audioUrl === player.queue[index].audioUrl);
   const playing = mine && player.status === "playing";
   const loading = mine && player.status === "loading";
 
