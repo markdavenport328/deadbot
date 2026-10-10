@@ -110,6 +110,53 @@ Dick's Picks 1, or bonus material such as the 11/2/77 tracks on Dick's Picks
 34); 59 tracks dated to a day `shows.csv` lacks or with more than one date; 5
 undated tracks that fit two candidate shows.
 
+## Songs on release tracks: medleys, suites and jams (2026-10-09)
+
+`song_id` on a release track is one song, and it counts: it is how a song's
+page lists the records that carry it. `normalize_release_track_songs.py`
+fills it from the mapped performance first, then from the title. Three rules
+keep the count honest:
+
+1. **A track that holds several songs has no `song_id`.** The schema's place
+   for one track over several performances is the
+   `official_release_track_performances` bridge (`schema/postgres.sql`), which
+   no CSV loads yet; every medley track in the catalog (231 `A / B` titles
+   before this pass) already left `song_id` and `performance_id` blank, and
+   so do suites. `Weather Report Suite` is three spine performances (Prelude,
+   Part 1, Let It Grow); `That's It for the Other One` is Cryptical
+   Envelopment > The Other One > Cryptical Envelopment. When such a track is
+   the only release track between two mapped neighbours, its note lists the
+   performance ids it spans, ready for the bridge.
+2. **A jam is never a song by its title alone.** A song-named jam (`Dark Star
+   Jam`, `Other One Jam`, `Playing Jam`, `Uncle John's Band Jam`), a
+   `Song > Jam` title, and a jam named for something else (`No MSG Jam`,
+   `Boston Clam Jam`, `Jam 1`) take a song only through the setlist: the
+   stretch of setlist between the track's mapped neighbours must hold exactly
+   one performance the title can name (the named song for a song-named jam,
+   the spine's own `Jam` for any other named jam). The gdshowsdb spine counts
+   such a jam as that performance (for example 1974-06-26 lists `Truckin' >
+   The Other One > Spanish Jam` where Dick's Picks 12 has `Other One Jam`), so
+   the track maps to it and inherits its song; the song's count rises only
+   where the spine already counts a performance. A named jam with no such
+   performance between its neighbours (`Mud Love Buddy Jam`, `Spinach Jam`,
+   `Wood Green Jam`, `Spam Jam`, Dick's Picks 5's `Jam 1`/`Jam 2`) keeps a
+   blank `song_id`.
+3. **Spelling variants are aliases.** `Other One` (The Other One), `Playing`
+   and `Playin' in the Band` (Playing in the Band), and `We Bid You
+   Goodnight` / `And We Bid You Goodnight` (And We Bid You Good Night) join
+   the reviewed alias table.
+
+Dick's Picks tracks with a song: 756 → 768 of 793 (all official releases
+9,475 → 9,516). The 25 left blank: seven `Weather Report Suite` and one
+`That's It for the Other One` (rule 1; Dick's Picks 4's suite track is not yet
+in the catalog); three medleys (Dick's Picks 13 `Saint of Circumstance /
+Scarlet Begonias > Fire on the Mountain`, whose 1981-05-06 setlist has no
+Scarlet/Fire, and `Caution / Spanish Jam`; Dick's Picks 14 `Brown-Eyed Woman /
+The Merry-Go-Round Broke Down / Beer Barrel Polka`); songs not in `songs.csv`
+(`Beer Barrel Polka` twice, `Funiculi Funicula`); spoken or untitled segments
+(`Introduction`, `I've Seen Them All`, `Phil Solo`, `Take a Step Back`,
+`Lunatic Preserve`); and the six named jams above.
+
 ## Show-resolution rule
 
 Dates are extracted from four title-level fields (release-group title and

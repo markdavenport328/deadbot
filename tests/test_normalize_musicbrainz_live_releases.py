@@ -161,3 +161,61 @@ def test_an_undated_track_that_fits_two_shows_in_order_is_held():
 
     assert _mapped(results) == [None]
     assert "more than one candidate show" in results[0]["held"]
+
+
+# --- segment titles: jams, suites, medleys -------------------------------------
+
+def test_a_song_named_jam_takes_the_performance_the_setlist_counts_between_its_neighbours():
+    rows, songs = _setlist("s", "Truckin'", "The Other One", "Spanish Jam", "Wharf Rat")
+    titles = ["Truckin’ >", "Other One Jam >", "Spanish Jam >", "Wharf Rat"]
+
+    results = mb.match_release_tracks(titles, [{"s"}] * 4, {"s": rows}, songs)
+
+    assert _mapped(results)[1] == "s-song-the-other-one-2"
+    assert results[1]["how"] == "segment"
+
+
+def test_a_song_then_jam_title_is_the_songs_performance_when_the_setlist_has_no_jam():
+    rows, songs = _setlist("s", "Dark Star", "Sugar Magnolia")
+
+    results = mb.match_release_tracks(["Dark Star > Jam >", "Sugar Magnolia"], [{"s"}] * 2, {"s": rows}, songs)
+
+    assert _mapped(results) == ["s-song-dark-star-1", "s-song-sugar-magnolia-2"]
+
+
+def test_a_named_jam_takes_only_the_setlists_own_jam():
+    rows, songs = _setlist("s", "He's Gone", "Jam", "Drums")
+    titles = ["He’s Gone >", "No MSG Jam >", "Drums"]
+
+    results = mb.match_release_tracks(titles, [{"s"}] * 3, {"s": rows}, songs)
+
+    assert _mapped(results)[1] == "s-song-jam-2"
+
+
+def test_a_named_jam_with_nothing_between_its_neighbours_stays_unmapped():
+    rows, songs = _setlist("s", "China Cat Sunflower", "I Know You Rider", "Jam")
+    titles = ["China Cat Sunflower >", "Mud Love Buddy Jam >", "I Know You Rider"]
+
+    results = mb.match_release_tracks(titles, [{"s"}] * 3, {"s": rows}, songs)
+
+    assert _mapped(results)[1] is None
+
+
+def test_a_suite_track_spans_its_parts_and_is_held():
+    rows, songs = _setlist("s", "Row Jimmy", "Weather Report Suite Prelude", "Weather Report Suite Part 1", "Let It Grow", "Dark Star")
+    titles = ["Row Jimmy", "Weather Report Suite >", "Dark Star"]
+
+    results = mb.match_release_tracks(titles, [{"s"}] * 3, {"s": rows}, songs)
+
+    assert _mapped(results) == ["s-song-row-jimmy-1", None, "s-song-dark-star-5"]
+    assert results[1]["held"].startswith("track spans 3 canonical performances")
+
+
+def test_a_jam_title_alone_never_resolves_a_song_but_spelling_variants_do():
+    import normalize_release_track_songs as backfill
+
+    folded = backfill._STUDIO.load_songs()
+    assert backfill.resolve_song_id("Dark Star Jam >", folded) is None
+    assert backfill.resolve_song_id("Other One Jam", folded) is None
+    assert backfill.resolve_song_id("Other One >", folded) == "song-the-other-one"
+    assert backfill.resolve_song_id("We Bid You Goodnight", folded) == "song-and-we-bid-you-good-night"

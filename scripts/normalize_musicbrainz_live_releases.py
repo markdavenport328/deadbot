@@ -169,6 +169,16 @@ TITLE_ALIASES = {
     "quinn the eskimo the mighty quinn": "quinn the eskimo",
     "the mighty quinn": "quinn the eskimo",
     "women are smarter": "man smart woman smarter",
+    # Dick's Picks spellings (2026-10-09): the article dropped from The Other
+    # One, "Playing" for Playing in the Band, and the Bid You Goodnight
+    # variants of the traditional closer the setlist calls And We Bid You
+    # Good Night.
+    "other one": "the other one",
+    "playing": "playing in the band",
+    "playin in the band": "playing in the band",
+    "we bid you goodnight": "and we bid you good night",
+    "we bid you good night": "and we bid you good night",
+    "and we bid you goodnight": "and we bid you good night",
 }
 
 
@@ -267,6 +277,14 @@ def spotify_track_url(urls: list[dict]) -> str:
 
 ORDER_CONFLICT = "the release places this title out of setlist order (re-sequenced or bonus material)"
 AMBIGUOUS = "title matches more than one setlist position (ambiguous alignment)"
+SEGMENT_SEPARATOR = re.compile(r"\s*(?:/|>|→|->)\s*")
+JAM_TITLE = re.compile(r"(?:(.+) )?jam(?: \d+)?")
+# Suite titles a release prints for segments the setlist spine lists one by
+# one.  Used only to recognise a track that spans several performances.
+SUITES = {
+    "weather report suite": ("weather report suite prelude", "weather report suite part 1", "let it grow"),
+    "that s it for the other one": ("cryptical envelopment", "the other one"),
+}
 
 
 
@@ -298,6 +316,39 @@ def chain_agreement(nodes: list[tuple[int, int]]) -> tuple[set[tuple[int, int]],
     per_length = Counter(ending[k] for k, node in enumerate(nodes) if node in on_some)
     on_every = {node for k, node in enumerate(nodes) if node in on_some and per_length[ending[k]] == 1}
     return on_every, on_some
+
+
+def segment_parts(title: str) -> list[str]:
+    """The normalized segment names in a release title (``Dark Star > Jam >``)."""
+
+    pieces = SEGMENT_SEPARATOR.split((title or "").replace("→", ">"))
+    return [part for part in (normalized_title(piece) for piece in pieces) if part]
+
+
+def part_targets(part: str, show_titles: set[str], catalog_titles: set[str]) -> tuple[str, tuple[str, ...]]:
+    """What setlist titles one segment name can stand for at a show.
+
+    ``song`` and ``suite`` parts must be found; a ``jam`` part may be absorbed
+    by its neighbour, because the setlist spine often counts a jam out of a
+    song as part of that song's performance.  ``<Song> Jam`` stands only for
+    that song; a jam named for something that is not a song (``No MSG Jam``,
+    ``Jam 1``) stands only for the setlist's own ``Jam``.  Anything else is a
+    segment the catalog has no song for (``Beer Barrel Polka``).
+    """
+
+    if part in show_titles:
+        return "song", (part,)
+    if part in SUITES:
+        return "suite", SUITES[part]
+    match = JAM_TITLE.fullmatch(part)
+    if match:
+        base = match.group(1)
+        if base:
+            base = TITLE_ALIASES.get(base, base)
+            if base in show_titles or base in catalog_titles:
+                return "jam", (base,)
+        return "jam", ("jam",)
+    return "other", ()
 
 
 def match_release_tracks(
@@ -439,6 +490,53 @@ def _solve_show(
         results[index] = {"held": ORDER_CONFLICT}
     for index, position in accepted.items():
         results[index] = {"show_id": show_id, "performance": performances[position], "how": "aligned"}
+
+    # Segment titles (``Dark Star > Jam``, ``Other One Jam``, ``No MSG Jam``,
+    # ``Weather Report Suite``): the setlist between the track's mapped
+    # neighbours must hold exactly one performance its segments name.  The
+    # spine counts a jam out of a song as that song's performance, so the
+    # track is that performance; a jam is never a song by its title alone.
+    catalog_titles = {normalized_title(title) for title in songs.values()}
+    show_titles = set(setlist)
+    claimed = set(accepted.values())
+    proposals: dict[int, int] = {}
+    for index in members:
+        if index in accepted or exact_nodes([index]):
+            continue
+        targets = [part_targets(part, show_titles, catalog_titles) for part in segment_parts(titles[index])]
+        if not targets or any(kind == "other" for kind, _ in targets):
+            continue
+        low, high = neighbours(index)
+        if low == -1 and high == len(setlist):
+            continue
+        found: set[int] = set()
+        missing_song = False
+        for kind, names in targets:
+            hits = {position for position in range(low + 1, high) if setlist[position] in names and position not in claimed}
+            missing_song = missing_song or (not hits and kind != "jam")
+            found |= hits
+        if missing_song or not found:
+            continue
+        if len(found) == 1:
+            proposals[index] = next(iter(found))
+        else:
+            listed = ", ".join(performances[position]["performance_id"] for position in sorted(found))
+            results[index] = {
+                "held": f"track spans {len(found)} canonical performances ({listed}); one track cannot name one performance, so it waits for the segment bridge table"
+            }
+    taken = Counter(proposals.values())
+    for index, position in proposals.items():
+        if taken[position] > 1:
+            results[index] = {"held": "two release tracks name the same setlist segment"}
+            continue
+        row = performances[position]
+        accepted[index] = position
+        results[index] = {
+            "show_id": show_id,
+            "performance": row,
+            "how": "segment",
+            "detail": f"{titles[index].strip()} = {songs[row['song_id']]}, set {row['set_number']} position {row['position_in_set']}",
+        }
 
     # A held track that is the only release track between two mapped
     # neighbours holds that whole stretch of the setlist.
@@ -768,7 +866,13 @@ def process_group(
         prefix = f"{location}; MusicBrainz recording {recording.get('id', '')}"
         if "performance" in result:
             performance_id = result["performance"]["performance_id"]
-            note = f"{prefix}; title aligned uniquely and monotonically with the {show_id} setlist."
+            if result["how"] == "segment":
+                note = (
+                    f"{prefix}; the track's segments name one performance in the {show_id} setlist between its "
+                    f"neighbouring tracks ({result['detail']}), and the setlist counts that segment as this performance."
+                )
+            else:
+                note = f"{prefix}; title aligned uniquely and monotonically with the {show_id} setlist."
             if not attributed_show:
                 others = sorted(track_candidates[index] - {show_id})
                 if others:
@@ -789,6 +893,8 @@ def process_group(
             canonical_titles = {normalized_title(songs[row["song_id"]]) for row in performances_by_show.get(attributed_show, [])}
             if looks_like_medley(track.get("title", ""), canonical_titles):
                 why = "track combines more than one canonical performance (medley); needs the segment bridge table"
+            elif len(segment_parts(track.get("title", ""))) > 1:
+                why = "track combines several songs (medley), not all of them in the show's canonical setlist; one track cannot name one performance"
             else:
                 why = "title is not in the show's canonical setlist (intro, tuning, banter, or source-only segment)"
             note = f"{prefix}; no canonical performance mapped: {why}."
