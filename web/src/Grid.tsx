@@ -5,7 +5,7 @@
 import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { CardHeading, MoreAbout } from "./components";
 import { GridFacts } from "./GridFacts";
-import { columnSummary, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
+import { columnSummary, GridReshapeError, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
 import { toTrack } from "./listen-control";
 import { usePlayer } from "./player";
 import type { GridBlock } from "./types";
@@ -67,7 +67,7 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
   const changed = block !== original;
   const [menu, setMenu] = useState<Menu | null>(null);
   const [working, setWorking] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [sortColumn, setSortColumn] = useState<number | null>(null);
   const [selection, setSelection] = useState<Selection>([]);
@@ -85,6 +85,7 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
   const menuRef = useRef<HTMLDivElement>(null);
   const menuTrigger = useRef<HTMLElement | null>(null);
   const headerRefs = useRef(new Map<string, HTMLButtonElement>());
+  const refocusTrigger = useRef(false); // a failed change hands focus back to the button that asked
   const focusColumn = useRef<string | null>(null); // the header to focus once the reshaped grid is drawn
 
   const canFold = block.open_rows != null && block.open_rows > 0 && block.open_rows < block.rows.length;
@@ -207,11 +208,18 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
     headerRefs.current.get(id)?.focus();
   }, [block]);
 
+  // The buttons are disabled while a change is on its way, so focus returns once they are enabled again.
+  useLayoutEffect(() => {
+    if (working || !refocusTrigger.current) return;
+    refocusTrigger.current = false;
+    menuTrigger.current?.focus();
+  }, [working]);
+
   async function reshape(change: GridChange, columnIndex: number | null) {
     if (working) return;
     setMenu(null);
     setWorking(true);
-    setFailed(false);
+    setFailure(null);
     try {
       const next = await reshapeGrid(block, change);
       const focusIndex = columnIndex == null ? null : Math.min(columnIndex, next.columns.length - 1);
@@ -221,9 +229,13 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
       setSelection([]);
       setFocus({ row: 0, column: 0 });
       setReshaped({ from: original, block: next });
-    } catch {
-      setFailed(true);
-      menuTrigger.current?.focus();
+    } catch (error) {
+      setFailure(
+        error instanceof GridReshapeError && error.status === 429
+          ? "Too many changes at once. Try again in a minute."
+          : "Couldn't change the grid. Try again.",
+      );
+      refocusTrigger.current = true;
     } finally {
       setWorking(false);
     }
@@ -300,9 +312,9 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
         </div>
         {block.title && <CardHeading className="grid-headline">{block.title}</CardHeading>}
         {block.note && <p className="grid-note">{block.note}</p>}
-        {changed && (block.title || block.note) && <p className="grid-original">Written for the original grid</p>}
+        {changed && (block.title || block.note || block.coverage) && <p className="grid-original">Written for the original grid</p>}
       </header>
-      <div className="grid-stage" ref={stageRef} aria-busy={working}>
+      <div className={`grid-stage${working ? " is-working" : ""}`} ref={stageRef} aria-busy={working}>
         <div
           className="grid-frame"
           role="region"
@@ -348,11 +360,11 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                           type="button"
                           className="grid-options"
                           aria-label={`Options for ${column.sub ?? column.label}`}
-                          aria-haspopup="true"
+                          disabled={working}
                           aria-expanded={menu?.kind === "remove" && menu.column === columnIndex}
                           onClick={(event) => {
                             hideTip();
-                            setFailed(false);
+                            setFailure(null);
                             menuTrigger.current = event.currentTarget;
                             setMenu(menu?.kind === "remove" && menu.column === columnIndex ? null : { kind: "remove", column: columnIndex });
                           }}
@@ -368,11 +380,11 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                     <button
                       type="button"
                       className="grid-add"
-                      aria-haspopup="true"
+                      disabled={working}
                       aria-expanded={menu?.kind === "add"}
                       onClick={(event) => {
                         hideTip();
-                        setFailed(false);
+                        setFailure(null);
                         menuTrigger.current = event.currentTarget;
                         setMenu(menu?.kind === "add" ? null : { kind: "add" });
                       }}
@@ -526,11 +538,9 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
         {sortColumn != null &&
           `Sorted by ${block.columns[sortColumn]?.sub ?? block.columns[sortColumn]?.label}. ${columnSentence(block, sortColumn)}`}
       </p>
-      {failed && (
-        <p className="grid-error" role="status">
-          Couldn't change the grid. Try again.
-        </p>
-      )}
+      <p className="grid-error" role="status">
+        {failure}
+      </p>
       {canFold && (
         <button type="button" className="grid-more" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
           {open ? `Show the first ${block.open_rows}` : `Show all ${block.rows.length}`}

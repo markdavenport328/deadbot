@@ -758,11 +758,13 @@ class GridBlock(ExperienceModel):
 
 class GridRequest(ExperienceModel):
     """A visitor's reshape of a grid: the lists as they now stand, plus the
-    model's headline and note, which the server hands back unchanged."""
+    model's headline, note and coverage, which the server hands back unchanged."""
 
     spec: GridSpecModel
-    title: str | None = Field(default=None, max_length=300)
-    note: str | None = Field(default=None, max_length=2000)
+    # Only a transport ceiling: a block the server produced must always reshape.
+    title: str | None = Field(default=None, max_length=20_000)
+    note: str | None = Field(default=None, max_length=20_000)
+    coverage: str | None = Field(default=None, max_length=20_000)
     open_rows: int | None = Field(default=None, ge=1)
 
 

@@ -2006,12 +2006,24 @@
       },
       "GridRequest": {
         "additionalProperties": false,
-        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline and note, which the server hands back unchanged.",
+        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline, note and coverage, which the server hands back unchanged.",
         "properties": {
+          "coverage": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
           "note": {
             "anyOf": [
               {
-                "maxLength": 2000,
+                "maxLength": 20000,
                 "type": "string"
               },
               {
@@ -2038,7 +2050,7 @@
           "title": {
             "anyOf": [
               {
-                "maxLength": 300,
+                "maxLength": 20000,
                 "type": "string"
               },
               {
@@ -4726,7 +4738,7 @@
     },
     "/api/grid": {
       "post": {
-        "description": "Rebuild a grid from the library after the visitor adds or removes a list.\n\nThe model's picks (highlights, chips, coverage) belong to the grid it\nwrote, so they are not part of the rebuilt block.",
+        "description": "Rebuild a grid from the library after the visitor adds or removes a list.\n\nThe model's picks (highlights and chips) belong to the grid it\nwrote, so they are not part of the rebuilt block.",
         "operationId": "reshape_grid_api_grid_post",
         "requestBody": {
           "content": {

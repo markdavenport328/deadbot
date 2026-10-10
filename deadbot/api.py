@@ -42,6 +42,18 @@ metrics_logger.propagate = False
 if not metrics_logger.handlers:
     metrics_logger.addHandler(logging.StreamHandler())
 
+# Ceilings far above what a model writes; a longer text is cut and logged, never refused.
+GRID_TITLE_CEILING = 1_000
+GRID_TEXT_CEILING = 10_000
+
+
+def _trim_text(text: str | None, ceiling: int, what: str) -> str | None:
+    if text is not None and len(text) > ceiling:
+        logger.warning("Truncated a %d-character %s to the ceiling of %d", len(text), what, ceiling)
+        return text[:ceiling]
+    return text
+
+
 UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
 
 
@@ -90,6 +102,7 @@ def create_app(
     # is not a real cross-instance limit. A shared store (e.g. Redis) would be
     # needed for that; deferred as a later operational decision.
     app.state.rate_limit_hits = {}
+    app.state.grid_rate_limit_hits = {}
     app.state.response_cache = ResponseCache(
         store,
         enabled=settings.response_cache,
@@ -102,14 +115,15 @@ def create_app(
             return forwarded_for.split(",")[0].strip()
         return http_request.client.host if http_request.client else "unknown"
 
-    def _enforce_rate_limit(http_request: Request) -> None:
-        limit = app.state.settings.rate_limit_per_minute
+    def _enforce_rate_limit(http_request: Request, *, grid: bool = False) -> None:
+        limit = app.state.settings.grid_rate_limit_per_minute if grid else app.state.settings.rate_limit_per_minute
         if limit <= 0:
             return
         now = time.monotonic()
         window_start = now - 60
         client_ip = _client_ip(http_request)
-        hits = app.state.rate_limit_hits.setdefault(client_ip, deque())
+        buckets = app.state.grid_rate_limit_hits if grid else app.state.rate_limit_hits
+        hits = buckets.setdefault(client_ip, deque())
         while hits and hits[0] <= window_start:
             hits.popleft()
         if len(hits) >= limit:
@@ -369,11 +383,11 @@ def create_app(
     def reshape_grid(request: GridRequest, http_request: Request) -> GridBlock:
         """Rebuild a grid from the library after the visitor adds or removes a list.
 
-        The model's picks (highlights, chips, coverage) belong to the grid it
+        The model's picks (highlights and chips) belong to the grid it
         wrote, so they are not part of the rebuilt block.
         """
 
-        _enforce_rate_limit(http_request)
+        _enforce_rate_limit(http_request, grid=True)
         spec = grids.GridSpec.from_json(request.spec.model_dump())
         if spec is None:
             raise HTTPException(status_code=422, detail="That pair of lists is not one the library can draw.")
@@ -384,9 +398,9 @@ def create_app(
             row_ids=None,
             open_rows=request.open_rows,
             highlights=[],
-            title=request.title,
-            note=request.note,
-            coverage=None,
+            title=_trim_text(request.title, GRID_TITLE_CEILING, "grid title"),
+            note=_trim_text(request.note, GRID_TEXT_CEILING, "grid note"),
+            coverage=_trim_text(request.coverage, GRID_TEXT_CEILING, "grid coverage"),
             follow_ups=[],
         )
         if block is None:

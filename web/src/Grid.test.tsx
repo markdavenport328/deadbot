@@ -396,6 +396,7 @@ describe("Grid reshape", () => {
     expect(body.spec.row_ids).toEqual(original.rows.map((r) => r.id));
     expect(body.title).toBe(original.title);
     expect(body.note).toBe(original.note);
+    expect(body.coverage).toBe(original.coverage ?? null);
     expect(await screen.findByRole("button", { name: /sort by mr\. charlie/i })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -448,6 +449,53 @@ describe("Grid reshape", () => {
     await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
     expect(await screen.findByText("Couldn't change the grid. Try again.")).toBeInTheDocument();
+  });
+
+  it("also shows the original-grid line when only the coverage was written", async () => {
+    const quiet = { ...original, title: null, note: null, coverage: "Setlists are thin before 1971." } as GridBlock;
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...quiet, columns: quiet.columns.slice(1), rows: quiet.rows.map((r) => ({ ...r, cells: r.cells!.slice(1) })) }) });
+    render(<Grid block={quiet} />);
+    expect(screen.queryByText("Written for the original grid")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(await screen.findByText("Written for the original grid")).toBeInTheDocument();
+    expect(requestBody().coverage).toBe("Setlists are thin before 1971.");
+  });
+
+  it("asks to wait when the reshape budget is spent", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 429, json: async () => ({}) });
+    render(<Grid block={original} />);
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(await screen.findByText("Too many changes at once. Try again in a minute.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /sort by dark star/i })).toBeInTheDocument();
+  });
+
+  it("keeps a live region in the page and fills it when a change fails", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 500, json: async () => ({}) });
+    render(<Grid block={original} />);
+    const status = document.querySelector(".grid-error") as HTMLElement;
+    expect(status).toHaveAttribute("role", "status");
+    expect(status).toBeEmptyDOMElement();
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    await vi.waitFor(() => expect(status).toHaveTextContent("Couldn't change the grid. Try again."));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Options for Dark Star" }));
+    expect(document.querySelector(".grid-error")).toBe(status);
+  });
+
+  it("disables the column controls while a change is on its way", async () => {
+    let finish: (value: unknown) => void = () => {};
+    fetchMock.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    render(<Grid block={original} />);
+    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
+    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
+    expect(screen.getByRole("button", { name: "Add a column" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Options for Dark Star" })).toBeDisabled();
+    expect(document.querySelector(".grid-stage")).toHaveClass("is-working");
+    await act(async () => finish({ ok: true, json: async () => original }));
+    expect(screen.getByRole("button", { name: "Add a column" })).toBeEnabled();
+    expect(document.querySelector(".grid-stage")).not.toHaveClass("is-working");
   });
 
   it("cannot remove the last remaining column", async () => {

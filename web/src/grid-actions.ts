@@ -72,8 +72,14 @@ function reshapedSpec(block: GridBlock, change: GridChange): GridBlock["spec"] {
   };
 }
 
+export class GridReshapeError extends Error {
+  constructor(readonly status: number) {
+    super(`The grid could not be reshaped (${status}).`);
+  }
+}
+
 // Ask the server to redraw this grid with one list added or removed. The
-// headline and note go along and come back as they were; the cells, tracks
+// headline, note and coverage go along and come back as they were; the cells, tracks
 // and suggestions are filled fresh from the library.
 export async function reshapeGrid(block: GridBlock, change: GridChange): Promise<GridBlock> {
   const result = await fetch("/api/grid", {
@@ -83,9 +89,10 @@ export async function reshapeGrid(block: GridBlock, change: GridChange): Promise
       spec: reshapedSpec(block, change),
       title: block.title ?? null,
       note: block.note ?? null,
+      coverage: block.coverage ?? null,
       open_rows: block.open_rows ?? null,
     }),
   });
-  if (!result.ok) throw new Error(`The grid could not be reshaped (${result.status}).`);
+  if (!result.ok) throw new GridReshapeError(result.status);
   return (await result.json()) as GridBlock;
 }

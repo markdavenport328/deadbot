@@ -51,7 +51,7 @@ export interface paths {
          * Reshape Grid
          * @description Rebuild a grid from the library after the visitor adds or removes a list.
          *
-         *     The model's picks (highlights, chips, coverage) belong to the grid it
+         *     The model's picks (highlights and chips) belong to the grid it
          *     wrote, so they are not part of the rebuilt block.
          */
         post: operations["reshape_grid_api_grid_post"];
@@ -775,9 +775,11 @@ export interface components {
         /**
          * GridRequest
          * @description A visitor's reshape of a grid: the lists as they now stand, plus the
-         *     model's headline and note, which the server hands back unchanged.
+         *     model's headline, note and coverage, which the server hands back unchanged.
          */
         GridRequest: {
+            /** Coverage */
+            coverage?: string | null;
             /** Note */
             note?: string | null;
             /** Open Rows */
