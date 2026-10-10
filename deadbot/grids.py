@@ -470,7 +470,7 @@ def grid_block(
             )
             for row in fit(ordered, "grid rows")
         ],
-        open_rows=open_rows if open_rows and open_rows < len(ordered) else None,
+        open_rows=open_rows if open_rows and 0 < open_rows < len(ordered) else None,
         max_value=data.max_value(),
         suggestions=[GridSuggestion(**s) for s in data.suggestions],
         follow_ups=list(follow_ups),

@@ -280,3 +280,22 @@ def test_grid_block_none_for_bad_spec(csv_store):
         )
         is None
     )
+
+
+@pytest.mark.parametrize("open_rows", [-1, 0])
+def test_grid_block_ignores_an_open_rows_that_cannot_open_anything(csv_store, open_rows):
+    payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
+    block = grids.grid_block(
+        csv_store, payload, row_ids=None, open_rows=open_rows,
+        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+    )
+    assert block is not None and block.open_rows is None and len(block.rows) == 22
+
+
+def test_grid_block_none_when_the_grid_id_does_not_match_the_spec(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
+    mismatched = {**payload, "grid_id": "grid:000000000000"}
+    assert grids.grid_block(
+        csv_store, mismatched, row_ids=None, open_rows=None,
+        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+    ) is None
