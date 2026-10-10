@@ -1,4 +1,6 @@
 import json
+import logging
+from types import SimpleNamespace
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
@@ -150,3 +152,121 @@ def test_from_json_keeps_good_entries_and_skips_bad_ones():
     assert [entry.key for entry in restored.entries] == [book.entries[0].key]
     assert len(restored.pages) == 1
     assert notebook.Notebook.from_json("junk") == notebook.Notebook()
+
+
+def _messages_with(name, payload, call_id="x1", args=None):
+    return [
+        HumanMessage(content="Q"),
+        AIMessage(content="", tool_calls=[{"name": name, "args": args or {}, "id": call_id, "type": "tool_call"}]),
+        ToolMessage(content=payload if isinstance(payload, str) else json.dumps(payload), tool_call_id=call_id, name=name),
+    ]
+
+
+def test_a_failed_web_read_is_not_recorded_but_an_empty_one_is():
+    for state in ("unavailable", "invalid"):
+        assert notebook.tool_results(_messages_with("read_page", {"state": state, "url": PAGE["url"], "message": "x"})) == []
+        assert notebook.tool_results(_messages_with("get_deadcast_metadata", {"research": {"state": state}})) == []
+    kept = notebook.tool_results(_messages_with("read_page", {"state": "empty", "url": PAGE["url"], "text": ""}))
+    assert [name for name, *_ in kept] == ["read_page"]
+
+
+def test_a_failed_read_leaves_no_entry_in_the_notebook():
+    messages = [*_messages_with("read_page", {"state": "unavailable", "url": PAGE["url"]}, "r1", {"url": PAGE["url"]}), *finish_messages("Could not fetch it.")]
+    response = build_experience_response("Q", "t", messages, store())
+    assert notebook.record_turn(notebook.Notebook(), composition._latest_turn(messages), response).entries == []
+
+
+def test_tool_results_skips_non_json_list_and_error_payloads_without_raising():
+    for payload in ("not json at all", json.dumps(["a", "list"]), json.dumps({"error": "boom"}), json.dumps("a string")):
+        assert notebook.tool_results(_messages_with("get_show", payload)) == []
+
+
+def test_the_finish_call_is_excluded_by_name_even_with_a_json_payload():
+    messages = _messages_with(notebook.FINISH_TOOL_NAME, {"ok": True})
+    assert notebook.tool_results(messages) == []
+    assert notebook.tool_results(_messages_with("get_show", {"ok": True}))[0][0] == "get_show"
+
+
+def test_entry_key_ignores_argument_order():
+    assert notebook.entry_key("query_catalog", {"a": 1, "b": [2, 3]}) == notebook.entry_key("query_catalog", {"b": [2, 3], "a": 1})
+    assert notebook.entry_key("get_show", {"a": 1}) != notebook.entry_key("get_song", {"a": 1})
+    assert len(notebook.entry_key("get_show", {})) == 10
+
+
+def test_an_unknown_tool_gets_the_generic_fact_line():
+    line = notebook.summarize("get_mystery", {"q": "dew"}, {"rows": [1, 2, 3], "note": "x"}, 2500)
+    assert line == "get_mystery dew · 3 rows · ~2.5k tok"
+
+
+def test_a_failing_fact_line_falls_back_to_the_generic_one(monkeypatch):
+    def boom(args, payload):
+        raise ValueError("bad payload")
+
+    monkeypatch.setitem(notebook._SUMMARIES, "get_show", boom)
+    assert notebook.summarize("get_show", {"show_id_or_date": "1972-05-26"}, {"performances": [1]}, 10) == "get_show 1972-05-26 · 1 performances · ~10 tok"
+
+
+def test_ids_and_urls_ceilings_trim_and_log(caplog):
+    payload = {"rows": [{"show_id": f"gd-1972-{index:04d}"} for index in range(450)], "links": [f"https://example.org/{index}" for index in range(70)]}
+    with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
+        ids, urls = notebook._ids_and_urls(payload)
+    assert len(ids) == notebook.IDS_PER_ENTRY_CEILING and len(urls) == notebook.URLS_PER_ENTRY_CEILING
+    assert "kept 400 of" in caplog.text
+
+
+class _Block:
+    def __init__(self, data):
+        self.data = data
+
+    def model_dump(self, mode="json"):
+        return self.data
+
+
+def test_the_digest_keeps_twelve_blocks_and_eight_chips():
+    blocks = [
+        _Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": f"T{index}", "follow_ups": [{"label": f"Chip {index}"}]})
+        for index in range(20)
+    ]
+    response = SimpleNamespace(blocks=blocks, answer="A", title="Title")
+    page = notebook.page_digest(response, 3)
+    assert len(page.blocks) == notebook.DIGEST_BLOCK_CEILING == 12
+    assert page.chips == [f"Chip {index}" for index in range(8)]
+    assert page.blocks[0] == {"type": "show_unit", "ids": ["gd-1972-0000"], "title": "T0", "note": ""}
+
+
+def test_identical_answers_on_two_turns_each_get_their_own_lines():
+    first, _ = record(notebook.Notebook(), "Q1", "Same answer.", LYCEUM, prefix="a")
+    second, _ = record(first, "Q2", "Same answer.", MORNING_DEW, prefix="b")
+    conversation = [
+        ConversationTurn(role="user", text="Q1"),
+        ConversationTurn(role="assistant", text="Same answer."),
+        ConversationTurn(role="user", text="Q2"),
+        ConversationTurn(role="assistant", text="Same answer."),
+    ]
+    messages = notebook.transcript_with_notebook(second, conversation)
+    assert [message.type for message in messages] == ["human", "ai", "human", "human", "ai", "human"]
+    assert messages[2].content.startswith("Research notebook, turn 1:") and "get_show" in messages[2].content
+    assert messages[5].content.startswith("Research notebook, turn 2:") and "get_song" in messages[5].content
+
+
+def test_from_json_drops_entries_and_pages_with_malformed_fields():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    data = book.to_json()
+    data["entries"].append({**data["entries"][0], "key": "badids", "ids": None})
+    data["entries"].append({**data["entries"][0], "key": "badurls", "urls": [1, 2]})
+    data["entries"].append({**data["entries"][0], "key": "badpayload", "payload": "text"})
+    data["pages"].append({**data["pages"][0], "turn": 2, "blocks": ["x"]})
+    data["pages"].append({**data["pages"][0], "turn": 3, "chips": "chip"})
+    restored = notebook.Notebook.from_json(data)
+    assert [entry.key for entry in restored.entries] == [book.entries[0].key]
+    assert [page.turn for page in restored.pages] == [1]
+
+
+def test_entries_mentioning_returns_the_newest_matches():
+    book, _ = record(
+        notebook.Notebook(), "Q", "A",
+        [("get_show", {"show_id_or_date": "1972-05-26"}), ("get_show", {"show_id_or_date": "gd-1972-05-26"})],
+    )
+    older, newer = book.entries
+    assert notebook.entries_mentioning(book, ["gd-1972-05-26"], limit=1) == [newer]
+    assert notebook.entries_mentioning(book, ["gd-1972-05-26"]) == [older, newer]

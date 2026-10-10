@@ -114,6 +114,14 @@ def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
 
 
+def _strings(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def _block_ok(block: Any) -> bool:
+    return isinstance(block, dict) and isinstance(block.get("ids", []), list) and all(isinstance(item, str) for item in block.get("ids", []))
+
+
 def _entry_from(raw: Any) -> Entry | None:
     if not isinstance(raw, dict):
         return None
@@ -125,6 +133,10 @@ def _entry_from(raw: Any) -> Entry | None:
         return None
     if not (isinstance(entry.turn, int) and isinstance(entry.last_read, int)):
         return None
+    if not (_strings(entry.ids) and _strings(entry.urls) and isinstance(entry.summary, str) and isinstance(entry.tokens, int)):
+        return None
+    if entry.payload is not None and not isinstance(entry.payload, dict):
+        return None
     return entry
 
 
@@ -135,7 +147,11 @@ def _page_from(raw: Any) -> PageDigest | None:
         page = PageDigest(**{name: raw[name] for name in _PAGE_FIELDS if name in raw})
     except TypeError:
         return None
-    return page if isinstance(page.turn, int) and isinstance(page.answer_key, str) else None
+    if not (isinstance(page.turn, int) and isinstance(page.answer_key, str) and isinstance(page.title, str)):
+        return None
+    if not (isinstance(page.blocks, list) and all(_block_ok(block) for block in page.blocks) and _strings(page.chips)):
+        return None
+    return page
 
 
 def entry_key(tool: str, args: dict[str, Any]) -> str:
@@ -289,6 +305,19 @@ def summarize(tool: str, args: dict[str, Any], payload: dict[str, Any], tokens: 
 # --- harvesting a turn ---------------------------------------------------------
 
 
+FAILED_READ_STATES = frozenset({"unavailable", "invalid"})
+
+
+def _failed_read(payload: dict[str, Any]) -> bool:
+    """A web tool reports a failed fetch as state "unavailable" or "invalid", at the top or under "research".
+
+    "empty" is kept: the page was fetched and had nothing readable, which is
+    an answer the model can reuse instead of fetching it again.
+    """
+
+    return any(_dict(holder).get("state") in FAILED_READ_STATES for holder in (payload, payload.get("research")))
+
+
 def tool_results(turn_messages: list[Any]) -> list[tuple[str, dict[str, Any], dict[str, Any], int]]:
     """Each successful research call this turn: name, arguments, parsed payload, size in characters."""
 
@@ -311,7 +340,7 @@ def tool_results(turn_messages: list[Any]) -> list[tuple[str, dict[str, Any], di
             payload = json.loads(text)
         except (TypeError, ValueError):
             continue
-        if not isinstance(payload, dict) or "error" in payload:
+        if not isinstance(payload, dict) or "error" in payload or (name in WEB_TOOLS and _failed_read(payload)):
             continue
         results.append((name, dict(call.get("args") or {}), payload, len(text)))
     return results
@@ -470,7 +499,9 @@ def transcript_with_notebook(book: Notebook, conversation: list[ConversationTurn
     before it.
     """
 
-    by_answer = {page.answer_key: page.turn for page in book.pages}
+    by_answer: dict[str, list[int]] = {}
+    for page in sorted(book.pages, key=lambda page: page.turn):
+        by_answer.setdefault(page.answer_key, []).append(page.turn)
     placed: set[int] = set()
     body: list[BaseMessage] = []
     for item in conversation:
@@ -478,9 +509,10 @@ def transcript_with_notebook(book: Notebook, conversation: list[ConversationTurn
             body.append(HumanMessage(content=item.text))
             continue
         body.append(AIMessage(content=item.text))
-        number = by_answer.get(answer_key(item.text))
-        if number is None or number in placed:
+        waiting = by_answer.get(answer_key(item.text))
+        if not waiting:
             continue
+        number = waiting.pop(0)
         placed.add(number)
         text = render_turn(book, number)
         if text:
@@ -529,7 +561,8 @@ def find(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[lis
 
 def entries_mentioning(book: Notebook, ids: Iterable[str], *, limit: int = 8) -> list[Entry]:
     wanted = {str(value) for value in ids if value}
-    return [entry for entry in book.entries if wanted & set(entry.ids) or wanted & _arg_values(entry.args)][:limit]
+    matches = [entry for entry in book.entries if wanted & set(entry.ids) or wanted & _arg_values(entry.args)]
+    return matches[-limit:] if limit > 0 else []
 
 
 def grounding(book: Notebook) -> tuple[frozenset[str], frozenset[str]]:
