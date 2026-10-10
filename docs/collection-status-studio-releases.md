@@ -311,3 +311,18 @@ the backfill runs again. See `schema/README.md` for the stated order.
    the free-text `notes` column (`owns_row` above) to tell the live and studio
    passes' rows apart. That has worked so far, but it is a weaker mechanism
    than a real column and is worth migrating to the same provenance pattern.
+
+## 2026-10-10: reruns keep reviewed values
+
+A rerun of `scripts/normalize_musicbrainz_studio_releases.py` used to blank 11
+hand-verified Spotify album links (the 2026-09-10 sweep) and shorten 11
+release dates that `normalize_wikipedia_album_dates.py` had sharpened
+(`1972-05-01` back to MusicBrainz's `1972-05`). `carry_forward_reviewed_values`
+now keeps a verified link MusicBrainz lacks and a date that extends
+MusicBrainz's own (never one that disagrees with it). Running the live pass,
+the studio pass, the Wikipedia date pass and the song backfill, in either
+pass order, now reproduces the release CSVs byte for byte. The one content
+change on this rerun: two personnel credits MusicBrainz already carried now
+resolve because their people were added to `people.csv` after the first run
+(Rob Wasserman, bass, Evening Moods; Waddy Wachtel, guitar, Heaven Help the
+Fool).

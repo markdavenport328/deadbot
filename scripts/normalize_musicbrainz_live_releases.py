@@ -612,8 +612,26 @@ def flatten_tracks(release: dict) -> list[dict]:
     return tracks
 
 
+# Recording disambiguation dates reviewed and found wrong, keyed by MusicBrainz
+# recording id.  The track is treated as undated, so the song-and-order matcher
+# decides its show like any other undated track, and its note says why.
+IGNORED_RECORDING_DATES = {
+    # Dick's Picks 6 (Hartford 10/14/83), disc 3 track 1 "Drums >": MusicBrainz
+    # dates the recording 1977-05-21 Lakeland, but the recording appears on no
+    # other release and sits inside the release's 10/14/83 segue run (Eyes of
+    # the World > Drums > Spinach Jam > The Other One), which the 10/14/83
+    # setlist matches (Eyes > Drums > Space > Spanish Jam > The Other One).
+    "62a3a9f4-c71f-4704-8322-7c34b38b56a2": (
+        "MusicBrainz dates this recording 1977-05-21 (Lakeland), but it appears on no other release and sits "
+        "inside this release's 10/14/83 segue run, so that date is ignored (reviewed 2026-10-10)"
+    ),
+}
+
+
 def track_dates(entry: dict) -> tuple[set[str], str]:
     recording = entry["track"].get("recording", {})
+    if recording.get("id") in IGNORED_RECORDING_DATES:
+        return set(), ""
     for basis, text in (
         ("recording disambiguation", recording.get("disambiguation", "")),
         ("medium title", entry["medium"].get("title", "")),
@@ -869,6 +887,8 @@ def process_group(
         length = track.get("length_ms") or recording.get("length_ms")
         performance_id, note = "", ""
         prefix = f"{location}; MusicBrainz recording {recording.get('id', '')}"
+        if recording.get("id") in IGNORED_RECORDING_DATES:
+            prefix += f"; {IGNORED_RECORDING_DATES[recording['id']]}"
         if "performance" in result:
             performance_id = result["performance"]["performance_id"]
             if result["how"] == "segment":

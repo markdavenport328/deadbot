@@ -239,3 +239,13 @@ def test_a_two_date_release_with_no_track_dates_is_promoted_by_song_and_order():
         "gd-1976-09-28-song-cold-rain-and-snow-1",
         "gd-1976-09-28-song-sugaree-2",
     ]
+
+
+def test_a_reviewed_wrong_recording_date_is_ignored():
+    entry = {
+        "medium": {"title": ""},
+        "track": {"title": "Drums >", "recording": {"id": "62a3a9f4-c71f-4704-8322-7c34b38b56a2", "disambiguation": "live, 1977-05-21: Lakeland"}},
+    }
+    assert mb.track_dates(entry) == (set(), "")
+    entry["track"]["recording"]["id"] = "some-other-recording"
+    assert mb.track_dates(entry) == ({"1977-05-21"}, "recording disambiguation")

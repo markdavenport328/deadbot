@@ -140,6 +140,18 @@ show. Dick's Picks now has 36 releases and 936 tracks, 829 with a performance
 and 909 with a song; all official releases 347, 10,751 tracks, 8,437 with a
 performance, 9,770 with a song.
 
+## Dick's Picks 6 "Drums" (reviewed 2026-10-10)
+
+Disc 3 track 1 of Dick's Picks 6 (Hartford 10/14/83) had mapped to the
+1977-05-21 Lakeland Drums, because MusicBrainz dates its recording
+(62a3a9f4-c71f-4704-8322-7c34b38b56a2) "live, 1977-05-21: Lakeland". The
+recording appears on no other release, and the track sits inside the
+release's 10/14/83 segue run (Eyes of the World > Drums > Spinach Jam > The
+Other One), which the 10/14/83 setlist matches. The normalizer's
+`IGNORED_RECORDING_DATES` table drops that one date, the track maps to
+`gd-1983-10-14-drums-2-5` by order, and its note says why. Dick's Picks 6 is
+now a single-show release.
+
 ## 1972-05-23 Dark Star (checked 2026-10-09)
 
 The Lyceum show's setlist has `Dark Star > Drums > Dark Star` (2.2–2.4), and
