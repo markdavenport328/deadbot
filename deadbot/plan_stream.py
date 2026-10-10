@@ -239,7 +239,7 @@ class PlanStreamer:
 
         title = title.strip() if isinstance(title, str) else None
         if self._list_mode == "first":
-            if index == 0:
+            if index == self._group_offset:  # 1 when loose items came first
                 self._first_title = title or None
             return []
         if self._list_mode != "pending" or index != self._group_offset:
@@ -345,12 +345,39 @@ class PlanStreamer:
             self._group(path[1])["criteria"] = [entry for entry in json.loads(raw) if isinstance(entry, str)]
         elif len(path) == 2 and path[0] == "groups" and frame.kind == "object":
             events.extend(self._group_closed(path[1], raw))
+        elif path == ["items"] and frame.kind == "array":
+            events.extend(self._loose_items_closed(raw))
         elif not self._stack:
             self._done = True
             events.extend(self._emit_head())
         parent = self._top()
         if parent is not None:
             parent.value_start = None
+        return events
+
+    def _loose_items_closed(self, raw: str) -> list[PlanEvent]:
+        """Body items written beside ``groups`` stand as one more collection.
+
+        The same reading as finish.loose_items_as_group: before the groups
+        when the list came first, after them otherwise. While a later groups
+        list is still being read, the delivered page carries them instead.
+        """
+
+        parsed = read_joining_repeats(raw)
+        if not isinstance(parsed, list) or not parsed or self._groups_lists > 1:
+            return []
+        events = self._emit_head()
+        if self._groups_lists == 0:
+            index = 0
+            self._group_offset = 1  # the groups written next follow this one
+        else:
+            index = max(self._groups) + 1 if self._groups else 0
+        self._groups[index] = {"presentation": "collection"}
+        events.append(PlanEvent("group_open", self._group_payload(index)))
+        for position, item in enumerate(parsed):
+            events.extend(self._item_closed(index, position, json.dumps(item)))
+        events.append(PlanEvent("group_close", self._group_payload(index)))
+        self._next_index = max(self._next_index, index + 1)
         return events
 
     def _item_closed(self, group_index: int, position: int, raw: str) -> list[PlanEvent]:

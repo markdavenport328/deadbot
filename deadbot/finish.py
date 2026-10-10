@@ -787,6 +787,25 @@ class GroupPlan(_PlanModel):
     )
 
 
+def loose_items_as_group(data: Any) -> Any:
+    """Body items written beside ``groups`` rather than inside one stand as one more collection.
+
+    The model meant them for the page (live, a grid planned this way was
+    otherwise lost), so they keep the place they were written: before the
+    groups when the list came first, after them otherwise. The plan streamer
+    reads them the same way.
+    """
+
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list) or not data["items"]:
+        return data
+    keys = list(data)
+    groups = data["groups"] if isinstance(data.get("groups"), list) else []
+    extra = {"presentation": "collection", "items": data["items"]}
+    first = "groups" in data and keys.index("items") < keys.index("groups")
+    rest = {key: value for key, value in data.items() if key != "items"}
+    return {**rest, "groups": [extra, *groups] if first else [*groups, extra]}
+
+
 class FinishPlan(BaseModel):
     """The model's finished response: chat answer plus the main-body plan."""
 
@@ -805,6 +824,7 @@ class FinishPlan(BaseModel):
         visitor has already watched the first one compose.
         """
 
+        data = loose_items_as_group(data)
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
             return data
         groups: list[Any] = []

@@ -89,12 +89,16 @@ The full selection inventory (get_selection_signals) serves questions about
 the sources and lists themselves. For a pairing or segue that fans hear as one
 piece, get_segue_pairing shows how its two halves changed across the nights
 it was played, and a version_strip of the nights you pick lets the visitor
-hear the handoff while your words say what to listen for. When the answer is
-how two lists meet (songs across years, nights across songs), get_grid lays
-them out as one table, and a grid in finish_response draws it with every cell
-filled by the library. Choose the rows that tell the story, open the most
-telling ones first, and point at the cells the visitor should hear or notice,
-each with a short note.
+hear the handoff while your words say what to listen for. A tour, a run or a
+handful of nights is often best told through the songs that defined it: which
+nights carried Playing in the Band, how long each Eyes of the World ran, where
+two jams shared a night. Songs often compare best year by year, side by side.
+Both are two lists meeting, and get_grid lays them out as one table (its tour
+argument gathers a tour's nights for you); a grid in finish_response draws it
+with every cell filled by the library, so the visitor scans the pattern and
+plays any night. Choose the rows that tell the story, open the most telling
+ones first, and point at the cells the visitor should hear or notice, each
+with a short note.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call
@@ -176,8 +180,8 @@ together.
 The page title states the central finding. A lead or group introduction earns its
 place only by adding a distinct idea, and so does a group: each group brings
 material the page has not shown yet. When what remains would only restate the
-finding in another form (a closing summary, a grid of the same songs already
-given their own units), the page ends instead.
+finding in another form (a closing summary, a fact_grid of the same songs
+already given their own units), the page ends instead.
 
 Semantic units declare the objects of the answer and the server hydrates
 their facts and listening: show_unit, performance_unit, album_unit,
@@ -247,7 +251,11 @@ deserve one; it is where a ranking and your reading of its rows live
 together. A version_strip draws nights you
 choose from one get_segue_pairing result to one clock, each row playing that
 night's two songs in turn, so the visitor can see and hear how the pairing
-grew.
+grew. A grid draws one get_grid result: nights down the side and songs across,
+each cell that song's minutes that night, or songs down the side and years
+across, each cell how many shows had it. The visitor hovers any cell for its
+facts and plays the nights, so a tour or a run read through its songs becomes
+something to scan and hear.
 
 A listening_hero leads the page, placed first, when the visitor wants to hear
 a show or recording. A pull_quote sets one sentence of yours large: use it for

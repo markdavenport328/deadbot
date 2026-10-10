@@ -247,3 +247,30 @@ def test_a_grid_survives_the_streamed_and_final_paths():
     final, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
     assert len(streamed) == 1 and len(final) == 1 and final[0].type == "grid"
     assert streamed[0] == final[0].model_dump(mode="json")
+
+
+def test_items_written_beside_groups_stand_as_one_more_group_in_the_stream_and_the_plan():
+    """Live, the model once planned its grid as a top-level items list next to groups.
+
+    Both paths read that list as one more collection where it was written, so the
+    draft and the delivered page agree and the item is not lost.
+    """
+
+    from deadbot.finish import FinishPlan, read_joining_repeats
+
+    group = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
+    loose = '[{"type": "show_unit", "show_id": "gd-1972-08-27"}]'
+    for text, titles, first_block in (
+        ('{"chat_answer": "a", "title": "t", "groups": [' + group + '], "items": ' + loose + "}", ["One", None], "song-sugaree"),
+        ('{"chat_answer": "a", "title": "t", "items": ' + loose + ', "groups": [' + group + "]}", [None, "One"], "gd-1972-08-27"),
+        ('{"chat_answer": "a", "title": "t", "items": ' + loose + "}", [None], "gd-1972-08-27"),
+    ):
+        events = drive(text, 6)
+        opened = [(event.payload["index"], event.payload["title"]) for event in events if event.type == "group_open"]
+        blocks = [(event.payload["group_index"], event.payload["block"]["id"]) for event in events if event.type == "block"]
+        assert [title for _, title in opened] == titles
+        assert [index for index, _ in opened] == list(range(len(titles)))
+        assert blocks[0][1] == first_block and len(blocks) == len(titles)
+        assert events[0].type == "page_head"
+        plan = FinishPlan.model_validate(read_joining_repeats(text))
+        assert [group.title for group in plan.groups] == titles
