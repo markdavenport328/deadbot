@@ -1,5 +1,8 @@
+import base64
 import json
 import logging
+import os
+import zlib
 from types import SimpleNamespace
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
@@ -7,7 +10,7 @@ from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from deadbot import composition, notebook
 from deadbot.experience import ConversationTurn
 from deadbot.finish import build_experience_response
-from notebook_support import LYCEUM, finish_messages, record, store
+from notebook_support import LYCEUM, SECRET, finish_messages, record, store
 
 MORNING_DEW = [("get_song", {"song_id_or_title": "Morning Dew"})]
 PAGE = {
@@ -270,3 +273,78 @@ def test_entries_mentioning_returns_the_newest_matches():
     older, newer = book.entries
     assert notebook.entries_mentioning(book, ["gd-1972-05-26"], limit=1) == [newer]
     assert notebook.entries_mentioning(book, ["gd-1972-05-26"]) == [older, newer]
+
+
+def _entry(index, *, last_read=1, summary=None, payload=None, tool="get_show"):
+    return notebook.Entry(
+        key=f"k{index:04d}", tool=tool, args={"n": index}, ids=[f"id-{index}"], urls=[],
+        summary=summary or f"{tool} {index} · ~10 tok", tokens=10, turn=1, last_read=last_read, payload=payload,
+    )
+
+
+def test_a_notebook_survives_the_round_trip():
+    book, _ = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM)
+    token = notebook.encode(book, SECRET)
+    assert token.startswith("v1.") and token.count(".") == 2
+    assert notebook.decode(token, SECRET).to_json() == notebook.compact(book).to_json()
+
+
+def test_a_changed_token_or_another_secret_reads_as_an_empty_notebook(caplog):
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    token = notebook.encode(book, SECRET)
+    version, body, signature = token.split(".")
+    swapped = "B" if body[20] == "A" else "A"
+    tampered = f"{version}.{body[:20]}{swapped}{body[21:]}.{signature}"
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(tampered, SECRET).entries == []
+        assert notebook.decode(token, "another-secret").entries == []
+        assert notebook.decode("not a token", SECRET).entries == []
+        assert notebook.decode("v1.\u00e9.\u00e9", SECRET).entries == []
+    assert "signature" in caplog.text
+    assert body[:40] not in caplog.text
+
+
+def test_without_a_secret_turns_run_without_a_notebook_and_say_so_once(monkeypatch, caplog):
+    monkeypatch.setattr(notebook, "_missing_secret_logged", False)
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.encode(notebook.Notebook(turns=1), None) is None
+        assert notebook.encode(notebook.Notebook(turns=1), "") is None
+        assert notebook.decode("v1.x.y", None).entries == []
+    assert caplog.text.count("DEADBOT_NOTEBOOK_SECRET is not set") == 1
+
+
+def test_a_signed_token_that_inflates_past_the_ceiling_is_ignored():
+    body = base64.urlsafe_b64encode(zlib.compress(b"[" + b"0," * 3_000_000 + b"0]", 9)).decode("ascii")
+    token = f"{notebook.NOTEBOOK_VERSION}.{body}.{notebook._sign(body, SECRET)}"
+    assert notebook.decode(token, SECRET).entries == []
+
+
+def test_too_many_entries_compact_to_sixty_keeping_the_most_recently_read():
+    book = notebook.Notebook(turns=1, entries=[_entry(index, last_read=index) for index in range(85)])
+    compacted = notebook.compact(book)
+    assert [entry.key for entry in compacted.entries] == [f"k{index:04d}" for index in range(25, 85)]
+
+
+def test_long_index_lines_compact_below_the_token_target():
+    book = notebook.Notebook(turns=1, entries=[_entry(index, last_read=index, summary="x" * 1000) for index in range(20)])
+    compacted = notebook.compact(book)
+    assert notebook.entry_tokens(compacted) <= notebook.INDEX_TOKEN_COMPACT_TO
+    assert compacted.entries[-1].key == "k0019" and compacted.entries[0].key != "k0000"
+
+
+def test_page_digests_keep_the_last_six_turns():
+    book = notebook.Notebook(turns=9, pages=[notebook.PageDigest(turn=number, answer_key=f"a{number}", title="T") for number in range(1, 10)])
+    assert [page.turn for page in notebook.compact(book).pages] == [4, 5, 6, 7, 8, 9]
+
+
+def test_over_the_size_ceiling_web_payloads_go_first_least_recently_read():
+    entries = [
+        _entry(index, last_read=index + 1, tool="read_page", payload={"url": f"https://example.org/{index}", "text": os.urandom(30_000).hex()})
+        for index in range(6)
+    ]
+    token = notebook.encode(notebook.Notebook(turns=6, entries=entries), SECRET)
+    assert len(token) <= notebook.TOKEN_BYTE_CEILING
+    kept = notebook.decode(token, SECRET)
+    assert len(kept.entries) == 6
+    assert kept.entries[0].payload is None
+    assert kept.entries[-1].payload is not None

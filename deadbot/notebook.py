@@ -13,10 +13,13 @@ decides what in it matters and what to read again.
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
+import hmac
 import json
 import logging
+import zlib
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, fields
 from typing import Any
@@ -423,7 +426,7 @@ def record_turn(book: Notebook, turn_messages: list[Any], response: ExperienceRe
         book.entries.append(entry)
         by_key[key] = entry
     book.pages = [page for page in book.pages if page.turn != number] + [page_digest(response, number)]
-    return book
+    return compact(book)
 
 
 # --- what the model reads ------------------------------------------------------
@@ -577,3 +580,127 @@ def grounding(book: Notebook) -> tuple[frozenset[str], frozenset[str]]:
         for block in page.blocks:
             ids.update(value for value in block.get("ids") or [] if isinstance(value, str))
     return frozenset(ids), frozenset(urls)
+
+
+# --- ceilings, signing, transport ------------------------------------------------
+
+NOTEBOOK_VERSION = "v1"
+ENTRY_CEILING = 80
+ENTRY_COMPACT_TO = 60
+INDEX_TOKEN_CEILING = 4_000
+INDEX_TOKEN_COMPACT_TO = 3_000
+PAGE_TURN_CEILING = 6
+# The whole token as the browser holds it. ExperienceRequest accepts up to
+# experience.NOTEBOOK_TOKEN_MAX_CHARS, which is larger.
+TOKEN_BYTE_CEILING = 150_000
+DECOMPRESSED_CEILING = 4_000_000
+_SIGNATURE_ROOM = 64
+
+_missing_secret_logged = False
+
+
+def note_missing_secret() -> None:
+    global _missing_secret_logged
+    if not _missing_secret_logged:
+        _missing_secret_logged = True
+        logger.warning("DEADBOT_NOTEBOOK_SECRET is not set; turns run without a research notebook")
+
+
+def _least_read(entry: Entry) -> tuple[int, int]:
+    return (entry.last_read, entry.turn)
+
+
+def compact(book: Notebook) -> Notebook:
+    """The notebook within its entry, index and page ceilings.
+
+    Over a ceiling, entries go in one batch, least recently read first, down
+    to the lower target, so the lines the model has already seen change
+    rarely and the provider's prompt cache keeps them.
+    """
+
+    book = copy.deepcopy(book)
+    book.pages = sorted(book.pages, key=lambda page: page.turn)[-PAGE_TURN_CEILING:]
+    if len(book.entries) <= ENTRY_CEILING and entry_tokens(book) <= INDEX_TOKEN_CEILING:
+        return book
+    before = len(book.entries)
+    for victim in sorted(book.entries, key=_least_read):
+        if len(book.entries) <= ENTRY_COMPACT_TO and entry_tokens(book) <= INDEX_TOKEN_COMPACT_TO:
+            break
+        book.entries = [entry for entry in book.entries if entry.key != victim.key]
+    logger.info("Research notebook compacted from %d to %d entries", before, len(book.entries))
+    return book
+
+
+def _pack(book: Notebook) -> str:
+    text = json.dumps(book.to_json(), ensure_ascii=False, separators=(",", ":"))
+    return base64.urlsafe_b64encode(zlib.compress(text.encode("utf-8"), 9)).decode("ascii")
+
+
+def _sign(body: str, secret: str) -> str:
+    digest = hmac.new(secret.encode("utf-8"), f"{NOTEBOOK_VERSION}.{body}".encode("ascii"), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii")
+
+
+def _drop_one_payload(book: Notebook) -> bool:
+    stored = [entry for entry in book.entries if entry.payload is not None]
+    if not stored:
+        return False
+    min(stored, key=_least_read).payload = None
+    return True
+
+
+def _drop_one_entry(book: Notebook) -> bool:
+    if not book.entries:
+        return False
+    victim = min(book.entries, key=_least_read)
+    book.entries = [entry for entry in book.entries if entry is not victim]
+    return True
+
+
+def encode(book: Notebook, secret: str | None) -> str | None:
+    """The signed token the browser carries to the next turn, or None without a secret."""
+
+    if not secret:
+        note_missing_secret()
+        return None
+    book = compact(book)
+    body = _pack(book)
+    if len(body) > TOKEN_BYTE_CEILING - _SIGNATURE_ROOM:
+        before = len(body)
+        while len(body) > TOKEN_BYTE_CEILING - _SIGNATURE_ROOM and (_drop_one_payload(book) or _drop_one_entry(book)):
+            body = _pack(book)
+        logger.info("Research notebook trimmed from %d to %d characters (%d entries)", before, len(body), len(book.entries))
+    return f"{NOTEBOOK_VERSION}.{body}.{_sign(body, secret)}"
+
+
+def decode(token: str | None, secret: str | None) -> Notebook:
+    """The notebook a request carried, or an empty one when it is missing or cannot be trusted."""
+
+    if not token:
+        return Notebook()
+    if not secret:
+        note_missing_secret()
+        return Notebook()
+    parts = token.split(".")
+    if len(parts) != 3 or parts[0] != NOTEBOOK_VERSION:
+        logger.warning("Ignoring a research notebook that is not a v1 token")
+        return Notebook()
+    _, body, signature = parts
+    try:
+        expected = _sign(body, secret)
+    except UnicodeEncodeError:
+        logger.warning("Ignoring a research notebook whose signature does not match")
+        return Notebook()
+    if not hmac.compare_digest(signature.encode("utf-8"), expected.encode("ascii")):
+        logger.warning("Ignoring a research notebook whose signature does not match")
+        return Notebook()
+    try:
+        inflater = zlib.decompressobj()
+        raw = inflater.decompress(base64.urlsafe_b64decode(body.encode("ascii")), DECOMPRESSED_CEILING)
+        if inflater.unconsumed_tail:
+            logger.warning("Ignoring a research notebook that inflates past %d bytes", DECOMPRESSED_CEILING)
+            return Notebook()
+        return Notebook.from_json(json.loads(raw.decode("utf-8")))
+    except (ValueError, zlib.error):
+        logger.warning("Ignoring a research notebook that could not be read")
+        return Notebook()

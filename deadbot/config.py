@@ -6,7 +6,7 @@ changing a model does not change the agent graph or its tools.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from os import environ
 from pathlib import Path
 
@@ -85,6 +85,10 @@ class Settings:
     # above all) while the data version and deployed commit are unchanged.
     response_cache: bool = True
     response_cache_ttl_seconds: int = 7 * 24 * 60 * 60
+    # Signs the research notebook the browser carries between turns. Unset
+    # means turns run without a notebook. Kept out of repr so it never lands
+    # in a log line.
+    notebook_secret: str | None = field(default=None, repr=False)
 
     @classmethod
     def from_env(cls, env_path: Path = DEFAULT_ENV_PATH) -> "Settings":
@@ -121,4 +125,5 @@ class Settings:
             conversation_window=_as_int(value("DEADBOT_CONVERSATION_WINDOW"), 12),
             response_cache=_as_bool(value("DEADBOT_RESPONSE_CACHE"), True),
             response_cache_ttl_seconds=_as_int(value("DEADBOT_RESPONSE_CACHE_TTL_SECONDS"), 7 * 24 * 60 * 60),
+            notebook_secret=(value("DEADBOT_NOTEBOOK_SECRET") or "").strip() or None,
         )
