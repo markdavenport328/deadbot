@@ -58,7 +58,7 @@ Held release groups and reasons:
 | Reason | Count | Examples |
 | --- | --- | --- |
 | `no_show_date_in_metadata` | 23 | Without a Net, Steal Your Face, Dylan & the Dead, Infrared Roses, Nightfall of Diamonds, Dozin' at the Knick, Vintage Dead, Historic Dead, View From the Vault I–IV, Road Trips 4.2 April Fools' '88, Road Trips 3.4 Penn State–Cornell '80, Dave's Picks bonus discs 2021 and 2025 |
-| `multi_show_without_track_attribution` | 8 | Dick's Picks 4, 20, 25, 29 (two dates in the title, no per-track dates), Download Series 9, Dave's Picks 30 (1/2/70 and 1/3/70 each have two canonical shows), RFK July 12 & 13 1989, Fare Thee Well (2015, outside the canonical span) |
+| `multi_show_without_track_attribution` | 8 | Dick's Picks 20, 25, 29 and Download Series 9 (two dates in the title, no per-track dates); Dick's Picks 4 (2/13/70, 2/14/70) and Dave's Picks 30 (1/2/70, 1/3/70), whose tracks are dated but each date has an early and a late canonical show; RFK July 12 & 13 1989, Fare Thee Well (2015, outside the canonical span) |
 | `date_matches_multiple_canonical_shows` | 2 | Fillmore East 2-11-69, Dave's Picks Bonus Disc 2019 (early and late shows on the same date) |
 | `possible_duplicate_of_curated_release` | 1 | Sunshine Daydream (same show and release year as the curated Veneta row) |
 
@@ -83,8 +83,10 @@ Unmapped-track reasons (all recorded per row in `notes`; sums to 2,998):
 Found while building a grid view that makes a blank cell read as "not played":
 433 of 793 Dick's Picks tracks had no `performance_id`. The live normalizer
 now aligns tracks with the rule in "Track-mapping rule" below and attributes
-undated tracks on multi-show releases by song and order. No raw data changed
-and no network was used; the run is deterministic and a second run is
+undated tracks on multi-show releases by song and order. The MusicBrainz
+snapshots under `data/raw/releases/` did not change; the generated review
+files beside them (`musicbrainz-release-review.jsonl`,
+`release-track-song-review.jsonl`) did. No network was used; the run is deterministic and a second run is
 byte-identical. No track that had a performance lost or changed it.
 
 | Tracks with a `performance_id` | Before | After |
@@ -110,11 +112,15 @@ Dick's Picks 1, or bonus material such as the 11/2/77 tracks on Dick's Picks
 34); 59 tracks dated to a day `shows.csv` lacks or with more than one date; 5
 undated tracks that fit two candidate shows.
 
-## Missing volumes: releases with no per-track dates (2026-10-09)
+## Missing volumes: releases held for want of track attribution (2026-10-09)
 
 Dick's Picks 4, 20, 25 and 29 were in the raw MusicBrainz snapshot all along,
-held as `multi_show_without_track_attribution`: two dates in the title, none on
-any track. No network request was needed. A release whose title names
+held as `multi_show_without_track_attribution`. Dick's Picks 20, 25 and 29
+(like Download Series 9 and RFK 1989) name two dates in the title and none on
+any track. Dick's Picks 4 and Dave's Picks 30 do carry a date on their
+tracks, but every one of those dates (2/13/70, 2/14/70; 1/2/70, 1/3/70) has
+an early and a late canonical show, so no track resolved to one show. No
+network request was needed. A release whose title names
 canonical shows is now promoted when the song-and-order matcher maps at least
 one track; seven of the eight held groups qualified.
 
@@ -169,7 +175,9 @@ keep the count honest:
    Jam`, `Other One Jam`, `Playing Jam`, `Uncle John's Band Jam`), a
    `Song > Jam` title, and a jam named for something else (`No MSG Jam`,
    `Boston Clam Jam`, `Jam 1`) take a song only through the setlist: the
-   stretch of setlist between the track's mapped neighbours must hold exactly
+   stretch of setlist between the track's mapped neighbours (or from the start
+   or to the end of the setlist when only one neighbour is mapped, as for
+   Dick's Picks 2's opening `Dark Star > Jam >`) must hold exactly
    one performance the title can name (the named song for a song-named jam,
    the spine's own `Jam` for any other named jam). The gdshowsdb spine counts
    such a jam as that performance (for example 1974-06-26 lists `Truckin' >
@@ -186,8 +194,7 @@ keep the count honest:
 
 Dick's Picks tracks with a song: 756 → 768 of 793 (all official releases
 9,475 → 9,516). The 25 left blank: seven `Weather Report Suite` and one
-`That's It for the Other One` (rule 1; Dick's Picks 4's suite track is not yet
-in the catalog); three medleys (Dick's Picks 13 `Saint of Circumstance /
+`That's It for the Other One` (rule 1); three medleys (Dick's Picks 13 `Saint of Circumstance /
 Scarlet Begonias > Fire on the Mountain`, whose 1981-05-06 setlist has no
 Scarlet/Fire, and `Caution / Spanish Jam`; Dick's Picks 14 `Brown-Eyed Woman /
 The Merry-Go-Round Broke Down / Beer Barrel Polka`); songs not in `songs.csv`
@@ -333,9 +340,10 @@ statement that the album is missing from Spotify.
    rights review, and matches should be verified against track lists before
    promotion.
 2. **Per-track show attribution for two-show releases.** Resolved 2026-10-09:
-   Dick's Picks 4, 20, 25, 29, Download Series 9, Dave's Picks 30 and RFK
-   July 12 & 13 1989 name two dates but their MusicBrainz recordings carry
-   none. They are now promoted, with each track attributed by song and release
+   Dick's Picks 20, 25, 29, Download Series 9 and RFK July 12 & 13 1989 name
+   two dates but their MusicBrainz recordings carry none; Dick's Picks 4 and
+   Dave's Picks 30 carry track dates, but each date has an early and a late
+   show. All seven are now promoted, with each track attributed by song and release
    order among the title's shows (see "Track-mapping rule"). Fare Thee Well
    (2015) stays held: its dates are outside `shows.csv`. Dead.net track
    listings or the booklets would confirm the split.

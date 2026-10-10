@@ -493,7 +493,9 @@ def _solve_show(
 
     # Segment titles (``Dark Star > Jam``, ``Other One Jam``, ``No MSG Jam``,
     # ``Weather Report Suite``): the setlist between the track's mapped
-    # neighbours must hold exactly one performance its segments name.  The
+    # neighbours (from the start, or to the end, of the setlist when only one
+    # side has a mapped neighbour) must hold exactly one performance its
+    # segments name; a track with no mapped neighbour at all is skipped.  The
     # spine counts a jam out of a song as that song's performance, so the
     # track is that performance; a jam is never a song by its title alone.
     catalog_titles = {normalized_title(title) for title in songs.values()}
@@ -744,10 +746,13 @@ def process_group(
             decision["reason"] = "multi_show_without_track_attribution"
             decision["unattributed_reasons"] = dict(Counter(reason for _, reason in attribution))
             return decision
-        resolution = (
-            f"multiple dates ({len(all_dates)}) in metadata; {sum(1 for show_id, _ in attribution if show_id)}/{len(tracks)} "
-            f"tracks attributed by track-level dates to {len(attributed_shows)} canonical show(s): {', '.join(attributed_shows)}"
-        )
+        if attributed_shows:
+            resolution = (
+                f"multiple dates ({len(all_dates)}) in metadata; {sum(1 for show_id, _ in attribution if show_id)}/{len(tracks)} "
+                f"tracks attributed by track-level dates to {len(attributed_shows)} canonical show(s): {', '.join(attributed_shows)}"
+            )
+        else:
+            resolution = f"multiple dates ({len(all_dates)}) in metadata; no track's own date names a single canonical show"
 
     # Every show a track could belong to: its attributed show; for an undated
     # track on a multi-show release, the shows the release title names; for a
@@ -784,7 +789,7 @@ def process_group(
         if song_attributed:
             resolution += (
                 f"; {sum(1 for index, result in enumerate(matched) if 'performance' in result and not attribution[index][0])} "
-                f"more attributed by song and release order to {len(song_attributed)} canonical show(s) named in the title or "
+                f"{'more ' if attributed_shows else ''}attributed by song and release order to {len(song_attributed)} canonical show(s) named in the title or "
                 f"track date: {', '.join(song_attributed)}"
             )
 
@@ -869,7 +874,7 @@ def process_group(
             if result["how"] == "segment":
                 note = (
                     f"{prefix}; the track's segments name one performance in the {show_id} setlist between its "
-                    f"neighbouring tracks ({result['detail']}), and the setlist counts that segment as this performance."
+                    f"mapped neighbouring tracks or the setlist's start or end ({result['detail']}), and the setlist counts that segment as this performance."
                 )
             else:
                 note = f"{prefix}; title aligned uniquely and monotonically with the {show_id} setlist."
