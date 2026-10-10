@@ -19,6 +19,10 @@
   --space-unit: 2.5rem;
   --space-section: 4rem;
   --panel: rgba(8, 16, 11, 0.55);
+  --card-bg: rgba(4, 10, 6, 0.38);
+  --card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.25);
+  /* --card-bg composited over --ground (#14221b), opaque: for sticky cells inside a card. */
+  --grid-sticky: #0e1913;
   --panel-featured: rgba(14, 22, 17, 0.62);
   --hair: rgba(233, 230, 217, 0.1);
   --cream: #f3f0e2;
@@ -286,7 +290,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .group-sequence .group-blocks > *::before { left: -1.75rem; width: 1.4rem; height: 1.4rem; line-height: 1.4rem; font-size: 0.8rem; }
 }
 .era-performances .list-item-label, .mention .list-item-label { overflow-wrap: anywhere; }
-.card { grid-column: span 6; background: rgba(4, 10, 6, 0.38); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.25); border-radius: var(--r); padding: 1.6rem 1.75rem 1.75rem; position: relative; }
+.card { grid-column: span 6; background: var(--card-bg); box-shadow: var(--card-shadow); border-radius: var(--r); padding: 1.6rem 1.75rem 1.75rem; position: relative; }
 .typography-block { grid-column: 1 / -1; max-width: 58rem; }
 /* The one control that speaks to the thread. Blue asks: every path back into
    the conversation shares this border and hover color. */

@@ -1,4 +1,7 @@
-"""Write the grid fixtures from the canonical data, with sketch-written model fields."""
+"""Write the grid fixtures from the canonical data, with sketch-written model fields.
+
+Run from the repo root: PYTHONPATH=. .venv/bin/python scripts/export_grid_fixtures.py
+"""
 
 import json
 from pathlib import Path

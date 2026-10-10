@@ -41,7 +41,7 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
         {block.title && <CardHeading className="grid-headline">{block.title}</CardHeading>}
         {block.note && <p className="grid-note">{block.note}</p>}
       </header>
-      <div className="grid-frame">
+      <div className="grid-frame" role="region" tabIndex={0} aria-label={block.title ?? `Grid of ${block.rows.length} ${rowsLabel} by ${block.columns.length} ${columnsLabel}`}>
         <table className={`grid-table grid-${block.column_kind}`}>
           <thead>
             <tr>
@@ -72,7 +72,7 @@ export function Grid({ block, onFollowUp }: { block: GridBlock; onFollowUp?: (qu
                   if (!column) return null;
                   const where = `${row.label}, ${column.sub ?? column.label}`;
                   const mark = cell.highlight ? " is-highlight" : "";
-                  const noted = cell.highlight && cell.note ? `. ${cell.note}` : "";
+                  const noted = cell.highlight ? (cell.note ? `. ${cell.note}` : ", worth a listen") : "";
                   if (cell.state === "none")
                     return <td key={column.id} className="is-none" aria-label={`${where}: not played`} />;
                   if (cell.state === "unknown")

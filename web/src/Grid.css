@@ -2,15 +2,15 @@
    table scrolls inside its own frame so the page never scrolls sideways, and
    row headers stick while the cells move. */
 .grid-card {
-  --grid-sticky: color-mix(in srgb, #08100b 55%, var(--ground)); /* the panel over the ground, opaque, for sticky headers */
+  --grid-ink: #1b2620; /* text on the brightest cream cells */
   grid-column: 1 / -1;
   display: grid;
   gap: var(--zone);
   min-width: 0;
   max-width: 100%;
   padding: 1.75rem clamp(1rem, 3vw, 2rem);
-  background: var(--grid-sticky); /* opaque, so sticky row headers match the card exactly */
-  border: 1px solid var(--hair);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
   border-radius: var(--r);
   font-variant-numeric: tabular-nums;
 }
@@ -21,25 +21,25 @@
 .grid-note { margin: 0; max-width: 62ch; color: var(--text); line-height: 1.6; }
 
 .grid-frame { overflow-x: auto; margin-inline: -4px; padding: 4px; min-width: 0; }
-.grid-table { border-collapse: separate; border-spacing: 3px; }
+.grid-table { --grid-sticky-gap: 3px 0 0 var(--grid-sticky); border-collapse: separate; border-spacing: 3px; } /* the shadow fills the 3px spacing beside a sticky cell so scrolled cells do not show through */
 .grid-table th { font-weight: 400; }
 .grid-table thead th { padding: 0 0 6px; color: var(--quiet); font-size: 0.68rem; letter-spacing: 0.04em; text-align: center; vertical-align: bottom; white-space: nowrap; }
 .grid-table thead th.is-vertical { writing-mode: vertical-rl; transform: rotate(180deg); text-align: left; color: var(--muted); font-size: 0.72rem; letter-spacing: 0.02em; }
-.grid-table thead td { position: sticky; left: 0; z-index: 1; background: var(--grid-sticky); }
-.grid-table tbody th { position: sticky; left: 0; z-index: 1; padding-right: 0.85rem; background: var(--grid-sticky); text-align: left; white-space: nowrap; color: var(--text); font-size: 0.86rem; }
+.grid-table thead td { position: sticky; left: 0; z-index: 1; background: var(--grid-sticky); box-shadow: var(--grid-sticky-gap); }
+.grid-table tbody th { position: sticky; left: 0; z-index: 1; padding-right: 0.85rem; background: var(--grid-sticky); box-shadow: var(--grid-sticky-gap); text-align: left; white-space: nowrap; color: var(--text); font-size: 0.86rem; }
 .grid-table tbody th .grid-sub { display: block; color: var(--quiet); font-size: 0.72rem; }
 
 .grid-table td { position: relative; width: 40px; min-width: 40px; height: 34px; border-radius: var(--r); text-align: center; font-size: 0.8rem; color: var(--cream); }
 .grid-table.grid-year td { width: 27px; min-width: 27px; font-size: 0.72rem; }
 .grid-table thead td { width: auto; min-width: 0; height: auto; border-radius: 0; }
-.grid-table td.is-light { color: #1b2620; }
+.grid-table td.is-light { color: var(--grid-ink); }
 .grid-table td.is-none::after { content: ""; position: absolute; left: 50%; top: 50%; width: 8px; height: 1px; background: var(--hair); transform: translate(-50%, -50%); }
 .grid-table td.is-dot::after { content: ""; position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 50%; background: var(--cream); transform: translate(-50%, -50%); }
 .grid-table td.is-unknown { color: var(--muted); border: 1px dashed var(--hair); }
 .grid-table td.is-highlight { box-shadow: inset 0 0 0 1.5px var(--cream); }
 .grid-table td.is-highlight.is-light { box-shadow: inset 0 0 0 1.5px var(--ground), 0 0 0 1.5px var(--cream); }
 .grid-passes { position: absolute; right: 3px; top: 2px; color: var(--quiet); font-size: 0.55rem; line-height: 1; }
-.is-light .grid-passes { color: rgba(27, 38, 32, 0.6); }
+.is-light .grid-passes { color: color-mix(in srgb, var(--grid-ink) 60%, transparent); }
 
 .grid-more { justify-self: start; min-height: 2.25rem; padding: 0.55rem 0.8rem; border: 1px solid var(--hair); border-radius: var(--r); background: none; color: var(--text); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 .grid-more:hover { border-color: var(--muted); }
