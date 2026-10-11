@@ -302,3 +302,44 @@ Pages (read from the delivered responses):
 Untried next step: when a read asks by a library ID rather than a key,
 return the part of each matching entry that mentions that ID, the way
 `only` does. The model's own call on the Lyceum turn asked for exactly that.
+
+## Run 4: a read by library ID comes back sliced (commit 755851a)
+
+What changed: when `read_notebook` is asked by a library ID that earlier
+results hold (not by an entry key or a call's argument), each matching entry
+comes back narrowed to the part that mentions that ID. It uses the same
+uncut replay as `only`, then the 80k ceiling once. Reads by key or argument
+stay whole. The tool schema is unchanged.
+
+One comparison, Europe '72 sequence only, same setup as before. Calls /
+total input tokens / cached share / seconds to first answer:
+
+| Turn | Without | With |
+|---|---|---|
+| 2: the Lyceum night | 3 / 51,790 / 0.88 / 8.2 | 2 / 33,492 / 0.88 / 4.3 |
+| 3: that Morning Dew | 3 / 64,289 / 0.78 / 8.9 | 3 / 68,391 / 0.80 / 8.1 |
+
+What the model did:
+
+- **Lyceum turn: no notebook read this time.** One research round
+  (`get_show`, `get_selections_for`), then the page. It dropped the web
+  reads the "without" run made. Against run 3's 105k, the box-set read-back
+  is gone.
+- **Morning Dew turn: the read came back sliced.** It called
+  `read_notebook(["gd-1972-05-26-morning-dew-2-5"])`, the performance's ID
+  from the turn-2 index line, and got 1,654 characters (the Lyceum
+  `get_show` result narrowed to that performance) instead of 9,250. It then
+  fetched notable versions and five `get_performance` calls itself, so the
+  turn's total stayed close to "without". It skipped the `search_entities`
+  and `get_show` calls the "without" run made.
+
+Pages:
+
+- Lyceum, with: accurate (19-song first set, The Other One opening into
+  Drums and Morning Dew, Sing Me Back Home, both releases that hold the
+  night). The night's card plus three playable performance cards from the
+  second-set suite. "Without" had one performance card and two editorials.
+  The two pages are about as good as each other.
+- Morning Dew, with: strong. The Lyceum Dew at 6:18 set against Rotterdam
+  (7:20), Philadelphia (6:29), RFK '73 (11:18) and Cornell '77. Five
+  playable performance cards against four without.
