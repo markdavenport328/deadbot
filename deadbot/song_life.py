@@ -365,12 +365,17 @@ def card_data(store: CanonicalStore, song_id: str) -> dict[str, Any] | None:
     song = _song(store, song_id)
     if not song:
         return None
-    performances = life_performances(store, song_id)
+    return card_from(song_id, song[1], life_performances(store, song_id))
+
+
+def card_from(song_id: str, title: str, performances: list[LifePerformance]) -> dict[str, Any]:
+    """The card's timeline data from performances already read."""
+
     return {
         "song_id": song_id,
-        "title": song[1],
+        "title": title,
         "performance_count": len(performances),
-        "year_summaries": year_summaries(performances, song[1]),
+        "year_summaries": year_summaries(performances, title),
         "length_points": [
             {"performance_id": p.performance_id, "show_date": p.show_date, "seconds": p.seconds}
             for p in performances

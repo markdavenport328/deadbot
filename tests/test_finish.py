@@ -1772,3 +1772,26 @@ def test_a_record_the_model_names_again_after_from_result_stays_on_the_page():
     })
     blocks, _, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
     assert [block.show_id for block in blocks] == ["gd-1983-06-22", "gd-1984-06-23", "gd-1984-06-23"]
+
+
+def test_song_overview_reads_stops_and_the_old_ids_key():
+    from deadbot.finish import SongOverviewRef
+
+    ref = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "song-terrapin-station",
+        "representatives": [{"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Charlie Miller's pick", "why": "The 1979 one."}],
+        "open_year": 1979, "chart_view": "length",
+        "year_questions": [{"year": 1979, "question": "How did 1979 differ?"}],
+    })
+    assert ref.representatives[0].label == "Charlie Miller's pick"
+    assert ref.open_year == 1979 and ref.chart_view == "length"
+    old = SongOverviewRef.model_validate({"type": "song_overview", "song_id": "song-terrapin-station", "representative_performance_ids": ["p1", "p2"]})
+    assert [stop.performance_id for stop in old.representatives] == ["p1", "p2"]
+    loose = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "s", "chart_view": "sideways", "open_year": "1979",
+        "representatives": ["p1", {"performance_id": "p2", "label": "Two"}, 7],
+        "year_questions": [{"year": 1979, "question": "Q?"}, {"question": "no year"}],
+    })
+    assert loose.chart_view is None and loose.open_year == 1979
+    assert [stop.performance_id for stop in loose.representatives] == ["p1", "p2"]
+    assert [question.year for question in loose.year_questions] == [1979]

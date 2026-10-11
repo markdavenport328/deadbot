@@ -503,6 +503,23 @@ class AlbumUnitRef(_Ref):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
+class SongStop(_PlanModel):
+    """One stop through a song's life: a performance, a few words, and why."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    performance_id: str
+    label: str | None = Field(default=None, description="A few words a fan would recognize: 'The debut', 'At the pyramids'.")
+    why: str | None = Field(default=None, description="One line on why this performance is worth hearing.")
+
+
+class YearQuestion(_PlanModel):
+    model_config = ConfigDict(extra="ignore")
+
+    year: int
+    question: str
+
+
 class SongOverviewRef(_Ref):
     """One song as a primary object, with model-chosen representative performances."""
 
@@ -517,15 +534,52 @@ class SongOverviewRef(_Ref):
         default_factory=lambda: ["representatives"],
         description=(
             "The song facets worth showing: representatives (your chosen renditions), credits, albums, history (first "
-            "and last performances, the count, and one rendition per year with listening links), by_year (how often the song was played each year)."
+            "and last performances, the count, and one rendition per year with listening links), by_year (the song's "
+            "timeline: plays and lengths per year, your stops as a listening path, and a panel for each year; with "
+            "by_year the timeline carries what history shows)."
         ),
     )
-    representative_performance_ids: list[str] = Field(
+    representatives: list[SongStop] = Field(
         default_factory=list,
-        description="Representative performances for this song, in the listening order you chose. Retrieve concrete rendition IDs first; each known direct recording link remains attached.",
+        description=(
+            "Your stops through the song's life, in listening order. With by_year they mark the timeline and form a "
+            "listening path; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
+            "(get_song_life lists the standouts)."
+        ),
     )
+    open_year: int | None = Field(default=None, description="With by_year: the year whose panel opens first, such as the year the visitor asked about.")
+    chart_view: Literal["count", "length"] | None = Field(default=None, description="With by_year: open on times played (count) or lengths (length).")
+    year_questions: list[YearQuestion] = Field(default_factory=list, description="With by_year: a follow-up question for any years you choose.")
     supporting_sources: list[SupportingSource] = Field(default_factory=list)
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_leniently(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        value = dict(value)
+        stops = value.get("representatives")
+        if stops is None and isinstance(value.get("representative_performance_ids"), list):
+            stops = value["representative_performance_ids"]
+        # Keep every usable stop; a bare ID string is a stop without words.
+        value["representatives"] = [
+            {"performance_id": item} if isinstance(item, str) else item
+            for item in (stops if isinstance(stops, list) else [])
+            if isinstance(item, str) or (isinstance(item, dict) and isinstance(item.get("performance_id"), str))
+        ]
+        if value.get("chart_view") not in (None, "count", "length"):
+            value["chart_view"] = None
+        year = value.get("open_year")
+        value["open_year"] = int(year) if isinstance(year, int) or (isinstance(year, str) and year.strip().isdigit()) else None
+        # One bad year question is dropped, never the whole card.
+        questions = value.get("year_questions")
+        value["year_questions"] = [
+            item
+            for item in (questions if isinstance(questions, list) else [])
+            if isinstance(item, dict) and isinstance(item.get("year"), int) and isinstance(item.get("question"), str)
+        ]
+        return value
 
 
 class ListeningHeroRef(_PlanModel):
@@ -1263,11 +1317,11 @@ def _resolve_reference(
                 judgments=item.judgments,
                 note=item.note,
                 visible_facets=item.visible_facets,
-                representative_performance_ids=[
-                    performance_id
-                    for performance_id in item.representative_performance_ids
-                    if performance_id in grounded.ids
-                ],
+                # Every stop in the model's order; only a grounded one may resolve.
+                representatives=[{**stop.model_dump(), "grounded": stop.performance_id in grounded.ids} for stop in item.representatives],
+                open_year=item.open_year,
+                chart_view=item.chart_view,
+                year_questions=[question.model_dump() for question in item.year_questions],
                 sources=unit_sources,
                 follow_ups=item.follow_ups,
             ),

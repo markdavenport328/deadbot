@@ -506,12 +506,20 @@ class SongReleaseItem(ExperienceModel):
 
 
 class SongRepresentativePerformance(ExperienceModel):
-    """A model-chosen rendition that gives a song unit an immediate listening path."""
+    """A model-chosen rendition that gives a song unit an immediate listening path.
+
+    On a song timeline it is one of the model's stops, with its label and why.
+    A stop the library could not resolve keeps only the model's words.
+    """
 
     performance_id: str
-    show_id: str
+    show_id: str = ""
     show_date: str | None = None
-    show_label: str
+    show_label: str = ""
+    label: str | None = None
+    why: str | None = None
+    # The performance's length (release, else tape), when known.
+    seconds: int | None = Field(default=None, ge=0)
     set_label: str | None = None
     venue_name: str | None = None
     listen_url: str | None = None
@@ -519,6 +527,55 @@ class SongRepresentativePerformance(ExperienceModel):
     # when the library has one, and its length.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
+
+
+class SongYearPick(ExperienceModel):
+    """The library's pick for a year without a stop: a picked version, a picked show, a release, else the first."""
+
+    performance_id: str
+    show_date: str
+    venue_name: str | None = None
+    set_label: str | None = None
+    seconds: int | None = Field(default=None, ge=0)
+    basis: Literal["picked", "show_picked", "released", "first"]
+    basis_detail: str | None = None
+    track: PlayableTrack | None = None
+
+
+class SongYearLongest(ExperienceModel):
+    performance_id: str
+    seconds: int = Field(ge=0)
+
+
+class SongYearNext(ExperienceModel):
+    """The song that most often followed this one that year, segue or not."""
+
+    title: str
+    count: int = Field(ge=0)
+
+
+class SongYearSummary(ExperienceModel):
+    """One year of a song's life on stage; a year it was not played has a count of zero."""
+
+    year: int
+    count: int = Field(ge=0)
+    median_seconds: int | None = Field(default=None, ge=0)
+    longest: SongYearLongest | None = None
+    top_next: SongYearNext | None = None
+    pick: SongYearPick | None = None
+
+
+class SongLengthPoint(ExperienceModel):
+    """One performance's length, for the timeline's Length view."""
+
+    performance_id: str
+    show_date: str
+    seconds: int = Field(ge=0)
+
+
+class SongYearQuestion(ExperienceModel):
+    year: int
+    question: str
 
 
 class SongYearCount(ExperienceModel):
@@ -545,6 +602,15 @@ class SongOverviewBlock(ExperienceModel):
     year_counts: list[SongYearCount] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
     representative_performances: list[SongRepresentativePerformance] = Field(default_factory=list, max_length=LIST_CEILING)
+    # The timeline, when by_year is visible: the model's open year, first view
+    # and year questions, and the library's year summaries and lengths. Length
+    # points carry one per timed performance (Drums has over 1,400), so that
+    # list has no ceiling of its own.
+    open_year: int | None = None
+    chart_view: Literal["count", "length"] | None = None
+    year_questions: list[SongYearQuestion] = Field(default_factory=list, max_length=LIST_CEILING)
+    year_summaries: list[SongYearSummary] = Field(default_factory=list, max_length=LIST_CEILING)
+    length_points: list[SongLengthPoint] = Field(default_factory=list)
     credits: list[CreditItem] = Field(default_factory=list, max_length=LIST_CEILING)
     source_ids: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     albums: list[SongReleaseItem] = Field(default_factory=list, max_length=LIST_CEILING)

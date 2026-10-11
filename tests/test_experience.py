@@ -886,3 +886,50 @@ def test_version_check_never_touches_the_store(monkeypatch):
     monkeypatch.setenv("VERCEL_GIT_COMMIT_SHA", "abc123")
     client = TestClient(create_app(settings=Settings(), store=UntouchableStore(), agent=object()))
     assert client.get("/api/version").json() == {"git_commit": "abc123"}
+
+
+def test_song_overview_with_by_year_carries_the_timeline_and_keeps_stop_order():
+    from deadbot import composition
+    from deadbot.data import CanonicalStore
+
+    store = CanonicalStore()
+    song = store.one("songs", "song-terrapin-station")
+    block = composition._song_overview(
+        store.song_context(song),
+        store,
+        visible_facets=["by_year"],
+        representatives=[
+            {"performance_id": "gd-1977-02-26-terrapin-station-1-1", "label": "The debut", "why": "First time out.", "grounded": True},
+            {"performance_id": "gd-1972-08-27-dark-star", "label": "Not this song", "why": "Another song's night.", "grounded": True},
+            {"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Charlie Miller's pick", "why": "The 1979 one.", "grounded": True},
+            {"performance_id": "gd-1981-12-31-terrapin-station-2-3", "label": "Never looked up", "why": None, "grounded": False},
+            {"performance_id": "no-words", "grounded": False},
+        ],
+        open_year=1979,
+        chart_view="length",
+        year_questions=[{"year": 1979, "question": "How did 1979 differ?"}],
+    )
+    assert [row.year for row in block.year_summaries][:3] == [1977, 1978, 1979]
+    assert len(block.length_points) == sum(1 for p in composition.song_life.life_performances(store, "song-terrapin-station") if p.seconds)
+    stops = block.representative_performances
+    assert [stop.label for stop in stops] == ["The debut", "Not this song", "Charlie Miller's pick", "Never looked up"]
+    # Another song's performance and an ungrounded stop keep their words in place, without facts.
+    assert (stops[1].show_date, stops[1].why) == (None, "Another song's night.")
+    assert stops[3].show_date is None
+    assert (stops[2].show_date, stops[2].seconds) == ("1979-01-08", 735)
+    assert block.open_year == 1979 and block.chart_view == "length"
+    assert block.year_questions[0].question == "How did 1979 differ?"
+
+
+def test_song_overview_without_by_year_carries_no_timeline():
+    from deadbot import composition
+    from deadbot.data import CanonicalStore
+
+    store = CanonicalStore()
+    block = composition._song_overview(
+        store.song_context(store.one("songs", "song-terrapin-station")), store,
+        visible_facets=["representatives"], open_year=1979, chart_view="length",
+        representatives=[{"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Pick", "grounded": True}],
+    )
+    assert block.year_summaries == [] and block.length_points == [] and block.open_year is None
+    assert block.representative_performances[0].label == "Pick"
