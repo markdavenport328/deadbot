@@ -37,6 +37,8 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
     args = args or {}
     if name == FINISH_TOOL_NAME:
         return "Assembling the page"
+    if name == "read_notebook":
+        return "Going back over earlier research"
     if name == "get_grid":
         return "Laying out the grid"
     if name == "search_entities":

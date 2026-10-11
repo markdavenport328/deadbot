@@ -85,6 +85,13 @@ def _tool_payloads(messages: Iterable[Any]) -> list[dict[str, Any]]:
             continue
         if isinstance(payload, dict):
             payloads.append(payload)
+            # read_notebook brings earlier results back inside one message;
+            # each result counts as if its tool had run this turn.
+            entries = payload.get("notebook_entries")
+            for entry in entries if isinstance(entries, list) else []:
+                result = entry.get("result") if isinstance(entry, dict) else None
+                if isinstance(result, dict):
+                    payloads.append(result)
     return payloads
 
 

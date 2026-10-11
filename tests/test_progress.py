@@ -37,3 +37,7 @@ def test_status_lines_cover_only_new_tool_calls():
 
 def test_grid_status_line():
     assert progress.describe_tool_call("get_grid", {"row_kind": "song"}) == "Laying out the grid"
+
+
+def test_reading_the_notebook_has_a_status_line():
+    assert progress.describe_tool_call("read_notebook", {"keys_or_ids": ["k"]}) == "Going back over earlier research"

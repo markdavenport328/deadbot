@@ -15,10 +15,11 @@ from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool, tool
 from pydantic import ValidationError, WithJsonSchema
 
-from deadbot import aggregation, grids, sequences
+from deadbot import aggregation, grids, notebook, sequences
 from deadbot.catalog_queries import NAMED_QUERIES, catalog_tool_description
 from deadbot.data import CanonicalStore
 from deadbot.deadnet import (
@@ -2465,4 +2466,47 @@ def build_tools(
 
         query_catalog.description = catalog_tool_description()
         tools.append(query_catalog)
+    replayable = {item.name: item for item in tools}
+
+    def _notebook_result(entry: notebook.Entry) -> dict[str, Any]:
+        """A stored web payload, or the canonical call run again against the library."""
+
+        if entry.payload is not None:
+            return entry.payload
+        original = replayable.get(entry.tool)
+        if original is None:
+            return {"error": "That tool is no longer available", "tool": entry.tool}
+        try:
+            result = json.loads(original.invoke(entry.args))
+        except Exception as error:  # A replay that fails must not end the turn.
+            return {"error": "Could not run that call again", "detail": str(error)[:300]}
+        return result if isinstance(result, dict) else {"result": result}
+
+    @tool
+    def read_notebook(keys_or_ids: list[str], config: RunnableConfig) -> str:
+        """Bring earlier research back in full: the results of calls listed in the research notebook.
+
+        Pass the bracketed keys from the notebook's lines, or library IDs and
+        arguments (a show_id, song_id, performance_id, aggregation_id,
+        result_id or date) to get the entries that hold them. Several keys in
+        one call come back together. Each result is what the original call
+        returned, run again against the library, so its IDs, aggregation_id
+        and result_id can go on the page.
+        """
+        book = ((config or {}).get("configurable") or {}).get("notebook")
+        if not isinstance(book, notebook.Notebook) or not book.entries:
+            return _json({
+                "notebook_entries": [],
+                "missing": [str(value).strip().strip("[]") for value in keys_or_ids],
+                "note": "The research notebook is empty for this conversation.",
+            })
+        found, missing = notebook.find(book, keys_or_ids)
+        return _json({
+            "notebook_entries": [
+                {"key": entry.key, "tool": entry.tool, "args": entry.args, "result": _notebook_result(entry)} for entry in found
+            ],
+            "missing": missing,
+        })
+
+    tools.append(read_notebook)
     return tools
