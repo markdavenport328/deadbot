@@ -8,6 +8,9 @@ import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { VersionStrip } from "./VersionStrip";
+import { SongTimeline } from "./SongTimeline";
+import type { SongTimelineData } from "./song-timeline-types";
+import { askFocus } from "./song-timeline-text";
 import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
@@ -1343,6 +1346,32 @@ function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { ty
   };
 }
 
+// A song card's timeline data: the library's years and lengths, and the
+// model's stops, open year, first view and year questions.
+function timelineData(block: SongOverviewBlockT): SongTimelineData {
+  return {
+    song_id: block.song_id,
+    title: block.title,
+    performance_count: block.known_performance_count,
+    year_summaries: block.year_summaries ?? [],
+    length_points: block.length_points ?? [],
+    stops: block.representative_performances.map((stop) => ({
+      performance_id: stop.performance_id,
+      label: stop.label ?? null,
+      why: stop.why ?? null,
+      show_date: stop.show_date ?? null,
+      venue_name: stop.venue_name ?? null,
+      seconds: stop.seconds ?? null,
+      track: stop.audio_url
+        ? { performance_id: stop.performance_id, title: block.title, audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null }
+        : null
+    })),
+    open_year: block.open_year ?? null,
+    chart_view: block.chart_view ?? null,
+    year_questions: block.year_questions ?? []
+  };
+}
+
 function SongOverviewUnit({
   block,
   criteria,
@@ -1358,9 +1387,12 @@ function SongOverviewUnit({
 }) {
   const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
   const showsFacet = (facet: SongOverviewBlockT["visible_facets"][number]) => block.visible_facets.includes(facet);
+  // With by_year the song's life is one timeline: it carries the chart, the
+  // model's stops and what the History tab showed.
+  const timeline = showsFacet("by_year") && (block.year_summaries ?? []).length > 0;
 
   const tabs: DrawerTab[] = [];
-  if (showsFacet("history") && block.history) {
+  if (showsFacet("history") && block.history && !timeline) {
     const history = block.history;
     tabs.push({
       id: "history",
@@ -1399,7 +1431,7 @@ function SongOverviewUnit({
     });
   }
   const initialOpen = openFacets && tabs.length > 0 ? tabs[0].id : null;
-  const representatives = showsFacet("representatives") ? block.representative_performances : [];
+  const representatives = showsFacet("representatives") && !timeline ? block.representative_performances : [];
 
   return (
     <UnitFrame inRow={inRow} className={`song-overview emphasis-${block.emphasis}`}>
@@ -1412,26 +1444,45 @@ function SongOverviewUnit({
       )}
       {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
-      {showsFacet("by_year") && (block.year_counts ?? []).length > 0 && (
-        <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
-          <DataChart block={songYearChart(block)} embedded />
-        </Suspense>
+      {timeline ? (
+        <SongTimeline
+          // The final page can change the model's open year or first view after the draft streamed.
+          key={`${block.song_id}:${block.open_year ?? ""}:${block.chart_view ?? ""}`}
+          data={timelineData(block)}
+          onAsk={(question, focus) => onFollowUp(question, askFocus(focus))}
+        />
+      ) : (
+        showsFacet("by_year") &&
+        (block.year_counts ?? []).length > 0 && (
+          <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
+            <DataChart block={songYearChart(block)} embedded />
+          </Suspense>
+        )
       )}
       {representatives.length > 0 && (
         <section className="song-representatives">
           <ul>
-            {representatives.map((performance) => (
-              <li key={performance.performance_id}>
-                <ListenControl
-                  url={performance.listen_url}
-                  label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
-                  track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
-                  name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
-                  className="list-item-label"
-                />
-                {performance.set_label && <span>{performance.set_label}</span>}
-              </li>
-            ))}
+            {representatives.map((performance, index) =>
+              performance.show_date || performance.show_label ? (
+                <li key={`${performance.performance_id}-${index}`}>
+                  <ListenControl
+                    url={performance.listen_url}
+                    label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
+                    track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
+                    name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
+                    className="list-item-label"
+                  />
+                  {[performance.label, performance.set_label].filter(Boolean).length > 0 && <span>{[performance.label, performance.set_label].filter(Boolean).join(" · ")}</span>}
+                  {performance.why && <span>{performance.why}</span>}
+                </li>
+              ) : (
+                // A stop the library could not place keeps the model's words.
+                <li key={`${performance.performance_id}-${index}`}>
+                  <span className="list-item-label">{performance.label ?? performance.why}</span>
+                  {performance.label && performance.why && <span>{performance.why}</span>}
+                </li>
+              )
+            )}
           </ul>
         </section>
       )}

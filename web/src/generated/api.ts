@@ -78,6 +78,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/songs/{song_id}/years/{year}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Song Year
+         * @description One song's performances in one year for the timeline's See all; library facts only, no model call.
+         *
+         *     It shares the grid's lookup limit. Library facts do not change between
+         *     deploys, so the browser and any cache may keep the answer for a day.
+         */
+        get: operations["song_year_api_songs__song_id__years__year__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/version": {
         parameters: {
             query?: never;
@@ -270,7 +293,7 @@ export interface components {
         };
         /**
          * AskFocus
-         * @description What the visitor was pointing at when they asked: the clicked cell or grid.
+         * @description What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.
          *
          *     The browser reports it with the question; the server hands it to the model
          *     as a note and lets the IDs it names join the turn's grounded IDs.
@@ -280,9 +303,9 @@ export interface components {
             block_id: string;
             /**
              * Block Type
-             * @constant
+             * @enum {string}
              */
-            block_type: "grid";
+            block_type: "grid" | "song_overview";
             /** Facts */
             facts?: string[];
             /** Ids */
@@ -1430,6 +1453,13 @@ export interface components {
             /** Visible Facets */
             visible_facets?: ("guests" | "listen" | "setlist" | "sources" | "lineup" | "recordings")[];
         };
+        /** SongGuest */
+        SongGuest: {
+            /** Instrument */
+            instrument?: string | null;
+            /** Name */
+            name: string;
+        };
         /**
          * SongHistory
          * @description A song's stage life: first, last, and one performance per year.
@@ -1442,10 +1472,36 @@ export interface components {
             known_count: number;
             last: components["schemas"]["PerformanceListItem"];
         };
+        /**
+         * SongLengthPoint
+         * @description One performance's length, for the timeline's Length view.
+         */
+        SongLengthPoint: {
+            /** Performance Id */
+            performance_id: string;
+            /** Seconds */
+            seconds: number;
+            /** Show Date */
+            show_date: string;
+        };
+        /**
+         * SongNeighbor
+         * @description The song just before or after a performance in its set, and whether it ran into or out of a segue.
+         */
+        SongNeighbor: {
+            /** Segued */
+            segued: boolean;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+        };
         /** SongOverviewBlock */
         SongOverviewBlock: {
             /** Albums */
             albums?: components["schemas"]["SongReleaseItem"][];
+            /** Chart View */
+            chart_view?: ("count" | "length") | null;
             /** Credits */
             credits?: components["schemas"]["CreditItem"][];
             /**
@@ -1471,8 +1527,12 @@ export interface components {
             known_performance_count: number;
             /** Last Year */
             last_year?: number | null;
+            /** Length Points */
+            length_points?: components["schemas"]["SongLengthPoint"][];
             /** Note */
             note?: string | null;
+            /** Open Year */
+            open_year?: number | null;
             /** Original Artist */
             original_artist?: string | null;
             /** Representative Performances */
@@ -1494,6 +1554,10 @@ export interface components {
             visible_facets?: ("credits" | "albums" | "history" | "representatives" | "by_year")[];
             /** Year Counts */
             year_counts?: components["schemas"]["SongYearCount"][];
+            /** Year Questions */
+            year_questions?: components["schemas"]["SongYearQuestion"][];
+            /** Year Summaries */
+            year_summaries?: components["schemas"]["SongYearSummary"][];
         };
         /** SongReleaseItem */
         SongReleaseItem: {
@@ -1511,26 +1575,54 @@ export interface components {
         /**
          * SongRepresentativePerformance
          * @description A model-chosen rendition that gives a song unit an immediate listening path.
+         *
+         *     On a song timeline it is one of the model's stops, with its label and why.
+         *     A stop the library could not resolve keeps only the model's words.
          */
         SongRepresentativePerformance: {
             /** Audio Url */
             audio_url?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
+            /** Label */
+            label?: string | null;
             /** Listen Url */
             listen_url?: string | null;
             /** Performance Id */
             performance_id: string;
+            /** Seconds */
+            seconds?: number | null;
             /** Set Label */
             set_label?: string | null;
             /** Show Date */
             show_date?: string | null;
-            /** Show Id */
+            /**
+             * Show Id
+             * @default
+             */
             show_id: string;
-            /** Show Label */
+            /**
+             * Show Label
+             * @default
+             */
             show_label: string;
             /** Venue Name */
             venue_name?: string | null;
+            /** Why */
+            why?: string | null;
+        };
+        /**
+         * SongSignal
+         * @description A voice that picked the performance, or its show.
+         */
+        SongSignal: {
+            /**
+             * Scope
+             * @enum {string}
+             */
+            scope: "performance" | "show";
+            /** Voice */
+            voice: string;
         };
         /**
          * SongYearCount
@@ -1539,6 +1631,124 @@ export interface components {
         SongYearCount: {
             /** Count */
             count: number;
+            /** Year */
+            year: number;
+        };
+        /**
+         * SongYearDetail
+         * @description Every performance of one song in one year, for the timeline's See all.
+         */
+        SongYearDetail: {
+            /** Performances */
+            performances?: components["schemas"]["SongYearPerformance"][];
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+            /** Year */
+            year: number;
+        };
+        /** SongYearLongest */
+        SongYearLongest: {
+            /** Performance Id */
+            performance_id: string;
+            /** Seconds */
+            seconds: number;
+        };
+        /**
+         * SongYearNext
+         * @description The song that most often followed this one that year, segue or not.
+         */
+        SongYearNext: {
+            /** Count */
+            count: number;
+            /** Title */
+            title: string;
+        };
+        /**
+         * SongYearPerformance
+         * @description One performance in a song's year, every fact from the library.
+         */
+        SongYearPerformance: {
+            /** City */
+            city?: string | null;
+            /**
+             * Encore
+             * @default false
+             */
+            encore: boolean;
+            /** Guests */
+            guests?: components["schemas"]["SongGuest"][];
+            /** Length Source */
+            length_source?: ("release" | "tape") | null;
+            next?: components["schemas"]["SongNeighbor"] | null;
+            /** Performance Id */
+            performance_id: string;
+            /**
+             * Position In Set
+             * @default 0
+             */
+            position_in_set: number;
+            previous?: components["schemas"]["SongNeighbor"] | null;
+            /** Releases */
+            releases?: string[];
+            /** Seconds */
+            seconds?: number | null;
+            /** Set Label */
+            set_label?: string | null;
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+            /** Signals */
+            signals?: components["schemas"]["SongSignal"][];
+            track?: components["schemas"]["PlayableTrack"] | null;
+            /** Venue Name */
+            venue_name?: string | null;
+        };
+        /**
+         * SongYearPick
+         * @description The library's pick for a year without a stop: a picked version, a picked show, a release, else the first.
+         */
+        SongYearPick: {
+            /**
+             * Basis
+             * @enum {string}
+             */
+            basis: "picked" | "show_picked" | "released" | "first";
+            /** Basis Detail */
+            basis_detail?: string | null;
+            /** Performance Id */
+            performance_id: string;
+            /** Seconds */
+            seconds?: number | null;
+            /** Set Label */
+            set_label?: string | null;
+            /** Show Date */
+            show_date: string;
+            track?: components["schemas"]["PlayableTrack"] | null;
+            /** Venue Name */
+            venue_name?: string | null;
+        };
+        /** SongYearQuestion */
+        SongYearQuestion: {
+            /** Question */
+            question: string;
+            /** Year */
+            year: number;
+        };
+        /**
+         * SongYearSummary
+         * @description One year of a song's life on stage; a year it was not played has a count of zero.
+         */
+        SongYearSummary: {
+            /** Count */
+            count: number;
+            longest?: components["schemas"]["SongYearLongest"] | null;
+            /** Median Seconds */
+            median_seconds?: number | null;
+            pick?: components["schemas"]["SongYearPick"] | null;
+            top_next?: components["schemas"]["SongYearNext"] | null;
             /** Year */
             year: number;
         };
@@ -1781,6 +1991,38 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    song_year_api_songs__song_id__years__year__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                song_id: string;
+                year: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SongYearDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

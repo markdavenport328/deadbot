@@ -1,14 +1,14 @@
-"""Write the song timeline's preview fixtures from the real library.
+"""Write the song timeline's visual fixture from the real library.
 
-The card data and every year's performances are the library's own, read
-through deadbot.song_life from the real SQLite catalog. The stops, the open
-year and the year questions stand in for what the model writes in the app;
-they are marked as stand-ins in the fixture. Run from the repository root:
+The card is built by the same composition the live service uses, against the
+real SQLite catalog, so its years, lengths, picks and tapes are the library's
+own. The stops, the open year, the first view and the year questions stand in
+for what the model writes. Run from the repository root:
 
     PYTHONPATH=. python scripts/export_song_timeline_fixture.py
 
-It writes web/src/fixtures/song-timeline-terrapin.json (the card) and
-web/src/fixtures/song-timeline-terrapin-years.json (every year's See all list).
+It writes web/src/fixtures/song-timeline-terrapin.json, a song_overview block
+the "timeline" visual fixture shows.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import json
 import tempfile
 from pathlib import Path
 
-from deadbot import song_life
+from deadbot import composition, song_life
 from deadbot.sqlite_build import build_database
 from deadbot.sqlite_store import SqliteCanonicalStore
 
@@ -47,42 +47,29 @@ STAND_IN_QUESTIONS = {
 def main() -> None:
     with tempfile.TemporaryDirectory() as folder:
         store = SqliteCanonicalStore(build_database(Path(folder) / "deadbot.sqlite").path, response_cache_path=Path(folder) / "cache.sqlite")
-        card = song_life.card_data(store, SONG_ID)
-        if card is None:
+        song = store.one("songs", SONG_ID)
+        if song is None:
             raise SystemExit(f"{SONG_ID} is not in the library")
-        performances = {p.show_date: p for p in song_life.life_performances(store, SONG_ID)}
-        stops = []
-        for show_date, label, why in STAND_IN_STOPS:
-            performance = performances[show_date]
-            stops.append(
-                {
-                    "performance_id": performance.performance_id,
-                    "label": label,
-                    "why": why,
-                    "show_date": performance.show_date,
-                    "venue_name": performance.venue_name,
-                    "seconds": performance.seconds,
-                    "track": performance.track_json(card["title"]),
-                }
-            )
-        card.update(
-            {
-                "_note": "Stops, open_year, chart_view and year_questions are stand-ins for the model's choices; every other fact is the library's.",
-                "stops": stops,
-                "open_year": 1979,
-                "chart_view": "count",
-                "year_questions": [{"year": year, "question": question} for year, question in STAND_IN_QUESTIONS.items()],
-            }
+        by_date = {p.show_date: p.performance_id for p in song_life.life_performances(store, SONG_ID)}
+        block = composition._song_overview(
+            store.song_context(song),
+            store,
+            emphasis="primary",
+            note="“Terrapin Station” debuted on February 26, 1977 and was last played on July 8, 1995. The song was performed 23 times in 1979.",
+            visible_facets=["by_year", "albums", "credits"],
+            representatives=[
+                {"performance_id": by_date[show_date], "label": label, "why": why, "grounded": True}
+                for show_date, label, why in STAND_IN_STOPS
+            ],
+            open_year=1979,
+            chart_view="count",
+            year_questions=[{"year": year, "question": question} for year, question in STAND_IN_QUESTIONS.items()],
         )
-        years = {
-            str(row["year"]): song_life.year_detail(store, SONG_ID, row["year"])
-            for row in card["year_summaries"]
-            if row["count"]
-        }
+    if block is None:
+        raise SystemExit("The song card could not be built")
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "song-timeline-terrapin.json").write_text(json.dumps(card, indent=1, ensure_ascii=False) + "\n")
-    (OUT / "song-timeline-terrapin-years.json").write_text(json.dumps(years, separators=(",", ":"), ensure_ascii=False) + "\n")
-    print(f"Wrote the card ({len(card['year_summaries'])} years, {len(stops)} stops) and {len(years)} years of performances")
+    (OUT / "song-timeline-terrapin.json").write_text(json.dumps(block.model_dump(mode="json"), indent=1, ensure_ascii=False) + "\n")
+    print(f"Wrote the card: {len(block.year_summaries)} years, {len(block.length_points)} lengths, {len(block.representative_performances)} stops")
 
 
 if __name__ == "__main__":

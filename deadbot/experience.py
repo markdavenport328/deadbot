@@ -1121,14 +1121,14 @@ def _trimmed_strings(value: Any, count: int, length: int, what: str) -> Any:
 
 
 class AskFocus(ExperienceModel):
-    """What the visitor was pointing at when they asked: the clicked cell or grid.
+    """What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.
 
     The browser reports it with the question; the server hands it to the model
     as a note and lets the IDs it names join the turn's grounded IDs.
     """
 
     label: str = Field(max_length=FOCUS_LABEL_CEILING)
-    block_type: Literal["grid"]
+    block_type: Literal["grid", "song_overview"]
     block_id: str = Field(max_length=FOCUS_BLOCK_ID_CEILING)
     ids: list[str] = Field(default_factory=list, max_length=FOCUS_ID_CEILING)
     facts: list[str] = Field(default_factory=list, max_length=FOCUS_FACT_COUNT_CEILING)

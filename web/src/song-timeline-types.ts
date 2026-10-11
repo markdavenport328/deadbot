@@ -1,37 +1,19 @@
-// The song timeline's data, mirroring deadbot/song_life.py's JSON. Phase 2
-// replaces these with types generated from the API schema.
+// The song timeline's data. The library's shapes come from the API schema
+// (deadbot/experience.py, generated into ./generated/api); the stop, the view
+// and the focus are shapes the client builds from a song card.
 
-export type TimelineTrack = {
-  performance_id: string;
-  title: string;
-  audio_url: string;
-  duration_seconds: number | null;
-  set_label: string | null;
-};
+import type { components } from "./generated/api";
 
-export type PickBasis = "picked" | "show_picked" | "released" | "first";
+type Schemas = components["schemas"];
+// Lists the server always fills (default_factory) are optional in the
+// generated schema; Require restores the always-present guarantee, as types.ts does.
+type Require<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
-export type YearPick = {
-  performance_id: string;
-  show_date: string;
-  venue_name: string | null;
-  set_label: string | null;
-  seconds: number | null;
-  basis: PickBasis;
-  basis_detail: string | null;
-  track: TimelineTrack | null;
-};
-
-export type YearSummary = {
-  year: number;
-  count: number;
-  median_seconds: number | null;
-  longest: { performance_id: string; seconds: number } | null;
-  top_next: { title: string; count: number } | null;
-  pick: YearPick | null;
-};
-
-export type LengthPoint = { performance_id: string; show_date: string; seconds: number };
+export type TimelineTrack = Schemas["PlayableTrack"];
+export type YearPick = Schemas["SongYearPick"];
+export type PickBasis = YearPick["basis"];
+export type YearSummary = Schemas["SongYearSummary"];
+export type LengthPoint = Schemas["SongLengthPoint"];
 
 // The model's stop; a stop the library could not resolve has only its words.
 export type TimelineStop = {
@@ -58,28 +40,9 @@ export type SongTimelineData = {
   year_questions: { year: number; question: string }[];
 };
 
-export type Neighbor = { song_id: string; title: string; segued: boolean };
+export type Neighbor = Schemas["SongNeighbor"];
+export type YearPerformance = Require<Schemas["SongYearPerformance"], "releases" | "signals" | "guests">;
+export type SongYearDetail = Omit<Schemas["SongYearDetail"], "performances"> & { performances: YearPerformance[] };
 
-export type YearPerformance = {
-  performance_id: string;
-  show_id: string;
-  show_date: string;
-  venue_name: string | null;
-  city: string | null;
-  set_label: string | null;
-  position_in_set: number;
-  encore: boolean;
-  previous: Neighbor | null;
-  next: Neighbor | null;
-  seconds: number | null;
-  length_source: "release" | "tape" | null;
-  track: TimelineTrack | null;
-  releases: string[];
-  signals: { voice: string; scope: "performance" | "show" }[];
-  guests: { name: string; instrument: string | null }[];
-};
-
-export type SongYearDetail = { song_id: string; title: string; year: number; performances: YearPerformance[] };
-
-// What the visitor was pointing at when they asked; phase 2 sends it as AskFocus.
+// What the visitor was pointing at when they asked; the song card sends it as AskFocus.
 export type TimelineFocus = { label: string; song_id: string; year: number; ids: string[]; facts: string[] };

@@ -14,6 +14,8 @@ import mostplayedJson from "./fixtures/mostplayed.json";
 // Built from the real library by scripts/export_grid_fixtures.py.
 import gridEurope72Json from "./fixtures/grid-europe72.json";
 import gridSongYearsJson from "./fixtures/grid-song-years.json";
+// Built from the real library by scripts/export_song_timeline_fixture.py; its stops stand in for the model's.
+import songTimelineJson from "./fixtures/song-timeline-terrapin.json";
 
 type FixtureAudio = { url: string; durationSeconds?: number; segueIntoNext?: boolean };
 type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean, audio?: FixtureAudio];
@@ -942,11 +944,22 @@ const grid: ExperienceResponse = fixture(
   { title: "Where the big jams fell", lead: "Cell strength is minutes played, or shows that year." }
 );
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid"] as const;
+// A song card with by_year: its life on stage as one timeline, the stops
+// standing in for the model's, every fact from the library.
+const timeline: ExperienceResponse = fixture(
+  "How often did they play Terrapin?",
+  "Terrapin Station became a regular second-set anchor",
+  "Its busiest year was the debut year, 1977, with 28 performances; 1979 remained one of the song's more active periods, with 23.",
+  [songTimelineJson] as unknown as ExperienceBlock[],
+  "collection",
+  { title: "The song's life on stage", lead: null }
+);
+
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "timeline"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, timeline };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

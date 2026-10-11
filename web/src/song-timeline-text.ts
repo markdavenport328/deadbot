@@ -2,6 +2,7 @@
 // model's own text, never invented here.
 import { clock } from "./VersionStrip";
 import type { SongTimelineData, TimelineFocus, YearPerformance, YearPick, YearSummary } from "./song-timeline-types";
+import type { AskFocus } from "./types";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -78,6 +79,12 @@ export function focusFor(data: SongTimelineData, summary: YearSummary, chosenId:
     ids: [data.song_id, ...(chosenId ? [chosenId] : [])],
     facts: [yearFacts(summary)]
   };
+}
+
+// The timeline's focus as the question carries it: the server grounds its IDs
+// and tells the model the visitor asked from a song's timeline.
+export function askFocus(focus: TimelineFocus): AskFocus {
+  return { block_type: "song_overview", block_id: focus.song_id, label: focus.label, ids: focus.ids, facts: focus.facts };
 }
 
 // The model's open year when it was played; otherwise the first year with a pick.

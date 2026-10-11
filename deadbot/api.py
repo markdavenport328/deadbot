@@ -94,7 +94,8 @@ def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
     them; only the library IDs are checked against the store.
     """
 
-    lines = [f'The visitor asked from a grid on the page ("{_one_line(focus.label)}").']
+    place = "a song's timeline" if focus.block_type == "song_overview" else "a grid"
+    lines = [f'The visitor asked from {place} on the page ("{_one_line(focus.label)}").']
     facts = [fact for fact in (_one_line(fact) for fact in focus.facts) if fact]
     if facts:
         lines.append(f"Facts as the page showed them: {' '.join(facts)}")

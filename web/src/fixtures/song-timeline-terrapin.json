@@ -1,7 +1,237 @@
 {
+ "type": "song_overview",
  "song_id": "song-terrapin-station",
  "title": "Terrapin Station",
- "performance_count": 302,
+ "original_artist": null,
+ "known_performance_count": 302,
+ "first_year": 1977,
+ "last_year": 1995,
+ "emphasis": "primary",
+ "disclosure": "expanded",
+ "judgments": [],
+ "visible_facets": [
+  "by_year",
+  "credits",
+  "albums"
+ ],
+ "history": null,
+ "year_counts": [
+  {
+   "year": 1977,
+   "count": 28
+  },
+  {
+   "year": 1978,
+   "count": 24
+  },
+  {
+   "year": 1979,
+   "count": 23
+  },
+  {
+   "year": 1980,
+   "count": 20
+  },
+  {
+   "year": 1981,
+   "count": 13
+  },
+  {
+   "year": 1982,
+   "count": 8
+  },
+  {
+   "year": 1983,
+   "count": 10
+  },
+  {
+   "year": 1984,
+   "count": 13
+  },
+  {
+   "year": 1985,
+   "count": 16
+  },
+  {
+   "year": 1986,
+   "count": 9
+  },
+  {
+   "year": 1987,
+   "count": 22
+  },
+  {
+   "year": 1988,
+   "count": 20
+  },
+  {
+   "year": 1989,
+   "count": 17
+  },
+  {
+   "year": 1990,
+   "count": 17
+  },
+  {
+   "year": 1991,
+   "count": 15
+  },
+  {
+   "year": 1992,
+   "count": 9
+  },
+  {
+   "year": 1993,
+   "count": 16
+  },
+  {
+   "year": 1994,
+   "count": 15
+  },
+  {
+   "year": 1995,
+   "count": 7
+  }
+ ],
+ "note": "“Terrapin Station” debuted on February 26, 1977 and was last played on July 8, 1995. The song was performed 23 times in 1979.",
+ "representative_performances": [
+  {
+   "performance_id": "gd-1977-02-26-terrapin-station-1-1",
+   "show_id": "gd-1977-02-26",
+   "show_date": "1977-02-26",
+   "show_label": "1977-02-26 — Swing Auditorium",
+   "label": "The debut",
+   "why": "First time out, opening the show five months before the studio album.",
+   "seconds": 745,
+   "set_label": "Set 1",
+   "venue_name": "Swing Auditorium",
+   "listen_url": "https://archive.org/download/gd1977-02-26.sbd.cantor.deibert.83283.flac16/gd1977-02-26d1t01-fixed.mp3",
+   "audio_url": "https://archive.org/download/gd1977-02-26.sbd.cantor.deibert.83283.flac16/gd1977-02-26d1t01-fixed.mp3",
+   "duration_seconds": 668
+  },
+  {
+   "performance_id": "gd-1977-05-28-terrapin-station-2-5",
+   "show_id": "gd-1977-05-28",
+   "show_date": "1977-05-28",
+   "show_label": "1977-05-28 — Hartford Civic Center",
+   "label": "Hartford, the version of record",
+   "why": "Released on its own as To Terrapin. The spring 1977 arrangement at full strength.",
+   "seconds": 666,
+   "set_label": "Set 2",
+   "venue_name": "Hartford Civic Center",
+   "listen_url": "https://archive.org/download/gd1977-05-28.sbd.ashley-bertha.12827.sbeok.flac16/gd77-05-28d3t03.mp3",
+   "audio_url": "https://archive.org/download/gd1977-05-28.sbd.ashley-bertha.12827.sbeok.flac16/gd77-05-28d3t03.mp3",
+   "duration_seconds": 671
+  },
+  {
+   "performance_id": "gd-1978-09-15-terrapin-station-2-7",
+   "show_id": "gd-1978-09-15",
+   "show_date": "1978-09-15",
+   "show_label": "1978-09-15 — Gizah Sound and Light Theater",
+   "label": "At the pyramids",
+   "why": "Played at the foot of the Great Pyramid, coming out of Space.",
+   "seconds": 382,
+   "set_label": "Set 2",
+   "venue_name": "Gizah Sound and Light Theater",
+   "listen_url": "https://archive.org/download/gd1978-09-15.sbd.lai.295.shnf/gd78-09-15IId2t03.mp3",
+   "audio_url": "https://archive.org/download/gd1978-09-15.sbd.lai.295.shnf/gd78-09-15IId2t03.mp3",
+   "duration_seconds": 382
+  },
+  {
+   "performance_id": "gd-1979-01-08-terrapin-station-2-4",
+   "show_id": "gd-1979-01-08",
+   "show_date": "1979-01-08",
+   "show_label": "1979-01-08 — Madison Square Garden",
+   "label": "Charlie Miller's pick",
+   "why": "The 1979 show Charlie Miller singles out, and the one from the visitor's first question.",
+   "seconds": 735,
+   "set_label": "Set 2",
+   "venue_name": "Madison Square Garden",
+   "listen_url": "https://archive.org/download/gd1979-01-08.nak300-wagner.miller.87657.flac16/gd79-01-08d3t01.mp3",
+   "audio_url": "https://archive.org/download/gd1979-01-08.nak300-wagner.miller.87657.flac16/gd79-01-08d3t01.mp3",
+   "duration_seconds": 735
+  },
+  {
+   "performance_id": "gd-1981-12-31-terrapin-station-2-3",
+   "show_id": "gd-1981-12-31",
+   "show_date": "1981-12-31",
+   "show_label": "1981-12-31 — Oakland Auditorium",
+   "label": "New Year's, inside Playin'",
+   "why": "Tucked into the middle of Playing in the Band on New Year's Eve.",
+   "seconds": 852,
+   "set_label": "Set 2",
+   "venue_name": "Oakland Auditorium",
+   "listen_url": "https://archive.org/download/gd1981-12-31.143570.sbd.healy.walker.scotton.miller.clugston.flac1648/Gd81-12-31S2t04TerrapinStation.mp3",
+   "audio_url": "https://archive.org/download/gd1981-12-31.143570.sbd.healy.walker.scotton.miller.clugston.flac1648/Gd81-12-31S2t04TerrapinStation.mp3",
+   "duration_seconds": 852
+  },
+  {
+   "performance_id": "gd-1989-12-06-terrapin-station-2-4",
+   "show_id": "gd-1989-12-06",
+   "show_date": "1989-12-06",
+   "show_label": "1989-12-06 — Oakland-Alameda County Coliseum Arena",
+   "label": "With Clarence Clemons",
+   "why": "Clemons sits in on sax and the song stretches to almost 23 minutes.",
+   "seconds": 1363,
+   "set_label": "Set 2",
+   "venue_name": "Oakland-Alameda County Coliseum Arena",
+   "listen_url": "https://archive.org/download/gd1989-12-06.138926.UltraMatrix.SBD.Gastwirt.Miller.Noel.t-flac16/gd89-12-06.s2t04.mp3",
+   "audio_url": "https://archive.org/download/gd1989-12-06.138926.UltraMatrix.SBD.Gastwirt.Miller.Noel.t-flac16/gd89-12-06.s2t04.mp3",
+   "duration_seconds": 1363
+  },
+  {
+   "performance_id": "gd-1993-09-29-terrapin-station-2-4",
+   "show_id": "gd-1993-09-29",
+   "show_date": "1993-09-29",
+   "show_label": "1993-09-29 — Boston Garden",
+   "label": "The longest",
+   "why": "Over 25 minutes in Boston, the longest Terrapin on record.",
+   "seconds": 1514,
+   "set_label": "Set 2",
+   "venue_name": "Boston Garden",
+   "listen_url": "https://archive.org/download/gd1993-09-29.139995.aud.lamarre.berger.flac1648/gd1993-09-29s2t04.mp3",
+   "audio_url": "https://archive.org/download/gd1993-09-29.139995.aud.lamarre.berger.flac1648/gd1993-09-29s2t04.mp3",
+   "duration_seconds": 1514
+  },
+  {
+   "performance_id": "gd-1995-07-08-terrapin-station-2-5",
+   "show_id": "gd-1995-07-08",
+   "show_date": "1995-07-08",
+   "show_label": "1995-07-08 — Soldier Field",
+   "label": "The last",
+   "why": "The final Terrapin, at Soldier Field the night before the band's last show.",
+   "seconds": 1022,
+   "set_label": "Set 2",
+   "venue_name": "Soldier Field",
+   "listen_url": "https://archive.org/download/gd1995-07-08.sbd.miller.114363.flac16/gd95-07-08d2t02.mp3",
+   "audio_url": "https://archive.org/download/gd1995-07-08.sbd.miller.114363.flac16/gd95-07-08d2t02.mp3",
+   "duration_seconds": 1022
+  }
+ ],
+ "open_year": 1979,
+ "chart_view": "count",
+ "year_questions": [
+  {
+   "year": 1977,
+   "question": "How did Terrapin change between its debut and the fall of 1977?"
+  },
+  {
+   "year": 1979,
+   "question": "How did the 1979 Terrapins differ from 1977?"
+  },
+  {
+   "year": 1980,
+   "question": "Why did Terrapin start leading into Drums in 1980?"
+  },
+  {
+   "year": 1989,
+   "question": "What did Clarence Clemons add to Terrapin?"
+  },
+  {
+   "year": 1993,
+   "question": "What made the Boston '93 Terrapin run 25 minutes?"
+  }
+ ],
  "year_summaries": [
   {
    "year": 1977,
@@ -1962,151 +2192,359 @@
    "seconds": 1022
   }
  ],
- "_note": "Stops, open_year, chart_view and year_questions are stand-ins for the model's choices; every other fact is the library's.",
- "stops": [
+ "credits": [
   {
-   "performance_id": "gd-1977-02-26-terrapin-station-1-1",
-   "label": "The debut",
-   "why": "First time out, opening the show five months before the studio album.",
-   "show_date": "1977-02-26",
-   "venue_name": "Swing Auditorium",
-   "seconds": 745,
-   "track": {
-    "performance_id": "gd-1977-02-26-terrapin-station-1-1",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1977-02-26.sbd.cantor.deibert.83283.flac16/gd1977-02-26d1t01-fixed.mp3",
-    "duration_seconds": 668,
-    "set_label": "Set 1"
-   }
+   "person_id": "person-jerry-garcia",
+   "name": "Jerry Garcia",
+   "role": "music"
   },
   {
-   "performance_id": "gd-1977-05-28-terrapin-station-2-5",
-   "label": "Hartford, the version of record",
-   "why": "Released on its own as To Terrapin. The spring 1977 arrangement at full strength.",
-   "show_date": "1977-05-28",
-   "venue_name": "Hartford Civic Center",
-   "seconds": 666,
-   "track": {
-    "performance_id": "gd-1977-05-28-terrapin-station-2-5",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1977-05-28.sbd.ashley-bertha.12827.sbeok.flac16/gd77-05-28d3t03.mp3",
-    "duration_seconds": 671,
-    "set_label": "Set 2"
-   }
-  },
-  {
-   "performance_id": "gd-1978-09-15-terrapin-station-2-7",
-   "label": "At the pyramids",
-   "why": "Played at the foot of the Great Pyramid, coming out of Space.",
-   "show_date": "1978-09-15",
-   "venue_name": "Gizah Sound and Light Theater",
-   "seconds": 382,
-   "track": {
-    "performance_id": "gd-1978-09-15-terrapin-station-2-7",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1978-09-15.sbd.lai.295.shnf/gd78-09-15IId2t03.mp3",
-    "duration_seconds": 382,
-    "set_label": "Set 2"
-   }
-  },
-  {
-   "performance_id": "gd-1979-01-08-terrapin-station-2-4",
-   "label": "Charlie Miller's pick",
-   "why": "The 1979 show Charlie Miller singles out, and the one from the visitor's first question.",
-   "show_date": "1979-01-08",
-   "venue_name": "Madison Square Garden",
-   "seconds": 735,
-   "track": {
-    "performance_id": "gd-1979-01-08-terrapin-station-2-4",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1979-01-08.nak300-wagner.miller.87657.flac16/gd79-01-08d3t01.mp3",
-    "duration_seconds": 735,
-    "set_label": "Set 2"
-   }
-  },
-  {
-   "performance_id": "gd-1981-12-31-terrapin-station-2-3",
-   "label": "New Year's, inside Playin'",
-   "why": "Tucked into the middle of Playing in the Band on New Year's Eve.",
-   "show_date": "1981-12-31",
-   "venue_name": "Oakland Auditorium",
-   "seconds": 852,
-   "track": {
-    "performance_id": "gd-1981-12-31-terrapin-station-2-3",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1981-12-31.143570.sbd.healy.walker.scotton.miller.clugston.flac1648/Gd81-12-31S2t04TerrapinStation.mp3",
-    "duration_seconds": 852,
-    "set_label": "Set 2"
-   }
-  },
-  {
-   "performance_id": "gd-1989-12-06-terrapin-station-2-4",
-   "label": "With Clarence Clemons",
-   "why": "Clemons sits in on sax and the song stretches to almost 23 minutes.",
-   "show_date": "1989-12-06",
-   "venue_name": "Oakland-Alameda County Coliseum Arena",
-   "seconds": 1363,
-   "track": {
-    "performance_id": "gd-1989-12-06-terrapin-station-2-4",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1989-12-06.138926.UltraMatrix.SBD.Gastwirt.Miller.Noel.t-flac16/gd89-12-06.s2t04.mp3",
-    "duration_seconds": 1363,
-    "set_label": "Set 2"
-   }
-  },
-  {
-   "performance_id": "gd-1993-09-29-terrapin-station-2-4",
-   "label": "The longest",
-   "why": "Over 25 minutes in Boston, the longest Terrapin on record.",
-   "show_date": "1993-09-29",
-   "venue_name": "Boston Garden",
-   "seconds": 1514,
-   "track": {
-    "performance_id": "gd-1993-09-29-terrapin-station-2-4",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1993-09-29.139995.aud.lamarre.berger.flac1648/gd1993-09-29s2t04.mp3",
-    "duration_seconds": 1514,
-    "set_label": "Set 2"
-   }
-  },
-  {
-   "performance_id": "gd-1995-07-08-terrapin-station-2-5",
-   "label": "The last",
-   "why": "The final Terrapin, at Soldier Field the night before the band's last show.",
-   "show_date": "1995-07-08",
-   "venue_name": "Soldier Field",
-   "seconds": 1022,
-   "track": {
-    "performance_id": "gd-1995-07-08-terrapin-station-2-5",
-    "title": "Terrapin Station",
-    "audio_url": "https://archive.org/download/gd1995-07-08.sbd.miller.114363.flac16/gd95-07-08d2t02.mp3",
-    "duration_seconds": 1022,
-    "set_label": "Set 2"
-   }
+   "person_id": "person-robert-hunter",
+   "name": "Robert Hunter",
+   "role": "lyrics"
   }
  ],
- "open_year": 1979,
- "chart_view": "count",
- "year_questions": [
+ "source_ids": [
+  "canonical:song-terrapin-station"
+ ],
+ "albums": [
   {
-   "year": 1977,
-   "question": "How did Terrapin change between its debut and the fall of 1977?"
+   "release_id": "release-dicks-picks-volume-3-1977-05-22",
+   "title": "Dick’s Picks, Volume 3: Pembroke Pines, Florida 5/22/77",
+   "release_date": "1995-11-07",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/3KxT9J6KTuKeXox9BUikZ4"
   },
   {
-   "year": 1979,
-   "question": "How did the 1979 Terrapins differ from 1977?"
+   "release_id": "release-so-many-roads-1965-1995-1999",
+   "title": "So Many Roads (1965–1995)",
+   "release_date": "1999-11-09",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/7mPptCcvPGwhCBGtqNvjk5"
   },
   {
-   "year": 1980,
-   "question": "Why did Terrapin start leading into Drums in 1980?"
+   "release_id": "release-dicks-picks-volume-29-fox-theatre-atlanta-ga-lakeland-civic-center-arena-lakeland-fl-2003",
+   "title": "Dick’s Picks, Volume 29: Fox Theatre, Atlanta, GA 5/19/77, Lakeland Civic Center Arena, Lakeland, FL 5/21/77",
+   "release_date": "2003-07-22",
+   "release_type": "live",
+   "listen_url": null
   },
   {
-   "year": 1989,
-   "question": "What did Clarence Clemons add to Terrapin?"
+   "release_id": "release-the-closing-of-winterland-1978-12-31",
+   "title": "The Closing of Winterland: December 31, 1978",
+   "release_date": "2003-12-16",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/3RtA7CxOnsJvfipdg4A3U8"
   },
   {
-   "year": 1993,
-   "question": "What made the Boston '93 Terrapin run 25 minutes?"
+   "release_id": "release-download-series-volume-1-1977-04-30",
+   "title": "Download Series, Volume 1: 4/30/77 Palladium, New York, NY",
+   "release_date": "2005-05-03",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/3PT8V8Rok86NvRgdP92yj9"
+  },
+  {
+   "release_id": "release-truckin-up-to-buffalo-1989-07-04",
+   "title": "Truckin' Up to Buffalo: July 4, 1989",
+   "release_date": "2005-07-12",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-road-trips-volume-1-no-1-fall-79-2007",
+   "title": "Road Trips, Volume 1, No. 1: Fall ’79",
+   "release_date": "2007-11-05",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/50ZGquEDNvdyMWPejqZ3sK"
+  },
+  {
+   "release_id": "release-road-trips-volume-1-no-2-october-77-2008",
+   "title": "Road Trips, Volume 1, No. 2: October ’77",
+   "release_date": "2008-02-04",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/1tyaHUMSKGFgBGAjBzLhHQ"
+  },
+  {
+   "release_id": "release-to-terrapin-1977-05-28",
+   "title": "To Terrapin: May 28, 1977 Hartford, CT",
+   "release_date": "2009-04-06",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/6aODZ83mana5oClW6sXEkx"
+  },
+  {
+   "release_id": "release-winterland-june-1977-the-complete-recordings-2009",
+   "title": "Winterland June 1977: The Complete Recordings",
+   "release_date": "2009-10-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-road-trips-volume-3-no-1-1979-12-28",
+   "title": "Road Trips, Volume 3, No. 1: Oakland 12‐28‐79",
+   "release_date": "2009-11-10",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/6KiDJOqOVs44Xm4QWuBMuD"
+  },
+  {
+   "release_id": "release-road-trips-volume-4-no-4-1982-04-06",
+   "title": "Road Trips, Volume 4, No. 4: Spectrum 4‐6‐82",
+   "release_date": "2011-08-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-may-1977-2013",
+   "title": "May 1977",
+   "release_date": "2013-06-11",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-7-1978-04-24",
+   "title": "Dave’s Picks, Volume 7: Horton Field House, Illinois State, Normal, IL · 4/24/78",
+   "release_date": "2013-08-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-complete-road-trips-2014",
+   "title": "Complete Road Trips",
+   "release_date": "2014-01-10",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/2czauXV6n1W4DzaqW9w71j"
+  },
+  {
+   "release_id": "release-daves-picks-volume-12-1977-11-04",
+   "title": "Dave’s Picks, Volume 12: Colgate University, Hamilton, NY · 11/4/77",
+   "release_date": "2014-11-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-capitol-theatre-passaic-nj-1977-04-25",
+   "title": "Capitol Theatre, Passaic, NJ, 4/25/77",
+   "release_date": "2016-04-16",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-july-1978-the-complete-recordings-2016",
+   "title": "July 1978 – The Complete Recordings",
+   "release_date": "2016-05-13",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-red-rocks-1978-07-08",
+   "title": "Red Rocks Amphitheatre, Morrison, CO 7/8/78",
+   "release_date": "2016-05-13",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/6q4mDbsYJsixRai11qc2Vx"
+  },
+  {
+   "release_id": "release-may-1977-get-shown-the-light-2017",
+   "title": "May 1977: Get Shown the Light",
+   "release_date": "2017-05-05",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-celebrating-jerry-garcia-the-days-between-2017",
+   "title": "Celebrating Jerry Garcia & the Days Between",
+   "release_date": "2017-08-01",
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/7EMt0XjOBp6LK5W8LNMVP5"
+  },
+  {
+   "release_id": "release-daves-picks-volume-23-1978-01-22",
+   "title": "Dave’s Picks, Volume 23: McArthur Court, U. Of Oregon, Eugene, OR · 1/22/78",
+   "release_date": "2017-08-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-robert-f-kennedy-stadium-washington-d-c-2017",
+   "title": "Robert F. Kennedy Stadium, Washington, D.C., July 12 & 13, 1989",
+   "release_date": "2017-11-10",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-29-1977-02-26",
+   "title": "Dave’s Picks, Volume 29: Swing Auditorium, San Bernardino, CA · 2/26/77",
+   "release_date": "2019-02-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-31-1979-12-03",
+   "title": "Dave’s Picks, Volume 31: Uptown Theatre, Chicago, IL · 12/3/79",
+   "release_date": "2019-08-02",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-35-1984-04-20",
+   "title": "Dave’s Picks, Volume 35: Philadelphia Civic Center, Philadelphia, PA · 4/20/1984",
+   "release_date": "2020-07-29",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-37-1978-04-15",
+   "title": "Dave’s Picks, Volume 37: College of William & Mary, Williamsburg, VA · 4/15/78",
+   "release_date": "2021-01-29",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-40-deer-creek-music-center-noblesville-in-2021",
+   "title": "Dave’s Picks, Volume 40: Deer Creek Music Center, Noblesville, IN · 7/18/90 & 7/19/90",
+   "release_date": "2021-11-01",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-41-1977-05-26",
+   "title": "Dave’s Picks, Volume 41: Baltimore Civic Center, Baltimore, MD · 5/26/77",
+   "release_date": "2022-01-28",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-in-and-out-of-the-garden-madison-square-garden-81-82-83-2022",
+   "title": "In and Out of the Garden: Madison Square Garden ’81, ’82, ’83",
+   "release_date": "2022-09-23",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-47-1979-12-09",
+   "title": "Dave’s Picks, Volume 47: Kiel Auditorium, St. Louis, MO · 12/9/79",
+   "release_date": "2023-07-28",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-50-1977-05-03",
+   "title": "Dave’s Picks, Volume 50: The Palladium, New York, NY · 5/3/77",
+   "release_date": "2024-04-25",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-2024-bonus-disc-1977-05-04",
+   "title": "Dave’s Picks 2024 Bonus Disc",
+   "release_date": "2024-05-04",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-friend-of-the-devils-april-1978-2024",
+   "title": "Friend of the Devils: April 1978",
+   "release_date": "2024-09-20",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-enjoying-the-ride-2025",
+   "title": "Enjoying the Ride",
+   "release_date": "2025-05-30",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-55-1990-10-28",
+   "title": "Dave’s Picks, Volume 55: Le Zénith, Paris, France (10/28/90)",
+   "release_date": "2025-07-28",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-daves-picks-volume-57-1978-02-01",
+   "title": "Dave’s Picks, Volume 57: Uptown Theatre, Chicago, IL · 2/1/78",
+   "release_date": "2026-01-31",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-mcnichols-sports-arena-denver-co-usa-1979-08-14",
+   "title": "1979-08-14: McNichols Sports Arena, Denver, CO, USA",
+   "release_date": "2026-04-16",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-madison-square-garden-new-york-ny-usa-1988-09-16",
+   "title": "1988‐09‐16: Madison Square Garden, New York, NY, USA",
+   "release_date": "2026-05-12",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-madison-square-garden-new-york-ny-usa-1988-09-20",
+   "title": "1988‐09‐20: Madison Square Garden, New York, NY, USA",
+   "release_date": "2026-05-19",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-crisler-arena-ann-arbor-mi-usa-1989-04-05",
+   "title": "1989-04-05: Crisler Arena, Ann Arbor, MI, USA",
+   "release_date": "2026-06-02",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-rosemont-horizon-rosemont-il-usa-1989-04-11",
+   "title": "Rosemont Horizon, Rosemont, IL, USA 1989‐04‐11",
+   "release_date": "2026-06-16",
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-dicks-picks-volume-10-1977-12-29",
+   "title": "Dick’s Picks, Volume 10: Winterland Arena 12/29/77",
+   "release_date": null,
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/1ZMr1r6Lxv79dhy4qHZHkK"
+  },
+  {
+   "release_id": "release-dicks-picks-volume-15-1977-09-03",
+   "title": "Dick’s Picks, Volume 15: Englishtown, NJ 9/3/77",
+   "release_date": null,
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/5uzn9YQ9XS2OoAt65U8Drg"
+  },
+  {
+   "release_id": "release-dicks-picks-volume-17-1991-09-25",
+   "title": "Dick’s Picks, Volume 17: Boston Garden 9/25/91",
+   "release_date": null,
+   "release_type": "live",
+   "listen_url": "https://open.spotify.com/album/1rZjJhRyYT3MAQrCSxoF6D"
+  },
+  {
+   "release_id": "release-road-trips-full-show-1979-11-06",
+   "title": "Road Trips Full Show: Spectrum, 11/6/1979",
+   "release_date": null,
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-spring-1990-2012",
+   "title": "Spring 1990",
+   "release_date": null,
+   "release_type": "live",
+   "listen_url": null
+  },
+  {
+   "release_id": "release-terrapin-station-live-landover-md-1990-03-15",
+   "title": "Terrapin Station: Live",
+   "release_date": null,
+   "release_type": "live",
+   "listen_url": null
   }
- ]
+ ],
+ "sources": [],
+ "follow_ups": []
 }
