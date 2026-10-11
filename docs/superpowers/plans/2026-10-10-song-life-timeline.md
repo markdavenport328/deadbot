@@ -10,6 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-10-10-song-life-timeline-design.md`
 
+> **Status, 2026-10-11:** Phase 1 shipped (PR #66). Phase 2 was built on `claude/song-timeline-phase2` with the owner's revisions recorded at the top of the spec (no code-chosen pick, history retired into the timeline, unranked standouts by kind, a mobile pass). Where Phase 2 below differs from the branch, the branch and the spec's Revisions are right.
+
 ## Global Constraints
 
 - AGENTS.md: code guards facts and transport; the model owns judgment. No check, cap or rule that only polices the model's choices.

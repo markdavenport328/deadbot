@@ -8,6 +8,9 @@ import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { VersionStrip } from "./VersionStrip";
+import { SongTimeline } from "./SongTimeline";
+import type { SongTimelineData } from "./song-timeline-types";
+import { askFocus } from "./song-timeline-text";
 import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
@@ -628,7 +631,8 @@ function unitIdentity(block: UnitBlock): { title: string; url?: string | null; t
     case "album_unit":
       return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
     case "song_overview": {
-      const first = block.representative_performances[0];
+      // The first stop the library placed; a stop with only the model's words has no recording.
+      const first = block.representative_performances.find((stop) => stop.show_id);
       const track = first ? trackFor(first, block.title, { showDate: first.show_date, venueName: first.venue_name ?? splitShowLabel(first.show_label).venue }) : null;
       return { title: block.title, url: first?.listen_url, track };
     }
@@ -1286,39 +1290,6 @@ function splitShowLabel(label: string, showDate?: string | null): { venue: strin
   return { venue, date };
 }
 
-type HistoryStop = { performance_id: string; show_label: string; show_date?: string | null; venue_name?: string | null; listen_url?: string | null; audio_url?: string | null; duration_seconds?: number | null; set_label?: string | null };
-
-function HistoryStop({ stop, label, songTitle }: { stop: HistoryStop; label: ReactNode; songTitle: string }) {
-  const { venue, date } = splitShowLabel(stop.show_label, stop.show_date);
-  const track = trackFor(stop, songTitle, { showDate: stop.show_date, venueName: stop.venue_name ?? venue });
-  return (
-    <li>
-      <span className="history-year">{label}</span>
-      <ListenControl url={stop.listen_url} label={venue} track={track} name={[songTitle, venue, date].filter(Boolean).join(", ")} className="entry-title" />
-      <span className="entry-detail">{[date, stop.set_label].filter(Boolean).join(" · ")}</span>
-    </li>
-  );
-}
-
-// The song's performance history: where it began and ended, then one
-// performance a year across a horizontal strip.
-function HistoryPanel({ history, songTitle }: { history: NonNullable<SongOverviewBlockT["history"]>; songTitle: string }) {
-  const byYear = history.by_year ?? [];
-  return (
-    <div className="history">
-      <ol className="history-span">
-        <HistoryStop stop={history.first} label="First" songTitle={songTitle} />
-        <HistoryStop stop={history.last} label="Last" songTitle={songTitle} />
-      </ol>
-      {byYear.length > 1 && (
-        <ol className="history-years" aria-label="One performance a year">
-          {byYear.map((item) => <HistoryStop key={item.performance_id} stop={item} label={item.year} songTitle={songTitle} />)}
-        </ol>
-      )}
-    </div>
-  );
-}
-
 // A song's plays per year, as the same bar chart an aggregate_data result
 // draws: years along the bottom, a year it was not played an empty slot.
 function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { type: "data_chart" }> {
@@ -1343,6 +1314,32 @@ function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { ty
   };
 }
 
+// A song card's timeline data: the library's years and lengths, and the
+// model's stops, open year, first view and year questions.
+function timelineData(block: SongOverviewBlockT): SongTimelineData {
+  return {
+    song_id: block.song_id,
+    title: block.title,
+    performance_count: block.known_performance_count,
+    year_summaries: block.year_summaries ?? [],
+    length_points: block.length_points ?? [],
+    stops: block.representative_performances.map((stop) => ({
+      performance_id: stop.performance_id,
+      label: stop.label ?? null,
+      why: stop.why ?? null,
+      show_date: stop.show_date ?? null,
+      venue_name: stop.venue_name ?? null,
+      seconds: stop.seconds ?? null,
+      track: stop.audio_url
+        ? { performance_id: stop.performance_id, title: block.title, audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null }
+        : null
+    })),
+    open_year: block.open_year ?? null,
+    chart_view: block.chart_view ?? null,
+    year_questions: block.year_questions ?? []
+  };
+}
+
 function SongOverviewUnit({
   block,
   criteria,
@@ -1358,16 +1355,11 @@ function SongOverviewUnit({
 }) {
   const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
   const showsFacet = (facet: SongOverviewBlockT["visible_facets"][number]) => block.visible_facets.includes(facet);
+  // With by_year the song's life is one timeline: the chart, the model's stops
+  // and every performance a year away.
+  const timeline = showsFacet("by_year") && (block.year_summaries ?? []).length > 0;
 
   const tabs: DrawerTab[] = [];
-  if (showsFacet("history") && block.history) {
-    const history = block.history;
-    tabs.push({
-      id: "history",
-      label: "History",
-      content: <HistoryPanel history={history} songTitle={block.title} />
-    });
-  }
   if (showsFacet("albums") && block.albums.length > 0) {
     tabs.push({
       id: "record",
@@ -1399,7 +1391,9 @@ function SongOverviewUnit({
     });
   }
   const initialOpen = openFacets && tabs.length > 0 ? tabs[0].id : null;
-  const representatives = showsFacet("representatives") ? block.representative_performances : [];
+  // Without a timeline to carry them, the model's stops list on the card.
+  const representatives = (showsFacet("representatives") || showsFacet("by_year")) && !timeline ? block.representative_performances : [];
+  const timelineInput = useMemo(() => timelineData(block), [block]);
 
   return (
     <UnitFrame inRow={inRow} className={`song-overview emphasis-${block.emphasis}`}>
@@ -1412,26 +1406,45 @@ function SongOverviewUnit({
       )}
       {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
-      {showsFacet("by_year") && (block.year_counts ?? []).length > 0 && (
-        <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
-          <DataChart block={songYearChart(block)} embedded />
-        </Suspense>
+      {timeline ? (
+        <SongTimeline
+          // The final page can change the model's open year or first view after the draft streamed.
+          key={`${block.song_id}:${block.open_year ?? ""}:${block.chart_view ?? ""}`}
+          data={timelineInput}
+          onAsk={(question, focus) => onFollowUp(question, askFocus(focus))}
+        />
+      ) : (
+        showsFacet("by_year") &&
+        (block.year_counts ?? []).length > 0 && (
+          <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
+            <DataChart block={songYearChart(block)} embedded />
+          </Suspense>
+        )
       )}
       {representatives.length > 0 && (
         <section className="song-representatives">
           <ul>
-            {representatives.map((performance) => (
-              <li key={performance.performance_id}>
-                <ListenControl
-                  url={performance.listen_url}
-                  label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
-                  track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
-                  name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
-                  className="list-item-label"
-                />
-                {performance.set_label && <span>{performance.set_label}</span>}
-              </li>
-            ))}
+            {representatives.map((performance, index) =>
+              performance.show_date || performance.show_label ? (
+                <li key={`${performance.performance_id}-${index}`}>
+                  <ListenControl
+                    url={performance.listen_url}
+                    label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
+                    track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
+                    name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
+                    className="list-item-label"
+                  />
+                  {[performance.label, performance.set_label].filter(Boolean).length > 0 && <span>{[performance.label, performance.set_label].filter(Boolean).join(" · ")}</span>}
+                  {performance.why && <span>{performance.why}</span>}
+                </li>
+              ) : (
+                // A stop the library could not place keeps the model's words.
+                <li key={`${performance.performance_id}-${index}`}>
+                  <span className="list-item-label">{performance.label ?? performance.why}</span>
+                  {performance.label && performance.why && <span>{performance.why}</span>}
+                </li>
+              )
+            )}
           </ul>
         </section>
       )}

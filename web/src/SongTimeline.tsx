@@ -4,7 +4,7 @@
 // facts served without the model; Ask (blue) starts a new turn with the year
 // attached. Every fact comes from the card's data; the stops, their words, the
 // open year and the first view are the model's.
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MutableRefObject, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { toTrack } from "./listen-control";
 import { usePlayer, type PlayerTrack } from "./player";
 import { clock } from "./VersionStrip";
@@ -17,7 +17,6 @@ import {
   longDate,
   monthDay,
   performanceTags,
-  pickEyebrow,
   plural,
   shortDate,
   yearFacts
@@ -37,10 +36,19 @@ type YearState = { status: "loading" } | { status: "ready"; detail: SongYearDeta
 // A stop the library resolved: it has a date, so it can sit on the chart.
 type PlacedStop = TimelineStop & { show_date: string; number: number };
 
-const VIEW_CAPTION: Record<ChartView, string> = {
-  count: "Each bar is a year. Gold marks are the stops below. Choose a year to open it.",
-  length: "Each dot is one performance, by minutes; the pale line is that year's typical length. Choose a dot to play it."
+// What each view shows and how to use it, for a mouse and for a finger.
+const VIEW_CAPTION: Record<ChartView, { pointer: string; touch: string }> = {
+  count: {
+    pointer: "Each bar is a year. Gold marks are the stops below. Choose a year to open it.",
+    touch: "Each bar is a year. Gold marks are the stops below. Tap a year, or drag across the chart."
+  },
+  length: {
+    pointer: "Each dot is one performance, by minutes; the pale line is that year's typical length. Choose a dot to play it.",
+    touch: "Each dot is one performance, by minutes; the pale line is that year's typical length. Tap a year to list its performances."
+  }
 };
+
+type PointerKind = "mouse" | "touch" | "pen";
 
 function asPlayerTrack(track: TimelineTrack, showDate?: string | null, venueName?: string | null): PlayerTrack {
   return toTrack(track, { showDate: showDate ?? null, venueName: venueName ?? null });
@@ -86,6 +94,8 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   const [years, setYears] = useState<Record<number, YearState>>({});
   // The latest dot the visitor chose; a slower lookup for an earlier dot is ignored.
   const latestPoint = useRef<string | null>(null);
+  // How the visitor last pointed: a finger opens years and lists rather than aiming at small marks.
+  const pointerKind = useRef<PointerKind>("mouse");
 
   const summaries = useMemo(() => new Map(data.year_summaries.map((summary) => [summary.year, summary])), [data]);
   const playedYears = useMemo(() => data.year_summaries.filter((summary) => summary.count > 0).map((summary) => summary.year), [data]);
@@ -96,7 +106,12 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
       ),
     [data]
   );
-  const stopNumbers = useMemo(() => new Map(data.stops.map((stop, index) => [stop.performance_id, index + 1])), [data]);
+  // A performance named twice keeps the number of its first stop.
+  const stopNumbers = useMemo(() => {
+    const numbers = new Map<string, number>();
+    data.stops.forEach((stop, index) => numbers.has(stop.performance_id) || numbers.set(stop.performance_id, index + 1));
+    return numbers;
+  }, [data]);
   const pathQueue = useMemo(
     () => stops.flatMap((stop) => (stop.track ? [asPlayerTrack(stop.track, stop.show_date, stop.venue_name)] : [])),
     [stops]
@@ -155,6 +170,15 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
     [loadYear, play, selectYear]
   );
 
+  const openYearList = useCallback(
+    (target: number) => {
+      selectYear(target);
+      setListOpen(true);
+      void loadYear(target);
+    },
+    [loadYear, selectYear]
+  );
+
   const playStop = useCallback(
     (stop: PlacedStop) => {
       selectYear(Number(stop.show_date.slice(0, 4)));
@@ -188,7 +212,10 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
           ))}
         </div>
       </div>
-      <p className="st-caption">{VIEW_CAPTION[view]}</p>
+      <p className="st-caption">
+        <span className="st-caption-pointer">{VIEW_CAPTION[view].pointer}</span>
+        <span className="st-caption-touch">{VIEW_CAPTION[view].touch}</span>
+      </p>
       <div className="st-chart" ref={wrapRef}>
         {f && (
           <TimelineChart
@@ -200,9 +227,11 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
             stops={stops}
             rows={rows}
             playingId={playingId}
+            pointerKind={pointerKind}
             onSelectYear={selectYear}
             onPlayStop={playStop}
             onPlayPoint={playPoint}
+            onOpenYearList={openYearList}
           />
         )}
       </div>
@@ -212,7 +241,7 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
           data={data}
           summary={summary}
           caretX={bandX(f, summary.year) + f.bandWidth / 2}
-          stop={stops.find((stop) => stop.show_date.startsWith(String(summary.year))) ?? null}
+          yearStops={stops.filter((stop) => stop.show_date.startsWith(String(summary.year)))}
           stopNumbers={stopNumbers}
           playedYears={playedYears}
           listOpen={listOpen}
@@ -246,9 +275,11 @@ function TimelineChart({
   stops,
   rows,
   playingId,
+  pointerKind,
   onSelectYear,
   onPlayStop,
-  onPlayPoint
+  onPlayPoint,
+  onOpenYearList
 }: {
   data: SongTimelineData;
   f: Frame;
@@ -258,9 +289,11 @@ function TimelineChart({
   stops: PlacedStop[];
   rows: number[];
   playingId: string | null;
+  pointerKind: MutableRefObject<PointerKind>;
   onSelectYear: (year: number) => void;
   onPlayStop: (stop: PlacedStop) => void;
   onPlayPoint: (point: LengthPoint) => void;
+  onOpenYearList: (year: number) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; content: ReactNode } | null>(null);
@@ -282,9 +315,48 @@ function TimelineChart({
   const step = yearLabelStep(f.bandWidth);
   const stopIds = new Set(stops.map((stop) => stop.performance_id));
 
-  const tipAt = (event: MouseEvent, content: ReactNode) => {
+  // Tooltips follow a mouse only; on a phone the year panel already shows the same facts.
+  const tipAt = (event: PointerEvent, content: ReactNode) => {
+    if (event.pointerType !== "mouse") return;
     const box = svgRef.current?.getBoundingClientRect();
     setTip({ x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0), content });
+  };
+
+  // The played year nearest a horizontal position on the chart.
+  const yearAt = (clientX: number): number | null => {
+    const box = svgRef.current?.getBoundingClientRect();
+    const index = Math.floor((clientX - (box?.left ?? 0) - MARGIN.left) / f.bandWidth);
+    const year = f.firstYear + Math.min(Math.max(index, 0), f.yearCount - 1);
+    if (playedYears.length === 0) return null;
+    return playedYears.reduce((best, candidate) => (Math.abs(candidate - year) < Math.abs(best - year) ? candidate : best));
+  };
+  // A finger chooses years only once it moves clearly sideways; a vertical
+  // swipe that starts on the chart scrolls the page and changes nothing. A
+  // tap is an ordinary click on its year or pin.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const scrubbing = useRef(false);
+  const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
+    pointerKind.current = event.pointerType === "touch" || event.pointerType === "pen" ? event.pointerType : "mouse";
+    if (pointerKind.current === "mouse") return;
+    setTip(null);
+    touchStart.current = { x: event.clientX, y: event.clientY };
+    scrubbing.current = false;
+  };
+  const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
+    const start = touchStart.current;
+    if (!start || event.pointerType === "mouse") return;
+    if (!scrubbing.current) {
+      const dx = Math.abs(event.clientX - start.x);
+      const dy = Math.abs(event.clientY - start.y);
+      if (dx < 8 || dx <= dy) return;
+      scrubbing.current = true;
+    }
+    const year = yearAt(event.clientX);
+    if (year !== null && year !== selectedYear) onSelectYear(year);
+  };
+  const endScrub = () => {
+    touchStart.current = null;
+    scrubbing.current = false;
   };
 
   const moveTo = (from: number, direction: 1 | -1) => {
@@ -296,18 +368,17 @@ function TimelineChart({
   };
 
   const bandTip = (summary: YearSummary): ReactNode => {
-    const stop = stops.find((item) => item.show_date.startsWith(String(summary.year)));
-    const chosen = stop ? { venue: stop.venue_name, date: stop.show_date } : summary.pick ? { venue: summary.pick.venue_name, date: summary.pick.show_date } : null;
+    const yearStops = stops.filter((item) => item.show_date.startsWith(String(summary.year)));
     return view === "count" ? (
       <>
         <strong>
           {plural(summary.count, "performance")} in {summary.year}
         </strong>
-        {chosen && (
-          <span className="st-tip-gold">
-            ▸ {chosen.venue}, {monthDay(chosen.date)}
+        {yearStops.map((stop) => (
+          <span key={`${stop.performance_id}-${stop.number}`} className="st-tip-gold">
+            ▸ Stop {stop.number}: {stop.venue_name}, {monthDay(stop.show_date)}
           </span>
-        )}
+        ))}
         <span className="st-tip-hint">Choose to open {summary.year}</span>
       </>
     ) : (
@@ -322,7 +393,19 @@ function TimelineChart({
 
   return (
     <>
-      <svg ref={svgRef} className="st-svg" width={f.width} height={f.height} viewBox={`0 0 ${f.width} ${f.height}`} role="group" aria-label={`${data.title} by year`}>
+      <svg
+        ref={svgRef}
+        className="st-svg"
+        width={f.width}
+        height={f.height}
+        viewBox={`0 0 ${f.width} ${f.height}`}
+        role="group"
+        aria-label={`${data.title} by year`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endScrub}
+        onPointerCancel={endScrub}
+      >
         <g aria-hidden="true">
           {ticks.map((value) => (
             <g key={value}>
@@ -370,9 +453,9 @@ function TimelineChart({
                   moveTo(summary.year, event.key === "ArrowRight" ? 1 : -1);
                 }
               }}
-              onMouseMove={(event) => tipAt(event, bandTip(summary))}
+              onPointerMove={(event) => tipAt(event, bandTip(summary))}
               onMouseLeave={() => setTip(null)}
-              onFocus={() => setTip({ x: center, y: f.plotTop, content: bandTip(summary) })}
+              onFocus={() => pointerKind.current === "mouse" && setTip({ x: center, y: f.plotTop, content: bandTip(summary) })}
               onBlur={() => setTip(null)}
             >
               <rect className="st-band-bg" x={x + 1} y={f.plotTop - 6} width={Math.max(0, f.bandWidth - 2)} height={f.plotBottom - f.plotTop + 6} rx={2} />
@@ -411,9 +494,11 @@ function TimelineChart({
                   className="st-dot"
                   onClick={(event) => {
                     event.stopPropagation();
-                    onPlayPoint(point);
+                    // A finger cannot aim at a dot: it opens the year's list to play from.
+                    if (pointerKind.current === "mouse") onPlayPoint(point);
+                    else onOpenYearList(Number(point.show_date.slice(0, 4)));
                   }}
-                  onMouseMove={(event) =>
+                  onPointerMove={(event) =>
                     tipAt(
                       event,
                       <>
@@ -440,7 +525,7 @@ function TimelineChart({
           const active = playingId === stop.performance_id;
           return (
             <g
-              key={stop.performance_id}
+              key={`${stop.performance_id}-${stop.number}`}
               className={active ? "st-pin st-pin-active" : "st-pin"}
               role="button"
               tabIndex={0}
@@ -452,7 +537,7 @@ function TimelineChart({
                   onPlayStop(stop);
                 }
               }}
-              onMouseMove={(event) =>
+              onPointerMove={(event) =>
                 tipAt(
                   event,
                   <>
@@ -472,6 +557,7 @@ function TimelineChart({
               {!onChart && view === "count" && stopYear && (
                 <line className="st-pin-stem" x1={x} x2={x} y1={y + 8} y2={yFor(f, stopYear.count, top) - 1} />
               )}
+              <circle cx={x} cy={y} r={16} className="st-pin-hit" />
               <circle cx={x} cy={y} r={8.5} className="st-pin-dot" />
               <text x={x} y={y + 3.5} textAnchor="middle" className="st-pin-number">
                 {stop.number}
@@ -518,7 +604,7 @@ function YearPanel({
   data,
   summary,
   caretX,
-  stop,
+  yearStops,
   stopNumbers,
   playedYears,
   listOpen,
@@ -534,7 +620,7 @@ function YearPanel({
   data: SongTimelineData;
   summary: YearSummary;
   caretX: number;
-  stop: PlacedStop | null;
+  yearStops: PlacedStop[];
   stopNumbers: Map<string, number>;
   playedYears: number[];
   listOpen: boolean;
@@ -550,16 +636,9 @@ function YearPanel({
   const index = playedYears.indexOf(summary.year);
   const previous = playedYears[index - 1];
   const next = playedYears[index + 1];
-  const pick = summary.pick;
-  // The year's pick: the model's stop when it named one, else the library's.
-  const chosen = stop
-    ? { id: stop.performance_id, venue: stop.venue_name, date: stop.show_date, setLabel: null, seconds: stop.seconds ?? null, track: stop.track ?? null, why: stop.why }
-    : pick
-      ? { id: pick.performance_id, venue: pick.venue_name, date: pick.show_date, setLabel: pick.set_label, seconds: pick.seconds, track: pick.track, why: null }
-      : null;
-  const eyebrow = stop ? `Stop ${stop.number}${stop.label ? ` · ${stop.label}` : ""}` : pick ? pickEyebrow(pick, null) : "";
+  // Only the model's stops are featured; every performance is a tap away in See all.
   const question = askQuestion(data, summary.year);
-  const playingChosen = chosen != null && playingId === chosen.id;
+  const stopIds = yearStops.map((stop) => stop.performance_id);
 
   return (
     <section className="st-year" aria-label={String(summary.year)} style={{ ["--st-caret" as string]: `${caretX}px` }}>
@@ -575,39 +654,42 @@ function YearPanel({
           </button>
         </div>
       </div>
-      {chosen && (
-        <div className="st-pick">
-          <button
-            type="button"
-            className="st-play-big"
-            disabled={!chosen.track}
-            aria-label={`${playingChosen ? "Pause" : "Play"} ${data.title}, ${chosen.venue ?? ""}, ${longDate(chosen.date)}`}
-            onClick={() => chosen.track && onPlay(asPlayerTrack(chosen.track, chosen.date, chosen.venue), stop ? pathQueue : undefined)}
-          >
-            {playingChosen ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
-          </button>
-          <div className="st-pick-body">
-            <span className="st-eyebrow-gold">{eyebrow}</span>
-            <span className="st-pick-title">{chosen.venue}</span>
-            <span className="st-pick-meta">
-              {[longDate(chosen.date), chosen.setLabel, chosen.seconds != null ? clock(chosen.seconds) : null].filter(Boolean).join(" · ")}
-            </span>
-            {chosen.why && <p className="st-pick-why">{chosen.why}</p>}
+      {yearStops.map((stop) => {
+        const playing = playingId === stop.performance_id;
+        return (
+          <div key={`${stop.performance_id}-${stop.number}`} className="st-pick">
+            <button
+              type="button"
+              className="st-play-big"
+              disabled={!stop.track}
+              aria-label={`${playing ? "Pause" : "Play"} ${data.title}, ${stop.venue_name ?? ""}, ${longDate(stop.show_date)}`}
+              onClick={() => stop.track && onPlay(asPlayerTrack(stop.track, stop.show_date, stop.venue_name), pathQueue)}
+            >
+              {playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+            </button>
+            <div className="st-pick-body">
+              <span className="st-eyebrow-gold">{`Stop ${stop.number}${stop.label ? ` · ${stop.label}` : ""}`}</span>
+              <span className="st-pick-title">{stop.venue_name}</span>
+              <span className="st-pick-meta">
+                {[longDate(stop.show_date), stop.seconds != null ? clock(stop.seconds) : null].filter(Boolean).join(" · ")}
+              </span>
+              {stop.why && <p className="st-pick-why">{stop.why}</p>}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })}
       <div className="st-actions">
         <button type="button" className="st-see-all" aria-expanded={listOpen} onClick={onToggleList}>
           {listOpen ? `Hide the ${summary.year} list` : `See all ${summary.count} from ${summary.year}`}
         </button>
-        <button type="button" className="st-ask" onClick={() => onAsk(question, focusFor(data, summary, chosen?.id ?? null))}>
+        <button type="button" className="st-ask" onClick={() => onAsk(question, focusFor(data, summary, stopIds))}>
           <span className="st-ask-mark" aria-hidden="true">
             ?
           </span>
           {question}
         </button>
       </div>
-      {listOpen && <YearList data={data} yearState={yearState} chosenId={chosen?.id ?? null} stopNumbers={stopNumbers} playingId={playingId} onRetry={onRetry} onPlay={onPlay} year={summary.year} />}
+      {listOpen && <YearList data={data} yearState={yearState} chosenIds={stopIds} stopNumbers={stopNumbers} playingId={playingId} onRetry={onRetry} onPlay={onPlay} year={summary.year} />}
     </section>
   );
 }
@@ -616,7 +698,7 @@ function YearList({
   data,
   year,
   yearState,
-  chosenId,
+  chosenIds,
   stopNumbers,
   playingId,
   onRetry,
@@ -625,7 +707,7 @@ function YearList({
   data: SongTimelineData;
   year: number;
   yearState: YearState | undefined;
-  chosenId: string | null;
+  chosenIds: string[];
   stopNumbers: Map<string, number>;
   playingId: string | null;
   onRetry: () => void;
@@ -649,7 +731,7 @@ function YearList({
         const tags = performanceTags(performance, stopNumbers.get(performance.performance_id) ?? null);
         const playing = playingId === performance.performance_id;
         return (
-          <li key={performance.performance_id} className={performance.performance_id === chosenId ? "st-row st-row-chosen" : "st-row"}>
+          <li key={performance.performance_id} className={chosenIds.includes(performance.performance_id) ? "st-row st-row-chosen" : "st-row"}>
             <button
               type="button"
               className="st-play-small"

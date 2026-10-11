@@ -489,3 +489,42 @@ of its own).
 The finish-call time did not fall with the smaller schema; plan output length
 (about 1500 to 1900 tokens per call) is the dominant cost, so the next latency
 lever is shorter plans or progressive page streaming.
+
+## Batch: the song timeline, "life of a song" (October 11, 2026)
+
+Spec: `docs/superpowers/specs/2026-10-10-song-life-timeline-design.md` (read its
+Revisions first). Plan: `docs/superpowers/plans/2026-10-10-song-life-timeline.md`.
+Phase 1 shipped as PR #66; phase 2 is branch `claude/song-timeline-phase2`.
+
+What shipped:
+
+- A song card with `by_year` is one timeline: Times played and Length views,
+  the model's stops as gold pins and a "Play the path" queue, and a panel for
+  each year with the model's stops for that year, See all (every performance,
+  playable, from `GET /api/songs/{song_id}/years/{year}`, no model call) and an
+  Ask chip that sends the year as `AskFocus{block_type: "song_overview"}`.
+- The model chooses stops (`representatives` with `label` and `why`),
+  `open_year`, `chart_view` and `year_questions`. Code chooses nothing for it:
+  no fallback pick per year, and the History facet is retired into the
+  timeline (an older plan's `history` reads as `by_year`).
+- `get_song_life` gives each year in brief (count, typical length, longest with
+  its ID) and standouts grouped by kind, unranked, in date order; `get_song`
+  carries two of each kind plus the first and last venues, so a "how often"
+  question has stop material without a second call.
+- Touch: drag sideways across the chart to choose a year; a vertical swipe
+  scrolls; a tap on a Length dot opens that year's list; 44px controls.
+
+Live findings (OpenAI, cache off, five songs): the model uses the new fields
+unprompted. With standouts in `get_song`, Terrapin and Morning Dew get four or
+five labeled stops from one tool call (about 10 s). Before `get_song` carried
+venues, the model guessed Terrapin's debut venue; tool output now states it.
+Run-to-run the model sometimes answers a song question with era or
+performance cards instead of a song card; that is its judgment.
+
+Data gaps seen: encores are mostly stored as "Set 3" (only 2 performances are
+marked encore); tape tracks can be partial (lengths under 60 s are unknown);
+releases can disagree on a performance's length (the one nearest the tape wins).
+
+Open: the "What came next" view (mocked, deferred); the play / see all / ask
+panel on other charts and lists; a measured eval of stop quality across more
+songs.

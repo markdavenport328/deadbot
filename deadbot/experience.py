@@ -98,7 +98,7 @@ class SetlistSection(ExperienceModel):
 
 Emphasis = Literal["primary", "supporting", "mention"]
 ShowFacet = Literal["guests", "listen", "setlist", "sources", "lineup", "recordings"]
-SongFacet = Literal["credits", "albums", "history", "representatives", "by_year"]
+SongFacet = Literal["credits", "albums", "representatives", "by_year"]
 PerformanceFacet = Literal["setlist", "listen", "sources"]
 SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
 # How a record card starts: expanded is the full card; collapsed is one
@@ -206,31 +206,6 @@ class PerformanceListItem(ExperienceModel):
     # when the library has one, and its length.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
-
-
-class ComparisonStripItem(ExperienceModel):
-    performance_id: str
-    show_id: str
-    year: int
-    show_date: str | None = None
-    show_label: str
-    set_label: str | None = None
-    position_in_set: str | None = None
-    venue_name: str | None = None
-    listen_url: str | None = None
-    # The Internet Archive track the in-page player plays for this rendition,
-    # when the library has one, and its length.
-    audio_url: str | None = None
-    duration_seconds: int | None = Field(default=None, ge=0)
-
-
-class SongHistory(ExperienceModel):
-    """A song's stage life: first, last, and one performance per year."""
-
-    known_count: int = Field(ge=1)
-    first: PerformanceListItem
-    last: PerformanceListItem
-    by_year: list[ComparisonStripItem] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class ShowUnitBlock(ExperienceModel):
@@ -506,12 +481,20 @@ class SongReleaseItem(ExperienceModel):
 
 
 class SongRepresentativePerformance(ExperienceModel):
-    """A model-chosen rendition that gives a song unit an immediate listening path."""
+    """A model-chosen rendition that gives a song unit an immediate listening path.
+
+    On a song timeline it is one of the model's stops, with its label and why.
+    A stop the library could not resolve keeps only the model's words.
+    """
 
     performance_id: str
-    show_id: str
+    show_id: str = ""
     show_date: str | None = None
-    show_label: str
+    show_label: str = ""
+    label: str | None = None
+    why: str | None = None
+    # The performance's length (release, else tape), when known.
+    seconds: int | None = Field(default=None, ge=0)
     set_label: str | None = None
     venue_name: str | None = None
     listen_url: str | None = None
@@ -519,6 +502,91 @@ class SongRepresentativePerformance(ExperienceModel):
     # when the library has one, and its length.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
+
+
+class SongYearLongest(ExperienceModel):
+    performance_id: str
+    seconds: int = Field(ge=0)
+
+
+class SongYearNext(ExperienceModel):
+    """The song that most often followed this one that year, segue or not."""
+
+    title: str
+    count: int = Field(ge=0)
+
+
+class SongYearSummary(ExperienceModel):
+    """One year of a song's life on stage; a year it was not played has a count of zero."""
+
+    year: int
+    count: int = Field(ge=0)
+    median_seconds: int | None = Field(default=None, ge=0)
+    longest: SongYearLongest | None = None
+    top_next: SongYearNext | None = None
+
+
+class SongLengthPoint(ExperienceModel):
+    """One performance's length, for the timeline's Length view."""
+
+    performance_id: str
+    show_date: str
+    seconds: int = Field(ge=0)
+
+
+class SongYearQuestion(ExperienceModel):
+    year: int
+    question: str
+
+
+class SongNeighbor(ExperienceModel):
+    """The song just before or after a performance in its set, and whether it ran into or out of a segue."""
+
+    song_id: str
+    title: str
+    segued: bool
+
+
+class SongSignal(ExperienceModel):
+    """A voice that picked the performance, or its show."""
+
+    voice: str
+    scope: Literal["performance", "show"]
+
+
+class SongGuest(ExperienceModel):
+    name: str
+    instrument: str | None = None
+
+
+class SongYearPerformance(ExperienceModel):
+    """One performance in a song's year, every fact from the library."""
+
+    performance_id: str
+    show_id: str
+    show_date: str
+    venue_name: str | None = None
+    city: str | None = None
+    set_label: str | None = None
+    position_in_set: int = 0
+    encore: bool = False
+    previous: SongNeighbor | None = None
+    next: SongNeighbor | None = None
+    seconds: int | None = Field(default=None, ge=0)
+    length_source: Literal["release", "tape"] | None = None
+    track: PlayableTrack | None = None
+    releases: list[str] = Field(default_factory=list)
+    signals: list[SongSignal] = Field(default_factory=list)
+    guests: list[SongGuest] = Field(default_factory=list)
+
+
+class SongYearDetail(ExperienceModel):
+    """Every performance of one song in one year, for the timeline's See all."""
+
+    song_id: str
+    title: str
+    year: int
+    performances: list[SongYearPerformance] = Field(default_factory=list)
 
 
 class SongYearCount(ExperienceModel):
@@ -540,11 +608,19 @@ class SongOverviewBlock(ExperienceModel):
     disclosure: CardDisclosure = "expanded"
     judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     visible_facets: list[SongFacet] = Field(default_factory=lambda: ["representatives"], max_length=LIST_CEILING)
-    history: SongHistory | None = None
     # Every year from the song's first performance to its last, zero years included.
     year_counts: list[SongYearCount] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
     representative_performances: list[SongRepresentativePerformance] = Field(default_factory=list, max_length=LIST_CEILING)
+    # The timeline, when by_year is visible: the model's open year, first view
+    # and year questions, and the library's year summaries and lengths. Length
+    # points carry one per timed performance (Drums has over 1,400), so that
+    # list has no ceiling of its own.
+    open_year: int | None = None
+    chart_view: Literal["count", "length"] | None = None
+    year_questions: list[SongYearQuestion] = Field(default_factory=list, max_length=LIST_CEILING)
+    year_summaries: list[SongYearSummary] = Field(default_factory=list, max_length=LIST_CEILING)
+    length_points: list[SongLengthPoint] = Field(default_factory=list)
     credits: list[CreditItem] = Field(default_factory=list, max_length=LIST_CEILING)
     source_ids: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     albums: list[SongReleaseItem] = Field(default_factory=list, max_length=LIST_CEILING)
@@ -1019,14 +1095,14 @@ def _trimmed_strings(value: Any, count: int, length: int, what: str) -> Any:
 
 
 class AskFocus(ExperienceModel):
-    """What the visitor was pointing at when they asked: the clicked cell or grid.
+    """What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.
 
     The browser reports it with the question; the server hands it to the model
     as a note and lets the IDs it names join the turn's grounded IDs.
     """
 
     label: str = Field(max_length=FOCUS_LABEL_CEILING)
-    block_type: Literal["grid"]
+    block_type: Literal["grid", "song_overview"]
     block_id: str = Field(max_length=FOCUS_BLOCK_ID_CEILING)
     ids: list[str] = Field(default_factory=list, max_length=FOCUS_ID_CEILING)
     facts: list[str] = Field(default_factory=list, max_length=FOCUS_FACT_COUNT_CEILING)

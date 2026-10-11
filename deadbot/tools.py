@@ -968,10 +968,16 @@ def build_tools(
 
         `plays_by_year` counts the song's performances in every year from its
         first to its last, with the years it was not played as zero; a
-        song_overview with the by_year facet draws exactly these counts as a
-        bar chart. `performance_summary` gives the count, first and last
-        performances and the songs it most often followed and led into; call
-        `list_song_performances` for concrete rendition IDs and listening
+        song_overview with the by_year facet draws them as the song's
+        timeline. `performance_summary` gives the count, the first and last
+        performances with their venues, and the songs it most often followed
+        and led into. `standouts` gives a few performances of each kind that
+        stand out (firsts and lasts, longest, picks of the performance, picks
+        of its show, releases, guests, played inside another song, unusual
+        placements, rare neighbors), with IDs, to
+        choose a song_overview's stops from;
+        get_song_life lists more of each kind and each year's longest, and
+        `list_song_performances` lists concrete rendition IDs and listening
         paths. `releases` names the official records carrying the song,
         earliest first. `resources` are articles, essays and interviews about
         it, attributed to their sources. pathways lists the gathered lore
@@ -1006,13 +1012,35 @@ def build_tools(
                 )
             },
         }
+        # The first and last nights carry where they were played, so no venue is guessed.
+        for key in ("first_performance", "last_performance"):
+            performance = payload["performance_summary"].get(key)
+            if isinstance(performance, dict) and performance.get("show_id"):
+                show = store.one("shows", performance["show_id"]) or {}
+                venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
+                if venue:
+                    payload["performance_summary"][key] = {
+                        **performance,
+                        "venue_name": venue.get("name"),
+                        "city": ", ".join(part for part in (venue.get("city"), venue.get("state_region")) if part) or None,
+                    }
         if years:
+            # The strongest standouts sit beside the counts, so a song's card has its stops at hand.
+            from deadbot import song_life
+
+            kinds, left_out, patterns = song_life.standouts(song_life.life_performances(store, song["song_id"]), per_kind=2)
+            payload["standouts"] = kinds
+            if left_out:
+                payload["standouts_left_out"] = left_out
+            if patterns:
+                payload["patterns"] = patterns
             payload["plays_by_year"] = [
                 {"year": year, "count": years.count(year)} for year in range(years[0], years[-1] + 1)
             ]
             payload["plays_by_year_chart"] = (
-                "A song_overview for this song with visible_facets including by_year draws these counts as a bar chart, "
-                "years along the bottom, the years it was not played left empty."
+                "A song_overview for this song with visible_facets including by_year draws these counts as the song's "
+                "timeline, with your representatives as its stops. get_song_life lists the performances that stand out "
+                "in each era to choose those stops from."
             )
         payload["release_count"] = len(releases)
         # A widely released song (Sugar Magnolia: 135 records) turned this
@@ -1039,6 +1067,29 @@ def build_tools(
             payload["arrangements"] = context["arrangements"]
         payload["pathways"] = pathways_for(store, [("song", song["song_id"])]).get(song["song_id"], {})
         return _json(payload)
+
+    @tool
+    def get_song_life(song_id_or_title: str) -> str:
+        """Get one song's life on stage: each year in brief and the performances that stand out.
+
+        Use it to build a song_overview timeline (visible_facets with by_year)
+        or to answer how a song changed over the years. `years` gives each
+        year's count, typical minutes and longest performance. `standouts`
+        groups the performances that stand out by kind (firsts and lasts,
+        longest, picks of the performance and of its show with who made them,
+        releases, guests, played inside another song, unusual placements, rare
+        neighbors), each with its ID and plain facts, in date order and
+        unranked. `patterns` names placements too common to list one by
+        one. Choose your stops from
+        these and from what you know; give each a short label and a one-line
+        why in the song_overview's representatives.
+        """
+        from deadbot import song_life
+
+        song = store.resolve_song(song_id_or_title)
+        if not song:
+            return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
+        return _json(song_life.tool_payload(store, song))
 
     @tool
     def list_song_performances(song_id_or_title: str, offset: int = 0, limit: int = 24) -> str:
@@ -2394,6 +2445,7 @@ def build_tools(
         search_guest_musicians,
         search_stored_resources,
         get_song,
+        get_song_life,
         list_song_performances,
         get_album,
         get_song_performance_profile,

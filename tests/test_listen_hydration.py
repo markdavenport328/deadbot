@@ -29,22 +29,14 @@ def test_an_era_performance_carries_its_track_length_and_venue(store):
     assert item.venue_name == "Robert F. Kennedy Stadium"
 
 
-def test_song_history_and_representatives_carry_tracks(store):
+def test_song_representatives_carry_tracks(store):
     song = store.one("songs", "song-playing-in-the-band")
     block = composition._song_overview(
         store.song_context(song),
         store,
-        visible_facets=["representatives", "history"],
+        visible_facets=["representatives"],
         representative_performance_ids=["gd-1972-08-27-playing-in-the-band"],
     )
-    history = block.history
-    assert history.last.audio_url and history.last.audio_url.startswith("https://archive.org/download/")
-    assert history.last.duration_seconds == 636
-    assert history.last.venue_name == "Riverport Amphitheatre"
-    # A rendition with no tape stays unplayable rather than borrowing another's.
-    assert history.first.audio_url is None
-    assert all(item.audio_url == item.listen_url for item in history.by_year if item.audio_url)
-    assert any(item.audio_url for item in history.by_year)
     representative = block.representative_performances[0]
     assert representative.audio_url and representative.venue_name == "Old Renaissance Faire Grounds"
 

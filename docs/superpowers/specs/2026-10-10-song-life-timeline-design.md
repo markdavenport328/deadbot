@@ -4,6 +4,24 @@ Status: approved design, 2026-10-10. Mockup:
 https://claude.ai/artifact/9KKz4RjCcf9yHZL3z1Tfky (real Terrapin Station data;
 stop reasons written to stand in for the model).
 
+## Revisions (2026-10-11, the owner's decisions; these supersede the text below)
+
+- **No code-chosen pick.** The year panel features only the model's stops for
+  that year (every one of them). The "fallback pick" described below is gone;
+  every performance stays playable in See all.
+- **History is the timeline.** The `history` facet and History tab are
+  retired; an older plan's `history` reads as `by_year`.
+- **Standouts are grouped, not ranked.** Kinds: firsts and lasts, longest,
+  picks (of the performance), show picks, releases, guests, played inside
+  another song, unusual placements, rare neighbors. Each kind is in date order;
+  a long kind keeps a sample spread across the song's years and counts the
+  rest. Each year's longest moved into `years`. `get_song` carries two of each
+  kind and the first and last venues; `get_song_life` six of each.
+- **Mobile.** Drag sideways across the chart to choose a year (a vertical
+  swipe scrolls), a tap on a Length dot opens that year's list, no tooltips on
+  touch, 44px controls, list rows stack on narrow screens.
+- The year lookup is cached for an hour, not a day.
+
 ## Why
 
 A song card already draws plays per year and, under a History tab, a first,

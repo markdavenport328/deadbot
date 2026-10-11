@@ -532,7 +532,7 @@
       },
       "AskFocus": {
         "additionalProperties": false,
-        "description": "What the visitor was pointing at when they asked: the clicked cell or grid.\n\nThe browser reports it with the question; the server hands it to the model\nas a note and lets the IDs it names join the turn's grounded IDs.",
+        "description": "What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.\n\nThe browser reports it with the question; the server hands it to the model\nas a note and lets the IDs it names join the turn's grounded IDs.",
         "properties": {
           "block_id": {
             "maxLength": 200,
@@ -540,7 +540,10 @@
             "type": "string"
           },
           "block_type": {
-            "const": "grid",
+            "enum": [
+              "grid",
+              "song_overview"
+            ],
             "title": "Block Type",
             "type": "string"
           },
@@ -572,113 +575,6 @@
           "block_id"
         ],
         "title": "AskFocus",
-        "type": "object"
-      },
-      "ComparisonStripItem": {
-        "additionalProperties": false,
-        "properties": {
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "listen_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Listen Url"
-          },
-          "performance_id": {
-            "title": "Performance Id",
-            "type": "string"
-          },
-          "position_in_set": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position In Set"
-          },
-          "set_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Label"
-          },
-          "show_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Date"
-          },
-          "show_id": {
-            "title": "Show Id",
-            "type": "string"
-          },
-          "show_label": {
-            "title": "Show Label",
-            "type": "string"
-          },
-          "venue_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Venue Name"
-          },
-          "year": {
-            "title": "Year",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "performance_id",
-          "show_id",
-          "year",
-          "show_label"
-        ],
-        "title": "ComparisonStripItem",
         "type": "object"
       },
       "ConversationTurn": {
@@ -2777,108 +2673,6 @@
         "title": "MediaLinkBlock",
         "type": "object"
       },
-      "PerformanceListItem": {
-        "additionalProperties": false,
-        "properties": {
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "listen_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Listen Url"
-          },
-          "performance_id": {
-            "title": "Performance Id",
-            "type": "string"
-          },
-          "position_in_set": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position In Set"
-          },
-          "set_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Label"
-          },
-          "show_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Date"
-          },
-          "show_id": {
-            "title": "Show Id",
-            "type": "string"
-          },
-          "show_label": {
-            "title": "Show Label",
-            "type": "string"
-          },
-          "venue_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Venue Name"
-          }
-        },
-        "required": [
-          "performance_id",
-          "show_id",
-          "show_label"
-        ],
-        "title": "PerformanceListItem",
-        "type": "object"
-      },
       "PerformanceSpineNeighbor": {
         "additionalProperties": false,
         "properties": {
@@ -4030,36 +3824,80 @@
         "title": "ShowUnitBlock",
         "type": "object"
       },
-      "SongHistory": {
+      "SongGuest": {
         "additionalProperties": false,
-        "description": "A song's stage life: first, last, and one performance per year.",
         "properties": {
-          "by_year": {
-            "items": {
-              "$ref": "#/components/schemas/ComparisonStripItem"
-            },
-            "maxItems": 1000,
-            "title": "By Year",
-            "type": "array"
+          "instrument": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Instrument"
           },
-          "first": {
-            "$ref": "#/components/schemas/PerformanceListItem"
-          },
-          "known_count": {
-            "minimum": 1.0,
-            "title": "Known Count",
-            "type": "integer"
-          },
-          "last": {
-            "$ref": "#/components/schemas/PerformanceListItem"
+          "name": {
+            "title": "Name",
+            "type": "string"
           }
         },
         "required": [
-          "known_count",
-          "first",
-          "last"
+          "name"
         ],
-        "title": "SongHistory",
+        "title": "SongGuest",
+        "type": "object"
+      },
+      "SongLengthPoint": {
+        "additionalProperties": false,
+        "description": "One performance's length, for the timeline's Length view.",
+        "properties": {
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "seconds": {
+            "minimum": 0.0,
+            "title": "Seconds",
+            "type": "integer"
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_date",
+          "seconds"
+        ],
+        "title": "SongLengthPoint",
+        "type": "object"
+      },
+      "SongNeighbor": {
+        "additionalProperties": false,
+        "description": "The song just before or after a performance in its set, and whether it ran into or out of a segue.",
+        "properties": {
+          "segued": {
+            "title": "Segued",
+            "type": "boolean"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "segued"
+        ],
+        "title": "SongNeighbor",
         "type": "object"
       },
       "SongOverviewBlock": {
@@ -4072,6 +3910,21 @@
             "maxItems": 1000,
             "title": "Albums",
             "type": "array"
+          },
+          "chart_view": {
+            "anyOf": [
+              {
+                "enum": [
+                  "count",
+                  "length"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chart View"
           },
           "credits": {
             "items": {
@@ -4119,16 +3972,6 @@
             "title": "Follow Ups",
             "type": "array"
           },
-          "history": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SongHistory"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "judgments": {
             "items": {
               "type": "string"
@@ -4152,6 +3995,13 @@
             ],
             "title": "Last Year"
           },
+          "length_points": {
+            "items": {
+              "$ref": "#/components/schemas/SongLengthPoint"
+            },
+            "title": "Length Points",
+            "type": "array"
+          },
           "note": {
             "anyOf": [
               {
@@ -4162,6 +4012,17 @@
               }
             ],
             "title": "Note"
+          },
+          "open_year": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Year"
           },
           "original_artist": {
             "anyOf": [
@@ -4216,7 +4077,6 @@
               "enum": [
                 "credits",
                 "albums",
-                "history",
                 "representatives",
                 "by_year"
               ],
@@ -4232,6 +4092,22 @@
             },
             "maxItems": 1000,
             "title": "Year Counts",
+            "type": "array"
+          },
+          "year_questions": {
+            "items": {
+              "$ref": "#/components/schemas/SongYearQuestion"
+            },
+            "maxItems": 1000,
+            "title": "Year Questions",
+            "type": "array"
+          },
+          "year_summaries": {
+            "items": {
+              "$ref": "#/components/schemas/SongYearSummary"
+            },
+            "maxItems": 1000,
+            "title": "Year Summaries",
             "type": "array"
           }
         },
@@ -4292,7 +4168,7 @@
       },
       "SongRepresentativePerformance": {
         "additionalProperties": false,
-        "description": "A model-chosen rendition that gives a song unit an immediate listening path.",
+        "description": "A model-chosen rendition that gives a song unit an immediate listening path.\n\nOn a song timeline it is one of the model's stops, with its label and why.\nA stop the library could not resolve keeps only the model's words.",
         "properties": {
           "audio_url": {
             "anyOf": [
@@ -4317,6 +4193,17 @@
             ],
             "title": "Duration Seconds"
           },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
           "listen_url": {
             "anyOf": [
               {
@@ -4331,6 +4218,18 @@
           "performance_id": {
             "title": "Performance Id",
             "type": "string"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
           },
           "set_label": {
             "anyOf": [
@@ -4355,10 +4254,12 @@
             "title": "Show Date"
           },
           "show_id": {
+            "default": "",
             "title": "Show Id",
             "type": "string"
           },
           "show_label": {
+            "default": "",
             "title": "Show Label",
             "type": "string"
           },
@@ -4372,14 +4273,47 @@
               }
             ],
             "title": "Venue Name"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
           }
         },
         "required": [
-          "performance_id",
-          "show_id",
-          "show_label"
+          "performance_id"
         ],
         "title": "SongRepresentativePerformance",
+        "type": "object"
+      },
+      "SongSignal": {
+        "additionalProperties": false,
+        "description": "A voice that picked the performance, or its show.",
+        "properties": {
+          "scope": {
+            "enum": [
+              "performance",
+              "show"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "voice": {
+            "title": "Voice",
+            "type": "string"
+          }
+        },
+        "required": [
+          "voice",
+          "scope"
+        ],
+        "title": "SongSignal",
         "type": "object"
       },
       "SongYearCount": {
@@ -4401,6 +4335,297 @@
           "count"
         ],
         "title": "SongYearCount",
+        "type": "object"
+      },
+      "SongYearDetail": {
+        "additionalProperties": false,
+        "description": "Every performance of one song in one year, for the timeline's See all.",
+        "properties": {
+          "performances": {
+            "items": {
+              "$ref": "#/components/schemas/SongYearPerformance"
+            },
+            "title": "Performances",
+            "type": "array"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "year"
+        ],
+        "title": "SongYearDetail",
+        "type": "object"
+      },
+      "SongYearLongest": {
+        "additionalProperties": false,
+        "properties": {
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "seconds": {
+            "minimum": 0.0,
+            "title": "Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "performance_id",
+          "seconds"
+        ],
+        "title": "SongYearLongest",
+        "type": "object"
+      },
+      "SongYearNext": {
+        "additionalProperties": false,
+        "description": "The song that most often followed this one that year, segue or not.",
+        "properties": {
+          "count": {
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "count"
+        ],
+        "title": "SongYearNext",
+        "type": "object"
+      },
+      "SongYearPerformance": {
+        "additionalProperties": false,
+        "description": "One performance in a song's year, every fact from the library.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "encore": {
+            "default": false,
+            "title": "Encore",
+            "type": "boolean"
+          },
+          "guests": {
+            "items": {
+              "$ref": "#/components/schemas/SongGuest"
+            },
+            "title": "Guests",
+            "type": "array"
+          },
+          "length_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "release",
+                  "tape"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length Source"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongNeighbor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "position_in_set": {
+            "default": 0,
+            "title": "Position In Set",
+            "type": "integer"
+          },
+          "previous": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongNeighbor"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "releases": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Releases",
+            "type": "array"
+          },
+          "seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seconds"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/SongSignal"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
+          "track": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayableTrack"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_id",
+          "show_date"
+        ],
+        "title": "SongYearPerformance",
+        "type": "object"
+      },
+      "SongYearQuestion": {
+        "additionalProperties": false,
+        "properties": {
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "question"
+        ],
+        "title": "SongYearQuestion",
+        "type": "object"
+      },
+      "SongYearSummary": {
+        "additionalProperties": false,
+        "description": "One year of a song's life on stage; a year it was not played has a count of zero.",
+        "properties": {
+          "count": {
+            "minimum": 0.0,
+            "title": "Count",
+            "type": "integer"
+          },
+          "longest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongYearLongest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "median_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Seconds"
+          },
+          "top_next": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongYearNext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year": {
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "year",
+          "count"
+        ],
+        "title": "SongYearSummary",
         "type": "object"
       },
       "SourceReference": {
@@ -4879,6 +5104,55 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/songs/{song_id}/years/{year}": {
+      "get": {
+        "description": "One song's performances in one year for the timeline's See all; library facts only, no model call.\n\nIt shares the grid's lookup limit. Library facts change only with a\ndeploy, so the browser and any cache may keep the answer for an hour.",
+        "operationId": "song_year_api_songs__song_id__years__year__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "song_id",
+            "required": true,
+            "schema": {
+              "title": "Song Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "year",
+            "required": true,
+            "schema": {
+              "title": "Year",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SongYearDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Song Year"
       }
     },
     "/api/version": {

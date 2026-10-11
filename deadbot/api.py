@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
@@ -23,11 +23,12 @@ from deadbot import composition, finish, grids
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, fit
+from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, SongYearDetail, fit
 from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
 from deadbot.postgres import query_cache_scope
+from deadbot.song_life import year_detail
 from deadbot.progress import describe_tool_call, status_lines
 from deadbot.response_cache import ResponseCache
 from deadbot.storage import create_canonical_store
@@ -93,7 +94,8 @@ def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
     them; only the library IDs are checked against the store.
     """
 
-    lines = [f'The visitor asked from a grid on the page ("{_one_line(focus.label)}").']
+    place = "a song's timeline" if focus.block_type == "song_overview" else "a grid"
+    lines = [f'The visitor asked from {place} on the page ("{_one_line(focus.label)}").']
     facts = [fact for fact in (_one_line(fact) for fact in focus.facts) if fact]
     if facts:
         lines.append(f"Facts as the page showed them: {' '.join(facts)}")
@@ -468,6 +470,21 @@ def create_app(
         if block is None:
             raise HTTPException(status_code=404, detail="The library has nothing to draw for those lists.")
         return block
+
+    @app.get("/api/songs/{song_id}/years/{year}", response_model=SongYearDetail)
+    def song_year(song_id: str, year: int, http_request: Request, response: Response) -> SongYearDetail:
+        """One song's performances in one year for the timeline's See all; library facts only, no model call.
+
+        It shares the grid's lookup limit. Library facts change only with a
+        deploy, so the browser and any cache may keep the answer for an hour.
+        """
+
+        _enforce_rate_limit(http_request, grid=True)
+        detail = year_detail(app.state.store, song_id, year)
+        if detail is None:
+            raise HTTPException(status_code=404, detail="The library has no such song.")
+        response.headers["Cache-Control"] = "public, max-age=3600"
+        return SongYearDetail.model_validate(detail)
 
     if client_dist.is_dir():
         assets = client_dist / "assets"

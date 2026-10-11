@@ -216,3 +216,19 @@ def test_the_stream_path_grounds_a_clicked_show_so_its_card_streams_without_tool
     # Without the click, the same plan names an ID no tool returned and no card streams.
     plain = client.post("/api/experience/stream", json={"question": QUESTION + " again"}).text
     assert [e["block"]["type"] for e in map(json.loads, filter(str.strip, plain.splitlines())) if e["type"] == "block"] != ["show_unit"]
+
+
+def test_a_year_on_a_song_timeline_travels_as_focus(store):
+    focus = AskFocus.model_validate(
+        {
+            "label": "Terrapin Station in 1979",
+            "block_type": "song_overview",
+            "block_id": "song-terrapin-station",
+            "ids": ["song-terrapin-station", "gd-1979-01-08-terrapin-station-2-4"],
+            "facts": ["23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)"],
+        }
+    )
+    assert focus_ids(store, focus) == {"song-terrapin-station", "gd-1979-01-08-terrapin-station-2-4"}
+    assert focus_note(focus, focus_ids(store, focus)).splitlines()[0] == (
+        'The visitor asked from a song\'s timeline on the page ("Terrapin Station in 1979").'
+    )

@@ -1120,7 +1120,6 @@ def test_server_built_items_carry_no_generated_follow_ups():
         experience.GuestAppearanceItem,
         experience.EquipmentItem,
         experience.PerformanceListItem,
-        experience.ComparisonStripItem,
         experience.PerformanceSpineNeighbor,
         experience.ShowSelectionItem,
         experience.ArrangementSearchItem,
@@ -1310,18 +1309,16 @@ def test_show_unit_hydrates_lineup_and_recordings_only_when_selected():
     assert blocks[1].lineup == [] and blocks[1].recordings == [] and blocks[1].sets
 
 
-def test_song_overview_hydrates_history_and_omits_unselected_facets():
+def test_an_older_plans_history_facet_asks_for_the_timeline_and_omits_unselected_facets():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
     grounded = finish.grounded_context(payloads)
-    ref = finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", visible_facets=["history"])
+    ref = finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", visible_facets=["history", "by_year"])
+    assert ref.visible_facets == ["by_year"]
     blocks, _ = finish.resolve_items([ref], grounded, payloads, store)
     song = blocks[0]
-    assert song.visible_facets == ["history"]
-    assert song.history is not None
-    assert song.history.first.show_date <= song.history.last.show_date
-    assert song.history.known_count == song.known_performance_count
-    assert len({item.year for item in song.history.by_year}) == len(song.history.by_year)
+    assert song.visible_facets == ["by_year"]
+    assert song.year_summaries and sum(row.count for row in song.year_summaries) == song.known_performance_count
     assert song.credits == [] and song.albums == [] and song.representative_performances == []
 
 
@@ -1772,3 +1769,42 @@ def test_a_record_the_model_names_again_after_from_result_stays_on_the_page():
     })
     blocks, _, _ = finish.resolve_groups(plan, finish.grounded_context(payloads), payloads, store)
     assert [block.show_id for block in blocks] == ["gd-1983-06-22", "gd-1984-06-23", "gd-1984-06-23"]
+
+
+def test_song_overview_reads_stops_and_the_old_ids_key():
+    from deadbot.finish import SongOverviewRef
+
+    ref = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "song-terrapin-station",
+        "representatives": [{"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Charlie Miller's pick", "why": "The 1979 one."}],
+        "open_year": 1979, "chart_view": "length",
+        "year_questions": [{"year": 1979, "question": "How did 1979 differ?"}],
+    })
+    assert ref.representatives[0].label == "Charlie Miller's pick"
+    assert ref.open_year == 1979 and ref.chart_view == "length"
+    old = SongOverviewRef.model_validate({"type": "song_overview", "song_id": "song-terrapin-station", "representative_performance_ids": ["p1", "p2"]})
+    assert [stop.performance_id for stop in old.representatives] == ["p1", "p2"]
+    loose = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "s", "chart_view": "sideways", "open_year": "1979",
+        "representatives": ["p1", {"performance_id": "p2", "label": "Two"}, 7],
+        "year_questions": [{"year": 1979, "question": "Q?"}, {"question": "no year"}],
+    })
+    assert loose.chart_view is None and loose.open_year == 1979
+    assert [stop.performance_id for stop in loose.representatives] == ["p1", "p2"]
+    assert [question.year for question in loose.year_questions] == [1979]
+
+
+def test_song_overview_reader_keeps_every_usable_part():
+    from deadbot.finish import SongOverviewRef
+
+    ref = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "s",
+        "visible_facets": ["history", "by_year", "credits", "bogus"],
+        "representatives": [{"performance_id": "p1", "label": 5, "why": "Kept."}, {"performance_id": "p2", "label": ["a"]}],
+        "open_year": True,
+        "year_questions": [{"year": "1977", "question": "Q?"}, {"year": 1979.0, "question": "R?"}, {"year": False, "question": "no"}],
+    })
+    assert ref.visible_facets == ["by_year", "credits"]
+    assert [(stop.performance_id, stop.label, stop.why) for stop in ref.representatives] == [("p1", None, "Kept."), ("p2", None, None)]
+    assert ref.open_year is None
+    assert [(question.year, question.question) for question in ref.year_questions] == [(1977, "Q?"), (1979, "R?")]
