@@ -398,7 +398,7 @@ def year_detail(store: CanonicalStore, song_id: str, year: int) -> dict[str, Any
     }
 
 
-def standouts(performances: list[LifePerformance]) -> tuple[list[dict[str, Any]], int, list[str]]:
+def standouts(performances: list[LifePerformance], ceiling: int = STANDOUT_CEILING) -> tuple[list[dict[str, Any]], int, list[str]]:
     """Performances whose facts stand out, each fact plain; no quality claims.
 
     Returns the kept standouts in date order, how many were cut, and patterns:
@@ -488,10 +488,10 @@ def standouts(performances: list[LifePerformance]) -> tuple[list[dict[str, Any]]
 
     # Within a tier, a version with more facts stands out more; ties keep date order.
     ranked = sorted(facts, key=lambda performance_id: (tier[performance_id], -len(facts[performance_id]), order[performance_id]))
-    kept = sorted(ranked[:STANDOUT_CEILING], key=order.__getitem__)
+    kept = sorted(ranked[:ceiling], key=order.__getitem__)
     cut = len(ranked) - len(kept)
     if cut:
-        logger.info("Cut %d of %d standouts to the ceiling of %d", cut, len(ranked), STANDOUT_CEILING)
+        logger.info("Cut %d of %d standouts to the ceiling of %d", cut, len(ranked), ceiling)
     return (
         [
             {"performance_id": pid, "date": by_id[pid].show_date, "venue": by_id[pid].venue_name, "facts": facts[pid]}

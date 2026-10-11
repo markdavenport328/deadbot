@@ -167,3 +167,12 @@ def test_song_life_states_years_and_standouts(built_sqlite, tmp_path):
     assert payload["stops_note"]
     missing = json.loads(tool.invoke({"song_id_or_title": "Qzxvplm"}))
     assert missing["error"] == "Song not found or ambiguous"
+
+
+def test_get_song_names_where_the_first_and_last_nights_were_played():
+    payload = json.loads(_tools()["get_song"].invoke({"song_id_or_title": "Terrapin Station"}))
+    first = payload["performance_summary"]["first_performance"]
+    last = payload["performance_summary"]["last_performance"]
+    assert (first["show_date"], first["venue_name"], first["city"]) == ("1977-02-26", "Swing Auditorium", "San Bernardino, CA")
+    assert (last["show_date"], last["venue_name"]) == ("1995-07-08", "Soldier Field")
+    assert "get_song_life" in payload["plays_by_year_chart"]
