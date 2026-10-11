@@ -19,6 +19,7 @@ import hashlib
 import hmac
 import json
 import logging
+import re
 import zlib
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field, fields
@@ -54,11 +55,11 @@ CHIP_CEILING = 8
 
 TURN_HEADING = (
     "Research notebook, turn {number}: what the tools returned for the answer above, one line per call. "
-    "read_notebook brings any entry back in full."
+    "Each line names, by ID, the shows, performances, releases, songs and people its result holds. read_notebook brings an entry back in full, or only the part that mentions given IDs."
 )
 EARLIER_HEADING = (
     "Research notebook from earlier in this conversation, one line per call. "
-    "read_notebook brings any entry back in full."
+    "Each line names, by ID, the shows, performances, releases, songs and people its result holds. read_notebook brings an entry back in full, or only the part that mentions given IDs."
 )
 FLAGS_HEADING = "Already in the research notebook for what the visitor clicked:"
 
@@ -316,6 +317,118 @@ def _generic_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
     return parts
 
 
+# --- what a result holds, by ID ------------------------------------------------
+
+# The things a card can be built from, in the order a line lists them: a box
+# set's nights come before its tracks, a show's songs before its lineup.
+ITEM_KINDS = ("show", "performance", "release", "song", "person")
+_ITEM_PLURALS = {"person": "people"}
+# Parts of a result that point onward (research routes, detail options)
+# rather than say what the result holds.
+_ITEM_SKIP_KEYS = frozenset({"pathways", "available"})
+ITEMS_CHAR_CEILING = 1_000
+
+
+LABEL_CHAR_CEILING = 48
+
+
+def _segments(text: str) -> list[str]:
+    return [part for part in re.split(r"[^a-z0-9]+", re.sub(r"['’]", "", text.casefold())) if part]
+
+
+def _labelled(identifier: str, *labels: Any) -> tuple[str, str]:
+    """An ID and the words of its labels it does not already spell (a show's date, a song's title)."""
+
+    spelled = set(_segments(identifier))
+    words = [
+        word
+        for label in labels
+        if isinstance(label, (str, int))
+        for word in str(label).split()
+        if (parts := _segments(word)) and not set(parts) <= spelled
+    ]
+    label = " ".join(words)
+    return identifier, label if len(label) <= LABEL_CHAR_CEILING else label[: LABEL_CHAR_CEILING - 1].rstrip() + "…"
+
+
+def _item(record: dict[str, Any]) -> tuple[str, str, str] | None:
+    """The kind, ID and label of a record a card can be built from, or None."""
+
+    def text(key: str) -> str:
+        value = record.get(key)
+        return value if isinstance(value, str) else ""
+
+    if text("entity_type") and text("id"):
+        return (text("entity_type"), *_labelled(text("id"), text("label")))
+    if text("performance_id"):
+        return ("performance", *_labelled(text("performance_id"), text("song_title") or text("title"), text("venue_name")))
+    if text("show_id") and (text("show_date") or text("venue_name")):
+        return ("show", *_labelled(text("show_id"), text("show_date"), text("venue_name") or text("venue")))
+    if text("release_id"):
+        return ("release", *_labelled(text("release_id"), text("title")))
+    if text("song_id"):
+        return ("song", *_labelled(text("song_id"), text("song_title") or text("title")))
+    if text("person_id"):
+        return ("person", *_labelled(text("person_id"), text("name")))
+    return None
+
+
+def _collect_items(value: Any, found: dict[str, dict[str, str]]) -> None:
+    if isinstance(value, list):
+        for nested in value:
+            _collect_items(nested, found)
+        return
+    if not isinstance(value, dict):
+        return
+    item = _item(value)
+    if item is not None:
+        kind, identifier, label = item
+        found.setdefault(kind, {}).setdefault(identifier, label)
+        if kind == "performance" and isinstance(value.get("song_id"), str) and value["song_id"]:
+            # A track or setlist row also says which song it is.
+            found.setdefault("song", {}).setdefault(value["song_id"], "")
+    for key, nested in value.items():
+        if not str(key).startswith("_") and key not in _ITEM_SKIP_KEYS:
+            _collect_items(nested, found)
+
+
+def items_text(payload: dict[str, Any], already: str = "") -> str:
+    """The shows, performances, releases, songs and people a result holds, by ID, within the line's ceiling."""
+
+    found: dict[str, dict[str, str]] = {}
+    _collect_items(payload, found)
+    named = set(re.split(r"[\s,;·]+", already))
+    kinds = [*(kind for kind in ITEM_KINDS if kind in found), *(kind for kind in found if kind not in ITEM_KINDS)]
+    groups = [
+        (kind, [f"{identifier} {label}".strip() for identifier, label in found[kind].items() if identifier not in named])
+        for kind in kinds
+    ]
+    groups = [(kind, items) for kind, items in groups if items]
+    total = sum(len(items) for _, items in groups)
+    sections: list[str] = []
+    listed = 0
+    used = 0
+    for kind, items in groups:
+        head = f"{_ITEM_PLURALS.get(kind, kind + 's')}: "
+        kept: list[str] = []
+        for item in items:
+            # Room for the separator and a closing "(+N more)".
+            cost = len(item) + 2 + (len(head) + 2 if not kept else 0)
+            if used + cost > ITEMS_CHAR_CEILING - 16:
+                break
+            kept.append(item)
+            used += cost
+        if kept:
+            sections.append(head + ", ".join(kept))
+            listed += len(kept)
+        if len(kept) < len(items):
+            break
+    if listed < total:
+        logger.info("A notebook line listed %d of %d items within %d characters", listed, total, ITEMS_CHAR_CEILING)
+        return "; ".join(sections) + f" (+{total - listed} more)" if sections else f"(+{total - listed} more)"
+    return "; ".join(sections)
+
+
 _SUMMARIES = {
     "get_show": _show_parts,
     "get_song": _song_parts,
@@ -337,7 +450,13 @@ def summarize(tool: str, args: dict[str, Any], payload: dict[str, Any], tokens: 
         logger.info("The notebook line for %s fell back to the generic one", tool, exc_info=True)
         parts = _generic_parts(args, payload)
     head, *rest = [str(part) for part in parts] or [""]
-    return " · ".join([f"{tool} {head}".strip(), *(part for part in rest if part), _tokens_text(tokens)])
+    line = [f"{tool} {head}".strip(), *(part for part in rest if part)]
+    try:
+        held = items_text(payload, " ".join(line))
+    except Exception:  # The facts above still make a line.
+        logger.info("The notebook items for %s could not be listed", tool, exc_info=True)
+        held = ""
+    return " · ".join([*line, *([held] if held else []), _tokens_text(tokens)])
 
 
 # --- harvesting a turn ---------------------------------------------------------

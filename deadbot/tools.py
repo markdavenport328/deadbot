@@ -6,6 +6,7 @@ import difflib
 import hashlib
 import json
 import re
+from contextvars import ContextVar
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
 from http.client import HTTPException as HTTPClientException
@@ -263,6 +264,9 @@ _GridColumnKindArg = Annotated[str, _one_of(list(dict.fromkeys(column for _, col
 # tokens). A result over it is transport damage, not an editorial choice:
 # trim the largest list and tell the model how much it did not see.
 TOOL_RESULT_CEILING_CHARS = 80_000
+# A notebook slice runs the original call with no ceiling, cuts it down, and
+# then bounds the sliced result once, so rows past the original cut survive.
+_RESULT_CEILING: ContextVar[int | None] = ContextVar("deadbot_tool_result_ceiling", default=TOOL_RESULT_CEILING_CHARS)
 
 
 def _dumps(value: Any) -> str:
@@ -304,15 +308,16 @@ def _json(value: Any) -> str:
 
     payload = compact(value)
     text = _dumps(payload)
-    if len(text) <= TOOL_RESULT_CEILING_CHARS or not isinstance(payload, dict):
+    ceiling = _RESULT_CEILING.get()
+    if ceiling is None or len(text) <= ceiling or not isinstance(payload, dict):
         return text
     trimmed: dict[str, tuple[list, int]] = {}
-    while len(text) > TOOL_RESULT_CEILING_CHARS:
+    while len(text) > ceiling:
         path, items, _ = _largest_list(payload)
         if items is None:
             break
         trimmed.setdefault(path, (items, len(items)))
-        keep = max(1, int(len(items) * TOOL_RESULT_CEILING_CHARS / len(text) * 0.9))
+        keep = max(1, int(len(items) * ceiling / len(text) * 0.9))
         if keep >= len(items):
             keep = len(items) - 1
         del items[keep:]
@@ -325,6 +330,31 @@ def _json(value: Any) -> str:
         )
         text = _dumps(payload)
     return text
+
+
+def _mentions(value: Any, needles: list[str]) -> bool:
+    text = _dumps(value).casefold()
+    return any(needle.casefold() in text for needle in needles)
+
+
+def _slice(value: Any, needles: list[str], path: str, sliced: list[dict[str, Any]]) -> Any:
+    """The result with each list of records narrowed to the records that mention a needle.
+
+    A kept record comes back whole. Each narrowed list is reported in
+    ``sliced`` with how many records it kept of how many.
+    """
+
+    if isinstance(value, dict):
+        # A stored result's own truncation record stays as it was.
+        return {
+            key: nested if str(key).startswith("_truncated") else _slice(nested, needles, f"{path}.{key}" if path else str(key), sliced)
+            for key, nested in value.items()
+        }
+    if isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+        kept = [item for item in value if _mentions(item, needles)]
+        sliced.append({"path": path, "kept": len(kept), "total": len(value)})
+        return kept
+    return value
 
 
 def _adapter_from_reviewed_source(source_id: str, *, needs_search: bool = False) -> DeadnetResearchAdapter | None:
@@ -2489,8 +2519,12 @@ def build_tools(
         tools.append(query_catalog)
     replayable = {item.name: item for item in tools}
 
-    def _notebook_result(entry: notebook.Entry) -> dict[str, Any]:
-        """A stored web payload, or the canonical call run again against the library."""
+    def _notebook_result(entry: notebook.Entry, *, whole: bool = False) -> dict[str, Any]:
+        """A stored web payload, or the canonical call run again against the library.
+
+        ``whole`` runs the call without the result ceiling, for a slice that
+        is bounded once it has been cut down.
+        """
 
         if entry.payload is not None:
             return entry.payload
@@ -2503,15 +2537,19 @@ def build_tools(
         original = replayable.get(entry.tool)
         if original is None:
             return {"error": "That tool is no longer available", "tool": entry.tool}
+        token = _RESULT_CEILING.set(None) if whole else None
         try:
             result = json.loads(original.invoke(entry.args))
         except Exception as error:  # A replay that fails must not end the turn.
             return {"error": "Could not run that call again", "detail": str(error)[:300]}
+        finally:
+            if token is not None:
+                _RESULT_CEILING.reset(token)
         return result if isinstance(result, dict) else {"result": result}
 
     @tool
-    def read_notebook(keys_or_ids: list[str], config: RunnableConfig) -> str:
-        """Bring earlier research back in full: the results of calls listed in the research notebook.
+    def read_notebook(keys_or_ids: list[str], config: RunnableConfig, only: list[str] | None = None) -> str:
+        """Bring earlier research back: the results of calls listed in the research notebook.
 
         Pass the bracketed keys from the notebook's lines, or library IDs and
         arguments (a show_id, song_id, performance_id, aggregation_id,
@@ -2519,6 +2557,12 @@ def build_tools(
         one call come back together. Each result is what the original call
         returned, run again against the library, so its IDs, aggregation_id
         and result_id can go on the page.
+
+        only takes IDs, dates or names and brings back the part of each result
+        that mentions them: every list in the result narrowed to its rows that
+        contain one of those values (one night's tracks from a box set, one
+        song's rows in a long listing), with the rest of the result as it was.
+        `sliced` gives each narrowed list's rows kept and its full count.
         """
         book = ((config or {}).get("configurable") or {}).get("notebook")
         if not isinstance(book, notebook.Notebook) or not book.entries:
@@ -2528,12 +2572,18 @@ def build_tools(
                 "note": "The research notebook is empty for this conversation.",
             })
         found, missing = notebook.find(book, keys_or_ids)
-        return _json({
-            "notebook_entries": [
-                {"key": entry.key, "tool": entry.tool, "args": entry.args, "result": _notebook_result(entry)} for entry in found
-            ],
-            "missing": missing,
-        })
+        needles = [str(value).strip() for value in only or [] if str(value).strip()]
+        entries = []
+        for entry in found:
+            item: dict[str, Any] = {"key": entry.key, "tool": entry.tool, "args": entry.args}
+            if needles:
+                sliced: list[dict[str, Any]] = []
+                item["result"] = _slice(_notebook_result(entry, whole=True), needles, "", sliced)
+                item["sliced"] = sliced
+            else:
+                item["result"] = _notebook_result(entry)
+            entries.append(item)
+        return _json({"notebook_entries": entries, "missing": missing})
 
     tools.append(read_notebook)
     return tools

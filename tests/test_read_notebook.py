@@ -30,8 +30,59 @@ def _read_turn(book, question, key, items):
     ]
 
 
-def test_read_notebook_shows_the_model_only_its_keys():
-    assert list(_read_tool().tool_call_schema.model_json_schema()["properties"]) == ["keys_or_ids"]
+def test_read_notebook_shows_the_model_its_keys_and_an_optional_slice():
+    schema = _read_tool().tool_call_schema.model_json_schema()
+    assert list(schema["properties"]) == ["keys_or_ids", "only"]
+    assert schema["required"] == ["keys_or_ids"]
+    assert "do not" not in _read_tool().description.casefold()
+
+
+BOX_SET = ("get_album", {"release_id_or_title": "release-europe-72-the-complete-recordings-2011", "include": ["tracks"]})
+
+
+def _read_only(book, wanted, only, **kwargs):
+    return json.loads(_read_tool(**kwargs).invoke({"keys_or_ids": wanted, "only": only}, config={"configurable": {"notebook": book}}))
+
+
+def test_a_slice_brings_back_one_night_of_a_box_set_even_past_the_original_ceiling():
+    book, _ = record(notebook.Notebook(), "What's on the box set?", "22 nights.", [BOX_SET])
+    key = book.entries[0].key
+    (entry,) = _read_only(book, [key], ["gd-1972-05-26"])["notebook_entries"]
+    result = entry["result"]
+    narrow = json.loads(tools()["get_album"].invoke({"release_id_or_title": BOX_SET[1]["release_id_or_title"], "show": "1972-05-26"}))
+    assert [track["performance_id"] for track in result["tracks"]] == [track["performance_id"] for track in narrow["tracks"]]
+    assert [show["show_id"] for show in result["contents"]["shows"]] == ["gd-1972-05-26"]
+    assert result["release"]["release_id"] == BOX_SET[1]["release_id_or_title"]
+    assert {"path": "tracks", "kept": len(narrow["tracks"]), "total": 578} in entry["sliced"]
+    assert "_truncated" not in result
+
+
+def test_a_slice_of_a_stored_web_payload_keeps_the_rows_that_mention_it():
+    payload = {"query": "lyceum", "hits": [{"url": "https://a.org/1972-05-26", "title": "Lyceum"}, {"url": "https://a.org/1977", "title": "Cornell"}]}
+    entry = notebook.Entry(
+        key="site000001", tool="search_site", args={"query": "lyceum"}, ids=[], urls=[], summary="search_site", tokens=1, turn=1, last_read=1, payload=payload,
+    )
+    (read,) = _read_only(notebook.Notebook(turns=1, entries=[entry]), ["site000001"], ["1972-05-26"])["notebook_entries"]
+    assert read["result"] == {"query": "lyceum", "hits": [payload["hits"][0]]}
+    assert read["sliced"] == [{"path": "hits", "kept": 1, "total": 2}]
+
+
+def test_a_sliced_read_stays_under_the_tool_result_ceiling():
+    from deadbot.tools import TOOL_RESULT_CEILING_CHARS
+
+    big = {"rows": [{"id": f"row-{index}", "text": "match " + "x" * 80} for index in range(5000)]}
+    entry = notebook.Entry(
+        key="big0000002", tool="read_page", args={"url": "https://example.org/big"}, ids=[], urls=[], summary="big", tokens=1, turn=1, last_read=1, payload=big,
+    )
+    text = _read_tool().invoke({"keys_or_ids": ["big0000002"], "only": ["match"]}, config={"configurable": {"notebook": notebook.Notebook(turns=1, entries=[entry])}})
+    assert len(text) <= TOOL_RESULT_CEILING_CHARS
+    assert "_truncated" in json.loads(text)
+
+
+def test_without_a_slice_the_read_is_whole_and_says_nothing_about_slicing():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    (entry,) = _read(book, [book.entries[0].key])["notebook_entries"]
+    assert "sliced" not in entry
 
 
 def test_read_notebook_is_registered_after_get_grid_in_a_fixed_position():

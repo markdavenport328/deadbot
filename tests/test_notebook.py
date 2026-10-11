@@ -39,8 +39,8 @@ def test_each_tool_call_becomes_one_entry_with_its_ids_and_a_fact_line():
     assert book.turns == 1
     show, song = book.entries
     assert show.key == notebook.entry_key("get_show", {"show_id_or_date": "1972-05-26"})
-    assert show.summary.startswith("get_show gd-1972-05-26 · Lyceum, London · 31 songs in 2 sets · 4 recordings · ~")
-    assert song.summary.startswith("get_song song-morning-dew · Morning Dew · 282 performances, 1967–1995 · 80 releases · ~")
+    assert show.summary.startswith("get_show gd-1972-05-26 · Lyceum, London · 31 songs in 2 sets · 4 recordings · performances: ")
+    assert song.summary.startswith("get_song song-morning-dew · Morning Dew · 282 performances, 1967–1995 · 80 releases · ")
     assert {"gd-1972-05-26", "gd-1972-05-26-promised-land-1-1"} <= set(show.ids)
     assert "song-morning-dew" in song.ids
     assert (show.turn, show.last_read, show.payload) == (1, 1, None)
@@ -215,6 +215,57 @@ def test_the_generic_fact_line_names_the_result_its_totals_and_its_dates():
         "get_album r1 · Europe '72: The Complete Recordings, 2011-09-01 · 3 of 578 tracks 1972-04-07 · "
         "2 shows 1972-04-07–1972-05-26 · 0 personnel · ~18.4k tok"
     )
+
+
+def test_a_line_names_a_box_sets_shows_by_date_and_venue_before_its_tracks():
+    payload = {
+        "release": {"release_id": "release-europe-72-the-complete-recordings-2011", "title": "Europe ’72: The Complete Recordings"},
+        "contents": {"shows": [
+            {"show_id": "gd-1972-04-07", "show_date": "1972-04-07", "venue_name": "Wembley Empire Pool", "track_count": 20},
+            {"show_id": "gd-1972-05-26", "show_date": "1972-05-26", "venue_name": "Lyceum", "track_count": 31},
+        ]},
+        "tracks": [
+            {"performance_id": "gd-1972-04-07-greatest-story-ever-told-2-1", "song_id": "song-greatest-story-ever-told", "title": "Greatest Story Ever Told"},
+            {"performance_id": "gd-1972-04-07-x-2-2", "song_id": "song-truckin", "title": "Truckin'"},
+        ],
+        "pathways": {"gd-1999-01-01": {"show_id": "gd-1999-01-01", "show_date": "1999-01-01"}},
+    }
+    line = notebook.summarize("get_album", {"release_id_or_title": "release-europe-72-the-complete-recordings-2011", "include": ["tracks"]}, payload, 18_400)
+    assert line.endswith(
+        " · shows: gd-1972-04-07 Wembley Empire Pool, gd-1972-05-26 Lyceum; "
+        "performances: gd-1972-04-07-greatest-story-ever-told-2-1, gd-1972-04-07-x-2-2 Truckin'; "
+        "songs: song-greatest-story-ever-told, song-truckin · ~18.4k tok"
+    )
+    assert "gd-1999-01-01" not in line
+
+
+def test_a_show_line_lists_its_performances_so_one_can_go_on_the_page_from_the_index():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    line = book.entries[0].summary
+    assert line.startswith("get_show gd-1972-05-26 · Lyceum, London · ")
+    assert "performances: gd-1972-05-26-promised-land-1-1, " in line
+    assert "gd-1972-05-26-morning-dew-2-5" in line
+    assert len(line) <= 200 + notebook.ITEMS_CHAR_CEILING
+
+
+def test_search_matches_are_listed_by_kind_with_labels_their_ids_do_not_spell():
+    payload = {"query": "lyceum", "matches": [
+        {"entity_type": "venue", "id": "venue-lyceum-london", "label": "Lyceum"},
+        {"entity_type": "show", "id": "gd-1972-05-26", "label": "1972-05-26 Lyceum, London"},
+        {"entity_type": "person", "id": "person-123", "label": "Ned Lagin"},
+    ]}
+    line = notebook.summarize("search_entities", {"query": "lyceum"}, payload, 400)
+    assert "shows: gd-1972-05-26 Lyceum, London; people: person-123 Ned Lagin; venues: venue-lyceum-london" in line
+
+
+def test_the_items_on_a_line_trim_at_their_ceiling_and_log(caplog):
+    rows = [{"performance_id": f"gd-1972-05-{index:02d}-song-{index}-1-1"} for index in range(200)]
+    with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
+        line = notebook.summarize("list_song_performances", {"song_id_or_title": "x"}, {"performances": rows}, 9_000)
+    items = line.split(" · ")[-2]
+    assert len(items) <= notebook.ITEMS_CHAR_CEILING
+    assert items.startswith("performances: gd-1972-05-00-song-0-1-1, ") and items.endswith(" more)")
+    assert "listed" in caplog.text
 
 
 def test_a_failing_fact_line_falls_back_to_the_generic_one(monkeypatch):
