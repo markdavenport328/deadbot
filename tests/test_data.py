@@ -195,8 +195,10 @@ def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
 def test_guest_directory_folds_any_jerrybase_name_qualifier_onto_the_plain_person():
     """Marvin Boxley is one harmonica player, not one per qualifier form.
 
-    The canonical people table carries both ``person-marvin-boxley`` and
-    ``person-marvin-boxley-songs-unknown``. "(songs unknown)" describes how
+    JerryBase lists him both as ``Marvin Boxley`` and as ``Marvin Boxley
+    (songs unknown)``; the canonical data folds the second onto
+    ``person-marvin-boxley``, and the directory folds it too should a qualified
+    row ever reappear. "(songs unknown)" describes how
     complete the source record is, so it folds the identity without claiming
     anything about the appearance the way "(complete show)" does.
     """

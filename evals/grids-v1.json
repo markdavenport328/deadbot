@@ -1,7 +1,7 @@
 {
   "suite_id": "grids-tool-retrieval",
   "version": "v1",
-  "description": "Retrieval baseline and live-review cases for the model-selected grid (get_grid): two lists of library things and the fact where each pair meets. Each case gives the visitor's question, a get_grid (or, for the negative case, aggregate_data) call a good answer would make, the pinned facts that call returns, and the failures to watch for when reading the live page. The arguments are one reasonable call, not the only one: the model chooses its own rows, columns and span, so a live run is judged on the page, not on matching these arguments. Pinned facts were measured 2026-10-10 against the deploy-built SQLite store. They move whenever a data pass adds shows, setlists or release tracks; regenerate them against the live store rather than trusting this file blindly. Live results are in docs/measurements/2026-10-10-grids.md.",
+  "description": "Retrieval baseline and live-review cases for the model-selected grid (get_grid): two lists of library things and the fact where each pair meets. Each case gives the visitor's question, a get_grid (or, for the negative case, aggregate_data) call a good answer would make, the pinned facts that call returns, and the failures to watch for when reading the live page. The arguments are one reasonable call, not the only one: the model chooses its own rows, columns and span, so a live run is judged on the page, not on matching these arguments. Pinned facts were measured 2026-10-10 against the deploy-built SQLite store; the Spring '77 Scarlet > Fire lengths were re-measured 2026-10-11 after the release-track pass linked more Dick's Picks and Road Trips tracks to their performances. They move whenever a data pass adds shows, setlists or release tracks; regenerate them against the live store rather than trusting this file blindly. Live results are in docs/measurements/2026-10-10-grids.md.",
   "cases": [
     {
       "id": "dark-star-vs-pitb-over-time",
@@ -55,7 +55,7 @@
       "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Spring 1977", "columns": ["Scarlet Begonias", "Fire on the Mountain"]},
       "page_expectation": "The tour's nights that had the pairing, with each half's length from the library, the longest pairings pointed at, and the nights without a known length called out rather than filled in.",
       "expected": {
-        "equals": {"coverage.lengths": {"release": 16, "tape": 11, "mixed": 0, "none": 2}},
+        "equals": {"coverage.lengths": {"release": 22, "tape": 7, "mixed": 0, "none": 0}},
         "contains": {
           "rows": {"id": "gd-1977-05-08", "label": "May 8, 1977 · Ithaca"},
           "cells.rows": ["gd-1977-05-08", "song-fire-on-the-mountain", 16, 1, "value"]

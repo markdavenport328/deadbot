@@ -27,8 +27,10 @@ docs/collection-methodology.md:
 
 Idempotent and rerunnable: existing song_writers.csv/people.csv rows are
 preserved and only new (song_id, person_id, writer_role) combinations are
-added; both outputs are written sorted by their ID columns so a concurrent
-agent's appends merge cleanly.
+added. people.csv is sorted by person_id and song_writers.csv by (song_id,
+person_id, writer_role); resource_songs.csv keeps its existing row order
+(other passes append to it) and gains new rows at the end. A rerun against
+the committed raw files reproduces every output byte for byte.
 """
 
 from __future__ import annotations
@@ -83,14 +85,35 @@ def append_note(value: str, addition: str) -> str:
 
 
 def remove_note(value: str, unwanted: str) -> str:
+    # Only the generated note goes; the punctuation of the notes around it
+    # (an earlier pass's "baseline.;") stays as written, so reruns are stable.
     value = value.replace(f"; {unwanted}", "").replace(unwanted, "")
-    return value.replace(".;", ";").strip(" ;")
+    return value.strip(" ;")
 
 
+# Spellings of the same name; no provenance note, the name is not in doubt.
 NAME_REPLACEMENTS = {
     "John Barlow": "John Perry Barlow",
     "Goin'": "Going",
     "Chester Burnett (Howlin' Wolf)": "Howlin' Wolf",
+}
+
+# Printed credits that name a person only by surname, by a former name, or by
+# a wrong first name: (canonical name, evidence). The evidence is written into
+# the credit row's note, so the row says what the source printed and why it
+# points where it does. Without these a rerun mints people rows that duplicate
+# existing writers (folded 2026-10-09).
+RESOLVED_CREDIT_NAMES = {
+    # Easy Answers: MusicBrainz work 3f42f391 (ISWC T-914.475.299-8) credits
+    # Weir, Hunter, Vince Welnick, Rob Wasserman and Bob Bralove.
+    "Bralove": ("Bob Bralove", " (printed 'Bralove'; resolved by name: Easy Answers MusicBrainz work 3f42f391 (ISWC T-914.475.299-8) credits Bob Bralove)"),
+    "Wasserman": ("Rob Wasserman", " (printed 'Wasserman'; resolved by name: Easy Answers MusicBrainz work 3f42f391 (ISWC T-914.475.299-8) credits Rob Wasserman)"),
+    "Bruce Welnick": ("Vince Welnick", " (printed 'Bruce Welnick'; resolved by name: Easy Answers MusicBrainz work 3f42f391 (ISWC T-914.475.299-8) credits Vince Welnick)"),
+    # Kansas City: MusicBrainz work 6a79f7b5 credits Jerry Leiber and Mike Stoller.
+    "Leiber": ("Jerry Leiber", " (printed 'Leiber'; resolved by name: Kansas City MusicBrainz work 6a79f7b5 credits Jerry Leiber)"),
+    "Stoller": ("Mike Stoller", " (printed 'Stoller'; resolved by name: Kansas City MusicBrainz work 6a79f7b5 credits Mike Stoller)"),
+    # Sunrise: Dead.net prints Donna Jean Godchaux's credit as "Donna Godchaux".
+    "Donna Godchaux": ("Donna Jean Godchaux", "; source credit reads 'Donna Godchaux', matched to the existing person row"),
 }
 
 NON_PERSON_CREDITS = {"traditional", "[traditional]", "grateful dead", "unknown", ""}
@@ -100,7 +123,16 @@ def normalize_credit_name(name: str) -> str | None:
     name = name.strip()
     if not name or name.casefold() in NON_PERSON_CREDITS:
         return None
+    if name in RESOLVED_CREDIT_NAMES:
+        return RESOLVED_CREDIT_NAMES[name][0]
     return NAME_REPLACEMENTS.get(name, name)
+
+
+def credit_note(printed: str, base: str) -> str:
+    """The credit row's note: the source, plus the resolution when the printed name was resolved."""
+
+    resolved = RESOLVED_CREDIT_NAMES.get(printed.strip())
+    return f"{base.rstrip('.')}{resolved[1]}." if resolved else base
 
 
 def credit_set(work: dict) -> frozenset[tuple[str, str]]:
@@ -227,7 +259,7 @@ def main() -> None:
             role = {"composer": "music", "lyricist": "lyrics", "writer": "writer"}.get(credit["role"])
             name = normalize_credit_name(credit["name"])
             if role and name:
-                credits.append((name, role, "MusicBrainz exact-title work match."))
+                credits.append((name, role, credit_note(credit["name"], "MusicBrainz exact-title work match.")))
         mb_only_traditional_or_unmapped = bool(mb_credits) and not credits
 
         dn_fallback_attempted = not credits and dn_status == 200 and bool(dead.get("has_credits"))
@@ -238,7 +270,7 @@ def main() -> None:
             for name, role in dn_pairs:
                 normalized = normalize_credit_name(name)
                 if normalized:
-                    dn_named.append((normalized, role, "Dead.net song-page credit."))
+                    dn_named.append((normalized, role, credit_note(name, "Dead.net song-page credit.")))
             credits.extend(dn_named)
             dn_only_traditional = bool(dn_pairs) and not dn_named
 
@@ -363,7 +395,7 @@ def main() -> None:
     write_csv(CANONICAL / "people.csv", people, ["person_id", "name", "birth_date", "death_date", "notes"])
     write_csv(
         CANONICAL / "song_writers.csv",
-        sorted(writer_rows.values(), key=lambda row: (row["song_id"], row["writer_role"], row["person_id"])),
+        sorted(writer_rows.values(), key=lambda row: (row["song_id"], row["person_id"], row["writer_role"])),
         ["song_id", "person_id", "writer_role", "notes"],
     )
     write_csv(
@@ -373,7 +405,7 @@ def main() -> None:
     )
     write_csv(
         CANONICAL / "resource_songs.csv",
-        sorted(relation_keys.values(), key=lambda row: (row["song_id"], row["resource_id"], row["relationship_type"])),
+        list(relation_keys.values()),
         ["resource_id", "song_id", "relationship_type", "notes"],
     )
     write_csv(

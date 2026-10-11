@@ -24,8 +24,10 @@ def test_a_song_with_only_catalog_resources_is_not_cataloged():
     store = CanonicalStore()
     # A song whose only resources are catalog rows (MusicBrainz work, lyric
     # page). The targeted lore passes reach most of the repertoire now, so the
-    # example is a one-off cover rather than a repertoire staple.
-    song = store.resolve_song("Ballad Of Casey Jones")
+    # example is a one-off cover rather than a repertoire staple. (Ballad of
+    # Casey Jones served until 2026-10-09, when its 5/15/70 performance on
+    # Complete Road Trips was mapped and it gained an official version.)
+    song = store.resolve_song("Cathy's Clown")
     assert song is not None
     pathways = pathways_for(store, [("song", song["song_id"])])[song["song_id"]]
 

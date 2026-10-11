@@ -774,6 +774,29 @@ def validate(
             raise SystemExit(f"personnel row {key} has no instrument")
 
 
+def carry_forward_reviewed_values(new_releases: list[dict], previous_rows: list[dict]) -> None:
+    """Keep reviewed values a rerun would otherwise lose on this pass's own rows.
+
+    * A Spotify album link verified by hand (the 2026-09-10 catalog sweep) that
+      MusicBrainz does not carry is kept; a MusicBrainz link still wins.
+    * A release date sharpened from MusicBrainz's partial date by
+      ``normalize_wikipedia_album_dates.py`` is kept when it extends the date
+      MusicBrainz gives (``1972-05`` -> ``1972-05-01``); a value that disagrees
+      with MusicBrainz's is not.
+    """
+
+    previous = {row["release_id"]: row for row in previous_rows}
+    for row in new_releases:
+        before = previous.get(row["release_id"])
+        if not before:
+            continue
+        if not row.get("spotify_album_url") and before.get("spotify_album_url"):
+            row["spotify_album_url"] = before["spotify_album_url"]
+        old_date, new_date = before.get("release_date", ""), row.get("release_date", "")
+        if new_date and len(old_date) > len(new_date) and old_date.startswith(new_date):
+            row["release_date"] = old_date
+
+
 def main() -> None:
     songs = load_songs()
     _, song_rows = read_csv(CANONICAL / "songs.csv")
@@ -842,6 +865,7 @@ def main() -> None:
         decision["personnel_rows"] = len(rows)
         decision["personnel_held"] = len(held)
 
+    carry_forward_reviewed_values(new_releases, [row for row in existing_releases if owns_row(row)])
     new_releases.sort(key=lambda row: row["release_id"])
     order = {row["release_id"]: index for index, row in enumerate(new_releases)}
     new_tracks.sort(key=lambda row: (order[row["release_id"]], int(row["track_number"])))

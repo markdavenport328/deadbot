@@ -30,12 +30,22 @@ this pass there was no `band_memberships` table, and `birth_date`/
    sit-in, never counted as tenure) joined to `shows.csv` for each person's
    first and last documented show, and wrote
    `data/canonical/band_memberships.csv`: 13 rows for 12 people.
-3. The same 12 people's `birth_date`/`death_date` (and the two JerryBase
-   `(complete show)` duplicate identities, `person-bruce-hornsby-complete-show`
-   and `person-tom-constanten-complete-show`) were filled in
-   `data/canonical/people.csv` from the Wikidata records above. No other
-   column changed and no row was added, so the file stays a clean merge
-   alongside a concurrent writer-row pass.
+3. The same 12 people's `birth_date`/`death_date` (and, at the time, the two
+   JerryBase `(complete show)` duplicate identities
+   `person-bruce-hornsby-complete-show` and `person-tom-constanten-complete-show`)
+   were filled in `data/canonical/people.csv` from the Wikidata records above.
+   No other column changed and no row was added, so the file stays a clean
+   merge alongside a concurrent writer-row pass.
+
+   2026-10-09: those duplicate ids, and four more of the same JerryBase
+   qualifier pattern (Airto Moreira, Merl Saunders, Ned Lagin `(complete
+   show)`; Marvin Boxley `(songs unknown)`), were folded onto the plain person
+   by `scripts/normalize_jerrybase_performers.py --fold-qualified-people`. The
+   23 `show_performers.csv` rows moved to the plain id and keep the qualifier
+   as `JerryBase source name:` and `JerryBase source participation scope:`
+   notes; the six people rows were removed. The Hornsby membership note now
+   gives his guest span as 1988-06-25 through 1995-06-25 (the 1992-1995
+   returns had been counted only under the duplicate id).
 
 ## Scope
 
