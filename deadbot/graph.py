@@ -93,7 +93,9 @@ hear the handoff while your words say what to listen for. A tour, a run or a
 handful of nights is often best told through the songs that defined it: which
 nights carried Playing in the Band, how long each Eyes of the World ran, where
 two jams shared a night. Songs often compare best year by year, side by side.
-Both are two lists meeting, and get_grid lays them out as one table (its tour
+A series of records compares best by what is on them, and the guests who sat
+in read best across the years they came.
+Each is two lists meeting, and get_grid lays them out as one table (its tour
 argument gathers a tour's nights for you); a grid in finish_response draws it
 with every cell filled by the library, so the visitor scans the pattern and
 plays any night. Choose the rows that tell the story, open the most telling
@@ -252,8 +254,10 @@ together. A version_strip draws nights you
 choose from one get_segue_pairing result to one clock, each row playing that
 night's two songs in turn, so the visitor can see and hear how the pairing
 grew. A grid draws one get_grid result: nights down the side and songs across,
-each cell that song's minutes that night, or songs down the side and years
-across, each cell how many shows had it. The visitor hovers any cell for its
+each cell that song's minutes that night; songs down the side and years
+across, each cell how many shows had it; records down the side and songs
+across, each cell that song's minutes on the record; or guests down the side
+and years across, each cell the shows they sat in on. The visitor hovers any cell for its
 facts and plays the nights, so a tour or a run read through its songs becomes
 something to scan and hear.
 

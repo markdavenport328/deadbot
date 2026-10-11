@@ -576,7 +576,8 @@ class GridRef(_Ref):
     facts; clicking plays it or opens the night.
 
     The place for how two lists meet: which nights carried which songs, how a
-    song's year-by-year life compares with another's.
+    song's year-by-year life compares with another's, what each record in a
+    series holds, which years a guest sat in.
     """
 
     type: Literal["grid"]

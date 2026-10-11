@@ -330,7 +330,7 @@ def test_get_grid_kinds_are_an_enum_in_the_schema_and_a_bad_kind_reaches_the_too
     store = CanonicalStore()
     tool = _tool_by_name(store, "get_grid")
     properties = convert_to_openai_tool(tool)["function"]["parameters"]["properties"]
-    assert properties["row_kind"]["enum"] == ["song", "show"]
+    assert properties["row_kind"]["enum"] == ["song", "show", "release", "guest"]
     assert properties["column_kind"]["enum"] == ["year", "song"]
     payload = json.loads(tool.invoke({"row_kind": "venue", "column_kind": "song", "rows": ["x"], "columns": ["Dark Star"]}))
     assert payload["error"] == "Unsupported grid"
@@ -347,3 +347,44 @@ def test_get_grid_misspelled_tour_suggests_known_tours():
     assert payload["error"] == "No shows on that tour"
     assert "Europe 1972" in payload["closest_tours"]
     assert len(payload["closest_tours"]) <= 5
+
+
+def test_get_grid_takes_records_by_id_or_title_against_songs():
+    store = CanonicalStore()
+    result = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {
+                "row_kind": "release",
+                "rows": ["Dick's Picks 36", "release-dicks-picks-volume-16-1969-11-08"],
+                "column_kind": "song",
+                "columns": ["Dark Star"],
+            }
+        )
+    )
+    assert result["rows_are"] == "release" and result["measure"] == "minutes"
+    assert [row["id"] for row in result["rows"]] == ["release-dicks-picks-volume-36-1972-09-21", "release-dicks-picks-volume-16-1969-11-08"]
+    assert ["release-dicks-picks-volume-36-1972-09-21", "song-dark-star", 37, 1, "value"] in result["cells"]["rows"]
+
+
+def test_get_grid_names_the_records_it_could_not_resolve_with_close_titles():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {"row_kind": "release", "rows": ["Dicks Pics 36"], "column_kind": "song", "columns": ["Dark Star"]}
+        )
+    )
+    assert payload["error"] == "Release not found or ambiguous"
+    assert payload["query"] == ["Dicks Pics 36"]
+    assert any(entry["release_id"] == "release-dicks-picks-volume-36-1972-09-21" for entry in payload["closest"])
+
+
+def test_get_grid_takes_guests_by_name_across_years():
+    store = CanonicalStore()
+    tool = _tool_by_name(store, "get_grid")
+    result = json.loads(
+        tool.invoke({"row_kind": "guest", "rows": ["Bruce Hornsby"], "column_kind": "year", "year_from": 1988, "year_to": 1995})
+    )
+    assert result["rows"] == [{"id": "person-bruce-hornsby", "label": "Bruce Hornsby", "total": 16}]
+    assert ["person-bruce-hornsby", "year:1989", 3, 0, "value"] in result["cells"]["rows"]
+    missing = json.loads(tool.invoke({"row_kind": "guest", "rows": ["Nobody Zzz"], "column_kind": "year", "year_from": 1988, "year_to": 1989}))
+    assert missing["error"] == "Guest not found or ambiguous"

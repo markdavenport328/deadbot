@@ -728,7 +728,7 @@ class GridSuggestion(ExperienceModel):
 
 
 class GridSpecModel(ExperienceModel):
-    row_kind: Literal["song", "show"]
+    row_kind: Literal["song", "show", "release", "guest"]
     row_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
     column_kind: Literal["year", "song"]
     column_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
@@ -744,7 +744,7 @@ class GridBlock(ExperienceModel):
     title: str | None = None
     note: str | None = None
     coverage: str | None = None
-    row_kind: Literal["song", "show"]
+    row_kind: Literal["song", "show", "release", "guest"]
     column_kind: Literal["year", "song"]
     measure: Literal["shows", "minutes"]
     columns: list[GridColumn] = Field(min_length=1, max_length=LIST_CEILING)

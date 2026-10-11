@@ -1,10 +1,10 @@
 """Grids: two lists of library things and the fact where each pair meets.
 
 A grid's rows and columns are both library entities: songs across years,
-nights across songs. The model chooses the lists, their order and what to say
-about them; every cell here is read from the store, so one spec always draws
-the same grid. Reads use only rows_in, one and aggregate, which every store
-already implements identically.
+nights across songs, records across songs, guests across years. The model
+chooses the lists, their order and what to say about them; every cell here is
+read from the store, so one spec always draws the same grid. Builds read only
+rows_in, one and aggregate, which every store already implements identically.
 """
 
 from __future__ import annotations
@@ -12,7 +12,9 @@ from __future__ import annotations
 import calendar
 import hashlib
 import json
+import difflib
 import logging
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -31,6 +33,8 @@ YEAR_PREFIX = "year:"
 SUPPORTED_PAIRS: dict[tuple[str, str], str] = {
     ("song", "year"): "shows",
     ("show", "song"): "minutes",
+    ("release", "song"): "minutes",
+    ("guest", "year"): "shows",
 }
 
 CellState = Literal["value", "none", "no_length", "unknown"]
@@ -128,6 +132,7 @@ class GridData:
     columns: list[Axis]
     cells: dict[tuple[str, str], Cell]
     coverage_by_year: dict[int, tuple[int, int]] = field(default_factory=dict)
+    tracks_without_song: dict[str, tuple[int, int]] = field(default_factory=dict)  # release: (tracks, tracks naming no song)
     suggestions: list[dict[str, Any]] = field(default_factory=list)
 
     @property
@@ -153,7 +158,15 @@ class GridData:
             if (cell := self.cell(row.id, column.id)).state != "none"
         ]
         return {
-            "rows": [{"id": row.id, "label": row.label, **({"total": row.total} if row.total is not None else {})} for row in self.rows],
+            "rows": [
+                {
+                    "id": row.id,
+                    "label": row.label,
+                    **({"sub": row.sub} if row.sub else {}),
+                    **({"total": row.total} if row.total is not None else {}),
+                }
+                for row in self.rows
+            ],
             "columns": [{"id": column.id, "label": column.label} for column in self.columns],
             "cells": {"columns": ["row", "column", "value", "passes", "state"], "rows": table},
         }
@@ -185,6 +198,12 @@ def tool_payload(data: GridData) -> dict[str, Any]:
             for year, (on_record, with_setlist) in sorted(data.coverage_by_year.items())
             if with_setlist < on_record
         ]
+    if data.tracks_without_song:
+        coverage["tracks_without_song"] = [
+            {"release_id": release_id, "tracks": tracks, "without_song": blank}
+            for release_id, (tracks, blank) in data.tracks_without_song.items()
+            if blank
+        ]
     return {
         "grid_id": grid_id(data.spec),
         "rows_are": data.spec.row_kind,
@@ -201,9 +220,7 @@ def tool_payload(data: GridData) -> dict[str, Any]:
 
 
 def build(store: CanonicalStore, spec: GridSpec) -> GridData:
-    if spec.measure == "minutes":
-        return _show_by_song(store, spec)
-    return _song_by_year(store, spec)
+    return _BUILDERS[(spec.row_kind, spec.column_kind)](store, spec)
 
 
 # --- show × song -------------------------------------------------------------
@@ -334,13 +351,13 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
 # --- song × year -------------------------------------------------------------
 
 
-def _year_counts(store: CanonicalStore, song_id: str | None, year_from: int, year_to: int) -> aggregation.AggregationResult:
-    filters: dict[str, Any] = {"year_from": year_from, "year_to": year_to}
-    if song_id:
-        filters["song_id"] = song_id
+def _year_counts(
+    store: CanonicalStore, year_from: int, year_to: int, *, dataset: str = "performances", **ids: str
+) -> aggregation.AggregationResult:
+    filters: dict[str, Any] = {"year_from": year_from, "year_to": year_to, **ids}
     request = aggregation.parse_request(
         {
-            "dataset": "performances",
+            "dataset": dataset,
             "group_by": "year",
             "measure": "distinct_shows",
             "filters": filters,
@@ -358,7 +375,7 @@ def _song_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
     if not years or not row_ids:
         return GridData(spec=spec, rows=[], columns=[], cells={})
     year_from, year_to = min(years), max(years)
-    baseline = _year_counts(store, None, year_from, year_to)
+    baseline = _year_counts(store, year_from, year_to)
     coverage = {
         int(entry["year"]): (int(entry["shows_on_record"]), int(entry["shows_with_setlist"]))
         for entry in (baseline.setlist_coverage or {}).get("by_year", [])
@@ -366,7 +383,7 @@ def _song_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
     cells: dict[tuple[str, str], Cell] = {}
     rows = []
     for song_id in row_ids:
-        result = _year_counts(store, song_id, year_from, year_to)
+        result = _year_counts(store, year_from, year_to, song_id=song_id)
         by_year = {int(row["year"]): int(row["value"] or 0) for row in result.rows}
         total = 0
         for year in years:
@@ -377,8 +394,211 @@ def _song_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
                 Cell(state="value", value=value, of_shows=of_shows) if value else Cell(state="none", of_shows=of_shows)
             )
         rows.append(Axis(id=song_id, label=songs[song_id].get("title") or song_id, total=total))
-    columns = [Axis(id=year_id(year), label=f"'{str(year)[2:]}", sub=str(year)) for year in years]
-    return GridData(spec=spec, rows=rows, columns=columns, cells=cells, coverage_by_year=coverage)
+    return GridData(spec=spec, rows=rows, columns=_year_columns(years), cells=cells, coverage_by_year=coverage)
+
+
+def _year_columns(years: list[int]) -> list[Axis]:
+    return [Axis(id=year_id(year), label=f"'{str(year)[2:]}", sub=str(year)) for year in years]
+
+
+# --- guest × year ------------------------------------------------------------
+
+
+def _guest_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
+    """Shows each guest sat in on, year by year, counted as aggregate_data counts them."""
+
+    years = [year for year in (parse_year(value) for value in spec.column_ids) if year is not None]
+    people = {row["person_id"]: row for row in store.rows_in("people", "person_id", spec.row_ids)}
+    row_ids = [person_id for person_id in spec.row_ids if person_id in people]
+    if not years or not row_ids:
+        return GridData(spec=spec, rows=[], columns=[], cells={})
+    year_from, year_to = min(years), max(years)
+    cells: dict[tuple[str, str], Cell] = {}
+    rows = []
+    for person_id in row_ids:
+        result = _year_counts(store, year_from, year_to, dataset="guest_appearances", guest_id=person_id)
+        by_year = {int(row["year"]): int(row["value"] or 0) for row in result.rows}
+        total = 0
+        for year in years:
+            value = by_year.get(year, 0)
+            total += value
+            cells[(person_id, year_id(year))] = Cell(state="value", value=value) if value else Cell(state="none")
+        rows.append(Axis(id=person_id, label=people[person_id].get("name") or person_id, total=total))
+    return GridData(spec=spec, rows=rows, columns=_year_columns(years), cells=cells)
+
+
+# --- release × song ----------------------------------------------------------
+
+_VOLUME = re.compile(r"(?<=[^\W\d_]), Vol(?:ume|\.) (\d+)$")
+_SERIES_PARENTHESIS = re.compile(r"^(.*, Vol(?:ume|\.) \d+) \((.+)\)$")
+
+
+def release_label(title: str) -> tuple[str, str | None]:
+    """A record's row name and sub line, cut from its own title and nothing else.
+
+    "Dick's Picks, Volume 36: The Spectrum, Philadelphia, PA 9/21/72" reads as
+    "Dick's Picks 36" over "The Spectrum, Philadelphia, PA 9/21/72". A volume
+    number joins a series name only where the name ends in a word, so
+    "Europe '72, Vol. 01" keeps its own words.
+    """
+
+    title = str(title or "").strip()
+    head, sub = title, None
+    if ": " in title:
+        head, sub = (part.strip() for part in title.split(": ", 1))
+    elif match := _SERIES_PARENTHESIS.match(title):
+        head, sub = match.group(1), match.group(2).strip()
+    return _VOLUME.sub(r" \1", head), sub or None
+
+
+_DASHES = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2010": "-", "\u2011": "-", "\u2013": "-", "\u2014": "-"})
+
+
+def _plain(text: str) -> str:
+    return " ".join(str(text or "").translate(_DASHES).casefold().split())
+
+
+def _mentions(track_title: str, song_title: str) -> bool:
+    """Whether a track's own title names the song as a whole word or phrase."""
+
+    needle = _plain(song_title)
+    return bool(needle) and re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", _plain(track_title)) is not None
+
+
+def resolve_release(store: CanonicalStore, identifier: str) -> dict[str, str] | None:
+    """A record by ID, title, or the short name its grid row carries ("Dick's Picks 36")."""
+
+    found = store.resolve_release(identifier)
+    if found:
+        return found
+    needle = _plain(identifier)
+    if not needle:
+        return None
+    releases = store.rows("official_releases")
+    names = [(row, _plain(row.get("title", "")), _plain(release_label(row.get("title", ""))[0])) for row in releases]
+    exact = [row for row, title, label in names if needle in (title, label)]
+    if exact:
+        return exact[0] if len(exact) == 1 else None
+    partial = [row for row, title, label in names if needle in title or needle in label]
+    return partial[0] if len(partial) == 1 else None
+
+
+def closest_releases(store: CanonicalStore, identifier: str, limit: int = 5) -> list[dict[str, str]]:
+    """The records whose names are nearest a name that did not resolve, so the model can retry by ID."""
+
+    by_name: dict[str, dict[str, str]] = {}
+    for row in store.rows("official_releases"):
+        by_name.setdefault(_plain(release_label(row.get("title", ""))[0]), row)
+        by_name.setdefault(_plain(row.get("title", "")), row)
+    chosen: dict[str, dict[str, str]] = {}
+    for name in difflib.get_close_matches(_plain(identifier), list(by_name), n=limit * 2, cutoff=0.5):
+        row = by_name[name]
+        chosen.setdefault(row["release_id"], {"release_id": row["release_id"], "title": row.get("title", "")})
+    return list(chosen.values())[:limit]
+
+
+def _number(value: str) -> int:
+    text = str(value or "").strip()
+    return int(text) if text.isdigit() else 10**9
+
+
+def _release_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
+    """Minutes each song takes up on each record, from the record's own track lengths."""
+
+    releases = {row["release_id"]: row for row in store.rows_in("official_releases", "release_id", spec.row_ids)}
+    row_ids = [release_id for release_id in spec.row_ids if release_id in releases]
+    by_release: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for track in store.rows_in("official_release_tracks", "release_id", row_ids):
+        by_release[track["release_id"]].append(track)
+    for tracks in by_release.values():
+        tracks.sort(key=lambda track: (_number(track.get("track_number", "")), track.get("track_title", "")))
+
+    song_ids = {t.get("song_id", "") for tracks in by_release.values() for t in tracks} - {""} | set(spec.column_ids)
+    songs = {row["song_id"]: row for row in store.rows_in("songs", "song_id", song_ids)}
+    column_ids = [song_id for song_id in spec.column_ids if song_id in songs]
+    column_set = set(column_ids)
+    title = lambda song_id: songs.get(song_id, {}).get("title") or song_id  # noqa: E731
+
+    wanted = [
+        t["performance_id"]
+        for tracks in by_release.values()
+        for t in tracks
+        if t.get("song_id") in column_set and t.get("performance_id", "").strip()
+    ]
+    tape = _archive_tracks(store, wanted)
+    set_labels = {row["performance_id"]: row.get("set_label", "") for row in store.rows_in("performances", "performance_id", wanted)}
+
+    cells: dict[tuple[str, str], Cell] = {}
+    seconds_by_cell: dict[tuple[str, str], int] = defaultdict(int)
+    for release_id in row_ids:
+        tracks = by_release.get(release_id, [])
+        for track in tracks:
+            song_id = track.get("song_id", "")
+            if song_id not in column_set:
+                continue
+            key = (release_id, song_id)
+            cell = cells.setdefault(key, Cell(state="no_length"))
+            cell.passes += 1
+            performance_id = track.get("performance_id", "").strip()
+            if performance_id:
+                cell.performance_ids = (*cell.performance_ids, performance_id)
+                if (found := tape.get(performance_id)) is not None:
+                    cell.tracks = (*cell.tracks, (performance_id, set_labels.get(performance_id, ""), found))
+            seconds = str(track.get("duration_seconds") or "").strip()
+            if seconds.isdigit() and int(seconds) > 0:
+                seconds_by_cell[key] += int(seconds)
+                cell.length_source = "release"
+        # A track naming no song keeps a song it mentions an open question, not an absence.
+        unnamed = [t.get("track_title", "") for t in tracks if not t.get("song_id", "").strip()]
+        for song_id in column_ids:
+            if (release_id, song_id) not in cells and any(_mentions(name, title(song_id)) for name in unnamed):
+                cells[(release_id, song_id)] = Cell(state="unknown")
+    for key, cell in cells.items():
+        if seconds_by_cell.get(key):
+            cell.state = "value"
+            cell.value = round(seconds_by_cell[key] / 60)
+
+    rows = []
+    for release_id in row_ids:
+        label, sub = release_label(releases[release_id].get("title") or release_id)
+        rows.append(Axis(id=release_id, label=label, sub=sub, setlist=[_track_entry(t) for t in by_release.get(release_id, [])]))
+    columns = [Axis(id=song_id, label=title(song_id)) for song_id in column_ids]
+    # Songs on the most of these records that are not yet columns: the "Add a column" menu.
+    counts: dict[str, int] = defaultdict(int)
+    for release_id in row_ids:
+        for song_id in {t.get("song_id", "") for t in by_release.get(release_id, [])} - {""} - column_set:
+            counts[song_id] += 1
+    suggestions = [
+        {"id": song_id, "label": title(song_id), "rows_with": count}
+        for song_id, count in sorted(counts.items(), key=lambda item: (-item[1], title(item[0])))[:12]
+    ]
+    blanks = {
+        release_id: (len(tracks := by_release.get(release_id, [])), sum(1 for t in tracks if not t.get("song_id", "").strip()))
+        for release_id in row_ids
+    }
+    return GridData(spec=spec, rows=rows, columns=columns, cells=cells, tracks_without_song=blanks, suggestions=suggestions)
+
+
+def _track_entry(track: dict[str, str]) -> dict[str, Any]:
+    """One line of a record's tracklist for the row's drawer, read from the track row."""
+
+    name = str(track.get("track_title") or "").strip()
+    segue = name.endswith(">")
+    disc = re.match(r"disc (\d+) track", str(track.get("notes") or ""), re.IGNORECASE)
+    return {
+        "song_id": track.get("song_id", "").strip(),
+        "title": name[:-1].rstrip() if segue else name,
+        "set_label": f"Disc {disc.group(1)}" if disc else "",
+        "segue": segue,
+    }
+
+
+_BUILDERS = {
+    ("song", "year"): _song_by_year,
+    ("show", "song"): _show_by_song,
+    ("release", "song"): _release_by_song,
+    ("guest", "year"): _guest_by_year,
+}
 
 
 def grid_block(

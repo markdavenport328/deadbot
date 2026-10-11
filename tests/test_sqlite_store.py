@@ -199,3 +199,16 @@ def test_aggregate_data_tool_ranks_most_played_songs_from_sqlite(store, csv_stor
     assert values == sorted(values, reverse=True) and values[0] > 0
     assert result["total"] == len(csv_store.rows("performances"))
     assert result["setlist_coverage"]["shows_with_setlist"] > 0
+
+
+@pytest.mark.parametrize("query", ["Bruce Hornsby", "person-bruce-hornsby", "hornsby"])
+def test_resolve_person_matches_the_csv_store(store, csv_store, query):
+    person = csv_store.resolve_person(query)
+    assert person is not None and person["person_id"] == "person-bruce-hornsby"
+    assert store.resolve_person(query) == person
+
+
+def test_resolve_person_leaves_an_unknown_or_ambiguous_name_unresolved(store, csv_store):
+    for query in ("Nobody Zzz", "John"):
+        assert csv_store.resolve_person(query) is None
+        assert store.resolve_person(query) is None

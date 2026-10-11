@@ -212,6 +212,13 @@ class CanonicalStore:
         matches = self.show_candidates(identifier)
         return matches[0] if len(matches) == 1 else None
 
+    def resolve_person(self, identifier: str) -> dict[str, str] | None:
+        direct = self.one("people", identifier)
+        if direct:
+            return direct
+        matches = self.matching_rows("people", identifier, ("name",))
+        return matches[0] if len(matches) == 1 else None
+
     def resolve_equipment(self, identifier: str) -> dict[str, str] | None:
         direct = self.one("equipment", identifier)
         if direct:

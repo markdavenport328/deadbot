@@ -735,7 +735,7 @@ export interface components {
              * Row Kind
              * @enum {string}
              */
-            row_kind: "song" | "show";
+            row_kind: "song" | "show" | "release" | "guest";
             /** Rows */
             rows: components["schemas"]["GridRow"][];
             spec: components["schemas"]["GridSpecModel"];
@@ -852,7 +852,7 @@ export interface components {
              * Row Kind
              * @enum {string}
              */
-            row_kind: "song" | "show";
+            row_kind: "song" | "show" | "release" | "guest";
         };
         /** GridSuggestion */
         GridSuggestion: {
