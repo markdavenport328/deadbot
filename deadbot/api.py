@@ -23,7 +23,7 @@ from deadbot import composition, finish, grids
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, SongYearDetail
+from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, SongYearDetail, fit
 from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
@@ -448,8 +448,8 @@ def create_app(
     def reshape_grid(request: GridRequest, http_request: Request) -> GridBlock:
         """Rebuild a grid from the library after the visitor adds or removes a list.
 
-        The model's picks (highlights and chips) belong to the grid it
-        wrote, so they are not part of the rebuilt block.
+        The model's headline, note, cell notes and follow-up chips come back
+        with it; a note whose cell is gone drops away.
         """
 
         _enforce_rate_limit(http_request, grid=True)
@@ -462,11 +462,10 @@ def create_app(
             {"spec": spec.to_json(), "grid_id": grids.grid_id(spec)},
             row_ids=None,
             open_rows=request.open_rows,
-            highlights=[],
+            highlights=[h.model_dump() for h in fit(request.highlights, "grid highlights")],
             title=_trim_text(request.title, GRID_TITLE_CEILING, "grid title"),
             note=_trim_text(request.note, GRID_TEXT_CEILING, "grid note"),
-            coverage=_trim_text(request.coverage, GRID_TEXT_CEILING, "grid coverage"),
-            follow_ups=[],
+            follow_ups=fit(request.follow_ups, "grid follow-ups"),
         )
         if block is None:
             raise HTTPException(status_code=404, detail="The library has nothing to draw for those lists.")

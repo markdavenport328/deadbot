@@ -41,7 +41,7 @@ def test_grid_endpoint_adds_a_column(client):
     assert body["grid_id"].startswith("grid:")
 
 
-def test_grid_endpoint_keeps_the_original_words_and_drops_the_models_picks(client):
+def test_grid_endpoint_keeps_the_original_words_with_no_picks_sent(client):
     response = client.post(
         "/api/grid",
         json={
@@ -56,9 +56,29 @@ def test_grid_endpoint_keeps_the_original_words_and_drops_the_models_picks(clien
     assert body["note"] == "Written for the first grid."
     assert body["open_rows"] == 1
     assert body["follow_ups"] == []
-    assert body["coverage"] is None
+    assert "coverage" not in body
     assert not any(cell["highlight"] for row in body["rows"] for cell in row["cells"])
     assert body["suggestions"]
+
+
+def test_grid_endpoint_keeps_the_models_cell_notes_and_chips_for_cells_that_remain(client):
+    chip = {"label": "More Dark Star", "question": "Tell me more about Dark Star.", "extra": "ignored"}
+    response = client.post(
+        "/api/grid",
+        json={
+            "spec": spec(["song-dark-star"]),
+            "highlights": [
+                {"row_id": "gd-1972-05-11", "column_id": "song-dark-star", "note": "The longest of the tour.", "x": 1},
+                {"row_id": "gd-1972-05-11", "column_id": "song-morning-dew", "note": "Its column was removed."},
+            ],
+            "follow_ups": [chip],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    noted = [cell for row in body["rows"] for cell in row["cells"] if cell["highlight"]]
+    assert [cell["note"] for cell in noted] == ["The longest of the tour."]
+    assert [(f["label"], f["question"]) for f in body["follow_ups"]] == [("More Dark Star", "Tell me more about Dark Star.")]
 
 
 def test_grid_endpoint_keeps_the_row_order_the_visitor_sees(client):
@@ -115,19 +135,19 @@ def test_a_long_note_still_reshapes_and_comes_back_intact(client):
 
 def test_a_note_past_the_ceiling_is_cut_not_refused(client):
     response = client.post(
-        "/api/grid", json={"spec": spec(["song-dark-star"]), "note": "x" * 15_000, "coverage": "y" * 15_000}
+        "/api/grid", json={"spec": spec(["song-dark-star"]), "note": "x" * 15_000}
     )
     assert response.status_code == 200
     body = response.json()
     assert len(body["note"]) == 10_000
-    assert len(body["coverage"]) == 10_000
 
 
-def test_grid_endpoint_hands_the_coverage_back(client):
-    body = client.post(
+def test_an_old_request_that_still_sends_coverage_is_read_and_the_block_has_none(client):
+    response = client.post(
         "/api/grid", json={"spec": spec(["song-dark-star"]), "coverage": "Setlists are thin before 1971."}
-    ).json()
-    assert body["coverage"] == "Setlists are thin before 1971."
+    )
+    assert response.status_code == 200
+    assert "coverage" not in response.json()
 
 
 def test_reshapes_have_their_own_rate_limit_bucket(built_sqlite, tmp_path):

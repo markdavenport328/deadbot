@@ -12,7 +12,7 @@ def test_grids_suite_passes(built_sqlite, tmp_path):
         result = evaluate_suite(SUITE, store=store)
     finally:
         store.close()
-    assert result["total"] == 5
+    assert result["total"] == 7
     assert result["failed"] == 0, result
 
 

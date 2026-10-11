@@ -254,8 +254,8 @@ _SortArg = Annotated[str | None, _one_of(get_args(aggregation.Sort))]
 _SongOrShowArg = Annotated[str, _one_of(("song", "show"))]
 _ShowOrPerformanceArg = Annotated[str, _one_of(("show", "performance"))]
 _TransitionArg = Annotated[str, _one_of(sequences.TRANSITIONS)]
-_GridRowKindArg = Annotated[str, _one_of(("song", "show"))]
-_GridColumnKindArg = Annotated[str, _one_of(("year", "song"))]
+_GridRowKindArg = Annotated[str, _one_of(list(dict.fromkeys(row for row, _ in grids.SUPPORTED_PAIRS)))]
+_GridColumnKindArg = Annotated[str, _one_of(list(dict.fromkeys(column for _, column in grids.SUPPORTED_PAIRS)))]
 
 
 # The architecture doc's hard ceiling for one tool result (about 20,000
@@ -2248,6 +2248,24 @@ def build_tools(
             if missing:
                 return _json({"error": "Song not found or ambiguous", "query": missing})
             return [song["song_id"] for song in resolved if song]
+        if kind == "release":
+            records = [grids.resolve_release(store, value) for value in rows]
+            missing = [value for value, record in zip(rows, records) if not record]
+            if missing:
+                closest = [match for value in missing for match in grids.closest_releases(store, value)]
+                return _json({"error": "Release not found or ambiguous", "query": missing, "closest": closest})
+            if not records:
+                return _json({"error": "Name the records as rows"})
+            return [record["release_id"] for record in records if record]
+        if kind == "guest":
+            people = [grids.resolve_guest(store, value) for value in rows]
+            missing = [value for value, person in zip(rows, people) if not person]
+            if missing:
+                closest = [match for value in missing for match in grids.closest_guests(store, value)]
+                return _json({"error": "Guest not found or ambiguous", "query": missing, "closest": closest})
+            if not people:
+                return _json({"error": "Name the guests as rows"})
+            return [person["person_id"] for person in people if person]
         if rows:
             resolved = [store.resolve_show(value) for value in rows]
             missing = [value for value, show in zip(rows, resolved) if not show]
@@ -2290,16 +2308,19 @@ def build_tools(
         """Two lists of library things and the fact where each pair meets, as one table.
 
         Songs across years (row_kind "song", column_kind "year"): each cell is
-        how many shows that year had the song, with each year's setlist
-        coverage. Nights across songs (row_kind "show", column_kind "song"):
-        each cell is the minutes that song ran that night, the passes it took,
-        its set, what it came out of and went into, and where the length came
-        from. rows and columns take IDs or titles, in the order you want them.
-        For show rows, tour (a tour name) selects the nights when rows is
-        empty, and is used only then; for year columns, year_from and year_to set the span.
-        The result carries a grid_id for a grid in finish_response, the filled
-        cells as one compact table, coverage facts, and for nights the songs
-        played most on them that are not yet columns.
+        how many shows that year had the song. Nights across songs (row_kind
+        "show", column_kind "song"): each cell is the minutes that song ran that
+        night, the passes it took, its set, and what it came out of and went
+        into. Records across songs (row_kind "release", column_kind "song"):
+        each cell is the minutes that song takes up on that record and the
+        tracks it spans. Guests across years (row_kind "guest", column_kind
+        "year"): each cell is how many shows that guest sat in on that year.
+        rows and columns take IDs, titles or names, in the order you want them.
+        For show rows, tour (a tour name) gathers that tour's nights in place
+        of rows; for year columns, year_from and year_to set the span. The
+        result carries a grid_id for a grid in finish_response, the filled
+        cells as one compact table, and for nights or records the songs on most
+        of them that are not yet columns.
         """
         if (row_kind, column_kind) not in grids.SUPPORTED_PAIRS:
             return _json({"error": "Unsupported grid", "valid": [f"{r} x {c}" for r, c in grids.SUPPORTED_PAIRS]})
@@ -2309,12 +2330,12 @@ def build_tools(
         column_ids = _grid_columns(column_kind, columns or [], year_from, year_to)
         if isinstance(column_ids, str):
             return column_ids
-        spec = grids.GridSpec.from_json(
+        spec, rows_cut, columns_cut = grids.GridSpec.parse(
             {"row_kind": row_kind, "row_ids": row_ids, "column_kind": column_kind, "column_ids": column_ids}
         )
         if spec is None:
             return _json({"error": "Unsupported grid", "valid": [f"{r} x {c}" for r, c in grids.SUPPORTED_PAIRS]})
-        return _json(grids.tool_payload(grids.build(store, spec)))
+        return _json(grids.tool_payload(grids.build(store, spec), rows_cut=rows_cut, columns_cut=columns_cut))
 
     @tool
     def aggregate_data(

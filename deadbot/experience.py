@@ -771,6 +771,8 @@ class GridCell(ExperienceModel):
     state: Literal["value", "none", "no_length", "unknown"]
     value: int | None = Field(default=None, ge=0)
     passes: int = Field(default=0, ge=0)
+    # Passes with a known length; fewer than passes means the value is partial.
+    timed: int = Field(default=0, ge=0)
     set_label: str | None = None
     segue_from: str | None = None
     segue_into: str | None = None
@@ -804,7 +806,7 @@ class GridSuggestion(ExperienceModel):
 
 
 class GridSpecModel(ExperienceModel):
-    row_kind: Literal["song", "show"]
+    row_kind: Literal["song", "show", "release", "guest"]
     row_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
     column_kind: Literal["year", "song"]
     column_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
@@ -819,8 +821,7 @@ class GridBlock(ExperienceModel):
     grid_id: str
     title: str | None = None
     note: str | None = None
-    coverage: str | None = None
-    row_kind: Literal["song", "show"]
+    row_kind: Literal["song", "show", "release", "guest"]
     column_kind: Literal["year", "song"]
     measure: Literal["shows", "minutes"]
     columns: list[GridColumn] = Field(min_length=1, max_length=LIST_CEILING)
@@ -832,16 +833,29 @@ class GridBlock(ExperienceModel):
     spec: GridSpecModel
 
 
+class GridHighlightNote(ModelAuthored):
+    """A cell the model pointed at, and what it said there."""
+
+    row_id: str
+    column_id: str
+    note: str | None = None
+
+
 class GridRequest(ExperienceModel):
     """A visitor's reshape of a grid: the lists as they now stand, plus the
-    model's headline, note and coverage, which the server hands back unchanged."""
+    model's headline, note, cell notes and follow-up chips, which the server
+    hands back with the cells that remain."""
+
+    # A page opened before the coverage field was removed may still send it.
+    model_config = ConfigDict(extra="ignore")
 
     spec: GridSpecModel
     # Only a transport ceiling: a block the server produced must always reshape.
     title: str | None = Field(default=None, max_length=20_000)
     note: str | None = Field(default=None, max_length=20_000)
-    coverage: str | None = Field(default=None, max_length=20_000)
     open_rows: int | None = Field(default=None, ge=1)
+    highlights: list[GridHighlightNote] = Field(default_factory=list)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
 class ProvenanceNoteBlock(ExperienceModel):

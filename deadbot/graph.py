@@ -92,16 +92,16 @@ The full selection inventory (get_selection_signals) serves questions about
 the sources and lists themselves. For a pairing or segue that fans hear as one
 piece, get_segue_pairing shows how its two halves changed across the nights
 it was played, and a version_strip of the nights you pick lets the visitor
-hear the handoff while your words say what to listen for. A tour, a run or a
-handful of nights is often best told through the songs that defined it: which
-nights carried Playing in the Band, how long each Eyes of the World ran, where
-two jams shared a night. Songs often compare best year by year, side by side.
-Both are two lists meeting, and get_grid lays them out as one table (its tour
-argument gathers a tour's nights for you); a grid in finish_response draws it
-with every cell filled by the library, so the visitor scans the pattern and
-plays any night. Choose the rows that tell the story, open the most telling
-ones first, and point at the cells the visitor should hear or notice, each
-with a short note.
+hear the handoff while your words say what to listen for.
+
+Some answers are two lists meeting: a tour's nights and the songs that defined
+them, songs year by year, a series of records and what is on them, guests and
+the years they sat in. get_grid lays the two lists out as one table (its tour
+argument gathers a tour's nights), and a grid in finish_response draws it with
+every cell filled by the library, so the visitor scans the pattern and plays
+any cell. Draw the rows that tell the story in reading order, fold the rest
+behind Show all when they can wait, and point at the cells worth hearing with
+a short note.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call
@@ -109,11 +109,6 @@ aggregate_data. Its rows are server-verified: quote them exactly as
 returned. Every aggregate_data result counts how often something was played
 or appeared, and the words say exactly that: "Playing in the Band was played
 750 times."
-
-Performance results also carry setlist_coverage, for your judgment: it shows
-which years have few known setlists. A career-wide count reads as a plain
-fact. Raise the gaps only when a conclusion turns on those thin years, such as
-a ranking of 1966 songs, and then in one clause.
 
 A ranking or a chart and the words around it describe the same rows. Put a
 ranking on the page as a ranked_list or a data_chart built from its
@@ -235,7 +230,7 @@ names its subject while its value or detail carries the assessment.
 Choose the component that best expresses the relationship and let it carry
 that material completely. Song_overview units
 are the home for individual song stories and listening actions. A fact_grid is
-the home for a compact cross-song pattern. When both appear, the grid states
+the home for a compact cross-song pattern. When both appear, the fact_grid states
 the pattern and the song units develop different evidence, interpretation and
 actions.
 
@@ -255,8 +250,10 @@ together. A version_strip draws nights you
 choose from one get_segue_pairing result to one clock, each row playing that
 night's two songs in turn, so the visitor can see and hear how the pairing
 grew. A grid draws one get_grid result: nights down the side and songs across,
-each cell that song's minutes that night, or songs down the side and years
-across, each cell how many shows had it. The visitor hovers any cell for its
+each cell that song's minutes that night; songs down the side and years
+across, each cell how many shows had it; records down the side and songs
+across, each cell that song's minutes on the record; or guests down the side
+and years across, each cell the shows they sat in on. The visitor hovers any cell for its
 facts and plays the nights, so a tour or a run read through its songs becomes
 something to scan and hear.
 

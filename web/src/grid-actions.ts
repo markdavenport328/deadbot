@@ -72,6 +72,18 @@ function reshapedSpec(block: GridBlock, change: GridChange): GridBlock["spec"] {
   };
 }
 
+// The cells the model pointed at, with what it said at each, so a redraw keeps
+// the notes whose cells are still on the grid.
+function highlightedCells(block: GridBlock): { row_id: string; column_id: string; note: string | null }[] {
+  return block.rows.flatMap((row) =>
+    (row.cells ?? []).flatMap((cell, index) =>
+      cell.highlight && block.columns[index]
+        ? [{ row_id: row.id, column_id: block.columns[index].id, note: cell.note ?? null }]
+        : [],
+    ),
+  );
+}
+
 export class GridReshapeError extends Error {
   constructor(readonly status: number) {
     super(`The grid could not be reshaped (${status}).`);
@@ -79,8 +91,9 @@ export class GridReshapeError extends Error {
 }
 
 // Ask the server to redraw this grid with one list added or removed. The
-// headline, note and coverage go along and come back as they were; the cells, tracks
-// and suggestions are filled fresh from the library.
+// headline, note, cell notes and follow-up chips go along and come back with
+// whatever of them still fits; the cells, tracks and suggestions are filled
+// fresh from the library.
 export async function reshapeGrid(block: GridBlock, change: GridChange): Promise<GridBlock> {
   const result = await fetch("/api/grid", {
     method: "POST",
@@ -89,8 +102,9 @@ export async function reshapeGrid(block: GridBlock, change: GridChange): Promise
       spec: reshapedSpec(block, change),
       title: block.title ?? null,
       note: block.note ?? null,
-      coverage: block.coverage ?? null,
       open_rows: block.open_rows ?? null,
+      highlights: highlightedCells(block),
+      follow_ups: block.follow_ups ?? [],
     }),
   });
   if (!result.ok) throw new GridReshapeError(result.status);

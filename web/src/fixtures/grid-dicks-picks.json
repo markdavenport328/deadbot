@@ -1,0 +1,1504 @@
+{
+ "type": "grid",
+ "grid_id": "grid:c95157a97775",
+ "title": "Where the long jams live.",
+ "note": "The 1972 volumes give a whole side to Dark Star; Nassau '81 is songs and segues.",
+ "row_kind": "release",
+ "column_kind": "song",
+ "measure": "minutes",
+ "columns": [
+  {
+   "id": "song-dark-star",
+   "label": "Dark Star",
+   "sub": null
+  },
+  {
+   "id": "song-the-other-one",
+   "label": "The Other One",
+   "sub": null
+  },
+  {
+   "id": "song-playing-in-the-band",
+   "label": "Playing In The Band",
+   "sub": null
+  },
+  {
+   "id": "song-scarlet-begonias",
+   "label": "Scarlet Begonias",
+   "sub": null
+  },
+  {
+   "id": "song-morning-dew",
+   "label": "Morning Dew",
+   "sub": null
+  }
+ ],
+ "rows": [
+  {
+   "id": "release-dicks-picks-volume-36-1972-09-21",
+   "label": "Dick\u2019s Picks 36",
+   "sub": "The Spectrum, Philadelphia, PA 9/21/72",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 37,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-09-21-dark-star-2-5",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd72-09-21.sbd.masse.7296.sbeok.shnf/gd72-9-21d3t02.mp3",
+       "duration_seconds": 1202,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": true,
+     "note": "The longest Dark Star in the series."
+    },
+    {
+     "state": "value",
+     "value": 29,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 17,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-09-21-morning-dew-2-7",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd72-09-21.sbd.masse.7296.sbeok.shnf/gd72-9-21d3t03.mp3",
+       "duration_seconds": 389,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-promised-land",
+     "title": "Promised Land",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-bird-song",
+     "title": "Bird Song",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black\u2010Throated Wind",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-river",
+     "title": "Big River",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing in the Band",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He\u2019s Gone",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin\u2019",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-peter",
+     "title": "Black Peter",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-morning-dew",
+     "title": "Morning Dew",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down the Line",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-mississippi-half-step",
+     "title": "Mississippi Half\u2010Step Uptown Toodeloo",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-friend-of-the-devil",
+     "title": "Friend of the Devil",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Disc 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin\u2019 Down the Road Feeling Bad",
+     "set_label": "Disc 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Disc 4",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Disc 4",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He\u2019s Gone",
+     "set_label": "Disc 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Disc 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Disc 4",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "release-dicks-picks-volume-16-1969-11-08",
+   "label": "Dick\u2019s Picks 16",
+   "sub": "Fillmore Auditorium 11/8/69",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 18,
+     "passes": 3,
+     "timed": 3,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1969-11-08-dark-star-2-1",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1969-11-08.sbd.wise.17433.shnf/gd69-11-08d1t03.mp3",
+       "duration_seconds": 882,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1969-11-08-dark-star-2-3",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1969-11-08.sbd.wise.17433.shnf/gd69-11-08d1t05.mp3",
+       "duration_seconds": 65,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1969-11-08-dark-star-2-5",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1969-11-08.sbd.wise.17433.shnf/gd69-11-08d1t07.mp3",
+       "duration_seconds": 203,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1969-11-08-the-other-one-2-2",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1969-11-08.sbd.wise.17433.shnf/gd69-11-08d1t04.mp3",
+       "duration_seconds": 720,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-good-morning-little-schoolgirl",
+     "title": "Good Morning Little Schoolgirl",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-easy-wind",
+     "title": "Easy Wind",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-high-time",
+     "title": "High Time",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mama-tried",
+     "title": "Mama Tried",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin\u2019",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John\u2019s Band Jam",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-saint-stephen",
+     "title": "St. Stephen",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-eleven",
+     "title": "The Eleven",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution (Do Not Stop on Tracks)",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-main-ten",
+     "title": "The Main Ten",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution (Do Not Stop on Tracks)",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-feedback",
+     "title": "Feedback",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-and-we-bid-you-good-night",
+     "title": "We Bid You Goodnight",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-turn-on-your-lovelight",
+     "title": "Turn On Your Lovelight",
+     "set_label": "Disc 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "release-dicks-picks-volume-11-1972-09-27",
+   "label": "Dick\u2019s Picks 11",
+   "sub": "Stanley Theater 9/27/72",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 31,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-09-27-dark-star-2-6",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd72-09-27.sbd.vernon.18106.sbeok.shnf/gd72-09-27d3t01.mp3",
+       "duration_seconds": 1041,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 16,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-09-27-playing-in-the-band-1-13",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd72-09-27.sbd.vernon.18106.sbeok.shnf/gd72-09-27d2t01.mp3",
+       "duration_seconds": 561,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 13,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-09-27-morning-dew-1-1",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd72-09-27.sbd.vernon.18106.sbeok.shnf/gd72-09-27d1t01.mp3",
+       "duration_seconds": 407,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-morning-dew",
+     "title": "Morning Dew",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down the Line",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-friend-of-the-devil",
+     "title": "Friend of the Devil",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black\u2010Throated Wind",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-bird-song",
+     "title": "Bird Song",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-river",
+     "title": "Big River",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brokedown-palace",
+     "title": "Brokedown Palace",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing in the Band",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He\u2019s Gone",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me and My Uncle",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-attics-of-my-life",
+     "title": "Attics of My Life",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-promised-land",
+     "title": "Promised Land",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John\u2019s Band",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-around-and-around",
+     "title": "Around and Around",
+     "set_label": "Disc 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "release-dicks-picks-volume-4-fillmore-east-1996",
+   "label": "Dick\u2019s Picks 4",
+   "sub": "Fillmore East 2/13\u201314/70",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 30,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "unknown",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "",
+     "title": "Intro by Zacherle",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dancin-in-the-streets",
+     "title": "Dancing in the Streets",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-high-time",
+     "title": "High Time",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "",
+     "title": "That\u2019s It for the Other One",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-turn-on-your-lovelight",
+     "title": "Turn On Your Love Light",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-alligator",
+     "title": "Alligator",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me and My Uncle",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-mason-s-children",
+     "title": "Mason\u2019s Children",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution (Do Not Stop on Tracks)",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-feedback",
+     "title": "Feedback",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-and-we-bid-you-good-night",
+     "title": "We Bid You Goodnight",
+     "set_label": "Disc 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "release-dicks-picks-volume-13-1981-05-06",
+   "label": "Dick\u2019s Picks 13",
+   "sub": "Nassau Coliseum 5/6/81",
+   "total": null,
+   "cells": [
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1981-05-06-the-other-one-2-10",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1981-05-06.136735.aud.lamarre.berger.flac24/gd81-05-06s2t07.mp3",
+       "duration_seconds": 322,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "unknown",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-alabama-getaway",
+     "title": "Alabama Getaway",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-they-love-each-other",
+     "title": "They Love Each Other",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-cassidy",
+     "title": "Cassidy",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-a-roe",
+     "title": "Jack\u2010A\u2010Roe",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-little-red-rooster",
+     "title": "Little Red Rooster",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-looks-like-rain",
+     "title": "Looks Like Rain",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-let-it-grow",
+     "title": "Let It Grow",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-minglewood-blues",
+     "title": "New Minglewood Blues",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-high-time",
+     "title": "High Time",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-lost-sailor",
+     "title": "Lost Sailor",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "",
+     "title": "Saint of Circumstance / Scarlet Begonias > Fire on the Mountain",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He\u2019s Gone",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "",
+     "title": "Caution / Spanish Jam",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-jam",
+     "title": "Jam",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin\u2019 Down the Road Feeling Bad",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Disc 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin\u2019",
+     "set_label": "Disc 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-don-t-ease-me-in",
+     "title": "Don\u2019t Ease Me In",
+     "set_label": "Disc 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "release-dicks-picks-volume-3-1977-05-22",
+   "label": "Dick\u2019s Picks 3",
+   "sub": "Pembroke Pines, Florida 5/22/77",
+   "total": null,
+   "cells": [
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "timed": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 14,
+     "passes": 1,
+     "timed": 1,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1977-05-22-morning-dew-2-12",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd1977-05-22.140278.sbd.miller.flac2496/23MorningDew.mp3",
+       "duration_seconds": 855,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "",
+     "title": "Funiculi Funicula",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-the-music-never-stopped",
+     "title": "The Music Never Stopped",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-lazy-lightning",
+     "title": "Lazy Lightning",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-supplication",
+     "title": "Supplication",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dancin-in-the-streets",
+     "title": "Dancin\u2019 in the Streets",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-help-on-the-way",
+     "title": "Help on the Way",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-slipknot",
+     "title": "Slipknot!",
+     "set_label": "Disc 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-franklin-s-tower",
+     "title": "Franklin\u2019s Tower",
+     "set_label": "Disc 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-samson-and-delilah",
+     "title": "Samson and Delilah",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sunrise",
+     "title": "Sunrise",
+     "set_label": "Disc 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-estimated-prophet",
+     "title": "Estimated Prophet",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-eyes-of-the-world",
+     "title": "Eyes of the World",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-terrapin-station",
+     "title": "Terrapin Station",
+     "set_label": "Disc 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-morning-dew",
+     "title": "(Walk Me Out in the) Morning Dew",
+     "set_label": "Disc 2",
+     "segue": false
+    }
+   ]
+  }
+ ],
+ "open_rows": null,
+ "max_value": 37,
+ "suggestions": [
+  {
+   "id": "song-china-cat-sunflower",
+   "label": "China Cat Sunflower",
+   "rows_with": 4
+  },
+  {
+   "id": "song-i-know-you-rider",
+   "label": "I Know You Rider",
+   "rows_with": 4
+  },
+  {
+   "id": "song-casey-jones",
+   "label": "Casey Jones",
+   "rows_with": 3
+  },
+  {
+   "id": "song-cumberland-blues",
+   "label": "Cumberland Blues",
+   "rows_with": 3
+  },
+  {
+   "id": "song-dire-wolf",
+   "label": "Dire Wolf",
+   "rows_with": 3
+  },
+  {
+   "id": "song-hes-gone",
+   "label": "He's Gone",
+   "rows_with": 3
+  },
+  {
+   "id": "song-high-time",
+   "label": "High Time",
+   "rows_with": 3
+  },
+  {
+   "id": "song-wharf-rat",
+   "label": "Wharf Rat",
+   "rows_with": 3
+  },
+  {
+   "id": "song-and-we-bid-you-good-night",
+   "label": "And We Bid You Good Night",
+   "rows_with": 2
+  },
+  {
+   "id": "song-beat-it-on-down-the-line",
+   "label": "Beat It On Down The Line",
+   "rows_with": 2
+  },
+  {
+   "id": "song-big-railroad-blues",
+   "label": "Big Railroad Blues",
+   "rows_with": 2
+  },
+  {
+   "id": "song-big-river",
+   "label": "Big River",
+   "rows_with": 2
+  }
+ ],
+ "follow_ups": [],
+ "spec": {
+  "row_kind": "release",
+  "row_ids": [
+   "release-dicks-picks-volume-36-1972-09-21",
+   "release-dicks-picks-volume-16-1969-11-08",
+   "release-dicks-picks-volume-11-1972-09-27",
+   "release-dicks-picks-volume-4-fillmore-east-1996",
+   "release-dicks-picks-volume-13-1981-05-06",
+   "release-dicks-picks-volume-3-1977-05-22"
+  ],
+  "column_kind": "song",
+  "column_ids": [
+   "song-dark-star",
+   "song-the-other-one",
+   "song-playing-in-the-band",
+   "song-scarlet-begonias",
+   "song-morning-dew"
+  ]
+ }
+}
