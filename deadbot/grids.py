@@ -10,9 +10,9 @@ rows_in, one and aggregate, which every store already implements identically.
 from __future__ import annotations
 
 import calendar
+import difflib
 import hashlib
 import json
-import difflib
 import logging
 import re
 from collections import defaultdict
@@ -198,12 +198,13 @@ def tool_payload(data: GridData) -> dict[str, Any]:
             for year, (on_record, with_setlist) in sorted(data.coverage_by_year.items())
             if with_setlist < on_record
         ]
-    if data.tracks_without_song:
-        coverage["tracks_without_song"] = [
-            {"release_id": release_id, "tracks": tracks, "without_song": blank}
-            for release_id, (tracks, blank) in data.tracks_without_song.items()
-            if blank
-        ]
+    unnamed = [
+        {"release_id": release_id, "tracks": tracks, "without_song": blank}
+        for release_id, (tracks, blank) in data.tracks_without_song.items()
+        if blank
+    ]
+    if unnamed:
+        coverage["tracks_without_song"] = unnamed
     return {
         "grid_id": grid_id(data.spec),
         "rows_are": data.spec.row_kind,
