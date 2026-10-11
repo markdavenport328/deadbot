@@ -1,0 +1,6654 @@
+{
+ "type": "grid",
+ "grid_id": "grid:727d1ee0a8a9",
+ "title": "One big jam a night, and they traded it.",
+ "note": "Every night of the tour had Dark Star or The Other One, and only Bickershaw on May 7 had both.",
+ "coverage": null,
+ "row_kind": "show",
+ "column_kind": "song",
+ "measure": "minutes",
+ "columns": [
+  {
+   "id": "song-truckin",
+   "label": "Truckin'",
+   "sub": null
+  },
+  {
+   "id": "song-dark-star",
+   "label": "Dark Star",
+   "sub": null
+  },
+  {
+   "id": "song-the-other-one",
+   "label": "The Other One",
+   "sub": null
+  },
+  {
+   "id": "song-morning-dew",
+   "label": "Morning Dew",
+   "sub": null
+  },
+  {
+   "id": "song-good-lovin",
+   "label": "Good Lovin'",
+   "sub": null
+  },
+  {
+   "id": "song-playing-in-the-band",
+   "label": "Playing In The Band",
+   "sub": null
+  },
+  {
+   "id": "song-china-cat-sunflower",
+   "label": "China Cat Sunflower",
+   "sub": null
+  }
+ ],
+ "rows": [
+  {
+   "id": "gd-1972-04-07",
+   "label": "April 7, 1972 \u00b7 London",
+   "sub": "Empire Pool",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 3",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-07-truckin-3-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-04-07.aud.sirmick.31329.sbeok.flacf/gd72-04-07d2t03.mp3",
+       "duration_seconds": 869,
+       "set_label": "Set 3"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 28,
+     "passes": 2,
+     "set_label": "Set 3",
+     "segue_from": "Drums",
+     "segue_into": "Wharf Rat",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-07-the-other-one-3-3",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-04-07.aud.sirmick.31329.sbeok.flacf/gd72-04-07d2t05.mp3",
+       "duration_seconds": 1219,
+       "set_label": "Set 3"
+      },
+      {
+       "performance_id": "gd-1972-04-07-the-other-one-3-5",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-04-07.aud.sirmick.31329.sbeok.flacf/gd72-04-07d2t07.mp3",
+       "duration_seconds": 521,
+       "set_label": "Set 3"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 10,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-07-playing-in-the-band-2-13",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd72-04-07.aud.sirmick.31329.sbeok.flacf/gd72-04-07d1t14.mp3",
+       "duration_seconds": 647,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-07-china-cat-sunflower-2-5",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-04-07.aud.sirmick.31329.sbeok.flacf/gd72-04-07d1t04.mp3",
+       "duration_seconds": 340,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-hey-bo-diddley",
+     "title": "Hey Bo Diddley",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-looks-like-rain",
+     "title": "Looks Like Rain",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 4",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-08",
+   "label": "April 8, 1972 \u00b7 London",
+   "sub": "Empire Pool",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-08-truckin-2-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-04-08.sbd.miller.83714.sbeok.flac16/gd72-04-08d2t03.mp3",
+       "duration_seconds": 688,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 32,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Mind Left Body Jam",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-08-dark-star-2-4",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-04-08.sbd.miller.83714.sbeok.flac16/gd72-04-08d3t01.mp3",
+       "duration_seconds": 1890,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-08-good-lovin-1-12",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-04-08.sbd.miller.83714.sbeok.flac16/gd72-04-08d1t13.mp3",
+       "duration_seconds": 624,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-08-playing-in-the-band-1-11",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-04-08.sbd.miller.83714.sbeok.flac16/gd72-04-08d1t12.mp3",
+       "duration_seconds": 635,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brown-eyed-women",
+     "title": "Brown Eyed Women",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-looks-like-rain",
+     "title": "Looks Like Rain",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-mind-left-body-jam",
+     "title": "Mind Left Body Jam",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-11",
+   "label": "April 11, 1972 \u00b7 Newcastle",
+   "sub": "City Hall",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 19,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-11-truckin-2-3",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-04-11.sbd.giles.12186.sbeok.shnf/gd72-04-11d3t01.mp3",
+       "duration_seconds": 559,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 26,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Drums",
+     "segue_into": "Comes A Time",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-11-the-other-one-2-5",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-04-11.sbd.giles.12186.sbeok.shnf/gd72-04-11d3t03.mp3",
+       "duration_seconds": 736,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 15,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-11-good-lovin-2-1",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd72-04-11.sbd.giles.12186.sbeok.shnf/gd72-04-11d2t07.mp3",
+       "duration_seconds": 465,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-11-playing-in-the-band-1-13",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd72-04-11.sbd.giles.12186.sbeok.shnf/gd72-04-11d2t01.mp3",
+       "duration_seconds": 278,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 7,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-11-china-cat-sunflower-1-11",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-04-11.sbd.giles.12186.sbeok.shnf/gd72-04-11d1t11.mp3",
+       "duration_seconds": 204,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brown-eyed-women",
+     "title": "Brown Eyed Women",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-looks-like-rain",
+     "title": "Looks Like Rain",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-comes-a-time",
+     "title": "Comes A Time",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-brokedown-palace",
+     "title": "Brokedown Palace",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-14",
+   "label": "April 14, 1972 \u00b7 Copenhagen",
+   "sub": "Tivoli Concert Hall",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-14-truckin-2-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-04-14.sbd.hurwitt.8828.sbeok.shnf/gd72-04-14d2t04.mp3",
+       "duration_seconds": 360,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 29,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Sugar Magnolia",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-14-dark-star-2-5",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd72-04-14.sbd.hurwitt.8828.sbeok.shnf/gd72-04-14d3t01.mp3",
+       "duration_seconds": 876,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 21,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": "Sugar Magnolia",
+     "segue_into": "Caution",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-14-good-lovin-2-7",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd72-04-14.sbd.hurwitt.8828.sbeok.shnf/gd72-04-14d3t03.mp3",
+       "duration_seconds": 592,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-04-14-good-lovin-2-11",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd72-04-14.sbd.hurwitt.8828.sbeok.shnf/gd72-04-14d3t07.mp3",
+       "duration_seconds": 97,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-14-playing-in-the-band-1-10",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd72-04-14.sbd.hurwitt.8828.sbeok.shnf/gd72-04-14d1t10.mp3",
+       "duration_seconds": 406,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-you-win-again",
+     "title": "You Win Again",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-bobby-mcgee",
+     "title": "Me And Bobby McGee",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-brown-eyed-women",
+     "title": "Brown Eyed Women",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-looks-like-rain",
+     "title": "Looks Like Rain",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-who-do-you-love",
+     "title": "Who Do You Love",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-16",
+   "label": "April 16, 1972 \u00b7 Aarhus",
+   "sub": "Stakladen Cafeteria (Aarhus University)",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "The Other One",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-16-truckin-2-5",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-04-16.sbd.miller.18103.sbeok.shnf/gd72-04-16d3t01.mp3",
+       "duration_seconds": 1101,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": "Truckin'",
+     "segue_into": "Not Fade Away",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-16-the-other-one-2-8",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-04-16.sbd.miller.18103.sbeok.shnf/gd72-04-16d3t04.mp3",
+       "duration_seconds": 156,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 20,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-16-good-lovin-2-1",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd72-04-16.sbd.miller.18103.sbeok.shnf/gd72-04-16d2t01.mp3",
+       "duration_seconds": 1194,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 7,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-16-china-cat-sunflower-1-8",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-04-16.sbd.miller.18103.sbeok.shnf/gd72-04-16d1t06.mp3",
+       "duration_seconds": 307,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-17",
+   "label": "April 17, 1972 \u00b7 Copenhagen",
+   "sub": "Tivoli Concert Hall",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 3",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-17-truckin-3-10",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-04-17.sbd.ashley-field.34032.sbeok.flac16/gd1972-04-17d2t08.mp3",
+       "duration_seconds": 665,
+       "set_label": "Set 3"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 31,
+     "passes": 1,
+     "set_label": "Set 4",
+     "segue_from": null,
+     "segue_into": "Sugar Magnolia",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-17-dark-star-4-1",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-04-17.sbd.ashley-field.34032.sbeok.flac16/gd1972-04-17d3t01.mp3",
+       "duration_seconds": 1845,
+       "set_label": "Set 4"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 10,
+     "passes": 1,
+     "set_label": "Set 3",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-17-china-cat-sunflower-2-4",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-04-17.sbd.ashley-field.34032.sbeok.flac16/gd1972-04-17d1t04.mp3",
+       "duration_seconds": 415,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John's Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-cold-rain-and-snow",
+     "title": "Cold Rain And Snow",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-bobby-mcgee",
+     "title": "Me And Bobby McGee",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution",
+     "set_label": "Set 4",
+     "segue": true
+    },
+    {
+     "song_id": "song-johnny-b-goode",
+     "title": "Johnny B. Goode",
+     "set_label": "Set 4",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-21",
+   "label": "April 21, 1972 \u00b7 Bremen",
+   "sub": "Beat Club",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 10,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 22,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 21,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-24",
+   "label": "April 24, 1972 \u00b7 Dusseldorf",
+   "sub": "Rheinhalle",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-24-truckin-1-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-04-24.aud.unknown.6956.sbeok.shnf/gd72-04-24d1t02.mp3",
+       "duration_seconds": 680,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 40,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Wharf Rat",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-24-dark-star-2-1",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-04-24.aud.unknown.6956.sbeok.shnf/gd72-04-24d3t01.mp3",
+       "duration_seconds": 1341,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-04-24-dark-star-2-3",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-04-24.aud.unknown.6956.sbeok.shnf/gd72-04-24d3t03.mp3",
+       "duration_seconds": 842,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 18,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-24-good-lovin-1-13",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-04-24.aud.unknown.6956.sbeok.shnf/gd72-04-24d2t03.mp3",
+       "duration_seconds": 1061,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-24-playing-in-the-band-1-10",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-04-24.aud.unknown.6956.sbeok.shnf/gd72-04-24d1t11.mp3",
+       "duration_seconds": 454,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-24-china-cat-sunflower-1-5",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-04-24.aud.unknown.6956.sbeok.shnf/gd72-04-24d1t06.mp3",
+       "duration_seconds": 349,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-bobby-mcgee",
+     "title": "Me And Bobby McGee",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 4",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-26",
+   "label": "April 26, 1972 \u00b7 Frankfurt",
+   "sub": "Jahrhunderthalle",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 14,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-26-truckin-2-3",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-04-26.136637.sbd.mr.sirmickflac1648/gd1972-04-26s2t03.mp3",
+       "duration_seconds": 832,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 36,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Drums",
+     "segue_into": "Comes A Time",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-26-the-other-one-2-5",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1972-04-26.136637.sbd.mr.sirmickflac1648/gd1972-04-26s2t05.mp3",
+       "duration_seconds": 2188,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 14,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-26-good-lovin-2-1",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-04-26.136637.sbd.mr.sirmickflac1648/gd1972-04-26s2t01.mp3",
+       "duration_seconds": 728,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 9,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-26-playing-in-the-band-1-11",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-04-26.136637.sbd.mr.sirmickflac1648/gd1972-04-26s1t11.mp3",
+       "duration_seconds": 549,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-26-china-cat-sunflower-1-7",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-04-26.136637.sbd.mr.sirmickflac1648/gd1972-04-26s1t07.mp3",
+       "duration_seconds": 315,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-you-win-again",
+     "title": "You Win Again",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-comes-a-time",
+     "title": "Comes A Time",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-turn-on-your-lovelight",
+     "title": "Turn On Your Lovelight",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 2",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-04-29",
+   "label": "April 29, 1972 \u00b7 Hamburg",
+   "sub": "Musikhalle",
+   "total": null,
+   "cells": [
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 30,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Sugar Magnolia",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-29-dark-star-2-4",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-04-29.sbd.sirmick.32877.sbeok.flac16/gd72-04-29d3t01.mp3",
+       "duration_seconds": 1796,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 16,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-29-good-lovin-1-13",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-04-29.sbd.sirmick.32877.sbeok.flac16/gd72-04-29d2t01.mp3",
+       "duration_seconds": 1024,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 10,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-04-29-china-cat-sunflower-1-5",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-04-29.sbd.sirmick.32877.sbeok.flac16/gd72-04-29d1t05.mp3",
+       "duration_seconds": 324,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John's Band",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-03",
+   "label": "May 3, 1972 \u00b7 Paris",
+   "sub": "Olympia",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 10,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Jam",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-03-truckin-2-4",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-05-03.sbd.samaritano.21923.sbeok.shnf/gd1972-05-03d3t01.mp3",
+       "duration_seconds": 320,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 34,
+     "passes": 3,
+     "set_label": "Set 2",
+     "segue_from": "Jam",
+     "segue_into": "Wharf Rat",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-03-the-other-one-2-6",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-05-03.sbd.samaritano.21923.sbeok.shnf/gd1972-05-03d3t03.mp3",
+       "duration_seconds": 335,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-05-03-the-other-one-2-10",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-05-03.sbd.samaritano.21923.sbeok.shnf/gd1972-05-03d3t07.mp3",
+       "duration_seconds": 88,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 17,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-03-good-lovin-1-14",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd72-05-03.sbd.samaritano.21923.sbeok.shnf/gd1972-05-03d2t02.mp3",
+       "duration_seconds": 524,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-03-china-cat-sunflower-1-7",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-05-03.sbd.samaritano.21923.sbeok.shnf/gd1972-05-03d1t07.mp3",
+       "duration_seconds": 116,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-jam",
+     "title": "Jam",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-me-and-bobby-mcgee",
+     "title": "Me And Bobby McGee",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-04",
+   "label": "May 4, 1972 \u00b7 Paris",
+   "sub": "Olympia",
+   "total": null,
+   "cells": [
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 37,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Sugar Magnolia",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-04-dark-star-2-5",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-05-04.152824.sbd.miller.sbeok.t-flac24/205%20-%20Dark%20Star.mp3",
+       "duration_seconds": 1162,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-05-04-dark-star-2-7",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-05-04.152824.sbd.miller.sbeok.t-flac24/207%20-%20Dark%20Star.mp3",
+       "duration_seconds": 1052,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 23,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-04-good-lovin-2-1",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-05-04.152824.sbd.miller.sbeok.t-flac24/201%20-%20Good%20Lovin%27.mp3",
+       "duration_seconds": 1384,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-04-playing-in-the-band-1-7",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-04.152824.sbd.miller.sbeok.t-flac24/107%20-%20Playing%20In%20The%20Band.mp3",
+       "duration_seconds": 603,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brown-eyed-women",
+     "title": "Brown Eyed Women",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-you-win-again",
+     "title": "You Win Again",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John's Band",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-07",
+   "label": "May 7, 1972 \u00b7 Wigan",
+   "sub": "Bickershaw Festival",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-07-truckin-1-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-05-07.133598.sbd.set1.miller.flac16/gd72-05-07s1t01.mp3",
+       "duration_seconds": 712,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 20,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": true,
+     "note": "Bickershaw: the one night with both."
+    },
+    {
+     "state": "value",
+     "value": 31,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Drums",
+     "segue_into": "Sing Me Back Home",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": true,
+     "note": "Bickershaw: the one night with both."
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 20,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-07-playing-in-the-band-1-11",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-07.133598.sbd.set1.miller.flac16/gd72-05-07s1t12.mp3",
+       "duration_seconds": 749,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-07-china-cat-sunflower-1-7",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-05-07.133598.sbd.set1.miller.flac16/gd72-05-07s1t07.mp3",
+       "duration_seconds": 389,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-turn-on-your-lovelight",
+     "title": "Turn On Your Lovelight",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-10",
+   "label": "May 10, 1972 \u00b7 Amsterdam",
+   "sub": "Concertgebouw",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 9,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-10-truckin-2-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-05-10.sbd.kaplan.1582.sbeok.shnf/gd72-05-10d3t01.mp3",
+       "duration_seconds": 319,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 36,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": "Drums",
+     "segue_into": "Wharf Rat",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-10-the-other-one-2-3",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-05-10.sbd.kaplan.1582.sbeok.shnf/gd72-05-10d3t03.mp3",
+       "duration_seconds": 1161,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-05-10-the-other-one-2-5",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-05-10.sbd.kaplan.1582.sbeok.shnf/gd72-05-10d3t05.mp3",
+       "duration_seconds": 76,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 14,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-10-playing-in-the-band-1-12",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd72-05-10.sbd.kaplan.1582.sbeok.shnf/gd72-05-10d2t01.mp3",
+       "duration_seconds": 448,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-10-china-cat-sunflower-1-4",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-05-10.sbd.kaplan.1582.sbeok.shnf/gd72-05-10d1t04.mp3",
+       "duration_seconds": 356,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-greatest-story-ever-told",
+     "title": "Greatest Story Ever Told",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-me-and-bobby-mcgee",
+     "title": "Me And Bobby McGee",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-11",
+   "label": "May 11, 1972 \u00b7 Rotterdam",
+   "sub": "Grote Zaal, De Doelen",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 9,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Who Do You Love",
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-11-truckin-2-13",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-05-11.sbd.ashley-bertha.7364.sbefail.shnf/gd72-05-11newd3t08.mp3",
+       "duration_seconds": 370,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 44,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Sugar Magnolia",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-11-dark-star-2-7",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd72-05-11.sbd.ashley-bertha.7364.sbefail.shnf/gd72-05-11newd2t09.mp3",
+       "duration_seconds": 488,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-05-11-dark-star-2-9",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd72-05-11.sbd.ashley-bertha.7364.sbefail.shnf/gd72-05-11newd3t03.mp3",
+       "duration_seconds": 66,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": true,
+     "note": "The longest stretch of the tour, in two passes."
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 13,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-11-morning-dew-2-1",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd72-05-11.sbd.ashley-bertha.7364.sbefail.shnf/gd72-05-11newd2t03.mp3",
+       "duration_seconds": 440,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 13,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-11-good-lovin-1-15",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd72-05-11.sbd.ashley-bertha.7364.sbefail.shnf/gd72-05-11newd2t01.mp3",
+       "duration_seconds": 471,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-11-china-cat-sunflower-1-8",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-05-11.sbd.ashley-bertha.7364.sbefail.shnf/gd72-05-11newd1t08.mp3",
+       "duration_seconds": 176,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brown-eyed-women",
+     "title": "Brown Eyed Women",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-morning-dew",
+     "title": "Morning Dew",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-caution",
+     "title": "Caution",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-who-do-you-love",
+     "title": "Who Do You Love",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John's Band",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-13",
+   "label": "May 13, 1972 \u00b7 Lille",
+   "sub": "Lille Fairgrounds",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-13-truckin-2-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd72-05-13.sbd.ladner.3457.sbeok.shnf/gd1972-05-13d2t04.mp3",
+       "duration_seconds": 662,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 29,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Drums",
+     "segue_into": "He's Gone",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-13-the-other-one-2-3",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd72-05-13.sbd.ladner.3457.sbeok.shnf/gd1972-05-13d2t06.mp3",
+       "duration_seconds": 1707,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 13,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-13-playing-in-the-band-1-12",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd72-05-13.sbd.ladner.3457.sbeok.shnf/gd1972-05-13d1t12.mp3",
+       "duration_seconds": 772,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-13-china-cat-sunflower-1-7",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd72-05-13.sbd.ladner.3457.sbeok.shnf/gd1972-05-13d1t07.mp3",
+       "duration_seconds": 382,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-16",
+   "label": "May 16, 1972 \u00b7 Luxembourg",
+   "sub": "Radio Luxembourg",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 3",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-16-truckin-3-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-05-16.sbd.23825.sbeok.shnf/gd1972-05-16d2t01.mp3",
+       "duration_seconds": 447,
+       "set_label": "Set 3"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 20,
+     "passes": 1,
+     "set_label": "Set 3",
+     "segue_from": "Drums",
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-16-the-other-one-3-3",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1972-05-16.sbd.23825.sbeok.shnf/gd1972-05-16d2t03.mp3",
+       "duration_seconds": 697,
+       "set_label": "Set 3"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-16-playing-in-the-band-2-12",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-16.sbd.23825.sbeok.shnf/gd1972-05-16d1t12.mp3",
+       "duration_seconds": 408,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-16-china-cat-sunflower-2-7",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-05-16.sbd.23825.sbeok.shnf/gd1972-05-16d1t07.mp3",
+       "duration_seconds": 208,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-big-river",
+     "title": "Big River",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-bertha",
+     "title": "Bertha",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-promised-land",
+     "title": "Promised Land",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 3",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 3",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 4",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-18",
+   "label": "May 18, 1972 \u00b7 Munich",
+   "sub": "Kongresssaal, Deutsches Museum",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-18-truckin-1-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d1t01.mp3",
+       "duration_seconds": 716,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 28,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Morning Dew",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-18-dark-star-2-5",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d3t01.mp3",
+       "duration_seconds": 1577,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Dark Star",
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-18-morning-dew-2-6",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d3t02.mp3",
+       "duration_seconds": 695,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 13,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-18-good-lovin-1-14",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d2t02.mp3",
+       "duration_seconds": 827,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 11,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-18-playing-in-the-band-1-13",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d2t01.mp3",
+       "duration_seconds": 669,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-18-china-cat-sunflower-1-8",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-05-18.sbd.smith.94581.sbeok.flac16/gd72-05-18d1t08.mp3",
+       "duration_seconds": 373,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-you-win-again",
+     "title": "You Win Again",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sitting-on-top-of-the-world",
+     "title": "Sitting On Top Of The World",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-morning-dew",
+     "title": "Morning Dew",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-23",
+   "label": "May 23, 1972 \u00b7 London",
+   "sub": "Lyceum",
+   "total": null,
+   "cells": [
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "no_length",
+     "value": null,
+     "passes": 2,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Morning Dew",
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Dark Star",
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-23-morning-dew-2-5",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd1972-05-23.sbd.lai.2581.shnf/gd72-05-23d3t303.mp3",
+       "duration_seconds": 425,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-23-good-lovin-1-18",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-05-23.sbd.lai.2581.shnf/gd72-05-23d2t205.mp3",
+       "duration_seconds": 442,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 13,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-23-playing-in-the-band-1-14",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-23.sbd.lai.2581.shnf/gd72-05-23d2t201.mp3",
+       "duration_seconds": 429,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-23-china-cat-sunflower-1-8",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-05-23.sbd.lai.2581.shnf/gd72-05-23d1t108.mp3",
+       "duration_seconds": 210,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-promised-land",
+     "title": "Promised Land",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sitting-on-top-of-the-world",
+     "title": "Sitting On Top Of The World",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-rockin-pneumonia",
+     "title": "Rockin' Pneumonia",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-morning-dew",
+     "title": "Morning Dew",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-comes-a-time",
+     "title": "Comes A Time",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-hey-bo-diddley",
+     "title": "Hey Bo Diddley",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John's Band",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-24",
+   "label": "May 24, 1972 \u00b7 London",
+   "sub": "Lyceum",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "Drums",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 30,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Drums",
+     "segue_into": "Sing Me Back Home",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-24-the-other-one-2-6",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1972-05-24.aud.jones.macdonald.sirmick.24068.sbeok.shnf/gd72-05-24d2t07.mp3",
+       "duration_seconds": 1781,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-cold-rain-and-snow",
+     "title": "Cold Rain And Snow",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-beat-it-on-down-the-line",
+     "title": "Beat It On Down The Line",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-deal",
+     "title": "Deal",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hurts-me-too",
+     "title": "Hurts Me Too",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-you-win-again",
+     "title": "You Win Again",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-rockin-pneumonia",
+     "title": "Rockin' Pneumonia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-mexicali-blues",
+     "title": "Mexicali Blues",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-peter",
+     "title": "Black Peter",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-turn-on-your-lovelight",
+     "title": "Turn On Your Lovelight",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 3",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-25",
+   "label": "May 25, 1972 \u00b7 London",
+   "sub": "Lyceum",
+   "total": null,
+   "cells": [
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 35,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "Wharf Rat",
+     "segue_into": "Sugar Magnolia",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-25-dark-star-2-7",
+       "title": "Dark Star",
+       "audio_url": "https://archive.org/download/gd1972-05-25.sbd.miller.87682.sbeok.flac16/gd72-05-25d3t03.mp3",
+       "duration_seconds": 2070,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 16,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-25-good-lovin-1-11",
+       "title": "Good Lovin'",
+       "audio_url": "https://archive.org/download/gd1972-05-25.sbd.miller.87682.sbeok.flac16/gd72-05-25d1t11.mp3",
+       "duration_seconds": 1030,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 16,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-25-playing-in-the-band-1-12",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-25.sbd.miller.87682.sbeok.flac16/gd72-05-25d2t01.mp3",
+       "duration_seconds": 861,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 5,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-25-china-cat-sunflower-1-8",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-05-25.sbd.miller.87682.sbeok.flac16/gd72-05-25d1t08.mp3",
+       "duration_seconds": 270,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-promised-land",
+     "title": "Promised Land",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brown-eyed-women",
+     "title": "Brown Eyed Women",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-boss-man",
+     "title": "Big Boss Man",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-tennessee-jed",
+     "title": "Tennessee Jed",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-bobby-mcgee",
+     "title": "Me And Bobby McGee",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-good-lovin",
+     "title": "Good Lovin'",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-brokedown-palace",
+     "title": "Brokedown Palace",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-big-railroad-blues",
+     "title": "Big Railroad Blues",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-uncle-john-s-band",
+     "title": "Uncle John's Band",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-wharf-rat",
+     "title": "Wharf Rat",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-dark-star",
+     "title": "Dark Star",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-comes-a-time",
+     "title": "Comes A Time",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sitting-on-top-of-the-world",
+     "title": "Sitting On Top Of The World",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 2",
+     "segue": false
+    }
+   ]
+  },
+  {
+   "id": "gd-1972-05-26",
+   "label": "May 26, 1972 \u00b7 London",
+   "sub": "Lyceum",
+   "total": null,
+   "cells": [
+    {
+     "state": "value",
+     "value": 19,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": null,
+     "segue_into": "The Other One",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-26-truckin-2-1",
+       "title": "Truckin'",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d3t1.mp3",
+       "duration_seconds": 334,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 27,
+     "passes": 3,
+     "set_label": "Set 2",
+     "segue_from": "Truckin'",
+     "segue_into": "Sing Me Back Home",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-26-the-other-one-2-2",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d3t2.mp3",
+       "duration_seconds": 456,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-05-26-the-other-one-2-4",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d3t4.mp3",
+       "duration_seconds": 695,
+       "set_label": "Set 2"
+      },
+      {
+       "performance_id": "gd-1972-05-26-the-other-one-2-6",
+       "title": "The Other One",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d3t6.mp3",
+       "duration_seconds": 214,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 12,
+     "passes": 1,
+     "set_label": "Set 2",
+     "segue_from": "The Other One",
+     "segue_into": "The Other One",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-26-morning-dew-2-5",
+       "title": "Morning Dew",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d3t5.mp3",
+       "duration_seconds": 378,
+       "set_label": "Set 2"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "none",
+     "value": null,
+     "passes": 0,
+     "set_label": null,
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": null,
+     "of_shows": null,
+     "tracks": [],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 18,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": null,
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-26-playing-in-the-band-1-10",
+       "title": "Playing In The Band",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d1t10.mp3",
+       "duration_seconds": 695,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    },
+    {
+     "state": "value",
+     "value": 6,
+     "passes": 1,
+     "set_label": "Set 1",
+     "segue_from": null,
+     "segue_into": "I Know You Rider",
+     "length_source": "release",
+     "of_shows": null,
+     "tracks": [
+      {
+       "performance_id": "gd-1972-05-26-china-cat-sunflower-1-15",
+       "title": "China Cat Sunflower",
+       "audio_url": "https://archive.org/download/gd1972-05-26.sbd.mvernon.5931.shnf/gd72-05-26d2t5.mp3",
+       "duration_seconds": 206,
+       "set_label": "Set 1"
+      }
+     ],
+     "highlight": false,
+     "note": null
+    }
+   ],
+   "setlist": [
+    {
+     "song_id": "song-promised-land",
+     "title": "Promised Land",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugaree",
+     "title": "Sugaree",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-mr-charlie",
+     "title": "Mr. Charlie",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-black-throated-wind",
+     "title": "Black Throated Wind",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-loser",
+     "title": "Loser",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-next-time-you-see-me",
+     "title": "Next Time You See Me",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-el-paso",
+     "title": "El Paso",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-dire-wolf",
+     "title": "Dire Wolf",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-two-souls-in-communion",
+     "title": "Two Souls In Communion",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-playing-in-the-band",
+     "title": "Playing In The Band",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-hes-gone",
+     "title": "He's Gone",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-cumberland-blues",
+     "title": "Cumberland Blues",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-jack-straw",
+     "title": "Jack Straw",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-chinatown-shuffle",
+     "title": "Chinatown Shuffle",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-china-cat-sunflower",
+     "title": "China Cat Sunflower",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-i-know-you-rider",
+     "title": "I Know You Rider",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-goin-down-the-road-feelin-bad",
+     "title": "Goin' Down The Road Feelin' Bad",
+     "set_label": "Set 1",
+     "segue": true
+    },
+    {
+     "song_id": "song-not-fade-away",
+     "title": "Not Fade Away",
+     "set_label": "Set 1",
+     "segue": false
+    },
+    {
+     "song_id": "song-truckin",
+     "title": "Truckin'",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-drums",
+     "title": "Drums",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-morning-dew",
+     "title": "Morning Dew",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-the-other-one",
+     "title": "The Other One",
+     "set_label": "Set 2",
+     "segue": true
+    },
+    {
+     "song_id": "song-sing-me-back-home",
+     "title": "Sing Me Back Home",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-me-and-my-uncle",
+     "title": "Me And My Uncle",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-ramble-on-rose",
+     "title": "Ramble On Rose",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-sugar-magnolia",
+     "title": "Sugar Magnolia",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-casey-jones",
+     "title": "Casey Jones",
+     "set_label": "Set 2",
+     "segue": false
+    },
+    {
+     "song_id": "song-one-more-saturday-night",
+     "title": "One More Saturday Night",
+     "set_label": "Set 2",
+     "segue": false
+    }
+   ]
+  }
+ ],
+ "open_rows": null,
+ "max_value": 44,
+ "suggestions": [
+  {
+   "id": "song-mr-charlie",
+   "label": "Mr. Charlie",
+   "rows_with": 22
+  },
+  {
+   "id": "song-black-throated-wind",
+   "label": "Black Throated Wind",
+   "rows_with": 21
+  },
+  {
+   "id": "song-chinatown-shuffle",
+   "label": "Chinatown Shuffle",
+   "rows_with": 20
+  },
+  {
+   "id": "song-sugar-magnolia",
+   "label": "Sugar Magnolia",
+   "rows_with": 20
+  },
+  {
+   "id": "song-casey-jones",
+   "label": "Casey Jones",
+   "rows_with": 19
+  },
+  {
+   "id": "song-one-more-saturday-night",
+   "label": "One More Saturday Night",
+   "rows_with": 19
+  },
+  {
+   "id": "song-i-know-you-rider",
+   "label": "I Know You Rider",
+   "rows_with": 18
+  },
+  {
+   "id": "song-beat-it-on-down-the-line",
+   "label": "Beat It On Down The Line",
+   "rows_with": 17
+  },
+  {
+   "id": "song-me-and-my-uncle",
+   "label": "Me And My Uncle",
+   "rows_with": 17
+  },
+  {
+   "id": "song-drums",
+   "label": "Drums",
+   "rows_with": 15
+  },
+  {
+   "id": "song-next-time-you-see-me",
+   "label": "Next Time You See Me",
+   "rows_with": 15
+  },
+  {
+   "id": "song-tennessee-jed",
+   "label": "Tennessee Jed",
+   "rows_with": 15
+  }
+ ],
+ "follow_ups": [],
+ "spec": {
+  "row_kind": "show",
+  "row_ids": [
+   "gd-1972-04-07",
+   "gd-1972-04-08",
+   "gd-1972-04-11",
+   "gd-1972-04-14",
+   "gd-1972-04-16",
+   "gd-1972-04-17",
+   "gd-1972-04-21",
+   "gd-1972-04-24",
+   "gd-1972-04-26",
+   "gd-1972-04-29",
+   "gd-1972-05-03",
+   "gd-1972-05-04",
+   "gd-1972-05-07",
+   "gd-1972-05-10",
+   "gd-1972-05-11",
+   "gd-1972-05-13",
+   "gd-1972-05-16",
+   "gd-1972-05-18",
+   "gd-1972-05-23",
+   "gd-1972-05-24",
+   "gd-1972-05-25",
+   "gd-1972-05-26"
+  ],
+  "column_kind": "song",
+  "column_ids": [
+   "song-truckin",
+   "song-dark-star",
+   "song-the-other-one",
+   "song-morning-dew",
+   "song-good-lovin",
+   "song-playing-in-the-band",
+   "song-china-cat-sunflower"
+  ]
+ }
+}

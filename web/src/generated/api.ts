@@ -38,6 +38,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/grid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reshape Grid
+         * @description Rebuild a grid from the library after the visitor adds or removes a list.
+         *
+         *     The model's picks (highlights and chips) belong to the grid it
+         *     wrote, so they are not part of the rebuilt block.
+         */
+        post: operations["reshape_grid_api_grid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -244,6 +267,28 @@ export interface components {
             title: string;
             /** Url */
             url: string;
+        };
+        /**
+         * AskFocus
+         * @description What the visitor was pointing at when they asked: the clicked cell or grid.
+         *
+         *     The browser reports it with the question; the server hands it to the model
+         *     as a note and lets the IDs it names join the turn's grounded IDs.
+         */
+        AskFocus: {
+            /** Block Id */
+            block_id: string;
+            /**
+             * Block Type
+             * @constant
+             */
+            block_type: "grid";
+            /** Facts */
+            facts?: string[];
+            /** Ids */
+            ids?: string[];
+            /** Label */
+            label: string;
         };
         /** ComparisonStripItem */
         ComparisonStripItem: {
@@ -594,6 +639,7 @@ export interface components {
         ExperienceRequest: {
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
+            focus?: components["schemas"]["AskFocus"] | null;
             /** Question */
             question: string;
             /** Thread Id */
@@ -604,7 +650,7 @@ export interface components {
             /** Answer */
             answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
             /** Body Lead */
             body_lead?: string | null;
             /** Conversation */
@@ -653,6 +699,169 @@ export interface components {
              * @enum {string}
              */
             type: "gap_state";
+        };
+        /**
+         * GridBlock
+         * @description Two lists and where each pair meets. The model chose the lists, the
+         *     order, what opens first, the cells to point at and the words; the server
+         *     filled every cell, track, date and venue from the library.
+         */
+        GridBlock: {
+            /**
+             * Column Kind
+             * @enum {string}
+             */
+            column_kind: "year" | "song";
+            /** Columns */
+            columns: components["schemas"]["GridColumn"][];
+            /** Coverage */
+            coverage?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
+            /** Grid Id */
+            grid_id: string;
+            /** Max Value */
+            max_value: number;
+            /**
+             * Measure
+             * @enum {string}
+             */
+            measure: "shows" | "minutes";
+            /** Note */
+            note?: string | null;
+            /** Open Rows */
+            open_rows?: number | null;
+            /**
+             * Row Kind
+             * @enum {string}
+             */
+            row_kind: "song" | "show";
+            /** Rows */
+            rows: components["schemas"]["GridRow"][];
+            spec: components["schemas"]["GridSpecModel"];
+            /** Suggestions */
+            suggestions?: components["schemas"]["GridSuggestion"][];
+            /** Title */
+            title?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "grid";
+        };
+        /**
+         * GridCell
+         * @description One meeting of a row and a column, every fact from the store.
+         */
+        GridCell: {
+            /**
+             * Highlight
+             * @default false
+             */
+            highlight: boolean;
+            /** Length Source */
+            length_source?: ("release" | "tape" | "mixed") | null;
+            /** Note */
+            note?: string | null;
+            /** Of Shows */
+            of_shows?: number | null;
+            /**
+             * Passes
+             * @default 0
+             */
+            passes: number;
+            /** Segue From */
+            segue_from?: string | null;
+            /** Segue Into */
+            segue_into?: string | null;
+            /** Set Label */
+            set_label?: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "value" | "none" | "no_length" | "unknown";
+            /** Tracks */
+            tracks?: components["schemas"]["PlayableTrack"][];
+            /** Value */
+            value?: number | null;
+        };
+        /** GridColumn */
+        GridColumn: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Sub */
+            sub?: string | null;
+        };
+        /**
+         * GridRequest
+         * @description A visitor's reshape of a grid: the lists as they now stand, plus the
+         *     model's headline, note and coverage, which the server hands back unchanged.
+         */
+        GridRequest: {
+            /** Coverage */
+            coverage?: string | null;
+            /** Note */
+            note?: string | null;
+            /** Open Rows */
+            open_rows?: number | null;
+            spec: components["schemas"]["GridSpecModel"];
+            /** Title */
+            title?: string | null;
+        };
+        /** GridRow */
+        GridRow: {
+            /** Cells */
+            cells?: components["schemas"]["GridCell"][];
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Setlist */
+            setlist?: components["schemas"]["GridSetlistEntry"][];
+            /** Sub */
+            sub?: string | null;
+            /** Total */
+            total?: number | null;
+        };
+        /** GridSetlistEntry */
+        GridSetlistEntry: {
+            /** Segue */
+            segue: boolean;
+            /** Set Label */
+            set_label: string;
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
+        };
+        /** GridSpecModel */
+        GridSpecModel: {
+            /** Column Ids */
+            column_ids: string[];
+            /**
+             * Column Kind
+             * @enum {string}
+             */
+            column_kind: "year" | "song";
+            /** Row Ids */
+            row_ids: string[];
+            /**
+             * Row Kind
+             * @enum {string}
+             */
+            row_kind: "song" | "show";
+        };
+        /** GridSuggestion */
+        GridSuggestion: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Rows With */
+            rows_with: number;
         };
         /** GuestAppearanceItem */
         GuestAppearanceItem: {
@@ -1508,6 +1717,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reshape_grid_api_grid_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GridRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GridBlock"];
                 };
             };
             /** @description Validation Error */
