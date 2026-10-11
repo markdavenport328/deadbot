@@ -10,7 +10,7 @@ import uuid
 from collections import deque
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import composition, finish, grids
+from deadbot import composition, finish, grids, notebook
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
@@ -118,6 +118,7 @@ class _Invocation:
     invocation_thread_id: str
     messages: list[Any]
     focus_ids: frozenset[str] = frozenset()
+    notebook: notebook.Notebook = field(default_factory=notebook.Notebook)
 
 
 def create_app(
@@ -212,6 +213,7 @@ def create_app(
 
     def _prepare(request: ExperienceRequest) -> _Invocation:
         thread_id = request.thread_id or f"web-{uuid.uuid4()}"
+        book = notebook.decode(request.notebook, app.state.settings.notebook_secret)
         conversation = _trimmed_conversation(request.conversation, app.state.settings.conversation_window)
         messages = [
             HumanMessage(content=turn.text) if turn.role == "user" else AIMessage(content=turn.text)
@@ -227,12 +229,13 @@ def create_app(
         # When the browser supplies its visible transcript, use an isolated
         # invocation thread so the transcript is authoritative and is not
         # duplicated with a warm instance's MemorySaver checkpoint.
-        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
+        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation or book.entries else thread_id
         return _Invocation(
             thread_id=thread_id,
             invocation_thread_id=invocation_thread_id,
             messages=messages,
             focus_ids=frozenset(grounded_focus),
+            notebook=book,
         )
 
     def _release(invocation: _Invocation) -> None:
@@ -246,26 +249,43 @@ def create_app(
             if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
                 checkpointer.delete_thread(invocation.invocation_thread_id)
 
+    def _with_notebook(invocation: _Invocation, messages: list[Any], response: ExperienceResponse) -> ExperienceResponse:
+        """The response plus the signed notebook the browser sends back with the next question."""
+
+        secret = app.state.settings.notebook_secret
+        if not secret:
+            notebook.note_missing_secret()
+            return response
+        try:
+            book = notebook.record_turn(invocation.notebook, composition._latest_turn(list(messages)), response)
+            token = notebook.encode(book, secret)
+        except Exception:  # The answer matters more than its notebook.
+            logger.exception("The research notebook could not be saved; the answer goes out without it")
+            return response
+        return response.model_copy(update={"notebook": token})
+
     def _respond(request: ExperienceRequest, invocation: _Invocation, messages: list[Any]) -> ExperienceResponse:
-        return build_experience_response(
+        response = build_experience_response(
             question=request.question,
             thread_id=invocation.thread_id,
             messages=messages,
             store=app.state.store,
             extra_ids=invocation.focus_ids,
         )
+        return _with_notebook(invocation, messages, response)
 
     def _cached(request: ExperienceRequest, invocation: _Invocation) -> ExperienceResponse | None:
         """A stored answer for a fresh (no-conversation) repeat of a question."""
 
         # A focused ask depends on what was clicked, which the cache key (the
-        # question text) does not capture.
-        if request.conversation or request.focus is not None:
+        # question text) does not capture. A notebook marks a follow-up in a
+        # session: its answer may lean on earlier research.
+        if request.conversation or request.focus is not None or request.notebook:
             return None
         return app.state.response_cache.lookup(request.question, thread_id=invocation.thread_id)
 
     def _remember(request: ExperienceRequest, response: ExperienceResponse) -> None:
-        if not request.conversation and request.focus is None:
+        if not request.conversation and request.focus is None and not request.notebook:
             app.state.response_cache.remember(request.question, response)
 
     @app.post("/api/experience", response_model=ExperienceResponse)

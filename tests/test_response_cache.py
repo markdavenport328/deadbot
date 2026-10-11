@@ -121,3 +121,14 @@ def test_a_missing_or_broken_bundle_changes_nothing(tmp_path):
     broken = tmp_path / "broken.json"
     broken.write_text("{not json", encoding="utf-8")
     assert cache.seed_from_bundle(broken) == 0
+
+
+def test_an_exported_answer_keeps_its_notebook_through_the_bundle():
+    _, cache = _postgres_cache()
+    question = "What's on Europe '72: The Complete Recordings?"
+    cache.remember(question, ExperienceResponse(thread_id="original", title="Europe '72", answer="Twenty-two nights.", notebook="v1.body.sig"))
+    (entry,) = cache.export([question])
+    assert entry["response"]["notebook"] == "v1.body.sig"
+    _, fresh = _postgres_cache()
+    assert fresh.seed([entry]) == 1
+    assert fresh.lookup(question, thread_id="new").notebook == "v1.body.sig"

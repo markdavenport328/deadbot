@@ -640,6 +640,11 @@ export interface components {
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             focus?: components["schemas"]["AskFocus"] | null;
+            /**
+             * Notebook
+             * @description The research notebook the previous response returned, sent back unchanged.
+             */
+            notebook?: string | null;
             /** Question */
             question: string;
             /** Thread Id */
@@ -663,6 +668,11 @@ export interface components {
              * @enum {string}
              */
             mode: "answer" | "gap";
+            /**
+             * Notebook
+             * @description Signed research notebook: what this conversation's tools found so far. Send it back with the next question.
+             */
+            notebook?: string | null;
             /**
              * Schema Version
              * @default 2

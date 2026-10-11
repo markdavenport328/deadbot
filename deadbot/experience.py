@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 logger = logging.getLogger(__name__)
@@ -1036,11 +1036,31 @@ class AskFocus(ExperienceModel):
         return known
 
 
+# The longest research-notebook token a request may carry. The server makes
+# tokens up to notebook.TOKEN_BYTE_CEILING, which is smaller.
+NOTEBOOK_TOKEN_MAX_CHARS = 200_000
+
+
 class ExperienceRequest(ExperienceModel):
     question: str = Field(min_length=1, max_length=2_000)
     thread_id: str | None = Field(default=None, min_length=1, max_length=200)
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
     focus: AskFocus | None = None
+    notebook: str | None = Field(
+        default=None,
+        max_length=NOTEBOOK_TOKEN_MAX_CHARS,
+        description="The research notebook the previous response returned, sent back unchanged.",
+    )
+
+    @field_validator("notebook", mode="before")
+    @classmethod
+    def _read_notebook_leniently(cls, value: Any) -> Any:
+        # A token that is too long or not text cannot be a notebook this server
+        # made. The question still runs, without one. Nothing from the token is logged.
+        if value is None or (isinstance(value, str) and len(value) <= NOTEBOOK_TOKEN_MAX_CHARS):
+            return value
+        logger.warning("Ignoring a research notebook that is not a token this server could have made")
+        return None
 
 
 class ExperienceGroup(ExperienceModel):
@@ -1071,3 +1091,7 @@ class ExperienceResponse(ExperienceModel):
     # A 32-block exploratory response can legitimately reference more than one
     # source per block (for example, show identity plus a recording path).
     sources: list[SourceReference] = Field(default_factory=list, max_length=LIST_CEILING)
+    notebook: str | None = Field(
+        default=None,
+        description="Signed research notebook: what this conversation's tools found so far. Send it back with the next question.",
+    )
