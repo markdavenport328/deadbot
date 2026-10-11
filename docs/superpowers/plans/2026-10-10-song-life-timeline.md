@@ -26,7 +26,15 @@
 
 # Phase 1: new files only (complete)
 
-Phase 1 was built and verified while planning: every code block below is the committed file, so the plan and the code cannot drift. Commits: `cd5e9d8`, `311d09b`, `b6708f5`, `fe79528`, `d0ba2b8`, `daa0132`.
+Phase 1 was built and verified while planning: every code block below is the committed file, so the plan and the code cannot drift. Commits: `cd5e9d8`, `311d09b`, `b6708f5`, `fe79528`, `d0ba2b8`, `daa0132`, then two commits of fixes from the final review (`b2758f0`, `b45abe1`):
+
+- Release lengths: when several releases carry a performance and disagree, take the one nearest the tape, else the longest (a 30 Days of Dead excerpt no longer beats the full release).
+- Fallback pick: a picked version outranks a picked show; Dead.net release confirmations are not picks.
+- The tooltip and Ask follow the model's stop for a year, not the library's pick.
+- Pins are placed left to right whatever the model's order, and the chart grows at the top for each extra pin row.
+- Count gridlines never repeat for songs played once or twice.
+- A slower year lookup for an earlier Length dot never replaces a later choice.
+- "usually followed by" replaces "usually into", since the count includes songs that followed without a segue.
 
 ### Task 1: Song-life data module
 
@@ -109,7 +117,7 @@ def test_year_summaries_span_every_year_with_counts_and_lengths(terrapin):
     y1979 = next(row for row in rows if row["year"] == 1979)
     assert y1979["count"] == 23
     assert y1979["top_next"] == {"title": "Playing In The Band", "count": 20}
-    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 925}
+    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 937}
     assert y1979["median_seconds"] == 758
     assert y1979["pick"]["track"]["audio_url"].startswith("https://archive.org/download/")
 
@@ -201,6 +209,22 @@ def test_tool_payload_stays_compact(sqlite_store, song_id):
     assert len(json.dumps(payload, ensure_ascii=False)) < 9000
     assert payload["years"][0]["count"] > 0
     assert payload["stops_note"]
+
+
+def test_disagreeing_releases_take_the_length_nearest_the_tape(sqlite_store):
+    # A 30 Days of Dead excerpt (447s) must not beat the full release (1263s); the tape runs 1244s.
+    pitb = by_date(song_life.life_performances(sqlite_store, "song-playing-in-the-band"), "1974-02-22")
+    assert (pitb.seconds, pitb.length_source) == (1263, "release")
+    assert song_life._release_length([447, 1263], None) == 1263
+    assert song_life._release_length([30], 500) == 30
+
+
+def test_a_picked_version_outranks_an_earlier_picked_show(sqlite_store):
+    rows = song_life.card_data(sqlite_store, "song-fire-on-the-mountain")["year_summaries"]
+    pick = next(row for row in rows if row["year"] == 1977)["pick"]
+    assert (pick["basis"], pick["show_date"], pick["basis_detail"]) == ("picked", "1977-05-13", "Charlie Miller")
+    # Release confirmations are not picks.
+    assert not any(s.voice == "Dead.net" for p in song_life.life_performances(sqlite_store, TERRAPIN) for s in p.signals)
 ```
 
 - [x] **Step 2: Run them to see them fail**
@@ -245,7 +269,10 @@ PATTERN_THRESHOLD = 5
 # A neighbor song met this many times or fewer stands out.
 RARE_NEIGHBOR_MEETINGS = 2
 # Voices for selection sources the import's selector names do not cover.
-SOURCE_VOICES = {"headyversion": "Headyversion voters", "deadnet-official-release-pass": "Dead.net"}
+SOURCE_VOICES = {"headyversion": "Headyversion voters"}
+# Signals that confirm an official release rather than pick a version; the
+# release titles already carry them.
+RELEASE_CONFIRMATION_SOURCES = {"deadnet-official-release-pass"}
 
 
 def clock(seconds: int | None) -> str:
@@ -344,6 +371,21 @@ class LifePerformance:
         }
 
 
+def _release_length(candidates: list[int], tape_seconds: int | None) -> int | None:
+    """One release length when several releases carry the performance.
+
+    Releases can disagree (a 30 Days of Dead excerpt against the full
+    release), so the one nearest the tape wins; with no tape, the longest.
+    """
+
+    usable = [seconds for seconds in candidates if seconds >= MIN_LENGTH_SECONDS]
+    if not usable:
+        return min(candidates) if candidates else None
+    if tape_seconds is not None and tape_seconds >= MIN_LENGTH_SECONDS:
+        return min(usable, key=lambda seconds: (abs(seconds - tape_seconds), -seconds))
+    return max(usable)
+
+
 def _length(release_seconds: int | None, tape_seconds: int | None, performance_id: str) -> tuple[int | None, str | None]:
     """Official release seconds first, then the tape track's; a too-short value is unknown."""
 
@@ -357,8 +399,8 @@ def _length(release_seconds: int | None, tape_seconds: int | None, performance_i
     return None, None
 
 
-def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, int], dict[str, tuple[str, ...]]]:
-    """Each performance's release seconds (its tracks on one release summed) and release titles."""
+def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, list[int]], dict[str, tuple[str, ...]]]:
+    """Each performance's release lengths (its tracks on one release summed, one per release) and release titles."""
 
     tracks = store.rows_in("official_release_tracks", "performance_id", performance_ids)
     releases = {row["release_id"]: row for row in store.rows_in("official_releases", "release_id", {t["release_id"] for t in tracks})}
@@ -366,12 +408,12 @@ def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[s
     for track in tracks:
         if track["release_id"] in releases:
             per_release[track["performance_id"]][track["release_id"]] += _int(track.get("duration_seconds"))
-    seconds: dict[str, int] = {}
+    seconds: dict[str, list[int]] = {}
     titles: dict[str, tuple[str, ...]] = {}
     for performance_id, by_release in per_release.items():
-        timed = [(release_id, total) for release_id, total in sorted(by_release.items()) if total > 0]
+        timed = [total for _release_id, total in sorted(by_release.items()) if total > 0]
         if timed:
-            seconds[performance_id] = timed[0][1]
+            seconds[performance_id] = timed
         ordered = sorted(by_release, key=lambda release_id: (releases[release_id].get("release_date") or "9999", releases[release_id].get("title") or ""))
         titles[performance_id] = tuple(dict.fromkeys(releases[release_id].get("title") or release_id for release_id in ordered))
     return seconds, titles
@@ -399,7 +441,7 @@ def _signals(store: CanonicalStore, performance_ids: set[str], show_ids: set[str
     by_performance: dict[str, list[str]] = defaultdict(list)
     by_show: dict[str, list[str]] = defaultdict(list)
     for signal in inventory:
-        if str(signal.get("resolution_state", "")).startswith("held_"):
+        if str(signal.get("resolution_state", "")).startswith("held_") or signal.get("source") in RELEASE_CONFIRMATION_SOURCES:
             continue
         voice = _selector_name(signal) or signal.get("selection_label") or SOURCE_VOICES.get(signal["source"], signal["source"])
         performances = signal.get("candidate_performances") or []
@@ -456,7 +498,9 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
         venue = venues.get(show.get("venue_id", "")) or {}
         before, after = around[performance_id]
         track = tracks.get(performance_id)
-        seconds, source = _length(release_seconds.get(performance_id), track.duration_seconds if track else None, performance_id)
+        tape_seconds = track.duration_seconds if track else None
+        release = _release_length(release_seconds.get(performance_id, []), tape_seconds)
+        seconds, source = _length(release, tape_seconds, performance_id)
         voices = performance_voices.get(performance_id, [])
         signals = [Signal(voice, "performance") for voice in voices]
         signals += [Signal(voice, "show") for voice in show_voices.get(row["show_id"], []) if voice not in voices]
@@ -489,13 +533,14 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
 
 
 def _fallback_pick(members: list[LifePerformance]) -> tuple[LifePerformance, str, str | None] | None:
-    """The year's pick when the model names none: picked, then released, then first."""
+    """The year's pick when the model names none: a picked version, a picked show, a release, the first."""
 
     playable = [performance for performance in members if performance.audio_url]
-    for performance in playable:
-        if performance.signals:
-            signal = performance.signals[0]
-            return performance, "picked" if signal.scope == "performance" else "show_picked", signal.voice
+    for scope, basis in (("performance", "picked"), ("show", "show_picked")):
+        for performance in playable:
+            signal = next((item for item in performance.signals if item.scope == scope), None)
+            if signal:
+                return performance, basis, signal.voice
     for performance in playable:
         if performance.releases:
             return performance, "released", performance.releases[0]
@@ -727,7 +772,7 @@ def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
 - [x] **Step 4: Run the tests**
 
 Run: `PYTHONPATH=. ../../../.venv/bin/python -m pytest tests/test_song_life.py -q`
-Expected: `17 passed`
+Expected: `19 passed`
 
 - [x] **Step 5: Commit**
 
@@ -868,7 +913,7 @@ git commit -m "Export Terrapin timeline fixtures from the real library, stops ma
 
 ```ts
 import { afterEach, expect, test, vi } from "vitest";
-import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pointX, yFor, yearLabelStep } from "./song-timeline-geometry";
+import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pinY, pointX, yFor, yearLabelStep } from "./song-timeline-geometry";
 import { askQuestion, flowLine, focusFor, initialYear, pickEyebrow, performanceTags, yearFacts } from "./song-timeline-text";
 import type { SongTimelineData, YearPerformance, YearSummary } from "./song-timeline-types";
 import { fetchSongYear, forgetSongYears, songYearUrl } from "./song-year";
@@ -948,13 +993,20 @@ test("the vertical scales round up to tidy gridlines", () => {
 
 test("crowded pins stack into rows and year labels thin out when narrow", () => {
   expect(pinRows([10, 15, 60, 70, 74, 120])).toEqual([0, 1, 0, 1, 2, 0]);
+  // Stops arrive in listening order; rows are assigned left to right.
+  expect(pinRows([500, 100, 300, 112, 510])).toEqual([0, 0, 0, 1, 1]);
+  expect(countTicks(1)).toEqual([0, 1]);
+  expect(countTicks(2)).toEqual([0, 1, 2]);
+  const roomy = frame(600, [1977], "count", 3);
+  expect(roomy.plotTop - frame(600, [1977], "count").plotTop).toBe(38);
+  expect(pinY(roomy, 2)).toBeGreaterThan(0);
   expect(yearLabelStep(50)).toBe(1);
   expect(yearLabelStep(25)).toBe(3);
   expect(yearLabelStep(12)).toBe(6);
 });
 
 test("a year's facts, pick and question read from the data", () => {
-  expect(yearFacts(y1979)).toBe("23 performances · typically 12:38 · usually into Playing In The Band (20 of 23)");
+  expect(yearFacts(y1979)).toBe("23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)");
   expect(pickEyebrow(y1979.pick!, null)).toBe("Show picked by Charlie Miller");
   expect(pickEyebrow(y1979.pick!, { number: 4, label: "Charlie Miller's pick" })).toBe("Stop 4 · Charlie Miller's pick");
   expect(pickEyebrow({ ...y1979.pick!, basis: "released", basis_detail: "Dave's Picks, Volume 31: Uptown Theatre" }, null)).toBe("On Dave's Picks, Volume 31");
@@ -976,7 +1028,7 @@ test("focus names the song, the year and its pick; the open year falls back to a
     song_id: "song-terrapin-station",
     year: 1979,
     ids: ["song-terrapin-station", "p-msg"],
-    facts: ["23 performances · typically 12:38 · usually into Playing In The Band (20 of 23)"]
+    facts: ["23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)"]
   });
   expect(initialYear(data)).toBe(1979);
   expect(initialYear({ ...data, open_year: 1978 })).toBe(1979);
@@ -1119,8 +1171,11 @@ export function chartHeight(view: ChartView, width: number): number {
   return view === "length" ? (narrow ? 250 : 290) : narrow ? 230 : 270;
 }
 
-export function frame(width: number, years: number[], view: ChartView): Frame {
-  const height = chartHeight(view, width);
+// `pinRows` is how many rows of stop pins sit above the plot; each extra row
+// adds room at the top so no pin is drawn off the chart.
+export function frame(width: number, years: number[], view: ChartView, pinRows = 1): Frame {
+  const extra = Math.max(0, pinRows - 1) * PIN_ROW_HEIGHT;
+  const height = chartHeight(view, width) + extra;
   const yearCount = Math.max(1, years.length);
   const bandWidth = (width - MARGIN.left - MARGIN.right) / yearCount;
   return {
@@ -1130,7 +1185,7 @@ export function frame(width: number, years: number[], view: ChartView): Frame {
     yearCount,
     bandWidth,
     barWidth: Math.min(26, bandWidth * 0.64),
-    plotTop: MARGIN.top,
+    plotTop: MARGIN.top + extra,
     plotBottom: height - MARGIN.bottom
   };
 }
@@ -1158,7 +1213,8 @@ export function countTicks(max: number): number[] {
   if (max <= 0) return [0, 1];
   const raw = max / 4;
   const power = 10 ** Math.floor(Math.log10(raw));
-  const step = (NICE.find((n) => n * power >= raw) ?? 10) * power;
+  // Counts are whole numbers, so the step is never below one.
+  const step = Math.max(1, (NICE.find((n) => n * power >= raw) ?? 10) * power);
   const top = Math.ceil(max / step) * step;
   const ticks: number[] = [];
   for (let value = 0; value <= top + step / 2; value += step) ticks.push(Math.round(value));
@@ -1182,16 +1238,20 @@ export function yearLabelStep(bandWidth: number): number {
   return bandWidth >= 40 ? 1 : bandWidth >= 22 ? 3 : 6;
 }
 
-// Each pin's row above the chart: a pin too close to the last one in a row
-// moves up a row. Input xs are in date order.
+// Each pin's row above the chart, returned in the input's order: placed left
+// to right, a pin too close to the last one in a row moves up a row. Stops
+// arrive in the model's listening order, so they are placed by x here.
 export function pinRows(xs: number[], minGap = 20): number[] {
   const lastInRow: number[] = [];
-  return xs.map((x) => {
+  const rows = new Array<number>(xs.length).fill(0);
+  const byX = xs.map((x, index) => ({ x, index })).sort((a, b) => a.x - b.x);
+  for (const { x, index } of byX) {
     let row = 0;
     while (lastInRow[row] !== undefined && x - lastInRow[row] < minGap) row += 1;
     lastInRow[row] = x;
-    return row;
-  });
+    rows[index] = row;
+  }
+  return rows;
 }
 
 export function pinY(f: Frame, row: number): number {
@@ -1225,12 +1285,13 @@ export function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-// "23 performances · typically 12:38 · usually into Playing In The Band (20 of 23)"
+// "23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)".
+// The count includes songs that followed without a segue, so it says "followed by"
 export function yearFacts(summary: YearSummary): string {
   const parts = [plural(summary.count, "performance")];
   if (summary.median_seconds != null) parts.push(`typically ${clock(summary.median_seconds)}`);
   const next = summary.top_next;
-  if (next) parts.push(`${next.count * 2 > summary.count ? "usually" : "most often"} into ${next.title} (${next.count} of ${summary.count})`);
+  if (next) parts.push(`${next.count * 2 > summary.count ? "usually" : "most often"} followed by ${next.title} (${next.count} of ${summary.count})`);
   return parts.join(" · ");
 }
 
@@ -1271,12 +1332,14 @@ export function performanceTags(performance: YearPerformance, stopNumber: number
   return tags;
 }
 
-export function focusFor(data: SongTimelineData, summary: YearSummary): TimelineFocus {
+// `chosenId` is the performance the panel shows for the year: the model's stop
+// when it named one, else the library's pick.
+export function focusFor(data: SongTimelineData, summary: YearSummary, chosenId: string | null = summary.pick?.performance_id ?? null): TimelineFocus {
   return {
     label: `${data.title} in ${summary.year}`,
     song_id: data.song_id,
     year: summary.year,
-    ids: [data.song_id, ...(summary.pick ? [summary.pick.performance_id] : [])],
+    ids: [data.song_id, ...(chosenId ? [chosenId] : [])],
     facts: [yearFacts(summary)]
   };
 }
@@ -1328,7 +1391,7 @@ export function forgetSongYears(): void {
 - [x] **Step 8: Run the tests and the type check**
 
 Run: `cd web && npx vitest run src/song-timeline-helpers.test.ts && npx tsc -p tsconfig.json --noEmit`
-Expected: `7 passed`, no type errors
+Expected: all pass, no type errors
 
 - [x] **Step 9: Commit**
 
@@ -1454,7 +1517,7 @@ test("played years are buttons; a year it was not played is not", () => {
 test("the model's open year opens first with its facts and pick", () => {
   setup();
   const panel = screen.getByRole("region", { name: "1979" });
-  expect(within(panel).getByText("1 performance · typically 12:15 · usually into Playing In The Band (1 of 1)")).toBeInTheDocument();
+  expect(within(panel).getByText("1 performance · typically 12:15 · usually followed by Playing In The Band (1 of 1)")).toBeInTheDocument();
   expect(within(panel).getByText("Stop 3 · Charlie Miller's pick")).toBeInTheDocument();
   expect(within(panel).getByText("From your first question.")).toBeInTheDocument();
 });
@@ -1527,7 +1590,7 @@ test("asking sends the year's question with the year as focus", async () => {
     song_id: "song-terrapin-station",
     year: 1979,
     ids: ["song-terrapin-station", "p-msg"],
-    facts: ["1 performance · typically 12:15 · usually into Playing In The Band (1 of 1)"]
+    facts: ["1 performance · typically 12:15 · usually followed by Playing In The Band (1 of 1)"]
   });
 });
 
@@ -1551,6 +1614,32 @@ test("a dot plays its performance once its year has loaded", async () => {
   const msgDot = [...container.querySelectorAll(".st-dot")][2];
   await user.click(msgDot.querySelector(".st-dot-hit")!);
   await waitFor(() => expect(screen.getByTestId("queue")).toHaveTextContent("p-msg"));
+});
+
+test("a year with a stop asks about the stop, not the library's pick", async () => {
+  const user = userEvent.setup();
+  const { onAsk } = setup();
+  await user.click(screen.getByRole("button", { name: /^1977:/ }));
+  await user.click(screen.getByRole("button", { name: /Tell me about Terrapin Station in 1977/ }));
+  expect(onAsk.mock.calls[0][1].ids).toEqual(["song-terrapin-station", "p-debut"]);
+});
+
+test("a slow lookup for an earlier dot does not replace a later choice", async () => {
+  const user = userEvent.setup();
+  let finish1977: (detail: SongYearDetail) => void = () => undefined;
+  const fetchYear = vi.fn((_song: string, year: number) =>
+    year === 1977 ? new Promise<SongYearDetail>((resolve) => (finish1977 = resolve)) : Promise.resolve(detail1979)
+  );
+  const { container } = setup({}, fetchYear);
+  await user.click(screen.getByRole("button", { name: "Length" }));
+  const dots = [...container.querySelectorAll(".st-dot-hit")];
+  await user.click(dots[1]);
+  await user.click(dots[2]);
+  await waitFor(() => expect(screen.getByTestId("queue")).toHaveTextContent("p-msg"));
+  finish1977({ ...detail1979, year: 1977, performances: [{ ...detail1979.performances[0], performance_id: "p-hartford", show_date: "1977-05-28", track: track("p-hartford") }] });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(screen.getByTestId("queue")).toHaveTextContent("p-msg");
+  expect(screen.getByTestId("queue")).not.toHaveTextContent("p-hartford");
 });
 ```
 
@@ -1648,6 +1737,8 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   const [year, setYear] = useState<number | null>(() => initialYear(data));
   const [listOpen, setListOpen] = useState(false);
   const [years, setYears] = useState<Record<number, YearState>>({});
+  // The latest dot the visitor chose; a slower lookup for an earlier dot is ignored.
+  const latestPoint = useRef<string | null>(null);
 
   const summaries = useMemo(() => new Map(data.year_summaries.map((summary) => [summary.year, summary])), [data]);
   const playedYears = useMemo(() => data.year_summaries.filter((summary) => summary.count > 0).map((summary) => summary.year), [data]);
@@ -1706,8 +1797,10 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   const playPoint = useCallback(
     (point: LengthPoint) => {
       const target = Number(point.show_date.slice(0, 4));
+      latestPoint.current = point.performance_id;
       selectYear(target);
       void loadYear(target).then((detail) => {
+        if (latestPoint.current !== point.performance_id) return;
         const performance = detail?.performances.find((item) => item.performance_id === point.performance_id);
         if (performance?.track) play(asPlayerTrack(performance.track, performance.show_date, performance.venue_name));
       });
@@ -1729,7 +1822,13 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   }
 
   const summary = year != null ? summaries.get(year) : undefined;
-  const f = width > 0 ? frame(width, data.year_summaries.map((item) => item.year), view) : null;
+  const allYears = data.year_summaries.map((item) => item.year);
+  // Pins sit in rows above the plot, except Length-view pins that sit on their own dot.
+  const inRows = (stop: PlacedStop) => !(view === "length" && stop.seconds != null);
+  const base = width > 0 ? frame(width, allYears, view) : null;
+  const rows = base ? pinRows(stops.map((stop) => (inRows(stop) ? pointX(base, stop.show_date) : -1e9))) : [];
+  const rowCount = 1 + Math.max(0, ...rows.filter((_row, index) => inRows(stops[index])));
+  const f = width > 0 ? frame(width, allYears, view, rowCount) : null;
 
   return (
     <div className="song-timeline">
@@ -1752,6 +1851,7 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
             selectedYear={year}
             playedYears={playedYears}
             stops={stops}
+            rows={rows}
             playingId={playingId}
             onSelectYear={selectYear}
             onPlayStop={playStop}
@@ -1797,6 +1897,7 @@ function TimelineChart({
   selectedYear,
   playedYears,
   stops,
+  rows,
   playingId,
   onSelectYear,
   onPlayStop,
@@ -1808,6 +1909,7 @@ function TimelineChart({
   selectedYear: number | null;
   playedYears: number[];
   stops: PlacedStop[];
+  rows: number[];
   playingId: string | null;
   onSelectYear: (year: number) => void;
   onPlayStop: (stop: PlacedStop) => void;
@@ -1822,7 +1924,6 @@ function TimelineChart({
   const top = ticks[ticks.length - 1];
   const step = yearLabelStep(f.bandWidth);
   const stopIds = new Set(stops.map((stop) => stop.performance_id));
-  const rows = pinRows(stops.map((stop) => pointX(f, stop.show_date)));
 
   const tipAt = (event: MouseEvent, content: ReactNode) => {
     const box = svgRef.current?.getBoundingClientRect();
@@ -1837,15 +1938,17 @@ function TimelineChart({
     requestAnimationFrame(() => svgRef.current?.querySelector<SVGGElement>(`[data-year="${target}"]`)?.focus());
   };
 
-  const bandTip = (summary: YearSummary): ReactNode =>
-    view === "count" ? (
+  const bandTip = (summary: YearSummary): ReactNode => {
+    const stop = stops.find((item) => item.show_date.startsWith(String(summary.year)));
+    const chosen = stop ? { venue: stop.venue_name, date: stop.show_date } : summary.pick ? { venue: summary.pick.venue_name, date: summary.pick.show_date } : null;
+    return view === "count" ? (
       <>
         <strong>
           {plural(summary.count, "performance")} in {summary.year}
         </strong>
-        {summary.pick && (
+        {chosen && (
           <span className="st-tip-gold">
-            ▸ {summary.pick.venue_name}, {monthDay(summary.pick.show_date)}
+            ▸ {chosen.venue}, {monthDay(chosen.date)}
           </span>
         )}
         <span className="st-tip-hint">Choose to open {summary.year}</span>
@@ -1858,6 +1961,7 @@ function TimelineChart({
         <span className="st-tip-hint">Choose to open {summary.year}</span>
       </>
     );
+  };
 
   return (
     <>
@@ -2139,7 +2243,7 @@ function YearPanel({
         <button type="button" className="st-see-all" aria-expanded={listOpen} onClick={onToggleList}>
           {listOpen ? `Hide the ${summary.year} list` : `See all ${summary.count} from ${summary.year}`}
         </button>
-        <button type="button" className="st-ask" onClick={() => onAsk(question, focusFor(data, summary))}>
+        <button type="button" className="st-ask" onClick={() => onAsk(question, focusFor(data, summary, chosen?.id ?? null))}>
           <span className="st-ask-mark" aria-hidden="true">
             ?
           </span>
@@ -2407,7 +2511,7 @@ button.st-stop:hover .st-stop-label, .st-stop-playing .st-stop-label { color: va
 - [x] **Step 5: Run the component tests, the whole web suite and the type check**
 
 Run: `cd web && npx vitest run && npx tsc -p tsconfig.json --noEmit`
-Expected: all test files pass (`12` in `SongTimeline.test.tsx`), no type errors
+Expected: all test files pass (`14` in `SongTimeline.test.tsx`), no type errors
 
 - [x] **Step 6: Commit**
 
@@ -2579,7 +2683,7 @@ def test_get_song_life_states_years_and_standouts(built_sqlite, tmp_path):
     tool = next(t for t in build_tools(store) if t.name == "get_song_life")
     payload = json.loads(tool.invoke({"song_id_or_title": "Terrapin Station"}))
     assert payload["performance_count"] == 302
-    assert (payload["years"][0]["year"], payload["years"][0]["count"], payload["years"][0]["longest_minutes"]) == (1977, 28, 14.9)
+    assert payload["years"][0] == {"year": 1977, "count": 28, "typical_minutes": payload["years"][0]["typical_minutes"], "longest_minutes": 14.9}
     assert any("longest on record (25:14)" in item["facts"] for item in payload["standouts"])
     missing = json.loads(tool.invoke({"song_id_or_title": "No Such Song"}))
     assert missing["error"] == "Song not found or ambiguous"
@@ -2657,8 +2761,14 @@ def test_song_overview_reads_stops_and_the_old_ids_key():
     assert ref.open_year == 1979 and ref.chart_view == "length"
     old = SongOverviewRef.model_validate({"type": "song_overview", "song_id": "song-terrapin-station", "representative_performance_ids": ["p1", "p2"]})
     assert [stop.performance_id for stop in old.representatives] == ["p1", "p2"]
-    loose = SongOverviewRef.model_validate({"type": "song_overview", "song_id": "s", "chart_view": "sideways", "open_year": "soon"})
-    assert loose.chart_view is None and loose.open_year is None
+    loose = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "s", "chart_view": "sideways", "open_year": "1979",
+        "representatives": ["p1", {"performance_id": "p2", "label": "Two"}, 7],
+        "year_questions": [{"year": 1979, "question": "Q?"}, {"question": "no year"}],
+    })
+    assert loose.chart_view is None and loose.open_year == 1979
+    assert [stop.performance_id for stop in loose.representatives] == ["p1", "p2"]
+    assert [q.year for q in loose.year_questions] == [1979]
 ```
 
 In `tests/test_experience.py` (using the CSV store):
@@ -2676,7 +2786,7 @@ def test_song_overview_with_by_year_carries_the_timeline():
         open_year=1979, chart_view="length", year_questions=[{"year": 1979, "question": "How did 1979 differ?"}],
     )
     assert [row.year for row in block.year_summaries][:3] == [1977, 1978, 1979]
-    assert len(block.length_points) == 279
+    assert len(block.length_points) == 280
     stop = block.representative_performances[0]
     assert (stop.label, stop.why, stop.seconds) == ("Charlie Miller's pick", "The 1979 one.", 735)
     assert block.open_year == 1979 and block.chart_view == "length"
@@ -2732,23 +2842,34 @@ In `SongOverviewRef`, replace `representative_performance_ids` with:
         value = dict(value)
         if "representatives" not in value and isinstance(value.get("representative_performance_ids"), list):
             value["representatives"] = [{"performance_id": pid} for pid in value["representative_performance_ids"] if isinstance(pid, str)]
+        # Keep every usable stop; a bare ID string is a stop without words.
+        value["representatives"] = [
+            {"performance_id": item} if isinstance(item, str) else item
+            for item in value.get("representatives") or []
+            if isinstance(item, str) or (isinstance(item, dict) and isinstance(item.get("performance_id"), str))
+        ]
         if value.get("chart_view") not in (None, "count", "length"):
             value["chart_view"] = None
-        if not isinstance(value.get("open_year"), int):
-            value["open_year"] = None
+        year = value.get("open_year")
+        value["open_year"] = int(year) if isinstance(year, int) or (isinstance(year, str) and year.strip().isdigit()) else None
+        # One bad year question is dropped, never the whole card.
+        value["year_questions"] = [
+            item for item in value.get("year_questions") or []
+            if isinstance(item, dict) and isinstance(item.get("year"), int) and isinstance(item.get("question"), str)
+        ]
         return value
 ```
 
-Update the `history` facet description to end: "With by_year, the timeline carries this and the History tab is not shown." In the `song_overview` resolution branch, pass the grounded stops and new fields instead of `representative_performance_ids`:
+Update the `history` facet description to end: "With by_year, the timeline carries this and the History tab is not shown." In the `song_overview` resolution branch, pass every stop in the model's order, marking which ones are grounded, instead of `representative_performance_ids`:
 
 ```python
-                representatives=[stop.model_dump() for stop in item.representatives if stop.performance_id in grounded.ids],
+                representatives=[{**stop.model_dump(), "grounded": stop.performance_id in grounded.ids} for stop in item.representatives],
                 open_year=item.open_year,
                 chart_view=item.chart_view,
                 year_questions=[question.model_dump() for question in item.year_questions],
 ```
 
-A stop whose ID is not grounded keeps its words: also pass `unresolved_stops=[stop.model_dump() for stop in item.representatives if stop.performance_id not in grounded.ids]`, which `_song_overview` appends as representatives with only `performance_id`, `label` and `why`.
+`_song_overview` keeps that one list in order. A stop resolves only when it is grounded and is a performance of this song; any other stop (ungrounded, or another song's performance) stays in its place with only `performance_id`, `label` and `why`, so the model's numbering and words survive.
 
 - [ ] **Step 4: Add the page models** (`deadbot/experience.py`)
 
@@ -2786,11 +2907,11 @@ class SongYearQuestion(ExperienceModel):
     question: str
 ```
 
-On `SongOverviewBlock` add `open_year: int | None = None`, `chart_view: Literal["count", "length"] | None = None`, `year_questions: list[SongYearQuestion]`, `year_summaries: list[SongYearSummary]`, `length_points: list[SongLengthPoint]` (lists `Field(default_factory=list, max_length=LIST_CEILING)`).
+On `SongOverviewBlock` add `open_year: int | None = None`, `chart_view: Literal["count", "length"] | None = None`, `year_questions: list[SongYearQuestion]` and `year_summaries: list[SongYearSummary]` (both `Field(default_factory=list, max_length=LIST_CEILING)`), and `length_points: list[SongLengthPoint] = Field(default_factory=list)` with **no** `max_length`: Drums has 1,407 points and Space 1,136, above `LIST_CEILING` (1,000), and a validation failure would break the card. If a ceiling is wanted, set one far above (for example 5,000) in `_song_overview`, trimming and logging. Note the size: Drums' card data is about 146 KB.
 
 - [ ] **Step 5: Fill them** (`deadbot/composition.py`, `_song_overview`)
 
-Replace the `representative_performance_ids` parameter with `representatives: list[dict] | None = None`, `unresolved_stops: list[dict] | None = None`, `open_year`, `chart_view`, `year_questions`. Build each representative as today from its `performance_id`, adding `label`, `why`, and `seconds` from `song_life` (`{p.performance_id: p.seconds for p in song_life.life_performances(store, song_id)}`); append unresolved stops as `SongRepresentativePerformance(performance_id=..., label=..., why=...)`. When `"by_year" in facets`, set `year_summaries` and `length_points` from `song_life.card_data(store, song_id)`.
+Replace the `representative_performance_ids` parameter with `representatives: list[dict] | None = None` (each `{performance_id, label, why, grounded}`), `open_year`, `chart_view`, `year_questions`. Walk the list in order: a grounded stop that is one of this song's performances builds as today, adding `label`, `why`, and `seconds` from `song_life` (`{p.performance_id: p.seconds for p in song_life.life_performances(store, song_id)}`); every other stop becomes `SongRepresentativePerformance(performance_id=..., label=..., why=...)` in the same position. When `"by_year" in facets`, set `year_summaries` and `length_points` from `song_life.card_data(store, song_id)`.
 
 - [ ] **Step 6: Run the tests and the existing suites that build song cards**
 
@@ -2914,7 +3035,7 @@ function timelineData(block: SongOverviewBlockT): SongTimelineData {
 }
 ```
 
-When `showsFacet("by_year") && block.year_summaries.length > 0`, render `<SongTimeline data={timelineData(block)} onAsk={(question, focus) => onFollowUp(question, { block_type: "song_overview", block_id: focus.song_id, label: focus.label, ids: focus.ids, facts: focus.facts })} />` in place of the `DataChart` and the representatives list, and leave the History tab out of `tabs`. Cards without `by_year` keep today's rendering.
+When `showsFacet("by_year") && block.year_summaries.length > 0`, render `<SongTimeline data={timelineData(block)} onAsk={(question, focus) => onFollowUp(question, { block_type: "song_overview", block_id: focus.song_id, label: focus.label, ids: focus.ids, facts: focus.facts })} />` in place of the `DataChart` and the representatives list, and leave the History tab out of `tabs`. Cards without `by_year` keep today's rendering. Give the timeline `key={`${block.song_id}:${block.open_year ?? ""}:${block.chart_view ?? ""}`}`: App keeps the same element when the final page replaces the streamed draft, and `SongTimeline` reads `open_year` and `chart_view` only when it mounts, so without the key a final page that changes them would be ignored.
 
 - [ ] **Step 4: Register the visual fixture** from `song-timeline-terrapin.json` in `web/src/visual-fixtures.ts` the way the grid fixtures are registered, and delete the preview page files.
 
@@ -2932,4 +3053,5 @@ git commit -m "Put the song timeline on song cards and ask about a year with the
 - [ ] **Step 1:** Run the owner's questions live against the worktree API (see the local-replay notes in memory): "How often did they play Terrapin", "How did Dark Star change over the years", "Best Sugar Magnolias", a rarity, and a cover. For each, record whether the model called `get_song_life`, chose stops with labels and reasons that are not just first-of-year, set `open_year` from the question, and the turn's added latency.
 - [ ] **Step 2:** Score the pages with `scripts/page_eval.py`; compare with the pre-change runs.
 - [ ] **Step 3:** If the model rarely chooses stops, ask what it was missing (AGENTS.md "When an answer is weak") before touching the prompt: check that `get_song_life` appears in its tool calls and that the field descriptions read clearly.
-- [ ] **Step 4:** Update `docs/UX-NEXT-STEPS.md` with the outcome, then hand the owner the push command.
+- [ ] **Step 4:** Known data gap to watch in the runs: the library marks only 2 performances as encores (encores are mostly stored as "Set 3"), so the "encore" standout rarely fires and encores read as "in Set 3" or "closed the set". Note it for a data pass rather than working around it in code.
+- [ ] **Step 5:** Update `docs/UX-NEXT-STEPS.md` with the outcome, then hand the owner the push command.
