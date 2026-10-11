@@ -66,6 +66,16 @@ function PlayPauseIcon({ playing }: { playing: boolean }) {
   );
 }
 
+// Back and next for a queue: a bar against a triangle, the triangle pointing
+// the way the queue moves.
+function StepIcon({ direction }: { direction: "previous" | "next" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d={direction === "previous" ? "M6 5h2.5v14H6zM19 5v14L9 12z" : "M15.5 5H18v14h-2.5zM5 5v14l10-7z"} />
+    </svg>
+  );
+}
+
 function formatShowDate(iso: string | null | undefined): string {
   if (!iso) return "Undated";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -1892,9 +1902,11 @@ function ComposedPage({
 // over the left rail, since it renders inside .content-pane). A 44px round
 // gold play/pause button, a real range-input scrubber with tabular-numeral
 // elapsed/total time, and one quiet external link to the tape's own details
-// page — everything else (queueing, position, next/previous within the
-// current queue) is the shared PlayerProvider's job.
-function NowPlayingBar() {
+// page. When more than one track is queued (a set, a path, a play-all), quiet
+// back and next steps flank the gold button; each dims at its end of the
+// queue rather than vanishing, so the bar holds still. Queueing and position
+// are the shared PlayerProvider's job.
+export function NowPlayingBar() {
   const player = usePlayer();
   const track = player.currentTrack;
   if (!track) return null;
@@ -1904,6 +1916,7 @@ function NowPlayingBar() {
   const duration = player.duration || track.durationSeconds || 0;
   const position = Math.min(player.position, duration || 0);
   const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
+  const queued = player.queue.length > 1;
   return (
     <div className="now-playing-bar" role="region" aria-label="Now playing">
       {track.thumbnailUrl ? (
@@ -1915,24 +1928,36 @@ function NowPlayingBar() {
         <p className="now-playing-title">{track.title}</p>
         {isError ? <p className="now-playing-error">Couldn’t play this track</p> : metaLine ? <p className="now-playing-meta">{metaLine}</p> : null}
       </div>
-      {isError ? (
-        <button type="button" className="now-playing-retry" onClick={() => player.retry()}>
-          Retry
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="now-playing-toggle"
-          onClick={() => {
-            if (!isLoading) player.toggle();
-          }}
-          aria-label={isPlaying ? "Pause" : "Play"}
-          aria-busy={isLoading}
-          disabled={isLoading}
-        >
-          <PlayPauseIcon playing={isPlaying} />
-        </button>
-      )}
+      <div className="now-playing-controls">
+        {queued && (
+          <button type="button" className="now-playing-step" onClick={player.previous} disabled={!player.hasPrevious} aria-label="Previous track">
+            <StepIcon direction="previous" />
+          </button>
+        )}
+        {isError ? (
+          <button type="button" className="now-playing-retry" onClick={() => player.retry()}>
+            Retry
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="now-playing-toggle"
+            onClick={() => {
+              if (!isLoading) player.toggle();
+            }}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-busy={isLoading}
+            disabled={isLoading}
+          >
+            <PlayPauseIcon playing={isPlaying} />
+          </button>
+        )}
+        {queued && (
+          <button type="button" className="now-playing-step" onClick={player.next} disabled={!player.hasNext} aria-label="Next track">
+            <StepIcon direction="next" />
+          </button>
+        )}
+      </div>
       <div className="now-playing-scrubber">
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
         <input
