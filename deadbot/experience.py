@@ -578,6 +578,56 @@ class SongYearQuestion(ExperienceModel):
     question: str
 
 
+class SongNeighbor(ExperienceModel):
+    """The song just before or after a performance in its set, and whether it ran into or out of a segue."""
+
+    song_id: str
+    title: str
+    segued: bool
+
+
+class SongSignal(ExperienceModel):
+    """A voice that picked the performance, or its show."""
+
+    voice: str
+    scope: Literal["performance", "show"]
+
+
+class SongGuest(ExperienceModel):
+    name: str
+    instrument: str | None = None
+
+
+class SongYearPerformance(ExperienceModel):
+    """One performance in a song's year, every fact from the library."""
+
+    performance_id: str
+    show_id: str
+    show_date: str
+    venue_name: str | None = None
+    city: str | None = None
+    set_label: str | None = None
+    position_in_set: int = 0
+    encore: bool = False
+    previous: SongNeighbor | None = None
+    next: SongNeighbor | None = None
+    seconds: int | None = Field(default=None, ge=0)
+    length_source: Literal["release", "tape"] | None = None
+    track: PlayableTrack | None = None
+    releases: list[str] = Field(default_factory=list)
+    signals: list[SongSignal] = Field(default_factory=list)
+    guests: list[SongGuest] = Field(default_factory=list)
+
+
+class SongYearDetail(ExperienceModel):
+    """Every performance of one song in one year, for the timeline's See all."""
+
+    song_id: str
+    title: str
+    year: int
+    performances: list[SongYearPerformance] = Field(default_factory=list)
+
+
 class SongYearCount(ExperienceModel):
     """How many times a song was played in one year; a year with none is zero."""
 
