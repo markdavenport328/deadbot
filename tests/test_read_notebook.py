@@ -79,6 +79,22 @@ def test_a_sliced_read_stays_under_the_tool_result_ceiling():
     assert "_truncated" in json.loads(text)
 
 
+def test_a_read_by_an_id_the_result_holds_brings_back_the_part_that_mentions_it():
+    book, _ = record(notebook.Notebook(), "What's on the box set?", "22 nights.", [BOX_SET])
+    (entry,) = _read(book, ["gd-1972-05-26"])["notebook_entries"]
+    narrow = json.loads(tools()["get_album"].invoke({"release_id_or_title": BOX_SET[1]["release_id_or_title"], "show": "1972-05-26"}))
+    assert [track["performance_id"] for track in entry["result"]["tracks"]] == [track["performance_id"] for track in narrow["tracks"]]
+    assert {"path": "tracks", "kept": len(narrow["tracks"]), "total": 578} in entry["sliced"]
+
+
+def test_a_read_by_key_stays_whole_and_an_id_read_adds_to_only():
+    book, _ = record(notebook.Notebook(), "What's on the box set?", "22 nights.", [BOX_SET])
+    (whole,) = _read(book, [book.entries[0].key])["notebook_entries"]
+    assert "sliced" not in whole and len(whole["result"]["contents"]["shows"]) == 22
+    (both,) = _read_only(book, ["gd-1972-05-26"], ["gd-1972-04-07"])["notebook_entries"]
+    assert [show["show_id"] for show in both["result"]["contents"]["shows"]] == ["gd-1972-04-07", "gd-1972-05-26"]
+
+
 def test_without_a_slice_the_read_is_whole_and_says_nothing_about_slicing():
     book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
     (entry,) = _read(book, [book.entries[0].key])["notebook_entries"]

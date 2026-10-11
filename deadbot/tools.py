@@ -2553,15 +2553,17 @@ def build_tools(
 
         Pass the bracketed keys from the notebook's lines, or library IDs and
         arguments (a show_id, song_id, performance_id, aggregation_id,
-        result_id or date) to get the entries that hold them. Several keys in
-        one call come back together. Each result is what the original call
+        result_id or date). A key, or an argument a call was made with, brings
+        that result back whole. A library ID that results hold brings back the
+        part of each of those results that mentions it: one night's tracks
+        from a box set, one song's rows in a long listing. Several keys and IDs
+        in one call come back together. Each result is what the original call
         returned, run again against the library, so its IDs, aggregation_id
         and result_id can go on the page.
 
-        only takes IDs, dates or names and brings back the part of each result
-        that mentions them: every list in the result narrowed to its rows that
-        contain one of those values (one night's tracks from a box set, one
-        song's rows in a long listing), with the rest of the result as it was.
+        only takes IDs, dates or names and narrows every result read to the
+        part that mentions them. A narrowed result keeps everything except its
+        lists, which hold just the rows that contain one of those values;
         `sliced` gives each narrowed list's rows kept and its full count.
         """
         book = ((config or {}).get("configurable") or {}).get("notebook")
@@ -2571,11 +2573,12 @@ def build_tools(
                 "missing": [str(value).strip().strip("[]") for value in keys_or_ids],
                 "note": "The research notebook is empty for this conversation.",
             })
-        found, missing = notebook.find(book, keys_or_ids)
-        needles = [str(value).strip() for value in only or [] if str(value).strip()]
+        found, missing, by_id = notebook.find_by(book, keys_or_ids)
+        asked = [str(value).strip() for value in only or [] if str(value).strip()]
         entries = []
         for entry in found:
             item: dict[str, Any] = {"key": entry.key, "tool": entry.tool, "args": entry.args}
+            needles = list(dict.fromkeys([*asked, *by_id.get(entry.key, [])]))
             if needles:
                 sliced: list[dict[str, Any]] = []
                 item["result"] = _slice(_notebook_result(entry, whole=True), needles, "", sliced)

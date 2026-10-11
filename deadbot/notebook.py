@@ -697,12 +697,19 @@ def _arg_values(args: dict[str, Any]) -> set[str]:
     return values
 
 
-def find(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[list[Entry], list[str]]:
-    """Entries by key, else by an argument they were called with, else by an ID they returned (newest first)."""
+def find_by(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[list[Entry], list[str], dict[str, list[str]]]:
+    """Entries by key, else by an argument they were called with, else by an ID they returned (newest first).
+
+    Also returns, for each entry found only by IDs it returned, those IDs:
+    a read asked that way wants the part of the entry about them. An entry
+    also named by its key or an argument comes back whole.
+    """
 
     found: list[Entry] = []
     seen: set[str] = set()
     missing: list[str] = []
+    by_id: dict[str, list[str]] = {}
+    whole: set[str] = set()
     for raw in wanted:
         value = str(raw).strip().strip("[]")
         if not value:
@@ -710,15 +717,27 @@ def find(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[lis
         matches = [entry for entry in book.entries if entry.key == value]
         if not matches:
             matches = [entry for entry in book.entries if value in _arg_values(entry.args)]
-        if not matches:
+        held = not matches
+        if held:
             matches = [entry for entry in reversed(book.entries) if value in entry.ids][:per_id]
         if not matches:
             missing.append(value)
             continue
         for entry in matches:
+            if held:
+                by_id.setdefault(entry.key, []).append(value)
+            else:
+                whole.add(entry.key)
             if entry.key not in seen:
                 seen.add(entry.key)
                 found.append(entry)
+    return found, missing, {key: ids for key, ids in by_id.items() if key not in whole}
+
+
+def find(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[list[Entry], list[str]]:
+    """Entries by key, else by an argument they were called with, else by an ID they returned (newest first)."""
+
+    found, missing, _ = find_by(book, wanted, per_id=per_id)
     return found, missing
 
 

@@ -134,6 +134,17 @@ def test_find_matches_keys_then_arguments_then_ids():
     assert missing == ["nope"]
 
 
+def test_find_by_says_which_entries_were_found_only_by_an_id_they_hold():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM + MORNING_DEW)
+    show, song = book.entries
+    found, missing, by_id = notebook.find_by(book, ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"])
+    assert [entry.key for entry in found] == [show.key, song.key]
+    assert by_id == {show.key: ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"], song.key: ["song-morning-dew"]}
+    # A key or an argument brings the entry back whole, even when an ID also matched it.
+    _, _, by_id = notebook.find_by(book, ["gd-1972-05-26-morning-dew-2-5", "1972-05-26", song.key])
+    assert by_id == {}
+
+
 def test_grounding_and_focus_flags_cover_entries_and_pages():
     item = {"type": "show_unit", "show_id": "gd-1972-05-26", "visible_facets": ["setlist"]}
     book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM, items=[item])
