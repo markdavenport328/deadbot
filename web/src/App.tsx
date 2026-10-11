@@ -4,6 +4,7 @@ import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
 import { CardHeading, Drawer, HeadingContext, MoreAbout, TopicChips, type DrawerTab } from "./components";
 import { askRequestBody, type FollowUp } from "./ask-request";
+import { clearStoredNotebook, readStoredNotebook, storeNotebook } from "./research-notebook";
 import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
@@ -1968,6 +1969,9 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeThreadId, setActiveThreadId] = useState(createThreadId);
+  // What this conversation's research has found so far, signed by the
+  // server. It goes back with each follow-up and is replaced by each answer.
+  const [notebook, setNotebook] = useState<string | null>(readStoredNotebook);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [pendingStartsFresh, setPendingStartsFresh] = useState(false);
   // What Deadbot is doing right now, one line per tool call, newest last.
@@ -2128,9 +2132,12 @@ function App() {
 
     const requestThreadId = fresh ? createThreadId() : activeThreadId;
     const conversation = fresh ? [] : response?.conversation ?? [];
+    const sentNotebook = fresh ? null : notebook;
     if (fresh) {
       setActiveThreadId(requestThreadId);
       setResponse(null);
+      setNotebook(null);
+      clearStoredNotebook();
     }
     setPendingQuestion(trimmed);
     setPendingStartsFresh(fresh);
@@ -2149,7 +2156,7 @@ function App() {
       return;
     }
 
-    const body = askRequestBody({ question: trimmed, threadId: requestThreadId, conversation, focus });
+    const body = askRequestBody({ question: trimmed, threadId: requestThreadId, conversation, focus, notebook: sentNotebook });
     try {
       let statusCount = 0;
       const streamed = await askStreaming(body, {
@@ -2167,6 +2174,10 @@ function App() {
         onPage: (event) => setDraft((current) => applyPageEvent(current, event))
       });
       const finalResponse = streamed ?? await askPlain(body);
+      // An answer without a notebook means the server could not use ours
+      // (or has none to give); the stale token goes rather than lingering.
+      setNotebook(finalResponse.notebook ?? null);
+      storeNotebook(finalResponse.notebook);
       setResponse(finalResponse);
       setAnswerReadyMessage(`Answer ready: ${finalResponse.title}`);
       askJustCompletedRef.current = true;
@@ -2269,6 +2280,8 @@ function App() {
   function startNewChat() {
     if (loading) return;
     setActiveThreadId(createThreadId());
+    setNotebook(null);
+    clearStoredNotebook();
     setResponse(null);
     setError(null);
     setQuestion("");
