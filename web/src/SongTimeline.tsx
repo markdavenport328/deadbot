@@ -84,6 +84,8 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   const [year, setYear] = useState<number | null>(() => initialYear(data));
   const [listOpen, setListOpen] = useState(false);
   const [years, setYears] = useState<Record<number, YearState>>({});
+  // The latest dot the visitor chose; a slower lookup for an earlier dot is ignored.
+  const latestPoint = useRef<string | null>(null);
 
   const summaries = useMemo(() => new Map(data.year_summaries.map((summary) => [summary.year, summary])), [data]);
   const playedYears = useMemo(() => data.year_summaries.filter((summary) => summary.count > 0).map((summary) => summary.year), [data]);
@@ -142,8 +144,10 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   const playPoint = useCallback(
     (point: LengthPoint) => {
       const target = Number(point.show_date.slice(0, 4));
+      latestPoint.current = point.performance_id;
       selectYear(target);
       void loadYear(target).then((detail) => {
+        if (latestPoint.current !== point.performance_id) return;
         const performance = detail?.performances.find((item) => item.performance_id === point.performance_id);
         if (performance?.track) play(asPlayerTrack(performance.track, performance.show_date, performance.venue_name));
       });
@@ -165,7 +169,13 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   }
 
   const summary = year != null ? summaries.get(year) : undefined;
-  const f = width > 0 ? frame(width, data.year_summaries.map((item) => item.year), view) : null;
+  const allYears = data.year_summaries.map((item) => item.year);
+  // Pins sit in rows above the plot, except Length-view pins that sit on their own dot.
+  const inRows = (stop: PlacedStop) => !(view === "length" && stop.seconds != null);
+  const base = width > 0 ? frame(width, allYears, view) : null;
+  const rows = base ? pinRows(stops.map((stop) => (inRows(stop) ? pointX(base, stop.show_date) : -1e9))) : [];
+  const rowCount = 1 + Math.max(0, ...rows.filter((_row, index) => inRows(stops[index])));
+  const f = width > 0 ? frame(width, allYears, view, rowCount) : null;
 
   return (
     <div className="song-timeline">
@@ -188,6 +198,7 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
             selectedYear={year}
             playedYears={playedYears}
             stops={stops}
+            rows={rows}
             playingId={playingId}
             onSelectYear={selectYear}
             onPlayStop={playStop}
@@ -233,6 +244,7 @@ function TimelineChart({
   selectedYear,
   playedYears,
   stops,
+  rows,
   playingId,
   onSelectYear,
   onPlayStop,
@@ -244,6 +256,7 @@ function TimelineChart({
   selectedYear: number | null;
   playedYears: number[];
   stops: PlacedStop[];
+  rows: number[];
   playingId: string | null;
   onSelectYear: (year: number) => void;
   onPlayStop: (stop: PlacedStop) => void;
@@ -258,7 +271,6 @@ function TimelineChart({
   const top = ticks[ticks.length - 1];
   const step = yearLabelStep(f.bandWidth);
   const stopIds = new Set(stops.map((stop) => stop.performance_id));
-  const rows = pinRows(stops.map((stop) => pointX(f, stop.show_date)));
 
   const tipAt = (event: MouseEvent, content: ReactNode) => {
     const box = svgRef.current?.getBoundingClientRect();
@@ -273,15 +285,17 @@ function TimelineChart({
     requestAnimationFrame(() => svgRef.current?.querySelector<SVGGElement>(`[data-year="${target}"]`)?.focus());
   };
 
-  const bandTip = (summary: YearSummary): ReactNode =>
-    view === "count" ? (
+  const bandTip = (summary: YearSummary): ReactNode => {
+    const stop = stops.find((item) => item.show_date.startsWith(String(summary.year)));
+    const chosen = stop ? { venue: stop.venue_name, date: stop.show_date } : summary.pick ? { venue: summary.pick.venue_name, date: summary.pick.show_date } : null;
+    return view === "count" ? (
       <>
         <strong>
           {plural(summary.count, "performance")} in {summary.year}
         </strong>
-        {summary.pick && (
+        {chosen && (
           <span className="st-tip-gold">
-            ▸ {summary.pick.venue_name}, {monthDay(summary.pick.show_date)}
+            ▸ {chosen.venue}, {monthDay(chosen.date)}
           </span>
         )}
         <span className="st-tip-hint">Choose to open {summary.year}</span>
@@ -294,6 +308,7 @@ function TimelineChart({
         <span className="st-tip-hint">Choose to open {summary.year}</span>
       </>
     );
+  };
 
   return (
     <>
@@ -575,7 +590,7 @@ function YearPanel({
         <button type="button" className="st-see-all" aria-expanded={listOpen} onClick={onToggleList}>
           {listOpen ? `Hide the ${summary.year} list` : `See all ${summary.count} from ${summary.year}`}
         </button>
-        <button type="button" className="st-ask" onClick={() => onAsk(question, focusFor(data, summary))}>
+        <button type="button" className="st-ask" onClick={() => onAsk(question, focusFor(data, summary, chosen?.id ?? null))}>
           <span className="st-ask-mark" aria-hidden="true">
             ?
           </span>

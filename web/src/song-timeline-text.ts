@@ -21,12 +21,13 @@ export function plural(count: number, noun: string): string {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-// "23 performances · typically 12:38 · usually into Playing In The Band (20 of 23)"
+// "23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)".
+// The count includes songs that followed without a segue, so it says "followed by"
 export function yearFacts(summary: YearSummary): string {
   const parts = [plural(summary.count, "performance")];
   if (summary.median_seconds != null) parts.push(`typically ${clock(summary.median_seconds)}`);
   const next = summary.top_next;
-  if (next) parts.push(`${next.count * 2 > summary.count ? "usually" : "most often"} into ${next.title} (${next.count} of ${summary.count})`);
+  if (next) parts.push(`${next.count * 2 > summary.count ? "usually" : "most often"} followed by ${next.title} (${next.count} of ${summary.count})`);
   return parts.join(" · ");
 }
 
@@ -67,12 +68,14 @@ export function performanceTags(performance: YearPerformance, stopNumber: number
   return tags;
 }
 
-export function focusFor(data: SongTimelineData, summary: YearSummary): TimelineFocus {
+// `chosenId` is the performance the panel shows for the year: the model's stop
+// when it named one, else the library's pick.
+export function focusFor(data: SongTimelineData, summary: YearSummary, chosenId: string | null = summary.pick?.performance_id ?? null): TimelineFocus {
   return {
     label: `${data.title} in ${summary.year}`,
     song_id: data.song_id,
     year: summary.year,
-    ids: [data.song_id, ...(summary.pick ? [summary.pick.performance_id] : [])],
+    ids: [data.song_id, ...(chosenId ? [chosenId] : [])],
     facts: [yearFacts(summary)]
   };
 }

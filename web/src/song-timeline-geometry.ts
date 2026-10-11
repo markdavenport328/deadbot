@@ -23,8 +23,11 @@ export function chartHeight(view: ChartView, width: number): number {
   return view === "length" ? (narrow ? 250 : 290) : narrow ? 230 : 270;
 }
 
-export function frame(width: number, years: number[], view: ChartView): Frame {
-  const height = chartHeight(view, width);
+// `pinRows` is how many rows of stop pins sit above the plot; each extra row
+// adds room at the top so no pin is drawn off the chart.
+export function frame(width: number, years: number[], view: ChartView, pinRows = 1): Frame {
+  const extra = Math.max(0, pinRows - 1) * PIN_ROW_HEIGHT;
+  const height = chartHeight(view, width) + extra;
   const yearCount = Math.max(1, years.length);
   const bandWidth = (width - MARGIN.left - MARGIN.right) / yearCount;
   return {
@@ -34,7 +37,7 @@ export function frame(width: number, years: number[], view: ChartView): Frame {
     yearCount,
     bandWidth,
     barWidth: Math.min(26, bandWidth * 0.64),
-    plotTop: MARGIN.top,
+    plotTop: MARGIN.top + extra,
     plotBottom: height - MARGIN.bottom
   };
 }
@@ -62,7 +65,8 @@ export function countTicks(max: number): number[] {
   if (max <= 0) return [0, 1];
   const raw = max / 4;
   const power = 10 ** Math.floor(Math.log10(raw));
-  const step = (NICE.find((n) => n * power >= raw) ?? 10) * power;
+  // Counts are whole numbers, so the step is never below one.
+  const step = Math.max(1, (NICE.find((n) => n * power >= raw) ?? 10) * power);
   const top = Math.ceil(max / step) * step;
   const ticks: number[] = [];
   for (let value = 0; value <= top + step / 2; value += step) ticks.push(Math.round(value));
@@ -86,16 +90,20 @@ export function yearLabelStep(bandWidth: number): number {
   return bandWidth >= 40 ? 1 : bandWidth >= 22 ? 3 : 6;
 }
 
-// Each pin's row above the chart: a pin too close to the last one in a row
-// moves up a row. Input xs are in date order.
+// Each pin's row above the chart, returned in the input's order: placed left
+// to right, a pin too close to the last one in a row moves up a row. Stops
+// arrive in the model's listening order, so they are placed by x here.
 export function pinRows(xs: number[], minGap = 20): number[] {
   const lastInRow: number[] = [];
-  return xs.map((x) => {
+  const rows = new Array<number>(xs.length).fill(0);
+  const byX = xs.map((x, index) => ({ x, index })).sort((a, b) => a.x - b.x);
+  for (const { x, index } of byX) {
     let row = 0;
     while (lastInRow[row] !== undefined && x - lastInRow[row] < minGap) row += 1;
     lastInRow[row] = x;
-    return row;
-  });
+    rows[index] = row;
+  }
+  return rows;
 }
 
 export function pinY(f: Frame, row: number): number {

@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pointX, yFor, yearLabelStep } from "./song-timeline-geometry";
+import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pinY, pointX, yFor, yearLabelStep } from "./song-timeline-geometry";
 import { askQuestion, flowLine, focusFor, initialYear, pickEyebrow, performanceTags, yearFacts } from "./song-timeline-text";
 import type { SongTimelineData, YearPerformance, YearSummary } from "./song-timeline-types";
 import { fetchSongYear, forgetSongYears, songYearUrl } from "./song-year";
@@ -79,13 +79,20 @@ test("the vertical scales round up to tidy gridlines", () => {
 
 test("crowded pins stack into rows and year labels thin out when narrow", () => {
   expect(pinRows([10, 15, 60, 70, 74, 120])).toEqual([0, 1, 0, 1, 2, 0]);
+  // Stops arrive in listening order; rows are assigned left to right.
+  expect(pinRows([500, 100, 300, 112, 510])).toEqual([0, 0, 0, 1, 1]);
+  expect(countTicks(1)).toEqual([0, 1]);
+  expect(countTicks(2)).toEqual([0, 1, 2]);
+  const roomy = frame(600, [1977], "count", 3);
+  expect(roomy.plotTop - frame(600, [1977], "count").plotTop).toBe(38);
+  expect(pinY(roomy, 2)).toBeGreaterThan(0);
   expect(yearLabelStep(50)).toBe(1);
   expect(yearLabelStep(25)).toBe(3);
   expect(yearLabelStep(12)).toBe(6);
 });
 
 test("a year's facts, pick and question read from the data", () => {
-  expect(yearFacts(y1979)).toBe("23 performances · typically 12:38 · usually into Playing In The Band (20 of 23)");
+  expect(yearFacts(y1979)).toBe("23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)");
   expect(pickEyebrow(y1979.pick!, null)).toBe("Show picked by Charlie Miller");
   expect(pickEyebrow(y1979.pick!, { number: 4, label: "Charlie Miller's pick" })).toBe("Stop 4 · Charlie Miller's pick");
   expect(pickEyebrow({ ...y1979.pick!, basis: "released", basis_detail: "Dave's Picks, Volume 31: Uptown Theatre" }, null)).toBe("On Dave's Picks, Volume 31");
@@ -107,7 +114,7 @@ test("focus names the song, the year and its pick; the open year falls back to a
     song_id: "song-terrapin-station",
     year: 1979,
     ids: ["song-terrapin-station", "p-msg"],
-    facts: ["23 performances · typically 12:38 · usually into Playing In The Band (20 of 23)"]
+    facts: ["23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)"]
   });
   expect(initialYear(data)).toBe(1979);
   expect(initialYear({ ...data, open_year: 1978 })).toBe(1979);

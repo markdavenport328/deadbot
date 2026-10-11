@@ -102,7 +102,7 @@ test("played years are buttons; a year it was not played is not", () => {
 test("the model's open year opens first with its facts and pick", () => {
   setup();
   const panel = screen.getByRole("region", { name: "1979" });
-  expect(within(panel).getByText("1 performance · typically 12:15 · usually into Playing In The Band (1 of 1)")).toBeInTheDocument();
+  expect(within(panel).getByText("1 performance · typically 12:15 · usually followed by Playing In The Band (1 of 1)")).toBeInTheDocument();
   expect(within(panel).getByText("Stop 3 · Charlie Miller's pick")).toBeInTheDocument();
   expect(within(panel).getByText("From your first question.")).toBeInTheDocument();
 });
@@ -175,7 +175,7 @@ test("asking sends the year's question with the year as focus", async () => {
     song_id: "song-terrapin-station",
     year: 1979,
     ids: ["song-terrapin-station", "p-msg"],
-    facts: ["1 performance · typically 12:15 · usually into Playing In The Band (1 of 1)"]
+    facts: ["1 performance · typically 12:15 · usually followed by Playing In The Band (1 of 1)"]
   });
 });
 
@@ -199,4 +199,30 @@ test("a dot plays its performance once its year has loaded", async () => {
   const msgDot = [...container.querySelectorAll(".st-dot")][2];
   await user.click(msgDot.querySelector(".st-dot-hit")!);
   await waitFor(() => expect(screen.getByTestId("queue")).toHaveTextContent("p-msg"));
+});
+
+test("a year with a stop asks about the stop, not the library's pick", async () => {
+  const user = userEvent.setup();
+  const { onAsk } = setup();
+  await user.click(screen.getByRole("button", { name: /^1977:/ }));
+  await user.click(screen.getByRole("button", { name: /Tell me about Terrapin Station in 1977/ }));
+  expect(onAsk.mock.calls[0][1].ids).toEqual(["song-terrapin-station", "p-debut"]);
+});
+
+test("a slow lookup for an earlier dot does not replace a later choice", async () => {
+  const user = userEvent.setup();
+  let finish1977: (detail: SongYearDetail) => void = () => undefined;
+  const fetchYear = vi.fn((_song: string, year: number) =>
+    year === 1977 ? new Promise<SongYearDetail>((resolve) => (finish1977 = resolve)) : Promise.resolve(detail1979)
+  );
+  const { container } = setup({}, fetchYear);
+  await user.click(screen.getByRole("button", { name: "Length" }));
+  const dots = [...container.querySelectorAll(".st-dot-hit")];
+  await user.click(dots[1]);
+  await user.click(dots[2]);
+  await waitFor(() => expect(screen.getByTestId("queue")).toHaveTextContent("p-msg"));
+  finish1977({ ...detail1979, year: 1977, performances: [{ ...detail1979.performances[0], performance_id: "p-hartford", show_date: "1977-05-28", track: track("p-hartford") }] });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  expect(screen.getByTestId("queue")).toHaveTextContent("p-msg");
+  expect(screen.getByTestId("queue")).not.toHaveTextContent("p-hartford");
 });
