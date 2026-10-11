@@ -201,6 +201,22 @@ def test_an_unknown_tool_gets_the_generic_fact_line():
     assert line == "get_mystery dew · 3 rows · ~2.5k tok"
 
 
+def test_the_generic_fact_line_names_the_result_its_totals_and_its_dates():
+    payload = {
+        "release": {"release_id": "r1", "title": "Europe '72: The Complete Recordings", "release_date": "2011-09-01"},
+        "track_count": 578,
+        "personnel": [],
+        "tracks": [{"show_date": "1972-04-07"}] * 3,
+        "contents": {"shows": [{"show_date": "1972-04-07"}, {"show_date": "1972-05-26"}], "routes": ["a"]},
+        "_truncated": [1],
+    }
+    line = notebook.summarize("get_album", {"release_id_or_title": "r1"}, payload, 18_400)
+    assert line == (
+        "get_album r1 · Europe '72: The Complete Recordings, 2011-09-01 · 3 of 578 tracks 1972-04-07 · "
+        "2 shows 1972-04-07–1972-05-26 · 0 personnel · ~18.4k tok"
+    )
+
+
 def test_a_failing_fact_line_falls_back_to_the_generic_one(monkeypatch):
     def boom(args, payload):
         raise ValueError("bad payload")

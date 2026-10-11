@@ -273,11 +273,46 @@ def _search_site_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[st
     return [f'{site} "{query}"', _count(len(hits), "hit")]
 
 
+_NAMING_FIELDS = ("title", "name", "song_title", "show_date", "release_date", "date")
+
+
+def _naming(value: dict[str, Any]) -> list[str]:
+    names = [value.get(field) for field in _NAMING_FIELDS]
+    return [str(name)[:60] for name in names if isinstance(name, (str, int)) and str(name).strip()][:2]
+
+
+def _date_span(rows: list[Any]) -> str:
+    dates = sorted({str(row.get("show_date") or row.get("date"))[:10] for row in rows if isinstance(row, dict) and (row.get("show_date") or row.get("date"))})
+    if not dates:
+        return ""
+    return dates[0] if len(dates) == 1 else f"{dates[0]}–{dates[-1]}"
+
+
 def _generic_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    """What the result is about, how much it holds, and the dates it spans."""
+
     parts = [_args_text(args) or "(no arguments)"]
-    for key, value in payload.items():
-        if isinstance(value, list) and len(parts) < 5:
-            parts.append(f"{len(value)} {key}")
+    names = [name for key, value in payload.items() if isinstance(value, dict) and not key.startswith("_") for name in _naming(value)]
+    if names:
+        parts.append(", ".join(dict.fromkeys(names))[:100])
+    lists = [(key, value) for key, value in payload.items() if isinstance(value, list) and not key.startswith("_")]
+    for value in payload.values():
+        if isinstance(value, dict):
+            # A summary's nested lists (a box set's shows) matter when they place it in time.
+            lists.extend((key, rows) for key, rows in value.items() if isinstance(rows, list) and not key.startswith("_") and _date_span(rows))
+    totals = {
+        key.removesuffix("_count"): value
+        for key, value in payload.items()
+        if key.endswith("_count") and isinstance(value, int) and not isinstance(value, bool)
+    }
+    listed = {key.removesuffix("s") for key, _ in lists}
+    parts.extend(_count(value, noun.replace("_", " ")) for noun, value in totals.items() if noun not in listed)
+    # Lists that hold something first; an empty one still says the call found nothing there.
+    for key, rows in sorted(lists, key=lambda item: not item[1])[:4]:
+        total = totals.get(key.removesuffix("s"))
+        span = _date_span(rows)
+        count = f"{len(rows)} of {total}" if isinstance(total, int) and total != len(rows) else str(len(rows))
+        parts.append(f"{count} {key}" + (f" {span}" if span else ""))
     return parts
 
 
