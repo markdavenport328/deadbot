@@ -40,7 +40,7 @@ def test_each_tool_call_becomes_one_entry_with_its_ids_and_a_fact_line():
     show, song = book.entries
     assert show.key == notebook.entry_key("get_show", {"show_id_or_date": "1972-05-26"})
     assert show.summary.startswith("get_show gd-1972-05-26 · Lyceum, London · 31 songs in 2 sets · 4 recordings · ~")
-    assert song.summary.startswith("get_song song-morning-dew · Morning Dew · 282 performances, 1967–1995 · 79 releases · ~")
+    assert song.summary.startswith("get_song song-morning-dew · Morning Dew · 282 performances, 1967–1995 · 80 releases · ~")
     assert {"gd-1972-05-26", "gd-1972-05-26-promised-land-1-1"} <= set(show.ids)
     assert "song-morning-dew" in song.ids
     assert (show.turn, show.last_read, show.payload) == (1, 1, None)
