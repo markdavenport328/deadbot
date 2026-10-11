@@ -225,16 +225,24 @@ class _Block:
         return self.data
 
 
-def test_the_digest_keeps_twelve_blocks_and_eight_chips():
+def test_the_digest_keeps_every_block_whole_and_eight_chips():
+    long_note = "N" * 300
     blocks = [
-        _Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": f"T{index}", "follow_ups": [{"label": f"Chip {index}"}]})
+        _Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": f"T{index}", "note": long_note if index == 0 else "", "follow_ups": [{"label": f"Chip {index}"}]})
         for index in range(20)
     ]
     response = SimpleNamespace(blocks=blocks, answer="A", title="Title")
     page = notebook.page_digest(response, 3)
-    assert len(page.blocks) == notebook.DIGEST_BLOCK_CEILING == 12
+    assert len(page.blocks) == 20
     assert page.chips == [f"Chip {index}" for index in range(8)]
-    assert page.blocks[0] == {"type": "show_unit", "ids": ["gd-1972-0000"], "title": "T0", "note": ""}
+    assert page.blocks[0] == {"type": "show_unit", "ids": ["gd-1972-0000"], "title": "T0", "note": long_note}
+
+
+def test_the_digest_trims_only_past_its_character_budget():
+    blocks = [_Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": "T" * 500}) for index in range(40)]
+    page = notebook.page_digest(SimpleNamespace(blocks=blocks, answer="A", title="Title"), 3)
+    assert 0 < len(page.blocks) < 40
+    assert sum(len(block["title"]) for block in page.blocks) <= notebook.DIGEST_CHAR_CEILING
 
 
 def test_identical_answers_on_two_turns_each_get_their_own_lines():

@@ -49,7 +49,7 @@ WEB_TOOLS = frozenset({
 })
 IDS_PER_ENTRY_CEILING = 400
 URLS_PER_ENTRY_CEILING = 60
-DIGEST_BLOCK_CEILING = 12
+DIGEST_CHAR_CEILING = 6_000
 CHIP_CEILING = 8
 
 TURN_HEADING = (
@@ -384,16 +384,22 @@ def page_digest(response: ExperienceResponse, turn: int) -> PageDigest:
 
     blocks: list[dict[str, Any]] = []
     chips: list[str] = []
-    for block in response.blocks[:DIGEST_BLOCK_CEILING]:
+    size = 0
+    for block in response.blocks:
         data = block.model_dump(mode="json")
         ids = [value for key, value in data.items() if isinstance(value, str) and value and (key == "id" or key.endswith("_id"))][:6]
         title = next((str(data[key]) for key in ("title", "song_title", "release_title") if data.get(key)), "")
-        blocks.append({"type": str(data.get("type") or ""), "ids": ids, "title": title[:120], "note": str(data.get("note") or "")[:120]})
+        item = {"type": str(data.get("type") or ""), "ids": ids, "title": title, "note": str(data.get("note") or "")}
+        size += len(json.dumps(item, ensure_ascii=False))
+        if size > DIGEST_CHAR_CEILING and blocks:
+            logger.info("The page digest kept %d of %d blocks within %d characters", len(blocks), len(response.blocks), DIGEST_CHAR_CEILING)
+            break
+        blocks.append(item)
         for chip in _list(data.get("follow_ups")):
             label = str(chip.get("label") or "").strip() if isinstance(chip, dict) else ""
             if label and label not in chips:
                 chips.append(label)
-    return PageDigest(turn=turn, answer_key=answer_key(response.answer), title=response.title[:120], blocks=blocks, chips=chips[:CHIP_CEILING])
+    return PageDigest(turn=turn, answer_key=answer_key(response.answer), title=response.title, blocks=blocks, chips=chips[:CHIP_CEILING])
 
 
 def record_turn(book: Notebook, turn_messages: list[Any], response: ExperienceResponse) -> Notebook:

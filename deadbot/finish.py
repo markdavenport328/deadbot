@@ -1611,9 +1611,8 @@ def build_finish_tool() -> BaseTool:
             "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
             "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
             "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
-            "mean the same on every unit. Every ID and URL in the plan must have appeared in a tool result this turn or in the research notebook: the "
-            "server hydrates each ID from the library, keeps your words where one does not resolve, and keeps a link only "
-            "when its URL came from a tool result."
+            "mean the same on every unit. IDs and URLs come from this turn's tool results or the research notebook; the server fills each ID's facts "
+            "from the library."
         ),
         args_schema=FinishPlan,
     )

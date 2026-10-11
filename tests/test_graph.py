@@ -286,6 +286,6 @@ def test_prompt_teaches_the_research_notebook():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "research notebook" in prompt
     assert "read_notebook" in prompt
-    assert "tool results of this turn or the research notebook" in prompt
+    assert "this turn's tool results or the research notebook" in prompt
     assert "do not" not in prompt.casefold()
     assert prompt.count("this turn") == 1
