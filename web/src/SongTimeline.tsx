@@ -8,7 +8,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type KeyboardE
 import { toTrack } from "./listen-control";
 import { usePlayer, type PlayerTrack } from "./player";
 import { clock } from "./VersionStrip";
-import { MARGIN, bandX, countTicks, frame, lengthTicks, pinRows, pinY, pointX, yFor, yearLabelStep, type Frame } from "./song-timeline-geometry";
+import { MARGIN, bandX, countTicks, frame, lengthTicks, pinRows, pinY, pointX, tipPosition, yFor, yearLabelStep, type Frame } from "./song-timeline-geometry";
 import {
   askQuestion,
   flowLine,
@@ -264,6 +264,16 @@ function TimelineChart({
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; content: ReactNode } | null>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  // Place the tooltip from its measured size, before paint, so it never sits under the pointer.
+  useLayoutEffect(() => {
+    const element = tipRef.current;
+    if (!tip || !element) return;
+    const { left, top } = tipPosition({ x: tip.x, y: tip.y }, { width: element.offsetWidth, height: element.offsetHeight }, f.width);
+    element.style.left = `${left}px`;
+    element.style.top = `${top}px`;
+    element.style.visibility = "visible";
+  }, [tip, f.width]);
   const ticks =
     view === "count"
       ? countTicks(Math.max(1, ...data.year_summaries.map((item) => item.count)))
@@ -471,7 +481,7 @@ function TimelineChart({
         })}
       </svg>
       {tip && (
-        <div className="st-tip" role="tooltip" style={{ left: Math.min(Math.max(0, tip.x + 14), f.width - 200), top: Math.max(0, tip.y - 70) }}>
+        <div ref={tipRef} className="st-tip" role="tooltip" style={{ left: 0, top: 0, visibility: "hidden" }}>
           {tip.content}
         </div>
       )}

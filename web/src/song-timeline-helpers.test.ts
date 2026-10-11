@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pinY, pointX, yFor, yearLabelStep } from "./song-timeline-geometry";
+import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pinY, pointX, tipPosition, yFor, yearLabelStep } from "./song-timeline-geometry";
 import { askQuestion, flowLine, focusFor, initialYear, pickEyebrow, performanceTags, yearFacts } from "./song-timeline-text";
 import type { SongTimelineData, YearPerformance, YearSummary } from "./song-timeline-types";
 import { fetchSongYear, forgetSongYears, songYearUrl } from "./song-year";
@@ -89,6 +89,18 @@ test("crowded pins stack into rows and year labels thin out when narrow", () => 
   expect(yearLabelStep(50)).toBe(1);
   expect(yearLabelStep(25)).toBe(3);
   expect(yearLabelStep(12)).toBe(6);
+});
+
+test("the tooltip keeps clear of the pointer at every edge", () => {
+  const tip = { width: 200, height: 80 };
+  // Room on the right and above: right of and above the pointer.
+  expect(tipPosition({ x: 100, y: 200 }, tip, 800)).toEqual({ left: 114, top: 106 });
+  // Near the right edge: flips to the left of the pointer instead of sliding under it.
+  expect(tipPosition({ x: 750, y: 200 }, tip, 800)).toEqual({ left: 536, top: 106 });
+  // Near the top: drops below the pointer.
+  expect(tipPosition({ x: 100, y: 40 }, tip, 800)).toEqual({ left: 114, top: 54 });
+  // Too narrow for either side: stays inside the box.
+  expect(tipPosition({ x: 120, y: 200 }, tip, 230).left).toBe(30);
 });
 
 test("a year's facts, pick and question read from the data", () => {

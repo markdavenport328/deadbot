@@ -106,6 +106,22 @@ export function pinRows(xs: number[], minGap = 20): number[] {
   return rows;
 }
 
+// Where a tooltip goes so it never covers the pointer: to the right of it,
+// flipped to the left when it would run past the chart's right edge, and
+// above it, dropped below when there is no room above.
+export function tipPosition(
+  pointer: { x: number; y: number },
+  tip: { width: number; height: number },
+  boxWidth: number,
+  gap = 14
+): { left: number; top: number } {
+  let left = pointer.x + gap;
+  if (left + tip.width > boxWidth) left = pointer.x - gap - tip.width;
+  if (left < 0) left = Math.max(0, Math.min(pointer.x + gap, boxWidth - tip.width));
+  const above = pointer.y - gap - tip.height;
+  return { left, top: above >= 0 ? above : pointer.y + gap };
+}
+
 export function pinY(f: Frame, row: number): number {
   return f.plotTop - 22 - row * PIN_ROW_HEIGHT;
 }
