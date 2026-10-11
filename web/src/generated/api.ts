@@ -51,8 +51,8 @@ export interface paths {
          * Reshape Grid
          * @description Rebuild a grid from the library after the visitor adds or removes a list.
          *
-         *     The model's picks (highlights and chips) belong to the grid it
-         *     wrote, so they are not part of the rebuilt block.
+         *     The model's headline, note, cell notes and follow-up chips come back
+         *     with it; a note whose cell is gone drops away.
          */
         post: operations["reshape_grid_api_grid_post"];
         delete?: never;
@@ -799,11 +799,28 @@ export interface components {
             sub?: string | null;
         };
         /**
+         * GridHighlightNote
+         * @description A cell the model pointed at, and what it said there.
+         */
+        GridHighlightNote: {
+            /** Column Id */
+            column_id: string;
+            /** Note */
+            note?: string | null;
+            /** Row Id */
+            row_id: string;
+        };
+        /**
          * GridRequest
          * @description A visitor's reshape of a grid: the lists as they now stand, plus the
-         *     model's headline and note, which the server hands back unchanged.
+         *     model's headline, note, cell notes and follow-up chips, which the server
+         *     hands back with the cells that remain.
          */
         GridRequest: {
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
+            /** Highlights */
+            highlights?: components["schemas"]["GridHighlightNote"][];
             /** Note */
             note?: string | null;
             /** Open Rows */

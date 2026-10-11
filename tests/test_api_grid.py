@@ -41,7 +41,7 @@ def test_grid_endpoint_adds_a_column(client):
     assert body["grid_id"].startswith("grid:")
 
 
-def test_grid_endpoint_keeps_the_original_words_and_drops_the_models_picks(client):
+def test_grid_endpoint_keeps_the_original_words_with_no_picks_sent(client):
     response = client.post(
         "/api/grid",
         json={
@@ -59,6 +59,26 @@ def test_grid_endpoint_keeps_the_original_words_and_drops_the_models_picks(clien
     assert "coverage" not in body
     assert not any(cell["highlight"] for row in body["rows"] for cell in row["cells"])
     assert body["suggestions"]
+
+
+def test_grid_endpoint_keeps_the_models_cell_notes_and_chips_for_cells_that_remain(client):
+    chip = {"label": "More Dark Star", "question": "Tell me more about Dark Star.", "extra": "ignored"}
+    response = client.post(
+        "/api/grid",
+        json={
+            "spec": spec(["song-dark-star"]),
+            "highlights": [
+                {"row_id": "gd-1972-05-11", "column_id": "song-dark-star", "note": "The longest of the tour.", "x": 1},
+                {"row_id": "gd-1972-05-11", "column_id": "song-morning-dew", "note": "Its column was removed."},
+            ],
+            "follow_ups": [chip],
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    noted = [cell for row in body["rows"] for cell in row["cells"] if cell["highlight"]]
+    assert [cell["note"] for cell in noted] == ["The longest of the tour."]
+    assert [(f["label"], f["question"]) for f in body["follow_ups"]] == [("More Dark Star", "Tell me more about Dark Star.")]
 
 
 def test_grid_endpoint_keeps_the_row_order_the_visitor_sees(client):

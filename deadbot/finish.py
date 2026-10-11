@@ -584,7 +584,7 @@ class GridRef(_Ref):
     grid_id: str = Field(description="The grid_id from a get_grid result.")
     row_ids: list[str] | None = Field(
         default=None,
-        description="Rows to put first, in reading order. Rows you leave out follow in the result's order.",
+        description="The rows to draw, in reading order. Leave it out to draw every row in the result's order.",
     )
     open_rows: int | None = Field(default=None, description="How many rows show before Show all, when the rest can wait.")
     highlights: list[GridHighlightRef] = Field(default_factory=list, description="Cells to point at, by row and column id.")

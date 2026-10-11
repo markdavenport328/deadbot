@@ -49,12 +49,15 @@ def parse_year(value: str) -> int | None:
     return int(text) if text.isascii() and text.isdigit() and len(text) == 4 else None
 
 
-def _trim(items: list[str], ceiling: int, what: str) -> list[str]:
+def _trim(items: list[str], ceiling: int, what: str) -> tuple[list[str], int]:
+    """The items without repeats, cut to the ceiling, and how many the ceiling cut."""
+
     items = list(dict.fromkeys(fit(items, what)))
-    if len(items) > ceiling:
+    cut = max(0, len(items) - ceiling)
+    if cut:
         logger.warning("Truncated %d %s to the grid ceiling of %d", len(items), what, ceiling)
         items = items[:ceiling]
-    return items
+    return items, cut
 
 
 @dataclass(frozen=True)
@@ -78,23 +81,26 @@ class GridSpec:
 
     @classmethod
     def from_json(cls, value: Any) -> "GridSpec | None":
+        return cls.parse(value)[0]
+
+    @classmethod
+    def parse(cls, value: Any) -> "tuple[GridSpec | None, int, int]":
+        """The spec, and how many rows and columns the ceilings cut."""
+
         if not isinstance(value, dict):
-            return None
+            return None, 0, 0
         row_kind, column_kind = value.get("row_kind"), value.get("column_kind")
         if (row_kind, column_kind) not in SUPPORTED_PAIRS:
-            return None
+            return None, 0, 0
         rows = [str(item) for item in value.get("row_ids") or [] if str(item).strip()]
         columns = [str(item) for item in value.get("column_ids") or [] if str(item).strip()]
         if column_kind == "year":
             columns = [year_id(year) if (year := parse_year(item)) is not None else item for item in columns]
         if not rows or not columns:
-            return None
-        return cls(
-            row_kind,
-            tuple(_trim(rows, GRID_ROW_CEILING, "grid rows")),
-            column_kind,
-            tuple(_trim(columns, GRID_COLUMN_CEILING, "grid columns")),
-        )
+            return None, 0, 0
+        rows, rows_cut = _trim(rows, GRID_ROW_CEILING, "grid rows")
+        columns, columns_cut = _trim(columns, GRID_COLUMN_CEILING, "grid columns")
+        return cls(row_kind, tuple(rows), column_kind, tuple(columns)), rows_cut, columns_cut
 
 
 def grid_id(spec: GridSpec) -> str:
@@ -132,8 +138,6 @@ class GridData:
     rows: list[Axis]
     columns: list[Axis]
     cells: dict[tuple[str, str], Cell]
-    coverage_by_year: dict[int, tuple[int, int]] = field(default_factory=dict)
-    tracks_without_song: dict[str, tuple[int, int]] = field(default_factory=dict)  # release: (tracks, tracks naming no song)
     suggestions: list[dict[str, Any]] = field(default_factory=list)
 
     @property
@@ -180,35 +184,10 @@ GRID_NOTE = (
 )
 
 
-def tool_payload(data: GridData) -> dict[str, Any]:
-    """The model's view of a built grid: the filled cells, coverage facts and the spec to rebuild it."""
+def tool_payload(data: GridData, *, rows_cut: int = 0, columns_cut: int = 0) -> dict[str, Any]:
+    """The model's view of a built grid: the filled cells and the spec to rebuild it."""
 
     compact = data.to_compact()
-    lengths = {"release": 0, "tape": 0, "mixed": 0, "none": 0}
-    for cell in data.cells.values():
-        if cell.state == "value" and cell.length_source:
-            lengths[cell.length_source] += 1
-        elif cell.state == "no_length":
-            lengths["none"] += 1
-    coverage: dict[str, Any] = {}
-    if data.measure == "minutes":
-        coverage["lengths"] = lengths
-        partly = sum(1 for cell in data.cells.values() if cell.state == "value" and cell.timed < cell.passes)
-        if partly:
-            coverage["partly_timed"] = partly
-    if data.coverage_by_year:
-        coverage["setlists_by_year"] = [
-            {"year": year, "shows_on_record": on_record, "shows_with_setlist": with_setlist}
-            for year, (on_record, with_setlist) in sorted(data.coverage_by_year.items())
-            if with_setlist < on_record
-        ]
-    unnamed = [
-        {"release_id": release_id, "tracks": tracks, "without_song": blank}
-        for release_id, (tracks, blank) in data.tracks_without_song.items()
-        if blank
-    ]
-    if unnamed:
-        coverage["tracks_without_song"] = unnamed
     return {
         "grid_id": grid_id(data.spec),
         "rows_are": data.spec.row_kind,
@@ -218,7 +197,8 @@ def tool_payload(data: GridData) -> dict[str, Any]:
         "rows": compact["rows"],
         "columns": compact["columns"],
         "cells": compact["cells"],
-        "coverage": coverage,
+        **({"rows_cut": rows_cut} if rows_cut > 0 else {}),
+        **({"columns_cut": columns_cut} if columns_cut > 0 else {}),
         "column_suggestions": data.suggestions,
         "spec": data.spec.to_json(),
     }
@@ -400,7 +380,7 @@ def _song_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
                 Cell(state="value", value=value, of_shows=of_shows) if value else Cell(state="none", of_shows=of_shows)
             )
         rows.append(Axis(id=song_id, label=songs[song_id].get("title") or song_id, total=total))
-    return GridData(spec=spec, rows=rows, columns=_year_columns(years), cells=cells, coverage_by_year=coverage)
+    return GridData(spec=spec, rows=rows, columns=_year_columns(years), cells=cells)
 
 
 def _year_columns(years: list[int]) -> list[Axis]:
@@ -614,11 +594,7 @@ def _release_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
         {"id": song_id, "label": title(song_id), "rows_with": count}
         for song_id, count in sorted(counts.items(), key=lambda item: (-item[1], title(item[0])))[:12]
     ]
-    blanks = {
-        release_id: (len(tracks := by_release.get(release_id, [])), sum(1 for t in tracks if not t.get("song_id", "").strip()))
-        for release_id in row_ids
-    }
-    return GridData(spec=spec, rows=rows, columns=columns, cells=cells, tracks_without_song=blanks, suggestions=suggestions)
+    return GridData(spec=spec, rows=rows, columns=columns, cells=cells, suggestions=suggestions)
 
 
 def _track_entry(track: dict[str, str]) -> dict[str, Any]:
@@ -675,8 +651,7 @@ def grid_block(
         return None
     by_id = {row.id: row for row in data.rows}
     chosen = [row_id for row_id in dict.fromkeys(row_ids or []) if row_id in by_id]
-    chosen_set = set(chosen)
-    ordered = [by_id[row_id] for row_id in chosen] + [row for row in data.rows if row.id not in chosen_set]
+    ordered = [by_id[row_id] for row_id in chosen] if chosen else list(data.rows)
     notes = {
         (str(h.get("row_id")), str(h.get("column_id"))): (str(h.get("note") or "").strip() or None)
         for h in highlights

@@ -524,8 +524,36 @@ describe("Grid reshape", () => {
     expect(body.title).toBe(original.title);
     expect(body.note).toBe(original.note);
     expect(body).not.toHaveProperty("coverage");
+    const pointedAt = original.rows.flatMap((row) => row.cells!.filter((cell) => cell.highlight).map(() => row.id));
+    expect(body.highlights.map((h: { row_id: string }) => h.row_id)).toEqual(pointedAt);
+    expect(body.follow_ups).toEqual(original.follow_ups ?? []);
     expect(await screen.findByRole("button", { name: /sort by mr\. charlie/i })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("sends the model's cell notes and follow-up chips along so the redraw keeps them", async () => {
+    const chip = { label: "More Dark Star", question: "Tell me more about Dark Star." };
+    const noted = {
+      ...original,
+      follow_ups: [chip],
+      rows: original.rows.map((row, r) => ({
+        ...row,
+        cells: row.cells!.map((cell, c) =>
+          r === 0 && c === 1
+            ? { ...cell, highlight: true, note: "The longest of the tour." }
+            : { ...cell, highlight: false, note: null },
+        ),
+      })),
+    } as GridBlock;
+    fetchMock.mockResolvedValue({ ok: true, json: async () => reshapedFrom(noted, noted.columns.map((c) => c.id).slice(0, -1)) });
+    render(<Grid block={noted} />);
+    await userEvent.click(screen.getByRole("button", { name: `Options for ${noted.columns.at(-1)!.label}` }));
+    await userEvent.click(screen.getByRole("button", { name: /^Remove / }));
+    const body = requestBody();
+    expect(body.highlights).toEqual([
+      { row_id: noted.rows[0].id, column_id: noted.columns[1].id, note: "The longest of the tour." },
+    ]);
+    expect(body.follow_ups).toEqual([chip]);
   });
 
   it("puts focus on the new column's header after an add", async () => {

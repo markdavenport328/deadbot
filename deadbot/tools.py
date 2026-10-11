@@ -2257,22 +2257,19 @@ def build_tools(
         """Two lists of library things and the fact where each pair meets, as one table.
 
         Songs across years (row_kind "song", column_kind "year"): each cell is
-        how many shows that year had the song, with each year's setlist
-        coverage. Nights across songs (row_kind "show", column_kind "song"):
-        each cell is the minutes that song ran that night, the passes it took,
-        its set, what it came out of and went into, and where the length came
-        from. Records across songs (row_kind "release", column_kind "song"):
-        records compared by what is on them, each cell the minutes that song
-        takes up on that record and the tracks it spans, with each record's
-        tracks that name no song counted. Guests across years (row_kind
-        "guest", column_kind "year"): each cell is how many shows that guest
-        sat in on that year. rows and columns take IDs, titles or names, in
-        the order you want them. For show rows, tour (a tour name) selects the
-        nights when rows is empty, and is used only then; for year columns,
-        year_from and year_to set the span. The result carries a grid_id for a
-        grid in finish_response, the filled cells as one compact table,
-        coverage facts, and for nights or records the songs on most of them
-        that are not yet columns.
+        how many shows that year had the song. Nights across songs (row_kind
+        "show", column_kind "song"): each cell is the minutes that song ran that
+        night, the passes it took, its set, and what it came out of and went
+        into. Records across songs (row_kind "release", column_kind "song"):
+        each cell is the minutes that song takes up on that record and the
+        tracks it spans. Guests across years (row_kind "guest", column_kind
+        "year"): each cell is how many shows that guest sat in on that year.
+        rows and columns take IDs, titles or names, in the order you want them.
+        For show rows, tour (a tour name) gathers that tour's nights in place
+        of rows; for year columns, year_from and year_to set the span. The
+        result carries a grid_id for a grid in finish_response, the filled
+        cells as one compact table, and for nights or records the songs on most
+        of them that are not yet columns.
         """
         if (row_kind, column_kind) not in grids.SUPPORTED_PAIRS:
             return _json({"error": "Unsupported grid", "valid": [f"{r} x {c}" for r, c in grids.SUPPORTED_PAIRS]})
@@ -2282,12 +2279,12 @@ def build_tools(
         column_ids = _grid_columns(column_kind, columns or [], year_from, year_to)
         if isinstance(column_ids, str):
             return column_ids
-        spec = grids.GridSpec.from_json(
+        spec, rows_cut, columns_cut = grids.GridSpec.parse(
             {"row_kind": row_kind, "row_ids": row_ids, "column_kind": column_kind, "column_ids": column_ids}
         )
         if spec is None:
             return _json({"error": "Unsupported grid", "valid": [f"{r} x {c}" for r, c in grids.SUPPORTED_PAIRS]})
-        return _json(grids.tool_payload(grids.build(store, spec)))
+        return _json(grids.tool_payload(grids.build(store, spec), rows_cut=rows_cut, columns_cut=columns_cut))
 
     @tool
     def aggregate_data(

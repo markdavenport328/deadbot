@@ -49,6 +49,21 @@ def test_grid_id_is_stable_and_order_sensitive():
     assert grids.grid_id(spec).startswith("grid:")
 
 
+def test_the_payload_says_how_many_rows_and_columns_the_ceilings_cut():
+    payload = {
+        "row_kind": "show",
+        "row_ids": [f"gd-1970-01-{n:03d}" for n in range(grids.GRID_ROW_CEILING + 5)],
+        "column_kind": "song",
+        "column_ids": [f"song-{n}" for n in range(grids.GRID_COLUMN_CEILING + 3)],
+    }
+    spec, rows_cut, columns_cut = grids.GridSpec.parse(payload)
+    assert (rows_cut, columns_cut) == (5, 3)
+    data = grids.GridData(spec=spec, rows=[], columns=[], cells={})
+    cut = grids.tool_payload(data, rows_cut=rows_cut, columns_cut=columns_cut)
+    assert (cut["rows_cut"], cut["columns_cut"]) == (5, 3)
+    assert "rows_cut" not in grids.tool_payload(data) and "columns_cut" not in grids.tool_payload(data)
+
+
 def test_unsupported_pair_is_rejected_by_from_json():
     assert grids.GridSpec.from_json({"row_kind": "venue", "row_ids": ["x"], "column_kind": "song", "column_ids": ["y"]}) is None
 
@@ -189,13 +204,12 @@ def test_show_by_song_segue_neighbours(csv_store):
     assert rotterdam.segue_into == "Sugar Magnolia"  # from the second pass
 
 
-def test_song_by_year_counts_and_setlist_coverage(csv_store):
+def test_song_by_year_counts_and_how_many_shows_have_a_setlist(csv_store):
     data = grids.build(csv_store, songs_by_year_spec())
     assert data.measure == "shows"
     assert data.cell(DARK_STAR, "year:1969").value == 67
     assert data.cell(DARK_STAR, "year:1976").state == "none"
     assert data.cell(PLAYING, "year:1972").value == 80
-    assert data.coverage_by_year[1969] == (149, 124)
     assert data.cell(DARK_STAR, "year:1969").of_shows == 124
 
 
@@ -211,7 +225,7 @@ def test_sqlite_matches_csv(csv_store, sqlite_store, spec_factory):
     left = grids.build(csv_store, spec_factory())
     right = grids.build(sqlite_store, spec_factory())
     assert left.to_compact() == right.to_compact()
-    assert dataclasses.asdict(left) == dataclasses.asdict(right)  # segues, lengths, tracks, setlists, suggestions, coverage
+    assert dataclasses.asdict(left) == dataclasses.asdict(right)  # segues, lengths, tracks, setlists, suggestions
 
 
 def test_tool_payload_order_and_spec(csv_store):
@@ -221,29 +235,14 @@ def test_tool_payload_order_and_spec(csv_store):
     assert payload["grid_id"] == grids.grid_id(europe_spec())
     assert grids.GridSpec.from_json(payload["spec"]) == europe_spec()
     assert "archive.org" not in str(payload)  # tape URLs stay out of the model's view
-    assert payload["coverage"]["lengths"]["release"] > 0
     assert list(payload) == [
         "grid_id", "rows_are", "columns_are", "measure", "on_the_page", "rows", "columns", "cells",
-        "coverage", "column_suggestions", "spec",
+        "column_suggestions", "spec",
     ]
 
 
-def test_tool_payload_counts_every_length_source():
-    store = _store(
-        [_perf("p1"), _perf("p2", position="2"), _perf("p3", song_id="s2", position="3")],
-        links=[_tape("p2", 600)],
-        releases=[{"performance_id": "p1", "duration_seconds": "300"}],
-    )
-    spec = grids.GridSpec("show", ("gd-1",), "song", ("s1", "s2"))
-    lengths = grids.tool_payload(grids.build(store, spec))["coverage"]["lengths"]
-    assert lengths == {"release": 0, "tape": 0, "mixed": 1, "none": 1}
 
 
-def test_tool_payload_lists_years_whose_setlists_are_incomplete(csv_store):
-    payload = grids.tool_payload(grids.build(csv_store, songs_by_year_spec()))
-    assert "lengths" not in payload["coverage"]
-    by_year = {entry["year"]: entry for entry in payload["coverage"]["setlists_by_year"]}
-    assert by_year[1969] == {"year": 1969, "shows_on_record": 149, "shows_with_setlist": 124}
 
 
 def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
@@ -263,12 +262,22 @@ def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
     )
     assert block.type == "grid"
     assert [row.id for row in block.rows][:2] == ["gd-1972-05-11", "gd-1972-05-07"]
-    assert len(block.rows) == 22  # rows the model left out follow in payload order
+    assert [row.id for row in block.rows] == ["gd-1972-05-11", "gd-1972-05-07"]  # only the rows the model chose
     assert block.open_rows == 1
     rotterdam = block.rows[0].cells[0]
     assert rotterdam.highlight and rotterdam.note == "The longest of the tour."
     assert rotterdam.tracks and rotterdam.tracks[0].audio_url.startswith("https://archive.org/")
     assert block.max_value >= rotterdam.value
+
+
+def test_grid_block_draws_every_row_when_none_of_the_chosen_rows_resolve(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
+    for row_ids in (None, [], ["gd-nope"]):
+        block = grids.grid_block(
+            csv_store, payload, row_ids=row_ids, open_rows=None,
+            highlights=[], title=None, note=None, follow_ups=[],
+        )
+        assert [row.id for row in block.rows] == list(europe_spec().row_ids)
 
 
 def test_grid_block_none_for_bad_spec(csv_store):
@@ -403,13 +412,10 @@ def test_guest_by_year_counts_shows_sat_in(csv_store):
     assert data.suggestions == []
 
 
-def test_tool_payload_counts_release_tracks_without_a_song(csv_store):
+def test_tool_payload_names_a_record_row_with_its_sub_line(csv_store):
     payload = grids.tool_payload(grids.build(csv_store, releases_spec()))
     assert payload["rows_are"] == "release"
-    by_release = {entry["release_id"]: entry for entry in payload["coverage"]["tracks_without_song"]}
-    assert by_release[DP13] == {"release_id": DP13, "tracks": 24, "without_song": 2}
-    assert DP36 not in by_release
-    assert payload["coverage"]["lengths"]["release"] > 0
+    assert "coverage" not in payload
     assert payload["rows"][0]["sub"] == "The Spectrum, Philadelphia, PA 9/21/72"
 
 
@@ -451,10 +457,6 @@ def test_a_night_cell_counts_its_timed_passes():
     assert (cell.passes, cell.timed) == (2, 1)
 
 
-def test_tool_payload_counts_cells_timed_for_only_some_passes():
-    store = _store([_perf("p1"), _perf("p2", position="2")], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
-    coverage = grids.tool_payload(grids.build(store, grids.GridSpec("show", ("gd-1",), "song", ("s1",))))["coverage"]
-    assert coverage["partly_timed"] == 1  # a cell whose minutes cover only some of its passes
 
 
 def test_block_kinds_match_the_supported_pairs():

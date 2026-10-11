@@ -14,14 +14,12 @@
         "equals": {"rows_are": "song", "columns_are": "year", "measure": "shows"},
         "contains": {
           "rows": {"id": "song-dark-star", "total": 245},
-          "cells.rows": ["song-dark-star", "year:1969", 67, 0, "value"],
-          "coverage.setlists_by_year": {"year": 1967, "shows_on_record": 139, "shows_with_setlist": 41}
+          "cells.rows": ["song-dark-star", "year:1969", 67, 0, "value"]
         }
       },
       "failure_conditions": [
         "The page answers with a wall of yearly numbers in prose instead of a grid or chart the visitor can scan.",
         "A yearly count in the words disagrees with the grid or chart beside it.",
-        "Presents 1967-1968 Dark Star counts as the whole story without saying how few of those years' shows have a surviving setlist.",
         "Shows only one of the two songs while presenting it as the comparison."
       ]
     },
@@ -33,7 +31,7 @@
       "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Europe 1972", "columns": ["Dark Star", "The Other One", "Truckin'"]},
       "page_expectation": "The tour's 22 nights as rows against a few songs that tell the tour's story (the big jams, a signature song), with the most telling nights open and a few cells pointed at, so the visitor can see the run and hear any night.",
       "expected": {
-        "equals": {"rows_are": "show", "columns_are": "song", "measure": "minutes", "coverage.lengths": {"release": 40, "tape": 0, "mixed": 0, "none": 1}},
+        "equals": {"rows_are": "show", "columns_are": "song", "measure": "minutes"},
         "contains": {
           "rows": {"id": "gd-1972-04-07", "label": "April 7, 1972 · London"},
           "cells.rows": ["gd-1972-05-11", "song-dark-star", 44, 2, "value"],
@@ -54,7 +52,6 @@
       "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Spring 1977", "columns": ["Scarlet Begonias", "Fire on the Mountain"]},
       "page_expectation": "The tour's nights that had the pairing, with each half's length from the library and the longest pairings pointed at.",
       "expected": {
-        "equals": {"coverage.lengths": {"release": 22, "tape": 7, "mixed": 0, "none": 0}},
         "contains": {
           "rows": {"id": "gd-1977-05-08", "label": "May 8, 1977 · Ithaca"},
           "cells.rows": ["gd-1977-05-08", "song-fire-on-the-mountain", 16, 1, "value"]
@@ -75,7 +72,6 @@
       "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Europe 1972", "columns": ["The Other One", "Dark Star"]},
       "page_expectation": "The 22 nights against the two songs, so the alternation is visible at a glance, with Bickershaw (May 7) pointed at as the one night that had both.",
       "expected": {
-        "equals": {"coverage.lengths": {"release": 22, "tape": 0, "mixed": 0, "none": 1}},
         "contains": {
           "cells.rows": ["gd-1972-05-07", "song-dark-star", 20, 1, "value"],
           "rows": {"id": "gd-1972-05-07", "label": "May 7, 1972 · Wigan"}
@@ -99,7 +95,6 @@
         "contains": {
           "rows": {"id": "release-dicks-picks-volume-36-1972-09-21", "label": "Dick’s Picks 36", "sub": "The Spectrum, Philadelphia, PA 9/21/72"},
           "cells.rows": ["release-dicks-picks-volume-36-1972-09-21", "song-dark-star", 37, 1, "value"],
-          "coverage.tracks_without_song": {"release_id": "release-dicks-picks-volume-13-1981-05-06", "tracks": 24, "without_song": 2},
           "column_suggestions": {"id": "song-sugar-magnolia", "rows_with": 18}
         }
       },
