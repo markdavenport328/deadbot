@@ -14,6 +14,8 @@ import mostplayedJson from "./fixtures/mostplayed.json";
 // Built from the real library by scripts/export_grid_fixtures.py.
 import gridEurope72Json from "./fixtures/grid-europe72.json";
 import gridSongYearsJson from "./fixtures/grid-song-years.json";
+import gridDicksPicksJson from "./fixtures/grid-dicks-picks.json";
+import gridGuestsJson from "./fixtures/grid-guests.json";
 
 type FixtureAudio = { url: string; durationSeconds?: number; segueIntoNext?: boolean };
 type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean, audio?: FixtureAudio];
@@ -942,11 +944,22 @@ const grid: ExperienceResponse = fixture(
   { title: "Where the big jams fell", lead: "Cell strength is minutes played, or shows that year." }
 );
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid"] as const;
+// Two more grids over real data: Dick's Picks volumes against five songs
+// (minutes on the record), and four guests across the years (shows sat in).
+const records: ExperienceResponse = fixture(
+  "Which Dick's Picks should I start with, and who sat in with the Dead?",
+  "Grids: Dick's Picks by song and guests by year",
+  "Two grids, each drawn from the library's release tracks and guest credits.",
+  [gridDicksPicksJson, gridGuestsJson] as unknown as ExperienceBlock[],
+  "collection",
+  { title: "Records and guests", lead: "Cell strength is minutes on the record, or shows sat in that year." }
+);
+
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

@@ -33,7 +33,7 @@ write(
                 {"row_id": "gd-1972-05-07", "column_id": "song-the-other-one", "note": "Bickershaw: the one night with both."}],
     title="One big jam a night, and they traded it.",
     note="Every night of the tour had Dark Star or The Other One, and only Bickershaw on May 7 had both.",
-    coverage=None, follow_ups=[],
+    follow_ups=[],
 )
 write(
     "grid-song-years.json",
@@ -43,6 +43,28 @@ write(
     highlights=[{"row_id": "song-dark-star", "column_id": "year:1969", "note": "Its height, on surviving setlists."}],
     title="Dark Star burned out early. Playing never left.",
     note="Dark Star was at its height in 1969 and was gone after 1974 apart from a handful of nights.",
-    coverage="Before 1971 the library has setlists for only some shows, so early counts run low.",
     follow_ups=[],
+)
+write(
+    "grid-dicks-picks.json",
+    grids.GridSpec("release", ("release-dicks-picks-volume-36-1972-09-21", "release-dicks-picks-volume-16-1969-11-08",
+                               "release-dicks-picks-volume-11-1972-09-27", "release-dicks-picks-volume-4-fillmore-east-1996",
+                               "release-dicks-picks-volume-13-1981-05-06", "release-dicks-picks-volume-3-1977-05-22"),
+                   "song", ("song-dark-star", "song-the-other-one", "song-playing-in-the-band", "song-scarlet-begonias",
+                            "song-morning-dew")),
+    row_ids=None, open_rows=None,
+    highlights=[{"row_id": "release-dicks-picks-volume-36-1972-09-21", "column_id": "song-dark-star",
+                 "note": "The longest Dark Star in the series."}],
+    title="Where the long jams live.",
+    note="The 1972 volumes give a whole side to Dark Star; Nassau '81 is songs and segues.",
+    follow_ups=[],
+)
+write(
+    "grid-guests.json",
+    grids.GridSpec("guest", ("person-bruce-hornsby", "person-ned-lagin", "person-david-nelson", "person-john-cipollina"),
+                   "year", tuple(grids.year_id(y) for y in range(1969, 1996))),
+    row_ids=None, open_rows=None,
+    highlights=[{"row_id": "person-ned-lagin", "column_id": "year:1974", "note": "The Seastones year."}],
+    title="Who sat in, and when.",
+    note=None, follow_ups=[],
 )

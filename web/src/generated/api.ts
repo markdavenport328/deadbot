@@ -51,8 +51,8 @@ export interface paths {
          * Reshape Grid
          * @description Rebuild a grid from the library after the visitor adds or removes a list.
          *
-         *     The model's picks (highlights and chips) belong to the grid it
-         *     wrote, so they are not part of the rebuilt block.
+         *     The model's headline, note, cell notes and follow-up chips come back
+         *     with it; a note whose cell is gone drops away.
          */
         post: operations["reshape_grid_api_grid_post"];
         delete?: never;
@@ -714,8 +714,6 @@ export interface components {
             column_kind: "year" | "song";
             /** Columns */
             columns: components["schemas"]["GridColumn"][];
-            /** Coverage */
-            coverage?: string | null;
             /** Follow Ups */
             follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Grid Id */
@@ -735,7 +733,7 @@ export interface components {
              * Row Kind
              * @enum {string}
              */
-            row_kind: "song" | "show";
+            row_kind: "song" | "show" | "release" | "guest";
             /** Rows */
             rows: components["schemas"]["GridRow"][];
             spec: components["schemas"]["GridSpecModel"];
@@ -781,6 +779,11 @@ export interface components {
              * @enum {string}
              */
             state: "value" | "none" | "no_length" | "unknown";
+            /**
+             * Timed
+             * @default 0
+             */
+            timed: number;
             /** Tracks */
             tracks?: components["schemas"]["PlayableTrack"][];
             /** Value */
@@ -796,13 +799,28 @@ export interface components {
             sub?: string | null;
         };
         /**
+         * GridHighlightNote
+         * @description A cell the model pointed at, and what it said there.
+         */
+        GridHighlightNote: {
+            /** Column Id */
+            column_id: string;
+            /** Note */
+            note?: string | null;
+            /** Row Id */
+            row_id: string;
+        };
+        /**
          * GridRequest
          * @description A visitor's reshape of a grid: the lists as they now stand, plus the
-         *     model's headline, note and coverage, which the server hands back unchanged.
+         *     model's headline, note, cell notes and follow-up chips, which the server
+         *     hands back with the cells that remain.
          */
         GridRequest: {
-            /** Coverage */
-            coverage?: string | null;
+            /** Follow Ups */
+            follow_ups?: components["schemas"]["FollowUpTopic"][];
+            /** Highlights */
+            highlights?: components["schemas"]["GridHighlightNote"][];
             /** Note */
             note?: string | null;
             /** Open Rows */
@@ -852,7 +870,7 @@ export interface components {
              * Row Kind
              * @enum {string}
              */
-            row_kind: "song" | "show";
+            row_kind: "song" | "show" | "release" | "guest";
         };
         /** GridSuggestion */
         GridSuggestion: {

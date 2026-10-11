@@ -1786,17 +1786,6 @@
             "title": "Columns",
             "type": "array"
           },
-          "coverage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage"
-          },
           "follow_ups": {
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
@@ -1848,7 +1837,9 @@
           "row_kind": {
             "enum": [
               "song",
-              "show"
+              "show",
+              "release",
+              "guest"
             ],
             "title": "Row Kind",
             "type": "string"
@@ -2001,6 +1992,12 @@
             "title": "State",
             "type": "string"
           },
+          "timed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Timed",
+            "type": "integer"
+          },
           "tracks": {
             "items": {
               "$ref": "#/components/schemas/PlayableTrack"
@@ -2058,21 +2055,52 @@
         "title": "GridColumn",
         "type": "object"
       },
-      "GridRequest": {
-        "additionalProperties": false,
-        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline, note and coverage, which the server hands back unchanged.",
+      "GridHighlightNote": {
+        "description": "A cell the model pointed at, and what it said there.",
         "properties": {
-          "coverage": {
+          "column_id": {
+            "title": "Column Id",
+            "type": "string"
+          },
+          "note": {
             "anyOf": [
               {
-                "maxLength": 20000,
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Coverage"
+            "title": "Note"
+          },
+          "row_id": {
+            "title": "Row Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_id",
+          "column_id"
+        ],
+        "title": "GridHighlightNote",
+        "type": "object"
+      },
+      "GridRequest": {
+        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline, note, cell notes and follow-up chips, which the server\nhands back with the cells that remain.",
+        "properties": {
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "title": "Follow Ups",
+            "type": "array"
+          },
+          "highlights": {
+            "items": {
+              "$ref": "#/components/schemas/GridHighlightNote"
+            },
+            "title": "Highlights",
+            "type": "array"
           },
           "note": {
             "anyOf": [
@@ -2238,7 +2266,9 @@
           "row_kind": {
             "enum": [
               "song",
-              "show"
+              "show",
+              "release",
+              "guest"
             ],
             "title": "Row Kind",
             "type": "string"
@@ -4792,7 +4822,7 @@
     },
     "/api/grid": {
       "post": {
-        "description": "Rebuild a grid from the library after the visitor adds or removes a list.\n\nThe model's picks (highlights and chips) belong to the grid it\nwrote, so they are not part of the rebuilt block.",
+        "description": "Rebuild a grid from the library after the visitor adds or removes a list.\n\nThe model's headline, note, cell notes and follow-up chips come back\nwith it; a note whose cell is gone drops away.",
         "operationId": "reshape_grid_api_grid_post",
         "requestBody": {
           "content": {
