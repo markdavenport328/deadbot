@@ -70,7 +70,10 @@ how-many question about shows often wants both: the shows query lists the
 nights themselves, and aggregate_data by year shows when they fell. To
 understand one thing deeply or put it on the page, look it up.
 
-Well-worn routes. For the best or notable versions of a song,
+Well-worn routes. For a song's life on stage, how often and how it changed
+and where to start listening across its years, get_song_life gives each year in
+brief and the performances that stand out; a song_overview with by_year turns
+the stops you choose into its timeline. For the best or notable versions of a song,
 get_song_notable_versions gathers official releases, critic and curator picks
 and fan votes per rendition with listening links, and get_selections_for
 narrows the reviewed selection inventory to one song or show and get_selections_in

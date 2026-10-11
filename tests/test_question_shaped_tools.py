@@ -153,3 +153,17 @@ def test_selections_in_a_span_carry_the_critics_show_picks_inside_it():
     payload = json.loads(tools["get_selections_in"].invoke({"year_from": 1977, "year_to": 1977}))
     dates = [item["show_date"] for pick in payload["show_selections"] for item in pick["items"]]
     assert dates and all(date.startswith("1977") for date in dates)
+
+
+def test_song_life_states_years_and_standouts(built_sqlite, tmp_path):
+    from deadbot.sqlite_store import SqliteCanonicalStore
+
+    store = SqliteCanonicalStore(built_sqlite, response_cache_path=tmp_path / "cache.sqlite")
+    tool = _tools(store)["get_song_life"]
+    payload = json.loads(tool.invoke({"song_id_or_title": "Terrapin Station"}))
+    assert payload["performance_count"] == 302
+    assert (payload["years"][0]["year"], payload["years"][0]["count"], payload["years"][0]["longest_minutes"]) == (1977, 28, 14.9)
+    assert any("longest on record (25:14)" in item["facts"] for item in payload["standouts"])
+    assert payload["stops_note"]
+    missing = json.loads(tool.invoke({"song_id_or_title": "Qzxvplm"}))
+    assert missing["error"] == "Song not found or ambiguous"

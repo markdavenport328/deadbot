@@ -1041,6 +1041,27 @@ def build_tools(
         return _json(payload)
 
     @tool
+    def get_song_life(song_id_or_title: str) -> str:
+        """Get one song's life on stage: each year in brief and the performances that stand out.
+
+        Use it to build a song_overview timeline (visible_facets with by_year)
+        or to answer how a song changed over the years. `years` gives each
+        year's count and typical and longest minutes. `standouts` are the
+        performances whose facts stand out, each with its ID and plain facts:
+        first, last and longest, the longest of each year, picks with who made
+        them, releases, rare placements, guests and rare neighbors. `patterns`
+        names placements too common to list one by one. Choose your stops from
+        these and from what you know; give each a short label and a one-line
+        why in the song_overview's representatives.
+        """
+        from deadbot import song_life
+
+        song = store.resolve_song(song_id_or_title)
+        if not song:
+            return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
+        return _json(song_life.tool_payload(store, song))
+
+    @tool
     def list_song_performances(song_id_or_title: str, offset: int = 0, limit: int = 24) -> str:
         """List a bounded chronological page of one song's performances.
 
@@ -2373,6 +2394,7 @@ def build_tools(
         search_guest_musicians,
         search_stored_resources,
         get_song,
+        get_song_life,
         list_song_performances,
         get_album,
         get_song_performance_profile,
