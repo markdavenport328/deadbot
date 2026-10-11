@@ -250,3 +250,55 @@ Raw metrics, one JSON object per question:
 {"question": "Compare the first two shows you picked.", "model_calls": 2, "research_rounds": 1, "calls": [{"input_tokens": 14148, "output_tokens": 157, "cached_input_tokens": 13977, "reasoning_tokens": 33, "tool_calls": 4, "finish": false}, {"input_tokens": 18051, "output_tokens": 1096, "cached_input_tokens": 14145, "reasoning_tokens": 30, "tool_calls": 1, "finish": true}], "peak_input_tokens": 18051, "total_input_tokens": 32199, "total_cached_input_tokens": 28122, "cached_input_share": 0.873, "total_output_tokens": 1253, "total_reasoning_tokens": 63, "tools": [{"name": "get_show", "chars": 5566, "truncated": false}, {"name": "get_show", "chars": 5500, "truncated": false}, {"name": "get_selections_for", "chars": 687, "truncated": false}, {"name": "get_selections_for", "chars": 769, "truncated": false}, {"name": "finish_response", "chars": 34, "truncated": false}], "largest_tool_result_chars": 5566, "notebook_reads": 0, "notebook_index_chars": 0, "seconds_to_first_answer": 4.31, "seconds_total": 13.6, "error": null, "turn": 2, "notebook_bytes": 0, "sequence": "1979, without the notebook"}
 {"question": "Which songs from those nights would you play someone new to 1979?", "model_calls": 2, "research_rounds": 1, "calls": [{"input_tokens": 14250, "output_tokens": 103, "cached_input_tokens": 14145, "reasoning_tokens": 37, "tool_calls": 2, "finish": false}, {"input_tokens": 17678, "output_tokens": 598, "cached_input_tokens": 14247, "reasoning_tokens": 36, "tool_calls": 1, "finish": true}], "peak_input_tokens": 17678, "total_input_tokens": 31928, "total_cached_input_tokens": 28392, "cached_input_share": 0.889, "total_output_tokens": 701, "total_reasoning_tokens": 73, "tools": [{"name": "get_show", "chars": 5566, "truncated": false}, {"name": "get_show", "chars": 5500, "truncated": false}, {"name": "finish_response", "chars": 34, "truncated": false}], "largest_tool_result_chars": 5566, "notebook_reads": 0, "notebook_index_chars": 0, "seconds_to_first_answer": 4.22, "seconds_total": 9.47, "error": null, "turn": 3, "notebook_bytes": 0, "sequence": "1979, without the notebook"}
 ```
+
+## Run 3: IDs in the index and slice reads (commit 9c93b89)
+
+What changed: each notebook line now lists, by ID, the shows, performances,
+releases, songs and people its result holds (shows first, so a box set's
+line names its 22 nights with venues; at most 1,000 characters of items per
+line, with "(+N more)"). `read_notebook` takes an optional `only`: the
+original call runs again without the result ceiling, every list is narrowed
+to the rows that mention those values, and the narrowed result is bounded
+once. One night of the box set (tracks 548 onward, past the original cut)
+now comes back whole.
+
+One comparison, Europe '72 sequence only, same setup as runs 1 and 2
+(gpt-5.6-luna, reasoning effort low, response cache off, SQLite, throwaway
+secret). Calls / total input tokens / cached share / seconds to first answer:
+
+| Turn | Without | With |
+|---|---|---|
+| 2: the Lyceum night | 3 / 52,862 / 0.86 / 9.0 | 3 / 105,027 / 0.66 / 7.6 |
+| 3: that Morning Dew | 3 / 63,903 / 0.79 / 21.3 | 3 / 66,075 / 0.83 / 6.8 |
+
+Index size: 3,097 characters at turn 2, 7,711 at turn 3 (run 2: 1,067 and
+2,178).
+
+What the model did:
+
+- **Lyceum turn: no slice.** It called `read_notebook(["gd-1972-05-26"])`,
+  asking by the night's ID, not by the box set's key, and did not pass
+  `only`. `find` matches an ID to every entry that returned it, so the whole
+  box set came back again (73,859 characters, cut). It then ran `get_show`,
+  `get_album` on the Lyceum box and a web read anyway. The read cost about
+  18k tokens again and added nothing.
+- **Morning Dew turn: no read and no search round.** It did not read the
+  notebook and skipped the `search_entities` and `get_show` calls the
+  "without" run made, going straight to notable versions and
+  `get_performance`. The first answer arrived in 6.8 s against 21.3 s
+  without. It did not place cards straight from the index: every card's ID
+  was also in this turn's own results.
+
+Pages (read from the delivered responses):
+
+- Lyceum, with: accurate (19-song first set, Truckin' > The Other One >
+  Morning Dew > The Other One, the closing run of songs). The night's card
+  and four playable performance cards. The "without" page also had an
+  editorial and the Lyceum '72 box card, so "with" is a little thinner.
+- Morning Dew, with: strong. The Lyceum Dew at 6:18 inside The Other One,
+  set against 1968, 1969, RFK '73 and Cornell '77. Five playable
+  performance cards, one more than "without".
+
+Untried next step: when a read asks by a library ID rather than a key,
+return the part of each matching entry that mentions that ID, the way
+`only` does. The model's own call on the Lyceum turn asked for exactly that.
