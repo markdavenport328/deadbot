@@ -258,3 +258,92 @@ def test_enum_parameters_reach_the_tool_schema_and_bad_values_still_get_the_tool
     # A value outside the enum still reaches the tool, whose error names the valid values.
     payload = json.loads(_tool_by_name(store, "get_media_links").invoke({"entity_type": "venue", "entity_id": "x"}))
     assert payload["error"] == "entity_type must be 'show' or 'performance'"
+
+
+def test_get_grid_is_registered_and_resolves_titles():
+    store = CanonicalStore()
+    result = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {
+                "row_kind": "song",
+                "rows": ["Dark Star", "song-playing-in-the-band"],
+                "column_kind": "year",
+                "year_from": 1968,
+                "year_to": 1974,
+            }
+        )
+    )
+    assert result["grid_id"].startswith("grid:")
+    assert [row["id"] for row in result["rows"]] == ["song-dark-star", "song-playing-in-the-band"]
+    assert result["columns"][0]["id"] == "year:1968"
+
+
+def test_get_grid_tour_selects_show_rows():
+    store = CanonicalStore()
+    result = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {"row_kind": "show", "tour": "Europe 1972", "column_kind": "song", "columns": ["Dark Star", "The Other One"]}
+        )
+    )
+    assert len(result["rows"]) == 22
+
+
+def test_get_grid_reports_what_it_could_not_resolve():
+    store = CanonicalStore()
+    tool = _tool_by_name(store, "get_grid")
+    missing_song = json.loads(tool.invoke({"row_kind": "song", "rows": ["Not A Song Zzz"], "column_kind": "year", "year_from": 1970, "year_to": 1971}))
+    assert missing_song["error"] == "Song not found or ambiguous"
+    no_nights = json.loads(tool.invoke({"row_kind": "show", "column_kind": "song", "columns": ["Dark Star"]}))
+    assert "error" in no_nights
+    no_years = json.loads(tool.invoke({"row_kind": "song", "rows": ["Dark Star"], "column_kind": "year"}))
+    assert "error" in no_years
+
+
+def test_get_grid_accepts_years_as_columns_and_the_tour_as_rows_by_id():
+    store = CanonicalStore()
+    result = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {"row_kind": "song", "rows": ["song-dark-star"], "column_kind": "year", "columns": ["1969", "year:1970"]}
+        )
+    )
+    assert [column["id"] for column in result["columns"]] == ["year:1969", "year:1970"]
+
+
+def test_get_grid_tour_selects_the_same_nights_on_sqlite(built_sqlite, tmp_path):
+    from deadbot.sqlite_store import SqliteCanonicalStore
+
+    store = SqliteCanonicalStore(built_sqlite, response_cache_path=tmp_path / "cache.sqlite")
+    try:
+        result = json.loads(
+            _tool_by_name(store, "get_grid").invoke(
+                {"row_kind": "show", "tour": "Europe 1972", "column_kind": "song", "columns": ["Dark Star"]}
+            )
+        )
+    finally:
+        store.close()
+    assert len(result["rows"]) == 22
+
+
+def test_get_grid_kinds_are_an_enum_in_the_schema_and_a_bad_kind_reaches_the_tool():
+    from langchain_core.utils.function_calling import convert_to_openai_tool
+
+    store = CanonicalStore()
+    tool = _tool_by_name(store, "get_grid")
+    properties = convert_to_openai_tool(tool)["function"]["parameters"]["properties"]
+    assert properties["row_kind"]["enum"] == ["song", "show"]
+    assert properties["column_kind"]["enum"] == ["year", "song"]
+    payload = json.loads(tool.invoke({"row_kind": "venue", "column_kind": "song", "rows": ["x"], "columns": ["Dark Star"]}))
+    assert payload["error"] == "Unsupported grid"
+    assert "show x song" in payload["valid"] and "song x year" in payload["valid"]
+
+
+def test_get_grid_misspelled_tour_suggests_known_tours():
+    store = CanonicalStore()
+    payload = json.loads(
+        _tool_by_name(store, "get_grid").invoke(
+            {"row_kind": "show", "tour": "Europe 72", "column_kind": "song", "columns": ["Dark Star"]}
+        )
+    )
+    assert payload["error"] == "No shows on that tour"
+    assert "Europe 1972" in payload["closest_tours"]
+    assert len(payload["closest_tours"]) <= 5

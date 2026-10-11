@@ -238,3 +238,9 @@ def test_a_streamed_finish_call_keeps_both_groups_lists():
     message = repair_finish_arguments(first + rest)
     assert [group["title"] for group in message.tool_calls[0]["args"]["groups"]] == ["One", "Two"]
     assert message.tool_calls[0]["id"] == "c1"
+
+
+def test_prompt_teaches_grid_and_get_grid():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "get_grid" in prompt
+    assert "a grid in finish_response" in prompt

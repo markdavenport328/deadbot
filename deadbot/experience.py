@@ -683,6 +683,91 @@ class VersionStripBlock(ExperienceModel):
     year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
+class GridColumn(ExperienceModel):
+    id: str
+    label: str
+    sub: str | None = None
+
+
+class GridCell(ExperienceModel):
+    """One meeting of a row and a column, every fact from the store."""
+
+    state: Literal["value", "none", "no_length", "unknown"]
+    value: int | None = Field(default=None, ge=0)
+    passes: int = Field(default=0, ge=0)
+    set_label: str | None = None
+    segue_from: str | None = None
+    segue_into: str | None = None
+    length_source: Literal["release", "tape", "mixed"] | None = None
+    of_shows: int | None = Field(default=None, ge=0)
+    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
+    highlight: bool = False
+    note: str | None = None
+
+
+class GridSetlistEntry(ExperienceModel):
+    song_id: str
+    title: str
+    set_label: str
+    segue: bool
+
+
+class GridRow(ExperienceModel):
+    id: str
+    label: str
+    sub: str | None = None
+    total: int | None = None
+    cells: list[GridCell] = Field(default_factory=list, max_length=LIST_CEILING)
+    setlist: list[GridSetlistEntry] = Field(default_factory=list, max_length=LIST_CEILING)
+
+
+class GridSuggestion(ExperienceModel):
+    id: str
+    label: str
+    rows_with: int = Field(ge=0)
+
+
+class GridSpecModel(ExperienceModel):
+    row_kind: Literal["song", "show"]
+    row_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
+    column_kind: Literal["year", "song"]
+    column_ids: list[str] = Field(min_length=1, max_length=LIST_CEILING)
+
+
+class GridBlock(ExperienceModel):
+    """Two lists and where each pair meets. The model chose the lists, the
+    order, what opens first, the cells to point at and the words; the server
+    filled every cell, track, date and venue from the library."""
+
+    type: Literal["grid"]
+    grid_id: str
+    title: str | None = None
+    note: str | None = None
+    coverage: str | None = None
+    row_kind: Literal["song", "show"]
+    column_kind: Literal["year", "song"]
+    measure: Literal["shows", "minutes"]
+    columns: list[GridColumn] = Field(min_length=1, max_length=LIST_CEILING)
+    rows: list[GridRow] = Field(min_length=1, max_length=LIST_CEILING)
+    open_rows: int | None = Field(default=None, ge=1)
+    max_value: int = Field(ge=0)
+    suggestions: list[GridSuggestion] = Field(default_factory=list, max_length=LIST_CEILING)
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
+    spec: GridSpecModel
+
+
+class GridRequest(ExperienceModel):
+    """A visitor's reshape of a grid: the lists as they now stand, plus the
+    model's headline, note and coverage, which the server hands back unchanged."""
+
+    spec: GridSpecModel
+    # Only a transport ceiling: a block the server produced must always reshape.
+    title: str | None = Field(default=None, max_length=20_000)
+    note: str | None = Field(default=None, max_length=20_000)
+    coverage: str | None = Field(default=None, max_length=20_000)
+    open_rows: int | None = Field(default=None, ge=1)
+
+
 class ProvenanceNoteBlock(ExperienceModel):
     type: Literal["provenance_note"]
     text: str
@@ -879,6 +964,7 @@ ExperienceBlock = Annotated[
     | ArrangementSearchBlock
     | DataChartBlock
     | VersionStripBlock
+    | GridBlock
     | ProvenanceNoteBlock
     | GapStateBlock
     | EditorialBlock
@@ -896,10 +982,65 @@ class ConversationTurn(ExperienceModel):
     text: str = Field(min_length=1, max_length=8_000)
 
 
+FOCUS_LABEL_CEILING = 300
+FOCUS_BLOCK_ID_CEILING = 200
+FOCUS_ID_CEILING = 40
+FOCUS_FACT_CEILING = 300
+FOCUS_FACT_COUNT_CEILING = 12
+
+
+def _trimmed_strings(value: Any, count: int, length: int, what: str) -> Any:
+    """A list of strings cut to ``count`` items of ``length`` characters, logging any cut."""
+
+    if not isinstance(value, list):
+        return value
+    strings = [item for item in value if isinstance(item, str)]
+    if len(strings) > count:
+        logger.warning("Truncated %d focus %s to the ceiling of %d", len(strings), what, count)
+        strings = strings[:count]
+    if any(len(item) > length for item in strings):
+        logger.warning("Truncated over-long focus %s to %d characters", what, length)
+        strings = [item[:length] for item in strings]
+    return strings
+
+
+class AskFocus(ExperienceModel):
+    """What the visitor was pointing at when they asked: the clicked cell or grid.
+
+    The browser reports it with the question; the server hands it to the model
+    as a note and lets the IDs it names join the turn's grounded IDs.
+    """
+
+    label: str = Field(max_length=FOCUS_LABEL_CEILING)
+    block_type: Literal["grid"]
+    block_id: str = Field(max_length=FOCUS_BLOCK_ID_CEILING)
+    ids: list[str] = Field(default_factory=list, max_length=FOCUS_ID_CEILING)
+    facts: list[str] = Field(default_factory=list, max_length=FOCUS_FACT_COUNT_CEILING)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_leniently(cls, data: Any) -> Any:
+        # Over-long text and lists trim and log rather than refuse the question,
+        # and keys this model does not name are ignored.
+        if not isinstance(data, dict):
+            return data
+        known = {key: data[key] for key in ("label", "block_type", "block_id", "ids", "facts") if key in data}
+        for key, ceiling in (("label", FOCUS_LABEL_CEILING), ("block_id", FOCUS_BLOCK_ID_CEILING)):
+            if isinstance(known.get(key), str) and len(known[key]) > ceiling:
+                logger.warning("Truncated a %d-character focus %s to the ceiling of %d", len(known[key]), key, ceiling)
+                known[key] = known[key][:ceiling]
+        if "ids" in known:
+            known["ids"] = _trimmed_strings(known["ids"], FOCUS_ID_CEILING, FOCUS_BLOCK_ID_CEILING, "ids")
+        if "facts" in known:
+            known["facts"] = _trimmed_strings(known["facts"], FOCUS_FACT_COUNT_CEILING, FOCUS_FACT_CEILING, "facts")
+        return known
+
+
 class ExperienceRequest(ExperienceModel):
     question: str = Field(min_length=1, max_length=2_000)
     thread_id: str | None = Field(default=None, min_length=1, max_length=200)
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
+    focus: AskFocus | None = None
 
 
 class ExperienceGroup(ExperienceModel):
