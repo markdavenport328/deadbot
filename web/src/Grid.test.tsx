@@ -6,6 +6,8 @@ import { PlayerProvider, usePlayer } from "./player";
 import { columnSummary, reshapeGrid, sortRows } from "./grid-actions";
 import europe from "./fixtures/grid-europe72.json";
 import years from "./fixtures/grid-song-years.json";
+import records from "./fixtures/grid-dicks-picks.json";
+import guests from "./fixtures/grid-guests.json";
 import { Grid, cellFill } from "./Grid";
 import type { GridBlock } from "./types";
 
@@ -19,6 +21,7 @@ function Queue() {
     <>
       <output data-testid="queue">{player.queue.map((track) => track.id).join(",")}</output>
       <output data-testid="urls">{player.queue.map((track) => track.audioUrl).join(",")}</output>
+      <output data-testid="dates">{player.queue.map((track) => track.showDate).join(",")}</output>
     </>
   );
 }
@@ -391,6 +394,82 @@ function reshapedFrom(base: GridBlock, columnIds: string[], extra: Partial<GridB
     ...extra,
   } as GridBlock;
 }
+
+describe("Grid of records and of guests", () => {
+  it("names a record grid's lists and measure in its own words", () => {
+    render(<Grid block={records as GridBlock} />);
+    expect(screen.getByText(/6 records · 5 songs · minutes on the record/)).toBeInTheDocument();
+    expect(screen.getByText("Dick’s Picks 36")).toBeInTheDocument();
+    expect(screen.getByText("The Spectrum, Philadelphia, PA 9/21/72")).toBeInTheDocument();
+    expect(screen.getByText("not on the record")).toBeInTheDocument();
+    expect(screen.getByText("not matched yet")).toBeInTheDocument();
+  });
+
+  it("says how long a song runs on a record, and when a blank track may hold it", async () => {
+    render(<Grid block={records as GridBlock} />);
+    fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 36, Dark Star: 37 min/));
+    const card = await screen.findByRole("tooltip");
+    expect(card).toHaveTextContent("Dark Star · Dick’s Picks 36");
+    expect(card).toHaveTextContent("37 minutes on the record, on 1 track.");
+    expect(card).toHaveTextContent("The longest Dark Star in the series.");
+    fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 16, Dark Star/));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("18 minutes on the record, across 3 tracks.");
+    fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 13, Scarlet Begonias: not matched yet$/));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/a track on this record that names no song/i);
+    fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 3, Dark Star: not on the record$/));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Not on this record.");
+  });
+
+  it("summarises a song's column across the records", async () => {
+    render(<Grid block={records as GridBlock} />);
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /sort by dark star/i }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("On 4 of 6 records. Longest: Dick’s Picks 36, 37 minutes.");
+  });
+
+  it("opens a record's tracks under its row", () => {
+    render(<Grid block={records as GridBlock} />);
+    const toggle = screen.getByRole("button", { name: "Open the tracks of Dick’s Picks 36" });
+    fireEvent.click(toggle);
+    const list = screen.getByRole("list", { name: "Tracks" });
+    expect(list).toHaveTextContent(/Promised Land/);
+    expect(list).toHaveTextContent(/Disc 1/);
+  });
+
+  it("asks about a song on a record by name", () => {
+    const onFollowUp = vi.fn();
+    render(<Grid block={records as GridBlock} onFollowUp={onFollowUp} />);
+    fireEvent.click(screen.getByLabelText(/^Dick’s Picks 36, Dark Star/));
+    fireEvent.click(screen.getByRole("button", { name: "Ask about this" }));
+    expect(onFollowUp.mock.calls[0][0]).toBe("Tell me about the Dark Star on Dick’s Picks 36.");
+    expect(onFollowUp.mock.calls[0][1].label).toBe("Dark Star · Dick’s Picks 36");
+  });
+
+  it("plays a record's cell with the show date read from its performance", () => {
+    render(
+      <>
+        <Grid block={records as GridBlock} />
+        <Queue />
+      </>,
+    );
+    fireEvent.click(screen.getByLabelText(/^Dick’s Picks 36, Dark Star/));
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    expect(screen.getByTestId("queue")).toHaveTextContent("gd-1972-09-21-dark-star-2-5");
+    expect(screen.getByTestId("dates")).toHaveTextContent("1972-09-21");
+  });
+
+  it("counts the shows a guest sat in on, year by year", async () => {
+    render(<Grid block={guests as GridBlock} />);
+    expect(screen.getByText(/4 guests · 27 years · shows sat in/)).toBeInTheDocument();
+    fireEvent.mouseEnter(screen.getByLabelText(/^Bruce Hornsby, 1989: 3 shows$/));
+    const card = await screen.findByRole("tooltip");
+    expect(card).toHaveTextContent("Bruce Hornsby · 1989");
+    expect(card).toHaveTextContent("Sat in on 3 shows that year.");
+    fireEvent.mouseEnter(screen.getByLabelText(/^Bruce Hornsby, 1991: none that year$/));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Did not sit in that year.");
+    fireEvent.mouseEnter(screen.getByRole("button", { name: "Sort by 1974" }));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/of the 4 guests sat in that year\. Most: Ned Lagin, \d+ shows\./);
+  });
+});
 
 describe("Grid reshape", () => {
   const original = europe as GridBlock;

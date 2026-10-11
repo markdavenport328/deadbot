@@ -46,3 +46,27 @@ write(
     coverage="Before 1971 the library has setlists for only some shows, so early counts run low.",
     follow_ups=[],
 )
+write(
+    "grid-dicks-picks.json",
+    grids.GridSpec("release", ("release-dicks-picks-volume-36-1972-09-21", "release-dicks-picks-volume-16-1969-11-08",
+                               "release-dicks-picks-volume-11-1972-09-27", "release-dicks-picks-volume-4-fillmore-east-1996",
+                               "release-dicks-picks-volume-13-1981-05-06", "release-dicks-picks-volume-3-1977-05-22"),
+                   "song", ("song-dark-star", "song-the-other-one", "song-playing-in-the-band", "song-scarlet-begonias",
+                            "song-morning-dew")),
+    row_ids=None, open_rows=None,
+    highlights=[{"row_id": "release-dicks-picks-volume-36-1972-09-21", "column_id": "song-dark-star",
+                 "note": "The longest Dark Star in the series."}],
+    title="Where the long jams live.",
+    note="The 1972 volumes give a whole side to Dark Star; Nassau '81 is songs and segues.",
+    coverage="Nassau '81 has two tracks that name no song, so its Scarlet and Fire are not matched yet.",
+    follow_ups=[],
+)
+write(
+    "grid-guests.json",
+    grids.GridSpec("guest", ("person-bruce-hornsby", "person-ned-lagin", "person-david-nelson", "person-john-cipollina"),
+                   "year", tuple(grids.year_id(y) for y in range(1969, 1996))),
+    row_ids=None, open_rows=None,
+    highlights=[{"row_id": "person-ned-lagin", "column_id": "year:1974", "note": "The Seastones year."}],
+    title="Who sat in, and when.",
+    note=None, coverage=None, follow_ups=[],
+)
