@@ -440,7 +440,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .tab[aria-expanded="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cream); }
 
 .panel { padding-top: 1.1rem; }
-.setlist-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2.5rem; }
+/* One column per set, side by side only where each set has room for its
+   titles; a lone set, or a narrow card, takes the full width. */
+.setlist-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: 1rem 2.5rem; }
 .setlist-panel .k { display: block; margin-bottom: 0.4rem; }
 .song-list { margin: 0; padding-left: 1.7rem; color: var(--quiet); font-size: 0.93rem; font-variant-numeric: tabular-nums; }
 .song-list li { padding: 0.17rem 0 0.17rem 0.2rem; }
@@ -609,7 +611,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 @media (max-width: 520px) {
   .card { grid-column: span 12; }
   .endpoints { grid-template-columns: 1fr; }
-  .setlist-panel { grid-template-columns: 1fr; }
   .mention { grid-template-columns: 1fr; }
   .entry-list.two-up { grid-template-columns: 1fr; }
   .history-span { grid-template-columns: 1fr; }
