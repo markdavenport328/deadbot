@@ -5,10 +5,10 @@ Input: `data/raw/people/wikidata-grateful-dead-members.jsonl`, written by
 `scripts/collect/fetch_band_membership_sources.py`.
 
 Output: `data/canonical/people.csv` with `birth_date`/`death_date` filled for
-the twelve people resolved by `scripts/normalize_band_membership.py`, plus
-their two JerryBase `(complete show)` duplicate identities
-(`person-bruce-hornsby-complete-show`, `person-tom-constanten-complete-show`),
-which name the same person under a second id. Every other column, and every
+the twelve people resolved by `scripts/normalize_band_membership.py`. (Their
+two JerryBase `(complete show)` duplicate ids were folded onto the plain ids
+by `scripts/normalize_jerrybase_performers.py --fold-qualified-people` on
+2026-10-09, so each label now fills one row.) Every other column, and every
 other row, is left untouched -- no row is added -- so a concurrent pass
 adding new people rows to the same file merges cleanly.
 
@@ -28,9 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW_PATH = ROOT / "data" / "raw" / "people" / "wikidata-grateful-dead-members.jsonl"
 PEOPLE_CSV = ROOT / "data" / "canonical" / "people.csv"
 
-# Wikidata label -> every canonical person_id it should fill. Two labels
-# resolve to two ids apiece because JerryBase's "(complete show)" participation
-# qualifier created a second person_id for the same human being.
+# Wikidata label -> every canonical person_id it should fill.
 LABEL_TO_PERSON_IDS: dict[str, tuple[str, ...]] = {
     "Jerry Garcia": ("person-jerry-garcia",),
     "Bob Weir": ("person-bob-weir",),
@@ -38,12 +36,12 @@ LABEL_TO_PERSON_IDS: dict[str, tuple[str, ...]] = {
     "Bill Kreutzmann": ("person-bill-kreutzmann",),
     "Mickey Hart": ("person-mickey-hart",),
     'Ron "Pigpen" McKernan': ("person-ron-pigpen-mckernan",),
-    "Tom Constanten": ("person-tom-constanten", "person-tom-constanten-complete-show"),
+    "Tom Constanten": ("person-tom-constanten",),
     "Keith Godchaux": ("person-keith-godchaux",),
     "Donna Jean Godchaux": ("person-donna-jean-godchaux",),
     "Brent Mydland": ("person-brent-mydland",),
     "Vince Welnick": ("person-vince-welnick",),
-    "Bruce Hornsby": ("person-bruce-hornsby", "person-bruce-hornsby-complete-show"),
+    "Bruce Hornsby": ("person-bruce-hornsby",),
 }
 
 

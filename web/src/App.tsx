@@ -1,8 +1,10 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AlbumUnitBlock, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
+import type { AlbumUnitBlock, AskFocus, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
-import { CardHeading, Drawer, HeadingContext, type DrawerTab } from "./components";
+import { CardHeading, Drawer, HeadingContext, MoreAbout, TopicChips, type DrawerTab } from "./components";
+import { askRequestBody, type FollowUp } from "./ask-request";
+import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { VersionStrip } from "./VersionStrip";
@@ -273,39 +275,11 @@ function Eyebrow({ label, title }: { label?: string | null; title?: string | nul
 // The one control that speaks to the thread. Only questions the composer
 // wrote reach here, labeled as what they are, so a page carries a few of them
 // and each reads as a next question rather than as navigation.
-function AskChip({ prompt, onFollowUp }: { prompt: string; onFollowUp: (prompt: string) => void }) {
+function AskChip({ prompt, onFollowUp }: { prompt: string; onFollowUp: FollowUp }) {
   return (
     <button type="button" className="ask-chip" onClick={() => onFollowUp(prompt)}>
       {prompt}
     </button>
-  );
-}
-
-// Topic chips: the model writes a short label and the full question it stands
-// for. The chip shows the label; pressing it sends the model's question.
-type FollowUpTopic = { label: string; question: string };
-
-function TopicChips({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
-  const items = (topics ?? []).filter((topic) => topic.label.trim() && topic.question.trim());
-  if (items.length === 0) return null;
-  return (
-    <div className="topics">
-      {items.map((topic) => (
-        <button type="button" className="ask-chip" key={topic.label} onClick={() => onFollowUp(topic.question)} title={topic.question}>
-          {topic.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function MoreAbout({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
-  if ((topics ?? []).length === 0) return null;
-  return (
-    <div className="ask-block">
-      <span className="k">More about</span>
-      <TopicChips topics={topics} onFollowUp={onFollowUp} />
-    </div>
   );
 }
 
@@ -788,7 +762,7 @@ function collapsedFacts(block: UnitBlock): {
 
 // A collapsed card: one row of key facts with its play control, and a quiet
 // control that opens the full card in place beneath the row.
-function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFollowUp: (prompt: string) => void; children: ReactNode }) {
+function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFollowUp: FollowUp; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [coverFailed, setCoverFailed] = useState(false);
   const cardId = useId();
@@ -962,7 +936,7 @@ function ShowUnit({
   unit: ShowUnitBlock;
   criteria: string[];
   soleUnit: boolean;
-  onFollowUp: (prompt: string) => void;
+  onFollowUp: FollowUp;
   inRow?: boolean;
 }) {
   const shows = (facet: ShowUnitBlock["visible_facets"][number]) => unit.visible_facets.includes(facet);
@@ -1135,7 +1109,7 @@ function AlbumUnit({
   block: AlbumUnitBlock;
   criteria: string[];
   soleUnit: boolean;
-  onFollowUp: (prompt: string) => void;
+  onFollowUp: FollowUp;
   inRow?: boolean;
 }) {
   const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
@@ -1229,7 +1203,7 @@ function PerformanceUnit({
 }: {
   block: PerformanceUnitBlockT;
   criteria: string[];
-  onFollowUp: (prompt: string) => void;
+  onFollowUp: FollowUp;
   inRow?: boolean;
 }) {
   const rightParts = [block.set_label, block.position_in_set ? `Song ${block.position_in_set}` : null].filter(Boolean) as string[];
@@ -1379,7 +1353,7 @@ function SongOverviewUnit({
   block: SongOverviewBlockT;
   criteria: string[];
   soleUnit: boolean;
-  onFollowUp: (prompt: string) => void;
+  onFollowUp: FollowUp;
   inRow?: boolean;
 }) {
   const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
@@ -1484,7 +1458,7 @@ function Block({
   sources: SourceReference[];
   criteria: string[];
   soleUnit: boolean;
-  onFollowUp: (prompt: string) => void;
+  onFollowUp: FollowUp;
   // Rendered inside a collapsed row that the visitor opened: the row keeps
   // its header, so the unit shows only what opens beneath it.
   inRow?: boolean;
@@ -1799,6 +1773,8 @@ function Block({
       );
     case "version_strip":
       return <VersionStrip block={block} />;
+    case "grid":
+      return <Grid block={block} onFollowUp={onFollowUp} />;
   }
 }
 
@@ -1815,7 +1791,7 @@ function ComposedPage({
   groups: RenderGroup[];
   sources: SourceReference[];
   composing: boolean;
-  onFollowUp: (prompt: string) => void;
+  onFollowUp: FollowUp;
 }) {
   // A primary unit's facets start open only when it is the page's sole unit;
   // typography blocks (era_unit, editorial, and the rest) do not count.
@@ -2139,7 +2115,7 @@ function App() {
     }
   }
 
-  async function askQuestion(nextQuestion?: string, { fresh = false }: { fresh?: boolean } = {}) {
+  async function askQuestion(nextQuestion?: string, { fresh = false, focus }: { fresh?: boolean; focus?: AskFocus } = {}) {
     if (visualFixture) return;
     const trimmed = (nextQuestion ?? question).trim();
     if (!trimmed || loading) return;
@@ -2173,7 +2149,7 @@ function App() {
       return;
     }
 
-    const body = JSON.stringify({ question: trimmed, thread_id: requestThreadId, conversation });
+    const body = askRequestBody({ question: trimmed, threadId: requestThreadId, conversation, focus });
     try {
       let statusCount = 0;
       const streamed = await askStreaming(body, {
@@ -2286,8 +2262,8 @@ function App() {
     await askQuestion();
   }
 
-  function chooseFollowUp(prompt: string) {
-    void askQuestion(prompt);
+  function chooseFollowUp(prompt: string, focus?: AskFocus) {
+    void askQuestion(prompt, { focus });
   }
 
   function startNewChat() {

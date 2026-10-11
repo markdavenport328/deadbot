@@ -11,6 +11,9 @@ import shows1977Json from "./fixtures/shows1977.json";
 import harrisburgJson from "./fixtures/harrisburg.json";
 import darkstarJson from "./fixtures/darkstar.json";
 import mostplayedJson from "./fixtures/mostplayed.json";
+// Built from the real library by scripts/export_grid_fixtures.py.
+import gridEurope72Json from "./fixtures/grid-europe72.json";
+import gridSongYearsJson from "./fixtures/grid-song-years.json";
 
 type FixtureAudio = { url: string; durationSeconds?: number; segueIntoNext?: boolean };
 type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean, audio?: FixtureAudio];
@@ -928,11 +931,22 @@ const harrisburg = harrisburgJson as unknown as ExperienceResponse;
 const darkstar = darkstarJson as unknown as ExperienceResponse;
 const mostplayed = mostplayedJson as unknown as ExperienceResponse;
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed"] as const;
+// Two grids over real data: the nights of the 1972 Europe tour against seven
+// songs (minutes), and three songs across the years (shows per year).
+const grid: ExperienceResponse = fixture(
+  "How did the Dead trade their big jams on the Europe '72 tour, and how did Dark Star compare with the others over the years?",
+  "Grids: Europe '72 and three songs across the years",
+  "Two grids, each drawn from the library's setlists and tape lengths.",
+  [gridEurope72Json, gridSongYearsJson] as unknown as ExperienceBlock[],
+  "collection",
+  { title: "Where the big jams fell", lead: "Cell strength is minutes played, or shows that year." }
+);
+
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

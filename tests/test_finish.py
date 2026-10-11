@@ -1,8 +1,9 @@
 import json
 
+import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from deadbot import composition, experience, finish
+from deadbot import composition, experience, finish, grids
 from deadbot.data import CanonicalStore
 
 
@@ -1465,6 +1466,43 @@ def test_data_chart_hydrates_a_genuinely_empty_result_with_its_empty_reason_carr
     assert block is not None
     assert block.rows == []
     assert block.empty_reason == payload["empty_reason"]
+
+
+@pytest.fixture(scope="module")
+def csv_store():
+    return CanonicalStore()
+
+
+def test_grid_ref_hydrates_from_this_turns_payload(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, grids.GridSpec("song", ("song-dark-star",), "year", ("year:1969", "year:1970"))))
+    grounded = finish.grounded_context([payload])
+    ref = finish._BODY_ITEM_ADAPTER.validate_python({"type": "grid", "grid_id": payload["grid_id"], "title": "Peak"})
+    block, _ = finish._resolve_reference(ref, grounded, [payload], csv_store)
+    assert block.type == "grid" and block.rows[0].cells[0].value == 67
+
+
+def test_grid_ref_converts_follow_ups_and_reads_leniently(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, grids.GridSpec("song", ("song-dark-star",), "year", ("year:1969", "year:1970"))))
+    item = finish.validate_body_item(
+        {
+            "type": "grid",
+            "grid_id": payload["grid_id"],
+            "mystery_key": 1,
+            "highlights": [{"row_id": "song-dark-star", "column_id": "year:1969", "note": "Peak", "extra": 1}],
+            "follow_ups": [{"label": "Why 1969?", "question": "Why was 1969 the peak?"}, {"label": " ", "question": "x"}],
+        },
+        where="test",
+    )
+    (block,), _ = finish.resolve_items([item], finish.grounded_context([payload]), [payload], csv_store)
+    assert block.type == "grid"
+    assert [(f.label, f.question) for f in block.follow_ups] == [("Why 1969?", "Why was 1969 the peak?")]
+    assert block.rows[0].cells[0].highlight and block.rows[0].cells[0].note == "Peak"
+
+
+def test_grid_ref_with_unknown_grid_falls_back_to_model_text(csv_store):
+    item = finish.validate_body_item({"type": "grid", "grid_id": "grid:000000000000", "title": "T", "note": "N"}, where="test")
+    blocks = finish.resolve_items([item], finish.grounded_context([]), [], csv_store)[0]
+    assert blocks and blocks[0].type == "editorial"
 
 
 def test_data_chart_rejects_a_non_numeric_row_value():

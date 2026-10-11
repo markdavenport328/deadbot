@@ -196,3 +196,20 @@ def test_a_previously_assigned_release_id_is_reused_rather_than_renumbered():
     }
     assigned = module.assign_release_ids([fresh], set(), dict(id_by_mbid))
     assert assigned["dddddddd-1111-2222-3333-444444444444"] == "release-wake-of-the-flood"
+
+
+def test_a_rerun_keeps_hand_verified_links_and_sharpened_dates():
+    previous = [
+        {"release_id": "release-ace", "spotify_album_url": "https://open.spotify.com/album/hand", "release_date": "1972-05-01"},
+        {"release_id": "release-other", "spotify_album_url": "", "release_date": "1975-02-02"},
+    ]
+    new = [
+        {"release_id": "release-ace", "spotify_album_url": "", "release_date": "1972-05"},
+        {"release_id": "release-other", "spotify_album_url": "https://open.spotify.com/album/mb", "release_date": "1976"},
+    ]
+
+    module.carry_forward_reviewed_values(new, previous)
+
+    assert new[0] == {"release_id": "release-ace", "spotify_album_url": "https://open.spotify.com/album/hand", "release_date": "1972-05-01"}
+    # A date that disagrees with MusicBrainz's is not carried, and a MusicBrainz link wins.
+    assert new[1] == {"release_id": "release-other", "spotify_album_url": "https://open.spotify.com/album/mb", "release_date": "1976"}

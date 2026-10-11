@@ -2184,6 +2184,12 @@ def build_tools(
             )
         )
 
+    def _closest_tours(tour: str) -> list[str]:
+        """The library's tour names nearest a name the model gave (fans say "Europe '72")."""
+
+        known = sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
+        return difflib.get_close_matches(tour, known, n=5, cutoff=0.4)
+
     def _grid_rows(kind: str, rows: list[str], tour: str | None) -> list[str] | str:
         if kind == "song":
             resolved = [store.resolve_song(value) for value in rows]
@@ -2200,14 +2206,7 @@ def build_tools(
         if tour:
             found = sorted(store.rows_in("shows", "tour_name", [tour]), key=lambda row: row.get("show_date", ""))
             if not found:
-                known = sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
-                return _json(
-                    {
-                        "error": "No shows on that tour",
-                        "query": tour,
-                        "closest_tours": difflib.get_close_matches(tour, known, n=5, cutoff=0.4),
-                    }
-                )
+                return _json({"error": "No shows on that tour", "query": tour, "closest_tours": _closest_tours(tour)})
             return [row["show_id"] for row in found]
         return _json({"error": "Name the nights as rows, or give a tour"})
 
@@ -2460,6 +2459,8 @@ def build_tools(
             payload = _with_row_units({"query": name, "result_id": _catalog_result_id(query.sql, bound), **result})
             if ignored:
                 payload["ignored"] = ignored
+            if "tour" in bound and tour and not payload.get("rows"):
+                payload["closest_tours"] = _closest_tours(tour)
             return _json(payload)
 
         query_catalog.description = catalog_tool_description()

@@ -1,0 +1,109 @@
+{
+  "suite_id": "grids-tool-retrieval",
+  "version": "v1",
+  "description": "Retrieval baseline and live-review cases for the model-selected grid (get_grid): two lists of library things and the fact where each pair meets. Each case gives the visitor's question, a get_grid (or, for the negative case, aggregate_data) call a good answer would make, the pinned facts that call returns, and the failures to watch for when reading the live page. The arguments are one reasonable call, not the only one: the model chooses its own rows, columns and span, so a live run is judged on the page, not on matching these arguments. Pinned facts were measured 2026-10-10 against the deploy-built SQLite store; the Spring '77 Scarlet > Fire lengths were re-measured 2026-10-11 after the release-track pass linked more Dick's Picks and Road Trips tracks to their performances. They move whenever a data pass adds shows, setlists or release tracks; regenerate them against the live store rather than trusting this file blindly. Live results are in docs/measurements/2026-10-10-grids.md.",
+  "cases": [
+    {
+      "id": "dark-star-vs-pitb-over-time",
+      "category": "song-by-year",
+      "question": "Compare Dark Star and Playing in the Band over time.",
+      "tool": "get_grid",
+      "arguments": {"row_kind": "song", "column_kind": "year", "rows": ["Dark Star", "Playing in the Band"], "year_from": 1967, "year_to": 1995},
+      "page_expectation": "A grid of the two songs across the years, or a chart per song (this question also lives in data-charts-v1); either shows the hand-off from Dark Star's late-sixties peak to Playing in the Band's long steady run.",
+      "expected": {
+        "equals": {"rows_are": "song", "columns_are": "year", "measure": "shows"},
+        "contains": {
+          "rows": {"id": "song-dark-star", "total": 245},
+          "cells.rows": ["song-dark-star", "year:1969", 67, 0, "value"],
+          "coverage.setlists_by_year": {"year": 1967, "shows_on_record": 139, "shows_with_setlist": 41}
+        }
+      },
+      "failure_conditions": [
+        "The page answers with a wall of yearly numbers in prose instead of a grid or chart the visitor can scan.",
+        "A yearly count in the words disagrees with the grid or chart beside it.",
+        "Presents 1967-1968 Dark Star counts as the whole story without saying how few of those years' shows have a surviving setlist.",
+        "Shows only one of the two songs while presenting it as the comparison."
+      ]
+    },
+    {
+      "id": "europe-72-tour",
+      "category": "show-by-song-tour",
+      "question": "Tell me about the Europe '72 tour.",
+      "tool": "get_grid",
+      "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Europe 1972", "columns": ["Dark Star", "The Other One", "Truckin'"]},
+      "page_expectation": "The tour's 22 nights as rows against a few songs that tell the tour's story (the big jams, a signature song), with the most telling nights open and a few cells pointed at, so the visitor can see the run and hear any night.",
+      "expected": {
+        "equals": {"rows_are": "show", "columns_are": "song", "measure": "minutes", "coverage.lengths": {"release": 40, "tape": 0, "mixed": 0, "none": 1}},
+        "contains": {
+          "rows": {"id": "gd-1972-04-07", "label": "April 7, 1972 · London"},
+          "cells.rows": ["gd-1972-05-11", "song-dark-star", 44, 2, "value"],
+          "column_suggestions": {"id": "song-playing-in-the-band", "rows_with": 22}
+        }
+      },
+      "failure_conditions": [
+        "No grid and no other way to see the tour's nights side by side or to hear them.",
+        "A night or song length named in the words that is not in the grid's cells.",
+        "Columns that say nothing about the tour (songs played once, or every song at equal weight) when the result suggested the songs played most.",
+        "Treats the tour as complete on official release without the one Dark Star (May 23) whose length is unknown."
+      ]
+    },
+    {
+      "id": "spring-77-scarlet-fire-lengths",
+      "category": "show-by-song-lengths",
+      "question": "Which nights of Spring '77 had Scarlet > Fire, and how long?",
+      "tool": "get_grid",
+      "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Spring 1977", "columns": ["Scarlet Begonias", "Fire on the Mountain"]},
+      "page_expectation": "The tour's nights that had the pairing, with each half's length from the library, the longest pairings pointed at, and the nights without a known length called out rather than filled in.",
+      "expected": {
+        "equals": {"coverage.lengths": {"release": 22, "tape": 7, "mixed": 0, "none": 0}},
+        "contains": {
+          "rows": {"id": "gd-1977-05-08", "label": "May 8, 1977 · Ithaca"},
+          "cells.rows": ["gd-1977-05-08", "song-fire-on-the-mountain", 16, 1, "value"]
+        }
+      },
+      "failure_conditions": [
+        "A length in the words or a highlight note that is not the grid's cell (lengths invented or remembered by the model).",
+        "Fills in a length for April 25 at Passaic, where the library has the pairing but no length.",
+        "Lists nights that had Scarlet Begonias without Fire on the Mountain as Scarlet > Fire nights, or misses that April 29 had Scarlet alone.",
+        "Answers with a prose list of dates and minutes the visitor cannot scan or play."
+      ]
+    },
+    {
+      "id": "europe-72-other-one-dark-star",
+      "category": "show-by-song-alternation",
+      "question": "How did The Other One and Dark Star trade places on Europe '72?",
+      "tool": "get_grid",
+      "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Europe 1972", "columns": ["The Other One", "Dark Star"]},
+      "page_expectation": "The 22 nights against the two songs, so the alternation is visible at a glance, with Bickershaw (May 7) pointed at as the one night that had both.",
+      "expected": {
+        "equals": {"coverage.lengths": {"release": 22, "tape": 0, "mixed": 0, "none": 1}},
+        "contains": {
+          "cells.rows": ["gd-1972-05-07", "song-dark-star", 20, 1, "value"],
+          "rows": {"id": "gd-1972-05-07", "label": "May 7, 1972 · Wigan"}
+        }
+      },
+      "failure_conditions": [
+        "Misses the Bickershaw exception: May 7, 1972 had both songs (Dark Star 20 minutes, The Other One 31).",
+        "Claims a strict alternation the grid's cells contradict.",
+        "No grid, so the visitor must read 22 dates in prose to see the pattern."
+      ]
+    },
+    {
+      "id": "most-played-1977-no-grid",
+      "category": "negative-case",
+      "question": "Which songs did they play most in 1977, and when in the year?",
+      "tool": "aggregate_data",
+      "arguments": {"dataset": "performances", "group_by": "song", "measure": "count", "year": 1977, "limit": 10},
+      "page_expectation": "A ranking (ranked_list or data_chart by song) answers which songs; when in the year is a tour or month question that a chart, the tours, or a few show cards answer. A song x year grid of one year is the wrong shape and would mean the grid had become a keyword route.",
+      "expected": {
+        "equals": {"total": 1233, "metric_label": "Performances"},
+        "contains": {"rows": {"id": "song-estimated-prophet", "value": 51}}
+      },
+      "failure_conditions": [
+        "Draws a song x year grid with a single 1977 column, which says nothing a ranking does not.",
+        "States a count in the words that differs from the ranking's rows.",
+        "Counts Drums as a song without the title or a note saying so."
+      ]
+    }
+  ]
+}

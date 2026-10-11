@@ -1,0 +1,755 @@
+// The grid: two lists and where each pair meets. The model chose the lists,
+// their order, what opens first, the cells to point at and the words; every
+// cell value comes from the library. Strength is cream only (gold is for
+// listen controls, which arrive with the cell interactions).
+import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
+import { CardHeading, MoreAbout } from "./components";
+import type { FollowUp } from "./ask-request";
+import { GridFacts, sentence } from "./GridFacts";
+import { columnSummary, GridReshapeError, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
+import { toTrack } from "./listen-control";
+import { usePlayer } from "./player";
+import type { AskFocus, GridBlock } from "./types";
+import "./Grid.css";
+
+// Cell strength scales to the block's own maximum, so the strongest cell is
+// always the brightest. Past `light` the cream is bright enough that the text
+// flips to dark ink.
+export function cellFill(value: number | null | undefined, max: number): { alpha: number; light: boolean } {
+  if (!value || max <= 0) return { alpha: 0, light: false };
+  const alpha = Math.round((0.08 + 0.82 * Math.min(1, value / max)) * 100) / 100;
+  return { alpha, light: alpha > 0.55 };
+}
+
+const UNIT = { shows: "shows", minutes: "min" } as const;
+const FOCUS_DELAY_MS = 250;
+
+type Tip = { kind: "cell"; row: number; column: number } | { kind: "column"; column: number };
+// The small list under the Add a column button or a column's options button.
+type Menu = { kind: "add" } | { kind: "remove"; column: number };
+
+// A hover card is a mouse convenience; on touch a tap selects and the detail
+// bar carries the same facts.
+function canHover(): boolean {
+  return typeof window.matchMedia !== "function" || !window.matchMedia("(hover: none)").matches;
+}
+
+function columnSentence(block: GridBlock, columnIndex: number): string {
+  const { played, longest } = columnSummary(block, columnIndex);
+  const total = block.rows.length;
+  const isShow = block.row_kind === "show";
+  const first = isShow ? `Played on ${played} of ${total} nights.` : `${played} of the ${total} songs were played that year.`;
+  if (!longest) return first;
+  const unit = block.measure === "minutes" ? "minutes" : "shows";
+  const where = rowParts({ label: longest.rowLabel } as GridRow).date;
+  return `${first} ${block.measure === "minutes" ? "Longest" : "Most"}: ${where}, ${longest.value} ${unit}.`;
+}
+
+// The question a selected cell sends, with the night and place written out.
+function askAbout(block: GridBlock, selection: Selection): string | null {
+  const named = selection.flatMap(({ row, column }) => {
+    const cell = block.rows[row]?.cells?.[column];
+    const col = block.columns[column];
+    if (!cell || !col || (cell.state !== "value" && cell.state !== "no_length")) return [];
+    const { date, city } = rowParts(block.rows[row]);
+    return block.row_kind === "show"
+      ? [{ subject: `the ${col.label} from ${date}`, place: city ? ` in ${city}` : "" }]
+      : [{ subject: `${block.rows[row].label} in ${col.sub ?? col.label}`, place: "" }];
+  });
+  if (named.length === 0) return null;
+  if (named.length === 1) return `Tell me about ${named[0].subject}${named[0].place}.`;
+  return `Compare ${named[0].subject} and ${named[1].subject}.`;
+}
+
+// What the visitor clicked, for the model: the library IDs, the facts the page
+// already showed, and the grid it was shown in.
+function clickedFocus(block: GridBlock, selection: Selection): AskFocus | undefined {
+  const cells = selection.flatMap(({ row, column }) => {
+    const source = block.rows[row];
+    const cell = source?.cells?.[column];
+    const col = block.columns[column];
+    if (!cell || !col || (cell.state !== "value" && cell.state !== "no_length")) return [];
+    const isShow = block.row_kind === "show";
+    const { date } = rowParts(source);
+    const title = `${isShow ? col.label : source.label} · ${isShow ? date : (col.sub ?? col.label)}`;
+    return [{ source, col, cell, title, fact: sentence(block, cell, col.sub ?? col.label) }];
+  });
+  if (cells.length === 0) return undefined;
+  const ids = cells.flatMap(({ source, col, cell }) => [
+    source.id,
+    ...(cell.tracks ?? []).map((track) => track.performance_id),
+    col.id,
+  ]);
+  return {
+    label: cells.map(({ title }) => title).join(" and "),
+    block_type: "grid",
+    block_id: block.grid_id,
+    ids: [...new Set(ids)],
+    facts: cells.map(({ title, fact }) => (cells.length > 1 ? `${title}: ${fact}` : fact)),
+  };
+}
+
+// The grid as a whole: its lists and what each column shows.
+function gridFocus(block: GridBlock): AskFocus {
+  return {
+    label: block.title ? `Grid: ${block.title}` : "This grid",
+    block_type: "grid",
+    block_id: block.grid_id,
+    ids: [...new Set([...block.columns.map((column) => column.id), ...block.rows.map((row) => row.id)])].slice(0, 40),
+    facts: block.columns.slice(0, 12).map((column, index) => `${column.label}: ${columnSentence(block, index)}`),
+  };
+}
+
+export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFollowUp?: FollowUp }) {
+  // The visitor's reshape replaces what the model drew, until the page sends a different grid.
+  const [reshaped, setReshaped] = useState<{ from: GridBlock; block: GridBlock } | null>(null);
+  const block = reshaped?.from === original ? reshaped.block : original;
+  const changed = block !== original;
+  const [menu, setMenu] = useState<Menu | null>(null);
+  const [working, setWorking] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [sortColumn, setSortColumn] = useState<number | null>(null);
+  const [selection, setSelection] = useState<Selection>([]);
+  const [setlists, setSetlists] = useState<ReadonlySet<string>>(new Set());
+  const [focus, setFocus] = useState({ row: 0, column: 0 });
+  const [tip, setTip] = useState<Tip | null>(null);
+  const cellRefs = useRef(new Map<string, HTMLElement>());
+  const anchorRef = useRef<HTMLElement | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const timer = useRef<number | undefined>(undefined);
+  const byKeyboard = useRef(false);
+  const pending = useRef(false); // a keyboard-focus card is waiting out its delay
+  const tipId = useId();
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuTrigger = useRef<HTMLElement | null>(null);
+  const headerRefs = useRef(new Map<string, HTMLButtonElement>());
+  const refocusTrigger = useRef(false); // a failed change hands focus back to the button that asked
+  const focusColumn = useRef<string | null>(null); // the header to focus once the reshaped grid is drawn
+
+  const canFold = block.open_rows != null && block.open_rows > 0 && block.open_rows < block.rows.length;
+  const ordered = useMemo(() => (sortColumn == null ? block.rows : sortRows(block.rows, sortColumn, "desc")), [block.rows, sortColumn]);
+  const visible = useMemo(
+    () => (open || !canFold ? ordered : ordered.slice(0, block.open_rows ?? undefined)),
+    [open, canFold, ordered, block.open_rows],
+  );
+  const indexOf = useMemo(() => new Map(block.rows.map((row, index) => [row, index])), [block.rows]);
+  const rowsLabel = block.row_kind === "show" ? "nights" : "songs";
+  const columnsLabel = block.column_kind === "year" ? "years" : "songs";
+  const hasHighlight = block.rows.some((row) => (row.cells ?? []).some((cell) => cell.highlight));
+  const lastColumn = block.columns.length - 1;
+  const active = visible.some((row) => indexOf.get(row) === focus.row)
+    ? focus
+    : { row: visible.length > 0 ? (indexOf.get(visible[0]) ?? 0) : 0, column: 0 };
+
+  // Whether the last input was the keyboard: focus from a click needs no card,
+  // the detail bar already answers it.
+  useEffect(() => {
+    const key = () => (byKeyboard.current = true);
+    const pointer = () => (byKeyboard.current = false);
+    window.addEventListener("keydown", key, true);
+    window.addEventListener("pointerdown", pointer, true);
+    window.addEventListener("mousedown", pointer, true);
+    return () => {
+      window.removeEventListener("keydown", key, true);
+      window.removeEventListener("pointerdown", pointer, true);
+      window.removeEventListener("mousedown", pointer, true);
+      window.clearTimeout(timer.current);
+    };
+  }, []);
+
+  const hideTip = useCallback(() => {
+    window.clearTimeout(timer.current);
+    pending.current = false;
+    setTip(null);
+  }, []);
+  const showTip = useCallback((target: Tip, anchor: HTMLElement, delay: number) => {
+    window.clearTimeout(timer.current);
+    const show = () => {
+      pending.current = false;
+      anchorRef.current = anchor;
+      setTip(target);
+    };
+    pending.current = delay > 0;
+    if (delay > 0) timer.current = window.setTimeout(show, delay);
+    else show();
+  }, []);
+
+  // Escape dismisses the card from wherever the pointer or focus is.
+  useEffect(() => {
+    if (!tip) return;
+    const dismiss = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") hideTip();
+    };
+    window.addEventListener("keydown", dismiss);
+    return () => window.removeEventListener("keydown", dismiss);
+  }, [tip, hideTip]);
+
+  // Above the anchor, flipped below near the top edge, clamped inside the stage.
+  useLayoutEffect(() => {
+    const card = tipRef.current;
+    const anchor = anchorRef.current;
+    const stage = stageRef.current;
+    if (!tip || !card || !anchor || !stage) return;
+    const a = anchor.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const width = card.offsetWidth;
+    const height = card.offsetHeight;
+    const left = Math.max(0, Math.min(a.left - s.left + a.width / 2 - width / 2, s.width - width));
+    const above = a.top - s.top - height - 6;
+    card.style.left = `${left}px`;
+    card.style.top = `${above >= 0 ? above : a.bottom - s.top + 6}px`;
+  }, [tip]);
+
+  const closeMenu = useCallback((refocus: boolean) => {
+    setMenu(null);
+    if (refocus) menuTrigger.current?.focus();
+  }, []);
+
+  // Escape or a click elsewhere closes the open list; Escape also hands focus back.
+  useEffect(() => {
+    if (!menu) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu(true);
+    };
+    const onPointer = (event: Event) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !menuTrigger.current?.contains(target)) closeMenu(false);
+    };
+    window.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [menu, closeMenu]);
+
+  // Under its button, inside the stage; the first choice takes focus.
+  useLayoutEffect(() => {
+    const list = menuRef.current;
+    const anchor = menuTrigger.current;
+    const stage = stageRef.current;
+    if (!menu || !list || !anchor || !stage) return;
+    const a = anchor.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const left = Math.max(0, Math.min(a.left - s.left, s.width - list.offsetWidth));
+    list.style.left = `${left}px`;
+    list.style.top = `${a.bottom - s.top + 4}px`;
+    list.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+  }, [menu]);
+
+  // After a reshape the grid's columns changed: the sort, the selection and the
+  // roving cell index named the old ones, and focus goes to the header asked for.
+  useLayoutEffect(() => {
+    const id = focusColumn.current;
+    if (!id) return;
+    focusColumn.current = null;
+    headerRefs.current.get(id)?.focus();
+  }, [block]);
+
+  // The buttons are disabled while a change is on its way, so focus returns once they are enabled again.
+  useLayoutEffect(() => {
+    if (working || !refocusTrigger.current) return;
+    refocusTrigger.current = false;
+    menuTrigger.current?.focus();
+  }, [working]);
+
+  async function reshape(change: GridChange, columnIndex: number | null) {
+    if (working) return;
+    setMenu(null);
+    setWorking(true);
+    setFailure(null);
+    try {
+      const next = await reshapeGrid(block, change);
+      const focusIndex = columnIndex == null ? null : Math.min(columnIndex, next.columns.length - 1);
+      focusColumn.current = change.addColumn ?? (focusIndex != null ? (next.columns[focusIndex]?.id ?? null) : null);
+      hideTip();
+      setSortColumn(null);
+      setSelection([]);
+      setFocus({ row: 0, column: 0 });
+      setReshaped({ from: original, block: next });
+    } catch (error) {
+      setFailure(
+        error instanceof GridReshapeError && error.status === 429
+          ? "Too many changes at once. Try again in a minute."
+          : "Couldn't change the grid. Try again.",
+      );
+      refocusTrigger.current = true;
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  function select(row: number, column: number, additive: boolean) {
+    setSelection((current) => {
+      const at = current.findIndex((entry) => entry.row === row && entry.column === column);
+      if (additive) {
+        if (at >= 0) return current.filter((_, index) => index !== at);
+        return current.length < 2 ? [...current, { row, column }] : [current[0], { row, column }];
+      }
+      return at >= 0 && current.length === 1 ? [] : [{ row, column }];
+    });
+  }
+
+  function moveTo(position: number, column: number) {
+    const row = visible[Math.max(0, Math.min(position, visible.length - 1))];
+    if (!row) return;
+    const rowIndex = indexOf.get(row) ?? 0;
+    const col = Math.max(0, Math.min(column, lastColumn));
+    setFocus({ row: rowIndex, column: col });
+    cellRefs.current.get(`${rowIndex}:${col}`)?.focus();
+  }
+
+  function onCellKey(event: KeyboardEvent<HTMLElement>, rowIndex: number, column: number) {
+    const position = visible.indexOf(block.rows[rowIndex]);
+    switch (event.key) {
+      case "ArrowRight": moveTo(position, column + 1); break;
+      case "ArrowLeft": moveTo(position, column - 1); break;
+      case "ArrowDown": moveTo(position + 1, column); break;
+      case "ArrowUp": moveTo(position - 1, column); break;
+      case "Home": moveTo(event.ctrlKey ? 0 : position, 0); break;
+      case "End": moveTo(event.ctrlKey ? visible.length - 1 : position, lastColumn); break;
+      case "Enter":
+      case " ":
+        select(rowIndex, column, event.shiftKey || event.metaKey || event.ctrlKey);
+        break;
+      case "Escape":
+        setSelection([]);
+        hideTip();
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+  }
+
+  function sortBy(column: number) {
+    hideTip();
+    setSortColumn((current) => (current === column ? null : column));
+  }
+
+  function toggleSetlist(id: string) {
+    setSetlists((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  const selected = new Set(selection.map((entry) => `${entry.row}:${entry.column}`));
+  const tipCell = tip?.kind === "cell" ? { row: tip.row, column: tip.column } : null;
+
+  return (
+    <article className="grid-card">
+      <header className="grid-head">
+        <div className="grid-eyebrow">
+          <span className="k">Grid</span>
+          <span className="grid-fact">
+            {block.rows.length} {rowsLabel} · {block.columns.length} {columnsLabel} ·{" "}
+            {block.measure === "minutes" ? "minutes played" : "shows per year"}
+          </span>
+        </div>
+        {block.title && <CardHeading className="grid-headline">{block.title}</CardHeading>}
+        {block.note && <p className="grid-note">{block.note}</p>}
+        {changed && (
+          <div className="grid-reshaped">
+            {(block.title || block.note || block.coverage) && <p className="grid-original">Written for the original grid</p>}
+            {onFollowUp && (
+              <button type="button" className="ask-chip" disabled={working} onClick={() => onFollowUp("What stands out in this grid?", gridFocus(block))}>
+                Ask Deadbot about this grid
+              </button>
+            )}
+          </div>
+        )}
+      </header>
+      <div className={`grid-stage${working ? " is-working" : ""}`} ref={stageRef} aria-busy={working}>
+        <div
+          className="grid-frame"
+          role="region"
+          tabIndex={0}
+          aria-label={block.title ?? `Grid of ${block.rows.length} ${rowsLabel} by ${block.columns.length} ${columnsLabel}`}
+          onScroll={() => !pending.current && hideTip()}
+        >
+          <table className={`grid-table grid-${block.column_kind}`} role="grid" aria-multiselectable="true">
+            <thead>
+              <tr>
+                <td role="presentation" />
+                {block.columns.map((column, columnIndex) => {
+                  const sorted = sortColumn === columnIndex;
+                  const target: Tip = { kind: "column", column: columnIndex };
+                  return (
+                    <th
+                      key={column.id}
+                      scope="col"
+                      role="columnheader"
+                      aria-label={column.sub ?? column.label}
+                      aria-sort={sorted ? "descending" : undefined}
+                      className={`${block.column_kind === "song" ? "is-vertical" : ""}${sorted ? " is-sorted" : ""}`.trim() || undefined}
+                    >
+                      <div className="grid-colhead">
+                        <button
+                          type="button"
+                          className="grid-sort"
+                          aria-label={`Sort by ${column.sub ?? column.label}`}
+                          aria-describedby={tip?.kind === "column" && tip.column === columnIndex ? tipId : undefined}
+                          ref={(element) => {
+                            if (element) headerRefs.current.set(column.id, element);
+                            else headerRefs.current.delete(column.id);
+                          }}
+                          onClick={() => sortBy(columnIndex)}
+                          onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
+                          onMouseLeave={hideTip}
+                          onFocus={(event) => byKeyboard.current && showTip(target, event.currentTarget, FOCUS_DELAY_MS)}
+                          onBlur={hideTip}
+                        >
+                          {column.label}
+                        </button>
+                        <button
+                          type="button"
+                          className="grid-options"
+                          aria-label={`Options for ${column.sub ?? column.label}`}
+                          disabled={working}
+                          aria-expanded={menu?.kind === "remove" && menu.column === columnIndex}
+                          onClick={(event) => {
+                            hideTip();
+                            setFailure(null);
+                            menuTrigger.current = event.currentTarget;
+                            setMenu(menu?.kind === "remove" && menu.column === columnIndex ? null : { kind: "remove", column: columnIndex });
+                          }}
+                        >
+                          <span aria-hidden="true">⋯</span>
+                        </button>
+                      </div>
+                    </th>
+                  );
+                })}
+                {block.suggestions.length > 0 && (
+                  <td role="presentation" className="grid-add-cell">
+                    <button
+                      type="button"
+                      className="grid-add"
+                      disabled={working}
+                      aria-expanded={menu?.kind === "add"}
+                      onClick={(event) => {
+                        hideTip();
+                        setFailure(null);
+                        menuTrigger.current = event.currentTarget;
+                        setMenu(menu?.kind === "add" ? null : { kind: "add" });
+                      }}
+                    >
+                      Add a column
+                    </button>
+                  </td>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((row) => {
+                const rowIndex = indexOf.get(row) ?? 0;
+                const hasSetlist = (row.setlist ?? []).length > 0;
+                const setlistOpen = hasSetlist && setlists.has(row.id);
+                const rowName = (
+                  <>
+                    {row.label}
+                    {(row.sub || row.total != null) && (
+                      <span className="grid-sub">{row.sub ?? `${row.total} ${UNIT[block.measure]}`}</span>
+                    )}
+                  </>
+                );
+                return (
+                  <Fragment key={row.id}>
+                    <tr>
+                      <th scope="row" role="rowheader">
+                        {hasSetlist ? (
+                          <button
+                            type="button"
+                            className="grid-row-toggle"
+                            aria-label={`Open the setlist for ${rowParts(row).date}`}
+                            aria-expanded={setlistOpen}
+                            onClick={() => toggleSetlist(row.id)}
+                          >
+                            {rowName}
+                          </button>
+                        ) : (
+                          rowName
+                        )}
+                      </th>
+                      {(row.cells ?? []).map((cell, index) => {
+                        const column = block.columns[index];
+                        if (!column) return null;
+                        const where = `${row.label}, ${column.sub ?? column.label}`;
+                        const noted = cell.highlight ? (cell.note ? `. ${cell.note}` : ", worth a listen") : "";
+                        const fill = cell.state === "value" ? cellFill(cell.value, block.max_value) : { alpha: 0, light: false };
+                        const key = `${rowIndex}:${index}`;
+                        const isSelected = selected.has(key);
+                        const classes = [
+                          cell.state === "none" ? "is-none" : "",
+                          cell.state === "unknown" ? "is-unknown" : "",
+                          cell.state === "no_length" ? "is-dot" : "",
+                          fill.light ? "is-light" : "",
+                          cell.highlight && (cell.state === "value" || cell.state === "no_length") ? "is-highlight" : "",
+                          isSelected ? "is-selected" : "",
+                          isSelected && (cell.tracks ?? []).length > 0 ? "is-playable" : "",
+                        ].filter(Boolean);
+                        const label =
+                          cell.state === "none"
+                            ? `${where}: not played`
+                            : cell.state === "unknown"
+                              ? `${where}: not matched yet`
+                              : cell.state === "no_length"
+                                ? `${where}: played, length not known${noted}`
+                                : `${where}: ${cell.value} ${UNIT[block.measure]}${noted}`;
+                        const target: Tip = { kind: "cell", row: rowIndex, column: index };
+                        return (
+                          <td
+                            key={column.id}
+                            role="gridcell"
+                            ref={(element) => {
+                              if (element) cellRefs.current.set(key, element);
+                              else cellRefs.current.delete(key);
+                            }}
+                            className={classes.join(" ") || undefined}
+                            style={cell.state === "value" ? { background: `rgba(var(--grid-cell), ${fill.alpha})` } : undefined}
+                            aria-label={label}
+                            aria-selected={isSelected}
+                            aria-describedby={tip?.kind === "cell" && tip.row === rowIndex && tip.column === index ? tipId : undefined}
+                            tabIndex={active.row === rowIndex && active.column === index ? 0 : -1}
+                            onClick={(event: MouseEvent) => select(rowIndex, index, event.shiftKey || event.metaKey || event.ctrlKey)}
+                            onKeyDown={(event) => onCellKey(event, rowIndex, index)}
+                            onFocus={(event) => {
+                              setFocus({ row: rowIndex, column: index });
+                              if (byKeyboard.current) showTip(target, event.currentTarget, FOCUS_DELAY_MS);
+                            }}
+                            onBlur={hideTip}
+                            onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
+                            onMouseLeave={hideTip}
+                          >
+                            {cell.state === "unknown" && "?"}
+                            {cell.state === "value" && (
+                              <>
+                                {cell.value}
+                                {cell.passes > 1 && <span className="grid-passes">{cell.passes}</span>}
+                              </>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    {setlistOpen && (
+                      <tr className="grid-setlist-row">
+                        <td role="cell" colSpan={block.columns.length + 1}>
+                          <Setlist row={row} columnIds={block.column_kind === "song" ? new Set(block.columns.map((column) => column.id)) : null} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {menu && (
+          <div
+            className="grid-menu"
+            ref={menuRef}
+            role="group"
+            aria-label={menu.kind === "add" ? "Add a column" : `Options for ${block.columns[menu.column]?.sub ?? block.columns[menu.column]?.label}`}
+          >
+            {menu.kind === "add" ? (
+              block.suggestions.map((suggestion) => (
+                <button key={suggestion.id} type="button" onClick={() => void reshape({ addColumn: suggestion.id }, null)}>
+                  {suggestion.label} · on {suggestion.rows_with} of {block.rows.length} {rowsLabel}
+                </button>
+              ))
+            ) : (
+              <button
+                type="button"
+                disabled={block.columns.length <= 1}
+                onClick={() => void reshape({ removeColumn: block.columns[menu.column]?.id }, menu.column)}
+              >
+                Remove {block.columns[menu.column]?.sub ?? block.columns[menu.column]?.label}
+              </button>
+            )}
+          </div>
+        )}
+        {tip && (
+          <div className="grid-tip" role="tooltip" id={tipId} ref={tipRef}>
+            {tipCell ? (
+              <GridFacts block={block} rowIndex={tipCell.row} columnIndex={tipCell.column} />
+            ) : (
+              <p className="grid-facts-line">{columnSentence(block, tip.column)}</p>
+            )}
+          </div>
+        )}
+      </div>
+      <p className="grid-sorted" aria-live="polite">
+        {sortColumn != null &&
+          `Sorted by ${block.columns[sortColumn]?.sub ?? block.columns[sortColumn]?.label}. ${columnSentence(block, sortColumn)}`}
+      </p>
+      <p className="grid-error" role="status">
+        {failure}
+      </p>
+      {canFold && (
+        <button type="button" className="grid-more" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+          {open ? `Show the first ${block.open_rows}` : `Show all ${block.rows.length}`}
+        </button>
+      )}
+      {selection.length > 0 && (
+        <DetailBar block={block} selection={selection} onClear={() => setSelection([])} onFollowUp={onFollowUp} />
+      )}
+      <GridLegend block={block} hasHighlight={hasHighlight} />
+      {block.coverage && (
+        <aside className="grid-aside">
+          <span className="k">Coverage</span>
+          <p>{block.coverage}</p>
+        </aside>
+      )}
+      {onFollowUp && <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />}
+    </article>
+  );
+}
+
+// A night's songs in order: the grid's own songs in cream, the rest muted,
+// each set's label as a small break, `>` after a segue.
+function Setlist({ row, columnIds }: { row: GridRow; columnIds: ReadonlySet<string> | null }) {
+  const items: ReactNode[] = [];
+  let currentSet: string | null = null;
+  for (const [index, entry] of (row.setlist ?? []).entries()) {
+    if (entry.set_label !== currentSet) {
+      currentSet = entry.set_label;
+      if (currentSet) items.push(<li key={`set-${index}`} className="grid-set-break">{currentSet}</li>);
+    }
+    items.push(
+      <li key={`${index}-${entry.song_id}`} className={columnIds?.has(entry.song_id) ? "is-column" : undefined}>
+        {entry.title}
+        {entry.segue && <span className="grid-segue" aria-hidden="true"> &gt;</span>}
+      </li>,
+    );
+  }
+  return (
+    <div className="grid-setlist">
+      <ul aria-label="Setlist">{items}</ul>
+    </div>
+  );
+}
+
+function PlayGlyph({ playing }: { playing: boolean }) {
+  return playing ? (
+    <svg viewBox="0 0 14 14" aria-hidden="true">
+      <rect x="2.5" y="2" width="3" height="10" fill="currentColor" />
+      <rect x="8.5" y="2" width="3" height="10" fill="currentColor" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 14 14" aria-hidden="true">
+      <path fill="currentColor" d="M4 2.2v9.6l7.6-4.8z" />
+    </svg>
+  );
+}
+
+// What the selection says and offers: each cell's facts, one gold Play, and
+// the blue ask. Tapping carries everything a hover card does.
+function DetailBar({
+  block,
+  selection,
+  onClear,
+  onFollowUp,
+}: {
+  block: GridBlock;
+  selection: Selection;
+  onClear: () => void;
+  onFollowUp?: FollowUp;
+}) {
+  const player = usePlayer();
+  const playable = selection.filter(({ row, column }) => (block.rows[row]?.cells?.[column]?.tracks ?? []).length > 0);
+  const queue = playable.flatMap(({ row, column }) => {
+    const source = block.rows[row];
+    return (source.cells?.[column]?.tracks ?? []).map((track) =>
+      toTrack(track, { showDate: rowShowDate(source), venueName: source.sub }),
+    );
+  });
+  // The player is on this selection only when its queue is this queue, same
+  // tracks in the same order; any other queue starts fresh.
+  const mine =
+    queue.length > 0 &&
+    player.queue.length === queue.length &&
+    queue.every((track, index) => track.id === player.queue[index].id && track.audioUrl === player.queue[index].audioUrl);
+  const playing = mine && player.status === "playing";
+  const loading = mine && player.status === "loading";
+
+  function onPlay() {
+    if (queue.length === 0 || loading) return;
+    if (playing) player.pause();
+    else if (mine && player.status === "error") player.retry();
+    else if (mine) player.toggle();
+    else player.play(queue[0], queue);
+  }
+
+  const question = askAbout(block, selection);
+  const askable = selection.filter(({ row, column }) => {
+    const state = block.rows[row]?.cells?.[column]?.state;
+    return state === "value" || state === "no_length";
+  }).length;
+  return (
+    <div className="grid-detail" role="group" aria-label="Selected cells">
+      <div className="grid-detail-facts" aria-live="polite">
+        {selection.map(({ row, column }) => (
+          <GridFacts key={`${row}:${column}`} block={block} rowIndex={row} columnIndex={column} />
+        ))}
+      </div>
+      <div className="grid-detail-actions">
+        {queue.length > 0 && (
+          <button type="button" className="grid-play" aria-busy={loading} onClick={onPlay}>
+            <PlayGlyph playing={playing} />
+            {playing ? "Pause" : playable.length > 1 ? "Play both" : "Play"}
+          </button>
+        )}
+        {onFollowUp && question && (
+          <button type="button" className="ask-chip" onClick={() => onFollowUp(question, clickedFocus(block, selection))}>
+            {askable > 1 ? "Compare these" : "Ask about this"}
+          </button>
+        )}
+        <button type="button" className="grid-clear" onClick={onClear}>
+          Clear
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// The legend names only the marks this grid uses.
+function GridLegend({ block, hasHighlight }: { block: GridBlock; hasHighlight: boolean }) {
+  const states = new Set(block.rows.flatMap((row) => (row.cells ?? []).map((cell) => cell.state)));
+  return (
+    <div className="grid-legend">
+      <span>
+        <i className="grid-swatch ramp" />
+        {block.measure === "minutes" ? "minutes" : "shows that year"}
+      </span>
+      {states.has("none") && (
+        <span>
+          <i className="grid-swatch dash" />
+          not played
+        </span>
+      )}
+      {states.has("no_length") && (
+        <span>
+          <i className="grid-swatch dot" />
+          played, length not known
+        </span>
+      )}
+      {states.has("unknown") && (
+        <span>
+          <i className="grid-swatch q">?</i>
+          not matched yet
+        </span>
+      )}
+      {hasHighlight && (
+        <span>
+          <i className="grid-swatch ring" />
+          worth a listen
+        </span>
+      )}
+    </div>
+  );
+}

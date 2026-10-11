@@ -376,6 +376,68 @@ the songs table's `first_known_dead_performance` column, which the song record
 still carries into get_song. If "known" keeps surfacing in answers, rename
 those next.
 
+## Batch: the grid block (October 10, 2026)
+
+A new page component for questions that lay two lists against each other: a
+tour's nights against the songs that carried them (minutes), or songs against
+years (shows). The model calls `get_grid`, names the grid with `grid_id`,
+highlights the cells that matter and says what it covers; code builds every
+cell from the store. Plan: `docs/superpowers/plans/2026-10-09-grid-block.md`.
+
+What shipped, by how fast the visitor's action answers:
+
+- **Hover facts.** A cell's card shows set, segue, minutes, where the length
+  came from and the model's note for it. Nothing is fetched.
+- **Instant clicks.** Select a cell and Play it from the grid's own queue, open
+  a night's setlist drawer (column songs in bold), sort by a column, Show all
+  rows. All client-side, with keyboard support.
+- **Reshape endpoint.** `POST /api/grid` adds or removes a column from the
+  library and returns the rebuilt grid without a model turn, on its own rate
+  limit. The sort resets and the model's highlight notes drop off by design;
+  any model note can reshape.
+- **Ask with focus.** "Ask about this" sends what was clicked with the question
+  as a separate note (`focus`: label, block, library IDs, the facts the page
+  showed). The server checks the IDs against the store and grounds them, so the
+  model can place the clicked night's card without looking it up again and the
+  visitor's transcript stays what they typed. Focused asks skip the response
+  cache.
+
+Also: a top-level `items` list written beside `groups` stands as one more
+collection, and the streamed and delivered pages place it the same way (before
+every group when written first, after every group otherwise, through repeated
+`groups` lists); `query_catalog` answers an unknown tour nickname with the
+library's nearest tour names.
+
+Status: Tasks 1 to 8 are done. Task 9 (release x song and guest x year grids)
+waits for the `claude/library-data-gaps` data branch to merge.
+
+Live findings (`docs/measurements/2026-10-10-grids.md`, gpt-5.6-luna, effort
+low, one to two runs per question):
+
+- Before the palette fix `get_grid` was called 0 times in 5 questions. After
+  giving the grid a line in the component palette and fixing the sentence that
+  told the model to end the page, the model chose the grid for the Other One /
+  Dark Star on Europe '72 question: 22 nights, highlights true to their cells,
+  a coverage line for the untimed night. The chat answer now describes the
+  alternation correctly.
+- The Europe '72 overview still gets a narrative page (timeline and album
+  units, nothing to hear). It reads "tell me about a tour" as a story
+  question. The next experiment is tool output (a `query_catalog` tour result
+  that says `get_grid` can lay these nights against their songs), not forcing
+  the component.
+- The song-by-year question is a fair toss-up between charts and a grid; the
+  suite accepts either.
+
+Live data gaps the grid exposed:
+
+- The May 11, 1972 Dark Star's first tape link (`gd72-05-11newd2t09.mp3`) is
+  dead, so Play shows the error state and Retry.
+- Bickershaw's Dark Star and Other One cells have no tape tracks, so the cells
+  the question turns on cannot be played from the grid; the expanded show card
+  plays the night.
+- May 11's tape tracks cover about 9 of the 44 minutes the release lists. Grid
+  playback of long jams is only as good as the tape-track mapping.
+
 ## Measurements
 
 | Date | Change | finish_response schema (chars / approx tokens) |
