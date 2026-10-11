@@ -176,7 +176,7 @@ class GridData:
 GRID_NOTE = (
     "A grid in finish_response draws these rows and columns with every cell filled by the library. "
     "Choose the rows to show and their order, how many open before Show all, the cells worth pointing at "
-    "with a short note each, and what the visitor should know about gaps."
+    "with a short note each."
 )
 
 
@@ -652,7 +652,6 @@ def grid_block(
     highlights: list[dict[str, Any]],
     title: str | None,
     note: str | None,
-    coverage: str | None,
     follow_ups: list[Any],
 ) -> Any:
     """Hydrate a model-planned grid from the spec in this turn's get_grid result, or None."""
@@ -717,7 +716,6 @@ def grid_block(
         grid_id=grid_id(spec),
         title=(title or "").strip() or None,
         note=(note or "").strip() or None,
-        coverage=(coverage or "").strip() or None,
         row_kind=spec.row_kind,
         column_kind=spec.column_kind,
         measure=spec.measure,

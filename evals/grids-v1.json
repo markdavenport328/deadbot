@@ -43,8 +43,7 @@
       "failure_conditions": [
         "No grid and no other way to see the tour's nights side by side or to hear them.",
         "A night or song length named in the words that is not in the grid's cells.",
-        "Columns that say nothing about the tour (songs played once, or every song at equal weight) when the result suggested the songs played most.",
-        "Treats the tour as complete on official release without the one Dark Star (May 23) whose length is unknown."
+        "Columns that say nothing about the tour (songs played once, or every song at equal weight) when the result suggested the songs played most."
       ]
     },
     {
@@ -53,7 +52,7 @@
       "question": "Which nights of Spring '77 had Scarlet > Fire, and how long?",
       "tool": "get_grid",
       "arguments": {"row_kind": "show", "column_kind": "song", "tour": "Spring 1977", "columns": ["Scarlet Begonias", "Fire on the Mountain"]},
-      "page_expectation": "The tour's nights that had the pairing, with each half's length from the library, the longest pairings pointed at, and the nights without a known length called out rather than filled in.",
+      "page_expectation": "The tour's nights that had the pairing, with each half's length from the library and the longest pairings pointed at.",
       "expected": {
         "equals": {"coverage.lengths": {"release": 22, "tape": 7, "mixed": 0, "none": 0}},
         "contains": {
@@ -107,7 +106,7 @@
       "failure_conditions": [
         "Recommends volumes without saying what is on them that makes each a good place to start.",
         "A song length or track count in the words that the library's tracklists do not show (Dark Star on Dick's Picks 36 runs 37 minutes on one track).",
-        "Treats a song as missing from a volume where a track names no song but mentions it, such as Scarlet Begonias inside Nassau '81's medley track.",
+        "Claims a volume lacks a song when a track on it names no song but mentions it, such as Scarlet Begonias inside Nassau '81's medley track.",
         "Names a volume or its date and venue wrongly, or recommends a Dick's Picks volume the library does not have.",
         "Gives the visitor no way to hear or open the records it recommends."
       ]

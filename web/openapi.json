@@ -1786,17 +1786,6 @@
             "title": "Columns",
             "type": "array"
           },
-          "coverage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage"
-          },
           "follow_ups": {
             "items": {
               "$ref": "#/components/schemas/FollowUpTopic"
@@ -2067,21 +2056,8 @@
         "type": "object"
       },
       "GridRequest": {
-        "additionalProperties": false,
-        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline, note and coverage, which the server hands back unchanged.",
+        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline and note, which the server hands back unchanged.",
         "properties": {
-          "coverage": {
-            "anyOf": [
-              {
-                "maxLength": 20000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Coverage"
-          },
           "note": {
             "anyOf": [
               {

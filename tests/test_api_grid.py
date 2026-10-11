@@ -56,7 +56,7 @@ def test_grid_endpoint_keeps_the_original_words_and_drops_the_models_picks(clien
     assert body["note"] == "Written for the first grid."
     assert body["open_rows"] == 1
     assert body["follow_ups"] == []
-    assert body["coverage"] is None
+    assert "coverage" not in body
     assert not any(cell["highlight"] for row in body["rows"] for cell in row["cells"])
     assert body["suggestions"]
 
@@ -115,19 +115,19 @@ def test_a_long_note_still_reshapes_and_comes_back_intact(client):
 
 def test_a_note_past_the_ceiling_is_cut_not_refused(client):
     response = client.post(
-        "/api/grid", json={"spec": spec(["song-dark-star"]), "note": "x" * 15_000, "coverage": "y" * 15_000}
+        "/api/grid", json={"spec": spec(["song-dark-star"]), "note": "x" * 15_000}
     )
     assert response.status_code == 200
     body = response.json()
     assert len(body["note"]) == 10_000
-    assert len(body["coverage"]) == 10_000
 
 
-def test_grid_endpoint_hands_the_coverage_back(client):
-    body = client.post(
+def test_an_old_request_that_still_sends_coverage_is_read_and_the_block_has_none(client):
+    response = client.post(
         "/api/grid", json={"spec": spec(["song-dark-star"]), "coverage": "Setlists are thin before 1971."}
-    ).json()
-    assert body["coverage"] == "Setlists are thin before 1971."
+    )
+    assert response.status_code == 200
+    assert "coverage" not in response.json()
 
 
 def test_reshapes_have_their_own_rate_limit_bucket(built_sqlite, tmp_path):

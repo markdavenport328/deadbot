@@ -357,7 +357,7 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
         {block.note && <p className="grid-note">{block.note}</p>}
         {changed && (
           <div className="grid-reshaped">
-            {(block.title || block.note || block.coverage) && <p className="grid-original">Written for the original grid</p>}
+            {(block.title || block.note) && <p className="grid-original">Written for the original grid</p>}
             {onFollowUp && (
               <button type="button" className="ask-chip" disabled={working} onClick={() => onFollowUp("What stands out in this grid?", gridFocus(block))}>
                 Ask Deadbot about this grid
@@ -487,8 +487,7 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                         const key = `${rowIndex}:${index}`;
                         const isSelected = selected.has(key);
                         const classes = [
-                          cell.state === "none" ? "is-none" : "",
-                          cell.state === "unknown" ? "is-unknown" : "",
+                          cell.state === "none" || cell.state === "unknown" ? "is-none" : "",
                           cell.state === "no_length" ? "is-dot" : "",
                           fill.light ? "is-light" : "",
                           cell.highlight && (cell.state === "value" || cell.state === "no_length") ? "is-highlight" : "",
@@ -496,13 +495,11 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                           isSelected && (cell.tracks ?? []).length > 0 ? "is-playable" : "",
                         ].filter(Boolean);
                         const label =
-                          cell.state === "none"
+                          cell.state === "none" || cell.state === "unknown"
                             ? `${where}: ${words.none}`
-                            : cell.state === "unknown"
-                              ? `${where}: not matched yet`
-                              : cell.state === "no_length"
-                                ? `${where}: played, length not known${noted}`
-                                : `${where}: ${cell.value} ${UNIT[block.measure]}${noted}`;
+                            : cell.state === "no_length"
+                              ? `${where}: played${noted}`
+                              : `${where}: ${cell.value} ${UNIT[block.measure]}${noted}`;
                         const target: Tip = { kind: "cell", row: rowIndex, column: index };
                         return (
                           <td
@@ -528,7 +525,6 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                             onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
                             onMouseLeave={hideTip}
                           >
-                            {cell.state === "unknown" && "?"}
                             {cell.state === "value" && (
                               <>
                                 {cell.value}
@@ -606,12 +602,6 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
         <DetailBar block={block} selection={selection} onClear={() => setSelection([])} onFollowUp={onFollowUp} />
       )}
       <GridLegend block={block} hasHighlight={hasHighlight} />
-      {block.coverage && (
-        <aside className="grid-aside">
-          <span className="k">Coverage</span>
-          <p>{block.coverage}</p>
-        </aside>
-      )}
       {onFollowUp && <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />}
     </article>
   );
@@ -738,22 +728,10 @@ function GridLegend({ block, hasHighlight }: { block: GridBlock; hasHighlight: b
         <i className="grid-swatch ramp" />
         {ROW_WORDS[block.row_kind].legend}
       </span>
-      {states.has("none") && (
+      {(states.has("none") || states.has("unknown")) && (
         <span>
           <i className="grid-swatch dash" />
           {ROW_WORDS[block.row_kind].none}
-        </span>
-      )}
-      {states.has("no_length") && (
-        <span>
-          <i className="grid-swatch dot" />
-          played, length not known
-        </span>
-      )}
-      {states.has("unknown") && (
-        <span>
-          <i className="grid-swatch q">?</i>
-          not matched yet
         </span>
       )}
       {hasHighlight && (

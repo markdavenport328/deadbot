@@ -259,7 +259,6 @@ def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
         ],
         title="One big jam a night",
         note="They traded it.",
-        coverage=None,
         follow_ups=[],
     )
     assert block.type == "grid"
@@ -276,7 +275,7 @@ def test_grid_block_none_for_bad_spec(csv_store):
     assert (
         grids.grid_block(
             csv_store, {"grid_id": "grid:x", "spec": {}}, row_ids=None, open_rows=None,
-            highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+            highlights=[], title=None, note=None, follow_ups=[],
         )
         is None
     )
@@ -287,7 +286,7 @@ def test_grid_block_ignores_an_open_rows_that_cannot_open_anything(csv_store, op
     payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
     block = grids.grid_block(
         csv_store, payload, row_ids=None, open_rows=open_rows,
-        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        highlights=[], title=None, note=None, follow_ups=[],
     )
     assert block is not None and block.open_rows is None and len(block.rows) == 22
 
@@ -297,7 +296,7 @@ def test_grid_block_none_when_the_grid_id_does_not_match_the_spec(csv_store):
     mismatched = {**payload, "grid_id": "grid:000000000000"}
     assert grids.grid_block(
         csv_store, mismatched, row_ids=None, open_rows=None,
-        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        highlights=[], title=None, note=None, follow_ups=[],
     ) is None
 
 
@@ -417,14 +416,14 @@ def test_tool_payload_counts_release_tracks_without_a_song(csv_store):
 def test_grid_block_carries_a_release_tracklist_and_guest_rows(csv_store):
     block = grids.grid_block(
         csv_store, grids.tool_payload(grids.build(csv_store, releases_spec())), row_ids=None, open_rows=None,
-        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        highlights=[], title=None, note=None, follow_ups=[],
     )
     assert block.row_kind == "release" and block.measure == "minutes"
     assert block.rows[0].setlist[0].title == "Promised Land"
     assert block.rows[0].cells[0].length_source == "release"
     guests = grids.grid_block(
         csv_store, grids.tool_payload(grids.build(csv_store, guests_spec())), row_ids=None, open_rows=None,
-        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        highlights=[], title=None, note=None, follow_ups=[],
     )
     assert guests.row_kind == "guest" and guests.measure == "shows" and guests.rows[0].label == "Bruce Hornsby"
 

@@ -416,8 +416,8 @@ low, one to two runs per question):
 - Before the palette fix `get_grid` was called 0 times in 5 questions. After
   giving the grid a line in the component palette and fixing the sentence that
   told the model to end the page, the model chose the grid for the Other One /
-  Dark Star on Europe '72 question: 22 nights, highlights true to their cells,
-  a coverage line for the untimed night. The chat answer now describes the
+  Dark Star on Europe '72 question: 22 nights, highlights true to their cells.
+  The chat answer now describes the
   alternation correctly.
 - The Europe '72 overview still gets a narrative page (timeline and album
   units, nothing to hear). It reads "tell me about a tour" as a story
@@ -443,20 +443,19 @@ Live data gaps the grid exposed:
   the side and songs across, each cell the minutes the song takes up on the
   record (from the record's own track lengths) and the tracks it spans. A song
   that only appears inside a track naming no song (Scarlet Begonias in Nassau
-  '81's medley) shows as "not matched yet", not as absent. A cell with an
-  untimed track says "length known for 1 of 2 tracks". Rows are named from the
+  '81's medley) is stored as an unmatched cell and drawn like an empty one.
+  Rows are named from the
   title ("Dick's Picks 36" over "The Spectrum, Philadelphia, PA 9/21/72"). A
   record's row opens its tracklist by disc. The model's payload counts each
   record's tracks that name no song.
 - **Guests x years.** `row_kind: "guest"` counts the shows each guest sat in
   on, year by year, as `aggregate_data` counts them. Names resolve with case,
   hyphens and spaces folded ("Hamza El Din"). A miss returns the nearest names.
-- **Tape against record.** Play on a record's cell plays the archive tape,
-  which often runs a different length from the released track (Dick's Picks
-  36's Dark Star: 37 minutes on the record, 20 on tape) or covers fewer of its
-  tracks. The cell's facts say so in one line ("Plays the archive tape: 20
-  minutes."), and the card and Ask question name a record with its sub line so
-  two records with the same short name cannot be confused.
+- **Musical facts only.** The grid shows musical facts (minutes, passes, set,
+  segues, the model's note, Play) and no data-hygiene text: no tape-versus-record
+  length, partial timing, coverage notes or "not matched" marks, by owner
+  direction 2026-10-11. The card and Ask question name a record with its sub
+  line so two records with the same short name cannot be confused.
 - **Live** (`docs/measurements/2026-10-11-grids-task9.md`, one run each, effort
   low): "Which Dick's Picks should I start with?" got five album units with
   correct facts. "Who sat in with the Dead?" got two person rosters with

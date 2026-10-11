@@ -714,8 +714,6 @@ export interface components {
             column_kind: "year" | "song";
             /** Columns */
             columns: components["schemas"]["GridColumn"][];
-            /** Coverage */
-            coverage?: string | null;
             /** Follow Ups */
             follow_ups?: components["schemas"]["FollowUpTopic"][];
             /** Grid Id */
@@ -803,11 +801,9 @@ export interface components {
         /**
          * GridRequest
          * @description A visitor's reshape of a grid: the lists as they now stand, plus the
-         *     model's headline, note and coverage, which the server hands back unchanged.
+         *     model's headline and note, which the server hands back unchanged.
          */
         GridRequest: {
-            /** Coverage */
-            coverage?: string | null;
             /** Note */
             note?: string | null;
             /** Open Rows */

@@ -81,12 +81,12 @@ describe("Grid", () => {
     expect(screen.getByRole("columnheader", { name: "1969" })).toHaveTextContent("'69");
   });
 
-  it("shows the model's headline, note and coverage, and a legend for the states present", () => {
+  it("shows the model's headline and note, and a legend for the marks present", () => {
     render(<Grid block={years as GridBlock} />);
     expect(screen.getByRole("heading", { name: /Dark Star burned out early/ })).toBeInTheDocument();
-    expect(screen.getByText(/Before 1971 the library has setlists/)).toBeInTheDocument();
     expect(screen.getByText("not played")).toBeInTheDocument();
     expect(screen.queryByText("not matched yet")).toBeNull();
+    expect(screen.queryByText("Coverage")).toBeNull();
   });
 
   it("draws follow-up chips under the grid and sends the model's question", async () => {
@@ -113,9 +113,8 @@ describe("Grid", () => {
     } as GridBlock;
     render(<Grid block={block} />);
     expect(screen.getByLabelText(/^Night, .*: 28 min$/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/: not played$/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/: played, length not known$/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/: not matched yet$/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/: played$/)).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/: not played$/)).toHaveLength(2); // an unmatched cell reads as an empty one
     expect(screen.getByLabelText(/: 11 min, worth a listen$/)).toBeInTheDocument();
   });
 
@@ -135,14 +134,15 @@ describe("Grid", () => {
     expect(card).toHaveTextContent(/Set 2/);
     expect(card).toHaveTextContent(/2 passes/);
     expect(card).toHaveTextContent(/The longest stretch of the tour/);
-    expect(card).toHaveTextContent(/Europe|release/i); // where the length came from
+    expect(card).toHaveTextContent("44 minutes in 2 passes.");
+    expect(card).not.toHaveTextContent(/timed from/);
     expect(card).toHaveTextContent(/Dark Star · May 11, 1972/);
     expect(card).toHaveTextContent(/Grote Zaal, De Doelen, Rotterdam/);
     fireEvent.mouseLeave(cell);
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
-  it("says where a mixed length came from, and when the length is not known", async () => {
+  it("gives a night's minutes and passes without saying where the length came from", async () => {
     const base = europe as GridBlock;
     const rows = base.rows.map((row, r) =>
       r !== 0
@@ -151,15 +151,18 @@ describe("Grid", () => {
     );
     render(<Grid block={{ ...base, rows }} />);
     fireEvent.mouseEnter(screen.getAllByRole("gridcell")[0]);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/timed from the official release and the archive tape/);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(/\d+ minutes?\./);
+    expect(screen.getByRole("tooltip")).not.toHaveTextContent(/timed from/);
     fireEvent.mouseEnter(screen.getAllByRole("gridcell")[2]);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/Length not known/);
+    expect(await screen.findByRole("tooltip")).not.toHaveTextContent(/Length not known/);
   });
 
-  it("shows how many of the year's shows a song was on, for a song by year grid", async () => {
+  it("shows how many shows a song was on that year, for a song by year grid", async () => {
     render(<Grid block={years as GridBlock} />);
     fireEvent.mouseEnter(screen.getAllByRole("gridcell")[2]);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/On 67 of the 124 shows with a setlist that year\./);
+    const card = await screen.findByRole("tooltip");
+    expect(card).toHaveTextContent("67 shows in 1969.");
+    expect(card).not.toHaveTextContent(/with a setlist/);
   });
 
   it("shows a column's summary when the header is hovered", async () => {
@@ -281,7 +284,7 @@ describe("Grid", () => {
     render(<Grid block={years as GridBlock} onFollowUp={() => {}} />);
     fireEvent.click(screen.getAllByRole("gridcell")[2]);
     expect(screen.queryByRole("button", { name: /^play/i })).toBeNull();
-    expect(screen.getAllByText(/On 67 of the 124 shows/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/67 shows in 1969/).length).toBeGreaterThan(0);
   });
 
   it("moves between cells with arrow keys", () => {
@@ -402,28 +405,29 @@ describe("Grid of records and of guests", () => {
     expect(screen.getByText("Dick’s Picks 36")).toBeInTheDocument();
     expect(screen.getByText("The Spectrum, Philadelphia, PA 9/21/72")).toBeInTheDocument();
     expect(screen.getByText("not on the record")).toBeInTheDocument();
-    expect(screen.getByText("not matched yet")).toBeInTheDocument();
+    expect(screen.queryByText("not matched yet")).toBeNull();
+    expect(screen.queryByText("?")).toBeNull();
   });
 
-  it("says how long a song runs on a record, and when a blank track may hold it", async () => {
+  it("says how long a song runs on a record, and nothing about the tape", async () => {
     render(<Grid block={records as GridBlock} />);
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 36, Dark Star: 37 min/));
     const card = await screen.findByRole("tooltip");
     expect(card).toHaveTextContent("Dark Star · Dick’s Picks 36 · The Spectrum, Philadelphia, PA 9/21/72");
     expect(card).toHaveTextContent("37 minutes on the record, on 1 track.");
-    expect(card).toHaveTextContent("Plays the archive tape: 20 minutes.");
+    expect(card).not.toHaveTextContent(/archive tape/);
     expect(card).toHaveTextContent("The longest Dark Star in the series.");
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 16, Dark Star/));
     const fillmore = await screen.findByRole("tooltip");
     expect(fillmore).toHaveTextContent("18 minutes on the record, across 3 tracks.");
-    expect(fillmore).not.toHaveTextContent(/archive tape/); // the tape runs 19 minutes, within a minute of the record
-    fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 13, Scarlet Begonias: not matched yet$/));
-    expect(await screen.findByRole("tooltip")).toHaveTextContent(/a track on this record that names no song/i);
+    expect(fillmore).not.toHaveTextContent(/archive tape/);
+    fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 13, Scarlet Begonias: not on the record$/));
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Not on this record.");
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 3, Dark Star: not on the record$/));
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Not on this record.");
   });
 
-  it("says when the tape covers fewer tracks than the record, and when only some tracks are timed", async () => {
+  it("keeps tape coverage and partial timing out of a record cell's facts", async () => {
     const base = records as GridBlock;
     const first = base.rows[1].cells![0]; // Dick's Picks 16, Dark Star: three tracks, three tapes
     const cells = [
@@ -433,11 +437,12 @@ describe("Grid of records and of guests", () => {
     const block = { ...base, columns: base.columns.slice(0, 2), rows: [{ ...base.rows[1], cells }] } as GridBlock;
     render(<Grid block={block} />);
     fireEvent.mouseEnter(screen.getAllByRole("gridcell")[0]);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Plays the archive tape for 1 of 3 tracks: 15 minutes.");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("18 minutes on the record, across 3 tracks.");
+    expect(screen.getByRole("tooltip")).not.toHaveTextContent(/archive tape/);
     fireEvent.mouseEnter(screen.getAllByRole("gridcell")[1]);
     const partial = await screen.findByRole("tooltip");
-    expect(partial).toHaveTextContent("10 minutes on the record, length known for 1 of 2 tracks.");
-    expect(partial).not.toHaveTextContent(/archive tape/);
+    expect(partial).toHaveTextContent("10 minutes on the record, across 2 tracks.");
+    expect(partial).not.toHaveTextContent(/length known|archive tape/);
   });
 
   it("summarises a song's column across the records", async () => {
@@ -485,7 +490,9 @@ describe("Grid of records and of guests", () => {
     expect(card).toHaveTextContent("Bruce Hornsby · 1989");
     expect(card).toHaveTextContent("Sat in on 3 shows that year.");
     fireEvent.mouseEnter(screen.getByLabelText(/^Bruce Hornsby, 1991: none that year$/));
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("No sit-ins credited that year.");
+    const quietYear = await screen.findByRole("tooltip");
+    expect(quietYear).toHaveTextContent("Bruce Hornsby · 1991");
+    expect(quietYear).not.toHaveTextContent(/credited/);
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Sort by 1974" }));
     expect(await screen.findByRole("tooltip")).toHaveTextContent(/of the 4 guests sat in that year\. Most: Ned Lagin, \d+ shows\./);
   });
@@ -516,7 +523,7 @@ describe("Grid reshape", () => {
     expect(body.spec.row_ids).toEqual(original.rows.map((r) => r.id));
     expect(body.title).toBe(original.title);
     expect(body.note).toBe(original.note);
-    expect(body.coverage).toBe(original.coverage ?? null);
+    expect(body).not.toHaveProperty("coverage");
     expect(await screen.findByRole("button", { name: /sort by mr\. charlie/i })).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
@@ -583,7 +590,7 @@ describe("Grid reshape", () => {
   });
 
   it("shows the ask-about-this-grid chip even when the model wrote no words for the grid", async () => {
-    const quiet = { ...original, title: null, note: null, coverage: null } as GridBlock;
+    const quiet = { ...original, title: null, note: null } as GridBlock;
     fetchMock.mockResolvedValue({ ok: true, json: async () => reshapedFrom(quiet, quiet.columns.map((c) => c.id).slice(1)) });
     render(<Grid block={quiet} onFollowUp={() => {}} />);
     await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
@@ -604,17 +611,6 @@ describe("Grid reshape", () => {
     await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
     await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
     expect(await screen.findByText("Couldn't change the grid. Try again.")).toBeInTheDocument();
-  });
-
-  it("also shows the original-grid line when only the coverage was written", async () => {
-    const quiet = { ...original, title: null, note: null, coverage: "Setlists are thin before 1971." } as GridBlock;
-    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ ...quiet, columns: quiet.columns.slice(1), rows: quiet.rows.map((r) => ({ ...r, cells: r.cells!.slice(1) })) }) });
-    render(<Grid block={quiet} />);
-    expect(screen.queryByText("Written for the original grid")).toBeNull();
-    await userEvent.click(screen.getByRole("button", { name: "Options for Dark Star" }));
-    await userEvent.click(screen.getByRole("button", { name: "Remove Dark Star" }));
-    expect(await screen.findByText("Written for the original grid")).toBeInTheDocument();
-    expect(requestBody().coverage).toBe("Setlists are thin before 1971.");
   });
 
   it("asks to wait when the reshape budget is spent", async () => {
@@ -694,5 +690,58 @@ describe("Grid reshape", () => {
   it("rejects when the server says no", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 404, json: async () => ({ detail: "nothing" }) });
     await expect(reshapeGrid(original, { addColumn: "song-nope" })).rejects.toThrow();
+  });
+});
+
+describe("Grid text is musical facts only", () => {
+  const REMOVED = [
+    /archive tape/i, /length known/i, /credited/i, /with a setlist/i, /not matched/i,
+    /timed from/i, /length not known/i, /sit-ins/i, /coverage/i,
+  ];
+
+  it("draws no data-hygiene phrase for a long record cell, a partly timed cell, an empty guest year or an unknown cell", async () => {
+    // A Dick's Picks 36 Dark Star, a partly timed record cell, an unmatched cell
+    const rec = records as GridBlock;
+    const first = rec.rows[0].cells![0];
+    const recordCells = [
+      first,
+      { ...first, state: "value" as const, value: 10, passes: 2, timed: 1, tracks: first.tracks!.slice(0, 1) },
+      { state: "unknown" as const, passes: 0, timed: 0, highlight: false },
+    ] as GridBlock["rows"][number]["cells"];
+    const recordBlock = {
+      ...rec, coverage: "Should never draw", columns: rec.columns.slice(0, 3),
+      rows: [{ ...rec.rows[0], cells: recordCells }],
+    } as unknown as GridBlock;
+    const view = render(<Grid block={recordBlock} />);
+    for (const index of [0, 1, 2]) {
+      fireEvent.mouseEnter(screen.getAllByRole("gridcell")[index]);
+      const tip = await screen.findByRole("tooltip");
+      for (const phrase of REMOVED) expect(tip).not.toHaveTextContent(phrase);
+      fireEvent.mouseLeave(screen.getAllByRole("gridcell")[index]);
+    }
+    for (const phrase of REMOVED) expect(view.container).not.toHaveTextContent(phrase);
+    expect(view.container).not.toHaveTextContent("Should never draw");
+    expect(screen.queryByText("?")).toBeNull();
+    view.unmount();
+
+    // A night with a partly timed cell
+    const base = europe as GridBlock;
+    const partRows = base.rows.map((row, r) =>
+      r !== 0 ? row : { ...row, cells: (row.cells ?? []).map((cell, c) => (c === 0 ? { ...cell, state: "value" as const, value: 20, passes: 2, timed: 1, length_source: "mixed" as const } : cell)) },
+    );
+    const night = render(<Grid block={{ ...base, rows: partRows }} />);
+    fireEvent.mouseEnter(screen.getAllByRole("gridcell")[0]);
+    const nightTip = await screen.findByRole("tooltip");
+    expect(nightTip).toHaveTextContent("20 minutes in 2 passes.");
+    for (const phrase of REMOVED) expect(nightTip).not.toHaveTextContent(phrase);
+    for (const phrase of REMOVED) expect(night.container).not.toHaveTextContent(phrase);
+    night.unmount();
+
+    // An empty guest year
+    const guestView = render(<Grid block={guests as GridBlock} />);
+    fireEvent.mouseEnter(screen.getByLabelText(/^Bruce Hornsby, 1991: none that year$/));
+    const guestTip = await screen.findByRole("tooltip");
+    for (const phrase of REMOVED) expect(guestTip).not.toHaveTextContent(phrase);
+    for (const phrase of REMOVED) expect(guestView.container).not.toHaveTextContent(phrase);
   });
 });

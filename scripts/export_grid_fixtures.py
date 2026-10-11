@@ -33,7 +33,7 @@ write(
                 {"row_id": "gd-1972-05-07", "column_id": "song-the-other-one", "note": "Bickershaw: the one night with both."}],
     title="One big jam a night, and they traded it.",
     note="Every night of the tour had Dark Star or The Other One, and only Bickershaw on May 7 had both.",
-    coverage=None, follow_ups=[],
+    follow_ups=[],
 )
 write(
     "grid-song-years.json",
@@ -43,7 +43,6 @@ write(
     highlights=[{"row_id": "song-dark-star", "column_id": "year:1969", "note": "Its height, on surviving setlists."}],
     title="Dark Star burned out early. Playing never left.",
     note="Dark Star was at its height in 1969 and was gone after 1974 apart from a handful of nights.",
-    coverage="Before 1971 the library has setlists for only some shows, so early counts run low.",
     follow_ups=[],
 )
 write(
@@ -58,7 +57,6 @@ write(
                  "note": "The longest Dark Star in the series."}],
     title="Where the long jams live.",
     note="The 1972 volumes give a whole side to Dark Star; Nassau '81 is songs and segues.",
-    coverage="Nassau '81 has two tracks that name no song, so its Scarlet and Fire are not matched yet.",
     follow_ups=[],
 )
 write(
@@ -68,5 +66,5 @@ write(
     row_ids=None, open_rows=None,
     highlights=[{"row_id": "person-ned-lagin", "column_id": "year:1974", "note": "The Seastones year."}],
     title="Who sat in, and when.",
-    note=None, coverage=None, follow_ups=[],
+    note=None, follow_ups=[],
 )

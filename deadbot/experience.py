@@ -745,7 +745,6 @@ class GridBlock(ExperienceModel):
     grid_id: str
     title: str | None = None
     note: str | None = None
-    coverage: str | None = None
     row_kind: Literal["song", "show", "release", "guest"]
     column_kind: Literal["year", "song"]
     measure: Literal["shows", "minutes"]
@@ -760,13 +759,15 @@ class GridBlock(ExperienceModel):
 
 class GridRequest(ExperienceModel):
     """A visitor's reshape of a grid: the lists as they now stand, plus the
-    model's headline, note and coverage, which the server hands back unchanged."""
+    model's headline and note, which the server hands back unchanged."""
+
+    # A page opened before the coverage field was removed may still send it.
+    model_config = ConfigDict(extra="ignore")
 
     spec: GridSpecModel
     # Only a transport ceiling: a block the server produced must always reshape.
     title: str | None = Field(default=None, max_length=20_000)
     note: str | None = Field(default=None, max_length=20_000)
-    coverage: str | None = Field(default=None, max_length=20_000)
     open_rows: int | None = Field(default=None, ge=1)
 
 

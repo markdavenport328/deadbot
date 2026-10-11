@@ -463,7 +463,6 @@ def create_app(
             highlights=[],
             title=_trim_text(request.title, GRID_TITLE_CEILING, "grid title"),
             note=_trim_text(request.note, GRID_TEXT_CEILING, "grid note"),
-            coverage=_trim_text(request.coverage, GRID_TEXT_CEILING, "grid coverage"),
             follow_ups=[],
         )
         if block is None:

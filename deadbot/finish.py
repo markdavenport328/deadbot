@@ -590,10 +590,6 @@ class GridRef(_Ref):
     highlights: list[GridHighlightRef] = Field(default_factory=list, description="Cells to point at, by row and column id.")
     title: str | None = Field(default=None, description="What the visitor should see across the grid, in a few words.")
     note: str | None = None
-    coverage: str | None = Field(
-        default=None,
-        description="What the visitor should know about gaps in these cells, when it changes how they read them.",
-    )
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
@@ -1392,7 +1388,6 @@ def _resolve_reference(
             highlights=[h.model_dump() for h in item.highlights],
             title=item.title,
             note=item.note,
-            coverage=item.coverage,
             follow_ups=composition._clean_follow_ups(item.follow_ups),
         )
         return (block, []) if block else (None, [])
