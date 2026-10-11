@@ -18,7 +18,7 @@ import logging
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, get_args
 
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
@@ -520,6 +520,23 @@ class YearQuestion(_PlanModel):
     question: str
 
 
+def _plan_year(value: Any) -> int | None:
+    """A year as the model wrote it: 1977, "1977" or 1977.0; never a boolean."""
+
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    if isinstance(value, str) and value.strip().isdigit():
+        return int(value.strip())
+    return None
+
+
+_SONG_FACETS = frozenset(get_args(SongFacet))
+
+
 class SongOverviewRef(_Ref):
     """One song as a primary object, with model-chosen representative performances."""
 
@@ -559,28 +576,36 @@ class SongOverviewRef(_Ref):
             return value
         value = dict(value)
         # The timeline is the song's history now; an older plan's "history" facet asks for it.
+        # A facet this card cannot show is left out here, so the rest of the list stays.
         facets = value.get("visible_facets")
         if isinstance(facets, list):
-            value["visible_facets"] = list(dict.fromkeys("by_year" if facet == "history" else facet for facet in facets))
+            mapped = ("by_year" if facet == "history" else facet for facet in facets)
+            value["visible_facets"] = list(dict.fromkeys(facet for facet in mapped if facet in _SONG_FACETS))
         stops = value.get("representatives")
         if stops is None and isinstance(value.get("representative_performance_ids"), list):
             stops = value["representative_performance_ids"]
-        # Keep every usable stop; a bare ID string is a stop without words.
+        # Keep every usable stop; a bare ID string is a stop without words, and a
+        # label or why that is not text is left out without losing the stop.
         value["representatives"] = [
-            {"performance_id": item} if isinstance(item, str) else item
+            {"performance_id": item}
+            if isinstance(item, str)
+            else {
+                "performance_id": item["performance_id"],
+                "label": item.get("label") if isinstance(item.get("label"), str) else None,
+                "why": item.get("why") if isinstance(item.get("why"), str) else None,
+            }
             for item in (stops if isinstance(stops, list) else [])
             if isinstance(item, str) or (isinstance(item, dict) and isinstance(item.get("performance_id"), str))
         ]
         if value.get("chart_view") not in (None, "count", "length"):
             value["chart_view"] = None
-        year = value.get("open_year")
-        value["open_year"] = int(year) if isinstance(year, int) or (isinstance(year, str) and year.strip().isdigit()) else None
+        value["open_year"] = _plan_year(value.get("open_year"))
         # One bad year question is dropped, never the whole card.
         questions = value.get("year_questions")
         value["year_questions"] = [
-            item
+            {"year": _plan_year(item.get("year")), "question": item["question"]}
             for item in (questions if isinstance(questions, list) else [])
-            if isinstance(item, dict) and isinstance(item.get("year"), int) and isinstance(item.get("question"), str)
+            if isinstance(item, dict) and _plan_year(item.get("year")) is not None and isinstance(item.get("question"), str)
         ]
         return value
 

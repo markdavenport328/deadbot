@@ -631,7 +631,8 @@ function unitIdentity(block: UnitBlock): { title: string; url?: string | null; t
     case "album_unit":
       return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
     case "song_overview": {
-      const first = block.representative_performances[0];
+      // The first stop the library placed; a stop with only the model's words has no recording.
+      const first = block.representative_performances.find((stop) => stop.show_id);
       const track = first ? trackFor(first, block.title, { showDate: first.show_date, venueName: first.venue_name ?? splitShowLabel(first.show_label).venue }) : null;
       return { title: block.title, url: first?.listen_url, track };
     }
@@ -1390,7 +1391,9 @@ function SongOverviewUnit({
     });
   }
   const initialOpen = openFacets && tabs.length > 0 ? tabs[0].id : null;
-  const representatives = showsFacet("representatives") && !timeline ? block.representative_performances : [];
+  // Without a timeline to carry them, the model's stops list on the card.
+  const representatives = (showsFacet("representatives") || showsFacet("by_year")) && !timeline ? block.representative_performances : [];
+  const timelineInput = useMemo(() => timelineData(block), [block]);
 
   return (
     <UnitFrame inRow={inRow} className={`song-overview emphasis-${block.emphasis}`}>
@@ -1407,7 +1410,7 @@ function SongOverviewUnit({
         <SongTimeline
           // The final page can change the model's open year or first view after the draft streamed.
           key={`${block.song_id}:${block.open_year ?? ""}:${block.chart_view ?? ""}`}
-          data={timelineData(block)}
+          data={timelineInput}
           onAsk={(question, focus) => onFollowUp(question, askFocus(focus))}
         />
       ) : (

@@ -27,7 +27,9 @@ MIN_LENGTH_SECONDS = 60
 # spread evenly across the song's years and says how many more there are.
 STANDOUT_GROUP_CEILING = 6
 # The kinds of standout, in the order the tools list them.
-STANDOUT_KINDS = ("firsts_and_lasts", "longest", "picks", "releases", "guests", "inside_another_song", "unusual_placements", "rare_neighbors")
+STANDOUT_KINDS = (
+    "firsts_and_lasts", "longest", "picks", "show_picks", "releases", "guests", "inside_another_song", "unusual_placements", "rare_neighbors",
+)
 # A placement shared by at most this share of a song's performances stands out.
 RARE_PLACEMENT_SHARE = 0.10
 # A rare placement shared by more performances than this is a pattern, reported once.
@@ -427,7 +429,10 @@ def standouts(
         for guest in p.guests:
             add("guests", p, f"with {guest.name}" + (f" ({guest.instrument})" if guest.instrument else ""))
         for signal in p.signals:
-            add("picks", p, f"picked by {signal.voice}" if signal.scope == "performance" else f"its show was picked by {signal.voice}")
+            if signal.scope == "performance":
+                add("picks", p, f"picked by {signal.voice}")
+            else:
+                add("show_picks", p, f"its show was picked by {signal.voice}")
         if p.previous and p.next and p.previous.song_id == p.next.song_id:
             add("inside_another_song", p, f"inside {p.previous.title}")
         else:

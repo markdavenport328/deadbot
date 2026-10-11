@@ -476,15 +476,15 @@ def create_app(
     def song_year(song_id: str, year: int, http_request: Request, response: Response) -> SongYearDetail:
         """One song's performances in one year for the timeline's See all; library facts only, no model call.
 
-        It shares the grid's lookup limit. Library facts do not change between
-        deploys, so the browser and any cache may keep the answer for a day.
+        It shares the grid's lookup limit. Library facts change only with a
+        deploy, so the browser and any cache may keep the answer for an hour.
         """
 
         _enforce_rate_limit(http_request, grid=True)
         detail = year_detail(app.state.store, song_id, year)
         if detail is None:
             raise HTTPException(status_code=404, detail="The library has no such song.")
-        response.headers["Cache-Control"] = "public, max-age=86400"
+        response.headers["Cache-Control"] = "public, max-age=3600"
         return SongYearDetail.model_validate(detail)
 
     if client_dist.is_dir():

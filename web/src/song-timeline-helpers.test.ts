@@ -108,7 +108,7 @@ test("a performance's flow joins segues with › and names its tags", () => {
 });
 
 test("focus names the song, the year and the model's stop in it", () => {
-  expect(focusFor(data, y1979, "p-msg")).toEqual({
+  expect(focusFor(data, y1979, ["p-msg"])).toEqual({
     label: "Terrapin Station in 1979",
     song_id: "song-terrapin-station",
     year: 1979,

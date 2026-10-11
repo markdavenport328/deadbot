@@ -89,8 +89,8 @@ export interface paths {
          * Song Year
          * @description One song's performances in one year for the timeline's See all; library facts only, no model call.
          *
-         *     It shares the grid's lookup limit. Library facts do not change between
-         *     deploys, so the browser and any cache may keep the answer for a day.
+         *     It shares the grid's lookup limit. Library facts change only with a
+         *     deploy, so the browser and any cache may keep the answer for an hour.
          */
         get: operations["song_year_api_songs__song_id__years__year__get"];
         put?: never;

@@ -1792,3 +1792,19 @@ def test_song_overview_reads_stops_and_the_old_ids_key():
     assert loose.chart_view is None and loose.open_year == 1979
     assert [stop.performance_id for stop in loose.representatives] == ["p1", "p2"]
     assert [question.year for question in loose.year_questions] == [1979]
+
+
+def test_song_overview_reader_keeps_every_usable_part():
+    from deadbot.finish import SongOverviewRef
+
+    ref = SongOverviewRef.model_validate({
+        "type": "song_overview", "song_id": "s",
+        "visible_facets": ["history", "by_year", "credits", "bogus"],
+        "representatives": [{"performance_id": "p1", "label": 5, "why": "Kept."}, {"performance_id": "p2", "label": ["a"]}],
+        "open_year": True,
+        "year_questions": [{"year": "1977", "question": "Q?"}, {"year": 1979.0, "question": "R?"}, {"year": False, "question": "no"}],
+    })
+    assert ref.visible_facets == ["by_year", "credits"]
+    assert [(stop.performance_id, stop.label, stop.why) for stop in ref.representatives] == [("p1", None, "Kept."), ("p2", None, None)]
+    assert ref.open_year is None
+    assert [(question.year, question.question) for question in ref.year_questions] == [(1977, "Q?"), (1979, "R?")]

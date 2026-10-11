@@ -117,7 +117,7 @@ def test_standouts_are_grouped_by_kind_in_date_order_without_ranking(sqlite_stor
     assert facts[("firsts_and_lasts", "1995-07-08")] == ["last performance"]
     assert facts[("longest", "1993-09-29")] == ["longest on record (25:14)"]
     assert facts[("inside_another_song", "1981-12-31")] == ["inside Playing In The Band"]
-    assert facts[("picks", "1981-12-31")] == ["its show was picked by Charlie Miller"]
+    assert facts[("show_picks", "1981-12-31")] == ["its show was picked by Charlie Miller"]
     assert facts[("guests", "1989-12-06")] == ["with Clarence Clemons (saxophone)"]
     for items in kinds.values():
         assert len(items) <= song_life.STANDOUT_GROUP_CEILING
@@ -174,3 +174,9 @@ def test_version_picks_and_show_picks_are_told_apart(sqlite_store):
     assert Signal("Charlie Miller", "performance") in fire.signals
     # Release confirmations are not picks.
     assert not any(s.voice == "Dead.net" for p in song_life.life_performances(sqlite_store, TERRAPIN) for s in p.signals)
+
+
+def test_picks_of_a_performance_and_of_its_show_are_separate_kinds(sqlite_store):
+    kinds, _left_out, _patterns = standouts(song_life.life_performances(sqlite_store, "song-dark-star"), per_kind=2)
+    assert kinds["picks"] and all(fact.startswith("picked by") for item in kinds["picks"] for fact in item["facts"])
+    assert all(fact.startswith("its show was picked by") for item in kinds.get("show_picks", []) for fact in item["facts"])

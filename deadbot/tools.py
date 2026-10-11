@@ -972,8 +972,9 @@ def build_tools(
         timeline. `performance_summary` gives the count, the first and last
         performances with their venues, and the songs it most often followed
         and led into. `standouts` gives a few performances of each kind that
-        stand out (firsts and lasts, longest, picks, releases, guests, played
-        inside another song, unusual placements, rare neighbors), with IDs, to
+        stand out (firsts and lasts, longest, picks of the performance, picks
+        of its show, releases, guests, played inside another song, unusual
+        placements, rare neighbors), with IDs, to
         choose a song_overview's stops from;
         get_song_life lists more of each kind and each year's longest, and
         `list_song_performances` lists concrete rendition IDs and listening
@@ -1075,9 +1076,10 @@ def build_tools(
         or to answer how a song changed over the years. `years` gives each
         year's count, typical minutes and longest performance. `standouts`
         groups the performances that stand out by kind (firsts and lasts,
-        longest, picks with who made them, releases, guests, played inside
-        another song, unusual placements, rare neighbors), each with its ID
-        and plain facts, in date order and unranked. `patterns` names placements too common to list one by
+        longest, picks of the performance and of its show with who made them,
+        releases, guests, played inside another song, unusual placements, rare
+        neighbors), each with its ID and plain facts, in date order and
+        unranked. `patterns` names placements too common to list one by
         one. Choose your stops from
         these and from what you know; give each a short label and a one-line
         why in the song_overview's representatives.

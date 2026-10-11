@@ -1,14 +1,15 @@
-"""Write the song timeline's visual fixture from the real library.
+"""Write the song timeline's visual fixtures from the real library.
 
-The card is built by the same composition the live service uses, against the
-real SQLite catalog, so its years, lengths, picks and tapes are the library's
-own. The stops, the open year, the first view and the year questions stand in
-for what the model writes. Run from the repository root:
+Each card is built by the same composition the live service uses, against the
+real SQLite catalog, so its years, lengths and tapes are the library's own.
+Terrapin's stops, open year, first view and year questions stand in for what
+the model writes; Eyes of the World has none, the timeline with no stops.
+Run from the repository root:
 
     PYTHONPATH=. python scripts/export_song_timeline_fixture.py
 
-It writes web/src/fixtures/song-timeline-terrapin.json, a song_overview block
-the "timeline" visual fixture shows.
+It writes web/src/fixtures/song-timeline-terrapin.json (the "timeline" visual
+fixture) and web/src/fixtures/song-timeline-eyes.json (in "evolution").
 """
 
 from __future__ import annotations
@@ -65,11 +66,23 @@ def main() -> None:
             chart_view="count",
             year_questions=[{"year": year, "question": question} for year, question in STAND_IN_QUESTIONS.items()],
         )
-    if block is None:
-        raise SystemExit("The song card could not be built")
+        eyes = composition._song_overview(
+            store.song_context(store.one("songs", "song-eyes-of-the-world")),
+            store,
+            emphasis="primary",
+            note=(
+                "Across two decades the song moved from a floating, conversational groove to a tighter, more propulsive "
+                "vehicle, then opened up again to welcome guest voices."
+            ),
+            visible_facets=["by_year", "albums"],
+            chart_view="length",
+        )
+    if block is None or eyes is None:
+        raise SystemExit("A song card could not be built")
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "song-timeline-terrapin.json").write_text(json.dumps(block.model_dump(mode="json"), indent=1, ensure_ascii=False) + "\n")
-    print(f"Wrote the card: {len(block.year_summaries)} years, {len(block.length_points)} lengths, {len(block.representative_performances)} stops")
+    for name, card in (("song-timeline-terrapin.json", block), ("song-timeline-eyes.json", eyes)):
+        (OUT / name).write_text(json.dumps(card.model_dump(mode="json"), indent=1, ensure_ascii=False) + "\n")
+        print(f"Wrote {name}: {len(card.year_summaries)} years, {len(card.length_points)} lengths, {len(card.representative_performances)} stops")
 
 
 if __name__ == "__main__":

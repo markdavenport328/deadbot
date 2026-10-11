@@ -16,6 +16,7 @@ import gridEurope72Json from "./fixtures/grid-europe72.json";
 import gridSongYearsJson from "./fixtures/grid-song-years.json";
 // Built from the real library by scripts/export_song_timeline_fixture.py; its stops stand in for the model's.
 import songTimelineJson from "./fixtures/song-timeline-terrapin.json";
+import songTimelineEyesJson from "./fixtures/song-timeline-eyes.json";
 
 type FixtureAudio = { url: string; durationSeconds?: number; segueIntoNext?: boolean };
 type FixtureSong = readonly [id: string, title: string, url: string | null, highlighted?: boolean, audio?: FixtureAudio];
@@ -219,16 +220,8 @@ const evolution: ExperienceResponse = fixture(
       performances: [{"performance_id": "gd-1990-03-29-eyes-of-the-world-2-1", "song_id": "song-eyes-of-the-world", "song_title": "Eyes Of The World", "show_id": "gd-1990-03-29", "show_date": "1990-03-29", "show_label": "1990-03-29 — Nassau Veterans Memorial Coliseum", "set_label": "Set 2", "venue_name": "Nassau Veterans Memorial Coliseum", "listen": {"label": "Listen to Eyes Of The World", "url": "https://archive.org/download/gd1990-03-29.149396.sbd.ultramatrix.miller.flac24/10%20Eyes%20Of%20The%20World.mp3", "provider": "archive", "is_official": false}, "audio_url": "https://archive.org/download/gd1990-03-29.149396.sbd.ultramatrix.miller.flac24/10%20Eyes%20Of%20The%20World.mp3", "duration_seconds": 977}],
       sources: [], follow_ups: [{ label: "Branford’s entrance", question: "What should I listen for when Branford enters this version?" }]
     },
-    {
-      type: "song_overview", disclosure: "expanded", song_id: "song-eyes-of-the-world", title: "Eyes of the World", original_artist: null, known_performance_count: 382,
-      emphasis: "primary",
-      note: "Across two decades the song moved from a floating, conversational groove to a tighter, more propulsive vehicle, then opened up again to welcome guest voices.",
-      representative_performances: [], credits: [], source_ids: ["canonical:song-eyes-of-the-world"],
-      albums: [{ release_id: "release-wake-of-the-flood", title: "Wake of the Flood", release_date: "1973-11-15", release_type: "studio" }],
-      sources: [],
-      visible_facets: ["albums"], judgments: [],
-      follow_ups: [{ label: "Rhythmic shifts", question: "Which other songs show a similarly gradual rhythmic shift?" }]
-    }
+    // Built from the real library: the timeline with no stops chosen.
+    songTimelineEyesJson as unknown as ExperienceBlock
   ] as ExperienceBlock[],
   "sequence"
 );

@@ -18,7 +18,7 @@ def client(built_sqlite, tmp_path):
 def test_song_year_lists_one_year_with_its_facts_and_may_be_cached(client):
     response = client.get("/api/songs/song-terrapin-station/years/1979")
     assert response.status_code == 200
-    assert response.headers["cache-control"] == "public, max-age=86400"
+    assert response.headers["cache-control"] == "public, max-age=3600"
     body = response.json()
     assert (body["song_id"], body["title"], body["year"]) == ("song-terrapin-station", "Terrapin Station", 1979)
     assert len(body["performances"]) == 23

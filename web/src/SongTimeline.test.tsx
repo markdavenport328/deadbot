@@ -247,9 +247,11 @@ test("dragging a finger across the chart opens the years under it", () => {
   setup({ open_year: 1977 });
   const chart = screen.getByRole("group", { name: "Terrapin Station by year" });
   // 600px wide, three years: 1977 starts at 36px, 1978 (not played) at 222px, 1979 at 408px.
-  fireEvent.pointerDown(chart, { pointerType: "touch", clientX: 500, pointerId: 1 });
+  fireEvent.pointerDown(chart, { pointerType: "touch", clientX: 100, clientY: 100, pointerId: 1 });
+  expect(screen.getByRole("region", { name: "1977" })).toBeInTheDocument();
+  fireEvent.pointerMove(chart, { pointerType: "touch", clientX: 500, clientY: 104, pointerId: 1 });
   expect(screen.getByRole("region", { name: "1979" })).toBeInTheDocument();
-  fireEvent.pointerMove(chart, { pointerType: "touch", clientX: 100, pointerId: 1 });
+  fireEvent.pointerMove(chart, { pointerType: "touch", clientX: 100, clientY: 104, pointerId: 1 });
   expect(screen.getByRole("region", { name: "1977" })).toBeInTheDocument();
   fireEvent.pointerUp(chart, { pointerType: "touch", clientX: 100, pointerId: 1 });
   // A mouse moving over the chart opens nothing on its own.
@@ -268,4 +270,33 @@ test("a tap on a dot opens its year's list instead of aiming at the dot", async 
   expect(await screen.findByText("Terrapin Station › Playing In The Band")).toBeInTheDocument();
   expect(fetchYear).toHaveBeenCalledWith("song-terrapin-station", 1979);
   expect(screen.getByTestId("queue")).toHaveTextContent("");
+});
+
+
+test("a vertical swipe that starts on the chart scrolls past without changing the year", async () => {
+  const user = userEvent.setup();
+  setup({ open_year: 1979 });
+  await user.click(screen.getByRole("button", { name: "See all 1 from 1979" }));
+  const chart = screen.getByRole("group", { name: "Terrapin Station by year" });
+  fireEvent.pointerDown(chart, { pointerType: "touch", clientX: 100, clientY: 100, pointerId: 4 });
+  fireEvent.pointerMove(chart, { pointerType: "touch", clientX: 110, clientY: 220, pointerId: 4 });
+  fireEvent.pointerCancel(chart, { pointerType: "touch", pointerId: 4 });
+  expect(screen.getByRole("region", { name: "1979" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Hide the 1979 list" })).toBeInTheDocument();
+});
+
+test("every stop the model put in a year is featured in that year", () => {
+  const second = { performance_id: "p-hartford", label: "Hartford", why: "Released as To Terrapin.", show_date: "1977-05-28", venue_name: "Hartford Civic Center", seconds: 671, track: track("p-hartford") };
+  setup({ open_year: 1977, stops: [data.stops[0], second, data.stops[2]] });
+  const panel = screen.getByRole("region", { name: "1977" });
+  expect(within(panel).getByText("Stop 1 · The debut")).toBeInTheDocument();
+  expect(within(panel).getByText("Stop 2 · Hartford")).toBeInTheDocument();
+});
+
+test("a stop named twice keeps its first number and draws without duplicate keys", () => {
+  const errors = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  setup({ open_year: 1979, stops: [data.stops[2], data.stops[0], data.stops[2]] });
+  expect(errors.mock.calls.some((call) => String(call[0]).includes("same key"))).toBe(false);
+  expect(screen.getAllByRole("button", { name: /^Play stop 1,/ }).length).toBeGreaterThan(0);
+  errors.mockRestore();
 });

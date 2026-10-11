@@ -5078,7 +5078,7 @@
     },
     "/api/songs/{song_id}/years/{year}": {
       "get": {
-        "description": "One song's performances in one year for the timeline's See all; library facts only, no model call.\n\nIt shares the grid's lookup limit. Library facts do not change between\ndeploys, so the browser and any cache may keep the answer for a day.",
+        "description": "One song's performances in one year for the timeline's See all; library facts only, no model call.\n\nIt shares the grid's lookup limit. Library facts change only with a\ndeploy, so the browser and any cache may keep the answer for an hour.",
         "operationId": "song_year_api_songs__song_id__years__year__get",
         "parameters": [
           {

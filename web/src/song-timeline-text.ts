@@ -53,13 +53,13 @@ export function performanceTags(performance: YearPerformance, stopNumber: number
   return tags;
 }
 
-// `stopId` is the model's stop in that year, when it chose one.
-export function focusFor(data: SongTimelineData, summary: YearSummary, stopId: string | null = null): TimelineFocus {
+// `stopIds` are the model's stops in that year, when it chose any.
+export function focusFor(data: SongTimelineData, summary: YearSummary, stopIds: string[] = []): TimelineFocus {
   return {
     label: `${data.title} in ${summary.year}`,
     song_id: data.song_id,
     year: summary.year,
-    ids: [data.song_id, ...(stopId ? [stopId] : [])],
+    ids: [data.song_id, ...stopIds],
     facts: [yearFacts(summary)]
   };
 }

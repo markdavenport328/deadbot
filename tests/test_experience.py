@@ -933,3 +933,40 @@ def test_song_overview_without_by_year_carries_no_timeline():
     )
     assert block.year_summaries == [] and block.length_points == [] and block.open_year is None
     assert block.representative_performances[0].label == "Pick"
+
+
+def test_a_stop_named_twice_is_one_stop_and_long_questions_are_trimmed():
+    from deadbot import composition
+    from deadbot.data import CanonicalStore
+
+    store = CanonicalStore()
+    block = composition._song_overview(
+        store.song_context(store.one("songs", "song-terrapin-station")), store,
+        visible_facets=["by_year"],
+        representatives=[
+            {"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": None, "why": "First words.", "grounded": True},
+            {"performance_id": "gd-1977-02-26-terrapin-station-1-1", "label": "The debut", "why": None, "grounded": True},
+            {"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Charlie Miller's pick", "why": "Later words.", "grounded": True},
+        ],
+        year_questions=[{"year": 1979, "question": "Why " + "really " * 200 + "?"}],
+    )
+    stops = block.representative_performances
+    assert [stop.performance_id[3:13] for stop in stops] == ["1979-01-08", "1977-02-26"]
+    assert (stops[0].label, stops[0].why) == ("Charlie Miller's pick", "First words.")
+    assert len(block.year_questions[0].question) <= composition.YEAR_QUESTION_CEILING
+
+
+def test_a_plain_song_card_does_not_read_the_timeline():
+    from unittest import mock
+
+    from deadbot import composition
+    from deadbot.data import CanonicalStore
+
+    store = CanonicalStore()
+    with mock.patch.object(composition.song_life, "life_performances", side_effect=AssertionError("read the timeline")):
+        block = composition._song_overview(
+            store.song_context(store.one("songs", "song-terrapin-station")), store,
+            visible_facets=["representatives"],
+            representatives=[{"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Pick", "grounded": True}],
+        )
+    assert block.representative_performances[0].label == "Pick"
