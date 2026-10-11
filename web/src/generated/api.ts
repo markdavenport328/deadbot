@@ -781,6 +781,11 @@ export interface components {
              * @enum {string}
              */
             state: "value" | "none" | "no_length" | "unknown";
+            /**
+             * Timed
+             * @default 0
+             */
+            timed: number;
             /** Tracks */
             tracks?: components["schemas"]["PlayableTrack"][];
             /** Value */

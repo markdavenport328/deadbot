@@ -2207,10 +2207,11 @@ def build_tools(
                 return _json({"error": "Name the records as rows"})
             return [record["release_id"] for record in records if record]
         if kind == "guest":
-            people = [store.resolve_person(value) for value in rows]
+            people = [grids.resolve_guest(store, value) for value in rows]
             missing = [value for value, person in zip(rows, people) if not person]
             if missing:
-                return _json({"error": "Guest not found or ambiguous", "query": missing})
+                closest = [match for value in missing for match in grids.closest_guests(store, value)]
+                return _json({"error": "Guest not found or ambiguous", "query": missing, "closest": closest})
             if not people:
                 return _json({"error": "Name the guests as rows"})
             return [person["person_id"] for person in people if person]

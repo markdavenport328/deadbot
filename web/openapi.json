@@ -2003,6 +2003,12 @@
             "title": "State",
             "type": "string"
           },
+          "timed": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Timed",
+            "type": "integer"
+          },
           "tracks": {
             "items": {
               "$ref": "#/components/schemas/PlayableTrack"

@@ -107,6 +107,7 @@ class Cell:
     state: CellState
     value: int | None = None
     passes: int = 0
+    timed: int = 0  # passes with a known length; fewer than passes means the minutes are partial
     performance_ids: tuple[str, ...] = ()
     set_label: str | None = None
     segue_from: str | None = None
@@ -192,6 +193,9 @@ def tool_payload(data: GridData) -> dict[str, Any]:
     coverage: dict[str, Any] = {}
     if data.measure == "minutes":
         coverage["lengths"] = lengths
+        partly = sum(1 for cell in data.cells.values() if cell.state == "value" and cell.timed < cell.passes)
+        if partly:
+            coverage["partly_timed"] = partly
     if data.coverage_by_year:
         coverage["setlists_by_year"] = [
             {"year": year, "shows_on_record": on_record, "shows_with_setlist": with_setlist}
@@ -303,6 +307,7 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
             if track is not None:
                 cell.tracks = (*cell.tracks, (performance_id, performance.get("set_label", ""), track))
             if seconds:
+                cell.timed += 1
                 seconds_by_cell[key] += seconds
                 if cell.length_source not in (None, source):
                     cell.length_source = "mixed"
@@ -466,6 +471,41 @@ def _mentions(track_title: str, song_title: str) -> bool:
     return bool(needle) and re.search(rf"(?<!\w){re.escape(needle)}(?!\w)", _plain(track_title)) is not None
 
 
+def _folded(text: str) -> str:
+    """A name with case, curly quotes, hyphens and spacing folded away: "Hamza el-Din" as "hamza el din"."""
+
+    return " ".join(re.sub(r"[-\s]+", " ", _plain(text)).split())
+
+
+def resolve_guest(store: CanonicalStore, identifier: str) -> dict[str, str] | None:
+    """A person by ID or name, folding case, hyphens and spaces ("Hamza El Din")."""
+
+    found = store.resolve_person(identifier)
+    if found:
+        return found
+    needle = _folded(identifier)
+    if not needle:
+        return None
+    names = [(row, _folded(row.get("name", ""))) for row in store.rows("people")]
+    exact = [row for row, name in names if name == needle]
+    if exact:
+        return exact[0] if len(exact) == 1 else None
+    partial = [row for row, name in names if needle in name]
+    return partial[0] if len(partial) == 1 else None
+
+
+def closest_guests(store: CanonicalStore, identifier: str, limit: int = 5) -> list[dict[str, str]]:
+    """The people whose names are nearest a name that did not resolve, so the model can retry by ID."""
+
+    by_name: dict[str, dict[str, str]] = {}
+    for row in store.rows("people"):
+        by_name.setdefault(_folded(row.get("name", "")), row)
+    return [
+        {"person_id": by_name[name]["person_id"], "name": by_name[name].get("name", "")}
+        for name in difflib.get_close_matches(_folded(identifier), list(by_name), n=limit, cutoff=0.6)
+    ]
+
+
 def resolve_release(store: CanonicalStore, identifier: str) -> dict[str, str] | None:
     """A record by ID, title, or the short name its grid row carries ("Dick's Picks 36")."""
 
@@ -548,6 +588,7 @@ def _release_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
             seconds = str(track.get("duration_seconds") or "").strip()
             if seconds.isdigit() and int(seconds) > 0:
                 seconds_by_cell[key] += int(seconds)
+                cell.timed += 1
                 cell.length_source = "release"
         # A track naming no song keeps a song it mentions an open question, not an absence.
         unnamed = [t.get("track_title", "") for t in tracks if not t.get("song_id", "").strip()]
@@ -651,6 +692,7 @@ def grid_block(
             state=cell.state,
             value=cell.value,
             passes=cell.passes,
+            timed=cell.timed,
             set_label=cell.set_label,
             segue_from=cell.segue_from,
             segue_into=cell.segue_into,

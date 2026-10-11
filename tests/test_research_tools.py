@@ -388,3 +388,7 @@ def test_get_grid_takes_guests_by_name_across_years():
     assert ["person-bruce-hornsby", "year:1989", 3, 0, "value"] in result["cells"]["rows"]
     missing = json.loads(tool.invoke({"row_kind": "guest", "rows": ["Nobody Zzz"], "column_kind": "year", "year_from": 1988, "year_to": 1989}))
     assert missing["error"] == "Guest not found or ambiguous"
+    folded = json.loads(tool.invoke({"row_kind": "guest", "rows": ["Hamza El Din"], "column_kind": "year", "year_from": 1978, "year_to": 1979}))
+    assert folded["rows"][0]["id"] == "person-hamza-el-din"
+    near = json.loads(tool.invoke({"row_kind": "guest", "rows": ["Bruce Hornsbee"], "column_kind": "year", "year_from": 1988, "year_to": 1989}))
+    assert any(entry["person_id"] == "person-bruce-hornsby" for entry in near["closest"])

@@ -695,6 +695,8 @@ class GridCell(ExperienceModel):
     state: Literal["value", "none", "no_length", "unknown"]
     value: int | None = Field(default=None, ge=0)
     passes: int = Field(default=0, ge=0)
+    # Passes with a known length; fewer than passes means the value is partial.
+    timed: int = Field(default=0, ge=0)
     set_label: str | None = None
     segue_from: str | None = None
     segue_into: str | None = None

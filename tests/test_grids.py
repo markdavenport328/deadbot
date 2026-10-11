@@ -375,6 +375,7 @@ def test_release_track_with_a_tape_is_playable_and_keeps_the_release_length():
     data = grids.build(store, grids.GridSpec("release", ("r1",), "song", ("s1", "s2", "s3")))
     one = data.cell("r1", "s1")
     assert (one.state, one.value, one.passes, one.length_source) == ("value", 10, 2, "release")  # the record's 600 s, not the tape's 640
+    assert one.timed == 1  # the second track has no length, so 10 minutes is one track's length, not the whole
     assert [(performance_id, set_label, track.duration_seconds) for performance_id, set_label, track in one.tracks] == [("p1", "Set 1", 640)]
     assert data.cell("r1", "s2").state == "unknown"  # "Two" as a word in an unnamed track, not inside "Twofold"
     assert data.cell("r1", "s3").state == "none"
@@ -388,7 +389,7 @@ def test_release_cell_with_no_timed_track_has_no_length():
         songs=[{"song_id": "s1", "title": "One"}],
     )
     cell = grids.build(store, grids.GridSpec("release", ("r1",), "song", ("s1",))).cell("r1", "s1")
-    assert (cell.state, cell.value, cell.passes, cell.length_source) == ("no_length", None, 1, None)
+    assert (cell.state, cell.value, cell.passes, cell.length_source, cell.timed) == ("no_length", None, 1, None, 0)
 
 
 def test_guest_by_year_counts_shows_sat_in(csv_store):
@@ -443,3 +444,40 @@ def test_resolve_release_takes_ids_titles_and_grid_labels(csv_store, sqlite_stor
 
 def test_resolve_release_leaves_an_ambiguous_phrase_unresolved(csv_store):
     assert grids.resolve_release(csv_store, "Dick's Picks") is None
+
+
+def test_a_night_cell_counts_its_timed_passes():
+    store = _store([_perf("p1"), _perf("p2", position="2")], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    cell = _one_cell(store)
+    assert (cell.passes, cell.timed) == (2, 1)
+
+
+def test_tool_payload_counts_cells_timed_for_only_some_passes():
+    store = _store([_perf("p1"), _perf("p2", position="2")], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    coverage = grids.tool_payload(grids.build(store, grids.GridSpec("show", ("gd-1",), "song", ("s1",))))["coverage"]
+    assert coverage["partly_timed"] == 1  # a cell whose minutes cover only some of its passes
+
+
+def test_block_kinds_match_the_supported_pairs():
+    from typing import get_args
+
+    from deadbot.experience import GridBlock, GridSpecModel
+
+    rows = {row for row, _ in grids.SUPPORTED_PAIRS}
+    columns = {column for _, column in grids.SUPPORTED_PAIRS}
+    measures = set(grids.SUPPORTED_PAIRS.values())
+    for model in (GridBlock, GridSpecModel):
+        assert set(get_args(model.model_fields["row_kind"].annotation)) == rows
+        assert set(get_args(model.model_fields["column_kind"].annotation)) == columns
+    assert set(get_args(GridBlock.model_fields["measure"].annotation)) == measures
+
+
+@pytest.mark.parametrize("query", ["Hamza El Din", "hamza el-din", "person-hamza-el-din", "Bruce Hornsby"])
+def test_resolve_guest_folds_case_hyphens_and_spaces(csv_store, sqlite_store, query):
+    left = grids.resolve_guest(csv_store, query)
+    assert left is not None and left == grids.resolve_guest(sqlite_store, query)
+
+
+def test_closest_guests_names_people_near_a_miss(csv_store):
+    assert grids.resolve_guest(csv_store, "Bruce Hornsbee") is None
+    assert {"person_id": "person-bruce-hornsby", "name": "Bruce Hornsby"} in grids.closest_guests(csv_store, "Bruce Hornsbee")
