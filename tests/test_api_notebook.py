@@ -6,9 +6,9 @@ from langchain_core.messages import AIMessage, HumanMessage
 from deadbot import composition, experience, notebook
 from deadbot.api import create_app
 from deadbot.config import Settings
-from deadbot.finish import FOCUS_MESSAGE_NAME, build_experience_response
-from notebook_support import LYCEUM, SECRET, record, store, turn
-from test_experience import FakeAgent, StreamingFakeAgent, _CachingStore, _ndjson
+from deadbot.finish import FOCUS_MESSAGE_NAME, build_experience_response, build_finish_tool
+from notebook_support import LYCEUM, SECRET, plan_for, record, store, turn
+from test_experience import FakeAgent, PlanStreamingFakeAgent, StreamingFakeAgent, _CachingStore, _ndjson
 
 EUROPE = "What's on Europe '72: The Complete Recordings?"
 EUROPE_ANSWER = "Twenty-two nights, every one released."
@@ -188,3 +188,31 @@ def test_notebook_messages_stay_out_of_the_visible_conversation():
     ]
     response = build_experience_response("q2", "t", messages, store())
     assert [item.text for item in response.conversation] == ["q1", "a1", "q2", "a2"]
+
+
+SHOW_ITEM = {"type": "show_unit", "show_id": "gd-1972-05-26", "visible_facets": ["setlist"]}
+
+
+def test_a_show_researched_in_an_earlier_turn_can_go_on_the_page_by_its_id():
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    request = {"question": "Show me the last Lyceum night.", "conversation": FIRST_EXCHANGE}
+    with_notebook = _client(FakeAgent(turn(request["question"], "Here it is.", [], items=[SHOW_ITEM]))).post(
+        "/api/experience", json={**request, "notebook": token}).json()
+    assert [block["type"] for block in with_notebook["blocks"]] == ["show_unit"]
+    assert with_notebook["blocks"][0]["sets"]
+    without = _client(FakeAgent(turn(request["question"], "Here it is.", [], items=[SHOW_ITEM]))).post(
+        "/api/experience", json=request).json()
+    assert "show_unit" not in [block["type"] for block in without["blocks"]]
+
+
+def test_the_streamed_page_grounds_notebook_ids_the_same_way():
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    question = "Show me the last Lyceum night."
+    agent = PlanStreamingFakeAgent(turn(question, "Here it is.", [], items=[SHOW_ITEM]), plan_for("Here it is.", [SHOW_ITEM]))
+    events = _ndjson(_client(agent).post("/api/experience/stream", json={"question": question, "conversation": FIRST_EXCHANGE, "notebook": token}).text)
+    assert [event["block"]["type"] for event in events if event["type"] == "block"] == ["show_unit"]
+    assert events[-1]["response"]["blocks"][0]["type"] == "show_unit"
+
+
+def test_the_finish_tool_names_the_notebook_as_a_source_of_ids():
+    assert "research notebook" in build_finish_tool().description

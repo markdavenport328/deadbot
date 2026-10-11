@@ -110,6 +110,15 @@ def grounded_context(payloads: list[dict[str, Any]], extra_ids: Iterable[str] = 
     return GroundedContext(ids=frozenset(ids), urls=frozenset(urls))
 
 
+def merge_grounding(*contexts: GroundedContext) -> GroundedContext:
+    """IDs and URLs from several sources: this turn's tools, the research notebook, what the visitor clicked."""
+
+    return GroundedContext(
+        ids=frozenset().union(*(context.ids for context in contexts)),
+        urls=frozenset().union(*(context.urls for context in contexts)),
+    )
+
+
 def keep_grounded_links(text: str, urls: frozenset[str]) -> str:
     """Keep markdown links whose URL the tools returned; unwrap the others to plain text."""
 
@@ -1606,7 +1615,7 @@ def build_finish_tool() -> BaseTool:
             "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
             "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
             "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
-            "mean the same on every unit. Every ID and URL in the plan must have appeared in a tool result this turn: the "
+            "mean the same on every unit. Every ID and URL in the plan must have appeared in a tool result this turn or in the research notebook: the "
             "server hydrates each ID from the library, keeps your words where one does not resolve, and keeps a link only "
             "when its URL came from a tool result."
         ),
@@ -1681,6 +1690,8 @@ def build_experience_response(
     messages: Iterable[Any],
     store: CanonicalStore,
     extra_ids: Iterable[str] = (),
+    *,
+    extra_grounding: GroundedContext | None = None,
 ) -> ExperienceResponse:
     """Assemble the browser response from the agent's latest turn."""
 
@@ -1707,6 +1718,8 @@ def build_experience_response(
         )
 
     grounded = grounded_context(payloads, extra_ids)
+    if extra_grounding is not None:
+        grounded = merge_grounding(grounded, extra_grounding)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
     chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
     lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None

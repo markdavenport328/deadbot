@@ -280,3 +280,12 @@ def test_other_providers_get_no_prompt_cache_key():
 def test_run_config_carries_the_notebook_only_when_given():
     assert "notebook" not in graph.run_config("t", Settings())["configurable"]
     assert graph.run_config("t", Settings(), notebook="book")["configurable"]["notebook"] == "book"
+
+
+def test_prompt_teaches_the_research_notebook():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "research notebook" in prompt
+    assert "read_notebook" in prompt
+    assert "tool results of this turn or the research notebook" in prompt
+    assert "do not" not in prompt.casefold()
+    assert prompt.count("this turn") == 1

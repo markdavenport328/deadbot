@@ -252,6 +252,12 @@ def create_app(
             prompt_cache_key=invocation.thread_id,
         )
 
+    def _turn_grounding(invocation: _Invocation) -> finish.GroundedContext:
+        """IDs and URLs this turn may use beyond its own tool results: the notebook and what was clicked."""
+
+        ids, urls = notebook.grounding(invocation.notebook)
+        return finish.GroundedContext(ids=frozenset(ids) | invocation.focus_ids, urls=frozenset(urls))
+
     def _release(invocation: _Invocation) -> None:
         # The per-request thread is throwaway: it exists only so this
         # invocation replays the browser's transcript in isolation. Without
@@ -284,7 +290,7 @@ def create_app(
             thread_id=invocation.thread_id,
             messages=messages,
             store=app.state.store,
-            extra_ids=invocation.focus_ids,
+            extra_grounding=_turn_grounding(invocation),
         )
         return _with_notebook(invocation, messages, response)
 
@@ -402,7 +408,7 @@ def create_app(
                             try:
                                 # Research is done by the time the plan starts; ground once.
                                 payloads = composition._tool_payloads(composition._latest_turn(messages))
-                                grounded = finish.grounded_context(payloads, invocation.focus_ids)
+                                grounded = finish.merge_grounding(finish.grounded_context(payloads), _turn_grounding(invocation))
                                 plan_streamer = PlanStreamer(
                                     lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0],
                                     grounded_urls=grounded.urls,
