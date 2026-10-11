@@ -214,6 +214,58 @@ function dedupeSources(sources: SourceReference[]): SourceReference[] {
   return result;
 }
 
+// The Internet Archive tapes behind the page's playable tracks, each once,
+// named by the show the block places it in, for the sources footer.
+type Tape = { identifier: string; showDate: string | null; venueName: string | null };
+
+const ARCHIVE_DETAILS = /^https?:\/\/(?:www\.)?archive\.org\/details\/([^/?#]+)/;
+
+function pageTapes(groups: RenderGroup[]): Tape[] {
+  const tapes = new Map<string, Tape>();
+  const visit = (value: unknown, show: { showDate: string | null; venueName: string | null }) => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item, show);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    const here = {
+      showDate: typeof record.show_date === "string" ? record.show_date : show.showDate,
+      venueName: typeof record.venue_name === "string" ? record.venue_name : show.venueName
+    };
+    for (const [key, field] of Object.entries(record)) {
+      if (typeof field !== "string") {
+        visit(field, here);
+        continue;
+      }
+      const identifier = key === "recording_identifier" ? field : (archiveTrack(field)?.identifier ?? ARCHIVE_DETAILS.exec(field)?.[1]);
+      if (!identifier) continue;
+      const known = tapes.get(identifier);
+      if (!known || (!known.showDate && here.showDate)) tapes.set(identifier, { identifier, ...here });
+    }
+  };
+  for (const group of groups) visit(group.blocks, { showDate: null, venueName: null });
+  return [...tapes.values()].sort((a, b) => (a.showDate ?? "9999").localeCompare(b.showDate ?? "9999") || a.identifier.localeCompare(b.identifier));
+}
+
+function showLabel(tape: Tape): string {
+  if (!tape.showDate) return tape.venueName ?? tape.identifier;
+  return [tape.venueName, formatShowDateLong(tape.showDate)].filter(Boolean).join(", ");
+}
+
+// Two tapes of one show are told apart by the tape's own name after its date
+// ("sbd.hicks"), the way tapers know them.
+function tapeLabels(tapes: Tape[]): Map<string, string> {
+  const shows = tapes.map(showLabel);
+  return new Map(
+    tapes.map((tape, index) => {
+      const shared = shows.filter((label) => label === shows[index]).length > 1;
+      const name = tape.identifier.replace(/^gd\d{2,4}-\d{2}-\d{2}\.?/, "") || tape.identifier;
+      return [tape.identifier, shared && name !== shows[index] ? `${shows[index]} (${name})` : shows[index]];
+    })
+  );
+}
+
 // A reading link: sources, articles, charts. A URL that is itself an audio
 // track still plays in-page, so no path to a raw archive file leaves the page.
 function ExternalLink({ href, children, className, label }: { href: string; children: ReactNode; className?: string; label?: string }) {
@@ -1810,6 +1862,8 @@ function ComposedPage({
   const firstBlock = groups[0]?.blocks[0];
   const hero = firstBlock?.type === "listening_hero" ? firstBlock : null;
   const bodyGroups = hero ? [{ ...groups[0], blocks: groups[0].blocks.slice(1) }, ...groups.slice(1)] : groups;
+  const tapes = composing ? [] : pageTapes(groups);
+  const tapeNames = tapeLabels(tapes);
   return (
     <>
       {hero && <ListeningHero block={hero} />}
@@ -1874,7 +1928,7 @@ function ComposedPage({
         );
       })}
       {composing && <p className="composing-note">Composing the page…</p>}
-      {!composing && sources.length > 0 && (
+      {!composing && (sources.length > 0 || tapes.length > 0) && (
         <footer className="sources-footer">
           <p className="sources-footer-label">Sources</p>
           <ul>
@@ -1890,6 +1944,12 @@ function ComposedPage({
                 )}
               </li>
             ))}
+            {tapes.map((tape) => (
+              <li key={tape.identifier}>
+                <span className="source-kind-chip">Internet Archive</span>
+                <ExternalLink href={`https://archive.org/details/${tape.identifier}`}>{tapeNames.get(tape.identifier)}</ExternalLink>
+              </li>
+            ))}
           </ul>
         </footer>
       )}
@@ -1898,14 +1958,14 @@ function ComposedPage({
 }
 
 // The one shared now-playing bar for the whole app: hidden until something
-// has played, then fixed to the bottom of the answer pane it lives in (never
-// over the left rail, since it renders inside .content-pane). A 44px round
-// gold play/pause button, a real range-input scrubber with tabular-numeral
-// elapsed/total time, and one quiet external link to the tape's own details
-// page. When more than one track is queued (a set, a path, a play-all), quiet
-// back and next steps flank the gold button; each dims at its end of the
-// queue rather than vanishing, so the bar holds still. Queueing and position
-// are the shared PlayerProvider's job.
+// has played, then held at the bottom of the screen within the answer pane
+// (never over the left rail, since it renders inside .content-pane). A 44px
+// round gold play/pause button and a real range-input scrubber with
+// tabular-numeral elapsed/total time; the tapes themselves are credited in
+// the page's sources footer. When more than one track is queued (a set, a
+// path, a play-all), quiet back and next steps flank the gold button; each
+// dims at its end of the queue rather than vanishing, so the bar holds
+// still. Queueing and position are the shared PlayerProvider's job.
 export function NowPlayingBar() {
   const player = usePlayer();
   const track = player.currentTrack;
@@ -1973,11 +2033,6 @@ export function NowPlayingBar() {
         />
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
       </div>
-      {track.recordingDetailsUrl && (
-        <a className="now-playing-tape" href={track.recordingDetailsUrl} target="_blank" rel="noreferrer">
-          Tape on the Internet Archive
-        </a>
-      )}
     </div>
   );
 }
@@ -2411,6 +2466,7 @@ function App() {
         </aside>
 
         <section className="content-pane" aria-label="Deadbot guide">
+          <div className="content-body">
           {atStart ? (
             <div className={`start-screen${phase === "leaving" ? " leaving" : ""}`}>
               <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
@@ -2470,6 +2526,7 @@ function App() {
               onFollowUp={chooseFollowUp}
             />
           ) : null}
+          </div>
           <NowPlayingBar />
         </section>
       </div>

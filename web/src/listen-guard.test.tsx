@@ -203,3 +203,17 @@ describe("collapsed cards", () => {
     expect(document.querySelector(".collapsed-list")).toBeNull();
   });
 });
+
+describe("tapes in the sources footer", () => {
+  it("credits each tape behind the page's tracks once, by its show", async () => {
+    await renderFixture("cornell", visualFixtures.cornell);
+    const footer = document.querySelector(".sources-footer") as HTMLElement;
+    const chips = [...footer.querySelectorAll(".source-kind-chip")].filter((chip) => chip.textContent === "Internet Archive");
+    const tapes = chips.map((chip) => chip.closest("li")?.querySelector("a"));
+    expect(tapes.length).toBeGreaterThan(0);
+    const hrefs = tapes.map((link) => link?.getAttribute("href"));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(hrefs.filter((href) => !href?.startsWith("https://archive.org/details/"))).toEqual([]);
+    expect(within(footer).getByRole("link", { name: /^Barton Hall, Cornell University, May 8, 1977 \(sbd\.hicks\)/ })).toBeInTheDocument();
+  });
+});

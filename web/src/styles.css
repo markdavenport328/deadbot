@@ -36,7 +36,8 @@
   --cream-rule: rgba(243, 240, 226, 0.55);
   --cream-underline: rgba(243, 240, 226, 0.35);
   --ground: #14221b;
-  --scrim: rgba(20, 34, 27, 0.97);
+  /* Panels keep a hint of the dye behind them. */
+  --scrim: rgba(20, 34, 27, 0.82);
   --read: #e8779a;
   --ask: #3f95dc;
   --ask-deep: #2c4f86;
@@ -145,7 +146,7 @@ h2, .card h3 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem
 .thread { display: flex; flex: 0 1 auto; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0 0.7rem; }
 .thread-messages { display: flex; flex-direction: column; gap: 0.7rem; padding: 1rem 0; }
 .message { max-width: 95%; border-radius: var(--r); padding: 0.75rem 0.85rem; font-size: 0.92rem; line-height: 1.5; white-space: pre-line; }
-.message.user { align-self: flex-end; background: #334f3b; color: #f2f3eb; }
+.message.user { align-self: flex-end; background: rgba(51, 79, 59, 0.85); color: #f2f3eb; }
 .message.assistant { align-self: flex-start; max-width: 100%; border-radius: 0; background: transparent; color: #d3dccf; padding: 0; }
 .message.assistant div { overflow-wrap: anywhere; }
 .message.pending { color: #adbbac; font-style: italic; }
@@ -171,7 +172,10 @@ h2, .card h3 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem
   50.01%, 100% { opacity: 0; }
 }
 
-.composer { position: sticky; bottom: 0; flex-shrink: 0; background: linear-gradient(to bottom, rgba(20, 34, 27, 0) 0, #14221b 1.25rem); padding: 1.25rem 0 1rem; }
+/* The ask box's ground fades in over the conversation scrolling beneath it;
+   like the panels, it keeps a hint of the dye, and blurs what passes under. */
+.composer { position: sticky; bottom: 0; isolation: isolate; flex-shrink: 0; background: linear-gradient(to bottom, rgba(20, 34, 27, 0), var(--scrim)) top / 100% 1.25rem no-repeat; padding: 1.25rem 0 1rem; }
+.composer::before { content: ""; position: absolute; inset: 1.25rem 0 0; z-index: -1; background: var(--scrim); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .question-field { position: relative; }
 textarea { display: block; width: 100%; min-width: 0; resize: none; border: 1px solid rgba(89, 112, 94, 0.55); border-radius: var(--r); background: rgba(51, 79, 59, 0.35); color: #f2f3eb; font-size: 1rem; line-height: 1.4; padding: 0.78rem 0.85rem 3rem; }
 textarea::placeholder { color: #9fb29f; }
@@ -180,26 +184,29 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 2px; border-co
 .question-field button[type="submit"] { position: absolute; right: 0.6rem; bottom: 0.6rem; border: 0; border-radius: var(--r); background: var(--ask-deep); color: var(--cream); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; padding: 0.8rem 1.05rem; transition: background 120ms ease; }
 .question-field button[type="submit"]:focus-visible { background: var(--ask-deep-hover); }
 button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68; }
-.error { margin: 0 0 0.8rem; border-radius: var(--r); border-left: 4px solid #e17e64; background: #3d2923; color: #f0d6ca; padding: 0.8rem; font-size: 0.86rem; }
+.error { margin: 0 0 0.8rem; border-radius: var(--r); border-left: 4px solid #e17e64; background: rgba(61, 41, 35, 0.88); color: #f0d6ca; padding: 0.8rem; font-size: 0.86rem; }
 
-.content-pane { min-width: 0; padding: 2rem clamp(1.4rem, 4vw, 4.5rem) 4rem; container-type: inline-size; }
+/* The pane is at least a screen tall with the now-playing bar at its foot,
+   so a short page still has the bar at the bottom of the screen. */
+.content-pane { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; padding: 2rem clamp(1.4rem, 4vw, 4.5rem) 4rem; container-type: inline-size; }
+.content-body { flex: 1 0 auto; min-width: 0; }
 
 /* The one shared now-playing bar: hidden until something has played, then
-   pinned to the bottom of the answer pane's own column (sticky within
-   .content-pane, so it never draws over the rail and scrolls away with the
-   page it belongs to rather than floating over every screen in the app). */
+   held at the bottom of the screen in the answer pane's own column (sticky
+   at the foot of .content-pane, so it never draws over the rail). Its
+   translucent ground lets the dye show through, blurred. */
 .now-playing-bar {
   position: sticky;
   bottom: 0;
   z-index: 20;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto minmax(10rem, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(10rem, 1fr);
   align-items: center;
   column-gap: 0.9rem;
   margin: 2rem calc(-1 * clamp(1.4rem, 4vw, 4.5rem)) calc(-1 * 4rem);
   padding: 0.7rem clamp(1.4rem, 4vw, 4.5rem);
-  background: var(--bar-scrim);
-  backdrop-filter: blur(6px);
+  background: rgba(10, 18, 13, 0.8);
+  backdrop-filter: blur(10px);
   border-top: 1px solid var(--hair);
 }
 .now-playing-thumb { width: 40px; height: 40px; border-radius: var(--r); object-fit: cover; background: var(--panel); flex-shrink: 0; }
@@ -220,20 +227,20 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .now-playing-scrubber { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
 .now-playing-time { color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .now-playing-range { flex: 1; min-width: 0; accent-color: var(--listen); }
-.now-playing-tape { color: var(--quiet); font-size: 0.8rem; text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.16em; white-space: nowrap; }
-.now-playing-tape:hover { color: var(--cream); }
 /* The bar stacks by the answer pane's width, not the window's: beside the
    rail, a wide window can still leave the pane too narrow for one row. */
 @container (max-width: 720px) {
-  .now-playing-bar { grid-template-columns: auto 1fr auto; grid-template-areas: "thumb info toggle" "scrub scrub scrub" "tape tape tape"; row-gap: 0.4rem; }
+  .now-playing-bar { grid-template-columns: auto 1fr auto; grid-template-areas: "thumb info toggle" "scrub scrub scrub"; row-gap: 0.4rem; }
   .now-playing-thumb { grid-area: thumb; }
   .now-playing-info { grid-area: info; }
   .now-playing-controls { grid-area: toggle; }
   .now-playing-scrubber { grid-area: scrub; }
-  .now-playing-tape { grid-area: tape; }
 }
+/* On a phone the pane has no side padding and the shell leaves a 0.625rem
+   gutter: the bar bleeds to the screen edges and its content lines up with
+   the page's text. */
 @media (max-width: 860px) {
-  .now-playing-bar { margin: 1.5rem calc(-1 * 1.25rem) calc(-1 * var(--space-section)); padding: 0.7rem 1.25rem; }
+  .now-playing-bar { margin: 1.5rem -0.625rem calc(-1 * var(--space-section)); padding: 0.7rem 0.625rem; }
 }
 .content-heading { max-width: 780px; margin-bottom: var(--space-part); }
 .content-heading h1 { font-size: clamp(2.2rem, 3.4vw, 3.1rem); font-variation-settings: "SOFT" 40, "opsz" 96; letter-spacing: -0.015em; max-width: 22ch; line-height: 1.15; overflow-wrap: anywhere; text-wrap: balance; }
@@ -816,9 +823,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* The one control on the ground at the rail's top edge gets the ground under
    it, so a rosette never shows through its label. */
 .new-chat-button { background-color: var(--ground); }
-/* A card's tint sits on the same ground scrim, so a rosette behind a card
-   never lowers the contrast of the card's quiet labels. On bare ground the
-   scrim is the ground itself and the card looks as it did. */
+/* A card's tint sits on a ground scrim that lets a hint of a rosette
+   through without lowering the contrast of the card's quiet labels. On bare
+   ground the scrim is the ground itself and the card looks as it did. */
 .card { background-color: var(--scrim); background-image: linear-gradient(rgba(4, 10, 6, 0.38), rgba(4, 10, 6, 0.38)); }
 .card.emphasis-primary { background-color: var(--scrim); background-image: linear-gradient(rgba(4, 10, 6, 0.46), rgba(4, 10, 6, 0.46)); }
 .card.emphasis-supporting { background-color: var(--scrim); }
