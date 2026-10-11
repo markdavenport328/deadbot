@@ -66,7 +66,7 @@ def test_year_summaries_span_every_year_with_counts_and_lengths(terrapin):
     y1979 = next(row for row in rows if row["year"] == 1979)
     assert y1979["count"] == 23
     assert y1979["top_next"] == {"title": "Playing In The Band", "count": 20}
-    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 925}
+    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 937}
     assert y1979["median_seconds"] == 758
     assert y1979["pick"]["track"]["audio_url"].startswith("https://archive.org/download/")
 
@@ -158,3 +158,19 @@ def test_tool_payload_stays_compact(sqlite_store, song_id):
     assert len(json.dumps(payload, ensure_ascii=False)) < 9000
     assert payload["years"][0]["count"] > 0
     assert payload["stops_note"]
+
+
+def test_disagreeing_releases_take_the_length_nearest_the_tape(sqlite_store):
+    # A 30 Days of Dead excerpt (447s) must not beat the full release (1263s); the tape runs 1244s.
+    pitb = by_date(song_life.life_performances(sqlite_store, "song-playing-in-the-band"), "1974-02-22")
+    assert (pitb.seconds, pitb.length_source) == (1263, "release")
+    assert song_life._release_length([447, 1263], None) == 1263
+    assert song_life._release_length([30], 500) == 30
+
+
+def test_a_picked_version_outranks_an_earlier_picked_show(sqlite_store):
+    rows = song_life.card_data(sqlite_store, "song-fire-on-the-mountain")["year_summaries"]
+    pick = next(row for row in rows if row["year"] == 1977)["pick"]
+    assert (pick["basis"], pick["show_date"], pick["basis_detail"]) == ("picked", "1977-05-13", "Charlie Miller")
+    # Release confirmations are not picks.
+    assert not any(s.voice == "Dead.net" for p in song_life.life_performances(sqlite_store, TERRAPIN) for s in p.signals)

@@ -16,18 +16,18 @@
     "count": 8
    },
    "pick": {
-    "performance_id": "gd-1977-05-22-terrapin-station-2-11",
-    "show_date": "1977-05-22",
-    "venue_name": "Sportatorium",
+    "performance_id": "gd-1977-06-09-terrapin-station-2-10",
+    "show_date": "1977-06-09",
+    "venue_name": "Winterland",
     "set_label": "Set 2",
-    "seconds": 358,
+    "seconds": 670,
     "basis": "show_picked",
-    "basis_detail": "Dead.net",
+    "basis_detail": "David Fricke / Rolling Stone",
     "track": {
-     "performance_id": "gd-1977-05-22-terrapin-station-2-11",
+     "performance_id": "gd-1977-06-09-terrapin-station-2-10",
      "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1977-05-22.140278.sbd.miller.flac2496/22TerrapinStation.mp3",
-     "duration_seconds": 355,
+     "audio_url": "https://archive.org/download/gd1977-06-09.sbd.dauria.3372.shnf/gd77-06-09d3t03.mp3",
+     "duration_seconds": 432,
      "set_label": "Set 2"
     }
    }
@@ -67,7 +67,7 @@
    "median_seconds": 758,
    "longest": {
     "performance_id": "gd-1979-11-06-terrapin-station-2-1",
-    "seconds": 925
+    "seconds": 937
    },
    "top_next": {
     "title": "Playing In The Band",
@@ -864,7 +864,7 @@
   {
    "performance_id": "gd-1979-11-06-terrapin-station-2-1",
    "show_date": "1979-11-06",
-   "seconds": 925
+   "seconds": 937
   },
   {
    "performance_id": "gd-1979-11-24-terrapin-station-2-4",

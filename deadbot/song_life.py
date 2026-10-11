@@ -32,7 +32,10 @@ PATTERN_THRESHOLD = 5
 # A neighbor song met this many times or fewer stands out.
 RARE_NEIGHBOR_MEETINGS = 2
 # Voices for selection sources the import's selector names do not cover.
-SOURCE_VOICES = {"headyversion": "Headyversion voters", "deadnet-official-release-pass": "Dead.net"}
+SOURCE_VOICES = {"headyversion": "Headyversion voters"}
+# Signals that confirm an official release rather than pick a version; the
+# release titles already carry them.
+RELEASE_CONFIRMATION_SOURCES = {"deadnet-official-release-pass"}
 
 
 def clock(seconds: int | None) -> str:
@@ -131,6 +134,21 @@ class LifePerformance:
         }
 
 
+def _release_length(candidates: list[int], tape_seconds: int | None) -> int | None:
+    """One release length when several releases carry the performance.
+
+    Releases can disagree (a 30 Days of Dead excerpt against the full
+    release), so the one nearest the tape wins; with no tape, the longest.
+    """
+
+    usable = [seconds for seconds in candidates if seconds >= MIN_LENGTH_SECONDS]
+    if not usable:
+        return min(candidates) if candidates else None
+    if tape_seconds is not None and tape_seconds >= MIN_LENGTH_SECONDS:
+        return min(usable, key=lambda seconds: (abs(seconds - tape_seconds), -seconds))
+    return max(usable)
+
+
 def _length(release_seconds: int | None, tape_seconds: int | None, performance_id: str) -> tuple[int | None, str | None]:
     """Official release seconds first, then the tape track's; a too-short value is unknown."""
 
@@ -144,8 +162,8 @@ def _length(release_seconds: int | None, tape_seconds: int | None, performance_i
     return None, None
 
 
-def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, int], dict[str, tuple[str, ...]]]:
-    """Each performance's release seconds (its tracks on one release summed) and release titles."""
+def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, list[int]], dict[str, tuple[str, ...]]]:
+    """Each performance's release lengths (its tracks on one release summed, one per release) and release titles."""
 
     tracks = store.rows_in("official_release_tracks", "performance_id", performance_ids)
     releases = {row["release_id"]: row for row in store.rows_in("official_releases", "release_id", {t["release_id"] for t in tracks})}
@@ -153,12 +171,12 @@ def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[s
     for track in tracks:
         if track["release_id"] in releases:
             per_release[track["performance_id"]][track["release_id"]] += _int(track.get("duration_seconds"))
-    seconds: dict[str, int] = {}
+    seconds: dict[str, list[int]] = {}
     titles: dict[str, tuple[str, ...]] = {}
     for performance_id, by_release in per_release.items():
-        timed = [(release_id, total) for release_id, total in sorted(by_release.items()) if total > 0]
+        timed = [total for _release_id, total in sorted(by_release.items()) if total > 0]
         if timed:
-            seconds[performance_id] = timed[0][1]
+            seconds[performance_id] = timed
         ordered = sorted(by_release, key=lambda release_id: (releases[release_id].get("release_date") or "9999", releases[release_id].get("title") or ""))
         titles[performance_id] = tuple(dict.fromkeys(releases[release_id].get("title") or release_id for release_id in ordered))
     return seconds, titles
@@ -186,7 +204,7 @@ def _signals(store: CanonicalStore, performance_ids: set[str], show_ids: set[str
     by_performance: dict[str, list[str]] = defaultdict(list)
     by_show: dict[str, list[str]] = defaultdict(list)
     for signal in inventory:
-        if str(signal.get("resolution_state", "")).startswith("held_"):
+        if str(signal.get("resolution_state", "")).startswith("held_") or signal.get("source") in RELEASE_CONFIRMATION_SOURCES:
             continue
         voice = _selector_name(signal) or signal.get("selection_label") or SOURCE_VOICES.get(signal["source"], signal["source"])
         performances = signal.get("candidate_performances") or []
@@ -243,7 +261,9 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
         venue = venues.get(show.get("venue_id", "")) or {}
         before, after = around[performance_id]
         track = tracks.get(performance_id)
-        seconds, source = _length(release_seconds.get(performance_id), track.duration_seconds if track else None, performance_id)
+        tape_seconds = track.duration_seconds if track else None
+        release = _release_length(release_seconds.get(performance_id, []), tape_seconds)
+        seconds, source = _length(release, tape_seconds, performance_id)
         voices = performance_voices.get(performance_id, [])
         signals = [Signal(voice, "performance") for voice in voices]
         signals += [Signal(voice, "show") for voice in show_voices.get(row["show_id"], []) if voice not in voices]
@@ -276,13 +296,14 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
 
 
 def _fallback_pick(members: list[LifePerformance]) -> tuple[LifePerformance, str, str | None] | None:
-    """The year's pick when the model names none: picked, then released, then first."""
+    """The year's pick when the model names none: a picked version, a picked show, a release, the first."""
 
     playable = [performance for performance in members if performance.audio_url]
-    for performance in playable:
-        if performance.signals:
-            signal = performance.signals[0]
-            return performance, "picked" if signal.scope == "performance" else "show_picked", signal.voice
+    for scope, basis in (("performance", "picked"), ("show", "show_picked")):
+        for performance in playable:
+            signal = next((item for item in performance.signals if item.scope == scope), None)
+            if signal:
+                return performance, basis, signal.voice
     for performance in playable:
         if performance.releases:
             return performance, "released", performance.releases[0]
