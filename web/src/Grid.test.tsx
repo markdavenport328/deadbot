@@ -409,15 +409,35 @@ describe("Grid of records and of guests", () => {
     render(<Grid block={records as GridBlock} />);
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 36, Dark Star: 37 min/));
     const card = await screen.findByRole("tooltip");
-    expect(card).toHaveTextContent("Dark Star · Dick’s Picks 36");
+    expect(card).toHaveTextContent("Dark Star · Dick’s Picks 36 · The Spectrum, Philadelphia, PA 9/21/72");
     expect(card).toHaveTextContent("37 minutes on the record, on 1 track.");
+    expect(card).toHaveTextContent("Plays the archive tape: 20 minutes.");
     expect(card).toHaveTextContent("The longest Dark Star in the series.");
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 16, Dark Star/));
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("18 minutes on the record, across 3 tracks.");
+    const fillmore = await screen.findByRole("tooltip");
+    expect(fillmore).toHaveTextContent("18 minutes on the record, across 3 tracks.");
+    expect(fillmore).not.toHaveTextContent(/archive tape/); // the tape runs 19 minutes, within a minute of the record
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 13, Scarlet Begonias: not matched yet$/));
     expect(await screen.findByRole("tooltip")).toHaveTextContent(/a track on this record that names no song/i);
     fireEvent.mouseEnter(screen.getByLabelText(/^Dick’s Picks 3, Dark Star: not on the record$/));
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Not on this record.");
+  });
+
+  it("says when the tape covers fewer tracks than the record, and when only some tracks are timed", async () => {
+    const base = records as GridBlock;
+    const first = base.rows[1].cells![0]; // Dick's Picks 16, Dark Star: three tracks, three tapes
+    const cells = [
+      { ...first, tracks: first.tracks!.slice(0, 1) },
+      { ...first, state: "value" as const, value: 10, passes: 2, timed: 1, tracks: [] },
+    ];
+    const block = { ...base, columns: base.columns.slice(0, 2), rows: [{ ...base.rows[1], cells }] } as GridBlock;
+    render(<Grid block={block} />);
+    fireEvent.mouseEnter(screen.getAllByRole("gridcell")[0]);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Plays the archive tape for 1 of 3 tracks: 15 minutes.");
+    fireEvent.mouseEnter(screen.getAllByRole("gridcell")[1]);
+    const partial = await screen.findByRole("tooltip");
+    expect(partial).toHaveTextContent("10 minutes on the record, length known for 1 of 2 tracks.");
+    expect(partial).not.toHaveTextContent(/archive tape/);
   });
 
   it("summarises a song's column across the records", async () => {
@@ -440,8 +460,8 @@ describe("Grid of records and of guests", () => {
     render(<Grid block={records as GridBlock} onFollowUp={onFollowUp} />);
     fireEvent.click(screen.getByLabelText(/^Dick’s Picks 36, Dark Star/));
     fireEvent.click(screen.getByRole("button", { name: "Ask about this" }));
-    expect(onFollowUp.mock.calls[0][0]).toBe("Tell me about the Dark Star on Dick’s Picks 36.");
-    expect(onFollowUp.mock.calls[0][1].label).toBe("Dark Star · Dick’s Picks 36");
+    expect(onFollowUp.mock.calls[0][0]).toBe("Tell me about the Dark Star on Dick’s Picks 36 (The Spectrum, Philadelphia, PA 9/21/72).");
+    expect(onFollowUp.mock.calls[0][1].label).toBe("Dark Star · Dick’s Picks 36 · The Spectrum, Philadelphia, PA 9/21/72");
   });
 
   it("plays a record's cell with the show date read from its performance", () => {
@@ -465,7 +485,7 @@ describe("Grid of records and of guests", () => {
     expect(card).toHaveTextContent("Bruce Hornsby · 1989");
     expect(card).toHaveTextContent("Sat in on 3 shows that year.");
     fireEvent.mouseEnter(screen.getByLabelText(/^Bruce Hornsby, 1991: none that year$/));
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Did not sit in that year.");
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("No sit-ins credited that year.");
     fireEvent.mouseEnter(screen.getByRole("button", { name: "Sort by 1974" }));
     expect(await screen.findByRole("tooltip")).toHaveTextContent(/of the 4 guests sat in that year\. Most: Ned Lagin, \d+ shows\./);
   });

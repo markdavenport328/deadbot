@@ -5,7 +5,7 @@
 import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { CardHeading, MoreAbout } from "./components";
 import type { FollowUp } from "./ask-request";
-import { cellTitle, GridFacts, ROW_WORDS, sentence } from "./GridFacts";
+import { cellTitle, GridFacts, recordName, ROW_WORDS, sentence } from "./GridFacts";
 import { columnSummary, GridReshapeError, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
 import { toTrack } from "./listen-control";
 import { usePlayer } from "./player";
@@ -57,7 +57,7 @@ function askAbout(block: GridBlock, selection: Selection): string | null {
     if (!cell || !col || (cell.state !== "value" && cell.state !== "no_length")) return [];
     const { date, city } = rowParts(block.rows[row]);
     if (block.row_kind === "show") return [{ subject: `the ${col.label} from ${date}`, place: city ? ` in ${city}` : "" }];
-    if (block.row_kind === "release") return [{ subject: `the ${col.label} on ${block.rows[row].label}`, place: "" }];
+    if (block.row_kind === "release") return [{ subject: `the ${col.label} on ${recordName(block.rows[row], "paren")}`, place: "" }];
     if (block.row_kind === "guest") return [{ subject: `${block.rows[row].label} sitting in during ${col.sub ?? col.label}`, place: "" }];
     return [{ subject: `${block.rows[row].label} in ${col.sub ?? col.label}`, place: "" }];
   });

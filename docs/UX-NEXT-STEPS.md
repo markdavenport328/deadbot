@@ -408,8 +408,7 @@ every group when written first, after every group otherwise, through repeated
 `groups` lists); `query_catalog` answers an unknown tour nickname with the
 library's nearest tour names.
 
-Status: Tasks 1 to 8 are done. Task 9 (release x song and guest x year grids)
-waits for the `claude/library-data-gaps` data branch to merge.
+Status: Tasks 1 to 9 are done.
 
 Live findings (`docs/measurements/2026-10-10-grids.md`, gpt-5.6-luna, effort
 low, one to two runs per question):
@@ -437,6 +436,38 @@ Live data gaps the grid exposed:
   plays the night.
 - May 11's tape tracks cover about 9 of the 44 minutes the release lists. Grid
   playback of long jams is only as good as the tape-track mapping.
+
+### Task 9: records across songs, guests across years (October 11, 2026)
+
+- **Records x songs.** `get_grid` with `row_kind: "release"` puts records down
+  the side and songs across, each cell the minutes the song takes up on the
+  record (from the record's own track lengths) and the tracks it spans. A song
+  that only appears inside a track naming no song (Scarlet Begonias in Nassau
+  '81's medley) shows as "not matched yet", not as absent. A cell with an
+  untimed track says "length known for 1 of 2 tracks". Rows are named from the
+  title ("Dick's Picks 36" over "The Spectrum, Philadelphia, PA 9/21/72"). A
+  record's row opens its tracklist by disc. The model's payload counts each
+  record's tracks that name no song.
+- **Guests x years.** `row_kind: "guest"` counts the shows each guest sat in
+  on, year by year, as `aggregate_data` counts them. Names resolve with case,
+  hyphens and spaces folded ("Hamza El Din"). A miss returns the nearest names.
+- **Tape against record.** Play on a record's cell plays the archive tape,
+  which often runs a different length from the released track (Dick's Picks
+  36's Dark Star: 37 minutes on the record, 20 on tape) or covers fewer of its
+  tracks. The cell's facts say so in one line ("Plays the archive tape: 20
+  minutes."), and the card and Ask question name a record with its sub line so
+  two records with the same short name cannot be confused.
+- **Live** (`docs/measurements/2026-10-11-grids-task9.md`, one run each, effort
+  low): "Which Dick's Picks should I start with?" got five album units with
+  correct facts. "Who sat in with the Dead?" got two person rosters with
+  correct counts and years. Both pages are good, and neither used a grid.
+  Whether the model reaches for the new grids when a question needs them
+  ("compare the 1972 Dick's Picks by their jams", "when was Ned Lagin
+  around?") is untested.
+- **Open idea: a series selector for record rows.** Show rows have `tour` to
+  gather a tour's nights in one call. Record rows need a SQL listing of the
+  series first. An argument that selects every record whose title starts with
+  a phrase ("Dick's Picks") would make the record grid one call away.
 
 ## Measurements
 
