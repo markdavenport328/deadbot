@@ -114,3 +114,10 @@ def test_a_run_is_labeled_by_what_was_sent():
     assert sequence_label("europe72", True, sent) == "europe72, with the notebook"
     assert sequence_label("europe72", True, none) == "europe72, notebook requested, none sent"
     assert sequence_label("europe72", False, none) == "europe72, without the notebook"
+
+
+def test_a_sequence_sends_back_the_notebook_each_answer_carried():
+    app = create_app(settings=Settings(response_cache=False, notebook_secret="s"), store=CanonicalStore(), agent=_Agent())
+    rows = measure_sequence(["one", "two"], app=app)
+    assert rows[0]["notebook_bytes"] == 0 and rows[1]["notebook_bytes"] > 0
+    assert measure_sequence(["one", "two"], app=app, use_notebook=False)[1]["notebook_bytes"] == 0
