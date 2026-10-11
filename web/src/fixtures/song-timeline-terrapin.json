@@ -6,7 +6,7 @@
   {
    "year": 1977,
    "count": 28,
-   "median_seconds": 657,
+   "median_seconds": 651,
    "longest": {
     "performance_id": "gd-1977-10-07-terrapin-station-2-5",
     "seconds": 892
@@ -219,18 +219,18 @@
     "count": 6
    },
    "pick": {
-    "performance_id": "gd-1984-04-01-terrapin-station-2-5",
-    "show_date": "1984-04-01",
-    "venue_name": "Marin Veterans Memorial Auditorium",
+    "performance_id": "gd-1984-04-19-terrapin-station-2-4",
+    "show_date": "1984-04-19",
+    "venue_name": "Civic Convention Hall Auditorium",
     "set_label": "Set 2",
-    "seconds": 522,
-    "basis": "first",
-    "basis_detail": null,
+    "seconds": 818,
+    "basis": "released",
+    "basis_detail": "Dave’s Picks, Volume 35: Philadelphia Civic Center, Philadelphia, PA · 4/20/1984",
     "track": {
-     "performance_id": "gd-1984-04-01-terrapin-station-2-5",
+     "performance_id": "gd-1984-04-19-terrapin-station-2-4",
      "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1984-04-01.sbd.acquiesce.9064.sbefail.shnf/gd84-04-01d2t05.mp3",
-     "duration_seconds": 522,
+     "audio_url": "https://archive.org/download/gd1984-04-19.sbd.miller.118658.flac16/gd84-04-19d2t05.mp3",
+     "duration_seconds": 791,
      "set_label": "Set 2"
     }
    }
@@ -354,7 +354,7 @@
   {
    "year": 1989,
    "count": 17,
-   "median_seconds": 791,
+   "median_seconds": 788,
    "longest": {
     "performance_id": "gd-1989-12-06-terrapin-station-2-4",
     "seconds": 1363
@@ -412,7 +412,7 @@
   {
    "year": 1991,
    "count": 15,
-   "median_seconds": 1084,
+   "median_seconds": 1039,
    "longest": {
     "performance_id": "gd-1991-02-21-terrapin-station-2-3",
     "seconds": 1223
@@ -582,9 +582,19 @@
    "seconds": 550
   },
   {
+   "performance_id": "gd-1977-04-25-terrapin-station-2-4",
+   "show_date": "1977-04-25",
+   "seconds": 577
+  },
+  {
    "performance_id": "gd-1977-04-27-terrapin-station-2-7",
    "show_date": "1977-04-27",
    "seconds": 381
+  },
+  {
+   "performance_id": "gd-1977-04-30-terrapin-station-3-1",
+   "show_date": "1977-04-30",
+   "seconds": 613
   },
   {
    "performance_id": "gd-1977-05-04-terrapin-station-2-4",
@@ -609,7 +619,7 @@
   {
    "performance_id": "gd-1977-05-19-terrapin-station-2-4",
    "show_date": "1977-05-19",
-   "seconds": 698
+   "seconds": 704
   },
   {
    "performance_id": "gd-1977-05-22-terrapin-station-2-11",
@@ -719,7 +729,7 @@
   {
    "performance_id": "gd-1978-04-18-terrapin-station-2-5",
    "show_date": "1978-04-18",
-   "seconds": 319
+   "seconds": 659
   },
   {
    "performance_id": "gd-1978-04-24-terrapin-station-2-4",
@@ -1134,7 +1144,7 @@
   {
    "performance_id": "gd-1984-04-19-terrapin-station-2-4",
    "show_date": "1984-04-19",
-   "seconds": 791
+   "seconds": 818
   },
   {
    "performance_id": "gd-1984-04-29-terrapin-station-2-4",
@@ -1544,7 +1554,7 @@
   {
    "performance_id": "gd-1989-07-13-terrapin-station-2-3",
    "show_date": "1989-07-13",
-   "seconds": 805
+   "seconds": 788
   },
   {
    "performance_id": "gd-1989-07-19-terrapin-station-2-4",
@@ -1734,7 +1744,7 @@
   {
    "performance_id": "gd-1991-09-25-terrapin-station-2-4",
    "show_date": "1991-09-25",
-   "seconds": 1082
+   "seconds": 768
   },
   {
    "performance_id": "gd-1991-10-30-terrapin-station-2-3",
