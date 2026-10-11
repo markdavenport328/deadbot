@@ -49,6 +49,21 @@ def test_grid_id_is_stable_and_order_sensitive():
     assert grids.grid_id(spec).startswith("grid:")
 
 
+def test_the_payload_says_how_many_rows_and_columns_the_ceilings_cut():
+    payload = {
+        "row_kind": "show",
+        "row_ids": [f"gd-1970-01-{n:03d}" for n in range(grids.GRID_ROW_CEILING + 5)],
+        "column_kind": "song",
+        "column_ids": [f"song-{n}" for n in range(grids.GRID_COLUMN_CEILING + 3)],
+    }
+    spec, rows_cut, columns_cut = grids.GridSpec.parse(payload)
+    assert (rows_cut, columns_cut) == (5, 3)
+    data = grids.GridData(spec=spec, rows=[], columns=[], cells={})
+    cut = grids.tool_payload(data, rows_cut=rows_cut, columns_cut=columns_cut)
+    assert (cut["rows_cut"], cut["columns_cut"]) == (5, 3)
+    assert "rows_cut" not in grids.tool_payload(data) and "columns_cut" not in grids.tool_payload(data)
+
+
 def test_unsupported_pair_is_rejected_by_from_json():
     assert grids.GridSpec.from_json({"row_kind": "venue", "row_ids": ["x"], "column_kind": "song", "column_ids": ["y"]}) is None
 
@@ -189,13 +204,12 @@ def test_show_by_song_segue_neighbours(csv_store):
     assert rotterdam.segue_into == "Sugar Magnolia"  # from the second pass
 
 
-def test_song_by_year_counts_and_setlist_coverage(csv_store):
+def test_song_by_year_counts_and_how_many_shows_have_a_setlist(csv_store):
     data = grids.build(csv_store, songs_by_year_spec())
     assert data.measure == "shows"
     assert data.cell(DARK_STAR, "year:1969").value == 67
     assert data.cell(DARK_STAR, "year:1976").state == "none"
     assert data.cell(PLAYING, "year:1972").value == 80
-    assert data.coverage_by_year[1969] == (149, 124)
     assert data.cell(DARK_STAR, "year:1969").of_shows == 124
 
 
@@ -211,7 +225,7 @@ def test_sqlite_matches_csv(csv_store, sqlite_store, spec_factory):
     left = grids.build(csv_store, spec_factory())
     right = grids.build(sqlite_store, spec_factory())
     assert left.to_compact() == right.to_compact()
-    assert dataclasses.asdict(left) == dataclasses.asdict(right)  # segues, lengths, tracks, setlists, suggestions, coverage
+    assert dataclasses.asdict(left) == dataclasses.asdict(right)  # segues, lengths, tracks, setlists, suggestions
 
 
 def test_tool_payload_order_and_spec(csv_store):
@@ -221,29 +235,14 @@ def test_tool_payload_order_and_spec(csv_store):
     assert payload["grid_id"] == grids.grid_id(europe_spec())
     assert grids.GridSpec.from_json(payload["spec"]) == europe_spec()
     assert "archive.org" not in str(payload)  # tape URLs stay out of the model's view
-    assert payload["coverage"]["lengths"]["release"] > 0
     assert list(payload) == [
         "grid_id", "rows_are", "columns_are", "measure", "on_the_page", "rows", "columns", "cells",
-        "coverage", "column_suggestions", "spec",
+        "column_suggestions", "spec",
     ]
 
 
-def test_tool_payload_counts_every_length_source():
-    store = _store(
-        [_perf("p1"), _perf("p2", position="2"), _perf("p3", song_id="s2", position="3")],
-        links=[_tape("p2", 600)],
-        releases=[{"performance_id": "p1", "duration_seconds": "300"}],
-    )
-    spec = grids.GridSpec("show", ("gd-1",), "song", ("s1", "s2"))
-    lengths = grids.tool_payload(grids.build(store, spec))["coverage"]["lengths"]
-    assert lengths == {"release": 0, "tape": 0, "mixed": 1, "none": 1}
 
 
-def test_tool_payload_lists_years_whose_setlists_are_incomplete(csv_store):
-    payload = grids.tool_payload(grids.build(csv_store, songs_by_year_spec()))
-    assert "lengths" not in payload["coverage"]
-    by_year = {entry["year"]: entry for entry in payload["coverage"]["setlists_by_year"]}
-    assert by_year[1969] == {"year": 1969, "shows_on_record": 149, "shows_with_setlist": 124}
 
 
 def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
@@ -259,12 +258,11 @@ def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
         ],
         title="One big jam a night",
         note="They traded it.",
-        coverage=None,
         follow_ups=[],
     )
     assert block.type == "grid"
     assert [row.id for row in block.rows][:2] == ["gd-1972-05-11", "gd-1972-05-07"]
-    assert len(block.rows) == 22  # rows the model left out follow in payload order
+    assert [row.id for row in block.rows] == ["gd-1972-05-11", "gd-1972-05-07"]  # only the rows the model chose
     assert block.open_rows == 1
     rotterdam = block.rows[0].cells[0]
     assert rotterdam.highlight and rotterdam.note == "The longest of the tour."
@@ -272,11 +270,21 @@ def test_grid_block_keeps_model_choices_and_store_facts(csv_store):
     assert block.max_value >= rotterdam.value
 
 
+def test_grid_block_draws_every_row_when_none_of_the_chosen_rows_resolve(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
+    for row_ids in (None, [], ["gd-nope"]):
+        block = grids.grid_block(
+            csv_store, payload, row_ids=row_ids, open_rows=None,
+            highlights=[], title=None, note=None, follow_ups=[],
+        )
+        assert [row.id for row in block.rows] == list(europe_spec().row_ids)
+
+
 def test_grid_block_none_for_bad_spec(csv_store):
     assert (
         grids.grid_block(
             csv_store, {"grid_id": "grid:x", "spec": {}}, row_ids=None, open_rows=None,
-            highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+            highlights=[], title=None, note=None, follow_ups=[],
         )
         is None
     )
@@ -287,7 +295,7 @@ def test_grid_block_ignores_an_open_rows_that_cannot_open_anything(csv_store, op
     payload = grids.tool_payload(grids.build(csv_store, europe_spec()))
     block = grids.grid_block(
         csv_store, payload, row_ids=None, open_rows=open_rows,
-        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        highlights=[], title=None, note=None, follow_ups=[],
     )
     assert block is not None and block.open_rows is None and len(block.rows) == 22
 
@@ -297,5 +305,180 @@ def test_grid_block_none_when_the_grid_id_does_not_match_the_spec(csv_store):
     mismatched = {**payload, "grid_id": "grid:000000000000"}
     assert grids.grid_block(
         csv_store, mismatched, row_ids=None, open_rows=None,
-        highlights=[], title=None, note=None, coverage=None, follow_ups=[],
+        highlights=[], title=None, note=None, follow_ups=[],
     ) is None
+
+
+# --- release × song and guest × year ------------------------------------------
+# Facts below were measured 2026-10-11 against data/canonical after the data
+# pass (#65): 36 Dick's Picks volumes, 909 of their 936 tracks named to a song,
+# Bruce Hornsby as one person id. They move when a data pass changes releases
+# or guest credits; re-measure rather than trusting them blindly.
+
+DP36 = "release-dicks-picks-volume-36-1972-09-21"
+DP16 = "release-dicks-picks-volume-16-1969-11-08"
+DP13 = "release-dicks-picks-volume-13-1981-05-06"
+SCARLET = "song-scarlet-begonias"
+HORNSBY = "person-bruce-hornsby"
+
+
+def releases_spec():
+    return grids.GridSpec("release", (DP36, DP16, DP13), "song", (DARK_STAR, PLAYING, SCARLET))
+
+
+def guests_spec():
+    return grids.GridSpec("guest", (HORNSBY, "person-ned-lagin"), "year", tuple(grids.year_id(y) for y in range(1970, 1996)))
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        ("Dick’s Picks, Volume 36: The Spectrum, Philadelphia, PA 9/21/72", ("Dick’s Picks 36", "The Spectrum, Philadelphia, PA 9/21/72")),
+        ("Dave's Picks, Volume 59 (Boston Garden, Boston, MA • 9/26/91)", ("Dave's Picks 59", "Boston Garden, Boston, MA • 9/26/91")),
+        ("History of the Grateful Dead, Volume 1: Bear’s Choice", ("History of the Grateful Dead 1", "Bear’s Choice")),
+        ("Europe ’72, Vol. 01: Wembley Empire Pool, London, England (4/7/1972)", ("Europe ’72, Vol. 01", "Wembley Empire Pool, London, England (4/7/1972)")),
+        ("Europe ’72, Volume 2", ("Europe ’72, Volume 2", None)),
+        ("Road Trips, Volume 1, No. 1: Fall ’79", ("Road Trips, Volume 1, No. 1", "Fall ’79")),
+        ("Cornell 5/8/77", ("Cornell 5/8/77", None)),
+        ("Fillmore Auditorium, San Francisco, CA (7/3/66)", ("Fillmore Auditorium, San Francisco, CA (7/3/66)", None)),
+    ],
+)
+def test_release_label_shortens_the_title_without_inventing_text(title, expected):
+    assert grids.release_label(title) == expected
+
+
+def test_release_by_song_cells(csv_store):
+    data = grids.build(csv_store, releases_spec())
+    assert data.measure == "minutes"
+    assert [row.id for row in data.rows] == [DP36, DP16, DP13]
+    assert (data.row(DP36).label, data.row(DP36).sub) == ("Dick’s Picks 36", "The Spectrum, Philadelphia, PA 9/21/72")
+    spectrum = data.cell(DP36, DARK_STAR)  # one 2,228-second track
+    assert (spectrum.state, spectrum.value, spectrum.passes, spectrum.length_source) == ("value", 37, 1, "release")
+    assert spectrum.performance_ids == ("gd-1972-09-21-dark-star-2-5",)
+    fillmore = data.cell(DP16, DARK_STAR)  # three tracks: 850 + 61 + 185 seconds
+    assert (fillmore.value, fillmore.passes) == (18, 3)
+    assert data.cell(DP36, SCARLET).state == "none"
+    # Nassau '81 has Scarlet only inside "Saint of Circumstance / Scarlet Begonias > Fire on the Mountain",
+    # a track with no song named: the blank stays honest as unknown, not as absent.
+    assert data.cell(DP13, SCARLET).state == "unknown"
+    assert data.cell(DP13, DARK_STAR).state == "none"
+    assert data.row(DP36).setlist[0] == {"song_id": "song-promised-land", "title": "Promised Land", "set_label": "Disc 1", "segue": False}
+    dark_star_entry = next(entry for entry in data.row(DP36).setlist if entry["song_id"] == DARK_STAR)
+    assert dark_star_entry["title"] == "Dark Star" and dark_star_entry["segue"] is True
+    assert {"id": "song-the-other-one", "label": "The Other One", "rows_with": 3} == data.suggestions[0]
+
+
+def test_release_track_with_a_tape_is_playable_and_keeps_the_release_length():
+    store = TableStore(
+        official_releases=[{"release_id": "r1", "title": "Picks, Volume 1: Hall 1/1/70"}],
+        official_release_tracks=[
+            {"release_id": "r1", "track_number": "1", "song_id": "s1", "performance_id": "p1", "track_title": "One >", "duration_seconds": "600", "notes": ""},
+            {"release_id": "r1", "track_number": "2", "song_id": "s1", "performance_id": "", "track_title": "One", "duration_seconds": "", "notes": ""},
+            {"release_id": "r1", "track_number": "3", "song_id": "", "performance_id": "", "track_title": "Twofold / Two Jam", "duration_seconds": "300", "notes": ""},
+        ],
+        songs=[{"song_id": "s1", "title": "One"}, {"song_id": "s2", "title": "Two"}, {"song_id": "s3", "title": "Three"}],
+        performances=[_perf("p1")],
+        performance_links=[_tape("p1", 640)],
+    )
+    data = grids.build(store, grids.GridSpec("release", ("r1",), "song", ("s1", "s2", "s3")))
+    one = data.cell("r1", "s1")
+    assert (one.state, one.value, one.passes, one.length_source) == ("value", 10, 2, "release")  # the record's 600 s, not the tape's 640
+    assert one.timed == 1  # the second track has no length, so 10 minutes is one track's length, not the whole
+    assert [(performance_id, set_label, track.duration_seconds) for performance_id, set_label, track in one.tracks] == [("p1", "Set 1", 640)]
+    assert data.cell("r1", "s2").state == "unknown"  # "Two" as a word in an unnamed track, not inside "Twofold"
+    assert data.cell("r1", "s3").state == "none"
+    assert data.row("r1").label == "Picks 1"
+
+
+def test_release_cell_with_no_timed_track_has_no_length():
+    store = TableStore(
+        official_releases=[{"release_id": "r1", "title": "Record"}],
+        official_release_tracks=[{"release_id": "r1", "track_number": "1", "song_id": "s1", "track_title": "One", "duration_seconds": ""}],
+        songs=[{"song_id": "s1", "title": "One"}],
+    )
+    cell = grids.build(store, grids.GridSpec("release", ("r1",), "song", ("s1",))).cell("r1", "s1")
+    assert (cell.state, cell.value, cell.passes, cell.length_source, cell.timed) == ("no_length", None, 1, None, 0)
+
+
+def test_guest_by_year_counts_shows_sat_in(csv_store):
+    data = grids.build(csv_store, guests_spec())
+    assert data.measure == "shows"
+    hornsby = data.row(HORNSBY)
+    assert hornsby.label == "Bruce Hornsby"
+    assert hornsby.total == 16
+    assert data.cell(HORNSBY, "year:1989").value == 3
+    assert data.cell(HORNSBY, "year:1991").state == "none"
+    assert data.cell("person-ned-lagin", "year:1970").state == "value"
+    assert data.suggestions == []
+
+
+def test_tool_payload_names_a_record_row_with_its_sub_line(csv_store):
+    payload = grids.tool_payload(grids.build(csv_store, releases_spec()))
+    assert payload["rows_are"] == "release"
+    assert "coverage" not in payload
+    assert payload["rows"][0]["sub"] == "The Spectrum, Philadelphia, PA 9/21/72"
+
+
+def test_grid_block_carries_a_release_tracklist_and_guest_rows(csv_store):
+    block = grids.grid_block(
+        csv_store, grids.tool_payload(grids.build(csv_store, releases_spec())), row_ids=None, open_rows=None,
+        highlights=[], title=None, note=None, follow_ups=[],
+    )
+    assert block.row_kind == "release" and block.measure == "minutes"
+    assert block.rows[0].setlist[0].title == "Promised Land"
+    assert block.rows[0].cells[0].length_source == "release"
+    guests = grids.grid_block(
+        csv_store, grids.tool_payload(grids.build(csv_store, guests_spec())), row_ids=None, open_rows=None,
+        highlights=[], title=None, note=None, follow_ups=[],
+    )
+    assert guests.row_kind == "guest" and guests.measure == "shows" and guests.rows[0].label == "Bruce Hornsby"
+
+
+@pytest.mark.parametrize("spec_factory", [releases_spec, guests_spec])
+def test_sqlite_matches_csv_for_releases_and_guests(csv_store, sqlite_store, spec_factory):
+    left = grids.build(csv_store, spec_factory())
+    right = grids.build(sqlite_store, spec_factory())
+    assert dataclasses.asdict(left) == dataclasses.asdict(right)
+
+
+@pytest.mark.parametrize("query", ["Dick's Picks 36", "dick’s picks, volume 36", DP36, "Dick’s Picks, Volume 36: The Spectrum, Philadelphia, PA 9/21/72"])
+def test_resolve_release_takes_ids_titles_and_grid_labels(csv_store, sqlite_store, query):
+    assert grids.resolve_release(csv_store, query)["release_id"] == DP36
+    assert grids.resolve_release(sqlite_store, query)["release_id"] == DP36
+
+
+def test_resolve_release_leaves_an_ambiguous_phrase_unresolved(csv_store):
+    assert grids.resolve_release(csv_store, "Dick's Picks") is None
+
+
+def test_a_night_cell_counts_its_timed_passes():
+    store = _store([_perf("p1"), _perf("p2", position="2")], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    cell = _one_cell(store)
+    assert (cell.passes, cell.timed) == (2, 1)
+
+
+
+
+def test_block_kinds_match_the_supported_pairs():
+    from typing import get_args
+
+    from deadbot.experience import GridBlock, GridSpecModel
+
+    rows = {row for row, _ in grids.SUPPORTED_PAIRS}
+    columns = {column for _, column in grids.SUPPORTED_PAIRS}
+    measures = set(grids.SUPPORTED_PAIRS.values())
+    for model in (GridBlock, GridSpecModel):
+        assert set(get_args(model.model_fields["row_kind"].annotation)) == rows
+        assert set(get_args(model.model_fields["column_kind"].annotation)) == columns
+    assert set(get_args(GridBlock.model_fields["measure"].annotation)) == measures
+
+
+@pytest.mark.parametrize("query", ["Hamza El Din", "hamza el-din", "person-hamza-el-din", "Bruce Hornsby"])
+def test_resolve_guest_folds_case_hyphens_and_spaces(csv_store, sqlite_store, query):
+    left = grids.resolve_guest(csv_store, query)
+    assert left is not None and left == grids.resolve_guest(sqlite_store, query)
+
+
+def test_closest_guests_names_people_near_a_miss(csv_store):
+    assert grids.resolve_guest(csv_store, "Bruce Hornsbee") is None
+    assert {"person_id": "person-bruce-hornsby", "name": "Bruce Hornsby"} in grids.closest_guests(csv_store, "Bruce Hornsbee")

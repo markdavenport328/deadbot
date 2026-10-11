@@ -632,8 +632,9 @@ class PostgresCanonicalStore(CanonicalStore):
             row.pop("_match_rank", None)
         return rows
 
-    # resolve_song, show_candidates, resolve_show, and resolve_equipment are
-    # inherited: they compose the optimized ``one`` and ``matching_rows`` calls.
+    # resolve_song, show_candidates, resolve_show, resolve_person and
+    # resolve_equipment are inherited: they compose the optimized ``one`` and
+    # ``matching_rows`` calls.
 
     def resources_for(self, relation_table: str, target_key: str, target_id: str) -> list[dict[str, str]]:
         relationships = self._filtered_rows(relation_table, **{target_key: target_id})

@@ -244,6 +244,8 @@ def test_prompt_teaches_grid_and_get_grid():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "get_grid" in prompt
     assert "a grid in finish_response" in prompt
+    assert "Draw the rows that tell the story in reading order, fold the rest behind Show all" in prompt
+    assert "setlist_coverage" not in prompt
 
 
 _SEEN_KWARGS: list[dict] = []

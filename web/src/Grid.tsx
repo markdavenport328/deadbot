@@ -5,7 +5,7 @@
 import { Fragment, useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { CardHeading, MoreAbout } from "./components";
 import type { FollowUp } from "./ask-request";
-import { GridFacts, sentence } from "./GridFacts";
+import { cellTitle, GridFacts, recordName, ROW_WORDS, sentence } from "./GridFacts";
 import { columnSummary, GridReshapeError, reshapeGrid, rowParts, rowShowDate, sortRows, type GridChange, type GridRow, type Selection } from "./grid-actions";
 import { toTrack } from "./listen-control";
 import { usePlayer } from "./player";
@@ -37,8 +37,12 @@ function canHover(): boolean {
 function columnSentence(block: GridBlock, columnIndex: number): string {
   const { played, longest } = columnSummary(block, columnIndex);
   const total = block.rows.length;
-  const isShow = block.row_kind === "show";
-  const first = isShow ? `Played on ${played} of ${total} nights.` : `${played} of the ${total} songs were played that year.`;
+  const first = {
+    show: `Played on ${played} of ${total} nights.`,
+    song: `${played} of the ${total} songs were played that year.`,
+    release: `On ${played} of ${total} records.`,
+    guest: `${played} of the ${total} guests sat in that year.`,
+  }[block.row_kind];
   if (!longest) return first;
   const unit = block.measure === "minutes" ? "minutes" : "shows";
   const where = rowParts({ label: longest.rowLabel } as GridRow).date;
@@ -52,9 +56,10 @@ function askAbout(block: GridBlock, selection: Selection): string | null {
     const col = block.columns[column];
     if (!cell || !col || (cell.state !== "value" && cell.state !== "no_length")) return [];
     const { date, city } = rowParts(block.rows[row]);
-    return block.row_kind === "show"
-      ? [{ subject: `the ${col.label} from ${date}`, place: city ? ` in ${city}` : "" }]
-      : [{ subject: `${block.rows[row].label} in ${col.sub ?? col.label}`, place: "" }];
+    if (block.row_kind === "show") return [{ subject: `the ${col.label} from ${date}`, place: city ? ` in ${city}` : "" }];
+    if (block.row_kind === "release") return [{ subject: `the ${col.label} on ${recordName(block.rows[row], "paren")}`, place: "" }];
+    if (block.row_kind === "guest") return [{ subject: `${block.rows[row].label} sitting in during ${col.sub ?? col.label}`, place: "" }];
+    return [{ subject: `${block.rows[row].label} in ${col.sub ?? col.label}`, place: "" }];
   });
   if (named.length === 0) return null;
   if (named.length === 1) return `Tell me about ${named[0].subject}${named[0].place}.`;
@@ -69,10 +74,7 @@ function clickedFocus(block: GridBlock, selection: Selection): AskFocus | undefi
     const cell = source?.cells?.[column];
     const col = block.columns[column];
     if (!cell || !col || (cell.state !== "value" && cell.state !== "no_length")) return [];
-    const isShow = block.row_kind === "show";
-    const { date } = rowParts(source);
-    const title = `${isShow ? col.label : source.label} · ${isShow ? date : (col.sub ?? col.label)}`;
-    return [{ source, col, cell, title, fact: sentence(block, cell, col.sub ?? col.label) }];
+    return [{ source, col, cell, title: cellTitle(block, source, col), fact: sentence(block, cell, col.sub ?? col.label) }];
   });
   if (cells.length === 0) return undefined;
   const ids = cells.flatMap(({ source, col, cell }) => [
@@ -135,7 +137,8 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
     [open, canFold, ordered, block.open_rows],
   );
   const indexOf = useMemo(() => new Map(block.rows.map((row, index) => [row, index])), [block.rows]);
-  const rowsLabel = block.row_kind === "show" ? "nights" : "songs";
+  const words = ROW_WORDS[block.row_kind];
+  const rowsLabel = words.many;
   const columnsLabel = block.column_kind === "year" ? "years" : "songs";
   const hasHighlight = block.rows.some((row) => (row.cells ?? []).some((cell) => cell.highlight));
   const lastColumn = block.columns.length - 1;
@@ -347,14 +350,14 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
           <span className="k">Grid</span>
           <span className="grid-fact">
             {block.rows.length} {rowsLabel} · {block.columns.length} {columnsLabel} ·{" "}
-            {block.measure === "minutes" ? "minutes played" : "shows per year"}
+            {words.measure}
           </span>
         </div>
         {block.title && <CardHeading className="grid-headline">{block.title}</CardHeading>}
         {block.note && <p className="grid-note">{block.note}</p>}
         {changed && (
           <div className="grid-reshaped">
-            {(block.title || block.note || block.coverage) && <p className="grid-original">Written for the original grid</p>}
+            {(block.title || block.note) && <p className="grid-original">Written for the original grid</p>}
             {onFollowUp && (
               <button type="button" className="ask-chip" disabled={working} onClick={() => onFollowUp("What stands out in this grid?", gridFocus(block))}>
                 Ask Deadbot about this grid
@@ -465,7 +468,7 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                           <button
                             type="button"
                             className="grid-row-toggle"
-                            aria-label={`Open the setlist for ${rowParts(row).date}`}
+                            aria-label={block.row_kind === "release" ? `Open the tracks of ${row.label}` : `Open the setlist for ${rowParts(row).date}`}
                             aria-expanded={setlistOpen}
                             onClick={() => toggleSetlist(row.id)}
                           >
@@ -484,8 +487,7 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                         const key = `${rowIndex}:${index}`;
                         const isSelected = selected.has(key);
                         const classes = [
-                          cell.state === "none" ? "is-none" : "",
-                          cell.state === "unknown" ? "is-unknown" : "",
+                          cell.state === "none" || cell.state === "unknown" ? "is-none" : "",
                           cell.state === "no_length" ? "is-dot" : "",
                           fill.light ? "is-light" : "",
                           cell.highlight && (cell.state === "value" || cell.state === "no_length") ? "is-highlight" : "",
@@ -493,13 +495,11 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                           isSelected && (cell.tracks ?? []).length > 0 ? "is-playable" : "",
                         ].filter(Boolean);
                         const label =
-                          cell.state === "none"
-                            ? `${where}: not played`
-                            : cell.state === "unknown"
-                              ? `${where}: not matched yet`
-                              : cell.state === "no_length"
-                                ? `${where}: played, length not known${noted}`
-                                : `${where}: ${cell.value} ${UNIT[block.measure]}${noted}`;
+                          cell.state === "none" || cell.state === "unknown"
+                            ? `${where}: ${words.none}`
+                            : cell.state === "no_length"
+                              ? `${where}: played${noted}`
+                              : `${where}: ${cell.value} ${UNIT[block.measure]}${noted}`;
                         const target: Tip = { kind: "cell", row: rowIndex, column: index };
                         return (
                           <td
@@ -525,7 +525,6 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                             onMouseEnter={(event) => canHover() && showTip(target, event.currentTarget, 0)}
                             onMouseLeave={hideTip}
                           >
-                            {cell.state === "unknown" && "?"}
                             {cell.state === "value" && (
                               <>
                                 {cell.value}
@@ -539,7 +538,11 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
                     {setlistOpen && (
                       <tr className="grid-setlist-row">
                         <td role="cell" colSpan={block.columns.length + 1}>
-                          <Setlist row={row} columnIds={block.column_kind === "song" ? new Set(block.columns.map((column) => column.id)) : null} />
+                          <Setlist
+                            row={row}
+                            label={block.row_kind === "release" ? "Tracks" : "Setlist"}
+                            columnIds={block.column_kind === "song" ? new Set(block.columns.map((column) => column.id)) : null}
+                          />
                         </td>
                       </tr>
                     )}
@@ -599,20 +602,15 @@ export function Grid({ block: original, onFollowUp }: { block: GridBlock; onFoll
         <DetailBar block={block} selection={selection} onClear={() => setSelection([])} onFollowUp={onFollowUp} />
       )}
       <GridLegend block={block} hasHighlight={hasHighlight} />
-      {block.coverage && (
-        <aside className="grid-aside">
-          <span className="k">Coverage</span>
-          <p>{block.coverage}</p>
-        </aside>
-      )}
       {onFollowUp && <MoreAbout topics={block.follow_ups} onFollowUp={onFollowUp} />}
     </article>
   );
 }
 
-// A night's songs in order: the grid's own songs in cream, the rest muted,
-// each set's label as a small break, `>` after a segue.
-function Setlist({ row, columnIds }: { row: GridRow; columnIds: ReadonlySet<string> | null }) {
+// A night's songs (or a record's tracks) in order: the grid's own songs in
+// cream, the rest muted, each set's or disc's label as a small break, `>`
+// after a segue.
+function Setlist({ row, label, columnIds }: { row: GridRow; label: string; columnIds: ReadonlySet<string> | null }) {
   const items: ReactNode[] = [];
   let currentSet: string | null = null;
   for (const [index, entry] of (row.setlist ?? []).entries()) {
@@ -629,7 +627,7 @@ function Setlist({ row, columnIds }: { row: GridRow; columnIds: ReadonlySet<stri
   }
   return (
     <div className="grid-setlist">
-      <ul aria-label="Setlist">{items}</ul>
+      <ul aria-label={label}>{items}</ul>
     </div>
   );
 }
@@ -665,7 +663,11 @@ function DetailBar({
   const queue = playable.flatMap(({ row, column }) => {
     const source = block.rows[row];
     return (source.cells?.[column]?.tracks ?? []).map((track) =>
-      toTrack(track, { showDate: rowShowDate(source), venueName: source.sub }),
+      // A record's row can span nights, so the night comes from the performance.
+      toTrack(track, {
+        showDate: track.performance_id.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? rowShowDate(source),
+        venueName: block.row_kind === "show" ? source.sub : null,
+      }),
     );
   });
   // The player is on this selection only when its queue is this queue, same
@@ -724,24 +726,12 @@ function GridLegend({ block, hasHighlight }: { block: GridBlock; hasHighlight: b
     <div className="grid-legend">
       <span>
         <i className="grid-swatch ramp" />
-        {block.measure === "minutes" ? "minutes" : "shows that year"}
+        {ROW_WORDS[block.row_kind].legend}
       </span>
-      {states.has("none") && (
+      {(states.has("none") || states.has("unknown")) && (
         <span>
           <i className="grid-swatch dash" />
-          not played
-        </span>
-      )}
-      {states.has("no_length") && (
-        <span>
-          <i className="grid-swatch dot" />
-          played, length not known
-        </span>
-      )}
-      {states.has("unknown") && (
-        <span>
-          <i className="grid-swatch q">?</i>
-          not matched yet
+          {ROW_WORDS[block.row_kind].none}
         </span>
       )}
       {hasHighlight && (

@@ -581,23 +581,20 @@ class GridRef(_Ref):
     facts; clicking plays it or opens the night.
 
     The place for how two lists meet: which nights carried which songs, how a
-    song's year-by-year life compares with another's.
+    song's year-by-year life compares with another's, what each record in a
+    series holds, which years a guest sat in.
     """
 
     type: Literal["grid"]
     grid_id: str = Field(description="The grid_id from a get_grid result.")
     row_ids: list[str] | None = Field(
         default=None,
-        description="Rows to put first, in reading order. Rows you leave out follow in the result's order.",
+        description="The rows to draw, in reading order. Leave it out to draw every row in the result's order.",
     )
     open_rows: int | None = Field(default=None, description="How many rows show before Show all, when the rest can wait.")
     highlights: list[GridHighlightRef] = Field(default_factory=list, description="Cells to point at, by row and column id.")
     title: str | None = Field(default=None, description="What the visitor should see across the grid, in a few words.")
     note: str | None = None
-    coverage: str | None = Field(
-        default=None,
-        description="What the visitor should know about gaps in these cells, when it changes how they read them.",
-    )
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
@@ -1396,7 +1393,6 @@ def _resolve_reference(
             highlights=[h.model_dump() for h in item.highlights],
             title=item.title,
             note=item.note,
-            coverage=item.coverage,
             follow_ups=composition._clean_follow_ups(item.follow_ups),
         )
         return (block, []) if block else (None, [])
