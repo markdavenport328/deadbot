@@ -137,7 +137,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const current = stateRef.current;
       if (current.index >= 0 && current.queue[current.index]?.id === track.id) {
         // The requested track is already loaded: resume rather than
-        // reassigning src, which would restart it from zero.
+        // reassigning src, which would restart it from zero. A different
+        // queue around the same track still replaces the one that follows it.
+        if (queue && queue.length > 0 && !(queue.length === current.queue.length && queue.every((item, i) => item.id === current.queue[i].id))) {
+          const index = queue.findIndex((item) => item.id === track.id);
+          if (index >= 0) setState((previous) => ({ ...previous, queue, index }));
+        }
         audio().play().catch(onPlayRejected);
         return;
       }

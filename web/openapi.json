@@ -530,6 +530,50 @@
         "title": "ArrangementSearchItem",
         "type": "object"
       },
+      "AskFocus": {
+        "additionalProperties": false,
+        "description": "What the visitor was pointing at when they asked: the clicked cell or grid.\n\nThe browser reports it with the question; the server hands it to the model\nas a note and lets the IDs it names join the turn's grounded IDs.",
+        "properties": {
+          "block_id": {
+            "maxLength": 200,
+            "title": "Block Id",
+            "type": "string"
+          },
+          "block_type": {
+            "const": "grid",
+            "title": "Block Type",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Facts",
+            "type": "array"
+          },
+          "ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 40,
+            "title": "Ids",
+            "type": "array"
+          },
+          "label": {
+            "maxLength": 300,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "block_type",
+          "block_id"
+        ],
+        "title": "AskFocus",
+        "type": "object"
+      },
       "ComparisonStripItem": {
         "additionalProperties": false,
         "properties": {
@@ -1458,6 +1502,16 @@
             "title": "Conversation",
             "type": "array"
           },
+          "focus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AskFocus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "question": {
             "maxLength": 2000,
             "minLength": 1,
@@ -1506,6 +1560,7 @@
                   "equipment_list": "#/components/schemas/EquipmentListBlock",
                   "era_unit": "#/components/schemas/EraUnitBlock",
                   "gap_state": "#/components/schemas/GapStateBlock",
+                  "grid": "#/components/schemas/GridBlock",
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "listening_hero": "#/components/schemas/ListeningHeroBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
@@ -1576,6 +1631,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/VersionStripBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/GridBlock"
                 },
                 {
                   "$ref": "#/components/schemas/ProvenanceNoteBlock"
@@ -1705,6 +1763,519 @@
           "message"
         ],
         "title": "GapStateBlock",
+        "type": "object"
+      },
+      "GridBlock": {
+        "additionalProperties": false,
+        "description": "Two lists and where each pair meets. The model chose the lists, the\norder, what opens first, the cells to point at and the words; the server\nfilled every cell, track, date and venue from the library.",
+        "properties": {
+          "column_kind": {
+            "enum": [
+              "year",
+              "song"
+            ],
+            "title": "Column Kind",
+            "type": "string"
+          },
+          "columns": {
+            "items": {
+              "$ref": "#/components/schemas/GridColumn"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Columns",
+            "type": "array"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "follow_ups": {
+            "items": {
+              "$ref": "#/components/schemas/FollowUpTopic"
+            },
+            "maxItems": 1000,
+            "title": "Follow Ups",
+            "type": "array"
+          },
+          "grid_id": {
+            "title": "Grid Id",
+            "type": "string"
+          },
+          "max_value": {
+            "minimum": 0.0,
+            "title": "Max Value",
+            "type": "integer"
+          },
+          "measure": {
+            "enum": [
+              "shows",
+              "minutes"
+            ],
+            "title": "Measure",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "open_rows": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Rows"
+          },
+          "row_kind": {
+            "enum": [
+              "song",
+              "show"
+            ],
+            "title": "Row Kind",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/GridRow"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/GridSpecModel"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/GridSuggestion"
+            },
+            "maxItems": 1000,
+            "title": "Suggestions",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "grid",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "grid_id",
+          "row_kind",
+          "column_kind",
+          "measure",
+          "columns",
+          "rows",
+          "max_value",
+          "spec"
+        ],
+        "title": "GridBlock",
+        "type": "object"
+      },
+      "GridCell": {
+        "additionalProperties": false,
+        "description": "One meeting of a row and a column, every fact from the store.",
+        "properties": {
+          "highlight": {
+            "default": false,
+            "title": "Highlight",
+            "type": "boolean"
+          },
+          "length_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "release",
+                  "tape",
+                  "mixed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length Source"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "of_shows": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Of Shows"
+          },
+          "passes": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Passes",
+            "type": "integer"
+          },
+          "segue_from": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segue From"
+          },
+          "segue_into": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Segue Into"
+          },
+          "set_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Set Label"
+          },
+          "state": {
+            "enum": [
+              "value",
+              "none",
+              "no_length",
+              "unknown"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "maxItems": 1000,
+            "title": "Tracks",
+            "type": "array"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "state"
+        ],
+        "title": "GridCell",
+        "type": "object"
+      },
+      "GridColumn": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "sub": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "GridColumn",
+        "type": "object"
+      },
+      "GridRequest": {
+        "additionalProperties": false,
+        "description": "A visitor's reshape of a grid: the lists as they now stand, plus the\nmodel's headline, note and coverage, which the server hands back unchanged.",
+        "properties": {
+          "coverage": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "open_rows": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Rows"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/GridSpecModel"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "spec"
+        ],
+        "title": "GridRequest",
+        "type": "object"
+      },
+      "GridRow": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/GridCell"
+            },
+            "maxItems": 1000,
+            "title": "Cells",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "setlist": {
+            "items": {
+              "$ref": "#/components/schemas/GridSetlistEntry"
+            },
+            "maxItems": 1000,
+            "title": "Setlist",
+            "type": "array"
+          },
+          "sub": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "GridRow",
+        "type": "object"
+      },
+      "GridSetlistEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "segue": {
+            "title": "Segue",
+            "type": "boolean"
+          },
+          "set_label": {
+            "title": "Set Label",
+            "type": "string"
+          },
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title",
+          "set_label",
+          "segue"
+        ],
+        "title": "GridSetlistEntry",
+        "type": "object"
+      },
+      "GridSpecModel": {
+        "additionalProperties": false,
+        "properties": {
+          "column_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Column Ids",
+            "type": "array"
+          },
+          "column_kind": {
+            "enum": [
+              "year",
+              "song"
+            ],
+            "title": "Column Kind",
+            "type": "string"
+          },
+          "row_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Row Ids",
+            "type": "array"
+          },
+          "row_kind": {
+            "enum": [
+              "song",
+              "show"
+            ],
+            "title": "Row Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "row_kind",
+          "row_ids",
+          "column_kind",
+          "column_ids"
+        ],
+        "title": "GridSpecModel",
+        "type": "object"
+      },
+      "GridSuggestion": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "rows_with": {
+            "minimum": 0.0,
+            "title": "Rows With",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "rows_with"
+        ],
+        "title": "GridSuggestion",
         "type": "object"
       },
       "GuestAppearanceItem": {
@@ -4217,6 +4788,45 @@
           }
         },
         "summary": "Experience Stream"
+      }
+    },
+    "/api/grid": {
+      "post": {
+        "description": "Rebuild a grid from the library after the visitor adds or removes a list.\n\nThe model's picks (highlights and chips) belong to the grid it\nwrote, so they are not part of the rebuilt block.",
+        "operationId": "reshape_grid_api_grid_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GridRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GridBlock"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reshape Grid"
       }
     },
     "/api/health": {

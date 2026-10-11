@@ -19,12 +19,12 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import composition, finish
+from deadbot import composition, finish, grids
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import ExperienceRequest, ExperienceResponse
-from deadbot.finish import FINISH_TOOL_NAME, build_experience_response
+from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest
+from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
 from deadbot.postgres import query_cache_scope
@@ -42,6 +42,67 @@ metrics_logger.propagate = False
 if not metrics_logger.handlers:
     metrics_logger.addHandler(logging.StreamHandler())
 
+# Ceilings far above what a model writes; a longer text is cut and logged, never refused.
+GRID_TITLE_CEILING = 1_000
+GRID_TEXT_CEILING = 10_000
+
+
+def _trim_text(text: str | None, ceiling: int, what: str) -> str | None:
+    if text is not None and len(text) > ceiling:
+        logger.warning("Truncated a %d-character %s to the ceiling of %d", len(text), what, ceiling)
+        return text[:ceiling]
+    return text
+
+
+# The tables a clicked cell's IDs can name, tried in order.
+FOCUS_TABLES = ("shows", "performances", "songs")
+
+
+def focus_ids(store: Any, focus: AskFocus | None) -> set[str]:
+    """The IDs a visitor's click named that the library holds.
+
+    These join the turn's grounded IDs, so the model can place a card for the
+    clicked night without looking it up again. An ID the library does not hold
+    is dropped; hydration still reads every fact from the store.
+    """
+
+    found: set[str] = set()
+    for entity_id in focus.ids if focus else []:
+        for table in FOCUS_TABLES:
+            try:
+                if store.one(table, entity_id):
+                    found.add(entity_id)
+                    break
+            except Exception:
+                logger.debug("Could not look up focus id %r in %s", entity_id, table, exc_info=True)
+        else:
+            logger.debug("Dropped focus id %r: the library holds no such record", entity_id)
+    return found
+
+
+def _one_line(text: str) -> str:
+    """The browser's words on a single line, so a label or fact cannot add lines to the note."""
+
+    return " ".join(str(text).split())
+
+
+def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
+    """What was clicked, written for the model; it decides whether to research further.
+
+    The label and facts are what the page showed, as the browser reported
+    them; only the library IDs are checked against the store.
+    """
+
+    lines = [f'The visitor asked from a grid on the page ("{_one_line(focus.label)}").']
+    facts = [fact for fact in (_one_line(fact) for fact in focus.facts) if fact]
+    if facts:
+        lines.append(f"Facts as the page showed them: {' '.join(facts)}")
+    ids = [entity_id for entity_id in focus.ids if entity_id in known_ids]
+    if ids:
+        lines.append(f"Library IDs: {', '.join(ids)}")
+    return "\n".join(lines)
+
+
 UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
 
 
@@ -56,6 +117,7 @@ class _Invocation:
     thread_id: str
     invocation_thread_id: str
     messages: list[Any]
+    focus_ids: frozenset[str] = frozenset()
 
 
 def create_app(
@@ -90,6 +152,7 @@ def create_app(
     # is not a real cross-instance limit. A shared store (e.g. Redis) would be
     # needed for that; deferred as a later operational decision.
     app.state.rate_limit_hits = {}
+    app.state.grid_rate_limit_hits = {}
     app.state.response_cache = ResponseCache(
         store,
         enabled=settings.response_cache,
@@ -102,14 +165,15 @@ def create_app(
             return forwarded_for.split(",")[0].strip()
         return http_request.client.host if http_request.client else "unknown"
 
-    def _enforce_rate_limit(http_request: Request) -> None:
-        limit = app.state.settings.rate_limit_per_minute
+    def _enforce_rate_limit(http_request: Request, *, grid: bool = False) -> None:
+        limit = app.state.settings.grid_rate_limit_per_minute if grid else app.state.settings.rate_limit_per_minute
         if limit <= 0:
             return
         now = time.monotonic()
         window_start = now - 60
         client_ip = _client_ip(http_request)
-        hits = app.state.rate_limit_hits.setdefault(client_ip, deque())
+        buckets = app.state.grid_rate_limit_hits if grid else app.state.rate_limit_hits
+        hits = buckets.setdefault(client_ip, deque())
         while hits and hits[0] <= window_start:
             hits.popleft()
         if len(hits) >= limit:
@@ -154,12 +218,22 @@ def create_app(
             for turn in conversation
         ]
         messages.append(HumanMessage(content=request.question.strip()))
+        grounded_focus = focus_ids(app.state.store, request.focus)
+        if request.focus is not None:
+            # A note of its own after the question: the visitor's transcript
+            # holds only what they typed, and the model reads what they clicked.
+            messages.append(HumanMessage(content=focus_note(request.focus, grounded_focus), name=FOCUS_MESSAGE_NAME))
         # Vercel may route successive requests to different function instances.
         # When the browser supplies its visible transcript, use an isolated
         # invocation thread so the transcript is authoritative and is not
         # duplicated with a warm instance's MemorySaver checkpoint.
         invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
-        return _Invocation(thread_id=thread_id, invocation_thread_id=invocation_thread_id, messages=messages)
+        return _Invocation(
+            thread_id=thread_id,
+            invocation_thread_id=invocation_thread_id,
+            messages=messages,
+            focus_ids=frozenset(grounded_focus),
+        )
 
     def _release(invocation: _Invocation) -> None:
         # The per-request thread is throwaway: it exists only so this
@@ -178,17 +252,20 @@ def create_app(
             thread_id=invocation.thread_id,
             messages=messages,
             store=app.state.store,
+            extra_ids=invocation.focus_ids,
         )
 
     def _cached(request: ExperienceRequest, invocation: _Invocation) -> ExperienceResponse | None:
         """A stored answer for a fresh (no-conversation) repeat of a question."""
 
-        if request.conversation:
+        # A focused ask depends on what was clicked, which the cache key (the
+        # question text) does not capture.
+        if request.conversation or request.focus is not None:
             return None
         return app.state.response_cache.lookup(request.question, thread_id=invocation.thread_id)
 
     def _remember(request: ExperienceRequest, response: ExperienceResponse) -> None:
-        if not request.conversation:
+        if not request.conversation and request.focus is None:
             app.state.response_cache.remember(request.question, response)
 
     @app.post("/api/experience", response_model=ExperienceResponse)
@@ -291,7 +368,7 @@ def create_app(
                             try:
                                 # Research is done by the time the plan starts; ground once.
                                 payloads = composition._tool_payloads(composition._latest_turn(messages))
-                                grounded = finish.grounded_context(payloads)
+                                grounded = finish.grounded_context(payloads, invocation.focus_ids)
                                 plan_streamer = PlanStreamer(
                                     lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0],
                                     grounded_urls=grounded.urls,
@@ -364,6 +441,34 @@ def create_app(
             media_type="application/x-ndjson",
             headers={"Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no"},
         )
+
+    @app.post("/api/grid", response_model=GridBlock)
+    def reshape_grid(request: GridRequest, http_request: Request) -> GridBlock:
+        """Rebuild a grid from the library after the visitor adds or removes a list.
+
+        The model's picks (highlights and chips) belong to the grid it
+        wrote, so they are not part of the rebuilt block.
+        """
+
+        _enforce_rate_limit(http_request, grid=True)
+        spec = grids.GridSpec.from_json(request.spec.model_dump())
+        if spec is None:
+            raise HTTPException(status_code=422, detail="That pair of lists is not one the library can draw.")
+        block = grids.grid_block(
+            app.state.store,
+            # grid_block builds the data itself; it needs only the spec and its id.
+            {"spec": spec.to_json(), "grid_id": grids.grid_id(spec)},
+            row_ids=None,
+            open_rows=request.open_rows,
+            highlights=[],
+            title=_trim_text(request.title, GRID_TITLE_CEILING, "grid title"),
+            note=_trim_text(request.note, GRID_TEXT_CEILING, "grid note"),
+            coverage=_trim_text(request.coverage, GRID_TEXT_CEILING, "grid coverage"),
+            follow_ups=[],
+        )
+        if block is None:
+            raise HTTPException(status_code=404, detail="The library has nothing to draw for those lists.")
+        return block
 
     if client_dist.is_dir():
         assets = client_dist / "assets"

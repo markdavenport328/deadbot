@@ -23,7 +23,7 @@ from typing import Annotated, Any, Literal
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from deadbot import composition, record_refs, sequences
+from deadbot import composition, grids, record_refs, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
@@ -54,6 +54,11 @@ from deadbot.experience import (
 logger = logging.getLogger(__name__)
 
 FINISH_TOOL_NAME = "finish_response"
+
+# The note the server sends the model after a visitor's question when they asked
+# from something they clicked. It is a message of its own so the visitor's
+# transcript, which is built from the human messages, can skip it by this name.
+FOCUS_MESSAGE_NAME = "grid_focus"
 
 # The ways a group can relate its items. An unknown value reads as a
 # collection in both paths rather than failing the plan.
@@ -91,10 +96,14 @@ def _walk(value: Any, ids: set[str], urls: set[str], key: str | None = None) -> 
             ids.add(value)
 
 
-def grounded_context(payloads: list[dict[str, Any]]) -> GroundedContext:
-    """Collect every identifier and URL present in this turn's tool output."""
+def grounded_context(payloads: list[dict[str, Any]], extra_ids: Iterable[str] = ()) -> GroundedContext:
+    """Collect every identifier and URL present in this turn's tool output.
 
-    ids: set[str] = set()
+    ``extra_ids`` are library IDs the server already resolved for this turn
+    (what the visitor clicked), which count as grounded like any tool result.
+    """
+
+    ids: set[str] = set(extra_ids)
     urls: set[str] = set()
     for payload in payloads:
         _walk(payload, ids, urls)
@@ -554,6 +563,39 @@ def _emphasis_for(ref: Any) -> Emphasis:
     return getattr(ref, "emphasis", None) or "supporting"
 
 
+class GridHighlightRef(_PlanModel):
+    model_config = ConfigDict(extra="ignore")
+    row_id: str
+    column_id: str
+    note: str | None = Field(default=None, description="What to hear or notice in this cell, in a sentence.")
+
+
+class GridRef(_Ref):
+    """A get_grid result from this turn, drawn as a table: rows down the side,
+    columns across, every cell filled by the server. Hovering a cell shows its
+    facts; clicking plays it or opens the night.
+
+    The place for how two lists meet: which nights carried which songs, how a
+    song's year-by-year life compares with another's.
+    """
+
+    type: Literal["grid"]
+    grid_id: str = Field(description="The grid_id from a get_grid result.")
+    row_ids: list[str] | None = Field(
+        default=None,
+        description="Rows to put first, in reading order. Rows you leave out follow in the result's order.",
+    )
+    open_rows: int | None = Field(default=None, description="How many rows show before Show all, when the rest can wait.")
+    highlights: list[GridHighlightRef] = Field(default_factory=list, description="Cells to point at, by row and column id.")
+    title: str | None = Field(default=None, description="What the visitor should see across the grid, in a few words.")
+    note: str | None = None
+    coverage: str | None = Field(
+        default=None,
+        description="What the visitor should know about gaps in these cells, when it changes how they read them.",
+    )
+    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
+
+
 BodyItem = Annotated[
     EditorialPlan
     | PullQuoteBlock
@@ -573,6 +615,7 @@ BodyItem = Annotated[
     | ResourceListRef
     | DataChartRef
     | VersionStripRef
+    | GridRef
     | RankedListRef,
     Field(discriminator="type"),
 ]
@@ -744,6 +787,29 @@ class GroupPlan(_PlanModel):
     )
 
 
+def loose_items_as_group(data: Any) -> Any:
+    """Body items written beside ``groups`` rather than inside one stand as one more collection.
+
+    The model meant them for the page (live, a grid planned this way was
+    otherwise lost), so they keep the place they were written: before every
+    group when ``items`` was written ahead of the first ``groups`` list, after
+    every group otherwise. ``groups`` lists the model wrote more than once are
+    already merged here (``read_joining_repeats``), so the place does not move
+    with a continuation or a revision. The plan streamer follows the same rule:
+    it streams loose items first when they came first, and holds them for the
+    close of the plan when they came after the groups.
+    """
+
+    if not isinstance(data, dict) or not isinstance(data.get("items"), list) or not data["items"]:
+        return data
+    keys = list(data)
+    groups = data["groups"] if isinstance(data.get("groups"), list) else []
+    extra = {"presentation": "collection", "items": data["items"]}
+    first = "groups" in data and keys.index("items") < keys.index("groups")
+    rest = {key: value for key, value in data.items() if key != "items"}
+    return {**rest, "groups": [extra, *groups] if first else [*groups, extra]}
+
+
 class FinishPlan(BaseModel):
     """The model's finished response: chat answer plus the main-body plan."""
 
@@ -762,6 +828,7 @@ class FinishPlan(BaseModel):
         visitor has already watched the first one compose.
         """
 
+        data = loose_items_as_group(data)
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
             return data
         groups: list[Any] = []
@@ -890,6 +957,13 @@ def _find_research_resource(payloads: list[dict[str, Any]], resource_id: str) ->
 def _find_aggregation_payload(payloads: list[dict[str, Any]], aggregation_id: str) -> dict[str, Any] | None:
     for payload in payloads:
         if payload.get("aggregation_id") == aggregation_id:
+            return payload
+    return None
+
+
+def _find_grid_payload(payloads: list[dict[str, Any]], wanted: str) -> dict[str, Any] | None:
+    for payload in payloads:
+        if payload.get("grid_id") == wanted and "spec" in payload:
             return payload
     return None
 
@@ -1303,6 +1377,25 @@ def _resolve_reference(
         )
         return (block, []) if block else (None, [])
 
+    if kind == "grid":
+        if item.grid_id not in grounded.ids:
+            return None, []
+        payload = _find_grid_payload(payloads, item.grid_id)
+        if payload is None:
+            return None, []
+        block = grids.grid_block(
+            store,
+            payload,
+            row_ids=item.row_ids,
+            open_rows=item.open_rows,
+            highlights=[h.model_dump() for h in item.highlights],
+            title=item.title,
+            note=item.note,
+            coverage=item.coverage,
+            follow_ups=composition._clean_follow_ups(item.follow_ups),
+        )
+        return (block, []) if block else (None, [])
+
     return None, []
 
 
@@ -1554,7 +1647,7 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     for message in all_messages:
         message_type = getattr(message, "type", None)
         text = composition._content_text(getattr(message, "content", "")).strip()
-        if message_type == "human" and text:
+        if message_type == "human" and text and getattr(message, "name", None) != FOCUS_MESSAGE_NAME:
             turns.append(ConversationTurn(role="user", text=text[:8_000]))
             answer_index = None
         elif message_type == "ai":
@@ -1579,7 +1672,13 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     return turns[-50:]
 
 
-def build_experience_response(question: str, thread_id: str, messages: Iterable[Any], store: CanonicalStore) -> ExperienceResponse:
+def build_experience_response(
+    question: str,
+    thread_id: str,
+    messages: Iterable[Any],
+    store: CanonicalStore,
+    extra_ids: Iterable[str] = (),
+) -> ExperienceResponse:
     """Assemble the browser response from the agent's latest turn."""
 
     all_messages = list(messages)
@@ -1604,7 +1703,7 @@ def build_experience_response(question: str, thread_id: str, messages: Iterable[
             sources=[],
         )
 
-    grounded = grounded_context(payloads)
+    grounded = grounded_context(payloads, extra_ids)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
     chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
     lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None

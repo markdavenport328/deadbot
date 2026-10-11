@@ -10,7 +10,7 @@ import re
 import unicodedata
 from pathlib import Path
 
-from deadbot.people_names import participation_scope_for, split_person_qualifier
+from deadbot.people_names import is_plain_name, participation_scope_for, split_person_qualifier
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -77,12 +77,101 @@ def instruments(value: str) -> list[str]:
     return result or ["unspecified"]
 
 
+PERFORMER_KEY = ("show_id", "person_id", "role", "instrument")
+
+
+def fold_qualified_people(
+    people_rows: list[dict[str, str]], performer_rows: list[dict[str, str]]
+) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, str]]:
+    """Fold person rows minted from a qualified JerryBase name onto the plain person.
+
+    Before ``deadbot.people_names`` existed, a name such as ``Bruce Hornsby
+    (complete show)`` minted a second person, ``person-bruce-hornsby-complete-show``.
+    The qualifier describes the appearance, never a second human being, so each
+    such row folds onto the plain row of the same base name: its
+    ``show_performers`` rows move to the plain id, a participation qualifier
+    (``complete show``) becomes the same note the normalizer writes today, and a
+    row that now collides with an existing assignment merges its notes.  A
+    qualified row with no plain row of the same name is left alone: a
+    parenthetical on its own is never evidence of who someone is.
+
+    Returns the new people rows, the new performer rows, and the
+    ``{folded_id: plain_id}`` map.  Idempotent: a second run finds nothing.
+    """
+
+    plain_by_name = {
+        row["name"].strip().casefold(): row for row in people_rows if is_plain_name(row.get("name", ""))
+    }
+    folded: dict[str, str] = {}
+    qualifier_of: dict[str, str] = {}
+    source_name_of: dict[str, str] = {}
+    for row in people_rows:
+        base_name, qualifier = split_person_qualifier(row.get("name", ""))
+        target = plain_by_name.get(base_name.casefold()) if qualifier else None
+        if not target or target["person_id"] == row["person_id"]:
+            continue
+        folded[row["person_id"]] = target["person_id"]
+        qualifier_of[row["person_id"]] = qualifier or ""
+        source_name_of[row["person_id"]] = row["name"]
+        for column in ("birth_date", "death_date"):
+            if not target.get(column) and row.get(column):
+                target[column] = row[column]
+        target["notes"] = append_note(
+            target.get("notes", "").rstrip("."),
+            f"JerryBase also lists this person as '{row['name']}'; the qualifier describes an appearance, "
+            f"so the former {row['person_id']} rows are folded onto this id.",
+        )
+    if not folded:
+        return people_rows, performer_rows, folded
+
+    merged: dict[tuple[str, ...], dict[str, str]] = {}
+    result: list[dict[str, str]] = []
+    for row in performer_rows:
+        old_id = row["person_id"]
+        if old_id in folded:
+            row = {**row, "person_id": folded[old_id]}
+            note = f"JerryBase source name: {source_name_of[old_id]}"
+            scope = participation_scope_for(qualifier_of[old_id])
+            if scope:
+                note = f"{note}. JerryBase source participation scope: {scope}"
+            row["notes"] = append_note(row.get("notes", "").rstrip("."), note) + "."
+        row_key = tuple(row[column] for column in PERFORMER_KEY)
+        if row_key in merged:
+            merged[row_key]["notes"] = append_note(merged[row_key].get("notes", ""), row.get("notes", ""))
+            continue
+        merged[row_key] = row
+        result.append(row)
+    people = [row for row in people_rows if row["person_id"] not in folded]
+    return people, result, folded
+
+
+def fold_only() -> None:
+    people_fields, people_rows = read_csv("people.csv")
+    performer_fields, performer_rows = read_csv("show_performers.csv")
+    people_rows, performer_rows, folded = fold_qualified_people(people_rows, performer_rows)
+    write_csv("people.csv", people_fields, sorted(people_rows, key=lambda row: row["person_id"]))
+    write_csv(
+        "show_performers.csv",
+        performer_fields,
+        sorted(performer_rows, key=lambda row: (row["show_id"], row["role"], row["person_id"], row["instrument"])),
+    )
+    print(f"Folded {len(folded)} qualified person rows: {json.dumps(folded, sort_keys=True)}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("year", type=int, nargs="?", default=1972)
     parser.add_argument("--input", type=Path)
     parser.add_argument("--all", action="store_true", help="normalize each collected year from 1965 through 1995")
+    parser.add_argument(
+        "--fold-qualified-people",
+        action="store_true",
+        help="only fold people minted from a qualified JerryBase name onto the plain person, then exit",
+    )
     args = parser.parse_args()
+    if args.fold_qualified_people:
+        fold_only()
+        return
     if args.all:
         if args.input:
             parser.error("--input cannot be combined with --all")
@@ -100,6 +189,7 @@ def main_for_year(year: int, input_path: Path | None = None) -> None:
     people_fields, people_rows = read_csv("people.csv")
     performer_fields, performer_rows = read_csv("show_performers.csv")
     show_fields, show_rows = read_csv("shows.csv")
+    people_rows, performer_rows, _ = fold_qualified_people(people_rows, performer_rows)
     people_by_key = {key(row["name"]): row for row in people_rows}
     shows = {row["show_id"] for row in show_rows}
     existing = {

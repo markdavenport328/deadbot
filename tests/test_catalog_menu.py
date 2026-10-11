@@ -147,3 +147,10 @@ def test_song_neighbors(run):
 def test_shows_by_venue(run):
     expected = {show_id for show_id, show in SHOWS.items() if "winterland" in VENUES.get(show["venue_id"], "").lower()}
     assert set(_column(run(name="shows", venue="Winterland"), "show_id")) == expected
+
+
+def test_a_tour_nickname_with_no_shows_names_the_library_tours_nearest_it(run):
+    result = run(name="shows", tour="Europe '72", year_from=1972)
+    assert result["rows"] == [] and "Europe 1972" in result["closest_tours"]
+    found = run(name="shows", tour="Europe 1972", year_from=1972)
+    assert len(found["rows"]) == 22 and "closest_tours" not in found

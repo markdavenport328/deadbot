@@ -257,7 +257,10 @@ def build_rows(
     # Bruce Hornsby: touring auxiliary member, bounded by performer-role rows;
     # guest sit-ins before and after are excluded from the tenure.
     start, end = first_last("person-bruce-hornsby")
-    guest_first, guest_last = "1988-06-25", "1994-08-04"
+    # The guest span was 1988-06-25 through 1994-08-04 while the 1992-1995
+    # returns sat under a second JerryBase id; folded 2026-10-09, they run to
+    # 1995-06-25.
+    guest_first, guest_last = "1988-06-25", "1995-06-25"
     add(
         "membership-bruce-hornsby-1990", "person-bruce-hornsby",
         "keyboards, accordion, vocals", start, "day", end, "day",
@@ -265,10 +268,9 @@ def build_rows(
         f"performer-role rows run {start} to {end}, matching Wikidata's "
         "has-part qualifier on the band's own item (1990-1992). MusicBrainz's "
         "member-of-band relation for Hornsby carries no begin/end. Separate "
-        f"guest-role sit-ins from {guest_first} through {guest_last} (including "
-        "under the JerryBase 'Bruce Hornsby (complete show)' identity, "
-        "person-bruce-hornsby-complete-show) precede and follow this tenure "
-        "and are not counted as membership. " + wd_note("Bruce Hornsby"),
+        f"guest-role sit-ins from {guest_first} through {guest_last} (some "
+        "listed by JerryBase as 'Bruce Hornsby (complete show)') precede and "
+        "follow this tenure and are not counted as membership. " + wd_note("Bruce Hornsby"),
     )
 
     # Mickey Hart: two tenures.

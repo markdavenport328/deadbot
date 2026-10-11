@@ -71,3 +71,31 @@ export function Drawer({ tabs, initialOpen }: { tabs: DrawerTab[]; initialOpen: 
     </div>
   );
 }
+
+// Topic chips: the model writes a short label and the full question it stands
+// for. The chip shows the label; pressing it sends the model's question.
+export type FollowUpTopic = { label: string; question: string };
+
+export function TopicChips({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
+  const items = (topics ?? []).filter((topic) => topic.label.trim() && topic.question.trim());
+  if (items.length === 0) return null;
+  return (
+    <div className="topics">
+      {items.map((topic) => (
+        <button type="button" className="ask-chip" key={topic.label} onClick={() => onFollowUp(topic.question)} title={topic.question}>
+          {topic.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function MoreAbout({ topics, onFollowUp }: { topics?: FollowUpTopic[] | null; onFollowUp: (prompt: string) => void }) {
+  if ((topics ?? []).length === 0) return null;
+  return (
+    <div className="ask-block">
+      <span className="k">More about</span>
+      <TopicChips topics={topics} onFollowUp={onFollowUp} />
+    </div>
+  );
+}

@@ -33,3 +33,7 @@ def test_status_lines_cover_only_new_tool_calls():
     assert list(progress.status_lines(messages, 0)) == ["Reading the show on 1972-08-27", "Reading deadessays.blogspot.com", "Assembling the page"]
     assert list(progress.status_lines(messages, 3)) == ["Reading deadessays.blogspot.com", "Assembling the page"]
     assert list(progress.status_lines(messages, len(messages))) == []
+
+
+def test_grid_status_line():
+    assert progress.describe_tool_call("get_grid", {"row_kind": "song"}) == "Laying out the grid"
