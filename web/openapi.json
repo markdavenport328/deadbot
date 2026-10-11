@@ -577,113 +577,6 @@
         "title": "AskFocus",
         "type": "object"
       },
-      "ComparisonStripItem": {
-        "additionalProperties": false,
-        "properties": {
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "listen_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Listen Url"
-          },
-          "performance_id": {
-            "title": "Performance Id",
-            "type": "string"
-          },
-          "position_in_set": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position In Set"
-          },
-          "set_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Label"
-          },
-          "show_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Date"
-          },
-          "show_id": {
-            "title": "Show Id",
-            "type": "string"
-          },
-          "show_label": {
-            "title": "Show Label",
-            "type": "string"
-          },
-          "venue_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Venue Name"
-          },
-          "year": {
-            "title": "Year",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "performance_id",
-          "show_id",
-          "year",
-          "show_label"
-        ],
-        "title": "ComparisonStripItem",
-        "type": "object"
-      },
       "ConversationTurn": {
         "additionalProperties": false,
         "description": "A browser-safe projection of one human or final assistant message.",
@@ -2750,108 +2643,6 @@
         "title": "MediaLinkBlock",
         "type": "object"
       },
-      "PerformanceListItem": {
-        "additionalProperties": false,
-        "properties": {
-          "audio_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Audio Url"
-          },
-          "duration_seconds": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Seconds"
-          },
-          "listen_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Listen Url"
-          },
-          "performance_id": {
-            "title": "Performance Id",
-            "type": "string"
-          },
-          "position_in_set": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Position In Set"
-          },
-          "set_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Label"
-          },
-          "show_date": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Show Date"
-          },
-          "show_id": {
-            "title": "Show Id",
-            "type": "string"
-          },
-          "show_label": {
-            "title": "Show Label",
-            "type": "string"
-          },
-          "venue_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Venue Name"
-          }
-        },
-        "required": [
-          "performance_id",
-          "show_id",
-          "show_label"
-        ],
-        "title": "PerformanceListItem",
-        "type": "object"
-      },
       "PerformanceSpineNeighbor": {
         "additionalProperties": false,
         "properties": {
@@ -4028,38 +3819,6 @@
         "title": "SongGuest",
         "type": "object"
       },
-      "SongHistory": {
-        "additionalProperties": false,
-        "description": "A song's stage life: first, last, and one performance per year.",
-        "properties": {
-          "by_year": {
-            "items": {
-              "$ref": "#/components/schemas/ComparisonStripItem"
-            },
-            "maxItems": 1000,
-            "title": "By Year",
-            "type": "array"
-          },
-          "first": {
-            "$ref": "#/components/schemas/PerformanceListItem"
-          },
-          "known_count": {
-            "minimum": 1.0,
-            "title": "Known Count",
-            "type": "integer"
-          },
-          "last": {
-            "$ref": "#/components/schemas/PerformanceListItem"
-          }
-        },
-        "required": [
-          "known_count",
-          "first",
-          "last"
-        ],
-        "title": "SongHistory",
-        "type": "object"
-      },
       "SongLengthPoint": {
         "additionalProperties": false,
         "description": "One performance's length, for the timeline's Length view.",
@@ -4183,16 +3942,6 @@
             "title": "Follow Ups",
             "type": "array"
           },
-          "history": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SongHistory"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "judgments": {
             "items": {
               "type": "string"
@@ -4298,7 +4047,6 @@
               "enum": [
                 "credits",
                 "albums",
-                "history",
                 "representatives",
                 "by_year"
               ],
@@ -4778,92 +4526,6 @@
         "title": "SongYearPerformance",
         "type": "object"
       },
-      "SongYearPick": {
-        "additionalProperties": false,
-        "description": "The library's pick for a year without a stop: a picked version, a picked show, a release, else the first.",
-        "properties": {
-          "basis": {
-            "enum": [
-              "picked",
-              "show_picked",
-              "released",
-              "first"
-            ],
-            "title": "Basis",
-            "type": "string"
-          },
-          "basis_detail": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Basis Detail"
-          },
-          "performance_id": {
-            "title": "Performance Id",
-            "type": "string"
-          },
-          "seconds": {
-            "anyOf": [
-              {
-                "minimum": 0.0,
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Seconds"
-          },
-          "set_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Set Label"
-          },
-          "show_date": {
-            "title": "Show Date",
-            "type": "string"
-          },
-          "track": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PlayableTrack"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "venue_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Venue Name"
-          }
-        },
-        "required": [
-          "performance_id",
-          "show_date",
-          "basis"
-        ],
-        "title": "SongYearPick",
-        "type": "object"
-      },
       "SongYearQuestion": {
         "additionalProperties": false,
         "properties": {
@@ -4913,16 +4575,6 @@
               }
             ],
             "title": "Median Seconds"
-          },
-          "pick": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SongYearPick"
-              },
-              {
-                "type": "null"
-              }
-            ]
           },
           "top_next": {
             "anyOf": [

@@ -533,10 +533,9 @@ class SongOverviewRef(_Ref):
     visible_facets: list[SongFacet] = Field(
         default_factory=lambda: ["representatives"],
         description=(
-            "The song facets worth showing: representatives (your chosen renditions), credits, albums, history (first "
-            "and last performances, the count, and one rendition per year with listening links), by_year (the song's "
-            "timeline: plays and lengths per year, your stops as a listening path, and a panel for each year; with "
-            "by_year the timeline carries what history shows)."
+            "The song facets worth showing: representatives (your chosen renditions), credits, albums, by_year (the "
+            "song's life on stage as a timeline: plays and lengths per year, your representatives as its stops and "
+            "listening path, and a panel for each year with every performance)."
         ),
     )
     representatives: list[SongStop] = Field(
@@ -559,6 +558,10 @@ class SongOverviewRef(_Ref):
         if not isinstance(value, dict):
             return value
         value = dict(value)
+        # The timeline is the song's history now; an older plan's "history" facet asks for it.
+        facets = value.get("visible_facets")
+        if isinstance(facets, list):
+            value["visible_facets"] = list(dict.fromkeys("by_year" if facet == "history" else facet for facet in facets))
         stops = value.get("representatives")
         if stops is None and isinstance(value.get("representative_performance_ids"), list):
             stops = value["representative_performance_ids"]

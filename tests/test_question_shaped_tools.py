@@ -162,8 +162,9 @@ def test_song_life_states_years_and_standouts(built_sqlite, tmp_path):
     tool = _tools(store)["get_song_life"]
     payload = json.loads(tool.invoke({"song_id_or_title": "Terrapin Station"}))
     assert payload["performance_count"] == 302
-    assert (payload["years"][0]["year"], payload["years"][0]["count"], payload["years"][0]["longest_minutes"]) == (1977, 28, 14.9)
-    assert any("longest on record (25:14)" in item["facts"] for item in payload["standouts"])
+    assert (payload["years"][0]["year"], payload["years"][0]["count"]) == (1977, 28)
+    assert payload["standouts"]["longest"][0]["facts"] == ["longest on record (25:14)"]
+    assert payload["years"][0]["longest"]["minutes"] == 14.9
     assert payload["stops_note"]
     missing = json.loads(tool.invoke({"song_id_or_title": "Qzxvplm"}))
     assert missing["error"] == "Song not found or ambiguous"

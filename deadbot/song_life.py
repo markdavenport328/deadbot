@@ -23,8 +23,11 @@ logger = logging.getLogger(__name__)
 
 # A shorter "length" is a partial tape track or a segment, not the performance.
 MIN_LENGTH_SECONDS = 60
-# Standouts the tool lists before cutting; released-only versions go first.
-STANDOUT_CEILING = 30
+# How many standouts of each kind a tool lists; a longer kind keeps a sample
+# spread evenly across the song's years and says how many more there are.
+STANDOUT_GROUP_CEILING = 6
+# The kinds of standout, in the order the tools list them.
+STANDOUT_KINDS = ("firsts_and_lasts", "longest", "picks", "releases", "guests", "inside_another_song", "unusual_placements", "rare_neighbors")
 # A placement shared by at most this share of a song's performances stands out.
 RARE_PLACEMENT_SHARE = 0.10
 # A rare placement shared by more performances than this is a pattern, reported once.
@@ -295,24 +298,7 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
     return result
 
 
-def _fallback_pick(members: list[LifePerformance]) -> tuple[LifePerformance, str, str | None] | None:
-    """The year's pick when the model names none: a picked version, a picked show, a release, the first."""
-
-    playable = [performance for performance in members if performance.audio_url]
-    for scope, basis in (("performance", "picked"), ("show", "show_picked")):
-        for performance in playable:
-            signal = next((item for item in performance.signals if item.scope == scope), None)
-            if signal:
-                return performance, basis, signal.voice
-    for performance in playable:
-        if performance.releases:
-            return performance, "released", performance.releases[0]
-    if playable:
-        return playable[0], "first", None
-    return (members[0], "first", None) if members else None
-
-
-def year_summaries(performances: list[LifePerformance], title: str) -> list[dict[str, Any]]:
+def year_summaries(performances: list[LifePerformance]) -> list[dict[str, Any]]:
     """One row per year from the first to the last, the unplayed years as zero."""
 
     by_year: dict[int, list[LifePerformance]] = defaultdict(list)
@@ -327,7 +313,6 @@ def year_summaries(performances: list[LifePerformance], title: str) -> list[dict
         longest = max(timed, key=lambda performance: (performance.seconds, performance.show_date)) if timed else None
         nexts = Counter(performance.next.title for performance in members if performance.next)
         top = nexts.most_common(1)[0] if nexts else None
-        pick = _fallback_pick(members)
         rows.append(
             {
                 "year": year,
@@ -335,20 +320,6 @@ def year_summaries(performances: list[LifePerformance], title: str) -> list[dict
                 "median_seconds": int(round(median([performance.seconds for performance in timed]))) if timed else None,
                 "longest": {"performance_id": longest.performance_id, "seconds": longest.seconds} if longest else None,
                 "top_next": {"title": top[0], "count": top[1]} if top else None,
-                "pick": (
-                    {
-                        "performance_id": pick[0].performance_id,
-                        "show_date": pick[0].show_date,
-                        "venue_name": pick[0].venue_name,
-                        "set_label": pick[0].set_label or None,
-                        "seconds": pick[0].seconds,
-                        "basis": pick[1],
-                        "basis_detail": pick[2],
-                        "track": pick[0].track_json(title),
-                    }
-                    if pick
-                    else None
-                ),
             }
         )
     return rows
@@ -375,7 +346,7 @@ def card_from(song_id: str, title: str, performances: list[LifePerformance]) -> 
         "song_id": song_id,
         "title": title,
         "performance_count": len(performances),
-        "year_summaries": year_summaries(performances, title),
+        "year_summaries": year_summaries(performances),
         "length_points": [
             {"performance_id": p.performance_id, "show_date": p.show_date, "seconds": p.seconds}
             for p in performances
@@ -398,39 +369,51 @@ def year_detail(store: CanonicalStore, song_id: str, year: int) -> dict[str, Any
     }
 
 
-def standouts(performances: list[LifePerformance], ceiling: int = STANDOUT_CEILING) -> tuple[list[dict[str, Any]], int, list[str]]:
-    """Performances whose facts stand out, each fact plain; no quality claims.
+def _spread(items: list[Any], count: int) -> list[Any]:
+    """``count`` items spread evenly from first to last, so a sample spans the song's years."""
 
-    Returns the kept standouts in date order, how many were cut, and patterns:
-    rare placements shared by more than PATTERN_THRESHOLD performances, said
-    once ("opened the show 25 times, 1968–1970") instead of listed. The most
-    distinctive facts rank first, then versions with more facts; versions that
-    stand out only for a release are cut first.
+    if len(items) <= count:
+        return items
+    if count <= 1:
+        return items[:count]
+    return [items[round(index * (len(items) - 1) / (count - 1))] for index in range(count)]
+
+
+def standouts(
+    performances: list[LifePerformance], per_kind: int = STANDOUT_GROUP_CEILING
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, int], list[str]]:
+    """Performances whose facts stand out, grouped by kind, each fact plain.
+
+    No kind outranks another and nothing is scored: each kind lists its
+    performances in date order, and a kind with more than ``per_kind`` keeps a
+    sample spread evenly across the song's years. Returns the kinds (empty ones
+    left out), how many each kind left out, and patterns: rare placements
+    shared by more than PATTERN_THRESHOLD performances, said once ("opened the
+    show 20 times, 1968–1970") instead of listed.
     """
 
     if not performances:
-        return [], 0, []
-    facts: dict[str, list[str]] = defaultdict(list)
-    tier: dict[str, int] = {}
+        return {}, {}, []
+    kinds: dict[str, dict[str, list[str]]] = {kind: {} for kind in STANDOUT_KINDS}
     order = {p.performance_id: index for index, p in enumerate(performances)}
     by_id = {p.performance_id: p for p in performances}
 
-    def add(performance: LifePerformance, text: str, level: int) -> None:
-        if text not in facts[performance.performance_id]:
-            facts[performance.performance_id].append(text)
-        tier[performance.performance_id] = min(tier.get(performance.performance_id, 9), level)
+    def add(kind: str, performance: LifePerformance, text: str) -> None:
+        facts = kinds[kind].setdefault(performance.performance_id, [])
+        if text not in facts:
+            facts.append(text)
 
     total = len(performances)
 
     def rare(count: int) -> bool:
         return count / total <= RARE_PLACEMENT_SHARE
 
-    add(performances[0], "first performance", 1)
-    add(performances[-1], "last performance", 1)
+    add("firsts_and_lasts", performances[0], "first performance")
+    add("firsts_and_lasts", performances[-1], "last performance")
     timed = [p for p in performances if p.seconds is not None]
-    longest = max(timed, key=lambda p: (p.seconds, p.show_date)) if timed else None
-    if longest:
-        add(longest, f"longest on record ({clock(longest.seconds)})", 1)
+    if timed:
+        longest = max(timed, key=lambda p: (p.seconds, p.show_date))
+        add("longest", longest, f"longest on record ({clock(longest.seconds)})")
 
     first_set = [p for p in performances if p.set_number == 1]
     later_sets = [p for p in performances if p.set_number != 1]
@@ -442,26 +425,26 @@ def standouts(performances: list[LifePerformance], ceiling: int = STANDOUT_CEILI
 
     for p in performances:
         for guest in p.guests:
-            add(p, f"with {guest.name}" + (f" ({guest.instrument})" if guest.instrument else ""), 1)
+            add("guests", p, f"with {guest.name}" + (f" ({guest.instrument})" if guest.instrument else ""))
         for signal in p.signals:
-            if signal.scope == "performance":
-                add(p, f"picked by {signal.voice}", 1)
-            else:
-                add(p, f"its show was picked by {signal.voice}", 2)
+            add("picks", p, f"picked by {signal.voice}" if signal.scope == "performance" else f"its show was picked by {signal.voice}")
         if p.previous and p.next and p.previous.song_id == p.next.song_id:
-            add(p, f"inside {p.previous.title}", 1)
+            add("inside_another_song", p, f"inside {p.previous.title}")
         else:
             for neighbor in (p.previous, p.next):
                 if neighbor and meetings[neighbor.song_id] <= RARE_NEIGHBOR_MEETINGS:
-                    add(p, f"next to {neighbor.title}", 3)
+                    add("rare_neighbors", p, f"next to {neighbor.title}")
+        if p.releases:
+            more = len(p.releases) - 1
+            add("releases", p, f"released on {p.releases[0].split(':')[0]}" + (f" and {more} more" if more else ""))
     patterns: list[str] = []
-    for group, label, level in (
-        (opened_show, "opened the show", 2),
-        (encores, "encore", 2),
-        (first_set, "in the first set", 2),
-        (later_sets, "in a later set", 2),
-        (opened_set, "opened a set", 3),
-        (closed_set, "closed the set", 3),
+    for group, label in (
+        (opened_show, "opened the show"),
+        (encores, "encore"),
+        (first_set, "in the first set"),
+        (later_sets, "in a later set"),
+        (opened_set, "opened a set"),
+        (closed_set, "closed the set"),
     ):
         if not group or not rare(len(group)):
             continue
@@ -471,35 +454,22 @@ def standouts(performances: list[LifePerformance], ceiling: int = STANDOUT_CEILI
             patterns.append(f"{label} {len(group)} times, {span}")
             continue
         for p in group:
-            add(p, f"in {p.set_label}" if label == "in a later set" and p.set_label else label, level)
+            add("unusual_placements", p, f"in {p.set_label}" if label == "in a later set" and p.set_label else label)
 
-    by_year: dict[int, list[LifePerformance]] = defaultdict(list)
-    for p in timed:
-        by_year[p.year].append(p)
-    for year, members in by_year.items():
-        top = max(members, key=lambda p: (p.seconds, p.show_date))
-        if top is not longest:
-            add(top, f"longest of {year} ({clock(top.seconds)})", 2)
-
-    for p in performances:
-        if p.releases:
-            more = len(p.releases) - 1
-            add(p, f"released on {p.releases[0].split(':')[0]}" + (f" and {more} more" if more else ""), 4)
-
-    # Within a tier, a version with more facts stands out more; ties keep date order.
-    ranked = sorted(facts, key=lambda performance_id: (tier[performance_id], -len(facts[performance_id]), order[performance_id]))
-    kept = sorted(ranked[:ceiling], key=order.__getitem__)
-    cut = len(ranked) - len(kept)
-    if cut:
-        logger.info("Cut %d of %d standouts to the ceiling of %d", cut, len(ranked), ceiling)
-    return (
-        [
-            {"performance_id": pid, "date": by_id[pid].show_date, "venue": by_id[pid].venue_name, "facts": facts[pid]}
+    listed: dict[str, list[dict[str, Any]]] = {}
+    left_out: dict[str, int] = {}
+    for kind in STANDOUT_KINDS:
+        ids = sorted(kinds[kind], key=order.__getitem__)
+        if not ids:
+            continue
+        kept = _spread(ids, per_kind)
+        if len(ids) > len(kept):
+            left_out[kind] = len(ids) - len(kept)
+        listed[kind] = [
+            {"performance_id": pid, "date": by_id[pid].show_date, "venue": by_id[pid].venue_name, "facts": kinds[kind][pid]}
             for pid in kept
-        ],
-        cut,
-        patterns,
-    )
+        ]
+    return listed, left_out, patterns
 
 
 def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
@@ -508,7 +478,7 @@ def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
     song_id = song["song_id"]
     title = song.get("title") or song_id
     performances = life_performances(store, song_id)
-    items, cut, patterns = standouts(performances)
+    kinds, left_out, patterns = standouts(performances)
     payload: dict[str, Any] = {
         "song": {"song_id": song_id, "title": title},
         "performance_count": len(performances),
@@ -517,11 +487,15 @@ def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
                 "year": row["year"],
                 "count": row["count"],
                 "typical_minutes": round(row["median_seconds"] / 60, 1) if row["median_seconds"] else None,
-                "longest_minutes": round(row["longest"]["seconds"] / 60, 1) if row["longest"] else None,
+                "longest": (
+                    {"performance_id": row["longest"]["performance_id"], "minutes": round(row["longest"]["seconds"] / 60, 1)}
+                    if row["longest"]
+                    else None
+                ),
             }
-            for row in year_summaries(performances, title)
+            for row in year_summaries(performances)
         ],
-        "standouts": items,
+        "standouts": kinds,
         "patterns": patterns,
         "lengths_note": (
             "Lengths are official release tracks where a release carries the performance, otherwise "
@@ -529,9 +503,10 @@ def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
         ),
         "stops_note": "A song_overview's representatives become stops on its timeline: give each a short label and a one-line why.",
     }
-    if cut:
+    if left_out:
+        payload["standouts_left_out"] = left_out
         payload["standouts_note"] = (
-            f"Showing {len(items)} of {len(items) + cut} standouts; versions that stand out only for a release were cut first. "
-            "get_song_notable_versions lists every released and picked version."
+            "Each kind lists a sample spread across the song's years; standouts_left_out counts the rest. "
+            "get_song_notable_versions lists every picked and released version, list_song_performances every rendition."
         )
     return payload

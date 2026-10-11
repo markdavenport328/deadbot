@@ -61,27 +61,27 @@ def test_releases_and_guests(terrapin):
 
 
 def test_year_summaries_span_every_year_with_counts_and_lengths(terrapin):
-    rows = year_summaries(terrapin, "Terrapin Station")
+    rows = year_summaries(terrapin)
     assert [row["year"] for row in rows] == list(range(1977, 1996))
     y1979 = next(row for row in rows if row["year"] == 1979)
     assert y1979["count"] == 23
     assert y1979["top_next"] == {"title": "Playing In The Band", "count": 20}
     assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 937}
     assert y1979["median_seconds"] == 758
-    assert y1979["pick"]["track"]["audio_url"].startswith("https://archive.org/download/")
+    # The library states each year's facts; choosing what to feature is the model's.
+    assert "pick" not in y1979
 
 
 def test_gap_years_are_zero_and_have_no_pick(csv_store):
-    rows = year_summaries(song_life.life_performances(csv_store, "song-dark-star"), "Dark Star")
+    rows = year_summaries(song_life.life_performances(csv_store, "song-dark-star"))
     y1975 = next(row for row in rows if row["year"] == 1975)
-    assert y1975 == {"year": 1975, "count": 0, "median_seconds": None, "longest": None, "top_next": None, "pick": None}
+    assert y1975 == {"year": 1975, "count": 0, "median_seconds": None, "longest": None, "top_next": None}
 
 
 def test_a_song_played_once(csv_store):
     data = song_life.card_data(csv_store, "song-i-ll-go-crazy")
     assert data["performance_count"] == 1
-    assert len(data["year_summaries"]) == 1
-    assert data["year_summaries"][0]["pick"]["basis"] in {"first", "released", "picked", "show_picked"}
+    assert [row["count"] for row in data["year_summaries"]] == [1]
 
 
 def test_card_data_carries_length_points_without_venues(csv_store):
@@ -102,14 +102,6 @@ def test_year_detail_lists_one_year_with_full_facts(csv_store):
     assert song_life.year_detail(csv_store, "song-no-such-song", 1979) is None
 
 
-def test_fallback_pick_prefers_picked_then_released_then_first(sqlite_store):
-    rows = song_life.card_data(sqlite_store, TERRAPIN)["year_summaries"]
-    y1979 = next(row for row in rows if row["year"] == 1979)
-    assert (y1979["pick"]["basis"], y1979["pick"]["show_date"], y1979["pick"]["basis_detail"]) == ("show_picked", "1979-01-08", "Charlie Miller")
-    y1978 = next(row for row in rows if row["year"] == 1978)
-    assert y1978["pick"]["basis"] == "released"
-
-
 def test_stores_agree_on_facts(csv_store, sqlite_store):
     csv_rows = song_life.life_performances(csv_store, TERRAPIN)
     sqlite_rows = song_life.life_performances(sqlite_store, TERRAPIN)
@@ -117,26 +109,34 @@ def test_stores_agree_on_facts(csv_store, sqlite_store):
     assert [key(p) for p in csv_rows] == [key(p) for p in sqlite_rows]
 
 
-def test_standouts_state_facts_across_the_songs_life(sqlite_store):
-    items, cut, patterns = standouts(song_life.life_performances(sqlite_store, TERRAPIN))
-    facts = {item["date"]: item["facts"] for item in items}
-    assert "first performance" in facts["1977-02-26"]
-    assert "last performance" in facts["1995-07-08"]
-    assert "longest on record (25:14)" in facts["1993-09-29"]
-    assert "inside Playing In The Band" in facts["1981-12-31"]
-    assert "its show was picked by Charlie Miller" in facts["1981-12-31"]
-    assert "with Clarence Clemons (saxophone)" in facts["1989-12-06"]
-    assert len(items) == song_life.STANDOUT_CEILING and cut > 0
-    assert [item["date"] for item in items] == sorted(item["date"] for item in items)
-    # Standouts reach the song's later years, not only its first.
-    assert sum(1 for item in items if item["date"] >= "1985") >= 8
+def test_standouts_are_grouped_by_kind_in_date_order_without_ranking(sqlite_store):
+    kinds, left_out, patterns = standouts(song_life.life_performances(sqlite_store, TERRAPIN))
+    assert list(kinds) == [kind for kind in song_life.STANDOUT_KINDS if kind in kinds]
+    facts = {(kind, item["date"]): item["facts"] for kind, items in kinds.items() for item in items}
+    assert facts[("firsts_and_lasts", "1977-02-26")] == ["first performance"]
+    assert facts[("firsts_and_lasts", "1995-07-08")] == ["last performance"]
+    assert facts[("longest", "1993-09-29")] == ["longest on record (25:14)"]
+    assert facts[("inside_another_song", "1981-12-31")] == ["inside Playing In The Band"]
+    assert facts[("picks", "1981-12-31")] == ["its show was picked by Charlie Miller"]
+    assert facts[("guests", "1989-12-06")] == ["with Clarence Clemons (saxophone)"]
+    for items in kinds.values():
+        assert len(items) <= song_life.STANDOUT_GROUP_CEILING
+        assert [item["date"] for item in items] == sorted(item["date"] for item in items)
+    # A long kind keeps a sample spanning the song's life and says how many it left out.
+    releases = [item["date"] for item in kinds["releases"]]
+    assert releases[0][:4] == "1977" and releases[-1][:4] == "1991" and left_out["releases"] > 0
     assert "opened a set 17 times, 1977–1991" in patterns
 
 
+def test_a_long_kind_is_sampled_evenly():
+    assert song_life._spread(list(range(10)), 4) == [0, 3, 6, 9]
+    assert song_life._spread([1, 2], 6) == [1, 2]
+
+
 def test_common_placements_become_patterns_not_standouts(sqlite_store):
-    items, _cut, patterns = standouts(song_life.life_performances(sqlite_store, "song-dark-star"))
+    kinds, _left_out, patterns = standouts(song_life.life_performances(sqlite_store, "song-dark-star"))
     assert "opened the show 20 times, 1968–1970" in patterns
-    assert not any("opened the show" in fact for item in items for fact in item["facts"])
+    assert not any("opened the show" in fact for items in kinds.values() for item in items for fact in item["facts"])
 
 
 def test_standouts_of_a_tiny_song():
@@ -145,17 +145,18 @@ def test_standouts_of_a_tiny_song():
         set_label="Set 2", position_in_set=3, encore=False, previous=None, next=None, seconds=300,
         length_source="tape", audio_url=None, tape_seconds=300, releases=(), signals=(Signal("Charlie Miller", "performance"),), guests=(),
     )
-    items, cut, patterns = standouts([lone])
-    assert items[0]["facts"][:3] == ["first performance", "last performance", "longest on record (5:00)"]
-    assert "picked by Charlie Miller" in items[0]["facts"]
-    assert cut == 0
-    assert standouts([]) == ([], 0, [])
+    kinds, left_out, patterns = standouts([lone])
+    assert kinds["firsts_and_lasts"][0]["facts"] == ["first performance", "last performance"]
+    assert kinds["longest"][0]["facts"] == ["longest on record (5:00)"]
+    assert kinds["picks"][0]["facts"] == ["picked by Charlie Miller"]
+    assert left_out == {} and patterns == []
+    assert standouts([]) == ({}, {}, [])
 
 
-@pytest.mark.parametrize("song_id", [TERRAPIN, "song-dark-star", "song-sugar-magnolia"])
+@pytest.mark.parametrize("song_id", [TERRAPIN, "song-dark-star", "song-sugar-magnolia", "song-drums"])
 def test_tool_payload_stays_compact(sqlite_store, song_id):
     payload = song_life.tool_payload(sqlite_store, sqlite_store.one("songs", song_id))
-    assert len(json.dumps(payload, ensure_ascii=False)) < 9000
+    assert len(json.dumps(payload, ensure_ascii=False)) < 10000
     assert payload["years"][0]["count"] > 0
     assert payload["stops_note"]
 
@@ -168,9 +169,8 @@ def test_disagreeing_releases_take_the_length_nearest_the_tape(sqlite_store):
     assert song_life._release_length([30], 500) == 30
 
 
-def test_a_picked_version_outranks_an_earlier_picked_show(sqlite_store):
-    rows = song_life.card_data(sqlite_store, "song-fire-on-the-mountain")["year_summaries"]
-    pick = next(row for row in rows if row["year"] == 1977)["pick"]
-    assert (pick["basis"], pick["show_date"], pick["basis_detail"]) == ("picked", "1977-05-13", "Charlie Miller")
+def test_version_picks_and_show_picks_are_told_apart(sqlite_store):
+    fire = by_date(song_life.life_performances(sqlite_store, "song-fire-on-the-mountain"), "1977-05-13")
+    assert Signal("Charlie Miller", "performance") in fire.signals
     # Release confirmations are not picks.
     assert not any(s.voice == "Dead.net" for p in song_life.life_performances(sqlite_store, TERRAPIN) for s in p.signals)

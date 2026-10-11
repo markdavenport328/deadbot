@@ -494,13 +494,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* The song listen zone: representative performances, cream links with the
    small gold play mark already carried by ListeningLabel. */
 .song-representatives { margin: var(--zone) 0 0; }
-.history { display: grid; gap: 1.5rem; }
-.history ol { margin: 0; padding: 0; list-style: none; }
-.history li { display: grid; gap: 0.1rem; align-content: start; }
-.history-span { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2.5rem; }
-.history-years { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 1.1rem 1.5rem; }
-.history-year { display: block; margin-bottom: 0.2rem; color: var(--quiet); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1.6; font-variant-numeric: tabular-nums; }
-.history .entry-title { display: inline-flex; align-items: baseline; gap: 0.35rem; }
 .song-representatives ul { margin: 0; padding: 0; list-style: none; }
 .song-representatives li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.3rem 0.65rem; padding: 0.2rem 0; }
 .song-representatives li > span { color: var(--muted); font-size: 0.88rem; }
@@ -595,7 +588,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .setlist-panel { grid-template-columns: 1fr; }
   .mention { grid-template-columns: 1fr; }
   .entry-list.two-up { grid-template-columns: 1fr; }
-  .history-span { grid-template-columns: 1fr; }
   .timeline-block li { grid-template-columns: 1fr; gap: 0.1rem; }
   .timeline-marker { grid-row: auto; }
   .timeline-ask, .timeline-link { grid-column: auto; }

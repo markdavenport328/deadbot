@@ -156,17 +156,14 @@ describe("era and song cards play in-page", () => {
     expect(row).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("the song card's History rows and representatives play in-page; On record links out quietly", async () => {
+  it("the song card's representatives play in-page; On record links out quietly", async () => {
     await renderFixture("playing", visualFixtures.playing);
     const card = screen.getByRole("heading", { name: "Playing In The Band" }).closest("article") as HTMLElement;
     expect(within(card).getByRole("button", { name: "Play Playing In The Band, Old Renaissance Faire Grounds (8/27/72)" })).toHaveAttribute("data-playable", "in-page");
-    const historyTab = within(card).getByRole("button", { name: "History" });
-    if (historyTab.getAttribute("aria-expanded") !== "true") fireEvent.click(historyTab);
-    const last = within(card).getByRole("button", { name: "Play Playing In The Band, Riverport Amphitheatre, July 5, 1995" });
-    expect(last).toHaveAttribute("data-playable", "in-page");
-    // The first performance has no tape: it is words, not a control.
-    expect(within(card).queryByRole("button", { name: /Capitol Theatre/ })).toBeNull();
-    fireEvent.click(within(card).getByRole("button", { name: /^On record/ }));
+    // The song's history lives on its timeline now; there is no History tab.
+    expect(within(card).queryByRole("button", { name: "History" })).toBeNull();
+    const recordTab = within(card).getByRole("button", { name: /^On record/ });
+    if (recordTab.getAttribute("aria-expanded") !== "true") fireEvent.click(recordTab);
     const ace = within(card).getByRole("link", { name: "Ace on open.spotify.com (opens in a new tab)" });
     expect(ace).toHaveClass("listen-link");
     expect(ace.querySelector(".listen-play-mark, svg")).toBeNull();

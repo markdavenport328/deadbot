@@ -98,7 +98,7 @@ class SetlistSection(ExperienceModel):
 
 Emphasis = Literal["primary", "supporting", "mention"]
 ShowFacet = Literal["guests", "listen", "setlist", "sources", "lineup", "recordings"]
-SongFacet = Literal["credits", "albums", "history", "representatives", "by_year"]
+SongFacet = Literal["credits", "albums", "representatives", "by_year"]
 PerformanceFacet = Literal["setlist", "listen", "sources"]
 SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
 # How a record card starts: expanded is the full card; collapsed is one
@@ -206,31 +206,6 @@ class PerformanceListItem(ExperienceModel):
     # when the library has one, and its length.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
-
-
-class ComparisonStripItem(ExperienceModel):
-    performance_id: str
-    show_id: str
-    year: int
-    show_date: str | None = None
-    show_label: str
-    set_label: str | None = None
-    position_in_set: str | None = None
-    venue_name: str | None = None
-    listen_url: str | None = None
-    # The Internet Archive track the in-page player plays for this rendition,
-    # when the library has one, and its length.
-    audio_url: str | None = None
-    duration_seconds: int | None = Field(default=None, ge=0)
-
-
-class SongHistory(ExperienceModel):
-    """A song's stage life: first, last, and one performance per year."""
-
-    known_count: int = Field(ge=1)
-    first: PerformanceListItem
-    last: PerformanceListItem
-    by_year: list[ComparisonStripItem] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class ShowUnitBlock(ExperienceModel):
@@ -529,19 +504,6 @@ class SongRepresentativePerformance(ExperienceModel):
     duration_seconds: int | None = Field(default=None, ge=0)
 
 
-class SongYearPick(ExperienceModel):
-    """The library's pick for a year without a stop: a picked version, a picked show, a release, else the first."""
-
-    performance_id: str
-    show_date: str
-    venue_name: str | None = None
-    set_label: str | None = None
-    seconds: int | None = Field(default=None, ge=0)
-    basis: Literal["picked", "show_picked", "released", "first"]
-    basis_detail: str | None = None
-    track: PlayableTrack | None = None
-
-
 class SongYearLongest(ExperienceModel):
     performance_id: str
     seconds: int = Field(ge=0)
@@ -562,7 +524,6 @@ class SongYearSummary(ExperienceModel):
     median_seconds: int | None = Field(default=None, ge=0)
     longest: SongYearLongest | None = None
     top_next: SongYearNext | None = None
-    pick: SongYearPick | None = None
 
 
 class SongLengthPoint(ExperienceModel):
@@ -647,7 +608,6 @@ class SongOverviewBlock(ExperienceModel):
     disclosure: CardDisclosure = "expanded"
     judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     visible_facets: list[SongFacet] = Field(default_factory=lambda: ["representatives"], max_length=LIST_CEILING)
-    history: SongHistory | None = None
     # Every year from the song's first performance to its last, zero years included.
     year_counts: list[SongYearCount] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None

@@ -1289,39 +1289,6 @@ function splitShowLabel(label: string, showDate?: string | null): { venue: strin
   return { venue, date };
 }
 
-type HistoryStop = { performance_id: string; show_label: string; show_date?: string | null; venue_name?: string | null; listen_url?: string | null; audio_url?: string | null; duration_seconds?: number | null; set_label?: string | null };
-
-function HistoryStop({ stop, label, songTitle }: { stop: HistoryStop; label: ReactNode; songTitle: string }) {
-  const { venue, date } = splitShowLabel(stop.show_label, stop.show_date);
-  const track = trackFor(stop, songTitle, { showDate: stop.show_date, venueName: stop.venue_name ?? venue });
-  return (
-    <li>
-      <span className="history-year">{label}</span>
-      <ListenControl url={stop.listen_url} label={venue} track={track} name={[songTitle, venue, date].filter(Boolean).join(", ")} className="entry-title" />
-      <span className="entry-detail">{[date, stop.set_label].filter(Boolean).join(" · ")}</span>
-    </li>
-  );
-}
-
-// The song's performance history: where it began and ended, then one
-// performance a year across a horizontal strip.
-function HistoryPanel({ history, songTitle }: { history: NonNullable<SongOverviewBlockT["history"]>; songTitle: string }) {
-  const byYear = history.by_year ?? [];
-  return (
-    <div className="history">
-      <ol className="history-span">
-        <HistoryStop stop={history.first} label="First" songTitle={songTitle} />
-        <HistoryStop stop={history.last} label="Last" songTitle={songTitle} />
-      </ol>
-      {byYear.length > 1 && (
-        <ol className="history-years" aria-label="One performance a year">
-          {byYear.map((item) => <HistoryStop key={item.performance_id} stop={item} label={item.year} songTitle={songTitle} />)}
-        </ol>
-      )}
-    </div>
-  );
-}
-
 // A song's plays per year, as the same bar chart an aggregate_data result
 // draws: years along the bottom, a year it was not played an empty slot.
 function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { type: "data_chart" }> {
@@ -1387,19 +1354,11 @@ function SongOverviewUnit({
 }) {
   const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
   const showsFacet = (facet: SongOverviewBlockT["visible_facets"][number]) => block.visible_facets.includes(facet);
-  // With by_year the song's life is one timeline: it carries the chart, the
-  // model's stops and what the History tab showed.
+  // With by_year the song's life is one timeline: the chart, the model's stops
+  // and every performance a year away.
   const timeline = showsFacet("by_year") && (block.year_summaries ?? []).length > 0;
 
   const tabs: DrawerTab[] = [];
-  if (showsFacet("history") && block.history && !timeline) {
-    const history = block.history;
-    tabs.push({
-      id: "history",
-      label: "History",
-      content: <HistoryPanel history={history} songTitle={block.title} />
-    });
-  }
   if (showsFacet("albums") && block.albums.length > 0) {
     tabs.push({
       id: "record",

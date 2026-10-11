@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { bandX, countTicks, dayFraction, frame, lengthTicks, pinRows, pinY, pointX, tipPosition, yFor, yearLabelStep } from "./song-timeline-geometry";
-import { askQuestion, flowLine, focusFor, initialYear, pickEyebrow, performanceTags, yearFacts } from "./song-timeline-text";
+import { askQuestion, flowLine, focusFor, initialYear, performanceTags, yearFacts } from "./song-timeline-text";
 import type { SongTimelineData, YearPerformance, YearSummary } from "./song-timeline-types";
 import { fetchSongYear, forgetSongYears, songYearUrl } from "./song-year";
 
@@ -9,24 +9,14 @@ const y1979: YearSummary = {
   count: 23,
   median_seconds: 758,
   longest: { performance_id: "p-long", seconds: 925 },
-  top_next: { title: "Playing In The Band", count: 20 },
-  pick: {
-    performance_id: "p-msg",
-    show_date: "1979-01-08",
-    venue_name: "Madison Square Garden",
-    set_label: "Set 2",
-    seconds: 735,
-    basis: "show_picked",
-    basis_detail: "Charlie Miller",
-    track: null
-  }
+  top_next: { title: "Playing In The Band", count: 20 }
 };
 
 const data: SongTimelineData = {
   song_id: "song-terrapin-station",
   title: "Terrapin Station",
   performance_count: 23,
-  year_summaries: [{ year: 1978, count: 0, median_seconds: null, longest: null, top_next: null, pick: null }, y1979],
+  year_summaries: [{ year: 1977, count: 28, median_seconds: 657, longest: null, top_next: null }, { year: 1978, count: 0, median_seconds: null, longest: null, top_next: null }, y1979],
   length_points: [],
   stops: [],
   open_year: null,
@@ -103,11 +93,8 @@ test("the tooltip keeps clear of the pointer at every edge", () => {
   expect(tipPosition({ x: 120, y: 200 }, tip, 230).left).toBe(30);
 });
 
-test("a year's facts, pick and question read from the data", () => {
+test("a year's facts and question read from the data", () => {
   expect(yearFacts(y1979)).toBe("23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)");
-  expect(pickEyebrow(y1979.pick!, null)).toBe("Show picked by Charlie Miller");
-  expect(pickEyebrow(y1979.pick!, { number: 4, label: "Charlie Miller's pick" })).toBe("Stop 4 · Charlie Miller's pick");
-  expect(pickEyebrow({ ...y1979.pick!, basis: "released", basis_detail: "Dave's Picks, Volume 31: Uptown Theatre" }, null)).toBe("On Dave's Picks, Volume 31");
   expect(askQuestion(data, 1979)).toBe("How did the 1979 Terrapins differ from 1977?");
   expect(askQuestion(data, 1980)).toBe("Tell me about Terrapin Station in 1980");
 });
@@ -120,16 +107,23 @@ test("a performance's flow joins segues with › and names its tags", () => {
   expect(performanceTags({ ...performance, releases: ["X"] }, 4)).toEqual(["Stop 4", "Show picked by Charlie Miller", "Released"]);
 });
 
-test("focus names the song, the year and its pick; the open year falls back to a played year", () => {
-  expect(focusFor(data, y1979)).toEqual({
+test("focus names the song, the year and the model's stop in it", () => {
+  expect(focusFor(data, y1979, "p-msg")).toEqual({
     label: "Terrapin Station in 1979",
     song_id: "song-terrapin-station",
     year: 1979,
     ids: ["song-terrapin-station", "p-msg"],
     facts: ["23 performances · typically 12:38 · usually followed by Playing In The Band (20 of 23)"]
   });
-  expect(initialYear(data)).toBe(1979);
-  expect(initialYear({ ...data, open_year: 1978 })).toBe(1979);
+  // A year with no stop sends only the song.
+  expect(focusFor(data, y1979).ids).toEqual(["song-terrapin-station"]);
+});
+
+test("the open year is the model's, else its first stop's year, else the first year played", () => {
+  expect(initialYear({ ...data, open_year: 1979 })).toBe(1979);
+  expect(initialYear({ ...data, open_year: 1978 })).toBe(1977);
+  expect(initialYear({ ...data, stops: [{ performance_id: "p-msg", label: null, why: null, show_date: "1979-01-08" }] })).toBe(1979);
+  expect(initialYear(data)).toBe(1977);
 });
 
 test("the year lookup asks once per song and year and retries after a failure", async () => {

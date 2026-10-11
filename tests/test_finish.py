@@ -1120,7 +1120,6 @@ def test_server_built_items_carry_no_generated_follow_ups():
         experience.GuestAppearanceItem,
         experience.EquipmentItem,
         experience.PerformanceListItem,
-        experience.ComparisonStripItem,
         experience.PerformanceSpineNeighbor,
         experience.ShowSelectionItem,
         experience.ArrangementSearchItem,
@@ -1310,18 +1309,16 @@ def test_show_unit_hydrates_lineup_and_recordings_only_when_selected():
     assert blocks[1].lineup == [] and blocks[1].recordings == [] and blocks[1].sets
 
 
-def test_song_overview_hydrates_history_and_omits_unselected_facets():
+def test_an_older_plans_history_facet_asks_for_the_timeline_and_omits_unselected_facets():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
     grounded = finish.grounded_context(payloads)
-    ref = finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", visible_facets=["history"])
+    ref = finish.SongOverviewRef(type="song_overview", song_id="song-sugaree", visible_facets=["history", "by_year"])
+    assert ref.visible_facets == ["by_year"]
     blocks, _ = finish.resolve_items([ref], grounded, payloads, store)
     song = blocks[0]
-    assert song.visible_facets == ["history"]
-    assert song.history is not None
-    assert song.history.first.show_date <= song.history.last.show_date
-    assert song.history.known_count == song.known_performance_count
-    assert len({item.year for item in song.history.by_year}) == len(song.history.by_year)
+    assert song.visible_facets == ["by_year"]
+    assert song.year_summaries and sum(row.count for row in song.year_summaries) == song.known_performance_count
     assert song.credits == [] and song.albums == [] and song.representative_performances == []
 
 

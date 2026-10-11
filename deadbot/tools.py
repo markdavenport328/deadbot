@@ -971,10 +971,13 @@ def build_tools(
         song_overview with the by_year facet draws them as the song's
         timeline. `performance_summary` gives the count, the first and last
         performances with their venues, and the songs it most often followed
-        and led into. `standouts` are the performances whose facts stand out
-        most, with IDs, ready to become a song_overview's stops; get_song_life
-        has more for each era, and `list_song_performances` lists concrete
-        rendition IDs and listening paths. `releases` names the official records carrying the song,
+        and led into. `standouts` gives a few performances of each kind that
+        stand out (firsts and lasts, longest, picks, releases, guests, played
+        inside another song, unusual placements, rare neighbors), with IDs, to
+        choose a song_overview's stops from;
+        get_song_life lists more of each kind and each year's longest, and
+        `list_song_performances` lists concrete rendition IDs and listening
+        paths. `releases` names the official records carrying the song,
         earliest first. `resources` are articles, essays and interviews about
         it, attributed to their sources. pathways lists the gathered lore
         (resources, source trail, selections) or the research sites to search
@@ -1024,8 +1027,10 @@ def build_tools(
             # The strongest standouts sit beside the counts, so a song's card has its stops at hand.
             from deadbot import song_life
 
-            standouts, _cut, patterns = song_life.standouts(song_life.life_performances(store, song["song_id"]), ceiling=10)
-            payload["standouts"] = standouts
+            kinds, left_out, patterns = song_life.standouts(song_life.life_performances(store, song["song_id"]), per_kind=2)
+            payload["standouts"] = kinds
+            if left_out:
+                payload["standouts_left_out"] = left_out
             if patterns:
                 payload["patterns"] = patterns
             payload["plays_by_year"] = [
@@ -1068,11 +1073,12 @@ def build_tools(
 
         Use it to build a song_overview timeline (visible_facets with by_year)
         or to answer how a song changed over the years. `years` gives each
-        year's count and typical and longest minutes. `standouts` are the
-        performances whose facts stand out, each with its ID and plain facts:
-        first, last and longest, the longest of each year, picks with who made
-        them, releases, rare placements, guests and rare neighbors. `patterns`
-        names placements too common to list one by one. Choose your stops from
+        year's count, typical minutes and longest performance. `standouts`
+        groups the performances that stand out by kind (firsts and lasts,
+        longest, picks with who made them, releases, guests, played inside
+        another song, unusual placements, rare neighbors), each with its ID
+        and plain facts, in date order and unranked. `patterns` names placements too common to list one by
+        one. Choose your stops from
         these and from what you know; give each a short label and a one-line
         why in the song_overview's representatives.
         """

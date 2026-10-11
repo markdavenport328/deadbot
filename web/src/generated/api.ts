@@ -313,31 +313,6 @@ export interface components {
             /** Label */
             label: string;
         };
-        /** ComparisonStripItem */
-        ComparisonStripItem: {
-            /** Audio Url */
-            audio_url?: string | null;
-            /** Duration Seconds */
-            duration_seconds?: number | null;
-            /** Listen Url */
-            listen_url?: string | null;
-            /** Performance Id */
-            performance_id: string;
-            /** Position In Set */
-            position_in_set?: string | null;
-            /** Set Label */
-            set_label?: string | null;
-            /** Show Date */
-            show_date?: string | null;
-            /** Show Id */
-            show_id: string;
-            /** Show Label */
-            show_label: string;
-            /** Venue Name */
-            venue_name?: string | null;
-            /** Year */
-            year: number;
-        };
         /**
          * ConversationTurn
          * @description A browser-safe projection of one human or final assistant message.
@@ -1033,29 +1008,6 @@ export interface components {
             /** Url */
             url: string;
         };
-        /** PerformanceListItem */
-        PerformanceListItem: {
-            /** Audio Url */
-            audio_url?: string | null;
-            /** Duration Seconds */
-            duration_seconds?: number | null;
-            /** Listen Url */
-            listen_url?: string | null;
-            /** Performance Id */
-            performance_id: string;
-            /** Position In Set */
-            position_in_set?: string | null;
-            /** Set Label */
-            set_label?: string | null;
-            /** Show Date */
-            show_date?: string | null;
-            /** Show Id */
-            show_id: string;
-            /** Show Label */
-            show_label: string;
-            /** Venue Name */
-            venue_name?: string | null;
-        };
         /** PerformanceSpineNeighbor */
         PerformanceSpineNeighbor: {
             /** Performance Id */
@@ -1461,18 +1413,6 @@ export interface components {
             name: string;
         };
         /**
-         * SongHistory
-         * @description A song's stage life: first, last, and one performance per year.
-         */
-        SongHistory: {
-            /** By Year */
-            by_year?: components["schemas"]["ComparisonStripItem"][];
-            first: components["schemas"]["PerformanceListItem"];
-            /** Known Count */
-            known_count: number;
-            last: components["schemas"]["PerformanceListItem"];
-        };
-        /**
          * SongLengthPoint
          * @description One performance's length, for the timeline's Length view.
          */
@@ -1520,7 +1460,6 @@ export interface components {
             first_year?: number | null;
             /** Follow Ups */
             follow_ups?: components["schemas"]["FollowUpTopic"][];
-            history?: components["schemas"]["SongHistory"] | null;
             /** Judgments */
             judgments?: string[];
             /** Known Performance Count */
@@ -1551,7 +1490,7 @@ export interface components {
              */
             type: "song_overview";
             /** Visible Facets */
-            visible_facets?: ("credits" | "albums" | "history" | "representatives" | "by_year")[];
+            visible_facets?: ("credits" | "albums" | "representatives" | "by_year")[];
             /** Year Counts */
             year_counts?: components["schemas"]["SongYearCount"][];
             /** Year Questions */
@@ -1706,30 +1645,6 @@ export interface components {
             /** Venue Name */
             venue_name?: string | null;
         };
-        /**
-         * SongYearPick
-         * @description The library's pick for a year without a stop: a picked version, a picked show, a release, else the first.
-         */
-        SongYearPick: {
-            /**
-             * Basis
-             * @enum {string}
-             */
-            basis: "picked" | "show_picked" | "released" | "first";
-            /** Basis Detail */
-            basis_detail?: string | null;
-            /** Performance Id */
-            performance_id: string;
-            /** Seconds */
-            seconds?: number | null;
-            /** Set Label */
-            set_label?: string | null;
-            /** Show Date */
-            show_date: string;
-            track?: components["schemas"]["PlayableTrack"] | null;
-            /** Venue Name */
-            venue_name?: string | null;
-        };
         /** SongYearQuestion */
         SongYearQuestion: {
             /** Question */
@@ -1747,7 +1662,6 @@ export interface components {
             longest?: components["schemas"]["SongYearLongest"] | null;
             /** Median Seconds */
             median_seconds?: number | null;
-            pick?: components["schemas"]["SongYearPick"] | null;
             top_next?: components["schemas"]["SongYearNext"] | null;
             /** Year */
             year: number;

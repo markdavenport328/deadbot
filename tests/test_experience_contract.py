@@ -26,7 +26,7 @@ def test_contract_version_two_uses_emphasis_and_server_set_mode():
         assert not hasattr(experience, removed), removed
 
 
-def test_show_unit_accepts_lineup_and_recordings_facets_and_song_overview_accepts_history():
+def test_show_unit_accepts_lineup_and_recordings_facets_and_song_overview_accepts_the_timeline():
     unit = experience.ShowUnitBlock(
         type="show_unit", show_id="gd-1972-08-27", show_date="1972-08-27",
         visible_facets=["lineup", "recordings"],
@@ -34,10 +34,10 @@ def test_show_unit_accepts_lineup_and_recordings_facets_and_song_overview_accept
         recordings=[experience.RecordingItem(recording_id="r1", title="SBD", source_type="soundboard", url="https://archive.org/details/x", source_id="recording:r1")],
     )
     assert unit.emphasis == "supporting" and unit.lineup[0].name == "Jerry Garcia"
-    item = experience.PerformanceListItem(performance_id="p1", show_id="gd-1972-08-27", show_date="1972-08-27", show_label="1972-08-27 — Veneta")
     song = experience.SongOverviewBlock(
         type="song_overview", song_id="song-sugaree", title="Sugaree", known_performance_count=1,
-        emphasis="primary", visible_facets=["history"],
-        history=experience.SongHistory(known_count=1, first=item, last=item, by_year=[]),
+        emphasis="primary", visible_facets=["by_year"], open_year=1972,
+        year_summaries=[experience.SongYearSummary(year=1972, count=1)],
+        length_points=[experience.SongLengthPoint(performance_id="p1", show_date="1972-08-27", seconds=600)],
     )
-    assert song.history.first.performance_id == "p1"
+    assert song.year_summaries[0].count == 1 and song.open_year == 1972

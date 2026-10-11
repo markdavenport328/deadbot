@@ -10,8 +10,6 @@ type Schemas = components["schemas"];
 type Require<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
 
 export type TimelineTrack = Schemas["PlayableTrack"];
-export type YearPick = Schemas["SongYearPick"];
-export type PickBasis = YearPick["basis"];
 export type YearSummary = Schemas["SongYearSummary"];
 export type LengthPoint = Schemas["SongLengthPoint"];
 

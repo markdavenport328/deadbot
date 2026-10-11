@@ -1,9 +1,24 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, test, vi } from "vitest";
 import { PlayerProvider, usePlayer } from "./player";
 import { SongTimeline } from "./SongTimeline";
 import type { SongTimelineData, SongYearDetail, TimelineTrack } from "./song-timeline-types";
+
+// jsdom has no PointerEvent; this stand-in carries the pointer type and position the timeline reads.
+if (!("PointerEvent" in window)) {
+  class PointerEventStandIn extends MouseEvent {
+    pointerId: number;
+    pointerType: string;
+    constructor(type: string, init: PointerEventInit = {}) {
+      super(type, init);
+      this.pointerId = init.pointerId ?? 0;
+      this.pointerType = init.pointerType ?? "mouse";
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test shim, not app code
+  (window as any).PointerEvent = PointerEventStandIn;
+}
 
 const track = (id: string): TimelineTrack => ({ performance_id: id, title: "Terrapin Station", audio_url: `https://archive.org/download/gd/${id}.mp3`, duration_seconds: 600, set_label: "Set 2" });
 
@@ -17,17 +32,15 @@ const data: SongTimelineData = {
       count: 2,
       median_seconds: 640,
       longest: { performance_id: "p-hartford", seconds: 671 },
-      top_next: { title: "Playing In The Band", count: 1 },
-      pick: { performance_id: "p-debut", show_date: "1977-02-26", venue_name: "Swing Auditorium", set_label: "Set 1", seconds: 668, basis: "released", basis_detail: "Dave's Picks, Volume 29: Swing", track: track("p-debut") }
+      top_next: { title: "Playing In The Band", count: 1 }
     },
-    { year: 1978, count: 0, median_seconds: null, longest: null, top_next: null, pick: null },
+    { year: 1978, count: 0, median_seconds: null, longest: null, top_next: null },
     {
       year: 1979,
       count: 1,
       median_seconds: 735,
       longest: { performance_id: "p-msg", seconds: 735 },
-      top_next: { title: "Playing In The Band", count: 1 },
-      pick: { performance_id: "p-msg", show_date: "1979-01-08", venue_name: "Madison Square Garden", set_label: "Set 2", seconds: 735, basis: "show_picked", basis_detail: "Charlie Miller", track: track("p-msg") }
+      top_next: { title: "Playing In The Band", count: 1 }
     }
   ],
   length_points: [
@@ -99,7 +112,7 @@ test("played years are buttons; a year it was not played is not", () => {
   expect(screen.queryByRole("button", { name: /^1978/ })).not.toBeInTheDocument();
 });
 
-test("the model's open year opens first with its facts and pick", () => {
+test("the model's open year opens first with its facts and stop", () => {
   setup();
   const panel = screen.getByRole("region", { name: "1979" });
   expect(within(panel).getByText("1 performance · typically 12:15 · usually followed by Playing In The Band (1 of 1)")).toBeInTheDocument();
@@ -120,12 +133,14 @@ test("choosing a year opens it, and arrows skip the years it was not played", as
   expect(screen.getByRole("region", { name: "1979" })).toBeInTheDocument();
 });
 
-test("a year without a stop shows the library's pick and why", async () => {
+test("a year without a stop features no performance; See all and Ask stay", async () => {
   const user = userEvent.setup();
-  setup({ stops: [] });
-  expect(screen.getByText("Show picked by Charlie Miller")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /^1977:/ }));
-  expect(screen.getByText("On Dave's Picks, Volume 29")).toBeInTheDocument();
+  setup({ stops: [], open_year: 1979 });
+  const panel = screen.getByRole("region", { name: "1979" });
+  expect(within(panel).queryByRole("button", { name: /^Play / })).not.toBeInTheDocument();
+  expect(within(panel).getByRole("button", { name: "See all 1 from 1979" })).toBeInTheDocument();
+  await user.click(within(panel).getByRole("button", { name: /How did the 1979 Terrapins differ/ }));
+  expect(screen.queryByText(/Show picked by/)).not.toBeInTheDocument();
 });
 
 test("the Length view draws one dot per performance with a length", async () => {
@@ -201,7 +216,7 @@ test("a dot plays its performance once its year has loaded", async () => {
   await waitFor(() => expect(screen.getByTestId("queue")).toHaveTextContent("p-msg"));
 });
 
-test("a year with a stop asks about the stop, not the library's pick", async () => {
+test("a year with a stop asks about the stop", async () => {
   const user = userEvent.setup();
   const { onAsk } = setup();
   await user.click(screen.getByRole("button", { name: /^1977:/ }));
@@ -225,4 +240,32 @@ test("a slow lookup for an earlier dot does not replace a later choice", async (
   await new Promise((resolve) => setTimeout(resolve, 0));
   expect(screen.getByTestId("queue")).toHaveTextContent("p-msg");
   expect(screen.getByTestId("queue")).not.toHaveTextContent("p-hartford");
+});
+
+
+test("dragging a finger across the chart opens the years under it", () => {
+  setup({ open_year: 1977 });
+  const chart = screen.getByRole("group", { name: "Terrapin Station by year" });
+  // 600px wide, three years: 1977 starts at 36px, 1978 (not played) at 222px, 1979 at 408px.
+  fireEvent.pointerDown(chart, { pointerType: "touch", clientX: 500, pointerId: 1 });
+  expect(screen.getByRole("region", { name: "1979" })).toBeInTheDocument();
+  fireEvent.pointerMove(chart, { pointerType: "touch", clientX: 100, pointerId: 1 });
+  expect(screen.getByRole("region", { name: "1977" })).toBeInTheDocument();
+  fireEvent.pointerUp(chart, { pointerType: "touch", clientX: 100, pointerId: 1 });
+  // A mouse moving over the chart opens nothing on its own.
+  fireEvent.pointerMove(chart, { pointerType: "mouse", clientX: 500, pointerId: 2 });
+  expect(screen.getByRole("region", { name: "1977" })).toBeInTheDocument();
+});
+
+test("a tap on a dot opens its year's list instead of aiming at the dot", async () => {
+  const user = userEvent.setup();
+  const { container, fetchYear } = setup({ open_year: 1977 });
+  await user.click(screen.getByRole("button", { name: "Length" }));
+  const chart = screen.getByRole("group", { name: "Terrapin Station by year" });
+  fireEvent.pointerDown(chart, { pointerType: "touch", clientX: 500, pointerId: 3 });
+  fireEvent.pointerUp(chart, { pointerType: "touch", clientX: 500, pointerId: 3 });
+  fireEvent.click([...container.querySelectorAll(".st-dot-hit")][2]);
+  expect(await screen.findByText("Terrapin Station › Playing In The Band")).toBeInTheDocument();
+  expect(fetchYear).toHaveBeenCalledWith("song-terrapin-station", 1979);
+  expect(screen.getByTestId("queue")).toHaveTextContent("");
 });

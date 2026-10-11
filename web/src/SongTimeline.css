@@ -9,9 +9,10 @@
 .st-view:hover { color: var(--cream); }
 .st-view[aria-pressed="true"] { color: var(--cream); border-bottom-color: var(--cream); }
 .st-caption { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.st-caption-touch { display: none; }
 
 .st-chart { position: relative; min-height: 230px; }
-.st-svg { display: block; max-width: 100%; overflow: visible; }
+.st-svg { display: block; max-width: 100%; overflow: visible; touch-action: pan-y; -webkit-tap-highlight-color: transparent; user-select: none; }
 .st-grid { stroke: var(--hair); }
 .st-axis { fill: var(--quiet); font-size: 11px; font-variant-numeric: tabular-nums; }
 .st-axis-selected { fill: var(--cream); font-weight: 600; }
@@ -31,6 +32,7 @@
 .st-dot:hover .st-dot-mark { fill: var(--listen); opacity: 1; }
 .st-pin { cursor: pointer; outline: none; }
 .st-pin-stem { stroke: var(--listen); stroke-opacity: 0.45; stroke-dasharray: 2 2; }
+.st-pin-hit { fill: transparent; }
 .st-pin-dot { fill: var(--ground); stroke: var(--listen); stroke-width: 1.5; }
 .st-pin-number { fill: var(--listen); font-size: 10px; font-weight: 700; }
 .st-pin:hover .st-pin-dot, .st-pin-active .st-pin-dot { fill: var(--listen); }
@@ -104,6 +106,18 @@ button.st-stop:hover .st-stop-label, .st-stop-playing .st-stop-label { color: va
   .st-stops { grid-template-columns: minmax(0, 1fr); }
   .st-row { grid-template-columns: 28px 3.4rem minmax(0, 1fr) 3rem; }
   .st-row-flow { grid-column: 3 / 5; grid-row: 2; font-size: 0.8rem; }
+}
+/* A finger: its own instructions, and controls at least 44px to tap. */
+@media (hover: none) and (pointer: coarse) {
+  .st-caption-pointer { display: none; }
+  .st-caption-touch { display: inline; }
+  .st-view { padding-block: 0.75rem; }
+  .st-year-step button { min-width: 2.75rem; min-height: 2.75rem; }
+  .st-play-small { width: 2.75rem; height: 2.75rem; }
+  .st-row { grid-template-columns: 2.75rem 3.4rem minmax(0, 1fr) 3rem; }
+  .st-see-all { min-height: 2.75rem; }
+  .st-ask { min-height: 2.75rem; }
+  .st-stop { min-height: 2.75rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .st-play-big, .st-stop-label { transition: none; }

@@ -14,7 +14,6 @@
   "credits",
   "albums"
  ],
- "history": null,
  "year_counts": [
   {
    "year": 1977,
@@ -244,22 +243,6 @@
    "top_next": {
     "title": "Playing In The Band",
     "count": 8
-   },
-   "pick": {
-    "performance_id": "gd-1977-06-09-terrapin-station-2-10",
-    "show_date": "1977-06-09",
-    "venue_name": "Winterland",
-    "set_label": "Set 2",
-    "seconds": 670,
-    "basis": "show_picked",
-    "basis_detail": "David Fricke / Rolling Stone",
-    "track": {
-     "performance_id": "gd-1977-06-09-terrapin-station-2-10",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1977-06-09.sbd.dauria.3372.shnf/gd77-06-09d3t03.mp3",
-     "duration_seconds": 432,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -273,22 +256,6 @@
    "top_next": {
     "title": "Playing In The Band",
     "count": 16
-   },
-   "pick": {
-    "performance_id": "gd-1978-01-22-terrapin-station-2-5",
-    "show_date": "1978-01-22",
-    "venue_name": "MacArthur Court, University of Oregon",
-    "set_label": "Set 2",
-    "seconds": 668,
-    "basis": "released",
-    "basis_detail": "Dave’s Picks, Volume 23: McArthur Court, U. Of Oregon, Eugene, OR · 1/22/78",
-    "track": {
-     "performance_id": "gd-1978-01-22-terrapin-station-2-5",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1978-01-22.sbd.miller.110632.flac16/gd78-01-22d3t01.mp3",
-     "duration_seconds": 651,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -302,22 +269,6 @@
    "top_next": {
     "title": "Playing In The Band",
     "count": 20
-   },
-   "pick": {
-    "performance_id": "gd-1979-01-08-terrapin-station-2-4",
-    "show_date": "1979-01-08",
-    "venue_name": "Madison Square Garden",
-    "set_label": "Set 2",
-    "seconds": 735,
-    "basis": "show_picked",
-    "basis_detail": "Charlie Miller",
-    "track": {
-     "performance_id": "gd-1979-01-08-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1979-01-08.nak300-wagner.miller.87657.flac16/gd79-01-08d3t01.mp3",
-     "duration_seconds": 735,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -331,22 +282,6 @@
    "top_next": {
     "title": "Drums",
     "count": 8
-   },
-   "pick": {
-    "performance_id": "gd-1980-05-11-terrapin-station-2-4",
-    "show_date": "1980-05-11",
-    "venue_name": "Cumberland County Civic Center",
-    "set_label": "Set 2",
-    "seconds": 729,
-    "basis": "show_picked",
-    "basis_detail": "Charlie Miller",
-    "track": {
-     "performance_id": "gd-1980-05-11-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1980-05-11.sbd.miller.89577.sbeok.flac16/gd80-05-11d2t04.mp3",
-     "duration_seconds": 729,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -360,22 +295,6 @@
    "top_next": {
     "title": "Playing In The Band",
     "count": 4
-   },
-   "pick": {
-    "performance_id": "gd-1981-12-31-terrapin-station-2-3",
-    "show_date": "1981-12-31",
-    "venue_name": "Oakland Auditorium",
-    "set_label": "Set 2",
-    "seconds": 852,
-    "basis": "show_picked",
-    "basis_detail": "Charlie Miller",
-    "track": {
-     "performance_id": "gd-1981-12-31-terrapin-station-2-3",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1981-12-31.143570.sbd.healy.walker.scotton.miller.clugston.flac1648/Gd81-12-31S2t04TerrapinStation.mp3",
-     "duration_seconds": 852,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -389,22 +308,6 @@
    "top_next": {
     "title": "Drums",
     "count": 6
-   },
-   "pick": {
-    "performance_id": "gd-1982-04-06-terrapin-station-2-4",
-    "show_date": "1982-04-06",
-    "venue_name": "Spectrum",
-    "set_label": "Set 2",
-    "seconds": 718,
-    "basis": "released",
-    "basis_detail": "Road Trips, Volume 4, No. 4: Spectrum 4‐6‐82",
-    "track": {
-     "performance_id": "gd-1982-04-06-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1982-04-06.143370.sbd.mtx.wise.miller.clugston.mdmilhausen.flac1644/16.TerrapinStation.mp3",
-     "duration_seconds": 718,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -418,22 +321,6 @@
    "top_next": {
     "title": "Drums",
     "count": 7
-   },
-   "pick": {
-    "performance_id": "gd-1983-03-31-terrapin-station-2-4",
-    "show_date": "1983-03-31",
-    "venue_name": "Warfield Theatre",
-    "set_label": "Set 2",
-    "seconds": 757,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1983-03-31-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1983-03-31.sbd.miller.32306.sbeok.flac16/gd83-03-31d2t01.mp3",
-     "duration_seconds": 757,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -447,22 +334,6 @@
    "top_next": {
     "title": "Drums",
     "count": 6
-   },
-   "pick": {
-    "performance_id": "gd-1984-04-19-terrapin-station-2-4",
-    "show_date": "1984-04-19",
-    "venue_name": "Civic Convention Hall Auditorium",
-    "set_label": "Set 2",
-    "seconds": 818,
-    "basis": "released",
-    "basis_detail": "Dave’s Picks, Volume 35: Philadelphia Civic Center, Philadelphia, PA · 4/20/1984",
-    "track": {
-     "performance_id": "gd-1984-04-19-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1984-04-19.sbd.miller.118658.flac16/gd84-04-19d2t05.mp3",
-     "duration_seconds": 791,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -476,22 +347,6 @@
    "top_next": {
     "title": "Drums",
     "count": 6
-   },
-   "pick": {
-    "performance_id": "gd-1985-02-19-terrapin-station-2-2",
-    "show_date": "1985-02-19",
-    "venue_name": "Henry J. Kaiser Convention Center",
-    "set_label": "Set 2",
-    "seconds": 522,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1985-02-19-terrapin-station-2-2",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd85-02-19.sbd.barbella.9879.sbeok.shnf/gd85-02-19d2t02.mp3",
-     "duration_seconds": 522,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -505,22 +360,6 @@
    "top_next": {
     "title": "Drums",
     "count": 4
-   },
-   "pick": {
-    "performance_id": "gd-1986-02-14-terrapin-station-2-4",
-    "show_date": "1986-02-14",
-    "venue_name": "Henry J. Kaiser Convention Center",
-    "set_label": "Set 2",
-    "seconds": 724,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1986-02-14-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1986-02-14.142427.sbd.pcm.miller.flac1644/14TerrapinStation.mp3",
-     "duration_seconds": 724,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -534,22 +373,6 @@
    "top_next": {
     "title": "Drums",
     "count": 21
-   },
-   "pick": {
-    "performance_id": "gd-1987-09-18-terrapin-station-2-3",
-    "show_date": "1987-09-18",
-    "venue_name": "Madison Square Garden",
-    "set_label": "Set 2",
-    "seconds": 804,
-    "basis": "show_picked",
-    "basis_detail": "David Fricke / Rolling Stone",
-    "track": {
-     "performance_id": "gd-1987-09-18-terrapin-station-2-3",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1987-09-18.124840.sbd.sbeok.Eichorn.flac16/gd87-09-18d02t04.mp3",
-     "duration_seconds": 804,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -563,22 +386,6 @@
    "top_next": {
     "title": "Drums",
     "count": 19
-   },
-   "pick": {
-    "performance_id": "gd-1988-09-16-terrapin-station-2-5",
-    "show_date": "1988-09-16",
-    "venue_name": "Madison Square Garden",
-    "set_label": "Set 2",
-    "seconds": 706,
-    "basis": "released",
-    "basis_detail": "1988‐09‐16: Madison Square Garden, New York, NY, USA",
-    "track": {
-     "performance_id": "gd-1988-09-16-terrapin-station-2-5",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1988-09-16.164211.UltraMatrix.sbd.cm.miller.t.flac1644/15%20Terrapin%20Station.mp3",
-     "duration_seconds": 707,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -592,22 +399,6 @@
    "top_next": {
     "title": "Drums",
     "count": 13
-   },
-   "pick": {
-    "performance_id": "gd-1989-04-05-terrapin-station-2-4",
-    "show_date": "1989-04-05",
-    "venue_name": "Crisler Arena, University of Michigan",
-    "set_label": "Set 2",
-    "seconds": 752,
-    "basis": "released",
-    "basis_detail": "1989-04-05: Crisler Arena, Ann Arbor, MI, USA",
-    "track": {
-     "performance_id": "gd-1989-04-05-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1989-04-05.144913.sbd.miller.flac2496/15%20Terrapin%20Station.mp3",
-     "duration_seconds": 752,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -621,22 +412,6 @@
    "top_next": {
     "title": "Drums",
     "count": 9
-   },
-   "pick": {
-    "performance_id": "gd-1990-03-15-terrapin-station-2-4",
-    "show_date": "1990-03-15",
-    "venue_name": "Capital Centre",
-    "set_label": "Set 2",
-    "seconds": 863,
-    "basis": "released",
-    "basis_detail": "Terrapin Station: Live",
-    "track": {
-     "performance_id": "gd-1990-03-15-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1990-03-15.140983.sbd.miller.flac2496/15TerrapinStation.mp3",
-     "duration_seconds": 1359,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -650,22 +425,6 @@
    "top_next": {
     "title": "Jam",
     "count": 12
-   },
-   "pick": {
-    "performance_id": "gd-1991-09-12-terrapin-station-2-4",
-    "show_date": "1991-09-12",
-    "venue_name": "Madison Square Garden",
-    "set_label": "Set 2",
-    "seconds": 758,
-    "basis": "released",
-    "basis_detail": "So Many Roads (1965–1995)",
-    "track": {
-     "performance_id": "gd-1991-09-12-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1991-09-12.149784.sbd.millerflac2496/14%20Terrapin%20Station.mp3",
-     "duration_seconds": 738,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -679,22 +438,6 @@
    "top_next": {
     "title": "Jam",
     "count": 7
-   },
-   "pick": {
-    "performance_id": "gd-1992-02-23-terrapin-station-2-4",
-    "show_date": "1992-02-23",
-    "venue_name": "Oakland-Alameda County Coliseum Arena",
-    "set_label": "Set 2",
-    "seconds": 1050,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1992-02-23-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1992-02-23.149829.sbd.miller.flac2496/13%20Terrapin%20Station.mp3",
-     "duration_seconds": 1050,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -708,22 +451,6 @@
    "top_next": {
     "title": "Jam",
     "count": 14
-   },
-   "pick": {
-    "performance_id": "gd-1993-01-26-terrapin-station-2-4",
-    "show_date": "1993-01-26",
-    "venue_name": "Oakland-Alameda County Coliseum Arena",
-    "set_label": "Set 2",
-    "seconds": 1075,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1993-01-26-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1993-01-26.143161.sbd.miller.flac2496/11TerrapinStation.mp3",
-     "duration_seconds": 1075,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -737,22 +464,6 @@
    "top_next": {
     "title": "Jam",
     "count": 13
-   },
-   "pick": {
-    "performance_id": "gd-1994-04-04-terrapin-station-2-4",
-    "show_date": "1994-04-04",
-    "venue_name": "Orlando Arena",
-    "set_label": "Set 2",
-    "seconds": 948,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1994-04-04-terrapin-station-2-4",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd1994-04-04.156443.sbd.miller.flac2448/13%20Terrapin%20Station.mp3",
-     "duration_seconds": 948,
-     "set_label": "Set 2"
-    }
    }
   },
   {
@@ -766,22 +477,6 @@
    "top_next": {
     "title": "Jam",
     "count": 5
-   },
-   "pick": {
-    "performance_id": "gd-1995-03-26-terrapin-station-2-5",
-    "show_date": "1995-03-26",
-    "venue_name": "The Omni",
-    "set_label": "Set 2",
-    "seconds": 1084,
-    "basis": "first",
-    "basis_detail": null,
-    "track": {
-     "performance_id": "gd-1995-03-26-terrapin-station-2-5",
-     "title": "Terrapin Station",
-     "audio_url": "https://archive.org/download/gd95-03-26.sbd.3909.sbeok.shnf/gd1995-03-26d2t05.mp3",
-     "duration_seconds": 1084,
-     "set_label": "Set 2"
-    }
    }
   }
  ],

@@ -1,7 +1,7 @@
 // The song timeline's words: every line is built from library facts or the
 // model's own text, never invented here.
 import { clock } from "./VersionStrip";
-import type { SongTimelineData, TimelineFocus, YearPerformance, YearPick, YearSummary } from "./song-timeline-types";
+import type { SongTimelineData, TimelineFocus, YearPerformance, YearSummary } from "./song-timeline-types";
 import type { AskFocus } from "./types";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -32,22 +32,6 @@ export function yearFacts(summary: YearSummary): string {
   return parts.join(" · ");
 }
 
-// Why this is the year's pick: the model's stop if it named one, else the library's reason.
-export function pickEyebrow(pick: YearPick, stop: { number: number; label: string | null } | null): string {
-  if (stop) return stop.label ? `Stop ${stop.number} · ${stop.label}` : `Stop ${stop.number}`;
-  const detail = pick.basis_detail ?? "";
-  switch (pick.basis) {
-    case "picked":
-      return `Picked by ${detail}`;
-    case "show_picked":
-      return `Show picked by ${detail}`;
-    case "released":
-      return `On ${detail.split(":")[0]}`;
-    default:
-      return "First of the year";
-  }
-}
-
 export function askQuestion(data: SongTimelineData, year: number): string {
   return data.year_questions.find((item) => item.year === year)?.question ?? `Tell me about ${data.title} in ${year}`;
 }
@@ -69,14 +53,13 @@ export function performanceTags(performance: YearPerformance, stopNumber: number
   return tags;
 }
 
-// `chosenId` is the performance the panel shows for the year: the model's stop
-// when it named one, else the library's pick.
-export function focusFor(data: SongTimelineData, summary: YearSummary, chosenId: string | null = summary.pick?.performance_id ?? null): TimelineFocus {
+// `stopId` is the model's stop in that year, when it chose one.
+export function focusFor(data: SongTimelineData, summary: YearSummary, stopId: string | null = null): TimelineFocus {
   return {
     label: `${data.title} in ${summary.year}`,
     song_id: data.song_id,
     year: summary.year,
-    ids: [data.song_id, ...(chosenId ? [chosenId] : [])],
+    ids: [data.song_id, ...(stopId ? [stopId] : [])],
     facts: [yearFacts(summary)]
   };
 }
@@ -87,9 +70,11 @@ export function askFocus(focus: TimelineFocus): AskFocus {
   return { block_type: "song_overview", block_id: focus.song_id, label: focus.label, ids: focus.ids, facts: focus.facts };
 }
 
-// The model's open year when it was played; otherwise the first year with a pick.
+// The model's open year when it was played; otherwise the first year it put a
+// stop in; otherwise the first year the song was played.
 export function initialYear(data: SongTimelineData): number | null {
-  const played = data.year_summaries.filter((summary) => summary.count > 0);
-  if (data.open_year != null && played.some((summary) => summary.year === data.open_year)) return data.open_year;
-  return (played.find((summary) => summary.pick) ?? played[0])?.year ?? null;
+  const played = data.year_summaries.filter((summary) => summary.count > 0).map((summary) => summary.year);
+  if (data.open_year != null && played.includes(data.open_year)) return data.open_year;
+  const stopYear = data.stops.map((stop) => Number(stop.show_date?.slice(0, 4))).find((year) => played.includes(year));
+  return stopYear ?? played[0] ?? null;
 }
