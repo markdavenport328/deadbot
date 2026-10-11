@@ -1,10 +1,12 @@
 import logging
 
 from fastapi.testclient import TestClient
+from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import experience, notebook
+from deadbot import composition, experience, notebook
 from deadbot.api import create_app
 from deadbot.config import Settings
+from deadbot.finish import FOCUS_MESSAGE_NAME, build_experience_response
 from notebook_support import LYCEUM, SECRET, record, store, turn
 from test_experience import FakeAgent, StreamingFakeAgent, _CachingStore, _ndjson
 
@@ -97,3 +99,92 @@ def test_a_cached_starter_answer_carries_its_notebook_and_notebook_requests_skip
     assert cached["notebook"] == live["notebook"]
     client.post("/api/experience", json={"question": EUROPE, "notebook": live["notebook"]})
     assert len(agent.calls) == 2
+
+
+def test_each_turns_research_follows_its_answer_and_the_question_comes_last():
+    book, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    agent = FakeAgent(turn("Compare the Lyceum nights.", "Four nights.", []))
+    _client(agent).post("/api/experience", json={
+        "question": "Compare the Lyceum nights.", "thread_id": "browser-1", "conversation": FIRST_EXCHANGE, "notebook": token,
+    })
+    sent = agent.calls[0][0]["messages"]
+    assert [message.type for message in sent] == ["human", "ai", "human", "human"]
+    assert sent[2].name == composition.NOTEBOOK_MESSAGE_NAME
+    assert sent[2].content.startswith("Research notebook, turn 1:")
+    assert f"[{book.entries[0].key}] get_show gd-1972-05-26" in sent[2].content
+    assert sent[3].content == "Compare the Lyceum nights."
+
+
+def test_a_new_turn_leaves_every_earlier_message_byte_identical():
+    first, first_token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    second, _ = record(first, "Tell me about May 26.", "The last Lyceum night.", [("get_song", {"song_id_or_title": "Morning Dew"})], prefix="t1")
+    second_token = notebook.encode(second, SECRET)
+    agent_one = FakeAgent(turn("Tell me about May 26.", "The last Lyceum night.", []))
+    _client(agent_one).post("/api/experience", json={"question": "Tell me about May 26.", "conversation": FIRST_EXCHANGE, "notebook": first_token})
+    agent_two = FakeAgent(turn("And its Morning Dew?", "Out of The Other One.", []))
+    two_exchanges = FIRST_EXCHANGE + [{"role": "user", "text": "Tell me about May 26."}, {"role": "assistant", "text": "The last Lyceum night."}]
+    _client(agent_two).post("/api/experience", json={"question": "And its Morning Dew?", "conversation": two_exchanges, "notebook": second_token})
+    one = [message.content for message in agent_one.calls[0][0]["messages"]][:-1]
+    two = [message.content for message in agent_two.calls[0][0]["messages"]]
+    assert two[: len(one)] == one
+    assert two[len(one) + 2].startswith("Research notebook, turn 2:")
+
+
+def test_a_click_on_something_already_researched_is_flagged_before_the_question_beside_the_grid_note():
+    book, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    question = "Tell me about the Morning Dew from May 26, 1972."
+    agent = FakeAgent(turn(question, "Out of The Other One.", []))
+    _client(agent).post("/api/experience", json={
+        "question": question,
+        "conversation": FIRST_EXCHANGE,
+        "notebook": token,
+        "focus": {"label": "Morning Dew \u00b7 May 26, 1972", "block_type": "grid", "block_id": "grid:abc",
+                  "ids": ["gd-1972-05-26", "song-morning-dew"], "facts": []},
+    })
+    sent = agent.calls[0][0]["messages"]
+    # [... flags, question, the grid's own focus note]: separate messages.
+    assert sent[-3].name == composition.NOTEBOOK_MESSAGE_NAME
+    assert sent[-3].content.startswith("Already in the research notebook for what the visitor clicked:")
+    assert book.entries[0].key in sent[-3].content
+    assert sent[-2].content == question
+    assert sent[-1].name == FOCUS_MESSAGE_NAME
+    assert "Already in the research notebook" not in sent[-1].content
+
+
+def test_a_focus_with_nothing_researched_adds_no_flags_message():
+    agent = FakeAgent(turn("Q", "A", []))
+    _client(agent).post("/api/experience", json={
+        "question": "Q", "conversation": FIRST_EXCHANGE,
+        "focus": {"label": "x", "block_type": "grid", "block_id": "g", "ids": ["gd-1972-05-26"], "facts": []},
+    })
+    sent = agent.calls[0][0]["messages"]
+    assert [message.name for message in sent if message.type == "human"].count(composition.NOTEBOOK_MESSAGE_NAME) == 0
+
+
+def test_a_notebook_without_a_transcript_still_gets_its_own_invocation_thread_and_the_cache_key():
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    agent = FakeAgent(turn("Q", "A", []))
+    _client(agent).post("/api/experience", json={"question": "Q", "thread_id": "browser-1", "notebook": token})
+    config = agent.calls[0][1]
+    assert config["configurable"]["thread_id"].startswith("browser-1:request:")
+    assert config["configurable"]["prompt_cache_key"] == "browser-1"
+    assert isinstance(config["configurable"]["notebook"], notebook.Notebook)
+
+
+def test_the_streamed_run_gets_the_same_config():
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    agent = StreamingFakeAgent(turn("Q", "A", []))
+    _client(agent).post("/api/experience/stream", json={"question": "Q", "thread_id": "browser-1", "notebook": token})
+    config = agent.calls[0][1]
+    assert config["configurable"]["prompt_cache_key"] == "browser-1"
+    assert isinstance(config["configurable"]["notebook"], notebook.Notebook)
+
+
+def test_notebook_messages_stay_out_of_the_visible_conversation():
+    messages = [
+        HumanMessage(content="q1"), AIMessage(content="a1"),
+        notebook.notebook_message("Research notebook, turn 1: what the tools returned"),
+        *turn("q2", "a2", []),
+    ]
+    response = build_experience_response("q2", "t", messages, store())
+    assert [item.text for item in response.conversation] == ["q1", "a1", "q2", "a2"]

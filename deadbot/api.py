@@ -215,10 +215,16 @@ def create_app(
         thread_id = request.thread_id or f"web-{uuid.uuid4()}"
         book = notebook.decode(request.notebook, app.state.settings.notebook_secret)
         conversation = _trimmed_conversation(request.conversation, app.state.settings.conversation_window)
-        messages = [
-            HumanMessage(content=turn.text) if turn.role == "user" else AIMessage(content=turn.text)
-            for turn in conversation
-        ]
+        # Each earlier turn's notebook lines sit right after that turn's
+        # answer, so a new turn only appends and the provider's prompt cache
+        # keeps everything before the new question.
+        messages = notebook.transcript_with_notebook(book, conversation)
+        if request.focus is not None:
+            # Research already done on what the visitor clicked, in a message of
+            # its own before the question (the grid's note of the click follows it).
+            flags = notebook.render_flags(notebook.entries_mentioning(book, request.focus.ids))
+            if flags:
+                messages.append(notebook.notebook_message(flags))
         messages.append(HumanMessage(content=request.question.strip()))
         grounded_focus = focus_ids(app.state.store, request.focus)
         if request.focus is not None:
@@ -236,6 +242,14 @@ def create_app(
             messages=messages,
             focus_ids=frozenset(grounded_focus),
             notebook=book,
+        )
+
+    def _run_config(invocation: _Invocation) -> dict:
+        return run_config(
+            invocation.invocation_thread_id,
+            app.state.settings,
+            notebook=invocation.notebook,
+            prompt_cache_key=invocation.thread_id,
         )
 
     def _release(invocation: _Invocation) -> None:
@@ -299,7 +313,7 @@ def create_app(
                     return cached
                 result = app.state.agent.invoke(
                     {"messages": invocation.messages},
-                    run_config(invocation.invocation_thread_id, app.state.settings),
+                    _run_config(invocation),
                 )
                 # Assembling the response is inside the try so an unexpected raise
                 # while resolving the plan reaches the visitor as the same friendly
@@ -345,7 +359,7 @@ def create_app(
         served_from_cache = False
         messages: list[Any] = []
         try:
-            config = run_config(invocation.invocation_thread_id, app.state.settings)
+            config = _run_config(invocation)
             payload = {"messages": invocation.messages}
             stream = getattr(app.state.agent, "stream", None)
             # One query cache for the whole request. Each step of this

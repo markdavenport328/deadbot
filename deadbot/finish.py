@@ -1647,7 +1647,10 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     for message in all_messages:
         message_type = getattr(message, "type", None)
         text = composition._content_text(getattr(message, "content", "")).strip()
-        if message_type == "human" and text and getattr(message, "name", None) != FOCUS_MESSAGE_NAME:
+        # Notes the model reads (the grid's click, the research notebook) are not the visitor's words.
+        if message_type == "human" and getattr(message, "name", None) in (FOCUS_MESSAGE_NAME, composition.NOTEBOOK_MESSAGE_NAME):
+            continue
+        if message_type == "human" and text:
             turns.append(ConversationTurn(role="user", text=text[:8_000]))
             answer_index = None
         elif message_type == "ai":
