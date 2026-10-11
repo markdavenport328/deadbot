@@ -1,7 +1,7 @@
 {
   "suite_id": "grids-tool-retrieval",
   "version": "v1",
-  "description": "Retrieval baseline and live-review cases for the model-selected grid (get_grid): two lists of library things and the fact where each pair meets. Each case gives the visitor's question, a get_grid (or, for the negative case, aggregate_data) call a good answer would make, the pinned facts that call returns, and the failures to watch for when reading the live page. The arguments are one reasonable call, not the only one: the model chooses its own rows, columns and span, so a live run is judged on the page, not on matching these arguments. Pinned facts were measured 2026-10-10 against the deploy-built SQLite store; the Spring '77 Scarlet > Fire lengths were re-measured 2026-10-11 after the release-track pass linked more Dick's Picks and Road Trips tracks to their performances. They move whenever a data pass adds shows, setlists or release tracks; regenerate them against the live store rather than trusting this file blindly. Live results are in docs/measurements/2026-10-10-grids.md.",
+  "description": "Retrieval baseline and live-review cases for the model-selected grid (get_grid): two lists of library things and the fact where each pair meets. Each case gives the visitor's question, a get_grid (or, for the negative case, aggregate_data) call a good answer would make, the pinned facts that call returns, and the failures to watch for when reading the live page. The arguments are one reasonable call, not the only one: the model chooses its own rows, columns and span, so a live run is judged on the page, not on matching these arguments. Pinned facts were measured 2026-10-10 against the deploy-built SQLite store; the Spring '77 Scarlet > Fire lengths were re-measured 2026-10-11 after the release-track pass linked more Dick's Picks and Road Trips tracks to their performances. The Dick's Picks and guest cases were measured 2026-10-11 against the same store after the data pass that completed the 36 Dick's Picks volumes and folded duplicate guests onto one person id. They move whenever a data pass adds shows, setlists or release tracks; regenerate them against the live store rather than trusting this file blindly. Live results are in docs/measurements/2026-10-10-grids.md and docs/measurements/2026-10-11-grids-task9.md.",
   "cases": [
     {
       "id": "dark-star-vs-pitb-over-time",
@@ -86,6 +86,51 @@
         "Misses the Bickershaw exception: May 7, 1972 had both songs (Dark Star 20 minutes, The Other One 31).",
         "Claims a strict alternation the grid's cells contradict.",
         "No grid, so the visitor must read 22 dates in prose to see the pattern."
+      ]
+    },
+    {
+      "id": "dicks-picks-where-to-start",
+      "category": "release-by-song",
+      "question": "Which Dick's Picks should I start with?",
+      "tool": "get_grid",
+      "arguments": {"row_kind": "release", "rows": ["Dick's Picks 1", "Dick's Picks 2", "Dick's Picks 3", "Dick's Picks 4", "Dick's Picks 5", "Dick's Picks 6", "Dick's Picks 7", "Dick's Picks 8", "Dick's Picks 9", "Dick's Picks 10", "Dick's Picks 11", "Dick's Picks 12", "Dick's Picks 13", "Dick's Picks 14", "Dick's Picks 15", "Dick's Picks 16", "Dick's Picks 17", "Dick's Picks 18", "Dick's Picks 19", "Dick's Picks 20", "Dick's Picks 21", "Dick's Picks 22", "Dick's Picks 23", "Dick's Picks 24", "Dick's Picks 25", "Dick's Picks 26", "Dick's Picks 27", "Dick's Picks 28", "Dick's Picks 29", "Dick's Picks 30", "Dick's Picks 31", "Dick's Picks 32", "Dick's Picks 33", "Dick's Picks 34", "Dick's Picks 35", "Dick's Picks 36"], "column_kind": "song", "columns": ["Dark Star", "Playing in the Band", "The Other One", "Morning Dew", "Scarlet Begonias"]},
+      "page_expectation": "A few volumes recommended by what is on them and why, with a way to see the series side by side (a grid of records against the songs that tell them apart, album cards, or a ranked pick list) and to hear the records named. The volumes picked lead; the rest can wait behind Show all.",
+      "expected": {
+        "equals": {"rows_are": "release", "columns_are": "song", "measure": "minutes"},
+        "contains": {
+          "rows": {"id": "release-dicks-picks-volume-36-1972-09-21", "label": "Dick’s Picks 36", "sub": "The Spectrum, Philadelphia, PA 9/21/72"},
+          "cells.rows": ["release-dicks-picks-volume-36-1972-09-21", "song-dark-star", 37, 1, "value"],
+          "coverage.tracks_without_song": {"release_id": "release-dicks-picks-volume-13-1981-05-06", "tracks": 24, "without_song": 2},
+          "column_suggestions": {"id": "song-sugar-magnolia", "rows_with": 18}
+        }
+      },
+      "failure_conditions": [
+        "Recommends volumes without saying what is on them that makes each a good place to start.",
+        "A song length or track count in the words that the library's tracklists do not show (Dark Star on Dick's Picks 36 runs 37 minutes on one track).",
+        "Treats a song as missing from a volume where a track names no song but mentions it, such as Scarlet Begonias inside Nassau '81's medley track.",
+        "Names a volume or its date and venue wrongly, or recommends a Dick's Picks volume the library does not have.",
+        "Gives the visitor no way to hear or open the records it recommends."
+      ]
+    },
+    {
+      "id": "who-sat-in",
+      "category": "guest-by-year",
+      "question": "Who sat in with the Dead?",
+      "tool": "get_grid",
+      "arguments": {"row_kind": "guest", "rows": ["Ned Lagin", "David Nelson", "Bruce Hornsby", "Hamza el-Din", "John Cipollina", "Branford Marsalis", "Carlos Santana"], "column_kind": "year", "year_from": 1966, "year_to": 1995},
+      "page_expectation": "The guests who sat in most, with how often and when, so the visitor sees who belonged to which era (a grid of guests across the years, a ranked list of guests, or guest appearance cards), and a few nights worth hearing.",
+      "expected": {
+        "equals": {"rows_are": "guest", "columns_are": "year", "measure": "shows"},
+        "contains": {
+          "rows": {"id": "person-bruce-hornsby", "label": "Bruce Hornsby", "total": 16},
+          "cells.rows": ["person-ned-lagin", "year:1974", 23, 0, "value"]
+        }
+      },
+      "failure_conditions": [
+        "A guest's count of shows in the words that differs from the library's guest credits (Ned Lagin 33, Bruce Hornsby 16 as a guest).",
+        "Lists the same person twice under two names.",
+        "Calls a band member a guest, or a guest a member, without saying which years each applies to.",
+        "Answers with a list of names and no sense of when each sat in or how often."
       ]
     },
     {
