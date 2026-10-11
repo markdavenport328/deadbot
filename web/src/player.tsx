@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode
 } from "react";
+import { archiveFallbackUrls } from "./archive-fallback";
 
 // The one shared player for the whole app: a single <audio> element behind a
 // context, so playback survives a page re-render or a follow-up question
@@ -71,12 +72,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PlayerState>(initialState);
   const stateRef = useRef(state);
   stateRef.current = state;
+  // The current load's second chance: archive.org links that fail get the
+  // item's primary servers (see archive-fallback.ts). Undefined urls means
+  // the lookup has not run yet.
+  const fallbackRef = useRef<{ trackId: string; urls?: string[] } | null>(null);
 
   // play() rejects with AbortError when a newer load interrupts it (a quick
-  // second click); that is not a playback failure, so only real rejections
-  // mark the track as errored.
+  // second click), and with NotSupportedError when the source fails, which
+  // the error event handles; only other rejections mark the track as errored.
   function onPlayRejected(error: unknown) {
     if (error instanceof DOMException && error.name === "AbortError") return;
+    if (error instanceof DOMException && error.name === "NotSupportedError" && audioRef.current?.error) return;
     setState((previous) => ({ ...previous, status: "error" }));
   }
 
@@ -90,6 +96,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const loadTrack = useCallback((track: PlayerTrack, queue: PlayerTrack[], index: number) => {
     const element = audio();
+    fallbackRef.current = { trackId: track.id };
     element.src = track.audioUrl;
     element.currentTime = 0;
     setState({ queue, index, status: "loading", position: 0, duration: track.durationSeconds ?? 0 });
@@ -105,7 +112,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const onPlaying = () => setState((previous) => ({ ...previous, status: "playing" }));
     const onPause = () => setState((previous) => (previous.status === "error" ? previous : { ...previous, status: "paused" }));
     const onWaiting = () => setState((previous) => ({ ...previous, status: "loading" }));
-    const onErrorEvent = () => setState((previous) => ({ ...previous, status: "error" }));
+    const markError = () => setState((previous) => ({ ...previous, status: "error" }));
+    const tryNextSource = (fallback: { urls?: string[] }) => {
+      const url = fallback.urls?.shift();
+      if (!url) return markError();
+      element.src = url;
+      element.play().catch(onPlayRejected);
+    };
+    const onErrorEvent = () => {
+      const fallback = fallbackRef.current;
+      const track = stateRef.current.queue[stateRef.current.index];
+      if (!fallback || !track || fallback.trackId !== track.id) return markError();
+      if (fallback.urls) return tryNextSource(fallback);
+      fallback.urls = [];
+      void archiveFallbackUrls(track.audioUrl).then((urls) => {
+        // A newer load replaced this one while the lookup ran.
+        if (fallbackRef.current !== fallback) return;
+        fallback.urls = urls;
+        tryNextSource(fallback);
+      });
+    };
     const onEnded = () => {
       const current = stateRef.current;
       const nextIndex = current.index + 1;
