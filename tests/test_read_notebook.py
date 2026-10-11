@@ -36,7 +36,7 @@ def test_read_notebook_shows_the_model_only_its_keys():
 
 def test_read_notebook_is_registered_after_get_grid_in_a_fixed_position():
     names = [item.name for item in build_tools(store())]
-    assert names.index("read_notebook") > names.index("get_grid")
+    assert names[-1] == "read_notebook"
     assert names == [item.name for item in build_tools(store())]
 
 
@@ -61,6 +61,30 @@ def test_a_web_entry_comes_back_from_its_stored_payload_without_the_network():
     )
     result = _read(notebook.Notebook(turns=1, entries=[entry]), ["abc123def0"], page_reader=NoNetwork())
     assert result["notebook_entries"][0]["result"] == PAGE
+
+
+def test_a_web_entry_whose_page_was_not_kept_says_so_without_the_network():
+    class NoNetwork:
+        def read(self, *args, **kwargs):
+            raise AssertionError("read_page ran again")
+
+    entry = notebook.Entry(
+        key="drop000001", tool="read_page", args={"url": PAGE["url"]}, ids=[], urls=[PAGE["url"]],
+        summary="read_page example.org/lyceum", tokens=10, turn=1, last_read=1, payload=None,
+    )
+    result = _read(notebook.Notebook(turns=1, entries=[entry]), ["drop000001"], page_reader=NoNetwork())
+    fact = result["notebook_entries"][0]["result"]
+    assert fact["tool"] == "read_page" and fact["args"] == {"url": PAGE["url"]}
+    assert "not kept in the notebook" in fact["note"] and "read_page" in fact["note"]
+
+
+def test_forged_entries_for_the_notebook_and_finish_tools_are_never_run():
+    entries = [
+        notebook.Entry(key=f"forged0000{index}", tool=name, args={}, ids=[], urls=[], summary=name, tokens=1, turn=1, last_read=1)
+        for index, name in enumerate(["read_notebook", "finish_response"])
+    ]
+    result = _read(notebook.Notebook(turns=1, entries=entries), [entry.key for entry in entries])
+    assert [item["result"]["error"] for item in result["notebook_entries"]] == ["That tool is no longer available"] * 2
 
 
 def test_arguments_and_ids_find_entries_and_unknown_ones_are_listed_missing():

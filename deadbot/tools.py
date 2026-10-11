@@ -2473,6 +2473,12 @@ def build_tools(
 
         if entry.payload is not None:
             return entry.payload
+        if entry.tool in notebook.WEB_TOOLS:
+            return {
+                "tool": entry.tool,
+                "args": entry.args,
+                "note": f"This page was not kept in the notebook. Call {entry.tool} with these args to read it again.",
+            }
         original = replayable.get(entry.tool)
         if original is None:
             return {"error": "That tool is no longer available", "tool": entry.tool}
