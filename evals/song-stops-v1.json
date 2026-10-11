@@ -1,0 +1,29 @@
+{
+  "suite_id": "song-stops",
+  "version": "v1",
+  "description": "Song questions asked live, the delivered page measured for the song timeline's stops against library facts: whether a song card and timeline appear, how many stops carry the model's label and reason, how widely they span the song's life and whether they reach beyond first, last and longest, whether every debut, last, longest, length and venue claim in a stop is true, and whether a question naming a year opens on it. Nothing here is expected of the model; it measures. Run with scripts/stop_eval.py; each case is one live model turn.",
+  "cases": [
+    {"id": "terrapin-often", "song_id": "song-terrapin-station", "question": "How often did they play terrapin"},
+    {"id": "terrapin-1979", "song_id": "song-terrapin-station", "year": 1979, "question": "What was Terrapin like in 1979?"},
+    {"id": "dark-star-change", "song_id": "song-dark-star", "question": "How did Dark Star change over the years?"},
+    {"id": "dark-star-when", "song_id": "song-dark-star", "question": "When was Dark Star played?"},
+    {"id": "morning-dew", "song_id": "song-morning-dew", "question": "How often did they play Morning Dew?"},
+    {"id": "eyes", "song_id": "song-eyes-of-the-world", "question": "Tell me about Eyes of the World live"},
+    {"id": "sugar-mag-best", "song_id": "song-sugar-magnolia", "question": "Best Sugar Magnolias"},
+    {"id": "scarlet", "song_id": "song-scarlet-begonias", "question": "Tell me about Scarlet Begonias"},
+    {"id": "china-cat", "song_id": "song-china-cat-sunflower", "question": "How did China Cat Sunflower evolve on stage?"},
+    {"id": "playin-1972", "song_id": "song-playing-in-the-band", "year": 1972, "question": "What was Playing in the Band like in 1972?"},
+    {"id": "bird-song", "song_id": "song-bird-song", "question": "How often did they play Bird Song?"},
+    {"id": "help-on-the-way", "song_id": "song-help-on-the-way", "question": "When did they play Help on the Way?"},
+    {"id": "st-stephen", "song_id": "song-saint-stephen", "question": "What happened to St. Stephen over the years?"},
+    {"id": "attics", "song_id": "song-attics-of-my-life", "question": "How often did they play Attics of My Life?"},
+    {"id": "blues-for-allah", "song_id": "song-blues-for-allah", "question": "When did they play Blues for Allah?"},
+    {"id": "box-of-rain", "song_id": "song-box-of-rain", "question": "Box of Rain live history"},
+    {"id": "stella-blue", "song_id": "song-stella-blue", "question": "Where should I start with Stella Blue?"},
+    {"id": "wharf-rat", "song_id": "song-wharf-rat", "question": "How did Wharf Rat change over the years?"},
+    {"id": "jack-straw-1977", "song_id": "song-jack-straw", "year": 1977, "question": "How often did they play Jack Straw in 1977?"},
+    {"id": "truckin", "song_id": "song-truckin", "question": "Truckin' through the years"},
+    {"id": "cassidy", "song_id": "song-cassidy", "question": "Tell me about Cassidy live"},
+    {"id": "not-fade-away", "song_id": "song-not-fade-away", "question": "How often did they play Not Fade Away?"}
+  ]
+}
