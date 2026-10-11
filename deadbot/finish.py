@@ -96,14 +96,10 @@ def _walk(value: Any, ids: set[str], urls: set[str], key: str | None = None) -> 
             ids.add(value)
 
 
-def grounded_context(payloads: list[dict[str, Any]], extra_ids: Iterable[str] = ()) -> GroundedContext:
-    """Collect every identifier and URL present in this turn's tool output.
+def grounded_context(payloads: list[dict[str, Any]]) -> GroundedContext:
+    """Collect every identifier and URL present in this turn's tool output."""
 
-    ``extra_ids`` are library IDs the server already resolved for this turn
-    (what the visitor clicked), which count as grounded like any tool result.
-    """
-
-    ids: set[str] = set(extra_ids)
+    ids: set[str] = set()
     urls: set[str] = set()
     for payload in payloads:
         _walk(payload, ids, urls)
@@ -1689,7 +1685,6 @@ def build_experience_response(
     thread_id: str,
     messages: Iterable[Any],
     store: CanonicalStore,
-    extra_ids: Iterable[str] = (),
     *,
     extra_grounding: GroundedContext | None = None,
 ) -> ExperienceResponse:
@@ -1717,7 +1712,7 @@ def build_experience_response(
             sources=[],
         )
 
-    grounded = grounded_context(payloads, extra_ids)
+    grounded = grounded_context(payloads)
     if extra_grounding is not None:
         grounded = merge_grounding(grounded, extra_grounding)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)

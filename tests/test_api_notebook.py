@@ -216,3 +216,23 @@ def test_the_streamed_page_grounds_notebook_ids_the_same_way():
 
 def test_the_finish_tool_names_the_notebook_as_a_source_of_ids():
     assert "research notebook" in build_finish_tool().description
+
+
+def test_a_url_the_notebook_holds_keeps_its_link_in_chat():
+    book, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    url = next(url for url in sorted(notebook.grounding(book)[1]) if url.startswith("http"))
+    answer = f"Hear it [here]({url})."
+    request = {"question": "Where can I hear it?", "conversation": FIRST_EXCHANGE}
+    linked = _client(FakeAgent(turn(request["question"], answer, []))).post("/api/experience", json={**request, "notebook": token}).json()
+    assert f"]({url})" in linked["answer"]
+    unlinked = _client(FakeAgent(turn(request["question"], answer, []))).post("/api/experience", json=request).json()
+    assert f"]({url})" not in unlinked["answer"]
+
+
+def test_notebook_ids_and_clicked_ids_both_ground_the_page():
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    focus = {"label": "Dark Star", "block_type": "grid", "block_id": "grid:abc", "ids": ["gd-1972-05-11"], "facts": []}
+    items = [SHOW_ITEM, {"type": "show_unit", "show_id": "gd-1972-05-11", "visible_facets": ["setlist"]}]
+    request = {"question": "Compare them.", "conversation": FIRST_EXCHANGE, "notebook": token, "focus": focus}
+    body = _client(FakeAgent(turn(request["question"], "Both.", [], items=items))).post("/api/experience", json=request).json()
+    assert [block["type"] for block in body["blocks"]] == ["show_unit", "show_unit"]
