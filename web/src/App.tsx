@@ -131,7 +131,7 @@ const stats = [
   { count: "2,358", noun: "shows" },
   { count: "436", noun: "songs" },
   { count: "39,774", noun: "performances" },
-  { count: "17,977", noun: "recordings" },
+  { count: "18,002", noun: "recordings" },
   { count: "139", noun: "guests" }
 ];
 

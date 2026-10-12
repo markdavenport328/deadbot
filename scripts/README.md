@@ -67,6 +67,20 @@ order: `normalize_internet_archive_tracks.py`, the collector,
 `normalize_internet_archive_tracks.py` again, then
 `normalize_internet_archive_track_links.py`.
 
+For shows that have a setlist but no track audio (typically a date shared by an
+early and a late show, which the index pass skips), run
+`collect/fetch_internet_archive_gap_shows.py`, then
+`normalize_internet_archive_gap_shows.py`, then `normalize_internet_archive_tracks.py`
+and `normalize_internet_archive_track_links.py` again. The collector searches
+the GratefulDead collection once per date and preserves the result in
+`data/raw/recordings/internet-archive-gap-search.jsonl`, fetches item metadata
+into `internet-archive-alternate-items.jsonl` (sequential, delayed, with
+retries; resumable), and uses no other source. The normalizer adds a
+`recordings.csv` row only for a tape whose track titles align to exactly one
+show on its date, and holds the rest with reasons in
+`internet-archive-gap-review.jsonl`. See
+`docs/collection-status-gap-show-track-links.md`.
+
 `collect/fetch_jerrybase_performers.py` collects source-reviewed musicians,
 guests, and instrument strings for canonical Grateful Dead shows. Run it for a
 year or use `--all` for 1965–1995; batch mode continues past held years and
