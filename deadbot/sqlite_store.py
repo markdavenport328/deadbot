@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import re
 import sqlite3
 import tempfile
 import threading
@@ -51,6 +52,52 @@ def _read_only(action: int, arg1: str | None, arg2: str | None, _db: str | None,
     if action == sqlite3.SQLITE_FUNCTION and (arg2 or "").lower() == "load_extension":
         return sqlite3.SQLITE_DENY
     return sqlite3.SQLITE_OK if action in _READ_ACTIONS else sqlite3.SQLITE_DENY
+
+
+# Titles keep their typography ("Dick’s Picks", "Help on the Way–Slipknot!"),
+# while visitors and the model type straight quotes and hyphens. LIKE folds
+# both sides so a search finds the record however its name is typed.
+_TYPOGRAPHY = str.maketrans({"’": "'", "‘": "'", "ʼ": "'", "`": "'", "“": '"', "”": '"', "–": "-", "—": "-"})
+_LIKE_PATTERNS: dict[tuple[str, str | None], re.Pattern[str]] = {}
+
+
+def _fold(text: str) -> str:
+    return text.translate(_TYPOGRAPHY).casefold()
+
+
+def _like_pattern(pattern: str, escape: str | None) -> re.Pattern[str]:
+    key = (pattern, escape)
+    compiled = _LIKE_PATTERNS.get(key)
+    if compiled is None:
+        parts: list[str] = []
+        chars = iter(_fold(pattern))
+        for char in chars:
+            if escape is not None and char == escape:
+                parts.append(re.escape(next(chars, "")))
+            elif char == "%":
+                parts.append(".*")
+            elif char == "_":
+                parts.append(".")
+            else:
+                parts.append(re.escape(char))
+        compiled = re.compile("".join(parts), re.DOTALL)
+        if len(_LIKE_PATTERNS) < 4096:
+            _LIKE_PATTERNS[key] = compiled
+    return compiled
+
+
+def _like(pattern: Any, value: Any, escape: Any = None) -> int | None:
+    """SQLite's LIKE, folding case, curly quotes and dashes on both sides."""
+
+    if pattern is None or value is None:
+        return None
+    return 1 if _like_pattern(str(pattern), escape).fullmatch(_fold(str(value))) else 0
+
+
+def _with_folding_like(connection: sqlite3.Connection) -> sqlite3.Connection:
+    connection.create_function("like", 2, _like, deterministic=True)
+    connection.create_function("like", 3, _like, deterministic=True)
+    return connection
 
 
 class _Cursor:
@@ -136,7 +183,7 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
             uri=True,
             check_same_thread=False,
         )
-        return _Connection(raw)
+        return _Connection(_with_folding_like(raw))
 
     def _connection(self) -> _Connection:
         # Every read goes through ``_execute``'s borrow-and-return, and the
@@ -207,7 +254,7 @@ class SqliteCanonicalStore(PostgresCanonicalStore):
         also add its own ``ORDER BY``/``LIMIT``.
         """
 
-        connection = sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro&immutable=1", uri=True)
+        connection = _with_folding_like(sqlite3.connect(f"{self.path.resolve().as_uri()}?mode=ro&immutable=1", uri=True))
         try:
             # Bounds any single string or blob a function call can produce
             # (e.g. randomblob, printf, zeroblob). The progress handler below

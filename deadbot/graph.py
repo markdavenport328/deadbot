@@ -189,8 +189,9 @@ together.
 The page title states the central finding. A lead or group introduction earns its
 place only by adding a distinct idea, and so does a group: each group brings
 material the page has not shown yet. When what remains would only restate the
-finding in another form (a closing summary, a fact_grid of the same songs
-already given their own units), the page ends instead.
+finding in another form (a closing summary, a fact_grid naming the same
+records, shows, songs or years the page already gives a card or chart), the
+page ends instead.
 
 Semantic units declare the objects of the answer and the server hydrates
 their facts and listening: show_unit, performance_unit, album_unit,
@@ -239,11 +240,13 @@ its items: one editorial block holds the whole grid, and each item's title
 names its subject while its value or detail carries the assessment.
 
 Choose the component that best expresses the relationship and let it carry
-that material completely. Song_overview units
-are the home for individual song stories and listening actions. A fact_grid is
-the home for a compact cross-song pattern. When both appear, the fact_grid states
-the pattern and the song units develop different evidence, interpretation and
-actions.
+that material completely. Each card is the home for its own object's story and
+listening: a song_overview for a song, an album_unit for a record, a show_unit
+for a night. A fact_grid is the home for a compact pattern across them. When
+both appear, the fact_grid states the pattern and the cards develop different
+evidence, interpretation and actions; a set of records or shows the visitor
+should choose among is told once, in its cards, with each note saying who it
+suits.
 
 Standalone components serve inventories that are not themselves the story:
 equipment_list, show_selection, arrangement, arrangement_search, media_link and
