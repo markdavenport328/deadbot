@@ -307,6 +307,43 @@ and Download Series entries have no Spotify relationship in MusicBrainz even
 where the album is streamable, so this is a lower bound on availability, not a
 statement that the album is missing from Spotify.
 
+### Spotify album sweep (2026-10-12)
+
+`spotify_album_url` now covers 170 of 347 releases (it was 165 of 347). Five
+links were added: Dick's Picks Vol. 4, 20, 25 and 29 (all four were on
+Spotify; the 2026-09-10 pass had missed them because their Spotify titles
+spell out venues and two dates) and Download Series Vol. 9. No other column
+changed.
+
+Method: Spotify Web API, client credentials. The Grateful Dead artist
+(`4TMHGUX5WI7OOm53PqSDAT`) lists 238 albums, compilations and singles across
+the US and GB markets; those were matched offline against every unlinked
+release, and each unlinked release was also searched by title and artist. A
+candidate had to name the same series and volume, or match the title at 0.8 or
+better with the same show dates, and then had to come back from Spotify's
+oEmbed endpoint with that album title. Side-project releases required the
+exact artist. Samplers, selections, highlights, anniversary editions and
+single tracks were rejected.
+
+Rejected: Spring 1990: The Other One Sampler (a sampler); Download Series:
+Family Dog at the Great Highway (Spotify's album is dated 7/4/70, the catalog
+row 2/4/70); Capitol Theatre, Passaic (Spotify's is 11/24/78, the row 4/25/77);
+Terrapin Station (the 1977 studio album, not the 1990 live release); Kingfish
+(the 2022 album by an unrelated act called Kingfish, with no match to the band's
+1985 track list; the band's 1976 album was already linked); Dave's Picks and
+Dave's Picks bonus discs (nothing by the band on Spotify, searched by title,
+venue and date).
+
+Still absent, 177 releases: all 69 unlinked Dave's Picks and bonus discs; 12
+30 Days of Dead years (2010, 2011, 2016-2023, 2025, Nov. 2024); all five Road
+Trips (Vol. 4 No. 1, 3, 4, 5 and the Spectrum 11/6/79 full show); the box sets
+Europe '72, Fillmore West 1969, Lyceum '72, Pacific Northwest '73-'74, July
+1978, Winterland June 1977, May 1977, The Vault Box and the Giants Stadium,
+Madison Square Garden and St. Louis box sets; the 2026 single-night archive
+releases (Hartford 1988, Madison Square Garden 1987 and 1988, Crisler 1989,
+Shoreline 1991 and others); and the New Riders, Kingfish and Bob Weir studio
+albums that are not on Spotify under those names.
+
 ## MusicBrainz attribution and terms
 
 - MusicBrainz core data (the entities, titles, dates, relationships and URLs
