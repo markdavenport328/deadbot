@@ -139,18 +139,18 @@ class LifePerformance:
         }
 
 
-def _release_length(candidates: list[int], tape_seconds: int | None) -> int | None:
-    """One release length when several releases carry the performance.
+def _release_length(candidates: list[int]) -> int | None:
+    """One release length when several releases carry the performance: the longest.
 
-    Releases can disagree (a 30 Days of Dead excerpt against the full
-    release), so the one nearest the tape wins; with no tape, the longest.
+    Releases disagree only by cutting: an LP edit (Europe '72's 13-minute
+    Truckin' against the complete recordings' 19) or an excerpt (a 30 Days of
+    Dead clip against the full Dave's Picks). The full performance is the
+    longest. A tape track is no guide, since it can be a fragment.
     """
 
     usable = [seconds for seconds in candidates if seconds >= MIN_LENGTH_SECONDS]
     if not usable:
         return min(candidates) if candidates else None
-    if tape_seconds is not None and tape_seconds >= MIN_LENGTH_SECONDS:
-        return min(usable, key=lambda seconds: (abs(seconds - tape_seconds), -seconds))
     return max(usable)
 
 
@@ -165,6 +165,36 @@ def _length(release_seconds: int | None, tape_seconds: int | None, performance_i
             continue
         return seconds, source
     return None, None
+
+
+def performance_lengths(store: CanonicalStore, performance_ids: list[str]) -> dict[str, int]:
+    """Each performance's length by the timeline's rule: the longest release, else the tape.
+
+    Every tool that states a length uses this, so the model reads one length
+    per performance wherever it looks. A performance with no usable length is
+    left out.
+    """
+
+    ids = list(dict.fromkeys(performance_ids))
+    release_seconds, _titles = _releases(store, ids)
+    tracks = _archive_tracks(store, ids)
+    lengths: dict[str, int] = {}
+    for performance_id in ids:
+        tape = tracks[performance_id].duration_seconds if performance_id in tracks else None
+        seconds, _source = _length(_release_length(release_seconds.get(performance_id, [])), tape, performance_id)
+        if seconds is not None:
+            lengths[performance_id] = seconds
+    return lengths
+
+
+def model_listen(listen: dict[str, Any]) -> dict[str, Any]:
+    """A performance's listening links as the model reads them, without the tape file's own length.
+
+    A tape track can be a fragment or split mid-jam, so its file length is the
+    player's business; the model reads the performance's length_seconds.
+    """
+
+    return {key: value for key, value in listen.items() if key != "archive_track_duration_seconds"}
 
 
 def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, list[int]], dict[str, tuple[str, ...]]]:
@@ -267,8 +297,7 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
         before, after = around[performance_id]
         track = tracks.get(performance_id)
         tape_seconds = track.duration_seconds if track else None
-        release = _release_length(release_seconds.get(performance_id, []), tape_seconds)
-        seconds, source = _length(release, tape_seconds, performance_id)
+        seconds, source = _length(_release_length(release_seconds.get(performance_id, [])), tape_seconds, performance_id)
         voices = performance_voices.get(performance_id, [])
         signals = [Signal(voice, "performance") for voice in voices]
         signals += [Signal(voice, "show") for voice in show_voices.get(row["show_id"], []) if voice not in voices]
