@@ -42,6 +42,7 @@ and Relisten moves to a secondary link. Today `inPagePlay`
 (`web/src/listen-control.tsx`) turns a card's queue into the main action only
 for archive.org links. This is transport: code builds players from stored URLs.
 *Size: small. Helps: 1979, Madison Square Garden, any expanded show card.*
+**Done (October 12):** the card's gold play button plays the setlist's tape; Relisten stays a quiet link.
 
 **2. A show row's "More" always opens to its setlist and listening.** Collapsed
 show rows get the same floor album rows already get (`finish.py` forces
@@ -50,12 +51,14 @@ with the row, so its drawer is never empty. The model still decides which
 facets an expanded card opens with. A setlist is a stored fact, and an
 expander that opens to nothing is broken transport. *Size: small. Helps:
 Reckoning, every `from_result` list of shows.*
+**Done (October 12):** collapsed show rows always carry setlist and listen; the live Reckoning run had 0 empty rows (was 10).
 
 **3. One heading per idea.** The renderer drops an editorial item's title when
 it repeats its block's title (the same rule `App.tsx` already applies to group
 headings), and the `editorial` schema description tells the model that a
 narrative is paragraphs, with items reserved for fact grids and timelines.
 *Size: small. Helps: Veneta and any narrative editorial.*
+**Done (October 12):** a repeated item title is dropped, and a narrative's lone item is lifted into paragraphs in the shared validator, so streamed and final pages match.
 
 **4. Make the chips an eval.** Add `evals/opening-v1.json` with all fifteen
 chips, scored by `scripts/page_eval.py` on things a visitor notices: the page
@@ -63,6 +66,7 @@ offers in-app listening where audio exists; no card's content is repeated as
 text; no catalog vocabulary appears in page copy; a show card's "More" has
 something in it. Run it live before and after each item below. *Size: small to
 medium. Helps: measuring every item after this one.*
+**Done (October 12):** `evals/opening-v1.json`; scorer adds `silent`, `empty_rows` and `restated`. First live run after items 1–3: expected shape 15/15, usable 12/15, clean writing 5/15, catalog words 28 (the main target for item 5).
 
 ### Tier 2: steering the model through tool output and the persona
 
@@ -122,6 +126,7 @@ pause our player and the two never play at once. Visitors who aren't signed in
 to Spotify hear 30-second previews, which is Spotify's rule, not ours. No
 content-security headers block the embed. *Size: medium. Helps: albums, Dick's
 Picks, Europe '72, any record answer.*
+**Done (October 12):** the album card's main listen control opens the Spotify player in the card (352px expanded, 152px in rows); Spotify and our player pause each other. Signed-out visitors see Spotify's preview player.
 
 **11. The life of a pairing.** Yes, a song-life timeline for China-Rider is
 straightforward with our data. Setlists mark segues, and counting China Cat →
@@ -139,11 +144,16 @@ Sailor-Saint, and every "when did X → Y start" question.*
 **12. Relisten source tracks.** Import track-level audio for shows where
 Relisten has a tape and we have none: 82 shows today have only a Relisten
 page, including the first China-Rider. This is already first on the data-pass
-list. *Helps: China-Rider, late-'60s questions.*
+list. *Helps: China-Rider, late-'60s questions.* **Status (October 12):**
+first pass done from Archive alone, without Relisten. 26 shows gained track audio,
+including `gd-1969-09-30-0`; 57 Relisten-linked shows still have none (36 with
+a setlist, held for review). See
+`docs/collection-status-gap-show-track-links.md`.
 
 **13. Fill Spotify gaps on records.** Dick's Picks Vol. 4 came back with no
 listen link. A sweep through the Spotify API, the next step in the Spotify
 notes, fills these so item 10 has something to embed.
+**Done (October 12):** five links added (Dick's Picks 4, 20, 25, 29 and Download Series 9), 170 of 347 releases linked; the rest are confirmed absent from Spotify. See `docs/collection-status-official-releases.md`.
 
 ## Recommended order
 
