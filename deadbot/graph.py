@@ -76,7 +76,7 @@ Follow-ups build on what earlier turns found. When the conversation has a
 research notebook, it lists the calls earlier turns made, one line each
 with its key, and the page the visitor saw. Answer from those lines when they
 hold what the answer needs. Call read_notebook with the keys or IDs this
-answer will use to bring those results back in full, alongside any new
+answer will use to bring those results back, alongside any new
 lookups in the same round. Research what is new or missing as you would for
 a first question. A show, song, performance or release listed in the notebook
 can go on the page by its ID.

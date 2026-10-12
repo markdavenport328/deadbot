@@ -52,6 +52,7 @@ IDS_PER_ENTRY_CEILING = 400
 URLS_PER_ENTRY_CEILING = 60
 DIGEST_CHAR_CEILING = 6_000
 CHIP_CEILING = 8
+BLOCK_ID_CEILING = 6
 
 TURN_HEADING = (
     "Research notebook, turn {number}: what the tools returned for the answer above, one line per call. "
@@ -168,7 +169,7 @@ def entry_key(tool: str, args: dict[str, Any]) -> str:
 def answer_key(text: str) -> str:
     """Matches a turn's page digest to that turn's answer in the browser's transcript."""
 
-    return hashlib.sha256(text.strip()[:8_000].encode("utf-8")).hexdigest()[:12]
+    return hashlib.sha256(text.strip()[:8_000].encode("utf-8", "surrogatepass")).hexdigest()[:12]
 
 
 # --- fact lines --------------------------------------------------------------
@@ -541,7 +542,10 @@ def page_digest(response: ExperienceResponse, turn: int) -> PageDigest:
     size = 0
     for block in response.blocks:
         data = block.model_dump(mode="json")
-        ids = [value for key, value in data.items() if isinstance(value, str) and value and (key == "id" or key.endswith("_id"))][:6]
+        ids = [value for key, value in data.items() if isinstance(value, str) and value and (key == "id" or key.endswith("_id"))]
+        if len(ids) > BLOCK_ID_CEILING:
+            logger.info("The page digest kept %d of %d IDs on a %s block", BLOCK_ID_CEILING, len(ids), data.get("type"))
+            ids = ids[:BLOCK_ID_CEILING]
         title = next((str(data[key]) for key in ("title", "song_title", "release_title") if data.get(key)), "")
         item = {"type": str(data.get("type") or ""), "ids": ids, "title": title, "note": str(data.get("note") or "")}
         size += len(json.dumps(item, ensure_ascii=False))
@@ -553,6 +557,8 @@ def page_digest(response: ExperienceResponse, turn: int) -> PageDigest:
             label = str(chip.get("label") or "").strip() if isinstance(chip, dict) else ""
             if label and label not in chips:
                 chips.append(label)
+    if len(chips) > CHIP_CEILING:
+        logger.info("The page digest kept %d of %d follow-up chips", CHIP_CEILING, len(chips))
     return PageDigest(turn=turn, answer_key=answer_key(response.answer), title=response.title, blocks=blocks, chips=chips[:CHIP_CEILING])
 
 
@@ -873,7 +879,7 @@ def decode(token: str | None, secret: str | None) -> Notebook:
     except UnicodeEncodeError:
         logger.warning("Ignoring a research notebook whose signature does not match")
         return Notebook()
-    if not hmac.compare_digest(signature.encode("utf-8"), expected.encode("ascii")):
+    if not hmac.compare_digest(signature.encode("utf-8", "replace"), expected.encode("ascii")):
         logger.warning("Ignoring a research notebook whose signature does not match")
         return Notebook()
     try:

@@ -236,3 +236,18 @@ def test_notebook_ids_and_clicked_ids_both_ground_the_page():
     request = {"question": "Compare them.", "conversation": FIRST_EXCHANGE, "notebook": token, "focus": focus}
     body = _client(FakeAgent(turn(request["question"], "Both.", [], items=items))).post("/api/experience", json=request).json()
     assert [block["type"] for block in body["blocks"]] == ["show_unit", "show_unit"]
+
+
+def test_a_lone_surrogate_in_the_token_signature_or_an_answer_still_gets_an_answer():
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    head, body, _ = token.split(".")
+    client = _client(FakeAgent(turn("And Morning Dew?", "It closed the run.", [])))
+    forged = '{"question": "And Morning Dew?", "notebook": "%s.%s.\\ud800"}' % (head, body)
+    response = client.post("/api/experience", content=forged.encode("utf-8"), headers={"content-type": "application/json"})
+    assert response.status_code == 200
+    for secret in (SECRET, None):
+        odd = '{"question": "Q", "conversation": [{"role": "user", "text": "Hi"}, {"role": "assistant", "text": "Hello \\udc80"}]}'
+        response = _client(FakeAgent(turn("Q", "A", [])), secret=secret).post(
+            "/api/experience", content=odd.encode("utf-8"), headers={"content-type": "application/json"},
+        )
+        assert response.status_code == 200, secret

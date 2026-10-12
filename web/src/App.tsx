@@ -2225,7 +2225,9 @@ function App() {
 
     const requestThreadId = fresh ? createThreadId() : activeThreadId;
     const conversation = fresh ? [] : response?.conversation ?? [];
-    const sentNotebook = fresh ? null : notebook;
+    // The notebook belongs to the answer on screen; with none showing (a
+    // reload, the start page) the question starts its own research.
+    const sentNotebook = fresh || !response ? null : notebook;
     if (fresh) {
       setActiveThreadId(requestThreadId);
       setResponse(null);

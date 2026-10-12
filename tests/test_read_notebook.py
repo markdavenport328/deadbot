@@ -210,3 +210,25 @@ def test_a_grid_can_be_placed_from_a_grid_read_back_from_the_notebook():
     messages = _read_turn(book, "Show me that grid again.", key, [{"type": "grid", "grid_id": grid_id, "title": "Dark Star by year"}])
     response = build_experience_response("Show me that grid again.", "t", messages, store())
     assert [block.type for block in response.blocks] == ["grid"]
+
+
+SUBJECT_CALLS = [
+    ("get_song", {"song_id_or_title": "Morning Dew"}, "song-morning-dew"),
+    ("get_show", {"show_id_or_date": "1972-05-26"}, "gd-1972-05-26"),
+    ("get_song_life", {"song_id_or_title": "Dark Star"}, "song-dark-star"),
+]
+
+
+def test_a_read_by_the_id_a_result_is_about_brings_it_back_whole():
+    for name, args, subject in SUBJECT_CALLS:
+        book, _ = record(notebook.Notebook(), "Q", "A", [(name, args)])
+        (entry,) = _read(book, [subject])["notebook_entries"]
+        assert "sliced" not in entry, name
+        assert entry["result"] == json.loads(tools()[name].invoke(args)), name
+
+
+def test_a_show_found_only_inside_a_box_sets_lists_still_comes_back_sliced():
+    book, _ = record(notebook.Notebook(), "Q", "A", [BOX_SET])
+    (entry,) = _read(book, ["gd-1972-05-26"])["notebook_entries"]
+    assert [show["show_id"] for show in entry["result"]["contents"]["shows"]] == ["gd-1972-05-26"]
+    assert entry["sliced"]

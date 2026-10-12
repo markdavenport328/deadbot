@@ -459,3 +459,19 @@ def test_over_the_size_ceiling_web_payloads_go_first_least_recently_read():
     assert len(kept.entries) == 6
     assert kept.entries[0].payload is None
     assert kept.entries[-1].payload is not None
+
+
+def test_a_lone_surrogate_in_a_signature_or_an_answer_never_raises():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    head, body, _ = notebook.encode(book, SECRET).split(".")
+    assert notebook.decode(f"{head}.{body}.\ud800", SECRET) == notebook.Notebook()
+    assert len(notebook.answer_key("Hello \udc80")) == 12
+
+
+def test_the_digest_logs_when_it_trims_chips_or_block_ids(caplog):
+    ids = {f"x{index}_id": f"id-{index}" for index in range(9)}
+    blocks = [_Block({"type": "show_unit", **ids, "follow_ups": [{"label": f"Chip {index}"} for index in range(10)]})]
+    with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
+        page = notebook.page_digest(SimpleNamespace(blocks=blocks, answer="A", title="Title"), 1)
+    assert len(page.blocks[0]["ids"]) == notebook.BLOCK_ID_CEILING and len(page.chips) == notebook.CHIP_CEILING
+    assert "kept 6 of 9 IDs" in caplog.text and "kept 8 of 10 follow-up chips" in caplog.text

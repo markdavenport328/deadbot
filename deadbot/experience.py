@@ -1065,11 +1065,27 @@ ExperienceBlock = Annotated[
 ]
 
 
+def _encodable(text: str) -> bool:
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
+
+
 class ConversationTurn(ExperienceModel):
     """A browser-safe projection of one human or final assistant message."""
 
     role: Literal["user", "assistant"]
     text: str = Field(min_length=1, max_length=8_000)
+
+    @field_validator("text", mode="before")
+    @classmethod
+    def _replace_lone_surrogates(cls, value: Any) -> Any:
+        # A lone surrogate cannot be encoded; it becomes U+FFFD and the turn is kept.
+        if isinstance(value, str) and not _encodable(value):
+            return value.encode("utf-8", "surrogatepass").decode("utf-8", "replace")
+        return value
 
 
 FOCUS_LABEL_CEILING = 300
@@ -1147,7 +1163,7 @@ class ExperienceRequest(ExperienceModel):
     def _read_notebook_leniently(cls, value: Any) -> Any:
         # A token that is too long or not text cannot be a notebook this server
         # made. The question still runs, without one. Nothing from the token is logged.
-        if value is None or (isinstance(value, str) and len(value) <= NOTEBOOK_TOKEN_MAX_CHARS):
+        if value is None or (isinstance(value, str) and len(value) <= NOTEBOOK_TOKEN_MAX_CHARS and _encodable(value)):
             return value
         logger.warning("Ignoring a research notebook that is not a token this server could have made")
         return None

@@ -337,6 +337,19 @@ def _mentions(value: Any, needles: list[str]) -> bool:
     return any(needle.casefold() in text for needle in needles)
 
 
+def _named_outside_lists(value: Any) -> set[str]:
+    """Every text value a result holds outside its lists: what the result is about."""
+
+    names: set[str] = set()
+    if isinstance(value, dict):
+        for nested in value.values():
+            if isinstance(nested, str):
+                names.add(nested)
+            elif isinstance(nested, dict):
+                names |= _named_outside_lists(nested)
+    return names
+
+
 def _slice(value: Any, needles: list[str], path: str, sliced: list[dict[str, Any]]) -> Any:
     """The result with each list of records narrowed to the records that mention a needle.
 
@@ -2630,13 +2643,18 @@ def build_tools(
         entries = []
         for entry in found:
             item: dict[str, Any] = {"key": entry.key, "tool": entry.tool, "args": entry.args}
-            needles = list(dict.fromkeys([*asked, *by_id.get(entry.key, [])]))
+            held = by_id.get(entry.key, [])
+            result = _notebook_result(entry, whole=bool(asked or held))
+            # An ID the result is about (its show, its song) brings it back
+            # whole; an ID only its lists hold (a night in a box set) slices.
+            subjects = _named_outside_lists(result) if held else set()
+            needles = list(dict.fromkeys([*asked, *(value for value in held if value not in subjects)]))
             if needles:
                 sliced: list[dict[str, Any]] = []
-                item["result"] = _slice(_notebook_result(entry, whole=True), needles, "", sliced)
+                item["result"] = _slice(result, needles, "", sliced)
                 item["sliced"] = sliced
             else:
-                item["result"] = _notebook_result(entry)
+                item["result"] = result
             entries.append(item)
         return _json({"notebook_entries": entries, "missing": missing})
 

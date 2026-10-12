@@ -108,13 +108,17 @@ test("the notebook rides the streamed response too", async () => {
   expect(window.sessionStorage.getItem(KEY)).toBe("v1.second.sig");
 });
 
-test("a reload keeps the notebook for the next question", async () => {
+test("after a reload with no answer on screen, the first question sends no notebook and keeps the new one", async () => {
   window.sessionStorage.setItem(KEY, "v1.kept.sig");
-  replies = [europe()];
+  replies = [europe(), lyceum()];
   await openApp();
   ask("What's on Europe '72?");
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
-  expect(sent[0].notebook).toBe("v1.kept.sig");
+  expect(sent[0].notebook).toBeUndefined();
+  expect(window.sessionStorage.getItem(KEY)).toBe("v1.first.sig");
+  ask("Tell me about the Lyceum.");
+  await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
+  expect(sent[1].notebook).toBe("v1.first.sig");
 });
 
 test("an answer that carries no notebook clears the stale token", async () => {
