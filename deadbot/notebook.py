@@ -46,7 +46,8 @@ WEB_TOOLS = frozenset({
     "get_historical_weather",
     "get_astronomy",
     "get_deadnet_song_context",
-    "get_deadcast_metadata",
+    "get_deadcast_episode",
+    "get_deadcast_metadata",  # notebooks written before the rename
 })
 IDS_PER_ENTRY_CEILING = 400
 URLS_PER_ENTRY_CEILING = 60
@@ -435,7 +436,8 @@ _SUMMARIES = {
     "get_song": _song_parts,
     "list_song_performances": _song_performances_parts,
     "search_entities": _search_parts,
-    "query_catalog": _catalog_parts,
+    "look_up": _catalog_parts,
+    "query_catalog": _catalog_parts,  # notebooks written before the rename
     "aggregate_data": _aggregate_parts,
     "read_page": _read_page_parts,
     "search_site": _search_site_parts,

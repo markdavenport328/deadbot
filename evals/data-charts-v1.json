@@ -1,7 +1,7 @@
 {
   "suite_id": "data-charts-tool-retrieval",
   "version": "v1",
-  "description": "Deterministic retrieval baseline for the model-selected data_chart capability (aggregate_data). Each case supplies the user-facing question, the expected aggregate_data/search_entities call, and the answer failure to watch for during separate model-response review. Pinned counts (rows, total, excluded_count, setlist_coverage) were computed 2026-09-22 against the real canonical CSVs, immediately after the fix that made 'total' the corrected measure over the whole filtered set (not a sum of the grouped rows) and added per-year setlist_coverage to every performances-dataset result. These counts will move whenever a future data pass adds shows, performances, or setlists -- regenerate them against the live store rather than trusting this file blindly.",
+  "description": "Deterministic retrieval baseline for the model-selected data_chart capability (aggregate_data). Each case supplies the user-facing question, the expected aggregate_data/search_entities call, and the answer failure to watch for during separate model-response review. Pinned counts (rows, total, excluded_count, setlist_counts) were computed 2026-09-22 against the real canonical CSVs, immediately after the fix that made 'total' the corrected measure over the whole filtered set (not a sum of the grouped rows) and added per-year setlist_counts to every performances-dataset result. These counts will move whenever a future data pass adds shows, performances, or setlists -- regenerate them against the live store rather than trusting this file blindly.",
   "cases": [
     {
       "id": "dark-star-by-year",
@@ -13,7 +13,7 @@
         "equals": {"metric_label": "Performances"},
         "contains": {
           "rows": {"year": 1969, "value": 70},
-          "setlist_coverage.by_year": {"year": 1968, "shows_with_setlist": 69}
+          "setlist_counts.by_year": {"year": 1968, "shows_with_setlist": 69}
         }
       },
       "failure_conditions": [

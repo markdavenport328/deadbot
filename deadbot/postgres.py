@@ -1022,13 +1022,13 @@ class PostgresCanonicalStore(CanonicalStore):
         total_rows = self._query(total_sql, tuple(base_params + filter_params))
         total = int(total_rows[0]["total"] or 0) if total_rows else 0
 
-        setlist_coverage = None
+        setlist_counts = None
         if dataset == "performances":
-            setlist_coverage = self._setlist_coverage(request.filters)
+            setlist_counts = self._setlist_counts(request.filters)
 
-        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_coverage)
+        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_counts)
 
-    def _setlist_coverage(self, filters: aggregation.AggregationFilters) -> dict[str, Any]:
+    def _setlist_counts(self, filters: aggregation.AggregationFilters) -> dict[str, Any]:
         """Coverage over the show-level filters only (venue_id/year/year_from/
         year_to) -- reusing `_aggregate_predicates("shows", filters)` gives
         exactly that subset, since song_id/show_id aren't in
@@ -1045,28 +1045,28 @@ class PostgresCanonicalStore(CanonicalStore):
 
         where_sql = f"WHERE {' AND '.join(predicates)}" if predicates else ""
         totals_sql = (
-            'SELECT COUNT(*) AS shows_on_record, COUNT(sl."show_id") AS shows_with_setlist '
+            'SELECT COUNT(*) AS shows_played, COUNT(sl."show_id") AS shows_with_setlist '
             f'FROM {shows} s {setlist_join} {where_sql}'
         )
         totals_rows = self._query(totals_sql, tuple(params))
-        shows_on_record = int(totals_rows[0]["shows_on_record"] or 0) if totals_rows else 0
+        shows_played = int(totals_rows[0]["shows_played"] or 0) if totals_rows else 0
         shows_with_setlist = int(totals_rows[0]["shows_with_setlist"] or 0) if totals_rows else 0
 
         by_year_predicates = predicates + ['s."show_date" IS NOT NULL']
         by_year_where_sql = f"WHERE {' AND '.join(by_year_predicates)}"
         by_year_sql = (
-            f"SELECT {self._AGGREGATE_YEAR_SQL} AS year, COUNT(*) AS shows_on_record, "
+            f"SELECT {self._AGGREGATE_YEAR_SQL} AS year, COUNT(*) AS shows_played, "
             'COUNT(sl."show_id") AS shows_with_setlist '
             f'FROM {shows} s {setlist_join} {by_year_where_sql} '
             f"GROUP BY {self._AGGREGATE_YEAR_SQL}"
         )
         by_year_rows = self._query(by_year_sql, tuple(params))
         by_year = [
-            (int(row["year"]), int(row["shows_on_record"] or 0), int(row["shows_with_setlist"] or 0))
+            (int(row["year"]), int(row["shows_played"] or 0), int(row["shows_with_setlist"] or 0))
             for row in by_year_rows
         ]
 
-        return aggregation.build_setlist_coverage(shows_on_record, shows_with_setlist, by_year)
+        return aggregation.build_setlist_counts(shows_played, shows_with_setlist, by_year)
 
 
 # A spelling-friendly alias for callers that prefer the expanded initialism.

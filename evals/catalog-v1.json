@@ -25,7 +25,7 @@
       "id": "menu-releases-covering-1972",
       "category": "catalog-menu",
       "question": "Which official releases cover 1972?",
-      "tool": "query_catalog",
+      "tool": "look_up",
       "arguments": {"name": "releases_covering_years", "year_from": 1972},
       "expected": {"equals": {"query": "releases_covering_years"}},
       "failure_conditions": ["The listed query for releases by year does not run."]
@@ -34,7 +34,7 @@
       "id": "releases-covering-1972-sql",
       "category": "catalog-sql",
       "question": "Which official releases cover 1972?",
-      "tool": "query_catalog",
+      "tool": "look_up",
       "arguments": {"sql": "SELECT DISTINCT release_id FROM release_track_facts WHERE year = 1972 ORDER BY release_id"},
       "expected": {"contains": {"rows": ["release-europe-72-the-complete-recordings-2011"]}},
       "failure_conditions": ["The Europe '72 box is missing from 1972's releases."]
@@ -43,7 +43,7 @@
       "id": "most-played-1977-sql",
       "category": "catalog-sql",
       "question": "Which songs did they play most in 1977?",
-      "tool": "query_catalog",
+      "tool": "look_up",
       "arguments": {"sql": "SELECT song_title, COUNT(*) AS times FROM performance_facts WHERE year = 1977 GROUP BY song_id ORDER BY times DESC LIMIT 1"},
       "expected": {"contains": {"rows": ["Estimated Prophet", 51]}},
       "failure_conditions": ["The top 1977 song or its count is wrong."]
@@ -52,7 +52,7 @@
       "id": "writes-refused",
       "category": "catalog-guardrail",
       "question": "(guardrail) a write attempt",
-      "tool": "query_catalog",
+      "tool": "look_up",
       "arguments": {"sql": "DELETE FROM songs"},
       "expected": {"equals": {"hint": "Only a single read-only SELECT is allowed."}},
       "failure_conditions": ["A write was not refused."]

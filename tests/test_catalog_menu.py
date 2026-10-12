@@ -29,7 +29,7 @@ def _year(show_id):
 @pytest.fixture
 def run(built_sqlite, tmp_path):
     store = SqliteCanonicalStore(built_sqlite, response_cache_path=tmp_path / "cache.sqlite")
-    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    tool = next(t for t in build_tools(store) if t.name == "look_up")
     yield lambda **args: json.loads(tool.invoke(args))
     store.close()
 

@@ -91,7 +91,7 @@ class MetadataRecord:
 class ResearchResult:
     state: ResultState
     records: tuple[MetadataRecord, ...] = ()
-    coverage: str = "metadata_only"
+    coverage: str = "links_only"
     source: str = "dead.net"
     message: str | None = None
     requested: Mapping[str, str] = field(default_factory=dict)

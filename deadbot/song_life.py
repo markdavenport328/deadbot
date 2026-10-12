@@ -444,7 +444,7 @@ def standouts(
     timed = [p for p in performances if p.seconds is not None]
     if timed:
         longest = max(timed, key=lambda p: (p.seconds, p.show_date))
-        add("longest", longest, f"longest on record ({clock(longest.seconds)})")
+        add("longest", longest, f"longest ever ({clock(longest.seconds)})")
 
     first_set = [p for p in performances if p.set_number == 1]
     later_sets = [p for p in performances if p.set_number != 1]

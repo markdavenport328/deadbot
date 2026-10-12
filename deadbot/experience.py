@@ -213,7 +213,7 @@ class ShowUnitBlock(ExperienceModel):
 
     The composer supplies the interpretive fields (emphasis, note, highlights,
     preferred recording, sources, follow-up topics); date, venue, setlist, guests and
-    listening actions come from canonical data.
+    listening actions come from the stored facts.
     """
 
     type: Literal["show_unit"]
@@ -392,7 +392,7 @@ class GuestAppearanceItem(ExperienceModel):
 
 
 class GuestAppearanceListBlock(ExperienceModel):
-    """Canonical guest-show relationships for one resolved person."""
+    """Guest-show relationships for one resolved person."""
 
     type: Literal["guest_appearance_list"]
     person_id: str
@@ -488,7 +488,7 @@ class SongRepresentativePerformance(ExperienceModel):
     """A model-chosen rendition that gives a song unit an immediate listening path.
 
     On a song timeline it is one of the model's stops, with its label and why.
-    A stop the library could not resolve keeps only the model's words.
+    A stop the server could not resolve keeps only the model's words.
     """
 
     performance_id: str
@@ -564,7 +564,7 @@ class SongGuest(ExperienceModel):
 
 
 class SongYearPerformance(ExperienceModel):
-    """One performance in a song's year, every fact from the library."""
+    """One performance in a song's year, every fact filled in by the server."""
 
     performance_id: str
     show_id: str
@@ -748,7 +748,7 @@ class VersionStripBlock(ExperienceModel):
 
     The model chose the pairing, the nights, their order and the framing; the
     server hydrated each night's venue, date, tape-track lengths and playable
-    tracks from the library, and the per-year counts when the model asked for
+    tracks from the server, and the per-year counts when the model asked for
     them.
     """
 
@@ -819,7 +819,7 @@ class GridSpecModel(ExperienceModel):
 class GridBlock(ExperienceModel):
     """Two lists and where each pair meets. The model chose the lists, the
     order, what opens first, the cells to point at and the words; the server
-    filled every cell, track, date and venue from the library."""
+    filled every cell, track, date and venue."""
 
     type: Literal["grid"]
     grid_id: str
@@ -889,7 +889,7 @@ class ListeningHeroBlock(ExperienceModel):
 
     The model chooses the show or record, writes the line and the Play words,
     and says where playback starts; the server hydrates identity, the image,
-    and the playable queue from the library.
+    and the playable queue from the server.
     """
 
     type: Literal["listening_hero"]

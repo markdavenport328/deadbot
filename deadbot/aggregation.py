@@ -233,7 +233,7 @@ class AggregationResult:
     total: int
     excluded_count: int
     empty_reason: str | None
-    setlist_coverage: dict[str, object] | None = None
+    setlist_counts: dict[str, object] | None = None
 
     def to_payload(self) -> dict[str, object]:
         payload: dict[str, object] = {
@@ -249,13 +249,13 @@ class AggregationResult:
             payload["date_range"] = self.date_range
         if self.empty_reason is not None:
             payload["empty_reason"] = self.empty_reason
-        if self.setlist_coverage is not None:
-            payload["setlist_coverage"] = self.setlist_coverage
+        if self.setlist_counts is not None:
+            payload["setlist_counts"] = self.setlist_counts
         return payload
 
 
-def build_setlist_coverage(
-    shows_on_record: int,
+def build_setlist_counts(
+    shows_played: int,
     shows_with_setlist: int,
     by_year: list[tuple[int, int, int]],
 ) -> dict[str, object]:
@@ -263,7 +263,7 @@ def build_setlist_coverage(
 
     Each store computes the raw counts its own way (a Python loop over CSV
     rows, or a grouped SQL query) and supplies them here only for shaping:
-    ``by_year`` is a list of (year, shows_on_record, shows_with_setlist)
+    ``by_year`` is a list of (year, shows_played, shows_with_setlist)
     triples, one per year that has at least one show on record; a show with
     no derivable year still counts toward the two top-level totals but has no
     year bucket. The result lists every such year, chronological, with no
@@ -271,10 +271,10 @@ def build_setlist_coverage(
     it.
     """
     return {
-        "shows_on_record": shows_on_record,
+        "shows_played": shows_played,
         "shows_with_setlist": shows_with_setlist,
         "by_year": [
-            {"year": year, "shows_on_record": on_record, "shows_with_setlist": with_setlist}
+            {"year": year, "shows_played": on_record, "shows_with_setlist": with_setlist}
             for year, on_record, with_setlist in sorted(by_year)
         ],
     }
@@ -285,7 +285,7 @@ def assemble_result(
     raw_rows: list[AggregationRow],
     date_range: dict[str, int] | None,
     total: int,
-    setlist_coverage: dict[str, object] | None = None,
+    setlist_counts: dict[str, object] | None = None,
 ) -> AggregationResult:
     """Shape a store's raw grouped rows into a verified result.
 
@@ -294,7 +294,7 @@ def assemble_result(
     GROUP BY). Zero-fill, sort, limit, and empty-state text all happen here
     so both stores produce identical shaped output. ``total`` is the measure
     computed by the store over the whole filtered set (not a sum of the
-    grouped rows) — see aggregate_data's docstring. ``setlist_coverage`` is
+    grouped rows) — see aggregate_data's docstring. ``setlist_counts`` is
     supplied only for the performances dataset; every other dataset passes
     None and it is left out of the payload entirely.
     """
@@ -325,5 +325,5 @@ def assemble_result(
         total=total,
         excluded_count=excluded_count,
         empty_reason=spec.empty_reason if not raw_rows else None,
-        setlist_coverage=setlist_coverage,
+        setlist_counts=setlist_counts,
     )

@@ -21,7 +21,7 @@ def test_live_box_set_summary_lists_shows_not_tracks(album):
     assert "tracks" not in payload and "live_legacy" not in payload
     shows = payload["contents"]["shows"]
     assert shows[0]["show_date"] == "1972-04-07" and shows[-1]["show_id"] == "gd-1972-05-26"
-    assert sum(show["track_count"] for show in shows) + payload["contents"].get("unattributed_track_count", 0) == payload["track_count"]
+    assert sum(show["track_count"] for show in shows) + payload["contents"].get("tracks_without_a_show", 0) == payload["track_count"]
     assert payload["available"]["tracks"]["count"] == payload["track_count"]
     assert "include" in payload["available"]["tracks"]["ask"]
     assert len(json.dumps(payload)) < 12_000

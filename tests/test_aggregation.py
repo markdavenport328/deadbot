@@ -266,8 +266,8 @@ def test_assemble_result_on_empty_rows():
     assert result.date_range == date_range
     assert result.rows == []
     assert result.excluded_count == 0
-    assert result.setlist_coverage is None
-    assert "setlist_coverage" not in result.to_payload()
+    assert result.setlist_counts is None
+    assert "setlist_counts" not in result.to_payload()
 
 
 def test_assemble_result_chronological_sort_is_never_truncated():
@@ -312,16 +312,16 @@ def test_assemble_result_non_chronological_sort_still_truncates():
     assert result.total == 16
 
 
-def test_assemble_result_carries_setlist_coverage_through_to_the_payload():
+def test_assemble_result_carries_setlist_counts_through_to_the_payload():
     request = parse_request({"dataset": "performances", "group_by": "year", "measure": "count"})
     coverage = {
-        "shows_on_record": 5,
+        "shows_played": 5,
         "shows_with_setlist": 3,
-        "by_year": [{"year": 1972, "shows_on_record": 5, "shows_with_setlist": 3}],
+        "by_year": [{"year": 1972, "shows_played": 5, "shows_with_setlist": 3}],
     }
     result = assemble_result(request, [], None, 0, coverage)
-    assert result.setlist_coverage == coverage
-    assert result.to_payload()["setlist_coverage"] == coverage
+    assert result.setlist_counts == coverage
+    assert result.to_payload()["setlist_counts"] == coverage
 
 
 # ---------------------------------------------------------------------------

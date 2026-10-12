@@ -22,7 +22,7 @@ def test_notable_versions_lead_with_the_most_released_renditions_and_keep_listen
     assert first["source_count"] >= payload["versions"][-1]["source_count"]
     assert first["show_date"] and first["venue_name"]
     assert payload["signal_summary"]["selection_evidence_available"] is False
-    assert payload["coverage_note"] == "Sources are official releases and reviewed selection evidence, not a ranking."
+    assert payload["coverage_note"] == "Sources are official releases and the selections of critics, curators and fans, not a ranking."
 
 
 def test_notable_versions_carry_reviewed_selection_signals_when_the_store_has_them():
@@ -163,7 +163,7 @@ def test_song_life_states_years_and_standouts(built_sqlite, tmp_path):
     payload = json.loads(tool.invoke({"song_id_or_title": "Terrapin Station"}))
     assert payload["performance_count"] == 302
     assert (payload["years"][0]["year"], payload["years"][0]["count"]) == (1977, 28)
-    assert payload["standouts"]["longest"][0]["facts"] == ["longest on record (25:14)"]
+    assert payload["standouts"]["longest"][0]["facts"] == ["longest ever (25:14)"]
     assert payload["years"][0]["longest"]["minutes"] == 14.9
     assert payload["stops_note"]
     missing = json.loads(tool.invoke({"song_id_or_title": "Qzxvplm"}))

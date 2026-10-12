@@ -1714,7 +1714,7 @@
       },
       "GridBlock": {
         "additionalProperties": false,
-        "description": "Two lists and where each pair meets. The model chose the lists, the\norder, what opens first, the cells to point at and the words; the server\nfilled every cell, track, date and venue from the library.",
+        "description": "Two lists and where each pair meets. The model chose the lists, the\norder, what opens first, the cells to point at and the words; the server\nfilled every cell, track, date and venue.",
         "properties": {
           "column_kind": {
             "enum": [
@@ -2327,7 +2327,7 @@
       },
       "GuestAppearanceListBlock": {
         "additionalProperties": false,
-        "description": "Canonical guest-show relationships for one resolved person.",
+        "description": "Guest-show relationships for one resolved person.",
         "properties": {
           "items": {
             "items": {
@@ -2466,7 +2466,7 @@
       },
       "ListeningHeroBlock": {
         "additionalProperties": false,
-        "description": "The page's lead when the answer is best heard: a cover, a name and one Play.\n\nThe model chooses the show or record, writes the line and the Play words,\nand says where playback starts; the server hydrates identity, the image,\nand the playable queue from the library.",
+        "description": "The page's lead when the answer is best heard: a cover, a name and one Play.\n\nThe model chooses the show or record, writes the line and the Play words,\nand says where playback starts; the server hydrates identity, the image,\nand the playable queue from the server.",
         "properties": {
           "image_alt": {
             "anyOf": [
@@ -3657,7 +3657,7 @@
       },
       "ShowUnitBlock": {
         "additionalProperties": false,
-        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (emphasis, note, highlights,\npreferred recording, sources, follow-up topics); date, venue, setlist, guests and\nlistening actions come from canonical data.",
+        "description": "One show as a primary object of the answer, hydrated from the store.\n\nThe composer supplies the interpretive fields (emphasis, note, highlights,\npreferred recording, sources, follow-up topics); date, venue, setlist, guests and\nlistening actions come from the stored facts.",
         "properties": {
           "disclosure": {
             "default": "expanded",
@@ -4219,7 +4219,7 @@
       },
       "SongRepresentativePerformance": {
         "additionalProperties": false,
-        "description": "A model-chosen rendition that gives a song unit an immediate listening path.\n\nOn a song timeline it is one of the model's stops, with its label and why.\nA stop the library could not resolve keeps only the model's words.",
+        "description": "A model-chosen rendition that gives a song unit an immediate listening path.\n\nOn a song timeline it is one of the model's stops, with its label and why.\nA stop the server could not resolve keeps only the model's words.",
         "properties": {
           "audio_url": {
             "anyOf": [
@@ -4463,7 +4463,7 @@
       },
       "SongYearPerformance": {
         "additionalProperties": false,
-        "description": "One performance in a song's year, every fact from the library.",
+        "description": "One performance in a song's year, every fact filled in by the server.",
         "properties": {
           "city": {
             "anyOf": [
@@ -4802,7 +4802,7 @@
       },
       "VersionStripBlock": {
         "additionalProperties": false,
-        "description": "Chosen nights of one song pairing, drawn to one clock.\n\nThe model chose the pairing, the nights, their order and the framing; the\nserver hydrated each night's venue, date, tape-track lengths and playable\ntracks from the library, and the per-year counts when the model asked for\nthem.",
+        "description": "Chosen nights of one song pairing, drawn to one clock.\n\nThe model chose the pairing, the nights, their order and the framing; the\nserver hydrated each night's venue, date, tape-track lengths and playable\ntracks from the server, and the per-year counts when the model asked for\nthem.",
         "properties": {
           "first_song": {
             "$ref": "#/components/schemas/VersionStripSong"

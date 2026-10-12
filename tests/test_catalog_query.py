@@ -107,20 +107,20 @@ def test_menu_query_truncation_note_suggests_narrowing_filters(store):
 
 
 def test_tool_is_registered_only_for_stores_that_can_query(store):
-    assert "query_catalog" in {t.name for t in build_tools(store)}
-    assert "query_catalog" not in {t.name for t in build_tools(CanonicalStore())}
+    assert "look_up" in {t.name for t in build_tools(store)}
+    assert "look_up" not in {t.name for t in build_tools(CanonicalStore())}
 
 
 def test_tool_description_stays_small_and_lists_every_query(store):
     from deadbot.catalog_queries import NAMED_QUERIES
 
-    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    tool = next(t for t in build_tools(store) if t.name == "look_up")
     assert len(tool.description) < 3500
     assert all(name in tool.description for name in NAMED_QUERIES)
 
 
 def test_tool_runs_free_sql_and_explains_bad_calls(store):
-    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    tool = next(t for t in build_tools(store) if t.name == "look_up")
     run = lambda **args: json.loads(tool.invoke(args))
     assert run(sql="SELECT COUNT(*) AS n FROM show_facts")["rows"][0][0] > 2000
     assert run()["error"].startswith("Pass name")
@@ -130,21 +130,21 @@ def test_tool_runs_free_sql_and_explains_bad_calls(store):
 
 
 def test_tool_reports_a_parameter_the_named_query_ignores(store):
-    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    tool = next(t for t in build_tools(store) if t.name == "look_up")
     run = lambda **args: json.loads(tool.invoke(args))
     result = run(name="releases_covering_years", year_from=1977, venue="Winterland")
     assert result["ignored"] == ["venue"]
 
 
 def test_tool_rejects_a_year_range_running_backwards(store):
-    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    tool = next(t for t in build_tools(store) if t.name == "look_up")
     run = lambda **args: json.loads(tool.invoke(args))
     result = run(name="releases_covering_years", year_from=1980, year_to=1970)
     assert "error" in result
 
 
 def test_tool_reports_parameters_it_did_not_use(store):
-    tool = next(t for t in build_tools(store) if t.name == "query_catalog")
+    tool = next(t for t in build_tools(store) if t.name == "look_up")
     run = lambda **args: json.loads(tool.invoke(args))
     assert run(sql="SELECT 1 AS n", song="Dark Star")["ignored"] == ["song"]
     assert "sql" in run(name="releases_covering_years", year_from=1977, sql="SELECT 1")["ignored"]
@@ -153,7 +153,7 @@ def test_tool_reports_parameters_it_did_not_use(store):
 def test_studio_releases_by_live_plays_ranks_records_by_how_often_their_songs_were_played(store):
     from deadbot.tools import build_tools
 
-    tool = {t.name: t for t in build_tools(store)}["query_catalog"]
+    tool = {t.name: t for t in build_tools(store)}["look_up"]
     payload = json.loads(tool.invoke({"name": "studio_releases_by_live_plays", "limit": 5}))
     columns = payload["columns"]
     plays = [row[columns.index("live_performances")] for row in payload["rows"]]

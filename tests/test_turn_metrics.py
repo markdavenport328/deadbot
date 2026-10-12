@@ -18,7 +18,7 @@ def _turn():
         AIMessage(content="", tool_calls=[{"name": "get_album", "args": {}, "id": "a", "type": "tool_call"}],
                   usage_metadata={"input_tokens": 1200, "output_tokens": 40, "total_tokens": 1240}),
         ToolMessage(content='{"release":{}}', tool_call_id="a", name="get_album"),
-        ToolMessage(content='{"rows":[],"_truncated":[{"path":"rows"}]}', tool_call_id="b", name="query_catalog"),
+        ToolMessage(content='{"rows":[],"_truncated":[{"path":"rows"}]}', tool_call_id="b", name="look_up"),
         AIMessage(content="", usage_metadata={"input_tokens": 5000, "output_tokens": 300, "total_tokens": 5300}),
     ]
 
@@ -28,7 +28,7 @@ def test_metrics_cover_only_this_turn():
     assert metrics["model_calls"] == 2
     assert metrics["peak_input_tokens"] == 5000
     assert metrics["total_input_tokens"] == 6200
-    assert [tool["name"] for tool in metrics["tools"]] == ["get_album", "query_catalog"]
+    assert [tool["name"] for tool in metrics["tools"]] == ["get_album", "look_up"]
     assert metrics["tools"][1]["truncated"] is True and metrics["tools"][0]["truncated"] is False
     assert metrics["largest_tool_result_chars"] == len('{"rows":[],"_truncated":[{"path":"rows"}]}')
     assert metrics["seconds_to_first_answer"] == 4.5 and metrics["seconds_total"] == 10.0

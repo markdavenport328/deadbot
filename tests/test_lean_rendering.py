@@ -89,7 +89,7 @@ def test_the_streamed_page_and_the_delivered_page_have_the_same_blocks():
         + [{"presentation": "collection", "items": [{"type": "editorial", "paragraphs": [f"Group {n}"]}]} for n in range(9)],
     }
     payloads = [show, song, listing]
-    response = finish.build_experience_response("q", "t", _turn([("get_show", show), ("get_song", song), ("query_catalog", listing)], plan), store)
+    response = finish.build_experience_response("q", "t", _turn([("get_show", show), ("get_song", song), ("look_up", listing)], plan), store)
     final = [block.model_dump(mode="json") for block in response.blocks]
     streamed = _streamed_blocks(plan, payloads, store)
     assert streamed == final
@@ -126,7 +126,7 @@ def test_song_overview_by_year_counts_every_year_from_first_to_last():
 
 
 def test_album_units_from_a_catalog_result_list_every_release_collapsed(sqlite_store):
-    result = json.loads(_tool(sqlite_store, "query_catalog").invoke({"name": "releases_covering_years", "year_from": 1972}))
+    result = json.loads(_tool(sqlite_store, "look_up").invoke({"name": "releases_covering_years", "year_from": 1972}))
     assert result["result_id"].startswith("query:")
     release_ids = [row[result["columns"].index("release_id")] for row in result["rows"]]
     item = finish.validate_body_item({"type": "album_unit", "from_result": result["result_id"], "disclosure": "collapsed", "visible_facets": ["listen", "tracklist"]}, where="planned")

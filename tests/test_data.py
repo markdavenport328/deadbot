@@ -103,7 +103,7 @@ def test_deadnet_song_context_returns_metadata_only_research_packet(monkeypatch)
         tool_by_name(store, "get_deadnet_song_context").invoke({"song_id_or_title": "Sugaree"})
     )
     assert payload["song"]["song_id"] == "song-sugaree"
-    assert payload["research"]["coverage"] == "metadata_only"
+    assert payload["research"]["coverage"] == "links_only"
     assert payload["research"]["records"] == [
         {
             "entity_type": "song",
@@ -128,7 +128,7 @@ def test_deadcast_metadata_returns_bounded_metadata_only_packet(monkeypatch):
             )
 
     monkeypatch.setattr(tools_module, "_reviewed_deadcast_adapter", lambda: FakeAdapter())
-    payload = json.loads(tool_by_name(store, "get_deadcast_metadata").invoke({"episode_id_or_slug": "episode-1"}))
+    payload = json.loads(tool_by_name(store, "get_deadcast_episode").invoke({"episode_id_or_slug": "episode-1"}))
     assert payload["research"]["state"] == "ok"
     assert payload["research"]["records"][0]["title"] == "Deadcast: Veneta"
     assert "transcript" not in payload["research"]["records"][0]

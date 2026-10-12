@@ -136,7 +136,7 @@ The model has access to 29 read-only research tools, all defined in `deadbot/too
 | `get_recording_reviews` | Archive.org listener reviews and star ratings |
 | `get_segue_pairing` | How a two-song pairing (China Cat > Rider) changed across the nights it was played |
 | `aggregate_data` | Verified counts and rankings across shows, performances or guests; the source of every chart |
-| `query_catalog` | Named catalog queries or read-only SQL over curated views, for lists by year, venue or tour |
+| `look_up` | Listed queries or read-only SQL over curated views, for lists by year, venue or tour |
 
 **External research tools** fetch from the web:
 
@@ -144,7 +144,7 @@ The model has access to 29 read-only research tools, all defined in `deadbot/too
 | --- | --- |
 | `search_stored_resources` | Search the cataloged resource inventory by keyword |
 | `get_deadnet_song_context` | Dead.net metadata page for a canonical song |
-| `get_deadcast_metadata` | Metadata for an official Deadcast episode |
+| `get_deadcast_episode` | Title and link of an official Deadcast episode |
 | `get_lore_source_trails` | Reviewed lore links for a song or show |
 | `get_research_source_directory` | List of research sites with what each is good for |
 | `search_site` | Search one external research site (Lost Live Dead, archive.org, etc.) |
@@ -242,7 +242,7 @@ Groups can carry titles, leads, and as many items as the answer needs. This give
 
 ### Collapsed cards and lists of records
 
-Every show, performance, album and song unit starts **expanded** (the full card) or **collapsed**: one compact row the server fills in — a show's venue, date and city; a record's cover, title, year, type and shows; a performance's song, venue, date and length; a song's count and span — with its one play control and a cue that opens the full card in place. The model chooses, from how many there are and what the visitor asked. For a long set, one unit can carry a `from_result` (a `query_catalog` `result_id` or an `aggregation_id`) instead of an ID, and the server makes one card per row in the result's order. A `ranked_list` shows the top rows of one `aggregate_data` result with its counts and the model's notes.
+Every show, performance, album and song unit starts **expanded** (the full card) or **collapsed**: one compact row the server fills in — a show's venue, date and city; a record's cover, title, year, type and shows; a performance's song, venue, date and length; a song's count and span — with its one play control and a cue that opens the full card in place. The model chooses, from how many there are and what the visitor asked. For a long set, one unit can carry a `from_result` (a `look_up` `result_id` or an `aggregation_id`) instead of an ID, and the server makes one card per row in the result's order. A `ranked_list` shows the top rows of one `aggregate_data` result with its counts and the model's notes.
 
 ### Editorial blocks
 
