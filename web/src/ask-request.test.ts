@@ -16,4 +16,15 @@ describe("askRequestBody", () => {
     expect(body.focus).toEqual(focus);
     expect(body.question).toBe("Tell me about it.");
   });
+
+  it("sends the research notebook beside the question when there is one", () => {
+    const body = JSON.parse(askRequestBody({ question: "Q", threadId: "t", conversation, notebook: "v1.body.sig" }));
+    expect(body.notebook).toBe("v1.body.sig");
+    expect(body.focus).toBeUndefined();
+  });
+
+  it("leaves the notebook out when there is none", () => {
+    const body = JSON.parse(askRequestBody({ question: "Q", threadId: "t", conversation, notebook: null }));
+    expect("notebook" in body).toBe(false);
+  });
 });

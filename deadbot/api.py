@@ -10,7 +10,7 @@ import uuid
 from collections import deque
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +19,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import composition, finish, grids
+from deadbot import composition, finish, grids, notebook
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
@@ -120,6 +120,7 @@ class _Invocation:
     invocation_thread_id: str
     messages: list[Any]
     focus_ids: frozenset[str] = frozenset()
+    notebook: notebook.Notebook = field(default_factory=notebook.Notebook)
 
 
 def create_app(
@@ -214,11 +215,18 @@ def create_app(
 
     def _prepare(request: ExperienceRequest) -> _Invocation:
         thread_id = request.thread_id or f"web-{uuid.uuid4()}"
+        book = notebook.decode(request.notebook, app.state.settings.notebook_secret)
         conversation = _trimmed_conversation(request.conversation, app.state.settings.conversation_window)
-        messages = [
-            HumanMessage(content=turn.text) if turn.role == "user" else AIMessage(content=turn.text)
-            for turn in conversation
-        ]
+        # Each earlier turn's notebook lines sit right after that turn's
+        # answer, so a new turn only appends and the provider's prompt cache
+        # keeps everything before the new question.
+        messages = notebook.transcript_with_notebook(book, conversation)
+        if request.focus is not None:
+            # Research already done on what the visitor clicked, in a message of
+            # its own before the question (the grid's note of the click follows it).
+            flags = notebook.render_flags(notebook.entries_mentioning(book, request.focus.ids))
+            if flags:
+                messages.append(notebook.notebook_message(flags))
         messages.append(HumanMessage(content=request.question.strip()))
         grounded_focus = focus_ids(app.state.store, request.focus)
         if request.focus is not None:
@@ -229,13 +237,28 @@ def create_app(
         # When the browser supplies its visible transcript, use an isolated
         # invocation thread so the transcript is authoritative and is not
         # duplicated with a warm instance's MemorySaver checkpoint.
-        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation else thread_id
+        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation or book.entries else thread_id
         return _Invocation(
             thread_id=thread_id,
             invocation_thread_id=invocation_thread_id,
             messages=messages,
             focus_ids=frozenset(grounded_focus),
+            notebook=book,
         )
+
+    def _run_config(invocation: _Invocation) -> dict:
+        return run_config(
+            invocation.invocation_thread_id,
+            app.state.settings,
+            notebook=invocation.notebook,
+            prompt_cache_key=invocation.thread_id,
+        )
+
+    def _turn_grounding(invocation: _Invocation) -> finish.GroundedContext:
+        """IDs and URLs this turn may use beyond its own tool results: the notebook and what was clicked."""
+
+        ids, urls = notebook.grounding(invocation.notebook)
+        return finish.GroundedContext(ids=frozenset(ids) | invocation.focus_ids, urls=frozenset(urls))
 
     def _release(invocation: _Invocation) -> None:
         # The per-request thread is throwaway: it exists only so this
@@ -248,26 +271,43 @@ def create_app(
             if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
                 checkpointer.delete_thread(invocation.invocation_thread_id)
 
+    def _with_notebook(invocation: _Invocation, messages: list[Any], response: ExperienceResponse) -> ExperienceResponse:
+        """The response plus the signed notebook the browser sends back with the next question."""
+
+        secret = app.state.settings.notebook_secret
+        if not secret:
+            notebook.note_missing_secret()
+            return response
+        try:
+            book = notebook.record_turn(invocation.notebook, composition._latest_turn(list(messages)), response)
+            token = notebook.encode(book, secret)
+        except Exception:  # The answer matters more than its notebook.
+            logger.exception("The research notebook could not be saved; the answer goes out without it")
+            return response
+        return response.model_copy(update={"notebook": token})
+
     def _respond(request: ExperienceRequest, invocation: _Invocation, messages: list[Any]) -> ExperienceResponse:
-        return build_experience_response(
+        response = build_experience_response(
             question=request.question,
             thread_id=invocation.thread_id,
             messages=messages,
             store=app.state.store,
-            extra_ids=invocation.focus_ids,
+            extra_grounding=_turn_grounding(invocation),
         )
+        return _with_notebook(invocation, messages, response)
 
     def _cached(request: ExperienceRequest, invocation: _Invocation) -> ExperienceResponse | None:
         """A stored answer for a fresh (no-conversation) repeat of a question."""
 
         # A focused ask depends on what was clicked, which the cache key (the
-        # question text) does not capture.
-        if request.conversation or request.focus is not None:
+        # question text) does not capture. A notebook marks a follow-up in a
+        # session: its answer may lean on earlier research.
+        if request.conversation or request.focus is not None or request.notebook:
             return None
         return app.state.response_cache.lookup(request.question, thread_id=invocation.thread_id)
 
     def _remember(request: ExperienceRequest, response: ExperienceResponse) -> None:
-        if not request.conversation and request.focus is None:
+        if not request.conversation and request.focus is None and not request.notebook:
             app.state.response_cache.remember(request.question, response)
 
     @app.post("/api/experience", response_model=ExperienceResponse)
@@ -281,7 +321,7 @@ def create_app(
                     return cached
                 result = app.state.agent.invoke(
                     {"messages": invocation.messages},
-                    run_config(invocation.invocation_thread_id, app.state.settings),
+                    _run_config(invocation),
                 )
                 # Assembling the response is inside the try so an unexpected raise
                 # while resolving the plan reaches the visitor as the same friendly
@@ -327,7 +367,7 @@ def create_app(
         served_from_cache = False
         messages: list[Any] = []
         try:
-            config = run_config(invocation.invocation_thread_id, app.state.settings)
+            config = _run_config(invocation)
             payload = {"messages": invocation.messages}
             stream = getattr(app.state.agent, "stream", None)
             # One query cache for the whole request. Each step of this
@@ -370,7 +410,7 @@ def create_app(
                             try:
                                 # Research is done by the time the plan starts; ground once.
                                 payloads = composition._tool_payloads(composition._latest_turn(messages))
-                                grounded = finish.grounded_context(payloads, invocation.focus_ids)
+                                grounded = finish.merge_grounding(finish.grounded_context(payloads), _turn_grounding(invocation))
                                 plan_streamer = PlanStreamer(
                                     lambda items, _g=grounded, _p=payloads: finish.resolve_items(items, _g, _p, app.state.store)[0],
                                     grounded_urls=grounded.urls,

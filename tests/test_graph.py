@@ -246,3 +246,48 @@ def test_prompt_teaches_grid_and_get_grid():
     assert "a grid in finish_response" in prompt
     assert "Draw the rows that tell the story in reading order, fold the rest behind Show all" in prompt
     assert "setlist_coverage" not in prompt
+
+
+_SEEN_KWARGS: list[dict] = []
+
+
+class _RecordingFakeChatModel(_BindableFakeChatModel):
+    def _generate(self, messages, stop=None, run_manager=None, **kwargs):
+        _SEEN_KWARGS.append(dict(kwargs))
+        return super()._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
+
+
+def _model_kwargs_for_one_call(settings):
+    class FakeProvider:
+        def create_chat_model(self):
+            return _RecordingFakeChatModel(responses=[AIMessage(content="hi")])
+
+    compiled = graph.build_agent(settings, store=CanonicalStore(), provider=FakeProvider())
+    _SEEN_KWARGS.clear()
+    compiled.invoke(
+        {"messages": [HumanMessage(content="hello")]},
+        graph.run_config("web-1:request:x", settings, prompt_cache_key="web-1"),
+    )
+    return _SEEN_KWARGS[-1]
+
+
+def test_openai_calls_carry_the_conversation_as_the_prompt_cache_key():
+    assert _model_kwargs_for_one_call(Settings(model_provider="openai"))["prompt_cache_key"] == "web-1"
+
+
+def test_other_providers_get_no_prompt_cache_key():
+    assert "prompt_cache_key" not in _model_kwargs_for_one_call(Settings())
+
+
+def test_run_config_carries_the_notebook_only_when_given():
+    assert "notebook" not in graph.run_config("t", Settings())["configurable"]
+    assert graph.run_config("t", Settings(), notebook="book")["configurable"]["notebook"] == "book"
+
+
+def test_prompt_teaches_the_research_notebook():
+    prompt = " ".join(graph.SYSTEM_PROMPT.split())
+    assert "research notebook" in prompt
+    assert "read_notebook" in prompt
+    assert "this turn's tool results or the research notebook" in prompt
+    assert "do not" not in prompt.casefold()
+    assert prompt.count("this turn") == 1

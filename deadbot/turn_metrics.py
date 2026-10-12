@@ -7,7 +7,8 @@ Per model call: input and output tokens, and when the provider reports them,
 the input tokens it served from its prompt cache (billed at a discount) and
 the output tokens spent on hidden reasoning. Per turn: the totals, how many
 calls asked for research tools (rounds), and the time to the first answer
-text the visitor saw.
+text the visitor saw. Per turn it also counts read_notebook calls and how
+large the notebook lines in the input were.
 """
 
 from __future__ import annotations
@@ -16,7 +17,9 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
+from deadbot.composition import NOTEBOOK_MESSAGE_NAME, _content_text
 from deadbot.finish import FINISH_TOOL_NAME
+from deadbot.notebook import READ_TOOL_NAME
 
 
 def _this_turn(messages: list[Any]) -> list[Any]:
@@ -81,6 +84,11 @@ def turn_metrics(
     research_rounds = sum(
         1 for call in calls if call.get("tool_calls") and (call["tool_calls"] > 1 or not call.get("finish"))
     )
+    notebook_chars = sum(
+        len(_content_text(message.content))
+        for message in messages
+        if isinstance(message, HumanMessage) and getattr(message, "name", None) == NOTEBOOK_MESSAGE_NAME
+    )
     return {
         "question": question,
         "model_calls": len(calls),
@@ -94,6 +102,8 @@ def turn_metrics(
         "total_reasoning_tokens": _total(calls, "reasoning_tokens"),
         "tools": tools,
         "largest_tool_result_chars": max((tool["chars"] for tool in tools), default=0),
+        "notebook_reads": sum(1 for tool in tools if tool["name"] == READ_TOOL_NAME),
+        "notebook_index_chars": notebook_chars,
         "seconds_to_first_answer": round(first_answer_at - started, 2) if first_answer_at is not None else None,
         "seconds_total": round(finished_at - started, 2),
         "error": error,

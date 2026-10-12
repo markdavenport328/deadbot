@@ -1,0 +1,894 @@
+"""The research notebook: what earlier turns of one conversation found.
+
+Each tool call a turn makes becomes one entry: the call itself (tool and
+arguments), every library ID and URL its result held, and a one-line fact
+digest written by code. A canonical result is not stored, because the same
+call against the same library returns the same payload and read_notebook can
+run it again; a web result costs seconds and may change, so its payload is
+kept. Each turn also leaves a digest of the page the visitor saw.
+
+Code keeps this record exact and carries it between requests. The model
+decides what in it matters and what to read again.
+"""
+
+from __future__ import annotations
+
+import base64
+import copy
+import hashlib
+import hmac
+import json
+import logging
+import re
+import zlib
+from collections.abc import Iterable
+from dataclasses import asdict, dataclass, field, fields
+from typing import Any
+from urllib.parse import urlparse
+
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+
+from deadbot.composition import NOTEBOOK_MESSAGE_NAME, _content_text
+from deadbot.experience import ConversationTurn, ExperienceResponse
+from deadbot.finish import FINISH_TOOL_NAME, _walk
+
+
+logger = logging.getLogger(__name__)
+
+READ_TOOL_NAME = "read_notebook"
+UNRECORDED_TOOLS = frozenset({FINISH_TOOL_NAME, READ_TOOL_NAME})
+# Results fetched from outside the library: slow, and not guaranteed to come
+# back the same, so the notebook keeps their payloads.
+WEB_TOOLS = frozenset({
+    "read_page",
+    "search_site",
+    "get_recording_reviews",
+    "get_historical_weather",
+    "get_astronomy",
+    "get_deadnet_song_context",
+    "get_deadcast_metadata",
+})
+IDS_PER_ENTRY_CEILING = 400
+URLS_PER_ENTRY_CEILING = 60
+DIGEST_CHAR_CEILING = 6_000
+CHIP_CEILING = 8
+BLOCK_ID_CEILING = 6
+
+TURN_HEADING = (
+    "Research notebook, turn {number}: what the tools returned for the answer above, one line per call. "
+    "Each line names, by ID, the shows, performances, releases, songs and people its result holds. read_notebook brings an entry back in full, or only the part that mentions given IDs."
+)
+EARLIER_HEADING = (
+    "Research notebook from earlier in this conversation, one line per call. "
+    "Each line names, by ID, the shows, performances, releases, songs and people its result holds. read_notebook brings an entry back in full, or only the part that mentions given IDs."
+)
+FLAGS_HEADING = "Already in the research notebook for what the visitor clicked:"
+
+
+@dataclass
+class Entry:
+    key: str
+    tool: str
+    args: dict[str, Any]
+    ids: list[str]
+    urls: list[str]
+    summary: str
+    tokens: int
+    turn: int
+    last_read: int
+    payload: dict[str, Any] | None = None
+
+
+@dataclass
+class PageDigest:
+    turn: int
+    answer_key: str
+    title: str
+    blocks: list[dict[str, Any]] = field(default_factory=list)
+    chips: list[str] = field(default_factory=list)
+
+
+@dataclass
+class Notebook:
+    turns: int = 0
+    entries: list[Entry] = field(default_factory=list)
+    pages: list[PageDigest] = field(default_factory=list)
+
+    def to_json(self) -> dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_json(cls, data: Any) -> "Notebook":
+        """Read a stored notebook leniently: a malformed entry or page is skipped."""
+
+        if not isinstance(data, dict):
+            return cls()
+        entries = [entry for raw in _list(data.get("entries")) if (entry := _entry_from(raw)) is not None]
+        pages = [page for raw in _list(data.get("pages")) if (page := _page_from(raw)) is not None]
+        turns = data.get("turns")
+        if not isinstance(turns, int):
+            turns = max([entry.turn for entry in entries] + [page.turn for page in pages] + [0])
+        return cls(turns=turns, entries=entries, pages=pages)
+
+
+_ENTRY_FIELDS = tuple(item.name for item in fields(Entry))
+_PAGE_FIELDS = tuple(item.name for item in fields(PageDigest))
+
+
+def _list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
+
+
+def _strings(value: Any) -> bool:
+    return isinstance(value, list) and all(isinstance(item, str) for item in value)
+
+
+def _block_ok(block: Any) -> bool:
+    return isinstance(block, dict) and isinstance(block.get("ids", []), list) and all(isinstance(item, str) for item in block.get("ids", []))
+
+
+def _entry_from(raw: Any) -> Entry | None:
+    if not isinstance(raw, dict):
+        return None
+    try:
+        entry = Entry(**{name: raw[name] for name in _ENTRY_FIELDS if name in raw})
+    except TypeError:
+        return None
+    if not (isinstance(entry.key, str) and isinstance(entry.tool, str) and isinstance(entry.args, dict)):
+        return None
+    if not (isinstance(entry.turn, int) and isinstance(entry.last_read, int)):
+        return None
+    if not (_strings(entry.ids) and _strings(entry.urls) and isinstance(entry.summary, str) and isinstance(entry.tokens, int)):
+        return None
+    if entry.payload is not None and not isinstance(entry.payload, dict):
+        return None
+    return entry
+
+
+def _page_from(raw: Any) -> PageDigest | None:
+    if not isinstance(raw, dict):
+        return None
+    try:
+        page = PageDigest(**{name: raw[name] for name in _PAGE_FIELDS if name in raw})
+    except TypeError:
+        return None
+    if not (isinstance(page.turn, int) and isinstance(page.answer_key, str) and isinstance(page.title, str)):
+        return None
+    if not (isinstance(page.blocks, list) and all(_block_ok(block) for block in page.blocks) and _strings(page.chips)):
+        return None
+    return page
+
+
+def entry_key(tool: str, args: dict[str, Any]) -> str:
+    """The same call with the same arguments has the same key."""
+
+    text = json.dumps([tool, args], sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:10]
+
+
+def answer_key(text: str) -> str:
+    """Matches a turn's page digest to that turn's answer in the browser's transcript."""
+
+    return hashlib.sha256(text.strip()[:8_000].encode("utf-8", "surrogatepass")).hexdigest()[:12]
+
+
+# --- fact lines --------------------------------------------------------------
+
+
+def _count(number: Any, singular: str, plural: str | None = None) -> str:
+    return f"{number} {singular if number == 1 else plural or singular + 's'}"
+
+
+def _args_text(args: dict[str, Any]) -> str:
+    values = []
+    for value in args.values():
+        if value in (None, "", [], {}):
+            continue
+        values.append(json.dumps(value, ensure_ascii=False) if isinstance(value, (list, dict)) else str(value))
+    return " ".join(values)[:80]
+
+
+def _tokens_text(tokens: int) -> str:
+    return f"~{tokens / 1000:.1f}k tok" if tokens >= 1000 else f"~{tokens} tok"
+
+
+def _dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _show_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    show, venue = _dict(payload.get("show")), _dict(payload.get("venue"))
+    songs = [row for row in _list(payload.get("performances")) if isinstance(row, dict)]
+    sets = {row.get("set_number") for row in songs if row.get("set_number")}
+    recordings = _dict(payload.get("recordings")).get("count")
+    parts = [show.get("show_id") or _args_text(args), ", ".join(str(part) for part in (venue.get("name"), venue.get("city")) if part)]
+    parts.append(f"{_count(len(songs), 'song')} in {_count(len(sets), 'set')}" if songs else "no setlist")
+    if recordings:
+        parts.append(_count(recordings, "recording"))
+    return parts
+
+
+def _song_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    song, summary = _dict(payload.get("song")), _dict(payload.get("performance_summary"))
+    first = _dict(summary.get("first_performance")).get("show_date")
+    last = _dict(summary.get("last_performance")).get("show_date")
+    parts = [song.get("song_id") or _args_text(args), song.get("title") or ""]
+    if summary.get("performance_count") is not None:
+        span = f", {str(first)[:4]}–{str(last)[:4]}" if first and last else ""
+        parts.append(_count(summary["performance_count"], "performance") + span)
+    if payload.get("release_count") is not None:
+        parts.append(_count(payload["release_count"], "release"))
+    return parts
+
+
+def _song_performances_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    song = _dict(payload.get("song"))
+    rows = _list(payload.get("performances"))
+    total = payload.get("performance_count", len(rows))
+    return [song.get("song_id") or _args_text(args), song.get("title") or "", f"{len(rows)} of {_count(total, 'performance')} from offset {payload.get('offset', 0)}"]
+
+
+def _search_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    matches = [match for match in _list(payload.get("matches")) if isinstance(match, dict)]
+    labels = ", ".join(str(match.get("label") or match.get("id")) for match in matches[:3])
+    query = payload.get("query") or args.get("query") or ""
+    return [f'"{query}"', _count(len(matches), "match", "matches") + (f": {labels}" if labels else "")]
+
+
+def _catalog_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    columns = [str(column) for column in _list(payload.get("columns"))][:5]
+    return [
+        str(payload.get("query") or "sql"),
+        str(payload.get("result_id") or ""),
+        _count(len(_list(payload.get("rows"))), "row"),
+        ("columns " + ", ".join(columns)) if columns else "",
+    ]
+
+
+def _aggregate_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    query = _dict(payload.get("query"))
+    filters = ", ".join(f"{key} {value}" for key, value in _dict(query.get("filters")).items() if value not in (None, "", []))
+    return [
+        str(payload.get("aggregation_id") or ""),
+        f"{query.get('dataset')} by {query.get('group_by')}, {query.get('measure')}",
+        filters,
+        _count(len(_list(payload.get("rows"))), "row"),
+    ]
+
+
+def _read_page_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    parsed = urlparse(str(payload.get("final_url") or payload.get("url") or args.get("url") or ""))
+    text = str(payload.get("text") or "")
+    parts = [(parsed.netloc.removeprefix("www.") + parsed.path)[:80]]
+    if payload.get("title"):
+        parts.append(f'"{str(payload["title"])[:80]}"')
+    parts.append(f"{len(text)} of {payload.get('total_chars') or len(text)} chars")
+    if args.get("focus"):
+        parts.append(f'focus "{args["focus"]}"')
+    return parts
+
+
+def _search_site_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    hits = [hit for hit in _list(payload.get("hits")) if isinstance(hit, dict)]
+    site = payload.get("site") or args.get("site") or ""
+    query = payload.get("query") or args.get("query") or ""
+    return [f'{site} "{query}"', _count(len(hits), "hit")]
+
+
+_NAMING_FIELDS = ("title", "name", "song_title", "show_date", "release_date", "date")
+
+
+def _naming(value: dict[str, Any]) -> list[str]:
+    names = [value.get(field) for field in _NAMING_FIELDS]
+    return [str(name)[:60] for name in names if isinstance(name, (str, int)) and str(name).strip()][:2]
+
+
+def _date_span(rows: list[Any]) -> str:
+    dates = sorted({str(row.get("show_date") or row.get("date"))[:10] for row in rows if isinstance(row, dict) and (row.get("show_date") or row.get("date"))})
+    if not dates:
+        return ""
+    return dates[0] if len(dates) == 1 else f"{dates[0]}–{dates[-1]}"
+
+
+def _generic_parts(args: dict[str, Any], payload: dict[str, Any]) -> list[str]:
+    """What the result is about, how much it holds, and the dates it spans."""
+
+    parts = [_args_text(args) or "(no arguments)"]
+    names = [name for key, value in payload.items() if isinstance(value, dict) and not key.startswith("_") for name in _naming(value)]
+    if names:
+        parts.append(", ".join(dict.fromkeys(names))[:100])
+    lists = [(key, value) for key, value in payload.items() if isinstance(value, list) and not key.startswith("_")]
+    for value in payload.values():
+        if isinstance(value, dict):
+            # A summary's nested lists (a box set's shows) matter when they place it in time.
+            lists.extend((key, rows) for key, rows in value.items() if isinstance(rows, list) and not key.startswith("_") and _date_span(rows))
+    totals = {
+        key.removesuffix("_count"): value
+        for key, value in payload.items()
+        if key.endswith("_count") and isinstance(value, int) and not isinstance(value, bool)
+    }
+    listed = {key.removesuffix("s") for key, _ in lists}
+    parts.extend(_count(value, noun.replace("_", " ")) for noun, value in totals.items() if noun not in listed)
+    # Lists that hold something first; an empty one still says the call found nothing there.
+    for key, rows in sorted(lists, key=lambda item: not item[1])[:4]:
+        total = totals.get(key.removesuffix("s"))
+        span = _date_span(rows)
+        count = f"{len(rows)} of {total}" if isinstance(total, int) and total != len(rows) else str(len(rows))
+        parts.append(f"{count} {key}" + (f" {span}" if span else ""))
+    return parts
+
+
+# --- what a result holds, by ID ------------------------------------------------
+
+# The things a card can be built from, in the order a line lists them: a box
+# set's nights come before its tracks, a show's songs before its lineup.
+ITEM_KINDS = ("show", "performance", "release", "song", "person")
+_ITEM_PLURALS = {"person": "people"}
+# Parts of a result that point onward (research routes, detail options)
+# rather than say what the result holds.
+_ITEM_SKIP_KEYS = frozenset({"pathways", "available"})
+ITEMS_CHAR_CEILING = 1_000
+
+
+LABEL_CHAR_CEILING = 48
+
+
+def _segments(text: str) -> list[str]:
+    return [part for part in re.split(r"[^a-z0-9]+", re.sub(r"['’]", "", text.casefold())) if part]
+
+
+def _labelled(identifier: str, *labels: Any) -> tuple[str, str]:
+    """An ID and the words of its labels it does not already spell (a show's date, a song's title)."""
+
+    spelled = set(_segments(identifier))
+    words = [
+        word
+        for label in labels
+        if isinstance(label, (str, int))
+        for word in str(label).split()
+        if (parts := _segments(word)) and not set(parts) <= spelled
+    ]
+    label = " ".join(words)
+    return identifier, label if len(label) <= LABEL_CHAR_CEILING else label[: LABEL_CHAR_CEILING - 1].rstrip() + "…"
+
+
+def _item(record: dict[str, Any]) -> tuple[str, str, str] | None:
+    """The kind, ID and label of a record a card can be built from, or None."""
+
+    def text(key: str) -> str:
+        value = record.get(key)
+        return value if isinstance(value, str) else ""
+
+    if text("entity_type") and text("id"):
+        return (text("entity_type"), *_labelled(text("id"), text("label")))
+    if text("performance_id"):
+        return ("performance", *_labelled(text("performance_id"), text("song_title") or text("title"), text("venue_name")))
+    if text("show_id") and (text("show_date") or text("venue_name")):
+        return ("show", *_labelled(text("show_id"), text("show_date"), text("venue_name") or text("venue")))
+    if text("release_id"):
+        return ("release", *_labelled(text("release_id"), text("title")))
+    if text("song_id"):
+        return ("song", *_labelled(text("song_id"), text("song_title") or text("title")))
+    if text("person_id"):
+        return ("person", *_labelled(text("person_id"), text("name")))
+    return None
+
+
+def _collect_items(value: Any, found: dict[str, dict[str, str]]) -> None:
+    if isinstance(value, list):
+        for nested in value:
+            _collect_items(nested, found)
+        return
+    if not isinstance(value, dict):
+        return
+    item = _item(value)
+    if item is not None:
+        kind, identifier, label = item
+        found.setdefault(kind, {}).setdefault(identifier, label)
+        if kind == "performance" and isinstance(value.get("song_id"), str) and value["song_id"]:
+            # A track or setlist row also says which song it is.
+            found.setdefault("song", {}).setdefault(value["song_id"], "")
+    for key, nested in value.items():
+        if not str(key).startswith("_") and key not in _ITEM_SKIP_KEYS:
+            _collect_items(nested, found)
+
+
+def items_text(payload: dict[str, Any], already: str = "") -> str:
+    """The shows, performances, releases, songs and people a result holds, by ID, within the line's ceiling."""
+
+    found: dict[str, dict[str, str]] = {}
+    _collect_items(payload, found)
+    named = set(re.split(r"[\s,;·]+", already))
+    kinds = [*(kind for kind in ITEM_KINDS if kind in found), *(kind for kind in found if kind not in ITEM_KINDS)]
+    groups = [
+        (kind, [f"{identifier} {label}".strip() for identifier, label in found[kind].items() if identifier not in named])
+        for kind in kinds
+    ]
+    groups = [(kind, items) for kind, items in groups if items]
+    total = sum(len(items) for _, items in groups)
+    sections: list[str] = []
+    listed = 0
+    used = 0
+    for kind, items in groups:
+        head = f"{_ITEM_PLURALS.get(kind, kind + 's')}: "
+        kept: list[str] = []
+        for item in items:
+            # Room for the separator and a closing "(+N more)".
+            cost = len(item) + 2 + (len(head) + 2 if not kept else 0)
+            if used + cost > ITEMS_CHAR_CEILING - 16:
+                break
+            kept.append(item)
+            used += cost
+        if kept:
+            sections.append(head + ", ".join(kept))
+            listed += len(kept)
+        if len(kept) < len(items):
+            break
+    if listed < total:
+        logger.info("A notebook line listed %d of %d items within %d characters", listed, total, ITEMS_CHAR_CEILING)
+        return "; ".join(sections) + f" (+{total - listed} more)" if sections else f"(+{total - listed} more)"
+    return "; ".join(sections)
+
+
+_SUMMARIES = {
+    "get_show": _show_parts,
+    "get_song": _song_parts,
+    "list_song_performances": _song_performances_parts,
+    "search_entities": _search_parts,
+    "query_catalog": _catalog_parts,
+    "aggregate_data": _aggregate_parts,
+    "read_page": _read_page_parts,
+    "search_site": _search_site_parts,
+}
+
+
+def summarize(tool: str, args: dict[str, Any], payload: dict[str, Any], tokens: int) -> str:
+    """One line of facts about a result, for the index the model browses."""
+
+    try:
+        parts = _SUMMARIES.get(tool, _generic_parts)(args, payload)
+    except Exception:  # A fact line must never cost the turn its notebook.
+        logger.info("The notebook line for %s fell back to the generic one", tool, exc_info=True)
+        parts = _generic_parts(args, payload)
+    head, *rest = [str(part) for part in parts] or [""]
+    line = [f"{tool} {head}".strip(), *(part for part in rest if part)]
+    try:
+        held = items_text(payload, " ".join(line))
+    except Exception:  # The facts above still make a line.
+        logger.info("The notebook items for %s could not be listed", tool, exc_info=True)
+        held = ""
+    return " · ".join([*line, *([held] if held else []), _tokens_text(tokens)])
+
+
+# --- harvesting a turn ---------------------------------------------------------
+
+
+FAILED_READ_STATES = frozenset({"unavailable", "invalid"})
+
+
+def _failed_read(payload: dict[str, Any]) -> bool:
+    """A web tool reports a failed fetch as state "unavailable" or "invalid", at the top or under "research".
+
+    "empty" is kept: the page was fetched and had nothing readable, which is
+    an answer the model can reuse instead of fetching it again.
+    """
+
+    return any(_dict(holder).get("state") in FAILED_READ_STATES for holder in (payload, payload.get("research")))
+
+
+def tool_results(turn_messages: list[Any]) -> list[tuple[str, dict[str, Any], dict[str, Any], int]]:
+    """Each successful research call this turn: name, arguments, parsed payload, size in characters."""
+
+    calls: dict[str, dict[str, Any]] = {}
+    for message in turn_messages:
+        if getattr(message, "type", None) == "ai":
+            for call in getattr(message, "tool_calls", None) or []:
+                if call.get("id"):
+                    calls[call["id"]] = call
+    results = []
+    for message in turn_messages:
+        if getattr(message, "type", None) != "tool" or getattr(message, "status", None) == "error":
+            continue
+        call = calls.get(getattr(message, "tool_call_id", None) or "")
+        name = (call or {}).get("name") or getattr(message, "name", None)
+        if call is None or not name or name in UNRECORDED_TOOLS:
+            continue
+        text = _content_text(getattr(message, "content", ""))
+        try:
+            payload = json.loads(text)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(payload, dict) or "error" in payload or (name in WEB_TOOLS and _failed_read(payload)):
+            continue
+        results.append((name, dict(call.get("args") or {}), payload, len(text)))
+    return results
+
+
+def keys_read(turn_messages: list[Any]) -> list[str]:
+    """Entry keys the model read back with read_notebook this turn."""
+
+    keys = []
+    for message in turn_messages:
+        if getattr(message, "type", None) != "tool" or getattr(message, "name", None) != READ_TOOL_NAME:
+            continue
+        try:
+            payload = json.loads(_content_text(getattr(message, "content", "")))
+        except (TypeError, ValueError):
+            continue
+        for item in _list(payload.get("notebook_entries")) if isinstance(payload, dict) else []:
+            if isinstance(item, dict) and isinstance(item.get("key"), str):
+                keys.append(item["key"])
+    return keys
+
+
+def _ids_and_urls(payload: dict[str, Any]) -> tuple[list[str], list[str]]:
+    ids: set[str] = set()
+    urls: set[str] = set()
+    _walk(payload, ids, urls)
+    id_list, url_list = sorted(ids), sorted(urls)
+    if len(id_list) > IDS_PER_ENTRY_CEILING or len(url_list) > URLS_PER_ENTRY_CEILING:
+        logger.info(
+            "A notebook entry kept %d of %d IDs and %d of %d URLs",
+            min(len(id_list), IDS_PER_ENTRY_CEILING), len(id_list), min(len(url_list), URLS_PER_ENTRY_CEILING), len(url_list),
+        )
+    return id_list[:IDS_PER_ENTRY_CEILING], url_list[:URLS_PER_ENTRY_CEILING]
+
+
+def page_digest(response: ExperienceResponse, turn: int) -> PageDigest:
+    """What the visitor saw: each block's type, IDs, title and note, and the follow-up chips."""
+
+    blocks: list[dict[str, Any]] = []
+    chips: list[str] = []
+    size = 0
+    for block in response.blocks:
+        data = block.model_dump(mode="json")
+        ids = [value for key, value in data.items() if isinstance(value, str) and value and (key == "id" or key.endswith("_id"))]
+        if len(ids) > BLOCK_ID_CEILING:
+            logger.info("The page digest kept %d of %d IDs on a %s block", BLOCK_ID_CEILING, len(ids), data.get("type"))
+            ids = ids[:BLOCK_ID_CEILING]
+        title = next((str(data[key]) for key in ("title", "song_title", "release_title") if data.get(key)), "")
+        item = {"type": str(data.get("type") or ""), "ids": ids, "title": title, "note": str(data.get("note") or "")}
+        size += len(json.dumps(item, ensure_ascii=False))
+        if size > DIGEST_CHAR_CEILING and blocks:
+            logger.info("The page digest kept %d of %d blocks within %d characters", len(blocks), len(response.blocks), DIGEST_CHAR_CEILING)
+            break
+        blocks.append(item)
+        for chip in _list(data.get("follow_ups")):
+            label = str(chip.get("label") or "").strip() if isinstance(chip, dict) else ""
+            if label and label not in chips:
+                chips.append(label)
+    if len(chips) > CHIP_CEILING:
+        logger.info("The page digest kept %d of %d follow-up chips", CHIP_CEILING, len(chips))
+    return PageDigest(turn=turn, answer_key=answer_key(response.answer), title=response.title, blocks=blocks, chips=chips[:CHIP_CEILING])
+
+
+def record_turn(book: Notebook, turn_messages: list[Any], response: ExperienceResponse) -> Notebook:
+    """A new notebook with this turn's calls and page added."""
+
+    book = copy.deepcopy(book)
+    number = book.turns + 1
+    book.turns = number
+    by_key = {entry.key: entry for entry in book.entries}
+    for key in keys_read(turn_messages):
+        if key in by_key:
+            by_key[key].last_read = number
+    for name, args, payload, chars in tool_results(turn_messages):
+        key = entry_key(name, args)
+        stored = payload if name in WEB_TOOLS else None
+        existing = by_key.get(key)
+        if existing is not None:
+            # The entry keeps its turn and its line, so the notebook messages
+            # already sent stay byte-identical for the provider's prompt cache.
+            existing.last_read = number
+            if stored is not None:
+                existing.payload = stored
+            continue
+        ids, urls = _ids_and_urls(payload)
+        entry = Entry(
+            key=key, tool=name, args=args, ids=ids, urls=urls,
+            summary=summarize(name, args, payload, chars // 4), tokens=chars // 4,
+            turn=number, last_read=number, payload=stored,
+        )
+        book.entries.append(entry)
+        by_key[key] = entry
+    book.pages = [page for page in book.pages if page.turn != number] + [page_digest(response, number)]
+    return compact(book)
+
+
+# --- what the model reads ------------------------------------------------------
+
+
+def turn_numbers(book: Notebook) -> list[int]:
+    return sorted({entry.turn for entry in book.entries} | {page.turn for page in book.pages})
+
+
+def _entry_line(entry: Entry) -> str:
+    return f"[{entry.key}] {entry.summary}"
+
+
+def _page_lines(page: PageDigest) -> list[str]:
+    lines = []
+    if page.blocks:
+        described = []
+        for block in page.blocks:
+            text = " ".join(part for part in (str(block.get("type") or ""), " ".join(block.get("ids") or [])) if part)
+            if block.get("title"):
+                text += f' "{block["title"]}"'
+            if block.get("note"):
+                text += f": {block['note']}"
+            described.append(text)
+        lines.append(f'Page shown ("{page.title}"): ' + "; ".join(described))
+    if page.chips:
+        lines.append("Follow-up chips offered: " + " · ".join(page.chips))
+    return lines
+
+
+def turn_lines(book: Notebook, number: int) -> list[str]:
+    lines = [_entry_line(entry) for entry in book.entries if entry.turn == number]
+    page = next((page for page in book.pages if page.turn == number), None)
+    if page is not None:
+        lines.extend(_page_lines(page))
+    return lines
+
+
+def entry_tokens(book: Notebook) -> int:
+    """About how many tokens the entry lines cost the model."""
+
+    return sum(len(_entry_line(entry)) + 1 for entry in book.entries) // 4
+
+
+def render_turn(book: Notebook, number: int) -> str:
+    lines = turn_lines(book, number)
+    return "\n".join([TURN_HEADING.format(number=number), *lines]) if lines else ""
+
+
+def render_earlier(book: Notebook, numbers: Iterable[int]) -> str:
+    sections: list[str] = []
+    for number in numbers:
+        lines = turn_lines(book, number)
+        if lines:
+            sections.extend([f"Turn {number}:", *lines])
+    return "\n".join([EARLIER_HEADING, *sections]) if sections else ""
+
+
+def render_flags(entries: list[Entry]) -> str:
+    return "\n".join([FLAGS_HEADING, *(_entry_line(entry) for entry in entries)]) if entries else ""
+
+
+def notebook_message(text: str) -> HumanMessage:
+    return HumanMessage(content=text, name=NOTEBOOK_MESSAGE_NAME)
+
+
+def transcript_with_notebook(book: Notebook, conversation: list[ConversationTurn]) -> list[BaseMessage]:
+    """The browser's transcript with each turn's notebook lines right after that turn's answer.
+
+    A new turn only appends, so everything already sent stays byte-identical
+    and the provider's prompt cache keeps it. Turns whose answers are no
+    longer in the transcript (trimmed, or never matched) go in one message
+    before it.
+    """
+
+    by_answer: dict[str, list[int]] = {}
+    for page in sorted(book.pages, key=lambda page: page.turn):
+        by_answer.setdefault(page.answer_key, []).append(page.turn)
+    placed: set[int] = set()
+    body: list[BaseMessage] = []
+    for item in conversation:
+        if item.role == "user":
+            body.append(HumanMessage(content=item.text))
+            continue
+        body.append(AIMessage(content=item.text))
+        waiting = by_answer.get(answer_key(item.text))
+        if not waiting:
+            continue
+        number = waiting.pop(0)
+        placed.add(number)
+        text = render_turn(book, number)
+        if text:
+            body.append(notebook_message(text))
+    earlier = render_earlier(book, [number for number in turn_numbers(book) if number not in placed])
+    return ([notebook_message(earlier)] if earlier else []) + body
+
+
+# --- lookups -------------------------------------------------------------------
+
+
+def _arg_values(args: dict[str, Any]) -> set[str]:
+    values: set[str] = set()
+    for value in args.values():
+        if isinstance(value, str):
+            values.add(value)
+        elif isinstance(value, list):
+            values.update(item for item in value if isinstance(item, str))
+    return values
+
+
+def find_by(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[list[Entry], list[str], dict[str, list[str]]]:
+    """Entries by key, else by an argument they were called with, else by an ID they returned (newest first).
+
+    Also returns, for each entry found only by IDs it returned, those IDs:
+    a read asked that way wants the part of the entry about them. An entry
+    also named by its key or an argument comes back whole.
+    """
+
+    found: list[Entry] = []
+    seen: set[str] = set()
+    missing: list[str] = []
+    by_id: dict[str, list[str]] = {}
+    whole: set[str] = set()
+    for raw in wanted:
+        value = str(raw).strip().strip("[]")
+        if not value:
+            continue
+        matches = [entry for entry in book.entries if entry.key == value]
+        if not matches:
+            matches = [entry for entry in book.entries if value in _arg_values(entry.args)]
+        held = not matches
+        if held:
+            matches = [entry for entry in reversed(book.entries) if value in entry.ids][:per_id]
+        if not matches:
+            missing.append(value)
+            continue
+        for entry in matches:
+            if held:
+                by_id.setdefault(entry.key, []).append(value)
+            else:
+                whole.add(entry.key)
+            if entry.key not in seen:
+                seen.add(entry.key)
+                found.append(entry)
+    return found, missing, {key: ids for key, ids in by_id.items() if key not in whole}
+
+
+def find(book: Notebook, wanted: Iterable[str], *, per_id: int = 3) -> tuple[list[Entry], list[str]]:
+    """Entries by key, else by an argument they were called with, else by an ID they returned (newest first)."""
+
+    found, missing, _ = find_by(book, wanted, per_id=per_id)
+    return found, missing
+
+
+def entries_mentioning(book: Notebook, ids: Iterable[str], *, limit: int = 8) -> list[Entry]:
+    wanted = {str(value) for value in ids if value}
+    matches = [entry for entry in book.entries if wanted & set(entry.ids) or wanted & _arg_values(entry.args)]
+    return matches[-limit:] if limit > 0 else []
+
+
+def grounding(book: Notebook) -> tuple[frozenset[str], frozenset[str]]:
+    """Every ID and URL the notebook holds, so the page can place them without a new lookup."""
+
+    ids: set[str] = set()
+    urls: set[str] = set()
+    for entry in book.entries:
+        ids.update(entry.ids)
+        urls.update(entry.urls)
+    for page in book.pages:
+        for block in page.blocks:
+            ids.update(value for value in block.get("ids") or [] if isinstance(value, str))
+    return frozenset(ids), frozenset(urls)
+
+
+# --- ceilings, signing, transport ------------------------------------------------
+
+NOTEBOOK_VERSION = "v1"
+ENTRY_CEILING = 80
+ENTRY_COMPACT_TO = 60
+INDEX_TOKEN_CEILING = 4_000
+INDEX_TOKEN_COMPACT_TO = 3_000
+PAGE_TURN_CEILING = 6
+# The whole token as the browser holds it. ExperienceRequest accepts up to
+# experience.NOTEBOOK_TOKEN_MAX_CHARS, which is larger.
+TOKEN_BYTE_CEILING = 150_000
+DECOMPRESSED_CEILING = 4_000_000
+_SIGNATURE_ROOM = 64
+
+_missing_secret_logged = False
+
+
+def note_missing_secret() -> None:
+    global _missing_secret_logged
+    if not _missing_secret_logged:
+        _missing_secret_logged = True
+        logger.warning("DEADBOT_NOTEBOOK_SECRET is not set; turns run without a research notebook")
+
+
+def _least_read(entry: Entry) -> tuple[int, int]:
+    return (entry.last_read, entry.turn)
+
+
+def compact(book: Notebook) -> Notebook:
+    """The notebook within its entry, index and page ceilings.
+
+    Over a ceiling, entries go in one batch, least recently read first, down
+    to the lower target, so the lines the model has already seen change
+    rarely and the provider's prompt cache keeps them.
+    """
+
+    book = copy.deepcopy(book)
+    book.pages = sorted(book.pages, key=lambda page: page.turn)[-PAGE_TURN_CEILING:]
+    if len(book.entries) <= ENTRY_CEILING and entry_tokens(book) <= INDEX_TOKEN_CEILING:
+        return book
+    before = len(book.entries)
+    for victim in sorted(book.entries, key=_least_read):
+        if len(book.entries) <= ENTRY_COMPACT_TO and entry_tokens(book) <= INDEX_TOKEN_COMPACT_TO:
+            break
+        book.entries = [entry for entry in book.entries if entry.key != victim.key]
+    logger.info("Research notebook compacted from %d to %d entries", before, len(book.entries))
+    return book
+
+
+def _pack(book: Notebook) -> str:
+    text = json.dumps(book.to_json(), ensure_ascii=False, separators=(",", ":"))
+    return base64.urlsafe_b64encode(zlib.compress(text.encode("utf-8"), 9)).decode("ascii")
+
+
+def _sign(body: str, secret: str) -> str:
+    digest = hmac.new(secret.encode("utf-8"), f"{NOTEBOOK_VERSION}.{body}".encode("ascii"), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii")
+
+
+def _drop_one_payload(book: Notebook) -> bool:
+    stored = [entry for entry in book.entries if entry.payload is not None]
+    if not stored:
+        return False
+    min(stored, key=_least_read).payload = None
+    return True
+
+
+def _drop_one_entry(book: Notebook) -> bool:
+    if not book.entries:
+        return False
+    victim = min(book.entries, key=_least_read)
+    book.entries = [entry for entry in book.entries if entry is not victim]
+    return True
+
+
+def encode(book: Notebook, secret: str | None) -> str | None:
+    """The signed token the browser carries to the next turn, or None without a secret."""
+
+    if not secret:
+        note_missing_secret()
+        return None
+    book = compact(book)
+    body = _pack(book)
+    if len(body) > TOKEN_BYTE_CEILING - _SIGNATURE_ROOM:
+        before = len(body)
+        while len(body) > TOKEN_BYTE_CEILING - _SIGNATURE_ROOM and (_drop_one_payload(book) or _drop_one_entry(book)):
+            body = _pack(book)
+        logger.info("Research notebook trimmed from %d to %d characters (%d entries)", before, len(body), len(book.entries))
+    return f"{NOTEBOOK_VERSION}.{body}.{_sign(body, secret)}"
+
+
+def decode(token: str | None, secret: str | None) -> Notebook:
+    """The notebook a request carried, or an empty one when it is missing or cannot be trusted."""
+
+    if not token:
+        return Notebook()
+    if not secret:
+        note_missing_secret()
+        return Notebook()
+    if len(token) > TOKEN_BYTE_CEILING:
+        logger.warning("Ignoring a research notebook longer than %d characters", TOKEN_BYTE_CEILING)
+        return Notebook()
+    parts = token.split(".")
+    if len(parts) != 3 or parts[0] != NOTEBOOK_VERSION:
+        logger.warning("Ignoring a research notebook that is not a v1 token")
+        return Notebook()
+    _, body, signature = parts
+    try:
+        expected = _sign(body, secret)
+    except UnicodeEncodeError:
+        logger.warning("Ignoring a research notebook whose signature does not match")
+        return Notebook()
+    if not hmac.compare_digest(signature.encode("utf-8", "replace"), expected.encode("ascii")):
+        logger.warning("Ignoring a research notebook whose signature does not match")
+        return Notebook()
+    try:
+        inflater = zlib.decompressobj()
+        raw = inflater.decompress(base64.urlsafe_b64decode(body.encode("ascii")), DECOMPRESSED_CEILING)
+        if inflater.unconsumed_tail:
+            logger.warning("Ignoring a research notebook that inflates past %d bytes", DECOMPRESSED_CEILING)
+            return Notebook()
+        return Notebook.from_json(json.loads(raw.decode("utf-8")))
+    except (ValueError, TypeError, RecursionError, MemoryError, zlib.error):
+        logger.warning("Ignoring a research notebook that could not be read")
+        return Notebook()

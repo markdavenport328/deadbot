@@ -1,0 +1,477 @@
+import base64
+import json
+import logging
+import os
+import zlib
+from types import SimpleNamespace
+
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+
+from deadbot import composition, notebook
+from deadbot.experience import ConversationTurn
+from deadbot.finish import build_experience_response
+from notebook_support import LYCEUM, SECRET, finish_messages, record, store
+
+MORNING_DEW = [("get_song", {"song_id_or_title": "Morning Dew"})]
+PAGE = {
+    "state": "ok",
+    "url": "https://www.example.org/lyceum",
+    "title": "Four nights at the Lyceum",
+    "total_chars": 5000,
+    "offset": 0,
+    "text": "The band closed the tour in London.",
+}
+
+
+def _web_turn(payload):
+    messages = [
+        HumanMessage(content="What did the papers say?"),
+        AIMessage(content="", tool_calls=[{"name": "read_page", "args": {"url": PAGE["url"]}, "id": "r1", "type": "tool_call"}]),
+        ToolMessage(content=json.dumps(payload), tool_call_id="r1", name="read_page"),
+        *finish_messages("Four nights."),
+    ]
+    response = build_experience_response("What did the papers say?", "t", messages, store())
+    return notebook.record_turn(notebook.Notebook(), composition._latest_turn(messages), response)
+
+
+def test_each_tool_call_becomes_one_entry_with_its_ids_and_a_fact_line():
+    book, _ = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM + MORNING_DEW)
+    assert book.turns == 1
+    show, song = book.entries
+    assert show.key == notebook.entry_key("get_show", {"show_id_or_date": "1972-05-26"})
+    assert show.summary.startswith("get_show gd-1972-05-26 · Lyceum, London · 31 songs in 2 sets · 4 recordings · performances: ")
+    assert song.summary.startswith("get_song song-morning-dew · Morning Dew · 282 performances, 1967–1995 · 80 releases · ")
+    assert {"gd-1972-05-26", "gd-1972-05-26-promised-land-1-1"} <= set(show.ids)
+    assert "song-morning-dew" in song.ids
+    assert (show.turn, show.last_read, show.payload) == (1, 1, None)
+
+
+def test_a_web_result_keeps_its_payload_and_its_urls():
+    (entry,) = _web_turn(PAGE).entries
+    assert entry.payload == PAGE
+    assert entry.summary.startswith('read_page example.org/lyceum · "Four nights at the Lyceum" · 35 of 5000 chars · ~')
+    assert PAGE["url"] in entry.urls
+
+
+def test_errors_and_the_finish_call_are_not_recorded():
+    book, _ = record(notebook.Notebook(), "Tell me about 1972-13-45.", "No such night.", [("get_show", {"show_id_or_date": "1972-13-45"})])
+    assert book.entries == []
+    assert book.pages[0].turn == 1
+
+
+def test_running_the_same_call_again_keeps_its_first_turn_and_line():
+    first, _ = record(notebook.Notebook(), "Q1", "A1", LYCEUM, prefix="a")
+    second, _ = record(first, "Q2", "A2", LYCEUM, prefix="b")
+    (entry,) = second.entries
+    assert (entry.turn, entry.last_read, entry.summary) == (1, 2, first.entries[0].summary)
+    assert second.turns == 2
+
+
+def test_reading_an_entry_back_marks_it_read_without_adding_an_entry():
+    first, _ = record(notebook.Notebook(), "Q1", "A1", LYCEUM, prefix="a")
+    key = first.entries[0].key
+    messages = [
+        HumanMessage(content="Q2"),
+        AIMessage(content="", tool_calls=[{"name": "read_notebook", "args": {"keys_or_ids": [key]}, "id": "n1", "type": "tool_call"}]),
+        ToolMessage(content=json.dumps({"notebook_entries": [{"key": key, "tool": "get_show", "args": {}, "result": {"show": {}}}]}), tool_call_id="n1", name="read_notebook"),
+        *finish_messages("A2"),
+    ]
+    response = build_experience_response("Q2", "t", messages, store())
+    second = notebook.record_turn(first, composition._latest_turn(messages), response)
+    assert [(entry.key, entry.last_read) for entry in second.entries] == [(key, 2)]
+
+
+def test_the_page_digest_names_each_block_and_the_chips():
+    item = {
+        "type": "show_unit",
+        "show_id": "gd-1972-05-26",
+        "title": "The last Lyceum night",
+        "note": "Morning Dew out of The Other One.",
+        "visible_facets": ["setlist"],
+        "follow_ups": [{"label": "Lyceum Morning Dew", "question": "How does the Lyceum Morning Dew compare?"}],
+    }
+    book, response = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM, items=[item])
+    (page,) = book.pages
+    assert page.answer_key == notebook.answer_key(response.answer)
+    assert page.blocks[0]["type"] == "show_unit" and page.blocks[0]["ids"] == ["gd-1972-05-26"]
+    assert page.blocks[0]["note"] == "Morning Dew out of The Other One."
+    assert page.chips == ["Lyceum Morning Dew"]
+
+
+def test_each_turns_lines_follow_its_answer_in_the_transcript():
+    book, _ = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM)
+    conversation = [
+        ConversationTurn(role="user", text="Tell me about May 26, 1972."),
+        ConversationTurn(role="assistant", text="The last Lyceum night."),
+    ]
+    messages = notebook.transcript_with_notebook(book, conversation)
+    assert [message.type for message in messages] == ["human", "ai", "human"]
+    assert messages[2].name == composition.NOTEBOOK_MESSAGE_NAME
+    assert messages[2].content.startswith("Research notebook, turn 1:")
+    assert f"[{book.entries[0].key}] get_show gd-1972-05-26" in messages[2].content
+
+
+def test_a_turn_whose_answer_is_not_in_the_transcript_goes_in_one_leading_message():
+    book, _ = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM)
+    conversation = [ConversationTurn(role="user", text="Hi"), ConversationTurn(role="assistant", text="Something else.")]
+    messages = notebook.transcript_with_notebook(book, conversation)
+    assert [message.type for message in messages] == ["human", "human", "ai"]
+    assert messages[0].content.startswith("Research notebook from earlier in this conversation")
+    assert "Turn 1:" in messages[0].content
+
+
+def test_an_empty_notebook_leaves_the_transcript_as_it_was():
+    conversation = [ConversationTurn(role="user", text="Hi"), ConversationTurn(role="assistant", text="Hello.")]
+    messages = notebook.transcript_with_notebook(notebook.Notebook(), conversation)
+    assert [(message.type, message.content) for message in messages] == [("human", "Hi"), ("ai", "Hello.")]
+
+
+def test_find_matches_keys_then_arguments_then_ids():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM + MORNING_DEW)
+    show, song = book.entries
+    found, missing = notebook.find(book, [f"[{song.key}]", "1972-05-26", "gd-1972-05-26-promised-land-1-1", "nope"])
+    assert [entry.key for entry in found] == [song.key, show.key]
+    assert missing == ["nope"]
+
+
+def test_find_by_says_which_entries_were_found_only_by_an_id_they_hold():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM + MORNING_DEW)
+    show, song = book.entries
+    found, missing, by_id = notebook.find_by(book, ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"])
+    # get_song's result now lists the Lyceum Morning Dew too, so both entries hold both IDs; newest first.
+    assert [entry.key for entry in found] == [song.key, show.key]
+    both = ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"]
+    assert by_id == {song.key: both, show.key: both}
+    # A key or an argument brings the entry back whole, even when an ID also matched it.
+    _, _, by_id = notebook.find_by(book, ["gd-1972-05-26-morning-dew-2-5", "1972-05-26", song.key])
+    assert by_id == {}
+
+
+def test_grounding_and_focus_flags_cover_entries_and_pages():
+    item = {"type": "show_unit", "show_id": "gd-1972-05-26", "visible_facets": ["setlist"]}
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM, items=[item])
+    ids, urls = notebook.grounding(book)
+    assert "gd-1972-05-26-promised-land-1-1" in ids and "gd-1972-05-26" in ids
+    assert isinstance(urls, frozenset)
+    flagged = notebook.entries_mentioning(book, ["gd-1972-05-26", "gd-1999-01-01"])
+    assert [entry.tool for entry in flagged] == ["get_show"]
+    assert notebook.render_flags(flagged).startswith("Already in the research notebook for what the visitor clicked:")
+    assert notebook.render_flags([]) == ""
+
+
+def test_from_json_keeps_good_entries_and_skips_bad_ones():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    data = book.to_json()
+    data["entries"].append({"key": "only-a-key"})
+    data["pages"].append("junk")
+    restored = notebook.Notebook.from_json(data)
+    assert [entry.key for entry in restored.entries] == [book.entries[0].key]
+    assert len(restored.pages) == 1
+    assert notebook.Notebook.from_json("junk") == notebook.Notebook()
+
+
+def _messages_with(name, payload, call_id="x1", args=None):
+    return [
+        HumanMessage(content="Q"),
+        AIMessage(content="", tool_calls=[{"name": name, "args": args or {}, "id": call_id, "type": "tool_call"}]),
+        ToolMessage(content=payload if isinstance(payload, str) else json.dumps(payload), tool_call_id=call_id, name=name),
+    ]
+
+
+def test_a_failed_web_read_is_not_recorded_but_an_empty_one_is():
+    for state in ("unavailable", "invalid"):
+        assert notebook.tool_results(_messages_with("read_page", {"state": state, "url": PAGE["url"], "message": "x"})) == []
+        assert notebook.tool_results(_messages_with("get_deadcast_metadata", {"research": {"state": state}})) == []
+    kept = notebook.tool_results(_messages_with("read_page", {"state": "empty", "url": PAGE["url"], "text": ""}))
+    assert [name for name, *_ in kept] == ["read_page"]
+
+
+def test_a_failed_read_leaves_no_entry_in_the_notebook():
+    messages = [*_messages_with("read_page", {"state": "unavailable", "url": PAGE["url"]}, "r1", {"url": PAGE["url"]}), *finish_messages("Could not fetch it.")]
+    response = build_experience_response("Q", "t", messages, store())
+    assert notebook.record_turn(notebook.Notebook(), composition._latest_turn(messages), response).entries == []
+
+
+def test_tool_results_skips_non_json_list_and_error_payloads_without_raising():
+    for payload in ("not json at all", json.dumps(["a", "list"]), json.dumps({"error": "boom"}), json.dumps("a string")):
+        assert notebook.tool_results(_messages_with("get_show", payload)) == []
+
+
+def test_the_finish_call_is_excluded_by_name_even_with_a_json_payload():
+    messages = _messages_with(notebook.FINISH_TOOL_NAME, {"ok": True})
+    assert notebook.tool_results(messages) == []
+    assert notebook.tool_results(_messages_with("get_show", {"ok": True}))[0][0] == "get_show"
+
+
+def test_entry_key_ignores_argument_order():
+    assert notebook.entry_key("query_catalog", {"a": 1, "b": [2, 3]}) == notebook.entry_key("query_catalog", {"b": [2, 3], "a": 1})
+    assert notebook.entry_key("get_show", {"a": 1}) != notebook.entry_key("get_song", {"a": 1})
+    assert len(notebook.entry_key("get_show", {})) == 10
+
+
+def test_an_unknown_tool_gets_the_generic_fact_line():
+    line = notebook.summarize("get_mystery", {"q": "dew"}, {"rows": [1, 2, 3], "note": "x"}, 2500)
+    assert line == "get_mystery dew · 3 rows · ~2.5k tok"
+
+
+def test_the_generic_fact_line_names_the_result_its_totals_and_its_dates():
+    payload = {
+        "release": {"release_id": "r1", "title": "Europe '72: The Complete Recordings", "release_date": "2011-09-01"},
+        "track_count": 578,
+        "personnel": [],
+        "tracks": [{"show_date": "1972-04-07"}] * 3,
+        "contents": {"shows": [{"show_date": "1972-04-07"}, {"show_date": "1972-05-26"}], "routes": ["a"]},
+        "_truncated": [1],
+    }
+    line = notebook.summarize("get_album", {"release_id_or_title": "r1"}, payload, 18_400)
+    assert line == (
+        "get_album r1 · Europe '72: The Complete Recordings, 2011-09-01 · 3 of 578 tracks 1972-04-07 · "
+        "2 shows 1972-04-07–1972-05-26 · 0 personnel · ~18.4k tok"
+    )
+
+
+def test_a_line_names_a_box_sets_shows_by_date_and_venue_before_its_tracks():
+    payload = {
+        "release": {"release_id": "release-europe-72-the-complete-recordings-2011", "title": "Europe ’72: The Complete Recordings"},
+        "contents": {"shows": [
+            {"show_id": "gd-1972-04-07", "show_date": "1972-04-07", "venue_name": "Wembley Empire Pool", "track_count": 20},
+            {"show_id": "gd-1972-05-26", "show_date": "1972-05-26", "venue_name": "Lyceum", "track_count": 31},
+        ]},
+        "tracks": [
+            {"performance_id": "gd-1972-04-07-greatest-story-ever-told-2-1", "song_id": "song-greatest-story-ever-told", "title": "Greatest Story Ever Told"},
+            {"performance_id": "gd-1972-04-07-x-2-2", "song_id": "song-truckin", "title": "Truckin'"},
+        ],
+        "pathways": {"gd-1999-01-01": {"show_id": "gd-1999-01-01", "show_date": "1999-01-01"}},
+    }
+    line = notebook.summarize("get_album", {"release_id_or_title": "release-europe-72-the-complete-recordings-2011", "include": ["tracks"]}, payload, 18_400)
+    assert line.endswith(
+        " · shows: gd-1972-04-07 Wembley Empire Pool, gd-1972-05-26 Lyceum; "
+        "performances: gd-1972-04-07-greatest-story-ever-told-2-1, gd-1972-04-07-x-2-2 Truckin'; "
+        "songs: song-greatest-story-ever-told, song-truckin · ~18.4k tok"
+    )
+    assert "gd-1999-01-01" not in line
+
+
+def test_a_show_line_lists_its_performances_so_one_can_go_on_the_page_from_the_index():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    line = book.entries[0].summary
+    assert line.startswith("get_show gd-1972-05-26 · Lyceum, London · ")
+    assert "performances: gd-1972-05-26-promised-land-1-1, " in line
+    assert "gd-1972-05-26-morning-dew-2-5" in line
+    assert len(line) <= 200 + notebook.ITEMS_CHAR_CEILING
+
+
+def test_search_matches_are_listed_by_kind_with_labels_their_ids_do_not_spell():
+    payload = {"query": "lyceum", "matches": [
+        {"entity_type": "venue", "id": "venue-lyceum-london", "label": "Lyceum"},
+        {"entity_type": "show", "id": "gd-1972-05-26", "label": "1972-05-26 Lyceum, London"},
+        {"entity_type": "person", "id": "person-123", "label": "Ned Lagin"},
+    ]}
+    line = notebook.summarize("search_entities", {"query": "lyceum"}, payload, 400)
+    assert "shows: gd-1972-05-26 Lyceum, London; people: person-123 Ned Lagin; venues: venue-lyceum-london" in line
+
+
+def test_the_items_on_a_line_trim_at_their_ceiling_and_log(caplog):
+    rows = [{"performance_id": f"gd-1972-05-{index:02d}-song-{index}-1-1"} for index in range(200)]
+    with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
+        line = notebook.summarize("list_song_performances", {"song_id_or_title": "x"}, {"performances": rows}, 9_000)
+    items = line.split(" · ")[-2]
+    assert len(items) <= notebook.ITEMS_CHAR_CEILING
+    assert items.startswith("performances: gd-1972-05-00-song-0-1-1, ") and items.endswith(" more)")
+    assert "listed" in caplog.text
+
+
+def test_a_failing_fact_line_falls_back_to_the_generic_one(monkeypatch):
+    def boom(args, payload):
+        raise ValueError("bad payload")
+
+    monkeypatch.setitem(notebook._SUMMARIES, "get_show", boom)
+    assert notebook.summarize("get_show", {"show_id_or_date": "1972-05-26"}, {"performances": [1]}, 10) == "get_show 1972-05-26 · 1 performances · ~10 tok"
+
+
+def test_ids_and_urls_ceilings_trim_and_log(caplog):
+    payload = {"rows": [{"show_id": f"gd-1972-{index:04d}"} for index in range(450)], "links": [f"https://example.org/{index}" for index in range(70)]}
+    with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
+        ids, urls = notebook._ids_and_urls(payload)
+    assert len(ids) == notebook.IDS_PER_ENTRY_CEILING and len(urls) == notebook.URLS_PER_ENTRY_CEILING
+    assert "kept 400 of" in caplog.text
+
+
+class _Block:
+    def __init__(self, data):
+        self.data = data
+
+    def model_dump(self, mode="json"):
+        return self.data
+
+
+def test_the_digest_keeps_every_block_whole_and_eight_chips():
+    long_note = "N" * 300
+    blocks = [
+        _Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": f"T{index}", "note": long_note if index == 0 else "", "follow_ups": [{"label": f"Chip {index}"}]})
+        for index in range(20)
+    ]
+    response = SimpleNamespace(blocks=blocks, answer="A", title="Title")
+    page = notebook.page_digest(response, 3)
+    assert len(page.blocks) == 20
+    assert page.chips == [f"Chip {index}" for index in range(8)]
+    assert page.blocks[0] == {"type": "show_unit", "ids": ["gd-1972-0000"], "title": "T0", "note": long_note}
+
+
+def test_the_digest_trims_only_past_its_character_budget():
+    blocks = [_Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": "T" * 500}) for index in range(40)]
+    page = notebook.page_digest(SimpleNamespace(blocks=blocks, answer="A", title="Title"), 3)
+    assert 0 < len(page.blocks) < 40
+    assert sum(len(block["title"]) for block in page.blocks) <= notebook.DIGEST_CHAR_CEILING
+
+
+def test_identical_answers_on_two_turns_each_get_their_own_lines():
+    first, _ = record(notebook.Notebook(), "Q1", "Same answer.", LYCEUM, prefix="a")
+    second, _ = record(first, "Q2", "Same answer.", MORNING_DEW, prefix="b")
+    conversation = [
+        ConversationTurn(role="user", text="Q1"),
+        ConversationTurn(role="assistant", text="Same answer."),
+        ConversationTurn(role="user", text="Q2"),
+        ConversationTurn(role="assistant", text="Same answer."),
+    ]
+    messages = notebook.transcript_with_notebook(second, conversation)
+    assert [message.type for message in messages] == ["human", "ai", "human", "human", "ai", "human"]
+    assert messages[2].content.startswith("Research notebook, turn 1:") and "get_show" in messages[2].content
+    assert messages[5].content.startswith("Research notebook, turn 2:") and "get_song" in messages[5].content
+
+
+def test_from_json_drops_entries_and_pages_with_malformed_fields():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    data = book.to_json()
+    data["entries"].append({**data["entries"][0], "key": "badids", "ids": None})
+    data["entries"].append({**data["entries"][0], "key": "badurls", "urls": [1, 2]})
+    data["entries"].append({**data["entries"][0], "key": "badpayload", "payload": "text"})
+    data["pages"].append({**data["pages"][0], "turn": 2, "blocks": ["x"]})
+    data["pages"].append({**data["pages"][0], "turn": 3, "chips": "chip"})
+    restored = notebook.Notebook.from_json(data)
+    assert [entry.key for entry in restored.entries] == [book.entries[0].key]
+    assert [page.turn for page in restored.pages] == [1]
+
+
+def test_entries_mentioning_returns_the_newest_matches():
+    book, _ = record(
+        notebook.Notebook(), "Q", "A",
+        [("get_show", {"show_id_or_date": "1972-05-26"}), ("get_show", {"show_id_or_date": "gd-1972-05-26"})],
+    )
+    older, newer = book.entries
+    assert notebook.entries_mentioning(book, ["gd-1972-05-26"], limit=1) == [newer]
+    assert notebook.entries_mentioning(book, ["gd-1972-05-26"]) == [older, newer]
+
+
+def _entry(index, *, last_read=1, summary=None, payload=None, tool="get_show"):
+    return notebook.Entry(
+        key=f"k{index:04d}", tool=tool, args={"n": index}, ids=[f"id-{index}"], urls=[],
+        summary=summary or f"{tool} {index} · ~10 tok", tokens=10, turn=1, last_read=last_read, payload=payload,
+    )
+
+
+def test_a_notebook_survives_the_round_trip():
+    book, _ = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM)
+    token = notebook.encode(book, SECRET)
+    assert token.startswith("v1.") and token.count(".") == 2
+    assert notebook.decode(token, SECRET).to_json() == notebook.compact(book).to_json()
+
+
+def test_a_changed_token_or_another_secret_reads_as_an_empty_notebook(caplog):
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    token = notebook.encode(book, SECRET)
+    version, body, signature = token.split(".")
+    swapped = "B" if body[20] == "A" else "A"
+    tampered = f"{version}.{body[:20]}{swapped}{body[21:]}.{signature}"
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(tampered, SECRET).entries == []
+        assert notebook.decode(token, "another-secret").entries == []
+        assert notebook.decode("not a token", SECRET).entries == []
+        assert notebook.decode("v1.\u00e9.\u00e9", SECRET).entries == []
+    assert "signature" in caplog.text
+    assert body[:40] not in caplog.text
+
+
+def test_without_a_secret_turns_run_without_a_notebook_and_say_so_once(monkeypatch, caplog):
+    monkeypatch.setattr(notebook, "_missing_secret_logged", False)
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.encode(notebook.Notebook(turns=1), None) is None
+        assert notebook.encode(notebook.Notebook(turns=1), "") is None
+        assert notebook.decode("v1.x.y", None).entries == []
+    assert caplog.text.count("DEADBOT_NOTEBOOK_SECRET is not set") == 1
+
+
+def _signed(raw: bytes) -> str:
+    body = base64.urlsafe_b64encode(zlib.compress(raw, 9)).decode("ascii")
+    return f"{notebook.NOTEBOOK_VERSION}.{body}.{notebook._sign(body, SECRET)}"
+
+
+def test_a_signed_token_that_inflates_past_the_ceiling_is_ignored(caplog):
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    raw = json.dumps(book.to_json()).encode("utf-8")
+    assert notebook.decode(_signed(raw), SECRET).entries
+    padded = raw + b" " * (notebook.DECOMPRESSED_CEILING + 1_000)
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(_signed(padded), SECRET).entries == []
+    assert "inflates past" in caplog.text
+
+
+def test_a_token_longer_than_the_ceiling_is_ignored_before_any_work(caplog):
+    token = "v1." + "A" * notebook.TOKEN_BYTE_CEILING + ".sig"
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(token, SECRET).entries == []
+    assert "longer than" in caplog.text
+    assert "AAAA" not in caplog.text
+
+
+def test_signed_json_that_cannot_be_parsed_safely_reads_as_an_empty_notebook(caplog):
+    with caplog.at_level(logging.WARNING, logger="deadbot.notebook"):
+        assert notebook.decode(_signed(b"[" * 100_000 + b"]" * 100_000), SECRET).entries == []
+    assert "could not be read" in caplog.text
+
+
+def test_too_many_entries_compact_to_sixty_keeping_the_most_recently_read():
+    book = notebook.Notebook(turns=1, entries=[_entry(index, last_read=index) for index in range(85)])
+    compacted = notebook.compact(book)
+    assert [entry.key for entry in compacted.entries] == [f"k{index:04d}" for index in range(25, 85)]
+
+
+def test_long_index_lines_compact_below_the_token_target():
+    book = notebook.Notebook(turns=1, entries=[_entry(index, last_read=index, summary="x" * 1000) for index in range(20)])
+    compacted = notebook.compact(book)
+    assert notebook.entry_tokens(compacted) <= notebook.INDEX_TOKEN_COMPACT_TO
+    assert compacted.entries[-1].key == "k0019" and compacted.entries[0].key != "k0000"
+
+
+def test_page_digests_keep_the_last_six_turns():
+    book = notebook.Notebook(turns=9, pages=[notebook.PageDigest(turn=number, answer_key=f"a{number}", title="T") for number in range(1, 10)])
+    assert [page.turn for page in notebook.compact(book).pages] == [4, 5, 6, 7, 8, 9]
+
+
+def test_over_the_size_ceiling_web_payloads_go_first_least_recently_read():
+    entries = [
+        _entry(index, last_read=index + 1, tool="read_page", payload={"url": f"https://example.org/{index}", "text": os.urandom(30_000).hex()})
+        for index in range(6)
+    ]
+    token = notebook.encode(notebook.Notebook(turns=6, entries=entries), SECRET)
+    assert len(token) <= notebook.TOKEN_BYTE_CEILING
+    kept = notebook.decode(token, SECRET)
+    assert len(kept.entries) == 6
+    assert kept.entries[0].payload is None
+    assert kept.entries[-1].payload is not None
+
+
+def test_a_lone_surrogate_in_a_signature_or_an_answer_never_raises():
+    book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM)
+    head, body, _ = notebook.encode(book, SECRET).split(".")
+    assert notebook.decode(f"{head}.{body}.\ud800", SECRET) == notebook.Notebook()
+    assert len(notebook.answer_key("Hello \udc80")) == 12
+
+
+def test_the_digest_logs_when_it_trims_chips_or_block_ids(caplog):
+    ids = {f"x{index}_id": f"id-{index}" for index in range(9)}
+    blocks = [_Block({"type": "show_unit", **ids, "follow_ups": [{"label": f"Chip {index}"} for index in range(10)]})]
+    with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
+        page = notebook.page_digest(SimpleNamespace(blocks=blocks, answer="A", title="Title"), 1)
+    assert len(page.blocks[0]["ids"]) == notebook.BLOCK_ID_CEILING and len(page.chips) == notebook.CHIP_CEILING
+    assert "kept 6 of 9 IDs" in caplog.text and "kept 8 of 10 follow-up chips" in caplog.text

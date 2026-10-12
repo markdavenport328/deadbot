@@ -8,9 +8,11 @@ One model researches with read-only tools and finishes the turn by calling
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from langchain_core.messages import AIMessage, AIMessageChunk, SystemMessage
 from langchain_core.messages.utils import message_chunk_to_message
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -69,6 +71,15 @@ years, use aggregate_data, whose results can become a chart on the page. A
 how-many question about shows often wants both: the shows query lists the
 nights themselves, and aggregate_data by year shows when they fell. To
 understand one thing deeply or put it on the page, look it up.
+
+Follow-ups build on what earlier turns found. When the conversation has a
+research notebook, it lists the calls earlier turns made, one line each
+with its key, and the page the visitor saw. Answer from those lines when they
+hold what the answer needs. Call read_notebook with the keys or IDs this
+answer will use to bring those results back, alongside any new
+lookups in the same round. Research what is new or missing as you would for
+a first question. A show, song, performance or release listed in the notebook
+can go on the page by its ID.
 
 Well-worn routes. For a song's life on stage, how often and how it changed
 and where to start listening across its years, get_song_life gives each year in
@@ -278,8 +289,8 @@ discoveries in proportion to how deeply they serve the visitor's intent.
 
 # TRUST AND VOICE
 
-Ground every fact, ID and URL in the tool results of this turn; the server
-checks every ID and link against them. Attribute quotations, reviews, ratings
+Ground every fact, ID and URL in this turn's tool results or the research
+notebook. Attribute quotations, reviews, ratings
 and consensus to the evidence that supports them. When the tools cannot
 answer, say so and offer the nearest honest path. Feature regular lineup and
 equipment when a guest or a change in the band makes them relevant.
@@ -363,6 +374,13 @@ def route_after_tools(state: MessagesState) -> str:
     return "agent"
 
 
+def _cache_options(config: RunnableConfig | None) -> dict[str, str]:
+    """Route a conversation's calls to the same provider cache (OpenAI's prompt_cache_key)."""
+
+    key = ((config or {}).get("configurable") or {}).get("prompt_cache_key")
+    return {"prompt_cache_key": str(key)[:64]} if key else {}
+
+
 def build_agent(
     settings: Settings | None = None,
     store: CanonicalStore | None = None,
@@ -381,20 +399,23 @@ def build_agent(
     if not settings.model_streaming:
         model = model.bind(stream=False)
 
-    def call_model(state: MessagesState):
+    routes_cache = settings.model_provider == "openai"
+
+    def call_model(state: MessagesState, config: RunnableConfig):
         prompt = [SystemMessage(content=SYSTEM_PROMPT), *state["messages"]]
+        options = _cache_options(config) if routes_cache else {}
         if not settings.model_streaming:
-            return {"messages": [model.invoke(prompt)]}
+            return {"messages": [model.invoke(prompt, **options)]}
         # Streamed, the finish_response arguments arrive as raw JSON text. The
         # model sometimes writes the "groups" key twice; a plain JSON parse
         # keeps only the last one and the page loses everything before it,
         # while the visitor already watched it stream. Read the raw text so
         # repeated lists join, the way the streamed draft shows them.
         full: AIMessageChunk | None = None
-        for chunk in model.stream(prompt):
+        for chunk in model.stream(prompt, **options):
             full = chunk if full is None else full + chunk
         if full is None:
-            return {"messages": [model.invoke(prompt)]}
+            return {"messages": [model.invoke(prompt, **options)]}
         return {"messages": [repair_finish_arguments(full)]}
 
     graph = StateGraph(MessagesState)
@@ -406,11 +427,17 @@ def build_agent(
     return graph.compile(checkpointer=MemorySaver())
 
 
-def run_config(thread_id: str, settings: Settings) -> dict:
-    """Return the stable session ID and a hard bound on agent iterations."""
+def run_config(thread_id: str, settings: Settings, *, notebook: Any = None, prompt_cache_key: str | None = None) -> dict:
+    """The session's checkpoint thread, its research notebook and cache key, and a bound on agent iterations."""
 
+    configurable: dict[str, Any] = {"thread_id": thread_id}
+    if notebook is not None:
+        # read_notebook finds it here, so its schema stays the same on every call.
+        configurable["notebook"] = notebook
+    if prompt_cache_key:
+        configurable["prompt_cache_key"] = prompt_cache_key
     # Each research round costs two graph steps (agent, tools). The extra pair
     # beyond the rounds themselves reserves room to finish: one for the
     # ``finish_response`` call, and one more so a call whose arguments failed
     # validation can be corrected instead of the turn dying mid-answer.
-    return {"configurable": {"thread_id": thread_id}, "recursion_limit": settings.max_tool_rounds * 2 + 4}
+    return {"configurable": configurable, "recursion_limit": settings.max_tool_rounds * 2 + 4}

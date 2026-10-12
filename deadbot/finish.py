@@ -96,18 +96,23 @@ def _walk(value: Any, ids: set[str], urls: set[str], key: str | None = None) -> 
             ids.add(value)
 
 
-def grounded_context(payloads: list[dict[str, Any]], extra_ids: Iterable[str] = ()) -> GroundedContext:
-    """Collect every identifier and URL present in this turn's tool output.
+def grounded_context(payloads: list[dict[str, Any]]) -> GroundedContext:
+    """Collect every identifier and URL present in this turn's tool output."""
 
-    ``extra_ids`` are library IDs the server already resolved for this turn
-    (what the visitor clicked), which count as grounded like any tool result.
-    """
-
-    ids: set[str] = set(extra_ids)
+    ids: set[str] = set()
     urls: set[str] = set()
     for payload in payloads:
         _walk(payload, ids, urls)
     return GroundedContext(ids=frozenset(ids), urls=frozenset(urls))
+
+
+def merge_grounding(*contexts: GroundedContext) -> GroundedContext:
+    """IDs and URLs from several sources: this turn's tools, the research notebook, what the visitor clicked."""
+
+    return GroundedContext(
+        ids=frozenset().union(*(context.ids for context in contexts)),
+        urls=frozenset().union(*(context.urls for context in contexts)),
+    )
 
 
 def keep_grounded_links(text: str, urls: frozenset[str]) -> str:
@@ -1684,9 +1689,8 @@ def build_finish_tool() -> BaseTool:
             "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
             "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
             "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
-            "mean the same on every unit. Every ID and URL in the plan must have appeared in a tool result this turn: the "
-            "server hydrates each ID from the library, keeps your words where one does not resolve, and keeps a link only "
-            "when its URL came from a tool result."
+            "mean the same on every unit. IDs and URLs come from this turn's tool results or the research notebook; the server fills each ID's facts "
+            "from the library."
         ),
         args_schema=FinishPlan,
     )
@@ -1725,7 +1729,10 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
     for message in all_messages:
         message_type = getattr(message, "type", None)
         text = composition._content_text(getattr(message, "content", "")).strip()
-        if message_type == "human" and text and getattr(message, "name", None) != FOCUS_MESSAGE_NAME:
+        # Notes the model reads (the grid's click, the research notebook) are not the visitor's words.
+        if message_type == "human" and getattr(message, "name", None) in (FOCUS_MESSAGE_NAME, composition.NOTEBOOK_MESSAGE_NAME):
+            continue
+        if message_type == "human" and text:
             turns.append(ConversationTurn(role="user", text=text[:8_000]))
             answer_index = None
         elif message_type == "ai":
@@ -1755,7 +1762,8 @@ def build_experience_response(
     thread_id: str,
     messages: Iterable[Any],
     store: CanonicalStore,
-    extra_ids: Iterable[str] = (),
+    *,
+    extra_grounding: GroundedContext | None = None,
 ) -> ExperienceResponse:
     """Assemble the browser response from the agent's latest turn."""
 
@@ -1781,7 +1789,9 @@ def build_experience_response(
             sources=[],
         )
 
-    grounded = grounded_context(payloads, extra_ids)
+    grounded = grounded_context(payloads)
+    if extra_grounding is not None:
+        grounded = merge_grounding(grounded, extra_grounding)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
     chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
     lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None

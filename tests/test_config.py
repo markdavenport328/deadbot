@@ -217,3 +217,16 @@ def test_unknown_provider_fails_clearly():
         assert "Registered providers: ollama, openai" in str(error)
     else:
         raise AssertionError("Unknown provider should fail")
+
+
+def test_the_notebook_secret_is_read_from_the_environment_and_kept_out_of_repr(monkeypatch, tmp_path):
+    monkeypatch.setenv("DEADBOT_NOTEBOOK_SECRET", "  s3cret-value  ")
+    settings = Settings.from_env(env_path=tmp_path / "absent.env")
+    assert settings.notebook_secret == "s3cret-value"
+    assert "s3cret-value" not in repr(settings)
+
+
+def test_a_blank_notebook_secret_means_no_notebook(monkeypatch, tmp_path):
+    monkeypatch.setenv("DEADBOT_NOTEBOOK_SECRET", " ")
+    assert Settings.from_env(env_path=tmp_path / "absent.env").notebook_secret is None
+    assert Settings().notebook_secret is None

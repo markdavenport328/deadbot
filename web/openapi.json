@@ -1408,6 +1408,19 @@
               }
             ]
           },
+          "notebook": {
+            "anyOf": [
+              {
+                "maxLength": 200000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The research notebook the previous response returned, sent back unchanged.",
+            "title": "Notebook"
+          },
           "question": {
             "maxLength": 2000,
             "minLength": 1,
@@ -1590,6 +1603,18 @@
             ],
             "title": "Mode",
             "type": "string"
+          },
+          "notebook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Signed research notebook: what this conversation's tools found so far. Send it back with the next question.",
+            "title": "Notebook"
           },
           "schema_version": {
             "const": "2",

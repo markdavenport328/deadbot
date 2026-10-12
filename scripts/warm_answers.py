@@ -1,4 +1,5 @@
 """Make the opening questions' answers ready before a visitor asks.
+Each answer carries its research notebook when DEADBOT_NOTEBOOK_SECRET is set at build time, so the first follow-up starts from that research.
 
 Two ways to run it:
 
@@ -77,6 +78,8 @@ def build_bundle(path: Path, questions: list[str]) -> int:
     if settings.model_provider == "openai" and not settings.openai_api_key:
         print("warm answers: no OPENAI_API_KEY here (a preview build?); skipping, answers will be computed live")
         return 0
+    if not settings.notebook_secret:
+        print("warm answers: DEADBOT_NOTEBOOK_SECRET is not set; the answers ship without research notebooks")
     # The producer fills a scratch cache and must not seed itself from a stale bundle.
     scratch = Path(tempfile.mkdtemp()) / "cache.sqlite"
     os.environ["DEADBOT_RESPONSE_CACHE_PATH"] = str(scratch)
@@ -102,7 +105,8 @@ def build_bundle(path: Path, questions: list[str]) -> int:
         return 0
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(entries, ensure_ascii=False), encoding="utf-8")
-    print(f"warm answers: wrote {len(entries)} of {len(questions)} to {path} ({sum(done)} answered)")
+    carried = sum(1 for entry in entries if isinstance(entry.get("response"), dict) and entry["response"].get("notebook"))
+    print(f"warm answers: wrote {len(entries)} of {len(questions)} to {path} ({sum(done)} answered, {carried} with a research notebook)")
     return 0
 
 

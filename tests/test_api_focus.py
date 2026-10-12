@@ -115,9 +115,26 @@ def test_a_clicked_night_can_be_placed_without_the_model_looking_it_up_again(sto
         ToolMessage(content="ok", tool_call_id="f1", name="finish_response"),
     ]
     ungrounded = finish.build_experience_response(QUESTION, "t", messages, store)
-    grounded = finish.build_experience_response(QUESTION, "t", messages, store, extra_ids=ids)
+    grounded = finish.build_experience_response(QUESTION, "t", messages, store, extra_grounding=finish.GroundedContext(ids=frozenset(ids), urls=frozenset()))
     assert [b.type for b in ungrounded.blocks] != ["show_unit"]
     assert [b.type for b in grounded.blocks] == ["show_unit"]
+
+
+def test_a_clicked_night_grounds_the_page_through_the_app(store, tmp_path):
+    item = {"type": "show_unit", "show_id": "gd-1972-05-11", "visible_facets": ["setlist"]}
+    plan = {"chat_answer": "Rotterdam.", "title": "T", "lead": None, "groups": [{"presentation": "collection", "items": [item]}]}
+    messages = [
+        AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f9", "type": "tool_call"}]),
+        ToolMessage(content="ok", tool_call_id="f9", name="finish_response"),
+    ]
+
+    def blocks(body):
+        agent = FakeAgent()
+        agent.invoke = lambda payload, config: {"messages": [*payload["messages"], *messages]}
+        return [b["type"] for b in client_for(store, agent, tmp_path).post("/api/experience", json=body).json()["blocks"]]
+
+    assert blocks({"question": QUESTION, "focus": FOCUS}) == ["show_unit"]
+    assert "show_unit" not in blocks({"question": QUESTION})
 
 
 def test_a_focused_ask_neither_reads_nor_writes_the_response_cache(store, tmp_path):

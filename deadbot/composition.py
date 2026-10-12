@@ -88,7 +88,20 @@ def _tool_payloads(messages: Iterable[Any]) -> list[dict[str, Any]]:
             continue
         if isinstance(payload, dict):
             payloads.append(payload)
+            # read_notebook brings earlier results back inside one message;
+            # each result counts as if its tool had run this turn.
+            entries = payload.get("notebook_entries")
+            for entry in entries if isinstance(entries, list) else []:
+                result = entry.get("result") if isinstance(entry, dict) else None
+                if isinstance(result, dict):
+                    payloads.append(result)
     return payloads
+
+
+# Research-notebook lines travel to the model as human messages with this
+# name. The Responses API drops message names, so the model reads only the
+# text; Deadbot uses the name to keep them out of the visible conversation.
+NOTEBOOK_MESSAGE_NAME = "research_notebook"
 
 
 def _latest_turn(messages: list[Any]) -> list[Any]:
