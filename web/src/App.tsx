@@ -9,6 +9,9 @@ import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { VersionStrip } from "./VersionStrip";
+import { SongTimeline } from "./SongTimeline";
+import type { SongTimelineData } from "./song-timeline-types";
+import { askFocus } from "./song-timeline-text";
 import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
@@ -63,6 +66,16 @@ function PlayPauseIcon({ playing }: { playing: boolean }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path fill="currentColor" d="M7 4.5v15l12-7.5z" />
+    </svg>
+  );
+}
+
+// Back and next for a queue: a bar against a triangle, the triangle pointing
+// the way the queue moves.
+function StepIcon({ direction }: { direction: "previous" | "next" }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d={direction === "previous" ? "M6 5h2.5v14H6zM19 5v14L9 12z" : "M15.5 5H18v14h-2.5zM5 5v14l10-7z"} />
     </svg>
   );
 }
@@ -203,6 +216,58 @@ function dedupeSources(sources: SourceReference[]): SourceReference[] {
     result.push(source);
   }
   return result;
+}
+
+// The Internet Archive tapes behind the page's playable tracks, each once,
+// named by the show the block places it in, for the sources footer.
+type Tape = { identifier: string; showDate: string | null; venueName: string | null };
+
+const ARCHIVE_DETAILS = /^https?:\/\/(?:www\.)?archive\.org\/details\/([^/?#]+)/;
+
+function pageTapes(groups: RenderGroup[]): Tape[] {
+  const tapes = new Map<string, Tape>();
+  const visit = (value: unknown, show: { showDate: string | null; venueName: string | null }) => {
+    if (Array.isArray(value)) {
+      for (const item of value) visit(item, show);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    const record = value as Record<string, unknown>;
+    const here = {
+      showDate: typeof record.show_date === "string" ? record.show_date : show.showDate,
+      venueName: typeof record.venue_name === "string" ? record.venue_name : show.venueName
+    };
+    for (const [key, field] of Object.entries(record)) {
+      if (typeof field !== "string") {
+        visit(field, here);
+        continue;
+      }
+      const identifier = key === "recording_identifier" ? field : (archiveTrack(field)?.identifier ?? ARCHIVE_DETAILS.exec(field)?.[1]);
+      if (!identifier) continue;
+      const known = tapes.get(identifier);
+      if (!known || (!known.showDate && here.showDate)) tapes.set(identifier, { identifier, ...here });
+    }
+  };
+  for (const group of groups) visit(group.blocks, { showDate: null, venueName: null });
+  return [...tapes.values()].sort((a, b) => (a.showDate ?? "9999").localeCompare(b.showDate ?? "9999") || a.identifier.localeCompare(b.identifier));
+}
+
+function showLabel(tape: Tape): string {
+  if (!tape.showDate) return tape.venueName ?? tape.identifier;
+  return [tape.venueName, formatShowDateLong(tape.showDate)].filter(Boolean).join(", ");
+}
+
+// Two tapes of one show are told apart by the tape's own name after its date
+// ("sbd.hicks"), the way tapers know them.
+function tapeLabels(tapes: Tape[]): Map<string, string> {
+  const shows = tapes.map(showLabel);
+  return new Map(
+    tapes.map((tape, index) => {
+      const shared = shows.filter((label) => label === shows[index]).length > 1;
+      const name = tape.identifier.replace(/^gd\d{2,4}-\d{2}-\d{2}\.?/, "") || tape.identifier;
+      return [tape.identifier, shared && name !== shows[index] ? `${shows[index]} (${name})` : shows[index]];
+    })
+  );
 }
 
 // A reading link: sources, articles, charts. A URL that is itself an audio
@@ -629,7 +694,8 @@ function unitIdentity(block: UnitBlock): { title: string; url?: string | null; t
     case "album_unit":
       return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
     case "song_overview": {
-      const first = block.representative_performances[0];
+      // The first stop the library placed; a stop with only the model's words has no recording.
+      const first = block.representative_performances.find((stop) => stop.show_id);
       const track = first ? trackFor(first, block.title, { showDate: first.show_date, venueName: first.venue_name ?? splitShowLabel(first.show_label).venue }) : null;
       return { title: block.title, url: first?.listen_url, track };
     }
@@ -1287,39 +1353,6 @@ function splitShowLabel(label: string, showDate?: string | null): { venue: strin
   return { venue, date };
 }
 
-type HistoryStop = { performance_id: string; show_label: string; show_date?: string | null; venue_name?: string | null; listen_url?: string | null; audio_url?: string | null; duration_seconds?: number | null; set_label?: string | null };
-
-function HistoryStop({ stop, label, songTitle }: { stop: HistoryStop; label: ReactNode; songTitle: string }) {
-  const { venue, date } = splitShowLabel(stop.show_label, stop.show_date);
-  const track = trackFor(stop, songTitle, { showDate: stop.show_date, venueName: stop.venue_name ?? venue });
-  return (
-    <li>
-      <span className="history-year">{label}</span>
-      <ListenControl url={stop.listen_url} label={venue} track={track} name={[songTitle, venue, date].filter(Boolean).join(", ")} className="entry-title" />
-      <span className="entry-detail">{[date, stop.set_label].filter(Boolean).join(" · ")}</span>
-    </li>
-  );
-}
-
-// The song's performance history: where it began and ended, then one
-// performance a year across a horizontal strip.
-function HistoryPanel({ history, songTitle }: { history: NonNullable<SongOverviewBlockT["history"]>; songTitle: string }) {
-  const byYear = history.by_year ?? [];
-  return (
-    <div className="history">
-      <ol className="history-span">
-        <HistoryStop stop={history.first} label="First" songTitle={songTitle} />
-        <HistoryStop stop={history.last} label="Last" songTitle={songTitle} />
-      </ol>
-      {byYear.length > 1 && (
-        <ol className="history-years" aria-label="One performance a year">
-          {byYear.map((item) => <HistoryStop key={item.performance_id} stop={item} label={item.year} songTitle={songTitle} />)}
-        </ol>
-      )}
-    </div>
-  );
-}
-
 // A song's plays per year, as the same bar chart an aggregate_data result
 // draws: years along the bottom, a year it was not played an empty slot.
 function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { type: "data_chart" }> {
@@ -1344,6 +1377,32 @@ function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { ty
   };
 }
 
+// A song card's timeline data: the library's years and lengths, and the
+// model's stops, open year, first view and year questions.
+function timelineData(block: SongOverviewBlockT): SongTimelineData {
+  return {
+    song_id: block.song_id,
+    title: block.title,
+    performance_count: block.known_performance_count,
+    year_summaries: block.year_summaries ?? [],
+    length_points: block.length_points ?? [],
+    stops: block.representative_performances.map((stop) => ({
+      performance_id: stop.performance_id,
+      label: stop.label ?? null,
+      why: stop.why ?? null,
+      show_date: stop.show_date ?? null,
+      venue_name: stop.venue_name ?? null,
+      seconds: stop.seconds ?? null,
+      track: stop.audio_url
+        ? { performance_id: stop.performance_id, title: block.title, audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null }
+        : null
+    })),
+    open_year: block.open_year ?? null,
+    chart_view: block.chart_view ?? null,
+    year_questions: block.year_questions ?? []
+  };
+}
+
 function SongOverviewUnit({
   block,
   criteria,
@@ -1359,16 +1418,11 @@ function SongOverviewUnit({
 }) {
   const openFacets = (block.emphasis === "primary" && soleUnit) || inRow;
   const showsFacet = (facet: SongOverviewBlockT["visible_facets"][number]) => block.visible_facets.includes(facet);
+  // With by_year the song's life is one timeline: the chart, the model's stops
+  // and every performance a year away.
+  const timeline = showsFacet("by_year") && (block.year_summaries ?? []).length > 0;
 
   const tabs: DrawerTab[] = [];
-  if (showsFacet("history") && block.history) {
-    const history = block.history;
-    tabs.push({
-      id: "history",
-      label: "History",
-      content: <HistoryPanel history={history} songTitle={block.title} />
-    });
-  }
   if (showsFacet("albums") && block.albums.length > 0) {
     tabs.push({
       id: "record",
@@ -1400,7 +1454,9 @@ function SongOverviewUnit({
     });
   }
   const initialOpen = openFacets && tabs.length > 0 ? tabs[0].id : null;
-  const representatives = showsFacet("representatives") ? block.representative_performances : [];
+  // Without a timeline to carry them, the model's stops list on the card.
+  const representatives = (showsFacet("representatives") || showsFacet("by_year")) && !timeline ? block.representative_performances : [];
+  const timelineInput = useMemo(() => timelineData(block), [block]);
 
   return (
     <UnitFrame inRow={inRow} className={`song-overview emphasis-${block.emphasis}`}>
@@ -1413,26 +1469,45 @@ function SongOverviewUnit({
       )}
       {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
-      {showsFacet("by_year") && (block.year_counts ?? []).length > 0 && (
-        <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
-          <DataChart block={songYearChart(block)} embedded />
-        </Suspense>
+      {timeline ? (
+        <SongTimeline
+          // The final page can change the model's open year or first view after the draft streamed.
+          key={`${block.song_id}:${block.open_year ?? ""}:${block.chart_view ?? ""}`}
+          data={timelineInput}
+          onAsk={(question, focus) => onFollowUp(question, askFocus(focus))}
+        />
+      ) : (
+        showsFacet("by_year") &&
+        (block.year_counts ?? []).length > 0 && (
+          <Suspense fallback={<div className="data-chart-figure data-chart-loading">Loading chart…</div>}>
+            <DataChart block={songYearChart(block)} embedded />
+          </Suspense>
+        )
       )}
       {representatives.length > 0 && (
         <section className="song-representatives">
           <ul>
-            {representatives.map((performance) => (
-              <li key={performance.performance_id}>
-                <ListenControl
-                  url={performance.listen_url}
-                  label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
-                  track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
-                  name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
-                  className="list-item-label"
-                />
-                {performance.set_label && <span>{performance.set_label}</span>}
-              </li>
-            ))}
+            {representatives.map((performance, index) =>
+              performance.show_date || performance.show_label ? (
+                <li key={`${performance.performance_id}-${index}`}>
+                  <ListenControl
+                    url={performance.listen_url}
+                    label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
+                    track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
+                    name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
+                    className="list-item-label"
+                  />
+                  {[performance.label, performance.set_label].filter(Boolean).length > 0 && <span>{[performance.label, performance.set_label].filter(Boolean).join(" · ")}</span>}
+                  {performance.why && <span>{performance.why}</span>}
+                </li>
+              ) : (
+                // A stop the library could not place keeps the model's words.
+                <li key={`${performance.performance_id}-${index}`}>
+                  <span className="list-item-label">{performance.label ?? performance.why}</span>
+                  {performance.label && performance.why && <span>{performance.why}</span>}
+                </li>
+              )
+            )}
           </ul>
         </section>
       )}
@@ -1801,6 +1876,8 @@ function ComposedPage({
   const firstBlock = groups[0]?.blocks[0];
   const hero = firstBlock?.type === "listening_hero" ? firstBlock : null;
   const bodyGroups = hero ? [{ ...groups[0], blocks: groups[0].blocks.slice(1) }, ...groups.slice(1)] : groups;
+  const tapes = composing ? [] : pageTapes(groups);
+  const tapeNames = tapeLabels(tapes);
   return (
     <>
       {hero && <ListeningHero block={hero} />}
@@ -1865,7 +1942,7 @@ function ComposedPage({
         );
       })}
       {composing && <p className="composing-note">Composing the page…</p>}
-      {!composing && sources.length > 0 && (
+      {!composing && (sources.length > 0 || tapes.length > 0) && (
         <footer className="sources-footer">
           <p className="sources-footer-label">Sources</p>
           <ul>
@@ -1881,6 +1958,12 @@ function ComposedPage({
                 )}
               </li>
             ))}
+            {tapes.map((tape) => (
+              <li key={tape.identifier}>
+                <span className="source-kind-chip">Internet Archive</span>
+                <ExternalLink href={`https://archive.org/details/${tape.identifier}`}>{tapeNames.get(tape.identifier)}</ExternalLink>
+              </li>
+            ))}
           </ul>
         </footer>
       )}
@@ -1889,13 +1972,15 @@ function ComposedPage({
 }
 
 // The one shared now-playing bar for the whole app: hidden until something
-// has played, then fixed to the bottom of the answer pane it lives in (never
-// over the left rail, since it renders inside .content-pane). A 44px round
-// gold play/pause button, a real range-input scrubber with tabular-numeral
-// elapsed/total time, and one quiet external link to the tape's own details
-// page — everything else (queueing, position, next/previous within the
-// current queue) is the shared PlayerProvider's job.
-function NowPlayingBar() {
+// has played, then held at the bottom of the screen within the answer pane
+// (never over the left rail, since it renders inside .content-pane). A 44px
+// round gold play/pause button and a real range-input scrubber with
+// tabular-numeral elapsed/total time; the tapes themselves are credited in
+// the page's sources footer. When more than one track is queued (a set, a
+// path, a play-all), quiet back and next steps flank the gold button; each
+// dims at its end of the queue rather than vanishing, so the bar holds
+// still. Queueing and position are the shared PlayerProvider's job.
+export function NowPlayingBar() {
   const player = usePlayer();
   const track = player.currentTrack;
   if (!track) return null;
@@ -1905,6 +1990,7 @@ function NowPlayingBar() {
   const duration = player.duration || track.durationSeconds || 0;
   const position = Math.min(player.position, duration || 0);
   const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
+  const queued = player.queue.length > 1;
   return (
     <div className="now-playing-bar" role="region" aria-label="Now playing">
       {track.thumbnailUrl ? (
@@ -1916,24 +2002,36 @@ function NowPlayingBar() {
         <p className="now-playing-title">{track.title}</p>
         {isError ? <p className="now-playing-error">Couldn’t play this track</p> : metaLine ? <p className="now-playing-meta">{metaLine}</p> : null}
       </div>
-      {isError ? (
-        <button type="button" className="now-playing-retry" onClick={() => player.retry()}>
-          Retry
-        </button>
-      ) : (
-        <button
-          type="button"
-          className="now-playing-toggle"
-          onClick={() => {
-            if (!isLoading) player.toggle();
-          }}
-          aria-label={isPlaying ? "Pause" : "Play"}
-          aria-busy={isLoading}
-          disabled={isLoading}
-        >
-          <PlayPauseIcon playing={isPlaying} />
-        </button>
-      )}
+      <div className="now-playing-controls">
+        {queued && (
+          <button type="button" className="now-playing-step" onClick={player.previous} disabled={!player.hasPrevious} aria-label="Previous track">
+            <StepIcon direction="previous" />
+          </button>
+        )}
+        {isError ? (
+          <button type="button" className="now-playing-retry" onClick={() => player.retry()}>
+            Retry
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="now-playing-toggle"
+            onClick={() => {
+              if (!isLoading) player.toggle();
+            }}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-busy={isLoading}
+            disabled={isLoading}
+          >
+            <PlayPauseIcon playing={isPlaying} />
+          </button>
+        )}
+        {queued && (
+          <button type="button" className="now-playing-step" onClick={player.next} disabled={!player.hasNext} aria-label="Next track">
+            <StepIcon direction="next" />
+          </button>
+        )}
+      </div>
       <div className="now-playing-scrubber">
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
         <input
@@ -1949,11 +2047,6 @@ function NowPlayingBar() {
         />
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
       </div>
-      {track.recordingDetailsUrl && (
-        <a className="now-playing-tape" href={track.recordingDetailsUrl} target="_blank" rel="noreferrer">
-          Tape on the Internet Archive
-        </a>
-      )}
     </div>
   );
 }
@@ -2399,6 +2492,7 @@ function App() {
         </aside>
 
         <section className="content-pane" aria-label="Deadbot guide">
+          <div className="content-body">
           {atStart ? (
             <div className={`start-screen${phase === "leaving" ? " leaving" : ""}`}>
               <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
@@ -2458,6 +2552,7 @@ function App() {
               onFollowUp={chooseFollowUp}
             />
           ) : null}
+          </div>
           <NowPlayingBar />
         </section>
       </div>

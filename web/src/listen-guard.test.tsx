@@ -156,17 +156,14 @@ describe("era and song cards play in-page", () => {
     expect(row).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("the song card's History rows and representatives play in-page; On record links out quietly", async () => {
+  it("the song card's representatives play in-page; On record links out quietly", async () => {
     await renderFixture("playing", visualFixtures.playing);
     const card = screen.getByRole("heading", { name: "Playing In The Band" }).closest("article") as HTMLElement;
     expect(within(card).getByRole("button", { name: "Play Playing In The Band, Old Renaissance Faire Grounds (8/27/72)" })).toHaveAttribute("data-playable", "in-page");
-    const historyTab = within(card).getByRole("button", { name: "History" });
-    if (historyTab.getAttribute("aria-expanded") !== "true") fireEvent.click(historyTab);
-    const last = within(card).getByRole("button", { name: "Play Playing In The Band, Riverport Amphitheatre, July 5, 1995" });
-    expect(last).toHaveAttribute("data-playable", "in-page");
-    // The first performance has no tape: it is words, not a control.
-    expect(within(card).queryByRole("button", { name: /Capitol Theatre/ })).toBeNull();
-    fireEvent.click(within(card).getByRole("button", { name: /^On record/ }));
+    // The song's history lives on its timeline now; there is no History tab.
+    expect(within(card).queryByRole("button", { name: "History" })).toBeNull();
+    const recordTab = within(card).getByRole("button", { name: /^On record/ });
+    if (recordTab.getAttribute("aria-expanded") !== "true") fireEvent.click(recordTab);
     const ace = within(card).getByRole("link", { name: "Ace on open.spotify.com (opens in a new tab)" });
     expect(ace).toHaveClass("listen-link");
     expect(ace.querySelector(".listen-play-mark, svg")).toBeNull();
@@ -201,5 +198,19 @@ describe("collapsed cards", () => {
     await renderFixture("harrisburg", visualFixtures.harrisburg);
     expect(document.querySelectorAll("article.show-unit").length).toBe(2);
     expect(document.querySelector(".collapsed-list")).toBeNull();
+  });
+});
+
+describe("tapes in the sources footer", () => {
+  it("credits each tape behind the page's tracks once, by its show", async () => {
+    await renderFixture("cornell", visualFixtures.cornell);
+    const footer = document.querySelector(".sources-footer") as HTMLElement;
+    const chips = [...footer.querySelectorAll(".source-kind-chip")].filter((chip) => chip.textContent === "Internet Archive");
+    const tapes = chips.map((chip) => chip.closest("li")?.querySelector("a"));
+    expect(tapes.length).toBeGreaterThan(0);
+    const hrefs = tapes.map((link) => link?.getAttribute("href"));
+    expect(new Set(hrefs).size).toBe(hrefs.length);
+    expect(hrefs.filter((href) => !href?.startsWith("https://archive.org/details/"))).toEqual([]);
+    expect(within(footer).getByRole("link", { name: /^Barton Hall, Cornell University, May 8, 1977 \(sbd\.hicks\)/ })).toBeInTheDocument();
   });
 });

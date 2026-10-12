@@ -138,8 +138,10 @@ def test_find_by_says_which_entries_were_found_only_by_an_id_they_hold():
     book, _ = record(notebook.Notebook(), "Q", "A", LYCEUM + MORNING_DEW)
     show, song = book.entries
     found, missing, by_id = notebook.find_by(book, ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"])
-    assert [entry.key for entry in found] == [show.key, song.key]
-    assert by_id == {show.key: ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"], song.key: ["song-morning-dew"]}
+    # get_song's result now lists the Lyceum Morning Dew too, so both entries hold both IDs; newest first.
+    assert [entry.key for entry in found] == [song.key, show.key]
+    both = ["gd-1972-05-26-morning-dew-2-5", "song-morning-dew"]
+    assert by_id == {song.key: both, show.key: both}
     # A key or an argument brings the entry back whole, even when an ID also matched it.
     _, _, by_id = notebook.find_by(book, ["gd-1972-05-26-morning-dew-2-5", "1972-05-26", song.key])
     assert by_id == {}

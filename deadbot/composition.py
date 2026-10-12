@@ -12,6 +12,7 @@ only decides how a chosen component is shaped.
 from __future__ import annotations
 
 import json
+import logging
 import math
 from collections.abc import Iterable
 from typing import Any, Literal
@@ -19,6 +20,7 @@ from urllib.parse import parse_qs, urlparse
 
 from pydantic import ValidationError
 
+from deadbot import song_life
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     AlbumCreditItem,
@@ -39,7 +41,6 @@ from deadbot.experience import (
     GuestAppearanceItem,
     GuestAppearanceSong,
     GuestAppearanceListBlock,
-    ComparisonStripItem,
     ListenAction,
     MediaLinkBlock,
     PerformanceListItem,
@@ -53,11 +54,13 @@ from deadbot.experience import (
     ShowSelectionBlock,
     ShowSelectionItem,
     ShowUnitBlock,
-    SongHistory,
     SongOverviewBlock,
     SongRepresentativePerformance,
+    SongLengthPoint,
     SongReleaseItem,
     SongYearCount,
+    SongYearQuestion,
+    SongYearSummary,
     SourceReference,
     UnitSource,
     fit,
@@ -379,42 +382,6 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
             )
         )
     return items
-
-
-def _song_history(performances: list[dict[str, Any]], store: CanonicalStore) -> SongHistory | None:
-    """First and last renditions plus one representative per year, canonical dates only."""
-
-    items = _performance_items(performances, store)
-    if not items:
-        return None
-    first_per_year: dict[int, PerformanceListItem] = {}
-    for item in items:
-        if item.show_date and item.show_date[:4].isdigit():
-            first_per_year.setdefault(int(item.show_date[:4]), item)
-    years = sorted(first_per_year)
-    if len(years) > 12:
-        selected_positions = {round(step * (len(years) - 1) / 11) for step in range(12)}
-        years = [year for position, year in enumerate(years) if position in selected_positions]
-    by_year = [
-        ComparisonStripItem(
-            performance_id=first_per_year[year].performance_id,
-            show_id=first_per_year[year].show_id,
-            year=year,
-            show_date=first_per_year[year].show_date,
-            show_label=first_per_year[year].show_label,
-            set_label=first_per_year[year].set_label,
-            position_in_set=first_per_year[year].position_in_set,
-            venue_name=first_per_year[year].venue_name,
-            listen_url=first_per_year[year].listen_url,
-            audio_url=first_per_year[year].audio_url,
-            duration_seconds=first_per_year[year].duration_seconds,
-        )
-        for year in years
-    ]
-    dated = [item for item in items if item.show_date]
-    first = dated[0] if dated else items[0]
-    last = dated[-1] if dated else items[-1]
-    return SongHistory(known_count=len(items), first=first, last=last, by_year=by_year)
 
 
 def _set_neighbors(
@@ -1291,6 +1258,21 @@ def _song_years(performances: list[dict[str, Any]], store: CanonicalStore) -> li
     return sorted(int(date[:4]) for date in dates if date[:4].isdigit())
 
 
+logger = logging.getLogger(__name__)
+
+# A visitor's question is capped at 2,000 characters; a year question the
+# model writes is trimmed well under that, so asking it always goes through.
+YEAR_QUESTION_CEILING = 500
+
+
+def _trim_question(text: str) -> str:
+    text = " ".join(str(text).split())
+    if len(text) > YEAR_QUESTION_CEILING:
+        logger.warning("Trimmed a %d-character year question to %d", len(text), YEAR_QUESTION_CEILING)
+        return text[:YEAR_QUESTION_CEILING].rstrip()
+    return text
+
+
 def _song_overview(
     context: dict[str, Any],
     store: CanonicalStore,
@@ -1300,13 +1282,25 @@ def _song_overview(
     note: str | None = None,
     visible_facets: list[str] | None = None,
     representative_performance_ids: list[str] | None = None,
+    representatives: list[dict[str, Any]] | None = None,
+    open_year: int | None = None,
+    chart_view: str | None = None,
+    year_questions: list[dict[str, Any]] | None = None,
     sources: list[UnitSource] | None = None,
     follow_ups: list[FollowUpTopic] | None = None,
 ) -> SongOverviewBlock | None:
+    """A song card. ``representatives`` are the model's stops in its order, each
+    ``{performance_id, label, why, grounded}``; ``representative_performance_ids``
+    is the older form, already grounded and without words."""
     song = context.get("song")
     if not isinstance(song, dict) or not song.get("song_id"):
         return None
-    facets = frozenset(visible_facets) if visible_facets is not None else frozenset({"representatives"})
+    # The timeline is the song's history now; an older plan's "history" asks for it.
+    facets = (
+        frozenset("by_year" if facet == "history" else facet for facet in visible_facets)
+        if visible_facets is not None
+        else frozenset({"representatives"})
+    )
     performances = context.get("performances") if isinstance(context.get("performances"), list) else []
 
     credits: list[CreditItem] = []
@@ -1340,29 +1334,53 @@ def _song_overview(
         other_albums = [album for album in all_albums if album.release_type != "studio"]
         albums = studio_albums + other_albums
 
-    representatives: list[SongRepresentativePerformance] = []
-    if "representatives" in facets:
-        performance_items = {
-            item.performance_id: item
-            for item in _performance_items(performances, store)
-        }
-        representatives = [
-            SongRepresentativePerformance(
-                performance_id=item.performance_id,
-                show_id=item.show_id,
-                show_date=item.show_date,
-                show_label=item.show_label,
-                set_label=item.set_label,
-                venue_name=item.venue_name,
-                listen_url=item.listen_url,
-                audio_url=item.audio_url,
-                duration_seconds=item.duration_seconds,
-            )
-            for performance_id in (representative_performance_ids or [])
-            if (item := performance_items.get(performance_id)) is not None
-        ]
+    # A performance named twice is one stop, in its first place, keeping the first words given.
+    stops: list[dict[str, Any]] = []
+    by_performance: dict[str, dict[str, Any]] = {}
+    for stop in [*(representatives or []), *({"performance_id": pid, "grounded": True} for pid in (representative_performance_ids or []))]:
+        performance_id = str(stop.get("performance_id") or "")
+        if performance_id in by_performance:
+            kept = by_performance[performance_id]
+            for key in ("label", "why"):
+                kept[key] = kept.get(key) or stop.get(key)
+            kept["grounded"] = kept.get("grounded", True) or stop.get("grounded", True)
+            continue
+        by_performance[performance_id] = dict(stop)
+        stops.append(by_performance[performance_id])
+    timeline = "by_year" in facets
+    # Lengths and the year summaries are the timeline's; a plain card never reads them.
+    life = song_life.life_performances(store, song["song_id"]) if timeline else []
+    built_stops: list[SongRepresentativePerformance] = []
+    if stops and ("representatives" in facets or timeline):
+        performance_items = {item.performance_id: item for item in _performance_items(performances, store)}
+        seconds = {performance.performance_id: performance.seconds for performance in life}
+        for stop in stops:
+            performance_id = str(stop.get("performance_id") or "")
+            label = (stop.get("label") or "").strip() or None
+            why = (stop.get("why") or "").strip() or None
+            item = performance_items.get(performance_id) if stop.get("grounded", True) else None
+            if item is not None:
+                built_stops.append(
+                    SongRepresentativePerformance(
+                        performance_id=item.performance_id,
+                        show_id=item.show_id,
+                        show_date=item.show_date,
+                        show_label=item.show_label,
+                        set_label=item.set_label,
+                        venue_name=item.venue_name,
+                        listen_url=item.listen_url,
+                        audio_url=item.audio_url,
+                        duration_seconds=item.duration_seconds,
+                        label=label,
+                        why=why,
+                        seconds=seconds.get(item.performance_id),
+                    )
+                )
+            elif label or why:
+                # A stop the library cannot place keeps the model's words, in its place.
+                built_stops.append(SongRepresentativePerformance(performance_id=performance_id, label=label, why=why))
+    card = song_life.card_from(song["song_id"], song.get("title") or song["song_id"], life) if timeline else None
 
-    history = _song_history(performances, store) if "history" in facets else None
     years = _song_years(performances, store)
     year_counts = (
         [SongYearCount(year=year, count=years.count(year)) for year in range(years[0], years[-1] + 1)]
@@ -1380,11 +1398,19 @@ def _song_overview(
         last_year=years[-1] if years else None,
         emphasis=emphasis,
         judgments=list(judgments or []),
-        visible_facets=sorted(facets, key=["representatives", "by_year", "history", "credits", "albums"].index),
-        history=history,
+        visible_facets=sorted(facets, key=["representatives", "by_year", "credits", "albums"].index),
         year_counts=year_counts,
         note=(note or "").strip() or None,
-        representative_performances=representatives,
+        representative_performances=built_stops,
+        open_year=open_year if timeline else None,
+        chart_view=chart_view if timeline and chart_view in ("count", "length") else None,
+        year_questions=[
+            SongYearQuestion(year=question["year"], question=_trim_question(question["question"])) for question in (year_questions or [])
+        ]
+        if timeline
+        else [],
+        year_summaries=[SongYearSummary.model_validate(row) for row in card["year_summaries"]] if card else [],
+        length_points=[SongLengthPoint.model_validate(point) for point in card["length_points"]] if card else [],
         credits=credits,
         source_ids=[f"canonical:{song['song_id']}"],
         albums=albums,

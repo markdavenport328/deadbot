@@ -153,3 +153,27 @@ def test_selections_in_a_span_carry_the_critics_show_picks_inside_it():
     payload = json.loads(tools["get_selections_in"].invoke({"year_from": 1977, "year_to": 1977}))
     dates = [item["show_date"] for pick in payload["show_selections"] for item in pick["items"]]
     assert dates and all(date.startswith("1977") for date in dates)
+
+
+def test_song_life_states_years_and_standouts(built_sqlite, tmp_path):
+    from deadbot.sqlite_store import SqliteCanonicalStore
+
+    store = SqliteCanonicalStore(built_sqlite, response_cache_path=tmp_path / "cache.sqlite")
+    tool = _tools(store)["get_song_life"]
+    payload = json.loads(tool.invoke({"song_id_or_title": "Terrapin Station"}))
+    assert payload["performance_count"] == 302
+    assert (payload["years"][0]["year"], payload["years"][0]["count"]) == (1977, 28)
+    assert payload["standouts"]["longest"][0]["facts"] == ["longest on record (25:14)"]
+    assert payload["years"][0]["longest"]["minutes"] == 14.9
+    assert payload["stops_note"]
+    missing = json.loads(tool.invoke({"song_id_or_title": "Qzxvplm"}))
+    assert missing["error"] == "Song not found or ambiguous"
+
+
+def test_get_song_names_where_the_first_and_last_nights_were_played():
+    payload = json.loads(_tools()["get_song"].invoke({"song_id_or_title": "Terrapin Station"}))
+    first = payload["performance_summary"]["first_performance"]
+    last = payload["performance_summary"]["last_performance"]
+    assert (first["show_date"], first["venue_name"], first["city"]) == ("1977-02-26", "Swing Auditorium", "San Bernardino, CA")
+    assert (last["show_date"], last["venue_name"]) == ("1995-07-08", "Soldier Field")
+    assert "get_song_life" in payload["plays_by_year_chart"]

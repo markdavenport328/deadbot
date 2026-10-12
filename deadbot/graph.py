@@ -81,7 +81,10 @@ lookups in the same round. Research what is new or missing as you would for
 a first question. A show, song, performance or release listed in the notebook
 can go on the page by its ID.
 
-Well-worn routes. For the best or notable versions of a song,
+Well-worn routes. For a song's life on stage, how often and how it changed
+and where to start listening across its years, get_song_life gives each year in
+brief and the performances that stand out; a song_overview with by_year turns
+the stops you choose into its timeline. For the best or notable versions of a song,
 get_song_notable_versions gathers official releases, critic and curator picks
 and fan votes per rendition with listening links, and get_selections_for
 narrows the reviewed selection inventory to one song or show and get_selections_in

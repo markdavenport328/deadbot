@@ -93,7 +93,7 @@ def main() -> None:
                 "chat_answer": "Dark Star peaked in 1969, fell nearly silent after 1974, and came back for a run from 1989 to 1994.",
                 "title": "Dark Star peaked in 1969 and returned in 1989",
                 "groups": [
-                    {"presentation": "collection", "items": [{"type": "song_overview", "song_id": "song-dark-star", "emphasis": "primary", "visible_facets": ["by_year", "history"], "note": "Seventy nights in 1969, a handful after 1974, then a late revival that peaked in 1991."}]},
+                    {"presentation": "collection", "items": [{"type": "song_overview", "song_id": "song-dark-star", "emphasis": "primary", "visible_facets": ["by_year", "by_year"], "note": "Seventy nights in 1969, a handful after 1974, then a late revival that peaked in 1991."}]},
                     {"presentation": "collection", "items": [{"type": "data_chart", "aggregation_id": years[2]["aggregation_id"], "title": "The same years from aggregate_data"}]},
                 ],
             },
