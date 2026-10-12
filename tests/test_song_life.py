@@ -161,12 +161,35 @@ def test_tool_payload_stays_compact(sqlite_store, song_id):
     assert payload["stops_note"]
 
 
-def test_disagreeing_releases_take_the_length_nearest_the_tape(sqlite_store):
-    # A 30 Days of Dead excerpt (447s) must not beat the full release (1263s); the tape runs 1244s.
+def test_disagreeing_releases_take_the_full_performance(sqlite_store):
+    # A 30 Days of Dead excerpt (447s) must not beat the full Dave's Picks (1263s).
     pitb = by_date(song_life.life_performances(sqlite_store, "song-playing-in-the-band"), "1974-02-22")
     assert (pitb.seconds, pitb.length_source) == (1263, "release")
-    assert song_life._release_length([447, 1263], None) == 1263
-    assert song_life._release_length([30], 500) == 30
+    # Europe '72's LP edit (786s) must not beat the complete recordings (1137s), whatever the 334s tape fragment says.
+    truckin = by_date(song_life.life_performances(sqlite_store, "song-truckin"), "1972-05-26")
+    assert (truckin.seconds, truckin.length_source, truckin.tape_seconds) == (1138, "release", 334)
+    assert song_life._release_length([447, 1263]) == 1263
+    assert song_life._release_length([30]) == 30
+
+
+def test_every_tool_states_the_same_length_as_the_timeline(sqlite_store):
+    import json
+
+    from deadbot.tools import build_tools
+
+    tools = {tool.name: tool for tool in build_tools(sqlite_store)}
+    lengths = song_life.performance_lengths(sqlite_store, ["gd-1974-03-23-cassidy-1-12", "gd-1972-05-26-truckin-2-1"])
+    assert lengths == {"gd-1974-03-23-cassidy-1-12": 249, "gd-1972-05-26-truckin-2-1": 1138}
+    versions = json.loads(tools["get_song_notable_versions"].invoke({"song_id_or_title": "Cassidy", "limit": 30}))
+    debut = next(item for item in versions["versions"] if item["performance_id"] == "gd-1974-03-23-cassidy-1-12")
+    assert debut["length_seconds"] == 249
+    assert "archive_track_duration_seconds" not in json.dumps(versions)
+    listed = json.loads(tools["list_song_performances"].invoke({"song_id_or_title": "Cassidy", "offset": 0, "limit": 5}))
+    assert listed["performances"][0]["length_seconds"] == 249
+    assert "archive_track_duration_seconds" not in json.dumps(listed)
+    show = json.loads(tools["get_show"].invoke({"show_id_or_date": "1972-05-26"}))
+    row = next(row for row in show["performances"] if row["performance_id"] == "gd-1972-05-26-truckin-2-1")
+    assert row["length_seconds"] == 1138 and row["audio"] is True
 
 
 def test_version_picks_and_show_picks_are_told_apart(sqlite_store):

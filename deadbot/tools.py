@@ -480,12 +480,13 @@ def _flag(value: Any) -> bool:
     return str(value).strip().lower() == "true"
 
 
-def _compact_setlist_row(row: dict[str, Any]) -> dict[str, Any]:
-    """One setlist entry for the model: its IDs, place, real booleans and whether it can be heard.
+def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, int] | None = None) -> dict[str, Any]:
+    """One setlist entry for the model: its IDs, place, real booleans, its length and whether it can be heard.
 
     The page's show_unit fills in every listening link from the library, so
-    the model needs only that a track exists and how long it runs, not the
-    archive.org track URL and tape identifier for each song.
+    the model needs only that a track exists and how long the performance
+    runs (release length, else the tape's), not the archive.org track URL and
+    tape identifier for each song.
     """
 
     compact: dict[str, Any] = {
@@ -503,8 +504,10 @@ def _compact_setlist_row(row: dict[str, Any]) -> dict[str, Any]:
         compact["segue_into_next"] = True
     listen = row.get("listen") or {}
     if listen.get("archive_track_url"):
-        seconds = listen.get("archive_track_duration_seconds")
-        compact["audio_seconds" if isinstance(seconds, int) else "audio"] = seconds if isinstance(seconds, int) else True
+        compact["audio"] = True
+    seconds = (lengths or {}).get(row.get("performance_id") or "")
+    if seconds is not None:
+        compact["length_seconds"] = seconds
     for key in ("release_track_url", "video_url"):
         if listen.get(key):
             compact[key] = listen[key]
@@ -1142,7 +1145,8 @@ def build_tools(
         Use after `get_song` when a question needs concrete renditions, dates,
         or per-performance listening paths. Start with the first page unless a
         prior result tells you to continue. Each performance carries its stable
-        ID, show date, set position, and any verified listening URLs. For rich
+        ID, show date, set position, its length_seconds (the release's length,
+        else the tape's) and any verified listening URLs. For rich
         context on a particular result, call `get_performance` with its ID.
         """
         song = store.resolve_song(song_id_or_title)
@@ -1175,7 +1179,10 @@ def build_tools(
                 performance.get("performance_id", ""),
             )
 
+        from deadbot import song_life
+
         performances = sorted(context["performances"], key=order_key)
+        lengths = song_life.performance_lengths(store, [row["performance_id"] for row in performances[start : start + page_size]])
         page = []
         for performance in performances[start : start + page_size]:
             show = shows_by_id.get(performance.get("show_id", ""), {})
@@ -1189,8 +1196,10 @@ def build_tools(
                 "encore": performance.get("encore", ""),
                 "segue_into_next": performance.get("segue_into_next", ""),
             }
+            if performance["performance_id"] in lengths:
+                item["length_seconds"] = lengths[performance["performance_id"]]
             if performance.get("listen"):
-                item["listen"] = performance["listen"]
+                item["listen"] = song_life.model_listen(performance["listen"])
             page.append(item)
 
         next_offset = start + len(page)
@@ -1391,8 +1400,10 @@ def build_tools(
         Sources are official releases carrying the performance, reviewed
         selection evidence (critic lists, curator picks, fan votes) naming the
         performance or its show, and the listening links already stored.
-        Four batched reads, whatever the song's performance count.
+        Four batched reads, whatever the song's performance count, plus one
+        for the versions' lengths.
         """
+        from deadbot import song_life
 
         context = store.song_context(song)
         performances = context["performances"]
@@ -1432,7 +1443,7 @@ def build_tools(
                     "selections": [],
                 }
                 if performance.get("listen"):
-                    item["listen"] = performance["listen"]
+                    item["listen"] = song_life.model_listen(performance["listen"])
                 versions[performance_id] = item
             return versions[performance_id]
 
@@ -1489,8 +1500,11 @@ def build_tools(
             return (-sources, item["show_date"] or "9999")
 
         ordered = sorted(versions.values(), key=rank)
+        lengths = song_life.performance_lengths(store, [item["performance_id"] for item in ordered])
         for item in ordered:
             item["source_count"] = len(item["official_releases"]) + len({s.get("source") for s in item["selections"]})
+            if item["performance_id"] in lengths:
+                item["length_seconds"] = lengths[item["performance_id"]]
         return {
             "song": context["song"],
             "performance_count": len(performances),
@@ -1511,8 +1525,9 @@ def build_tools(
         Use this first for "best", "notable", "essential" or "where do I start"
         questions about a song. Each version carries the official releases that
         include it (Dick's Picks, Dave's Picks, box sets), the reviewed critic,
-        curator and fan signals that name it or its show, and its direct
-        listening links. source_count counts distinct sources, never quality:
+        curator and fan signals that name it or its show, its length_seconds
+        (the release's length, else the tape's) and its direct listening
+        links. source_count counts distinct sources, never quality:
         present them as separate voices. Versions no source singled out are
         absent here and remain reachable through list_song_performances.
         """
@@ -1807,7 +1822,10 @@ def build_tools(
         if not show:
             return _json(_unresolved_show_payload(store, show_id_or_date))
         payload = store.show_context(show)
-        payload["performances"] = [_compact_setlist_row(row) for row in payload.get("performances", [])]
+        from deadbot import song_life
+
+        lengths = song_life.performance_lengths(store, [row.get("performance_id", "") for row in payload.get("performances", [])])
+        payload["performances"] = [_compact_setlist_row(row, lengths) for row in payload.get("performances", [])]
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
         payload["recordings_note"] = (
             "get_recording_reviews ranks this show's tapes by listener reviews, with their recording_ids; "
