@@ -69,7 +69,7 @@ def test_a_show_row_with_nothing_to_open_is_an_empty_row():
 def test_a_card_with_only_outbound_listening_is_silent():
     relisten = [{"label": "Stream the show", "url": "https://relisten.net/grateful-dead/1969/09/30", "provider": "relisten"}]
     tape = {"label": "Set 1", "songs": [{"title": "China Cat Sunflower", "audio_url": "https://archive.org/download/x/t01.mp3"}]}
-    album = {"type": "album_unit", "release_title": "Ace", "listen": [{"provider": "spotify", "url": "https://open.spotify.com/album/x"}], "tracks": []}
+    album = {"type": "album_unit", "release_title": "Ace", "embed_kind": "album", "embed_id": "album/x", "tracks": []}
     blocks = [_show_row(disclosure="expanded", listen=relisten), _show_row(disclosure="expanded", sets=[tape]), album]
     assert score_page(_page(blocks=blocks))["silent"] == ["show_unit[0] gd-1980-09-26"]
 
@@ -103,3 +103,18 @@ def test_the_opening_suite_asks_the_splash_questions():
 
     suite = json.loads((Path(__file__).resolve().parents[1] / "evals" / "opening-v1.json").read_text(encoding="utf-8"))
     assert [case["question"] for case in suite["cases"]] == OPENING_QUESTIONS
+
+
+def test_a_song_life_told_by_year_is_not_a_retelling():
+    song = {"type": "song_overview", "visible_facets": ["by_year"], "year_counts": [{"year": 1968, "count": 37}, {"year": 1973, "count": 22}]}
+    story = {"type": "editorial", "title": "Its life", "items": [
+        {"marker": "1968", "title": "First single", "detail": "Released as a single before it ever stretched out."},
+        {"marker": "1973", "title": "The last long ones", "detail": "Fall '73 brought the final half-hour versions."},
+    ]}
+    assert score_page(_page(blocks=[song, story]))["restated"] == []
+
+
+def test_a_one_word_venue_needs_the_whole_row_to_match():
+    shows = [{"type": "show_unit", "venue_name": "Winterland", "tracks": [{"audio_url": "x"}]}]
+    grid = {"type": "editorial", "title": "Bay Area nights", "items": [{"title": "Winterland opens"}, {"title": "Winterland closes"}]}
+    assert score_page(_page(blocks=[*shows, grid]))["restated"] == []

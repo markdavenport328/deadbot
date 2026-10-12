@@ -163,8 +163,7 @@ def playable(block: dict[str, Any]) -> bool:
         return bool(block.get("audio_url")) or bool(block.get("show_tracks"))
     if kind == "album_unit":
         # Spotify plays in the card's embed; anything else official leaves the site.
-        spotify = any(isinstance(item, dict) and item.get("provider") == "spotify" for item in block.get("listen") or [])
-        return spotify or _has_audio(block.get("tracks"))
+        return bool(block.get("embed_id")) or _has_audio(block.get("tracks"))
     if kind == "song_overview":
         return _has_audio(block.get("representative_performances")) or _has_audio(
             block.get("representative_performances"), "track"
@@ -221,17 +220,27 @@ def _card_names(blocks: list[dict[str, Any]]) -> tuple[list[set[str]], set[str]]
     return [name for name in names if name], years
 
 
-def _names_a_card(text: str, names: list[set[str]], years: set[str]) -> bool:
-    if text.strip() in years:
-        return True
+def _names_a_card(text: str, names: list[set[str]]) -> bool:
     words = _tokens(text)
     numbers = {word for word in words if word.isdigit()}
     for name in names:
-        shared = words & name
+        # A one-word name (a venue like Winterland) only counts when the row is just that name.
+        if len(name - numbers) < 2:
+            if words and words == name:
+                return True
+            continue
         # Every number must agree, so Dick's Picks 4 never matches Vol. 11.
-        if len(shared - numbers) >= min(2, len(name)) and numbers <= name:
+        if len((words & name) - numbers) >= 2 and numbers <= name:
             return True
     return False
+
+
+def _retells(item: dict[str, Any], names: list[set[str]], years: set[str]) -> bool:
+    # A year row beside a song's timeline retells it only when it is just the count;
+    # a row with its own story is a timeline of the song's life.
+    if not item.get("detail") and any(str(item.get(key) or "").strip() in years for key in ("marker", "title")):
+        return True
+    return any(_names_a_card(str(item.get(key) or ""), names) for key in ("marker", "title") if item.get(key))
 
 
 def restated_cards(blocks: list[dict[str, Any]]) -> list[str]:
@@ -245,9 +254,7 @@ def restated_cards(blocks: list[dict[str, Any]]) -> list[str]:
         if block.get("type") != "editorial":
             continue
         items = [item for item in block.get("items") or [] if isinstance(item, dict)]
-        hits = sum(
-            1 for item in items if any(_names_a_card(str(item.get(key) or ""), names, years) for key in ("marker", "title") if item.get(key))
-        )
+        hits = sum(1 for item in items if _retells(item, names, years))
         if hits >= 2 and hits * 2 >= len(items):
             found.append(f"editorial[{index}] {block.get('title') or ''} ({hits} of {len(items)} rows retell cards)".strip())
     return found

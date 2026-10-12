@@ -55,6 +55,10 @@ export function loadSpotifyApi(): Promise<SpotifyIFrameApi> {
     };
     document.head.appendChild(script);
   });
+  // A failed load falls back to plain iframes for now; the next embed tries again.
+  apiPromise.catch(() => {
+    apiPromise = null;
+  });
   return apiPromise;
 }
 
@@ -95,6 +99,7 @@ export function SpotifyEmbed({ embedId, title, height = 152, autoFocus = false }
     const host = hostRef.current;
     if (!host) return;
     let cancelled = false;
+    let live: SpotifyController | null = null;
     const mine = entry.current;
     loadSpotifyApi()
       .then((api) => {
@@ -112,12 +117,15 @@ export function SpotifyEmbed({ embedId, title, height = 152, autoFocus = false }
             frame.setAttribute("loading", "lazy");
             if (autoFocus) frame.focus();
           }
+          live = controller;
           mine.pause = () => controller.pause();
           activeEmbeds.add(mine);
           controller.addListener("playback_update", (event) => {
+            // Updates repeat while it plays; only the moment it starts pauses the others.
             const playing = !event.data.isPaused;
+            const was = mine.playing;
             mine.playing = playing;
-            if (!playing) return;
+            if (!playing || was) return;
             const status = playerRef.current.status;
             if (status === "playing" || status === "loading") playerRef.current.pause();
             for (const other of activeEmbeds) if (other !== mine && other.playing) other.pause();
@@ -132,6 +140,7 @@ export function SpotifyEmbed({ embedId, title, height = 152, autoFocus = false }
       activeEmbeds.delete(mine);
       mine.playing = false;
       mine.pause = () => {};
+      live?.destroy?.();
       host.replaceChildren();
     };
   }, [embedId, height, title, autoFocus]);

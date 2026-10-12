@@ -8,7 +8,7 @@ import { visualFixtures } from "./visual-fixtures";
 // shared player through Spotify's iFrame API, and falls back to a plain
 // iframe when that script cannot load.
 
-type MockController = SpotifyController & { pause: Mock<() => void>; emit: (isPaused: boolean) => void; uri: string; height: unknown };
+type MockController = SpotifyController & { pause: Mock<() => void>; destroy: Mock<() => void>; emit: (isPaused: boolean) => void; uri: string; height: unknown };
 
 let controllers: MockController[] = [];
 let audio: HTMLMediaElement | null = null;
@@ -24,6 +24,7 @@ function mockApi(): SpotifyIFrameApi {
         uri: options.uri,
         height: options.height,
         pause: vi.fn<() => void>(),
+        destroy: vi.fn<() => void>(),
         addListener: (_event, listener) => {
           listeners.push(listener);
         },
@@ -239,6 +240,39 @@ describe("one thing plays at a time", () => {
     });
     expect(controllers[0].pause).toHaveBeenCalledTimes(1);
     expect(controllers[1].pause).not.toHaveBeenCalled();
+  });
+
+  it("keeps our player going when a late position update arrives from the embed it paused", async () => {
+    render(
+      <PlayerProvider>
+        <Harness />
+      </PlayerProvider>
+    );
+    await apiReady();
+    const status = () => screen.getByLabelText("status").textContent;
+    await act(async () => {
+      controllers[0].emit(false);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Play tape" }));
+    });
+    expect(controllers[0].pause).toHaveBeenCalledTimes(1);
+    // Spotify repeats "playing" while its position moves; one sent before it paused lands now.
+    await act(async () => {
+      controllers[0].emit(false);
+    });
+    expect(status()).toBe("playing");
+  });
+
+  it("lets go of the Spotify controller when the embed closes", async () => {
+    const { unmount } = render(
+      <PlayerProvider>
+        <Harness />
+      </PlayerProvider>
+    );
+    await apiReady();
+    unmount();
+    expect(controllers[0].destroy).toHaveBeenCalledTimes(1);
   });
 
   it("loads the iFrame API script once for any number of embeds", async () => {
