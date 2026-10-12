@@ -50,10 +50,11 @@ def test_a_slice_brings_back_one_night_of_a_box_set_even_past_the_original_ceili
     (entry,) = _read_only(book, [key], ["gd-1972-05-26"])["notebook_entries"]
     result = entry["result"]
     narrow = json.loads(tools()["get_album"].invoke({"release_id_or_title": BOX_SET[1]["release_id_or_title"], "show": "1972-05-26"}))
-    assert [track["performance_id"] for track in result["tracks"]] == [track["performance_id"] for track in narrow["tracks"]]
+    assert [n["show_id"] for n in result["nights"]] == ["gd-1972-05-26"]
+    assert [track["performance_id"] for track in result["nights"][0]["tracks"]] == [track["performance_id"] for track in narrow["tracks"]]
     assert [show["show_id"] for show in result["contents"]["shows"]] == ["gd-1972-05-26"]
     assert result["release"]["release_id"] == BOX_SET[1]["release_id_or_title"]
-    assert {"path": "tracks", "kept": len(narrow["tracks"]), "total": 578} in entry["sliced"]
+    assert {"path": "nights", "kept": 1, "total": 22} in entry["sliced"]
     assert "_truncated" not in result
 
 
@@ -83,8 +84,8 @@ def test_a_read_by_an_id_the_result_holds_brings_back_the_part_that_mentions_it(
     book, _ = record(notebook.Notebook(), "What's on the box set?", "22 nights.", [BOX_SET])
     (entry,) = _read(book, ["gd-1972-05-26"])["notebook_entries"]
     narrow = json.loads(tools()["get_album"].invoke({"release_id_or_title": BOX_SET[1]["release_id_or_title"], "show": "1972-05-26"}))
-    assert [track["performance_id"] for track in entry["result"]["tracks"]] == [track["performance_id"] for track in narrow["tracks"]]
-    assert {"path": "tracks", "kept": len(narrow["tracks"]), "total": 578} in entry["sliced"]
+    assert [track["performance_id"] for track in entry["result"]["nights"][0]["tracks"]] == [track["performance_id"] for track in narrow["tracks"]]
+    assert {"path": "nights", "kept": 1, "total": 22} in entry["sliced"]
 
 
 def test_a_read_by_key_stays_whole_and_an_id_read_adds_to_only():

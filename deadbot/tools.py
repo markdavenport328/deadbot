@@ -1254,6 +1254,36 @@ def build_tools(
 
     _ALBUM_DETAILS = ("live_legacy", "tracks")
 
+    _NIGHTS_CEILING = 60_000
+    _NIGHT_PREVIEW = 5
+
+    def _group_tracks_by_night(payload: dict[str, Any], tracks: list[dict[str, Any]], show_of) -> None:
+        """A multi-show release's tracks, night by night and compact, inside the result ceiling."""
+
+        def compact(track: dict[str, Any]) -> dict[str, Any]:
+            return {
+                "track_number": track.get("track_number"),
+                "title": track.get("song_title") or track.get("title", ""),
+                "performance_id": track.get("performance_id"),
+                "duration_seconds": track.get("duration_seconds"),
+            }
+
+        nights = []
+        for entry in payload["contents"]["shows"]:
+            own = [compact(track) for track in tracks if show_of(track) == entry["show_id"]]
+            nights.append({**entry, "tracks": own})
+        summarized = _RESULT_CEILING.get() is not None and len(_dumps(nights)) > _NIGHTS_CEILING
+        if summarized:
+            for night in nights:
+                night["tracks"] = night["tracks"][:_NIGHT_PREVIEW]
+        payload["nights"] = nights
+        shown = "the first %d tracks of each night" % _NIGHT_PREVIEW if summarized else "every track"
+        payload["tracks_note"] = (
+            f"Tracks are grouped by night ({shown}; Spotify links left out). "
+            + ("This box is too long to list in full: " if summarized else "")
+            + 'get_album with show="<show_id>" gives one night\'s full tracklist with Spotify links.'
+        )
+
     @tool
     def get_album(release_id_or_title: str, include: list[str] | None = None, show: str | None = None) -> str:
         """Get one official release: a summary first, with detail on request.
@@ -1335,6 +1365,7 @@ def build_tools(
                         "show_date": shows[show_id].get("show_date", ""),
                         "venue_name": venues.get(shows[show_id].get("venue_id", ""), {}).get("name", ""),
                         "city": venues.get(shows[show_id].get("venue_id", ""), {}).get("city", ""),
+                        "tour": shows[show_id].get("tour_name", ""),
                         "track_count": counts[show_id],
                     }
                     for show_id in ordered
@@ -1353,12 +1384,10 @@ def build_tools(
                     return _json({"error": "Show not on this release", "shows": [entry["show_date"] for entry in payload["contents"].get("shows", [])]})
                 show_id = resolved["show_id"]
                 payload["tracks"] = [track for track in tracks if show_of(track) == show_id]
+            elif len(payload["contents"].get("shows", [])) > 1:
+                _group_tracks_by_night(payload, tracks, show_of)
             else:
                 payload["tracks"] = tracks
-                if len(payload["contents"].get("shows", [])) > 1:
-                    payload["tracks_note"] = (
-                        f'narrow to one show with show="{payload["contents"]["shows"][0]["show_date"]}"'
-                    )
         if "live_legacy" in wanted:
             payload["live_legacy"] = _album_live_legacy(song_ids)
             payload["live_legacy_note"] = (

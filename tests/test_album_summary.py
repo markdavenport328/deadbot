@@ -37,16 +37,17 @@ def test_studio_summary_lists_songs(album):
 def test_tracks_on_request_and_narrowed_to_one_show(album):
     full = album(release_id_or_title=BOX, include=["tracks"])
     one = album(release_id_or_title=BOX, show="1972-05-26")
-    # This box set's full tracklist (578 tracks) is 130,627 raw JSON characters,
-    # over the 80,000-char tool result ceiling (Task 3's _json safety net), so
-    # the untruncated case only applies to releases small enough to fit.
-    if "_truncated" in full:
-        assert len(full["tracks"]) < full["track_count"]
-    else:
-        assert len(full["tracks"]) == full["track_count"]
-    assert 0 < len(one["tracks"]) < full["track_count"]
+    assert "tracks" not in full and "_truncated" not in full
+    assert len(json.dumps(full)) < 80_000
+    nights = full["nights"]
+    assert len(nights) == len(full["contents"]["shows"]) == 22
+    assert nights[0]["tour"] == "Europe 1972" and nights[0]["show_id"] and nights[0]["track_count"]
+    assert list(full)[:2] == ["release", "tour"]
+    assert all(night["tracks"] and "performance_id" in night["tracks"][0] for night in nights)
+    assert "first 5 tracks" in full["tracks_note"] and "show=" in full["tracks_note"]
+    assert max(len(night["tracks"]) for night in nights) == 5
+    assert 0 < len(one["tracks"]) < full["track_count"] and "nights" not in one
     assert "tracks" not in one["available"]
-    assert "narrow to one show" in full["tracks_note"]
 
 
 def test_unresolvable_show_errors_rather_than_returning_unattributed_tracks(album):
@@ -78,3 +79,10 @@ def test_live_box_set_names_its_tour_right_after_the_release(album):
 
 def test_studio_album_has_no_tour_pointer(album):
     assert "tour" not in album(release_id_or_title="American Beauty")
+
+
+def test_a_small_multi_show_release_lists_every_track_by_night(album):
+    payload = album(release_id_or_title="release-dicks-picks-volume-4-fillmore-east-1996", include=["tracks"])
+    assert len(payload["nights"]) == 2 and "tracks" not in payload
+    assert sum(len(night["tracks"]) for night in payload["nights"]) + payload["contents"]["unattributed_track_count"] == payload["track_count"]
+    assert "every track" in payload["tracks_note"]
