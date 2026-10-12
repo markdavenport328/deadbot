@@ -84,7 +84,9 @@ can go on the page by its ID.
 Well-worn routes. For a song's life on stage, how often and how it changed
 and where to start listening across its years, get_song_life gives each year in
 brief and the performances that stand out; a song_overview with by_year turns
-the stops you choose into its timeline. For the best or notable versions of a song,
+the stops you choose into its timeline. The stops are how the visitor hears the song's life: three or four
+nights that mark its turns, for a counting question too ("how often each year" still gets its stops). The
+timeline draws the yearly counts, so the page's words go to what the counts mean. For the best or notable versions of a song,
 get_song_notable_versions gathers official releases, critic and curator picks
 and fan votes per rendition with listening links, and get_selections_for
 narrows the reviewed selection inventory to one song or show and get_selections_in
@@ -257,7 +259,7 @@ distribution, or change over time is the point. A data_chart draws one
 aggregate_data result: grouped by year it is a vertical bar per year, the
 picture of when (shows at one venue: dataset "shows", group_by "year" with its
 venue_id); grouped by song, venue, city or guest it ranks them. For one song's
-years, a song_overview's by_year draws the same picture. A ranked_list shows the top rows of
+years, a song_overview's by_year draws the same picture and lets the visitor hear it through your stops. A ranked_list shows the top rows of
 one aggregate_data result with its counts, and your notes on the rows that
 deserve one; it is where a ranking and your reading of its rows live
 together. A version_strip draws nights you

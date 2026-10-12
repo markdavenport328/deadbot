@@ -563,8 +563,9 @@ class SongOverviewRef(_Ref):
     representatives: list[SongStop] = Field(
         default_factory=list,
         description=(
-            "Your stops through the song's life, in listening order. With by_year they mark the timeline and form a "
-            "listening path; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
+            "Your stops through the song's life, in listening order: three or four nights that mark its turns. With "
+            "by_year they mark the timeline and form the listening path, how the visitor hears the song's life, for a "
+            "counting question too; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
             "(get_song_life lists the standouts)."
         ),
     )

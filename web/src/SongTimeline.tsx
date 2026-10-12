@@ -48,6 +48,15 @@ const VIEW_CAPTION: Record<ChartView, { pointer: string; touch: string }> = {
   }
 };
 
+// With no stops there are no gold marks, so the caption says how to listen instead.
+const NO_STOPS_CAPTION: Record<ChartView, { pointer: string; touch: string }> = {
+  count: {
+    pointer: "Each bar is a year. Choose a year, then See all, to play its performances.",
+    touch: "Each bar is a year. Tap a year, then See all, to play its performances."
+  },
+  length: VIEW_CAPTION.length
+};
+
 type PointerKind = "mouse" | "touch" | "pen";
 
 function asPlayerTrack(track: TimelineTrack, showDate?: string | null, venueName?: string | null): PlayerTrack {
@@ -201,6 +210,8 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
   const rowCount = 1 + Math.max(0, ...rows.filter((_row, index) => inRows(stops[index])));
   const f = width > 0 ? frame(width, allYears, view, rowCount) : null;
 
+  const caption = data.stops.length > 0 ? VIEW_CAPTION : NO_STOPS_CAPTION;
+
   return (
     <div className="song-timeline">
       <div className="st-view-bar">
@@ -213,8 +224,8 @@ export function SongTimeline({ data, onAsk, fetchYear = fetchSongYear }: Props) 
         </div>
       </div>
       <p className="st-caption">
-        <span className="st-caption-pointer">{VIEW_CAPTION[view].pointer}</span>
-        <span className="st-caption-touch">{VIEW_CAPTION[view].touch}</span>
+        <span className="st-caption-pointer">{caption[view].pointer}</span>
+        <span className="st-caption-touch">{caption[view].touch}</span>
       </p>
       <div className="st-chart" ref={wrapRef}>
         {f && (

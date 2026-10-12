@@ -1120,7 +1120,10 @@ def build_tools(
         """Get one song's life on stage: each year in brief and the performances that stand out.
 
         Use it to build a song_overview timeline (visible_facets with by_year)
-        or to answer how a song changed over the years. `years` gives each
+        or to answer how a song changed over the years. The timeline already
+        draws the yearly counts, so your words go to what they mean; its stops
+        are how the visitor hears the song's life, so choose three or four
+        nights that mark its turns, for a counting question too. `years` gives each
         year's count, typical minutes and longest performance. `standouts`
         groups the performances that stand out by kind (firsts and lasts,
         longest, picks of the performance and of its show with who made them,
