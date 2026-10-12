@@ -50,8 +50,8 @@ def test_stops_are_counted_spread_and_compared_with_the_calendar():
 
 def test_wrong_facts_in_a_stops_words_are_caught():
     score = score_stops(page([
-        {"performance_id": "p79", "label": "The debut", "why": "Debuted at the Spectrum, the longest ever at 25:14."},
-        {"performance_id": "p86", "label": "The last one", "why": "A 30-minute reading from 1985."},
+        {"performance_id": "p79", "label": "The debut at the Spectrum", "why": "Debuted here, the longest ever at 25:14."},
+        {"performance_id": "p86", "label": "The last one, 1985", "why": "A 30-minute reading."},
     ], open_year=1977), CASE, LIFE)
     issues = " | ".join(score["fact_issues"])
     assert "says first/debut but the debut is 1977-02-26" in issues
@@ -66,4 +66,11 @@ def test_wrong_facts_in_a_stops_words_are_caught():
 
 def test_the_longest_of_its_year_is_a_true_longest():
     score = score_stops(page([{"performance_id": "p79b", "label": "Longest of 1979", "why": "The longest 1979 version, about 15 minutes."}]), CASE, LIFE)
+    assert score["fact_issues"] == []
+
+
+def test_context_in_a_why_is_not_a_claim_about_the_stop():
+    score = score_stops(page([
+        {"performance_id": "p95", "label": "The last one", "why": "Closing a stage life that began at Swing Auditorium, nearly 18 years after its debut in 1977."},
+    ]), CASE, LIFE)
     assert score["fact_issues"] == []

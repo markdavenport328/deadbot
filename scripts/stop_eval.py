@@ -2,13 +2,15 @@
 
     PYTHONPATH=. python scripts/stop_eval.py [--runs 1] [--case ID ...] [--out DIR]
     PYTHONPATH=. python scripts/stop_eval.py --rescore DIR
+    PYTHONPATH=. python scripts/stop_eval.py --collect DIR
 
 Each question is one live model turn through scripts/live_check.py (OpenAI,
 cache off), run in parallel. Each page is measured by deadbot.stop_quality
 against the real SQLite library and summarized in a table; ``summary.json`` in
 the output folder keeps every measurement. ``--rescore`` measures saved runs
 again without asking anything, so a change to the scorer can be checked for
-free.
+free. ``--collect`` measures every turn saved in a folder, matched to its case
+by question, for a run that stopped before writing its summary.
 """
 
 from __future__ import annotations
@@ -39,13 +41,18 @@ DEFAULT_SUITE = ROOT / "evals" / "song-stops-v1.json"
 def _ask(question: str, out_dir: Path) -> Path | None:
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
     env.setdefault("DEADBOT_OPENAI_REASONING_EFFORT", "low")
-    completed = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "live_check.py"), "ask", question, "--out", str(out_dir)],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=600,
-    )
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "live_check.py"), "ask", question, "--out", str(out_dir)],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=600,
+        )
+    except subprocess.TimeoutExpired:
+        # A turn that hangs is a missing page, not the end of the run.
+        print(f"Timed out: {question}", file=sys.stderr)
+        return None
     match = re.search(r"saved (\S+\.ndjson)", completed.stdout)
     return Path(match.group(1)) if match else None
 
@@ -123,6 +130,7 @@ def main() -> None:
     parser.add_argument("--parallel", type=int, default=4)
     parser.add_argument("--out", type=Path, default=ROOT / "build" / "stop-eval" / time.strftime("%Y%m%d-%H%M%S"))
     parser.add_argument("--rescore", type=Path, help="measure a saved output folder again without new model turns")
+    parser.add_argument("--collect", type=Path, help="measure every turn saved in a folder, matched to its case by question")
     args = parser.parse_args()
 
     suite = json.loads(args.suite.read_text(encoding="utf-8"))
@@ -137,6 +145,25 @@ def main() -> None:
             return None
         response, tools, seconds = _turn(stream)
         return score_stops(response, case, lives[case["song_id"]], tools, seconds) if response else None
+
+    if args.collect:
+        by_question = {case["question"]: case for case in cases.values()}
+        runs: dict[str, int] = {}
+        results = []
+        for dump in sorted(args.collect.glob("*.json")):
+            if dump.name == "summary.json":
+                continue
+            case = by_question.get(json.loads(dump.read_text(encoding="utf-8")).get("question"))
+            stream = dump.with_suffix(".ndjson")
+            if case is None or not stream.exists():
+                continue
+            runs[case["id"]] = runs.get(case["id"], 0) + 1
+            results.append({"case": case["id"], "run": runs[case["id"]], "question": case["question"], "stream": str(stream), "score": measure(case, stream)})
+        order = list(cases)
+        results.sort(key=lambda result: (order.index(result["case"]), result["run"]))
+        (args.collect / "summary.json").write_text(json.dumps({"suite": suite["suite_id"], "results": results}, indent=1), encoding="utf-8")
+        report(results)
+        return
 
     if args.rescore:
         saved = json.loads((args.rescore / "summary.json").read_text(encoding="utf-8"))

@@ -19,7 +19,8 @@ from deadbot.song_life import LifePerformance
 CLOCK_TOLERANCE_SECONDS = 90
 MINUTES_TOLERANCE = 3
 
-FIRST_CLAIM = re.compile(r"\b(debut|first performance|first time|first known|first-ever|first ever|premiere)\b")
+# "The debut" claims the stop; "after its debut" only refers to it.
+FIRST_CLAIM = re.compile(r"\b(the debut|debut performance|debuted|first performance|first time|first known|first-ever|first ever|premiere)\b")
 LAST_CLAIM = re.compile(
     r"\b(final|last) (known |ever |documented |cataloged |recorded |live )?(performance|time|version|rendition|one|terrapin|reading)\b"
     r"|^the (last|final)\b"
@@ -41,11 +42,18 @@ def _thirds(year: int, first: int, last: int) -> int:
     return min(2, int(3 * (year - first) / (last - first + 1)))
 
 
-def _claim_issues(text: str, performance: LifePerformance, life: list[LifePerformance], venues: set[str]) -> tuple[list[str], int]:
-    """Wrong facts in one stop's words, and how many claims the library could not check."""
+def _claim_issues(label: str, why: str, performance: LifePerformance, life: list[LifePerformance], venues: set[str]) -> tuple[list[str], int]:
+    """Wrong facts in one stop's words, and how many claims the library could not check.
+
+    Debut, last, longest and length claims are read in the label and the why.
+    A venue or year is read in the label alone: the label names the stop, while
+    the why often places it among other nights ("a stage life that began at
+    Fillmore West", "before the 1969 expansion").
+    """
 
     issues: list[str] = []
     unverifiable = 0
+    text = " ".join(part for part in (label, why) if part)
     lowered = text.lower()
     if FIRST_CLAIM.search(lowered) and performance is not life[0]:
         issues.append(f"says first/debut but the debut is {life[0].show_date}")
@@ -72,11 +80,12 @@ def _claim_issues(text: str, performance: LifePerformance, life: list[LifePerfor
         elif abs(int(minutes) - performance.seconds / 60) > MINUTES_TOLERANCE:
             issues.append(f"says {minutes} minutes but the library has {round(performance.seconds / 60)}")
     own = (performance.venue_name or "").lower()
+    label_lowered = (label or "").lower()
     for venue in venues:
         name = venue.lower()
-        if len(name) > 6 and name in lowered and name not in own and own not in name:
+        if len(name) > 6 and name in label_lowered and name not in own and own not in name:
             issues.append(f"names {venue} but the performance was at {performance.venue_name}")
-    years = {int(year) for year in YEAR.findall(text)}
+    years = {int(year) for year in YEAR.findall(label or "")}
     if years and performance.year not in years:
         issues.append(f"names {', '.join(map(str, sorted(years)))} but the performance is from {performance.year}")
     return issues, unverifiable
@@ -151,8 +160,7 @@ def score_stops(
         performance = by_id.get(stop.get("performance_id"))
         if performance is None:
             continue
-        text = " ".join(part for part in (stop.get("label"), stop.get("why")) if part)
-        issues, unverifiable = _claim_issues(text, performance, life, venues)
+        issues, unverifiable = _claim_issues(stop.get("label") or "", stop.get("why") or "", performance, life, venues)
         score["fact_issues"] += [f"{performance.show_date}: {issue}" for issue in issues]
         score["unverifiable"] += unverifiable
     return score
