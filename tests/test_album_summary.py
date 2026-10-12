@@ -67,3 +67,14 @@ def test_live_legacy_on_request_keyed_by_song(album):
 def test_bad_requests_explain_themselves(album):
     assert album(release_id_or_title=BOX, include=["lyrics"])["valid"] == ["live_legacy", "tracks"]
     assert "shows" in album(release_id_or_title=BOX, show="1977-05-08")
+
+
+def test_live_box_set_names_its_tour_right_after_the_release(album):
+    payload = album(release_id_or_title=BOX)
+    assert list(payload)[:2] == ["release", "tour"]
+    assert payload["tour"]["names"] == ["Europe 1972"]
+    assert "query_catalog" in payload["tour"]["nights"] and "get_grid" in payload["tour"]["nights"]
+
+
+def test_studio_album_has_no_tour_pointer(album):
+    assert "tour" not in album(release_id_or_title="American Beauty")

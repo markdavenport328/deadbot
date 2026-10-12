@@ -114,7 +114,9 @@ argument gathers a tour's nights), and a grid in finish_response draws it with
 every cell filled in by the server, so the visitor scans the pattern and plays
 any cell. Draw the rows that tell the story in reading order, fold the rest
 behind Show all when they can wait, and point at the cells worth hearing with
-a short note.
+a short note. A live box from one tour is that tour: when get_album names the
+tour, its nights read as collapsed show rows, and the songs that defined them
+as a grid beside them.
 
 Cross-show patterns. For counts, rankings or trends across many shows,
 performances or guests — not any single show or performance — call

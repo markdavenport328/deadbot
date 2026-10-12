@@ -341,7 +341,7 @@ def test_get_grid_misspelled_tour_suggests_known_tours():
     store = CanonicalStore()
     payload = json.loads(
         _tool_by_name(store, "get_grid").invoke(
-            {"row_kind": "show", "tour": "Europe 72", "column_kind": "song", "columns": ["Dark Star"]}
+            {"row_kind": "show", "tour": "Europ 1972", "column_kind": "song", "columns": ["Dark Star"]}
         )
     )
     assert payload["error"] == "No shows on that tour"

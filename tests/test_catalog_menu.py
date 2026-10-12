@@ -149,8 +149,13 @@ def test_shows_by_venue(run):
     assert set(_column(run(name="shows", venue="Winterland"), "show_id")) == expected
 
 
-def test_a_tour_nickname_with_no_shows_names_the_library_tours_nearest_it(run):
-    result = run(name="shows", tour="Europe '72", year_from=1972)
-    assert result["rows"] == [] and "Europe 1972" in result["closest_tours"]
-    found = run(name="shows", tour="Europe 1972", year_from=1972)
-    assert len(found["rows"]) == 22 and "closest_tours" not in found
+def test_a_fan_spelling_of_a_tour_finds_its_nights_and_points_to_the_grid(run):
+    for spelling in ("Europe '72", "Europe 72", "europe 1972 tour"):
+        found = run(name="shows", tour=spelling, year_from=1972)
+        assert len(found["rows"]) == 22 and "closest_tours" not in found
+        assert 'tour="Europe 1972"' in found["tour_songs"]
+
+
+def test_an_unknown_tour_names_the_library_tours_nearest_it(run):
+    result = run(name="shows", tour="Europe Spring Fling", year_from=1972)
+    assert result["rows"] == [] and "closest_tours" in result and "tour_songs" not in result

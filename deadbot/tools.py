@@ -46,6 +46,7 @@ from deadbot.selection_signals import (
     stored_selection_entries,
 )
 from deadbot.site_search import SiteSearcher
+from deadbot.tours import matching_tours, normalize_tour
 from deadbot.source_reader import PageReader, default_reader
 
 
@@ -1260,7 +1261,9 @@ def build_tools(
         The summary names the release, its date and type, and what is on it:
         for a live release the shows its tracks come from (date, venue, how many
         tracks); for a studio album its songs. It carries the IDs you need to
-        place the album, its shows or its songs on the page. `available` lists
+        place the album, its shows or its songs on the page. A live box
+        from one tour names that tour, so its nights can become show rows and a
+        grid. `available` lists
         what the summary left out and how to ask for it. Ask only for what your
         answer will use:
         - include=["tracks"]: the full tracklist (each track's song or
@@ -1308,6 +1311,23 @@ def build_tools(
                 if show_of(track):
                     counts[show_of(track)] = counts.get(show_of(track), 0) + 1
             ordered = sorted(counts, key=lambda show_id: (shows[show_id].get("show_date", ""), show_id))
+            tours = list(dict.fromkeys(
+                shows[show_id].get("tour_name", "") for show_id in ordered if shows[show_id].get("tour_name")
+            ))
+            if len(ordered) > 1 and tours:
+                # Right after the release, where the order steers the page.
+                payload = {
+                    "release": payload.pop("release"),
+                    "tour": {
+                        "names": tours,
+                        "nights": (
+                            "To show what is on this box, lay out the tour night by night: query_catalog shows with "
+                            "tour=<name> gives the nights as collapsed show rows (a show_unit from_result), and "
+                            "get_grid (show by song, tour=<name>, columns=the songs that define the tour) gives them across the nights."
+                        ),
+                    },
+                    **payload,
+                }
             payload["contents"] = {
                 "shows": [
                     {
@@ -2343,11 +2363,22 @@ def build_tools(
             )
         )
 
+    def _known_tours() -> list[str]:
+        return sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
+
+    def _stored_tour(tour: str) -> str:
+        """The stored tour name a fan's spelling means, or the spelling itself when it is not exactly one."""
+
+        found = matching_tours(_known_tours(), tour)
+        return found[0] if len(found) == 1 else tour
+
     def _closest_tours(tour: str) -> list[str]:
         """The library's tour names nearest a name the model gave (fans say "Europe '72")."""
 
-        known = sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
-        return difflib.get_close_matches(tour, known, n=5, cutoff=0.4)
+        known = _known_tours()
+        by_form = {normalize_tour(name): name for name in known}
+        close = difflib.get_close_matches(normalize_tour(tour), list(by_form), n=5, cutoff=0.4)
+        return [by_form[form] for form in close]
 
     def _grid_rows(kind: str, rows: list[str], tour: str | None) -> list[str] | str:
         if kind == "song":
@@ -2381,7 +2412,7 @@ def build_tools(
                 return _json({"error": "Show not found or ambiguous", "query": missing})
             return [show["show_id"] for show in resolved if show]
         if tour:
-            found = sorted(store.rows_in("shows", "tour_name", [tour]), key=lambda row: row.get("show_date", ""))
+            found = sorted(store.rows_in("shows", "tour_name", [_stored_tour(tour)]), key=lambda row: row.get("show_date", ""))
             if not found:
                 return _json({"error": "No shows on that tour", "query": tour, "closest_tours": _closest_tours(tour)})
             return [row["show_id"] for row in found]
@@ -2397,6 +2428,8 @@ def build_tools(
             if not columns or None in years:
                 return _json({"error": "Give year columns as year_from and year_to, or as years"})
             return [grids.year_id(year) for year in years if year]
+        if not columns:
+            return _json({"error": "Name the songs as columns; the result then lists the songs on most of the nights to add"})
         resolved = [store.resolve_song(value) for value in columns]
         missing = [value for value, song in zip(columns, resolved) if not song]
         if missing:
@@ -2424,8 +2457,9 @@ def build_tools(
         tracks it spans. Guests across years (row_kind "guest", column_kind
         "year"): each cell is how many shows that guest sat in on that year.
         rows and columns take IDs, titles or names, in the order you want them.
-        For show rows, tour (a tour name) gathers that tour's nights in place
-        of rows; for year columns, year_from and year_to set the span. The
+        For show rows, tour (a tour name as fans say it: "Europe '72" works)
+        gathers that tour's nights in place of rows; query_catalog shows with
+        the same tour lays the nights out as show rows; for year columns, year_from and year_to set the span. The
         result carries a grid_id for a grid in finish_response, the filled
         cells as one compact table, and for nights or records the songs on most
         of them that are not yet columns.
@@ -2619,7 +2653,7 @@ def build_tools(
             ]
             if missing:
                 return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
-            params: dict[str, Any] = {"venue": venue, "tour": tour, "limit": max(1, min(limit, 200))}
+            params: dict[str, Any] = {"venue": venue, "tour": _stored_tour(tour) if tour else "", "limit": max(1, min(limit, 200))}
             if song:
                 resolved = store.resolve_song(song)
                 if not resolved:
@@ -2638,6 +2672,10 @@ def build_tools(
             ignored = [key for key in supplied if key not in bound] + (["sql"] if sql else [])
             result = store.run_catalog_query(query.sql, bound, menu=True)
             payload = _with_row_units({"query": name, "result_id": _catalog_result_id(query.sql, bound), **result})
+            if "tour" in bound and tour and payload.get("rows"):
+                payload["tour_songs"] = (
+                    f'The songs across these nights fit one grid: get_grid (show by song, tour="{params["tour"]}").'
+                )
             if ignored:
                 payload["ignored"] = ignored
             if "tour" in bound and tour and not payload.get("rows"):
