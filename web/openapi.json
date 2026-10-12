@@ -181,6 +181,32 @@
             "title": "Disclosure",
             "type": "string"
           },
+          "embed_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Id"
+          },
+          "embed_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "spotify",
+                  "youtube"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Kind"
+          },
           "emphasis": {
             "default": "supporting",
             "enum": [

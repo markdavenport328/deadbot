@@ -961,8 +961,11 @@ def _album_unit(
     # tracks carry that); otherwise its streaming album is the listen link.
     # The catalog page it was sourced from (MusicBrainz) is not a place to listen.
     listen: list[ListenAction] = []
+    embed_kind: Literal["spotify", "youtube"] | None = None
+    embed_id: str | None = None
     album_url = release.get("spotify_album_url")
     if "listen" in facets and isinstance(album_url, str) and album_url:
+        embed_kind, embed_id = _embed_details(_provider_for(album_url), album_url)
         listen.append(
             ListenAction(
                 label=f"Listen to {release.get('title') or 'the record'}",
@@ -996,6 +999,8 @@ def _album_unit(
         tracks=tracks,
         personnel=fit(personnel, "album credits"),
         listen=listen,
+        embed_kind=embed_kind,
+        embed_id=embed_id,
         sources=list(sources or []) if "sources" in facets else [],
         follow_ups=_clean_follow_ups(follow_ups),
     )

@@ -1303,6 +1303,24 @@ def test_album_unit_offers_the_record_as_a_listening_action():
     assert block.listen[0].label == "Listen to American Beauty"
 
 
+def test_album_unit_carries_the_spotify_embed_beside_its_listen_action():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store)
+    album_id = payload["release"]["spotify_album_url"].rstrip("/").rsplit("/", 1)[-1].split("?")[0]
+    assert block.embed_kind == "spotify"
+    assert block.embed_id == f"album/{album_id}"
+
+    # The embed belongs to the listen facet: a card that hides listening hides it.
+    quiet, _ = composition._album_unit(payload, store, visible_facets=["tracklist"])
+    assert quiet.embed_kind is None and quiet.embed_id is None
+
+    # A release with no stored streaming album has nothing to embed.
+    bare = {**payload, "release": {**payload["release"], "spotify_album_url": ""}}
+    none, _ = composition._album_unit(bare, store)
+    assert none.embed_id is None and none.listen == []
+
+
 def test_song_overview_shows_the_records_that_held_the_song():
     store = CanonicalStore()
     context = store.song_context(store.resolve_song("Truckin'"))

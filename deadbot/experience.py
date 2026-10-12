@@ -360,6 +360,10 @@ class AlbumUnitBlock(ExperienceModel):
     tracks: list[AlbumTrackItem] = Field(default_factory=list, max_length=LIST_CEILING)
     personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=LIST_CEILING)
     listen: list[ListenAction] = Field(default_factory=list, max_length=LIST_CEILING)
+    # The record's streaming album as an embeddable player, derived from the
+    # stored Spotify album URL the same way a media link's embed is.
+    embed_kind: Literal["spotify", "youtube"] | None = None
+    embed_id: str | None = None
     sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 

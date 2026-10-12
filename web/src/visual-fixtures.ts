@@ -347,6 +347,7 @@ const fact: ExperienceResponse = {
       emphasis: "primary",
       note: "It is the band's second studio album of 1970, following Workingman's Dead by about five months.",
       listen: [{ label: "Listen to American Beauty", provider: "Spotify", url: "https://open.spotify.com/album/1CBhqfy4uwiWhPMZ2sqjRc", is_official: true }],
+      embed_kind: "spotify", embed_id: "album/1CBhqfy4uwiWhPMZ2sqjRc",
       tracks: [],
       personnel: [],
       sources: [],
@@ -550,6 +551,7 @@ const album: ExperienceResponse = fixture(
       listen: [
         { label: "Listen to Workingman's Dead", provider: "Spotify", url: "https://open.spotify.com/album/0Dx3ntxFk1ZzIWFp2mL6oN", is_official: true }
       ],
+      embed_kind: "spotify", embed_id: "album/0Dx3ntxFk1ZzIWFp2mL6oN",
       tracks: workingmansDeadTracks.map(([title, highlighted = false], index) => ({
         track_number: index + 1,
         title,

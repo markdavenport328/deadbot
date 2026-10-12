@@ -179,6 +179,10 @@ export interface components {
              * @enum {string}
              */
             disclosure: "collapsed" | "expanded";
+            /** Embed Id */
+            embed_id?: string | null;
+            /** Embed Kind */
+            embed_kind?: ("spotify" | "youtube") | null;
             /**
              * Emphasis
              * @default supporting
