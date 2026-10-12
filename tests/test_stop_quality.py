@@ -74,3 +74,10 @@ def test_context_in_a_why_is_not_a_claim_about_the_stop():
         {"performance_id": "p95", "label": "The last one", "why": "Closing a stage life that began at Swing Auditorium, nearly 18 years after its debut in 1977."},
     ]), CASE, LIFE)
     assert score["fact_issues"] == []
+
+
+def test_qualified_and_contextual_phrases_are_not_claims():
+    score = score_stops(page([
+        {"performance_id": "p86", "label": "Berkeley", "why": "The longest among the released versions; the year's typical versions ran about 30 minutes, years after the debut."},
+    ]), CASE, LIFE)
+    assert score["fact_issues"] == []

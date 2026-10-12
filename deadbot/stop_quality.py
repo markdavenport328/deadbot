@@ -20,7 +20,7 @@ CLOCK_TOLERANCE_SECONDS = 90
 MINUTES_TOLERANCE = 3
 
 # "The debut" claims the stop; "after its debut" only refers to it.
-FIRST_CLAIM = re.compile(r"\b(the debut|debut performance|debuted|first performance|first time|first known|first-ever|first ever|premiere)\b")
+FIRST_CLAIM = re.compile(r"(?<!after )(?<!since )(?<!before )\b(the debut|debut performance|debuted|first performance|first time|first known|first-ever|first ever|premiere)\b")
 LAST_CLAIM = re.compile(
     r"\b(final|last) (known |ever |documented |cataloged |recorded |live )?(performance|time|version|rendition|one|terrapin|reading)\b"
     r"|^the (last|final)\b"
@@ -59,7 +59,8 @@ def _claim_issues(label: str, why: str, performance: LifePerformance, life: list
         issues.append(f"says first/debut but the debut is {life[0].show_date}")
     if LAST_CLAIM.search(lowered) and performance is not life[-1]:
         issues.append(f"says last but the last is {life[-1].show_date}")
-    if LONGEST_CLAIM.search(lowered):
+    # "the longest ... among the highlighted versions" is qualified, not a library claim.
+    if LONGEST_CLAIM.search(lowered) and " among " not in lowered:
         timed = [p for p in life if p.seconds is not None]
         overall = max(timed, key=lambda p: p.seconds) if timed else None
         in_year = [p for p in timed if p.year == performance.year]
@@ -74,7 +75,8 @@ def _claim_issues(label: str, why: str, performance: LifePerformance, life: list
             unverifiable += 1
         elif abs(stated - performance.seconds) > CLOCK_TOLERANCE_SECONDS:
             issues.append(f"says {minutes}:{seconds} but the library has {performance.seconds // 60}:{performance.seconds % 60:02d}")
-    for minutes in MINUTES.findall(lowered):
+    # "the year's typical versions ran about 27 minutes" describes the year, not the stop.
+    for minutes in ([] if "typical" in lowered else MINUTES.findall(lowered)):
         if performance.seconds is None:
             unverifiable += 1
         elif abs(int(minutes) - performance.seconds / 60) > MINUTES_TOLERANCE:
