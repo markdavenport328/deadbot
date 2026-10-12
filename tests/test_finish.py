@@ -915,6 +915,33 @@ def test_show_unit_only_hydrates_the_facets_the_composer_selected():
     assert unit.sets and not unit.guests and not unit.listen and not unit.sources
 
 
+def _resolve_one_show(**fields):
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    item = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", **fields)
+    blocks, _ = finish.resolve_items([item], finish.grounded_context([payload]), [payload], store)
+    return blocks[0]
+
+
+def test_a_collapsed_show_row_always_carries_its_setlist_and_listening():
+    unit = _resolve_one_show(disclosure="collapsed", visible_facets=[])
+    assert {"setlist", "listen"} <= set(unit.visible_facets)
+    assert unit.sets and unit.listen and unit.tracks
+    assert not unit.guests and not unit.sources
+
+
+def test_a_collapsed_show_row_keeps_the_facets_the_model_chose_and_a_hidden_setlist():
+    unit = _resolve_one_show(disclosure="collapsed", visible_facets=["guests"])
+    assert {"guests", "setlist", "listen"} <= set(unit.visible_facets)
+    hidden = _resolve_one_show(disclosure="collapsed", visible_facets=[], setlist_disclosure="hidden")
+    assert "listen" in hidden.visible_facets and "setlist" not in hidden.visible_facets and not hidden.sets
+
+
+def test_an_expanded_show_card_opens_with_exactly_the_facets_the_model_chose():
+    unit = _resolve_one_show(disclosure="expanded", visible_facets=[])
+    assert unit.visible_facets == [] and not unit.sets and not unit.listen
+
+
 def test_show_unit_with_no_selected_facets_stays_compact():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
@@ -1274,6 +1301,24 @@ def test_album_unit_offers_the_record_as_a_listening_action():
     block, _ = composition._album_unit(payload, store)
     assert all(action.is_official for action in block.listen)
     assert block.listen[0].label == "Listen to American Beauty"
+
+
+def test_album_unit_carries_the_spotify_embed_beside_its_listen_action():
+    store = CanonicalStore()
+    payload = store.album_context(store.resolve_release("release-american-beauty"))
+    block, _ = composition._album_unit(payload, store)
+    album_id = payload["release"]["spotify_album_url"].rstrip("/").rsplit("/", 1)[-1].split("?")[0]
+    assert block.embed_kind == "spotify"
+    assert block.embed_id == f"album/{album_id}"
+
+    # The embed belongs to the listen facet: a card that hides listening hides it.
+    quiet, _ = composition._album_unit(payload, store, visible_facets=["tracklist"])
+    assert quiet.embed_kind is None and quiet.embed_id is None
+
+    # A release with no stored streaming album has nothing to embed.
+    bare = {**payload, "release": {**payload["release"], "spotify_album_url": ""}}
+    none, _ = composition._album_unit(bare, store)
+    assert none.embed_id is None and none.listen == []
 
 
 def test_song_overview_shows_the_records_that_held_the_song():

@@ -179,6 +179,10 @@ export interface components {
              * @enum {string}
              */
             disclosure: "collapsed" | "expanded";
+            /** Embed Id */
+            embed_id?: string | null;
+            /** Embed Kind */
+            embed_kind?: ("spotify" | "youtube") | null;
             /**
              * Emphasis
              * @default supporting
@@ -439,7 +443,7 @@ export interface components {
             paragraphs?: string[];
             /**
              * Presentation
-             * @description narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.
+             * @description narrative: prose, written as paragraphs. fact_grid: a compact set judged on shared terms, including attributed viewpoints, one item per row. timeline: a sequence, one item per step.
              * @default narrative
              * @enum {string}
              */

@@ -60,11 +60,12 @@ def _row(case_id: str, run: int, scored: dict | None) -> str:
     return (
         f"{case_id:<18} {run:>3}  {shape:<24} {len(scored['repeats']):>7} {len(scored['catalog']):>7} "
         f"{len(scored['narration']):>9} {len(scored['hedges']):>6} {scored['page_words']:>6}"
+        f" {len(scored.get('silent', [])):>6} {len(scored.get('empty_rows', [])):>5} {len(scored.get('restated', [])):>8}"
     )
 
 
 def report(results: list[dict]) -> None:
-    print(f"{'case':<18} {'run':>3}  {'expected shape':<24} {'repeats':>7} {'catalog':>7} {'narration':>9} {'hedges':>6} {'words':>6}")
+    print(f"{'case':<18} {'run':>3}  {'expected shape':<24} {'repeats':>7} {'catalog':>7} {'narration':>9} {'hedges':>6} {'words':>6} {'silent':>6} {'empty':>5} {'restated':>8}")
     for result in results:
         print(_row(result["case"], result["run"], result.get("score")))
     scored = [result["score"] for result in results if result.get("score")]
@@ -77,12 +78,13 @@ def report(results: list[dict]) -> None:
             f" · catalog {sum(len(score['catalog']) for score in scored)}"
             f" · narration {sum(len(score['narration']) for score in scored)}"
             f" · hedges {sum(len(score['hedges']) for score in scored)}"
+            f" · usable {sum(score.get('usable', True) for score in scored)}/{len(scored)}"
             f" · median page words {sorted(score['page_words'] for score in scored)[len(scored) // 2]}"
         )
     print("\nFindings:")
     for result in results:
         score = result.get("score") or {}
-        for kind in ("repeats", "catalog", "narration", "hedges"):
+        for kind in ("repeats", "catalog", "narration", "hedges", "silent", "empty_rows", "restated"):
             for finding in score.get(kind, []):
                 print(f"  {result['case']} #{result['run']} {kind}: {finding}")
 

@@ -12,6 +12,13 @@ Every check counts something a reader would notice:
 - catalog: talk about the catalog, library or documentation instead of the band
 - narration: describing the page itself ("below", "open any card")
 - hedges: stock caveats such as "not popularity ratings"
+
+Three more checks look at what the visitor can do with the page rather than
+its words:
+
+- silent: a card with nothing to play on the page, only links that leave it
+- empty_rows: a collapsed show row whose "More" opens to nothing
+- restated: a text block whose rows retell cards already on the page
 """
 
 from __future__ import annotations
@@ -138,6 +145,121 @@ def _describe(option: dict[str, Any]) -> str:
     return " ".join(bits)
 
 
+CARD_TYPES = frozenset({"show_unit", "performance_unit", "album_unit", "song_overview"})
+
+
+def _has_audio(rows: Any, key: str = "audio_url") -> bool:
+    return any(isinstance(row, dict) and row.get(key) for row in rows or [])
+
+
+def playable(block: dict[str, Any]) -> bool:
+    """Whether a card offers listening that stays on the page."""
+
+    kind = block.get("type")
+    if kind == "show_unit":
+        songs = [song for set_ in block.get("sets") or [] for song in set_.get("songs") or []]
+        return _has_audio(block.get("tracks")) or _has_audio(songs)
+    if kind == "performance_unit":
+        return bool(block.get("audio_url")) or bool(block.get("show_tracks"))
+    if kind == "album_unit":
+        # Spotify plays in the card's embed; anything else official leaves the site.
+        return bool(block.get("embed_id")) or _has_audio(block.get("tracks"))
+    if kind == "song_overview":
+        return _has_audio(block.get("representative_performances")) or _has_audio(
+            block.get("representative_performances"), "track"
+        )
+    return True
+
+
+def _card_label(index: int, block: dict[str, Any]) -> str:
+    name = block.get("release_title") or block.get("song_title") or block.get("title") or block.get("show_id") or ""
+    return f"{block.get('type')}[{index}] {name}".strip()
+
+
+def silent_cards(blocks: list[dict[str, Any]]) -> list[str]:
+    return [_card_label(index, block) for index, block in enumerate(blocks) if block.get("type") in CARD_TYPES and not playable(block)]
+
+
+def empty_rows(blocks: list[dict[str, Any]]) -> list[str]:
+    """Collapsed show rows that carry nothing for "More" to open."""
+
+    found = []
+    for index, block in enumerate(blocks):
+        if block.get("type") != "show_unit" or block.get("disclosure") != "collapsed":
+            continue
+        if not any(block.get(key) for key in ("sets", "lineup", "guests", "recordings", "listen", "sources")):
+            found.append(_card_label(index, block))
+    return found
+
+
+_TOKEN = re.compile(r"[a-z0-9]+")
+
+
+def _tokens(text: str) -> set[str]:
+    text = text.lower().replace("’", "'").replace("'s", "").replace("vol.", "volume ")
+    return {token for token in _TOKEN.findall(text) if token not in _STOP and (token.isdigit() or len(token) > 2)}
+
+
+def _card_names(blocks: list[dict[str, Any]]) -> tuple[list[set[str]], set[str]]:
+    """Token sets naming each card or row on the page, and the years a song card already counts."""
+
+    names: list[set[str]] = []
+    years: set[str] = set()
+    for block in blocks:
+        for key in ("release_title", "song_title", "venue_name"):
+            if isinstance(block.get(key), str):
+                names.append(_tokens(block[key]))
+        for row in (block.get("items") if block.get("type") == "person_roster" else None) or []:
+            if isinstance(row, dict) and row.get("name"):
+                names.append(_tokens(row["name"]))
+        for row in block.get("rows") or [] if block.get("type") in {"data_chart", "ranked_list"} else []:
+            if isinstance(row, dict) and isinstance(row.get("label"), str):
+                names.append(_tokens(row["label"]))
+        if block.get("type") == "song_overview" and "by_year" in (block.get("visible_facets") or []):
+            years |= {str(row.get("year")) for row in block.get("year_counts") or [] if isinstance(row, dict)}
+    return [name for name in names if name], years
+
+
+def _names_a_card(text: str, names: list[set[str]]) -> bool:
+    words = _tokens(text)
+    numbers = {word for word in words if word.isdigit()}
+    for name in names:
+        # A one-word name (a venue like Winterland) only counts when the row is just that name.
+        if len(name - numbers) < 2:
+            if words and words == name:
+                return True
+            continue
+        # Every number must agree, so Dick's Picks 4 never matches Vol. 11.
+        if len((words & name) - numbers) >= 2 and numbers <= name:
+            return True
+    return False
+
+
+def _retells(item: dict[str, Any], names: list[set[str]], years: set[str]) -> bool:
+    # A year row beside a song's timeline retells it only when it is just the count;
+    # a row with its own story is a timeline of the song's life.
+    if not item.get("detail") and any(str(item.get(key) or "").strip() in years for key in ("marker", "title")):
+        return True
+    return any(_names_a_card(str(item.get(key) or ""), names) for key in ("marker", "title") if item.get(key))
+
+
+def restated_cards(blocks: list[dict[str, Any]]) -> list[str]:
+    """Editorial blocks whose rows mostly name cards the page already shows."""
+
+    names, years = _card_names(blocks)
+    if not names and not years:
+        return []
+    found = []
+    for index, block in enumerate(blocks):
+        if block.get("type") != "editorial":
+            continue
+        items = [item for item in block.get("items") or [] if isinstance(item, dict)]
+        hits = sum(1 for item in items if _retells(item, names, years))
+        if hits >= 2 and hits * 2 >= len(items):
+            found.append(f"editorial[{index}] {block.get('title') or ''} ({hits} of {len(items)} rows retell cards)".strip())
+    return found
+
+
 def score_page(response: dict[str, Any], expect: dict[str, Any] | None = None) -> dict[str, Any]:
     """Counts and examples for one delivered page."""
 
@@ -152,9 +274,13 @@ def score_page(response: dict[str, Any], expect: dict[str, Any] | None = None) -
         "page_words": sum(len(_words(text)) for _, text in layers),
         "chat_words": len(_words(chat)),
         "blocks": [block.get("type") for block in blocks],
+        "silent": silent_cards(blocks),
+        "empty_rows": empty_rows(blocks),
+        "restated": restated_cards(blocks),
     }
     if expect:
         met, described = _expectation_met(expect, blocks)
         result["expected"] = {"met": met, "wanted": described}
     result["clean"] = not (result["repeats"] or result["catalog"] or result["narration"] or result["hedges"])
+    result["usable"] = not (result["silent"] or result["empty_rows"] or result["restated"])
     return result

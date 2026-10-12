@@ -1,4 +1,4 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, lazy, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, createContext, lazy, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AlbumUnitBlock, AskFocus, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
@@ -7,6 +7,7 @@ import { askRequestBody, type FollowUp } from "./ask-request";
 import { clearStoredNotebook, readStoredNotebook, storeNotebook } from "./research-notebook";
 import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
+import { CardSpotifyButton, SpotifyEmbed, SpotifyPanelEmbed, SpotifyTextButton, useSpotifyPanel, type SpotifyPanel } from "./spotify-embed";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { VersionStrip } from "./VersionStrip";
 import { SongTimeline } from "./SongTimeline";
@@ -363,15 +364,7 @@ function MediaEmbed({ block }: { block: Extract<ExperienceBlock, { type: "media_
     );
   }
   if (block.embed_kind === "spotify" && block.embed_id) {
-    return (
-      <iframe
-        className="spotify-frame"
-        src={`https://open.spotify.com/embed/${block.embed_id}`}
-        title={block.title}
-        loading="lazy"
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-      />
-    );
+    return <SpotifyEmbed embedId={block.embed_id} title={block.title} height={152} />;
   }
   return null;
 }
@@ -385,11 +378,11 @@ function ListenActionList({ actions }: { actions: ListenActions }) {
 
 // A card's header: its one in-page play, round and gold, beside the title and
 // identity line. Without an in-page play the header is the title alone.
-function CardHead({ primary, children }: { primary: { play: InPagePlay; label: string } | null; children: ReactNode }) {
-  if (!primary) return <>{children}</>;
+function CardHead({ primary, spotify, children }: { primary: { play: InPagePlay; label: string } | null; spotify?: { panel: SpotifyPanel; label: string } | null; children: ReactNode }) {
+  if (!primary && !spotify) return <>{children}</>;
   return (
     <div className="card-head">
-      <CardPlayButton play={primary.play} label={primary.label} />
+      {primary ? <CardPlayButton play={primary.play} label={primary.label} /> : spotify ? <CardSpotifyButton panel={spotify.panel} label={spotify.label} /> : null}
       <div className="card-head-text">{children}</div>
     </div>
   );
@@ -656,6 +649,18 @@ function GoDeeper({ sources }: { sources: UnitSources }) {
 
 type UnitBlock = Extract<ExperienceBlock, { type: "show_unit" | "performance_unit" | "album_unit" | "song_overview" }>;
 
+// A record's Spotify album, when the server derived an embed for it: the
+// listen action it came from and the embed's identifier.
+function albumSpotify(block: AlbumUnitBlock): { action: AlbumUnitBlock["listen"][number]; embedId: string } | null {
+  if (block.embed_kind !== "spotify" || !block.embed_id) return null;
+  const action = block.listen.find((item) => item.provider.toLowerCase() === "spotify");
+  return action ? { action, embedId: block.embed_id } : null;
+}
+
+// A collapsed row owns its record's Spotify player (compact, under the row's
+// header); the record opened beneath it reaches for the same panel.
+const RowSpotifyContext = createContext<SpotifyPanel | null>(null);
+
 // A unit's container. As a card it is its own framed object; opened inside a
 // collapsed row it is the row's body, so the row and its details are one
 // object: the row's header stays and this opens beneath it.
@@ -786,12 +791,18 @@ function collapsedFacts(block: UnitBlock): {
   play: InPagePlay | null;
   // Where to hear it when nothing plays in-page: a streaming album.
   link?: { url: string; label: string } | null;
+  // The streaming album as an embedded player, when the record has one.
+  embedId?: string | null;
 } {
   const playOf = (queue: PlayerTrack[]): InPagePlay | null => (queue.length > 0 ? { start: queue[0], queue } : null);
   switch (block.type) {
     case "show_unit": {
       const meta: TrackMeta = { showDate: block.show_date, venueName: block.venue_name };
-      const queue = (block.tracks ?? []).map((track) => toTrack(track, meta));
+      const own = (block.tracks ?? []).map((track) => toTrack(track, meta));
+      // A row whose data came with a setlist plays that tape when it has none of its own.
+      const queue = own.length > 0
+        ? own
+        : block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) })).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name || formatShowDateLong(block.show_date), meta: [block.venue_name ? formatShowDateLong(block.show_date) : null, block.location], play: playOf(queue) };
     }
     case "album_unit": {
@@ -807,7 +818,8 @@ function collapsedFacts(block: UnitBlock): {
         meta: [year, formatReleaseType(block.release_type), shows],
         cover: block.cover_url,
         play: playOf(queue),
-        link: queue.length === 0 ? block.listen[0] ?? null : null
+        link: queue.length === 0 ? block.listen[0] ?? null : null,
+        embedId: albumSpotify(block)?.embedId ?? null
       };
     }
     case "performance_unit": {
@@ -834,6 +846,7 @@ function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFol
   const [coverFailed, setCoverFailed] = useState(false);
   const cardId = useId();
   const facts = collapsedFacts(block);
+  const spotifyPanel = useSpotifyPanel();
   const metaLine = facts.meta.filter(Boolean).join(" · ");
   return (
     <li className={`collapsed-row ${block.type}${open ? " open" : ""}`}>
@@ -857,6 +870,8 @@ function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFol
         <div className="collapsed-actions">
           {facts.play ? (
             <CardPlayButton play={facts.play} label={`Play ${facts.title}`} />
+          ) : facts.embedId ? (
+            <SpotifyTextButton panel={spotifyPanel} label="Listen" name={`Listen to ${facts.title} on Spotify`} className="collapsed-listen" />
           ) : facts.link ? (
             <ListenControl url={facts.link.url} label={facts.title} className="collapsed-listen">Listen</ListenControl>
           ) : null}
@@ -866,8 +881,13 @@ function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFol
           </button>
         </div>
       </div>
+      {facts.embedId && (
+        <div className="collapsed-embed">
+          <SpotifyPanelEmbed panel={spotifyPanel} embedId={facts.embedId} title={`${facts.title} on Spotify`} height={152} />
+        </div>
+      )}
       <div id={cardId} className="collapsed-card" hidden={!open}>
-        {open ? children : null}
+        <RowSpotifyContext.Provider value={facts.embedId ? spotifyPanel : null}>{open ? children : null}</RowSpotifyContext.Provider>
       </div>
     </li>
   );
@@ -928,8 +948,22 @@ function blockHeading(block: ExperienceBlock): string | null {
   return null;
 }
 
+// Two headings are the same idea when they match ignoring case, outer
+// whitespace, and curly versus straight quotes.
+function headingKey(text: string): string {
+  return text.trim().toLowerCase().replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"');
+}
+
 function sameHeading(a: string | null, b: string | null): boolean {
-  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+  return !!a && !!b && headingKey(a) === headingKey(b);
+}
+
+type EditorialBlockT = Extract<ExperienceBlock, { type: "editorial" }>;
+
+// An item whose title repeats its block's title would print the same heading
+// twice; the block's heading stands. An item whose title plays a tape keeps it.
+function repeatsBlockTitle(block: EditorialBlockT, item: EditorialBlockT["items"][number]): boolean {
+  return sameHeading(block.title ?? null, item.title) && (item.tracks ?? []).length === 0;
 }
 
 type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
@@ -1082,7 +1116,14 @@ function ShowUnit({
   const modelHeadline = unit.title?.trim() || "";
   const identityName = unit.venue_name || dateLong;
   const listen = splitListen(shows("listen") ? unit.listen : [], playableQueue);
-  const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
+  // A show with tape in the library plays it in our player: the card's main
+  // listen control plays the queue, and any outside links (a Relisten page)
+  // stay below as quiet links.
+  const primary = listen.primary
+    ? { play: listen.primary.play, label: listen.primary.action.label }
+    : playableQueue.length > 0
+      ? { play: { start: playableQueue[0], queue: playableQueue }, label: `Play ${identityName}` }
+      : null;
   const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets || inRow;
   const initialOpen = wantsSetlistOpen && tabs.some((tab) => tab.id === "setlist") ? "setlist" : null;
 
@@ -1184,7 +1225,11 @@ function AlbumUnit({
   // streaming album. A row already shows that control in its header.
   const queue = albumQueue(block);
   const primary = queue.length > 0 ? { play: { start: queue[0], queue }, label: `Play ${block.release_title?.trim() || block.title}` } : null;
-  const otherListen = primary ? block.listen : inRow ? block.listen.slice(1) : block.listen;
+  const spotify = albumSpotify(block);
+  const rowPanel = useContext(RowSpotifyContext);
+  const ownPanel = useSpotifyPanel();
+  const spotifyPanel = inRow && rowPanel ? rowPanel : ownPanel;
+  const otherListen = (primary ? block.listen : inRow ? block.listen.slice(1) : block.listen).filter((action) => action !== spotify?.action);
   const highlightedTracks = block.tracks.filter((track) => track.highlighted);
   const personnel = groupPersonnel(block.personnel);
   const typeLabel = block.artist_name && block.artist_name !== "Grateful Dead" ? `Album · ${block.artist_name}` : "Album";
@@ -1226,7 +1271,7 @@ function AlbumUnit({
       ) : modelHeadline ? (
         <>
           <IdRow type={typeLabel} />
-          <CardHead primary={primary}>
+          <CardHead primary={primary} spotify={spotify && !inRow ? { panel: spotifyPanel, label: spotify.action.label } : null}>
             <div className="identity">
               <p className="identity-name">{recordName}</p>
               <Meta parts={[kindLine, releaseLong ? `Released ${releaseLong}` : null]} />
@@ -1237,7 +1282,7 @@ function AlbumUnit({
       ) : (
         <>
           <IdRow type={typeLabel} when={releaseLong ? `Released ${releaseLong}` : null} />
-          <CardHead primary={primary}>
+          <CardHead primary={primary} spotify={spotify && !inRow ? { panel: spotifyPanel, label: spotify.action.label } : null}>
             <CardHeading>{recordName}</CardHeading>
             <Meta parts={[kindLine]} />
           </CardHead>
@@ -1245,6 +1290,19 @@ function AlbumUnit({
       )}
       {block.note && !inRow && <ClampText className="unit-note">{renderInline(block.note)}</ClampText>}
       <CriteriaTable criteria={criteria} judgments={block.judgments} />
+      {spotify && !inRow && <SpotifyPanelEmbed panel={spotifyPanel} embedId={spotify.embedId} title={`${recordName} on Spotify`} height={352} />}
+      {spotify && (
+        <ul className="listen-links" aria-label="Spotify">
+          {primary && (
+            <li>
+              <SpotifyTextButton panel={spotifyPanel} label="Listen on Spotify" name={`Listen to ${recordName} on Spotify`} />
+            </li>
+          )}
+          <li>
+            <ListenControl url={spotify.action.url} label="Open in Spotify" />
+          </li>
+        </ul>
+      )}
       <ListenActionList actions={otherListen} />
       {highlightedTracks.length > 0 && (
         <ListenFor items={highlightedTracks.map((track) => ({ key: String(track.track_number), title: track.title, url: track.listen_url, track: albumTrack(track) }))} />
@@ -1789,8 +1847,8 @@ function Block({
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
-                {item.marker ? <dt>{item.marker}</dt> : <dt className="fact-subject"><EditorialTitle item={item} /></dt>}
-                {item.marker && <dd className="fact-subject"><EditorialTitle item={item} /></dd>}
+                {item.marker ? <dt>{item.marker}</dt> : !repeatsBlockTitle(block, item) && <dt className="fact-subject"><EditorialTitle item={item} /></dt>}
+                {item.marker && !repeatsBlockTitle(block, item) && <dd className="fact-subject"><EditorialTitle item={item} /></dd>}
                 {item.value && (
                   <dd className={item.value.trim().length <= 20 ? "fact-value display" : "fact-value"}>
                     {renderInline(item.value)}
@@ -1812,7 +1870,7 @@ function Block({
             {block.items.map((item, index) => (
               <li key={`${item.marker ?? item.title}-${index}`}>
                 {item.marker && <span className="timeline-marker">{item.marker}</span>}
-                <strong><EditorialTitle item={item} /></strong>
+                {!repeatsBlockTitle(block, item) && <strong><EditorialTitle item={item} /></strong>}
                 {item.detail && <span className="timeline-detail">{renderInline(item.detail)}</span>}
                 {item.link && <ExternalLink className="timeline-link" href={item.link.url} label={item.link.label}>{item.link.label}</ExternalLink>}
                 {(item.follow_ups ?? []).length > 0 && <span className="timeline-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></span>}

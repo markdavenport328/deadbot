@@ -360,6 +360,10 @@ class AlbumUnitBlock(ExperienceModel):
     tracks: list[AlbumTrackItem] = Field(default_factory=list, max_length=LIST_CEILING)
     personnel: list[AlbumCreditItem] = Field(default_factory=list, max_length=LIST_CEILING)
     listen: list[ListenAction] = Field(default_factory=list, max_length=LIST_CEILING)
+    # The record's streaming album as an embeddable player, derived from the
+    # stored Spotify album URL the same way a media link's embed is.
+    embed_kind: Literal["spotify", "youtube"] | None = None
+    embed_id: str | None = None
     sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
@@ -968,6 +972,46 @@ class EditorialItem(EditorialItemText):
     tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
+_QUOTES = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201b": "'", "\u201c": '"', "\u201d": '"'})
+
+
+def same_heading(first: Any, second: Any) -> bool:
+    """Two headings name the same idea: equal ignoring case, outer space, and curly versus straight quotes."""
+
+    if not isinstance(first, str) or not isinstance(second, str):
+        return False
+    key = lambda text: text.strip().translate(_QUOTES).casefold()  # noqa: E731
+    return bool(key(first)) and key(first) == key(second)
+
+
+def _lift_narrative_item(data: dict[str, Any]) -> dict[str, Any]:
+    """A narrative written as one item becomes the paragraphs it meant.
+
+    A narrative is paragraphs; items belong to a fact grid or a timeline. When a
+    narrative arrives with no paragraphs and one plain item (its title the
+    block's own, or the block untitled) the item's value and detail are the
+    prose, so they become the paragraphs, in the model's words.
+    """
+
+    items = data.get("items")
+    if data.get("presentation") != "narrative" or data.get("paragraphs") or not isinstance(items, list) or len(items) != 1:
+        return data
+    item = items[0]
+    if not isinstance(item, dict) or set(item) - {"title", "value", "detail"}:
+        return data
+    title = item.get("title")
+    if not (same_heading(data.get("title"), title) or (not data.get("title") and isinstance(title, str) and title.strip())):
+        return data
+    paragraphs = [text.strip() for text in (item.get("value"), item.get("detail")) if isinstance(text, str) and text.strip()]
+    if not paragraphs:
+        return data
+    lifted = {key: value for key, value in data.items() if key != "items"}
+    lifted["title"] = data.get("title") or title
+    lifted["paragraphs"] = paragraphs
+    lifted["items"] = []
+    return lifted
+
+
 def read_editorial_shape(data: Any) -> Any:
     """A fact-grid row written as a whole block becomes that block's one item,
     and a block without a presentation gets one from its shape.
@@ -987,6 +1031,7 @@ def read_editorial_shape(data: Any) -> Any:
         data = {key: value for key, value in data.items() if key not in row_keys}
         data["items"] = [item]
         data.setdefault("presentation", "fact_grid")
+    data = _lift_narrative_item(data)
     if not data.get("presentation"):
         # Items alone read as a fact grid; anything else as a narrative.
         data = {**data, "presentation": "fact_grid" if data.get("items") and not data.get("paragraphs") else "narrative"}
@@ -1004,7 +1049,7 @@ class EditorialBlock(ModelAuthored):
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
         default="narrative",
-        description="narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence."
+        description="narrative: prose, written as paragraphs. fact_grid: a compact set judged on shared terms, including attributed viewpoints, one item per row. timeline: a sequence, one item per step."
     )
     eyebrow: str | None = None
     title: str | None = None

@@ -181,6 +181,32 @@
             "title": "Disclosure",
             "type": "string"
           },
+          "embed_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Id"
+          },
+          "embed_kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "spotify",
+                  "youtube"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embed Kind"
+          },
           "emphasis": {
             "default": "supporting",
             "enum": [
@@ -864,7 +890,7 @@
           },
           "presentation": {
             "default": "narrative",
-            "description": "narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.",
+            "description": "narrative: prose, written as paragraphs. fact_grid: a compact set judged on shared terms, including attributed viewpoints, one item per row. timeline: a sequence, one item per step.",
             "enum": [
               "narrative",
               "fact_grid",

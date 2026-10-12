@@ -529,7 +529,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .reading-pub .pub { color: var(--text); font-weight: 500; }
 .ask-block .ask-chip { margin-top: 0; }
 .media-frame { display: block; width: min(100%, 720px); aspect-ratio: 16 / 9; border: 0; border-radius: var(--r); margin: 1rem 0; }
-.spotify-frame { display: block; width: min(100%, 720px); height: 152px; border: 0; border-radius: var(--r); margin: 1rem 0; }
+.spotify-embed { width: min(100%, 720px); margin: 1rem 0; }
+.spotify-embed iframe { display: block; width: 100%; border: 0; border-radius: var(--r); }
+.spotify-panel { margin-top: var(--space-part); }
+.spotify-panel .spotify-embed { margin: 0; }
+.collapsed-embed { padding: 0 0 0.85rem calc(56px + 1rem); }
+.collapsed-embed .spotify-embed { margin: 0; }
 
 .sources-footer { margin-top: 3rem; border-top: 1px solid #33452f; padding-top: 1rem; }
 .sources-footer-label { margin: 0 0 0.6rem; }
@@ -676,6 +681,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .collapsed-head { gap: 0.75rem; }
   .collapsed-cover { width: 44px; height: 44px; }
   .collapsed-row.album_unit .row-body { padding-left: 0; }
+  .collapsed-embed { padding-left: 0; }
 }
 
 /* A ranking from one aggregate_data result: rank, name, count, one column. */

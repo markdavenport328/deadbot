@@ -768,6 +768,42 @@ def test_a_well_formed_editorial_block_is_left_alone():
     assert block.title == "What changed" and len(block.items) == 1 and block.items[0].title == "Tempo"
 
 
+def test_a_narrative_written_as_one_plain_item_becomes_its_paragraphs():
+    from deadbot.experience import EditorialBlock
+
+    block = EditorialBlock.model_validate({
+        "type": "editorial",
+        "presentation": "narrative",
+        "eyebrow": "The cause",
+        "title": "Saving 'Springfield' Creamery",
+        "paragraphs": [],
+        "items": [{"title": "saving \u2018Springfield\u2019 creamery ", "value": "A dairy kept alive.", "detail": "The Dead played to save it."}],
+    })
+    assert block.presentation == "narrative" and block.items == []
+    assert block.title == "Saving 'Springfield' Creamery" and block.eyebrow == "The cause"
+    assert block.paragraphs == ["A dairy kept alive.", "The Dead played to save it."]
+
+
+def test_a_narrative_item_with_its_own_title_or_extras_stays_an_item():
+    from deadbot.experience import EditorialBlock
+
+    other = EditorialBlock.model_validate({
+        "type": "editorial", "presentation": "narrative", "title": "The cause",
+        "items": [{"title": "Springfield Creamery", "detail": "A dairy."}],
+    })
+    assert other.paragraphs == [] and len(other.items) == 1
+    linked = EditorialBlock.model_validate({
+        "type": "editorial", "presentation": "narrative", "title": "The cause",
+        "items": [{"title": "The cause", "detail": "A dairy.", "link": {"label": "More", "url": "https://example.com/a"}}],
+    })
+    assert linked.paragraphs == [] and len(linked.items) == 1
+    written = EditorialBlock.model_validate({
+        "type": "editorial", "presentation": "narrative", "title": "The cause", "paragraphs": ["Prose."],
+        "items": [{"title": "The cause", "detail": "A dairy."}],
+    })
+    assert written.paragraphs == ["Prose."] and len(written.items) == 1
+
+
 def _data_chart_columns():
     return [
         experience.DataChartColumn(key="year", label="Year", type="temporal"),
