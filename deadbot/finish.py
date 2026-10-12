@@ -303,14 +303,14 @@ class EditorialPlan(_PlanModel):
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
         default="narrative",
-        description="narrative for prose; fact_grid for a compact set judged on shared terms, including attributed viewpoints; timeline for a sequence.",
+        description="narrative: prose, written as paragraphs. fact_grid: a compact set judged on shared terms, including attributed viewpoints, one item per row. timeline: a sequence, one item per step.",
     )
-    eyebrow: str | None = None
-    title: str | None = None
-    paragraphs: list[str] = Field(default_factory=list)
+    eyebrow: str | None = Field(default=None, description="A small label above the title, for a block that has a title of its own.")
+    title: str | None = Field(default=None, description="The block's one heading. An item's title names the item; the block's heading is written once.")
+    paragraphs: list[str] = Field(default_factory=list, description="The text of a narrative: your prose, one paragraph per entry.")
     items: list[EditorialItemPlan] = Field(
         default_factory=list,
-        description="The items of a fact_grid or timeline, in reading order: viewpoints or claims judged on shared terms, or the steps of a sequence.",
+        description="The rows of a fact_grid or the steps of a timeline, in reading order: viewpoints or claims judged on shared terms, or the steps of a sequence. A narrative is written in paragraphs.",
     )
 
 
@@ -1067,6 +1067,13 @@ def _resolve_show_unit(
     unit_sources, source_refs = composition._unit_sources(
         item.supporting_sources if "sources" in selected_facets else [], grounded.urls, payloads
     )
+    # A collapsed show's row opens to its show: the setlist (unless the model
+    # hid it) and the listen control come with the row, so its drawer is never
+    # empty. An expanded card opens with exactly the facets the model chose.
+    facets = item.visible_facets
+    if item.disclosure == "collapsed":
+        floor = ["listen"] if item.setlist_disclosure == "hidden" else ["setlist", "listen"]
+        facets = list(dict.fromkeys([*item.visible_facets, *floor]))
     block, listen_sources = composition._show_unit(
         store.show_context(show),
         store,
@@ -1074,7 +1081,7 @@ def _resolve_show_unit(
         judgments=item.judgments,
         note=item.note,
         title=item.title,
-        visible_facets=item.visible_facets,
+        visible_facets=facets,
         setlist_disclosure=item.setlist_disclosure,
         highlighted_performance_ids=item.highlighted_performance_ids,
         preferred_recording_id=item.preferred_recording_id,

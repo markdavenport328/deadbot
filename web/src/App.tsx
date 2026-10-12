@@ -791,7 +791,11 @@ function collapsedFacts(block: UnitBlock): {
   switch (block.type) {
     case "show_unit": {
       const meta: TrackMeta = { showDate: block.show_date, venueName: block.venue_name };
-      const queue = (block.tracks ?? []).map((track) => toTrack(track, meta));
+      const own = (block.tracks ?? []).map((track) => toTrack(track, meta));
+      // A row whose data came with a setlist plays that tape when it has none of its own.
+      const queue = own.length > 0
+        ? own
+        : block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) })).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name || formatShowDateLong(block.show_date), meta: [block.venue_name ? formatShowDateLong(block.show_date) : null, block.location], play: playOf(queue) };
     }
     case "album_unit": {
@@ -928,8 +932,22 @@ function blockHeading(block: ExperienceBlock): string | null {
   return null;
 }
 
+// Two headings are the same idea when they match ignoring case, outer
+// whitespace, and curly versus straight quotes.
+function headingKey(text: string): string {
+  return text.trim().toLowerCase().replace(/[\u2018\u2019\u201B]/g, "'").replace(/[\u201C\u201D]/g, '"');
+}
+
 function sameHeading(a: string | null, b: string | null): boolean {
-  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+  return !!a && !!b && headingKey(a) === headingKey(b);
+}
+
+type EditorialBlockT = Extract<ExperienceBlock, { type: "editorial" }>;
+
+// An item whose title repeats its block's title would print the same heading
+// twice; the block's heading stands. An item whose title plays a tape keeps it.
+function repeatsBlockTitle(block: EditorialBlockT, item: EditorialBlockT["items"][number]): boolean {
+  return sameHeading(block.title ?? null, item.title) && (item.tracks ?? []).length === 0;
 }
 
 type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
@@ -1082,7 +1100,14 @@ function ShowUnit({
   const modelHeadline = unit.title?.trim() || "";
   const identityName = unit.venue_name || dateLong;
   const listen = splitListen(shows("listen") ? unit.listen : [], playableQueue);
-  const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
+  // A show with tape in the library plays it in our player: the card's main
+  // listen control plays the queue, and any outside links (a Relisten page)
+  // stay below as quiet links.
+  const primary = listen.primary
+    ? { play: listen.primary.play, label: listen.primary.action.label }
+    : playableQueue.length > 0
+      ? { play: { start: playableQueue[0], queue: playableQueue }, label: `Play ${identityName}` }
+      : null;
   const wantsSetlistOpen = unit.setlist_disclosure === "expanded" || openFacets || inRow;
   const initialOpen = wantsSetlistOpen && tabs.some((tab) => tab.id === "setlist") ? "setlist" : null;
 
@@ -1789,8 +1814,8 @@ function Block({
           <dl>
             {block.items.map((item, index) => (
               <div key={`${item.marker ?? item.title}-${index}`}>
-                {item.marker ? <dt>{item.marker}</dt> : <dt className="fact-subject"><EditorialTitle item={item} /></dt>}
-                {item.marker && <dd className="fact-subject"><EditorialTitle item={item} /></dd>}
+                {item.marker ? <dt>{item.marker}</dt> : !repeatsBlockTitle(block, item) && <dt className="fact-subject"><EditorialTitle item={item} /></dt>}
+                {item.marker && !repeatsBlockTitle(block, item) && <dd className="fact-subject"><EditorialTitle item={item} /></dd>}
                 {item.value && (
                   <dd className={item.value.trim().length <= 20 ? "fact-value display" : "fact-value"}>
                     {renderInline(item.value)}
@@ -1812,7 +1837,7 @@ function Block({
             {block.items.map((item, index) => (
               <li key={`${item.marker ?? item.title}-${index}`}>
                 {item.marker && <span className="timeline-marker">{item.marker}</span>}
-                <strong><EditorialTitle item={item} /></strong>
+                {!repeatsBlockTitle(block, item) && <strong><EditorialTitle item={item} /></strong>}
                 {item.detail && <span className="timeline-detail">{renderInline(item.detail)}</span>}
                 {item.link && <ExternalLink className="timeline-link" href={item.link.url} label={item.link.label}>{item.link.label}</ExternalLink>}
                 {(item.follow_ups ?? []).length > 0 && <span className="timeline-ask"><TopicChips topics={item.follow_ups} onFollowUp={onFollowUp} /></span>}

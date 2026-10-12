@@ -915,6 +915,33 @@ def test_show_unit_only_hydrates_the_facets_the_composer_selected():
     assert unit.sets and not unit.guests and not unit.listen and not unit.sources
 
 
+def _resolve_one_show(**fields):
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    item = finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", **fields)
+    blocks, _ = finish.resolve_items([item], finish.grounded_context([payload]), [payload], store)
+    return blocks[0]
+
+
+def test_a_collapsed_show_row_always_carries_its_setlist_and_listening():
+    unit = _resolve_one_show(disclosure="collapsed", visible_facets=[])
+    assert {"setlist", "listen"} <= set(unit.visible_facets)
+    assert unit.sets and unit.listen and unit.tracks
+    assert not unit.guests and not unit.sources
+
+
+def test_a_collapsed_show_row_keeps_the_facets_the_model_chose_and_a_hidden_setlist():
+    unit = _resolve_one_show(disclosure="collapsed", visible_facets=["guests"])
+    assert {"guests", "setlist", "listen"} <= set(unit.visible_facets)
+    hidden = _resolve_one_show(disclosure="collapsed", visible_facets=[], setlist_disclosure="hidden")
+    assert "listen" in hidden.visible_facets and "setlist" not in hidden.visible_facets and not hidden.sets
+
+
+def test_an_expanded_show_card_opens_with_exactly_the_facets_the_model_chose():
+    unit = _resolve_one_show(disclosure="expanded", visible_facets=[])
+    assert unit.visible_facets == [] and not unit.sets and not unit.listen
+
+
 def test_show_unit_with_no_selected_facets_stays_compact():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
