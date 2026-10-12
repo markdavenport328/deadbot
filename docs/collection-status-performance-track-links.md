@@ -2,6 +2,10 @@
 
 Updated 2026-09-08.
 
+Later update (2026-10-12): the Internet Archive gap pass added track links for
+26 more shows and brought the archive track-link total to 32,935 rows; see
+`docs/collection-status-gap-show-track-links.md`.
+
 The September 8 playback correction changed every generated track URL from
 Archive's `/details/` route, which opens the full-show page, to the direct
 `/download/` file route. The preserved item and file selection are unchanged.
