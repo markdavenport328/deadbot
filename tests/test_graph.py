@@ -90,7 +90,7 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "perform an omission pass" not in prompt
     assert "avoid first-person singular" in prompt
     assert "each item's title names its subject" in prompt
-    assert "song_overview" in prompt
+    assert "Each card is the home for its own object's story" in prompt
     # The abstract "Five Jobs of Gestalt" list was retired; its ideas are stated concretely elsewhere.
     assert "gestalt" not in prompt.casefold()
 
