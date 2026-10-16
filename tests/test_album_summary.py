@@ -74,7 +74,7 @@ def test_live_box_set_names_its_tour_right_after_the_release(album):
     payload = album(release_id_or_title=BOX)
     assert list(payload)[:2] == ["release", "tour"]
     assert payload["tour"]["names"] == ["Europe 1972"]
-    assert "query_catalog" in payload["tour"]["nights"] and "get_grid" in payload["tour"]["nights"]
+    assert "look_up" in payload["tour"]["nights"] and "get_grid" in payload["tour"]["nights"]
 
 
 def test_studio_album_has_no_tour_pointer(album):
@@ -84,5 +84,5 @@ def test_studio_album_has_no_tour_pointer(album):
 def test_a_small_multi_show_release_lists_every_track_by_night(album):
     payload = album(release_id_or_title="release-dicks-picks-volume-4-fillmore-east-1996", include=["tracks"])
     assert len(payload["nights"]) == 2 and "tracks" not in payload
-    assert sum(len(night["tracks"]) for night in payload["nights"]) + payload["contents"]["unattributed_track_count"] == payload["track_count"]
+    assert sum(len(night["tracks"]) for night in payload["nights"]) + payload["contents"]["tracks_without_a_show"] == payload["track_count"]
     assert "every track" in payload["tracks_note"]

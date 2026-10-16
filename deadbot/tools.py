@@ -1351,7 +1351,7 @@ def build_tools(
                     "tour": {
                         "names": tours,
                         "nights": (
-                            "To show what is on this box, lay out the tour night by night: query_catalog shows with "
+                            "To show what is on this box, lay out the tour night by night: look_up shows with "
                             "tour=<name> gives the nights as collapsed show rows (a show_unit from_result), and "
                             "get_grid (show by song, tour=<name>, columns=the songs that define the tour) gives them across the nights."
                         ),
@@ -2487,7 +2487,7 @@ def build_tools(
         "year"): each cell is how many shows that guest sat in on that year.
         rows and columns take IDs, titles or names, in the order you want them.
         For show rows, tour (a tour name as fans say it: "Europe '72" works)
-        gathers that tour's nights in place of rows; query_catalog shows with
+        gathers that tour's nights in place of rows; look_up shows with
         the same tour lays the nights out as show rows; for year columns, year_from and year_to set the span. The
         result carries a grid_id for a grid in finish_response, the filled
         cells as one compact table, and for nights or records the songs on most
