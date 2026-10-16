@@ -539,10 +539,21 @@ def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]
 
 # Selection-pipeline bookkeeping the model does not use to answer: the
 # signal's internal ID, how the evidence was collected and who identified it.
-def _without_notes(row: dict[str, Any]) -> dict[str, Any]:
-    """A stored row without its notes: those record how the row was gathered, not the music."""
+_PARTIAL_DATE = re.compile(r"gives only '(\d{4}(?:-\d{2})?)'")
 
-    return {key: value for key, value in row.items() if key != "notes"}
+
+def _without_notes(row: dict[str, Any]) -> dict[str, Any]:
+    """A stored row without its notes: those record how the row was gathered, not the music.
+
+    A release whose source gives only a year or month keeps that partial date,
+    which otherwise lives only in the note.
+    """
+
+    kept = {key: value for key, value in row.items() if key != "notes"}
+    if "release_date" in row and not row.get("release_date"):
+        if match := _PARTIAL_DATE.search(str(row.get("notes") or "")):
+            kept["release_date"] = match.group(1)
+    return kept
 
 
 _HOW_GATHERED = re.compile(
@@ -1272,14 +1283,19 @@ def build_tools(
         for entry in payload["contents"]["shows"]:
             own = [compact(track) for track in tracks if show_of(track) == entry["show_id"]]
             nights.append({**entry, "tracks": own})
+        # Studio cuts and unplaced material belong to no night but are still on the record.
+        unplaced = [compact(track) for track in tracks if not show_of(track)]
+        if unplaced:
+            payload["tracks_without_a_show"] = unplaced
         summarized = _RESULT_CEILING.get() is not None and len(_dumps(nights)) > _NIGHTS_CEILING
         if summarized:
             for night in nights:
                 night["tracks"] = night["tracks"][:_NIGHT_PREVIEW]
         payload["nights"] = nights
         shown = "the first %d tracks of each night" % _NIGHT_PREVIEW if summarized else "every track"
+        elsewhere = "; tracks from no known show are listed after the nights" if unplaced else ""
         payload["tracks_note"] = (
-            f"Tracks are grouped by night ({shown}; Spotify links left out). "
+            f"Tracks are grouped by night ({shown}{elsewhere}; Spotify links left out). "
             + ("This box is too long to list in full: " if summarized else "")
             + 'get_album with show="<show_id>" gives one night\'s full tracklist with Spotify links.'
         )
@@ -1341,9 +1357,14 @@ def build_tools(
                 if show_of(track):
                     counts[show_of(track)] = counts.get(show_of(track), 0) + 1
             ordered = sorted(counts, key=lambda show_id: (shows[show_id].get("show_date", ""), show_id))
-            tours = list(dict.fromkeys(
-                shows[show_id].get("tour_name", "") for show_id in ordered if shows[show_id].get("tour_name")
-            ))
+            # A box from one tour is that tour; a compilation drawing a track
+            # from many tours is not, so it gets no tour pointer.
+            tour_counts: dict[str, int] = {}
+            for show_id in ordered:
+                if name := shows[show_id].get("tour_name"):
+                    tour_counts[name] = tour_counts.get(name, 0) + 1
+            leading = max(tour_counts, key=tour_counts.get) if tour_counts else ""
+            tours = [leading] if leading and tour_counts[leading] * 5 >= len(ordered) * 4 else []
             if len(ordered) > 1 and tours:
                 # Right after the release, where the order steers the page.
                 payload = {
@@ -2716,8 +2737,6 @@ def build_tools(
     replayable = {item.name: item for item in tools}
     if "look_up" in replayable:
         replayable["query_catalog"] = replayable["look_up"]  # notebooks written before the rename
-    if "look_up" in replayable:
-        replayable["look_up"] = replayable["look_up"]  # notebooks written before the rename
 
     def _notebook_result(entry: notebook.Entry, *, whole: bool = False) -> dict[str, Any]:
         """A stored web payload, or the canonical call run again against the library.

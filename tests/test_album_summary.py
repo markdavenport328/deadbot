@@ -86,3 +86,24 @@ def test_a_small_multi_show_release_lists_every_track_by_night(album):
     assert len(payload["nights"]) == 2 and "tracks" not in payload
     assert sum(len(night["tracks"]) for night in payload["nights"]) + payload["contents"]["tracks_without_a_show"] == payload["track_count"]
     assert "every track" in payload["tracks_note"]
+
+
+def test_tracks_from_no_known_show_stay_on_the_record(album):
+    payload = album(release_id_or_title=BOX, include=["tracks"])
+    listed = sum(len(night["tracks"]) for night in payload["nights"]) + len(payload.get("tracks_without_a_show", []))
+    assert payload["contents"]["tracks_without_a_show"] == len(payload.get("tracks_without_a_show", []))
+    if "first" not in payload["tracks_note"]:
+        assert listed == payload["track_count"]
+    if payload["contents"]["tracks_without_a_show"]:
+        assert "no known show" in payload["tracks_note"]
+
+
+def test_a_compilation_across_many_tours_gets_no_tour_pointer(album):
+    payload = album(release_id_or_title="release-thankfully-grateful-2024")
+    assert "tour" not in payload
+
+
+def test_a_release_keeps_the_partial_date_its_source_gives(album):
+    payload = album(release_id_or_title="release-dicks-picks-volume-32-1982-08-07")
+    assert payload["release"]["release_date"]
+    assert "notes" not in payload["release"]
