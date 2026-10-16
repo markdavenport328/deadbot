@@ -50,6 +50,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 
 from normalize_internet_archive_tracks import (  # noqa: E402
     ALTERNATES_PATH,
+    RECOVERY_NOTE,
     audio_track_files,
     normalized_title,
     parse_duration,
@@ -109,11 +110,23 @@ def track_url(identifier: str, file_name: str) -> str:
     return f"https://archive.org/download/{identifier}/{urllib.parse.quote(file_name, safe='/')}"
 
 
-def titles_agree(source_title: str, canonical_title: str, canonical_song_title: str = "") -> bool:
-    """Same song title, exactly normalized or after the tolerant title folding."""
+def titles_agree(
+    source_title: str,
+    canonical_title: str,
+    canonical_song_title: str = "",
+    recovered_title: str = "",
+) -> bool:
+    """Same song title, exactly normalized or after the tolerant title folding.
+
+    ``recovered_title`` is the source title of a row the title-variant
+    recovery pass mapped by spelling variant or typo ("Moring Dew"); the file
+    that carries exactly that title is the one the mapping decided on.
+    """
 
     if not source_title:
         return False
+    if recovered_title and source_title == recovered_title:
+        return True
     if normalized_title(source_title) == canonical_title:
         return True
     return bool(canonical_song_title) and bool(title_keys(source_title) & title_keys(canonical_song_title))
@@ -124,6 +137,7 @@ def select_track_file(
     track_number: int,
     canonical_title: str,
     canonical_song_title: str = "",
+    recovered_title: str = "",
 ) -> tuple[dict | None, str, str, list[str]]:
     """Return (file, selection_kind, hold_reason, titles_seen) for one track."""
 
@@ -140,7 +154,7 @@ def select_track_file(
             continue
         if title:
             titles_seen.append(title)
-        if titles_agree(title, canonical_title, canonical_song_title):
+        if titles_agree(title, canonical_title, canonical_song_title, recovered_title):
             mp3_matches.append(record)
     if len(mp3_matches) == 1:
         return mp3_matches[0], "mp3", "", titles_seen
@@ -164,7 +178,7 @@ def select_track_file(
     title = lossless.get("title") or ""
     if title:
         titles_seen.append(title)
-    if titles_agree(title, canonical_title, canonical_song_title):
+    if titles_agree(title, canonical_title, canonical_song_title, recovered_title):
         return lossless, "lossless", "", titles_seen
     return None, "", "file_title_does_not_match_canonical_song", titles_seen
 
@@ -251,7 +265,11 @@ def build_links(
             continue
 
         chosen, kind, reason, titles_seen = select_track_file(
-            record.get("raw_payload", {}), track_number, canonical_title, songs.get(song_id, "")
+            record.get("raw_payload", {}),
+            track_number,
+            canonical_title,
+            songs.get(song_id, ""),
+            row.get("track_title", "") if row.get("notes") == RECOVERY_NOTE else "",
         )
         if chosen is None:
             hold(reason, titles_seen)

@@ -200,3 +200,11 @@ def test_track_file_title_matches_after_prefix_and_spelling_folding():
     assert chosen is not None and chosen["name"] == "t07.mp3"
     assert kind == "mp3"
     assert reason == ""
+
+
+def test_recovered_row_links_the_file_that_carries_its_variant_title():
+    # "Moring Dew" is a typo the recovery pass mapped; only a file with that
+    # exact title is accepted, never a different title.
+    assert ia_links.titles_agree("Moring Dew", "morning dew", "Morning Dew", "Moring Dew")
+    assert not ia_links.titles_agree("Moring Dew", "morning dew", "Morning Dew")
+    assert not ia_links.titles_agree("Dark Star", "morning dew", "Morning Dew", "Moring Dew")
