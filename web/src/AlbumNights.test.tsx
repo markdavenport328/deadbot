@@ -34,9 +34,12 @@ const NEWCASTLE = { id: "gd-1972-04-11", date: "1972-04-11", venue: "City Hall",
 // Tracks arrive in the record's own order, not date order.
 const BOX = [
   track(1, "Truckin'", NEWCASTLE),
-  track(2, "Jack Straw", LONDON),
-  track(3, "Sugaree", LONDON),
-  track(4, "Tuning Rap", null)
+  track(2, "Ramble On Rose", NEWCASTLE),
+  track(3, "Bertha", NEWCASTLE),
+  track(4, "Jack Straw", LONDON),
+  track(5, "Sugaree", LONDON),
+  track(6, "Tennessee Jed", LONDON),
+  track(7, "Tuning Rap", null)
 ];
 
 function Probe() {
@@ -59,8 +62,12 @@ describe("a multi-show record's tracklist", () => {
   it("groups tracks by night in date order, with tracks from no show last", () => {
     const groups = groupByNight(BOX)!;
     expect(groups.nights.map((night) => night.key)).toEqual([LONDON.id, NEWCASTLE.id]);
-    expect(groups.nights[0].tracks.map((item) => item.title)).toEqual(["Jack Straw", "Sugaree"]);
+    expect(groups.nights[0].tracks.map((item) => item.title)).toEqual(["Jack Straw", "Sugaree", "Tennessee Jed"]);
     expect(groups.other.map((item) => item.title)).toEqual(["Tuning Rap"]);
+  });
+
+  it("leaves a compilation of a song or two per night as a plain tracklist", () => {
+    expect(groupByNight([track(1, "A", LONDON), track(2, "B", NEWCASTLE), track(3, "C", NEWCASTLE)])).toBeNull();
   });
 
   it("leaves a single-show or studio record as a plain tracklist", () => {
@@ -73,7 +80,7 @@ describe("a multi-show record's tracklist", () => {
     const rows = screen.getAllByRole("listitem");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Apr 7, 1972");
-    expect(rows[0]).toHaveTextContent("Empire Pool, London · 2 tracks");
+    expect(rows[0]).toHaveTextContent("Empire Pool, London · 3 tracks");
     expect(rows[2]).toHaveTextContent("Other tracks");
   });
 
@@ -88,13 +95,16 @@ describe("a multi-show record's tracklist", () => {
   it("plays a night's tape as that night's queue", () => {
     renderNights(BOX);
     fireEvent.click(screen.getByRole("button", { name: /Play Apr 11, 1972/ }));
-    expect(screen.getByTestId("queue").textContent).toBe("Truckin'");
+    expect(screen.getByTestId("queue").textContent).toBe("Truckin'|Ramble On Rose|Bertha");
     fireEvent.click(screen.getByRole("button", { name: /Play Apr 7, 1972/ }));
-    expect(screen.getByTestId("queue").textContent).toBe("Jack Straw|Sugaree");
+    expect(screen.getByTestId("queue").textContent).toBe("Jack Straw|Sugaree|Tennessee Jed");
   });
 
   it("offers no play for a night without tape", () => {
-    renderNights([track(1, "A", LONDON, false), track(2, "B", NEWCASTLE)]);
+    renderNights([
+      track(1, "A", LONDON, false), track(2, "B", LONDON, false), track(3, "C", LONDON, false),
+      track(4, "D", NEWCASTLE), track(5, "E", NEWCASTLE), track(6, "F", NEWCASTLE)
+    ]);
     expect(screen.queryByRole("button", { name: /Play Apr 7, 1972/ })).toBeNull();
     expect(screen.getByRole("button", { name: /Play Apr 11, 1972/ })).toBeInTheDocument();
   });

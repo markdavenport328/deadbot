@@ -1542,11 +1542,14 @@ def resolve_item(
 
 
 def _spans_nights(context: dict[str, Any], store: CanonicalStore) -> bool:
-    """Whether a release's tracks come from more than one show."""
+    """Whether a release is a box of whole nights: several shows, about three tracks or more each.
+
+    A compilation drawing a song or two from many nights is not.
+    """
 
     ids = {track["performance_id"] for track in context.get("tracks", []) if track.get("performance_id")}
-    shows = {row.get("show_id") for row in store.rows_in("performances", "performance_id", ids)} if ids else set()
-    return len(shows - {None, ""}) > 1
+    shows = {row.get("show_id") for row in store.rows_in("performances", "performance_id", ids)} - {None, ""} if ids else set()
+    return len(shows) > 1 and len(ids) >= 3 * len(shows)
 
 
 # The ID field of each record unit, which a ``from_result`` fills row by row.

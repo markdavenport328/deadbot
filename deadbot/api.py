@@ -545,6 +545,8 @@ def create_app(
         """
 
         _enforce_rate_limit(http_request, grid=True)
+        if len(row_id) > 200 or (scope and len(scope) > 200):
+            raise HTTPException(status_code=404, detail="The library has no such record.")
         detail = row_details.row_detail(app.state.store, row_id, scope)
         if detail is None:
             raise HTTPException(status_code=404, detail="The library has no such record.")

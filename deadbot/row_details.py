@@ -41,7 +41,7 @@ _KINDS: dict[str, tuple[RowKind, str, str]] = {
     "venue-": ("venue", "venues", "venue_id"),
     "release-": ("release", "official_releases", "release_id"),
 }
-_YEAR = re.compile(r"\d{4}")
+_YEAR = re.compile(r"[0-9]{4}")
 
 
 def row_kind(row_id: str | None) -> RowKind | None:
@@ -115,7 +115,17 @@ def chart_openings(store: CanonicalStore, payload: dict[str, Any]) -> tuple[list
     """Which of a chart's rows open, and the song its years belong to."""
 
     ids, is_years = _dimension_ids(payload)
+    if is_years and _narrowed_beyond_a_song(payload):
+        # A year bar counting one guest's or one venue's nights would open to
+        # the whole year's count; those years stay plain.
+        return [], None
     return openable_ids(store, ids), (open_scope(store, payload) if is_years else None)
+
+
+def _narrowed_beyond_a_song(payload: dict[str, Any]) -> bool:
+    query = payload.get("query") if isinstance(payload.get("query"), dict) else {}
+    filters = query.get("filters") if isinstance(query.get("filters"), dict) else {}
+    return any(value not in (None, "", [], False) for key, value in filters.items() if key not in {"song_id", "year_from", "year_to", "exclude_song_ids", "fill_missing"})
 
 
 # --- Shared pieces -----------------------------------------------------------

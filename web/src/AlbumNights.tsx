@@ -32,7 +32,9 @@ export function groupByNight(tracks: AlbumTrack[]): { nights: Night[]; other: Al
     night.tracks.push(track);
     nights.set(track.show_id, night);
   }
-  if (nights.size < 2) return null;
+  // A box of whole nights, not a compilation drawing a song or two from each.
+  const placed = tracks.length - other.length;
+  if (nights.size < 2 || placed < 3 * nights.size) return null;
   const ordered = [...nights.values()].sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"));
   return { nights: ordered, other };
 }

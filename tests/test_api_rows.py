@@ -163,3 +163,18 @@ def test_a_question_from_an_opened_row_names_where_it_came_from(store):
     note = focus_note(focus, known)
     assert "a name they opened in a roster" in note
     assert "person-ned-lagin" in note
+
+
+def test_years_of_a_chart_narrowed_to_a_guest_stay_plain():
+    from deadbot import row_details
+    from deadbot.data import CanonicalStore
+
+    store = CanonicalStore()
+    payload = {"query": {"group_by": "year", "filters": {"guest_id": "person-branford-marsalis"}}, "rows": [{"year": 1990, "value": 5}]}
+    assert row_details.chart_openings(store, payload) == ([], None)
+
+
+def test_a_year_pattern_reads_ascii_digits_only():
+    from deadbot import row_details
+
+    assert row_details.row_kind("１９７２") is None

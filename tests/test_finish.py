@@ -1873,3 +1873,10 @@ def test_a_live_box_card_always_carries_its_nights(csv_store):
     )
     block, _ = finish._resolve_reference(studio, grounded, payloads, csv_store)
     assert block is not None and block.tracks == []
+
+
+def test_a_compilation_of_single_tracks_is_not_a_box(csv_store):
+    context = csv_store.album_context(csv_store.resolve_release("release-thankfully-grateful-2024"))
+    assert not finish._spans_nights(context, csv_store)
+    box = csv_store.album_context(csv_store.resolve_release("release-europe-72-the-complete-recordings-2011"))
+    assert finish._spans_nights(box, csv_store)
