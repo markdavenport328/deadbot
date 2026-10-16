@@ -83,7 +83,7 @@ def ranked_list_block(
     for position, row in enumerate(shown, start=1):
         if not isinstance(row, dict) or not isinstance(row.get("value"), int) or row.get(key) is None:
             continue
-        row_id = row.get("id") if isinstance(row.get("id"), str) else None
+        row_id = row.get("id") if isinstance(row.get("id"), str) else (str(row["year"]) if key == "year" else None)
         label = str(row[key])
         ranked.append(RankedListRow(rank=position, id=row_id, label=label, value=row["value"], note=row_notes.get(row_id or "") or row_notes.get(label)))
     if not ranked:

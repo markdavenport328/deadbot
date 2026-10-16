@@ -150,6 +150,22 @@ def test_a_ranked_list_takes_its_rows_and_counts_from_the_aggregation():
     assert [row.label for row in block.rows] == [row["label"] for row in payload["rows"][:5]]
     assert [row.value for row in block.rows] == [row["value"] for row in payload["rows"][:5]]
     assert block.rows[0].note == "The workhorse." and block.more_count >= 5
+    # Each song row names a song the library holds, so each opens.
+    assert all(row.opens for row in block.rows)
+
+
+def test_a_chart_and_a_ranked_list_of_guests_open_their_rows():
+    store = CanonicalStore()
+    payload = json.loads(_tool(store, "aggregate_data").invoke({"dataset": "guest_appearances", "group_by": "guest", "measure": "count", "limit": 8}))
+    grounded = finish.grounded_context([payload])
+    chart, ranked = (
+        finish.validate_body_item({"type": "data_chart", "aggregation_id": payload["aggregation_id"], "title": "Who sat in"}, where="planned"),
+        finish.validate_body_item({"type": "ranked_list", "aggregation_id": payload["aggregation_id"]}, where="planned"),
+    )
+    (chart_block, ranked_block), _ = finish.resolve_items([chart, ranked], grounded, [payload], store)
+    ids = [row["id"] for row in payload["rows"]]
+    assert chart_block.open_ids == ids and all(row_id.startswith("person-") for row_id in ids)
+    assert all(row.opens for row in ranked_block.rows)
 
 
 def test_an_editorial_item_that_names_a_performance_plays_it():

@@ -558,7 +558,7 @@
       },
       "AskFocus": {
         "additionalProperties": false,
-        "description": "What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.\n\nThe browser reports it with the question; the server hands it to the model\nas a note and lets the IDs it names join the turn's grounded IDs.",
+        "description": "What the visitor was pointing at when they asked: a grid's cell, a year on a song's timeline, or an opened ranked row.\n\nThe browser reports it with the question; the server hands it to the model\nas a note and lets the IDs it names join the turn's grounded IDs.",
         "properties": {
           "block_id": {
             "maxLength": 200,
@@ -568,7 +568,10 @@
           "block_type": {
             "enum": [
               "grid",
-              "song_overview"
+              "song_overview",
+              "data_chart",
+              "ranked_list",
+              "person_roster"
             ],
             "title": "Block Type",
             "type": "string"
@@ -783,6 +786,25 @@
               }
             ],
             "title": "Note"
+          },
+          "open_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "title": "Open Ids",
+            "type": "array"
+          },
+          "open_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Scope"
           },
           "orientation": {
             "enum": [
@@ -3245,6 +3267,17 @@
             ],
             "title": "Note"
           },
+          "open_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Scope"
+          },
           "rows": {
             "items": {
               "$ref": "#/components/schemas/RankedListRow"
@@ -3303,6 +3336,11 @@
               }
             ],
             "title": "Note"
+          },
+          "opens": {
+            "default": false,
+            "title": "Opens",
+            "type": "boolean"
           },
           "rank": {
             "minimum": 1.0,
@@ -3445,6 +3483,130 @@
           "items"
         ],
         "title": "ResourceListBlock",
+        "type": "object"
+      },
+      "RowDetail": {
+        "additionalProperties": false,
+        "description": "What a ranked row, bar or roster name opens to: its record's key facts, one play, one question.",
+        "properties": {
+          "ask": {
+            "title": "Ask",
+            "type": "string"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/RowFact"
+            },
+            "title": "Facts",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "song",
+              "person",
+              "venue",
+              "release",
+              "year"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "play": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RowPlay"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "ask"
+        ],
+        "title": "RowDetail",
+        "type": "object"
+      },
+      "RowFact": {
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "value"
+        ],
+        "title": "RowFact",
+        "type": "object"
+      },
+      "RowPlay": {
+        "additionalProperties": false,
+        "description": "The one recording an opened row plays, chosen by the server from stored signals and tapes.",
+        "properties": {
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/PlayableTrack"
+            },
+            "minItems": 1,
+            "title": "Tracks",
+            "type": "array"
+          },
+          "venue_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venue Name"
+          },
+          "why": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Why"
+          }
+        },
+        "required": [
+          "show_id",
+          "show_date",
+          "tracks"
+        ],
+        "title": "RowPlay",
         "type": "object"
       },
       "SetlistSection": {
@@ -5155,6 +5317,62 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/api/rows/{row_id}": {
+      "get": {
+        "description": "What a ranked row, chart bar or roster name opens to; library facts only, no model call.\n\n``scope`` is the song a year chart counts, so its years open to that\nsong's year. It shares the grid's lookup limit and, like a song's\nyear, may be cached for an hour.",
+        "operationId": "row_detail_api_rows__row_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "row_id",
+            "required": true,
+            "schema": {
+              "title": "Row Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RowDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Row Detail"
       }
     },
     "/api/songs/{song_id}/years/{year}": {

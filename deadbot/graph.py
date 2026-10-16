@@ -264,7 +264,10 @@ venue_id); grouped by song, venue, city or guest it ranks them. For one song's
 years, a song_overview's by_year draws the same picture and lets the visitor hear it through your stops. A ranked_list shows the top rows of
 one aggregate_data result with its counts, and your notes on the rows that
 deserve one; it is where a ranking and your reading of its rows live
-together. A version_strip draws nights you
+together. Every bar, ranked row and roster name that is a song, person,
+venue, record or year opens in place to its facts, a recording to play and a
+question to ask, so a ranking of guests or songs carries the names itself and
+your words can say what the ranking shows. A version_strip draws nights you
 choose from one get_segue_pairing result to one clock, each row playing that
 night's two songs in turn, so the visitor can see and hear how the pairing
 grew. A grid draws one get_grid result: nights down the side and songs across,

@@ -23,7 +23,7 @@ from typing import Annotated, Any, Literal, get_args
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from deadbot import composition, grids, record_refs, sequences
+from deadbot import composition, grids, record_refs, row_details, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
@@ -1448,14 +1448,23 @@ def _resolve_reference(
             title=item.title,
             note=item.note,
         )
-        return (block, []) if block else (None, [])
+        if block is None:
+            return None, []
+        open_ids, scope = row_details.chart_openings(store, payload)
+        return block.model_copy(update={"open_ids": open_ids, "open_scope": scope}), []
 
     if kind == "ranked_list":
         payload = _find_aggregation_payload(payloads, item.aggregation_id)
         if payload is None:
             return None, []
         notes = {entry.key.strip(): entry.note.strip() for entry in item.notes if entry.key.strip() and entry.note.strip()}
-        return record_refs.ranked_list_block(payload, count=item.count, title=item.title, note=item.note, row_notes=notes), []
+        block = record_refs.ranked_list_block(payload, count=item.count, title=item.title, note=item.note, row_notes=notes)
+        if block is None:
+            return None, []
+        open_ids, scope = row_details.chart_openings(store, payload)
+        opens = set(open_ids)
+        rows = [row.model_copy(update={"opens": row.id in opens}) for row in block.rows]
+        return block.model_copy(update={"rows": rows, "open_scope": scope}), []
 
     if kind == "version_strip":
         block = sequences.version_strip_block(

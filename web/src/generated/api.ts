@@ -78,6 +78,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rows/{row_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Row Detail
+         * @description What a ranked row, chart bar or roster name opens to; library facts only, no model call.
+         *
+         *     ``scope`` is the song a year chart counts, so its years open to that
+         *     song's year. It shares the grid's lookup limit and, like a song's
+         *     year, may be cached for an hour.
+         */
+        get: operations["row_detail_api_rows__row_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/songs/{song_id}/years/{year}": {
         parameters: {
             query?: never;
@@ -297,7 +321,7 @@ export interface components {
         };
         /**
          * AskFocus
-         * @description What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.
+         * @description What the visitor was pointing at when they asked: a grid's cell, a year on a song's timeline, or an opened ranked row.
          *
          *     The browser reports it with the question; the server hands it to the model
          *     as a note and lets the IDs it names join the turn's grounded IDs.
@@ -309,7 +333,7 @@ export interface components {
              * Block Type
              * @enum {string}
              */
-            block_type: "grid" | "song_overview";
+            block_type: "grid" | "song_overview" | "data_chart" | "ranked_list" | "person_roster";
             /** Facts */
             facts?: string[];
             /** Ids */
@@ -399,6 +423,10 @@ export interface components {
             metric_label: string;
             /** Note */
             note?: string | null;
+            /** Open Ids */
+            open_ids?: string[];
+            /** Open Scope */
+            open_scope?: string | null;
             /**
              * Orientation
              * @enum {string}
@@ -1227,6 +1255,8 @@ export interface components {
             more_count: number;
             /** Note */
             note?: string | null;
+            /** Open Scope */
+            open_scope?: string | null;
             /** Rows */
             rows: components["schemas"]["RankedListRow"][];
             /** Title */
@@ -1245,6 +1275,11 @@ export interface components {
             label: string;
             /** Note */
             note?: string | null;
+            /**
+             * Opens
+             * @default false
+             */
+            opens: boolean;
             /** Rank */
             rank: number;
             /** Value */
@@ -1293,6 +1328,49 @@ export interface components {
              * @enum {string}
              */
             type: "resource_list";
+        };
+        /**
+         * RowDetail
+         * @description What a ranked row, bar or roster name opens to: its record's key facts, one play, one question.
+         */
+        RowDetail: {
+            /** Ask */
+            ask: string;
+            /** Facts */
+            facts?: components["schemas"]["RowFact"][];
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "song" | "person" | "venue" | "release" | "year";
+            play?: components["schemas"]["RowPlay"] | null;
+            /** Title */
+            title: string;
+        };
+        /** RowFact */
+        RowFact: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
+        /**
+         * RowPlay
+         * @description The one recording an opened row plays, chosen by the server from stored signals and tapes.
+         */
+        RowPlay: {
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+            /** Tracks */
+            tracks: components["schemas"]["PlayableTrack"][];
+            /** Venue Name */
+            venue_name?: string | null;
+            /** Why */
+            why?: string | null;
         };
         /** SetlistSection */
         SetlistSection: {
@@ -1937,6 +2015,39 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    row_detail_api_rows__row_id__get: {
+        parameters: {
+            query?: {
+                scope?: string | null;
+            };
+            header?: never;
+            path: {
+                row_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RowDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
