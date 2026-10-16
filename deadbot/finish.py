@@ -397,8 +397,9 @@ _DISCLOSURE_DESCRIPTION = (
 
 
 def _from_result_description(record: str, column: str) -> str:
+    albums = " (or of a get_album result of a live release, whose rows are its nights)" if column == "show_id" else ""
     return (
-        f"Instead of one {column}: the result_id of a look_up result, or the aggregation_id of an aggregate_data "
+        f"Instead of one {column}: the result_id of a look_up result{albums}, or the aggregation_id of an aggregate_data "
         f"result, whose rows carry {column}. The server makes one {record} card per row, in the result's order, each with "
         "this item's emphasis, disclosure and facets; this item's title and note speak for the whole set and appear once, above the cards. "
         f"The cards already include every row. To give particular {record}s a note of their own, name each by its {column} in place of from_result."

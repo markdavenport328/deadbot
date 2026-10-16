@@ -74,7 +74,7 @@ def test_live_box_set_names_its_tour_right_after_the_release(album):
     payload = album(release_id_or_title=BOX)
     assert list(payload)[:2] == ["release", "tour"]
     assert payload["tour"]["names"] == ["Europe 1972"]
-    assert "look_up" in payload["tour"]["nights"] and "get_grid" in payload["tour"]["nights"]
+    assert "from_result" in payload["tour"]["nights"] and "get_grid" in payload["tour"]["nights"]
 
 
 def test_studio_album_has_no_tour_pointer(album):
@@ -107,3 +107,19 @@ def test_a_release_keeps_the_partial_date_its_source_gives(album):
     payload = album(release_id_or_title="release-dicks-picks-volume-32-1982-08-07")
     assert payload["release"]["release_date"]
     assert "notes" not in payload["release"]
+
+
+def test_from_result_on_an_album_lays_out_its_nights_in_date_order(album):
+    from deadbot import finish
+
+    for release, count in ((BOX, 22), ("release-dicks-picks-volume-4-fillmore-east-1996", 2)):
+        payload = album(release_id_or_title=release)
+        assert payload["result_id"] == f"album:{release}"
+        item = finish.validate_body_item(
+            {"type": "show_unit", "from_result": payload["result_id"], "disclosure": "collapsed"}, where="planned"
+        )
+        rows = finish.expand_item(item, [payload])
+        dates = [show["show_date"] for show in payload["contents"]["shows"]]
+        assert len(rows) == count and dates == sorted(dates)
+        assert [row.show_id for row in rows] == [show["show_id"] for show in payload["contents"]["shows"]]
+    assert "from_result" in payload["on_the_page"]

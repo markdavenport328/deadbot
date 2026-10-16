@@ -23,12 +23,18 @@ _AGGREGATION_ID_COLUMNS = {"song": "song_id", "venue": "venue_id", "guest": "per
 def result_ids(payloads: list[dict[str, Any]], result_id: str, column: str) -> list[str]:
     """The ``column`` IDs in one tool result this turn, in its row order, without repeats.
 
-    ``result_id`` names a look_up result (its ``result_id``) or an
-    aggregate_data result (its ``aggregation_id``).
+    ``result_id`` names a look_up result (its ``result_id``), an
+    aggregate_data result (its ``aggregation_id``) or a get_album result of a
+    live release (its ``result_id``), whose show_id rows are its nights.
     """
 
     for payload in payloads:
-        if payload.get("result_id") == result_id:
+        if payload.get("result_id") == result_id and isinstance(payload.get("contents"), dict):
+            # A get_album result: the release's nights, already in date order.
+            if column != "show_id":
+                return []
+            values = [row.get("show_id") for row in payload["contents"].get("shows") or [] if isinstance(row, dict)]
+        elif payload.get("result_id") == result_id:
             columns, rows = payload.get("columns"), payload.get("rows")
             if not isinstance(columns, list) or not isinstance(rows, list) or column not in columns:
                 return []
