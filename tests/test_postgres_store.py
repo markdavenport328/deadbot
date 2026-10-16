@@ -821,21 +821,21 @@ def test_aggregate_total_count_by_song_still_equals_all_performances_on_real_dat
     assert pg_payload["total"] == len(real_csv_store.rows("performances"))
 
 
-# ---- setlist_coverage (Task A / A4) ----------------------------------------
+# ---- setlist_counts (Task A / A4) ----------------------------------------
 
 
-def test_setlist_coverage_appears_only_on_performances_results(real_store, real_csv_store):
+def test_setlist_counts_appears_only_on_performances_results(real_store, real_csv_store):
     performances_request = aggregation.AggregationRequest(
         dataset="performances", group_by="year", measure="count", limit=50,
     )
     payload = real_store.aggregate(performances_request).to_payload()
     assert payload == real_csv_store.aggregate(performances_request).to_payload()
-    coverage = payload["setlist_coverage"]
-    assert coverage["shows_on_record"] > 0
-    assert 0 < coverage["shows_with_setlist"] <= coverage["shows_on_record"]
+    coverage = payload["setlist_counts"]
+    assert coverage["shows_played"] > 0
+    assert 0 < coverage["shows_with_setlist"] <= coverage["shows_played"]
     assert coverage["by_year"], "expected at least one year bucket"
     for entry in coverage["by_year"]:
-        assert entry["shows_with_setlist"] <= entry["shows_on_record"]
+        assert entry["shows_with_setlist"] <= entry["shows_played"]
     years = [entry["year"] for entry in coverage["by_year"]]
     assert years == sorted(years)
 
@@ -843,11 +843,11 @@ def test_setlist_coverage_appears_only_on_performances_results(real_store, real_
         other_request = aggregation.AggregationRequest(dataset=dataset, group_by=group_by, measure="count", limit=50)
         other_payload = real_store.aggregate(other_request).to_payload()
         assert other_payload == real_csv_store.aggregate(other_request).to_payload()
-        assert "setlist_coverage" not in other_payload
+        assert "setlist_counts" not in other_payload
 
 
-def test_setlist_coverage_ignores_song_id_and_show_id_filters(real_store, real_csv_store):
-    """setlist_coverage is computed over the show-level filters only
+def test_setlist_counts_ignores_song_id_and_show_id_filters(real_store, real_csv_store):
+    """setlist_counts is computed over the show-level filters only
     (venue_id/year/year_from/year_to); song_id/show_id don't change whether a
     setlist survives, so two requests differing only in song_id must report
     identical coverage."""
@@ -864,7 +864,7 @@ def test_setlist_coverage_ignores_song_id_and_show_id_filters(real_store, real_c
     assert base_payload == real_csv_store.aggregate(base).to_payload()
     other_payload = real_store.aggregate(other).to_payload()
     assert other_payload == real_csv_store.aggregate(other).to_payload()
-    assert base_payload["setlist_coverage"] == other_payload["setlist_coverage"]
+    assert base_payload["setlist_counts"] == other_payload["setlist_counts"]
 
 
 # ---- A3: LEFT JOIN dimension tables so a missing/blank dimension record ----

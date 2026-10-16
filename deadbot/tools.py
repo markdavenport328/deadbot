@@ -46,6 +46,7 @@ from deadbot.selection_signals import (
     stored_selection_entries,
 )
 from deadbot.site_search import SiteSearcher
+from deadbot.tours import matching_tours, normalize_tour
 from deadbot.source_reader import PageReader, default_reader
 
 
@@ -141,7 +142,7 @@ def _show_location(store: CanonicalStore, identifier: str) -> tuple[dict[str, st
             "latitude": float(latitude),
             "longitude": float(longitude),
             "timezone": "",
-            "source": "canonical venue coordinates",
+            "source": "venue coordinates",
         }
     else:
         query = ", ".join(
@@ -326,7 +327,7 @@ def _json(value: Any) -> str:
         ]
         payload["_truncated_note"] = (
             "This result was over the size ceiling, so the lists above were shortened. "
-            "To see the rest, narrow the request: a filter, a detail option, a smaller page, or a query_catalog query."
+            "To see the rest, narrow the request: a filter, a detail option, a smaller page, or a look_up."
         )
         text = _dumps(payload)
     return text
@@ -538,6 +539,51 @@ def _compact_performers(performers: list[dict[str, Any]]) -> list[dict[str, Any]
 
 # Selection-pipeline bookkeeping the model does not use to answer: the
 # signal's internal ID, how the evidence was collected and who identified it.
+_PARTIAL_DATE = re.compile(r"gives only '(\d{4}(?:-\d{2})?)'")
+
+
+def _without_notes(row: dict[str, Any]) -> dict[str, Any]:
+    """A stored row without its notes: those record how the row was gathered, not the music.
+
+    A release whose source gives only a year or month keeps that partial date,
+    which otherwise lives only in the note.
+    """
+
+    kept = {key: value for key, value in row.items() if key != "notes"}
+    if "release_date" in row and not row.get("release_date"):
+        if match := _PARTIAL_DATE.search(str(row.get("notes") or "")):
+            kept["release_date"] = match.group(1)
+    return kept
+
+
+_HOW_GATHERED = re.compile(
+    r"metadata|indexed|cataloged|normalized|not stored|no files|no post text|canonical|already cite|"
+    r"retained for|source linking|mapped|import",
+    re.IGNORECASE,
+)
+
+
+def _fan_notes(notes: Any) -> str:
+    """A stored note without the sentences that only say how the row was gathered."""
+
+    if not isinstance(notes, str):
+        return ""
+    sentences = re.split(r"(?<=[.;])\s+", notes.strip())
+    return " ".join(sentence for sentence in sentences if not _HOW_GATHERED.search(sentence)).strip()
+
+
+def _links_for_fans(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Link or recording rows with their notes reduced to what a fan would say."""
+
+    return [{**row, "notes": _fan_notes(row.get("notes"))} if isinstance(row, dict) and "notes" in row else row for row in rows]
+
+
+def _held_phrase(state: str) -> str:
+    """Why a signal was held back, in plain words ("multiple performances")."""
+
+    return state.removeprefix("held_").replace("_", " ").replace("canonical ", "")
+
+
 _SIGNAL_INTERNAL_FIELDS = frozenset({"signal_id", "resolution_state", "collection_state", "identity_state", "source_provenance"})
 
 
@@ -554,7 +600,7 @@ def _lean_signal(signal: dict[str, Any], *, song_id: str | None = None) -> dict[
     lean = {key: value for key, value in signal.items() if key not in _SIGNAL_INTERNAL_FIELDS}
     state = signal.get("resolution_state") or ""
     if state.startswith("held_"):
-        lean["held"] = state.removeprefix("held_").replace("_", " ")
+        lean["held"] = _held_phrase(state)
     performances = signal.get("candidate_performances")
     if isinstance(performances, list):
         lean["candidate_performances"] = []
@@ -631,16 +677,16 @@ def build_tools(
 
     @tool
     def search_entities(query: str) -> str:
-        """Find canonical songs, shows, people, equipment, venues, and official releases matching a user phrase.
+        """Find songs, shows, people, equipment, venues, and official releases matching a user phrase.
 
         Use this before other entity tools when an ID is unknown or ambiguous.
-        The people search covers the whole canonical people table, including
+        The people search covers everyone, including
         people who appear only in guest credits. Use search_guest_musicians
         when the distinction between a guest credit and the regular lineup is
         material. Returns stable IDs and display names only; it never searches
         the web. pathways lists the gathered lore for each result (resources,
         source trail, selections) or the research sites to search when
-        nothing is cataloged.
+        nothing is gathered.
         """
         words = query.casefold().split()
         stop_words = {"a", "an", "and", "at", "for", "in", "of", "on", "the", "to"}
@@ -732,7 +778,7 @@ def build_tools(
         performances they played on in set order with a note on what
         happened. That call also carries pathways: the gathered lore for
         each show (resources, source trail, selections) or the research
-        sites to search when nothing is cataloged. When the question is
+        sites to search when nothing is gathered. When the question is
         about a specific guest, ask for include=["appearances"] in the same
         call rather than looking the guest up twice.
         """
@@ -928,15 +974,15 @@ def build_tools(
 
     @tool
     def search_stored_resources(query: str) -> str:
-        """Search all locally cataloged external links and their provenance notes.
+        """Search the stored links to interviews, oral histories and articles, with their notes.
 
         This is the broadest local route to interviews, oral histories,
         eyewitness accounts, official features, song history, release context,
-        and other anecdotal material already cataloged for Grateful Dead topics.
-        It searches resource title, creator, source, type, and catalog notes;
+        and other anecdotal material already gathered for Grateful Dead topics.
+        It searches each link's title, creator, source, type and notes;
         results identify their song, show, or performance relationships when
-        known. Returned links are metadata and source descriptions, not the
-        source text or proof of a claim beyond that description.
+        known. Returned links come with their descriptions, not the
+        source text, and prove nothing beyond that description.
         """
         needle = query.casefold().strip()
         if not needle:
@@ -987,7 +1033,7 @@ def build_tools(
                         "creator": resource.get("creator") or None,
                         "source_name": resource.get("source_name"),
                         "url": resource["source_url"],
-                        "notes": resource.get("notes") or None,
+                        "notes": _fan_notes(resource.get("notes")) or None,
                         "song_ids": song_ids_by_resource.get(resource_id, []),
                         "show_ids": show_ids_by_resource.get(resource_id, []),
                         "performance_ids": performance_ids_by_resource.get(resource_id, []),
@@ -1001,7 +1047,7 @@ def build_tools(
         resources = [item[2] for item in scored]
         payload = {
             "query": query,
-            "note": "Matching cataloged resource metadata; source text is not retrieved.",
+            "note": "Matching links with their titles and notes; the pages themselves were not read.",
             "match_count": len(resources),
             "resources": resources[:_RESOURCE_RESULT_CAP],
         }
@@ -1029,7 +1075,7 @@ def build_tools(
         earliest first. `resources` are articles, essays and interviews about
         it, attributed to their sources. pathways lists the gathered lore
         (resources, source trail, selections) or the research sites to search
-        when nothing is cataloged.
+        when nothing is gathered.
         """
         from deadbot.composition import _song_years
 
@@ -1120,7 +1166,10 @@ def build_tools(
         """Get one song's life on stage: each year in brief and the performances that stand out.
 
         Use it to build a song_overview timeline (visible_facets with by_year)
-        or to answer how a song changed over the years. `years` gives each
+        or to answer how a song changed over the years. The timeline already
+        draws the yearly counts, so your words go to what they mean; its stops
+        are how the visitor hears the song's life, so choose three or four
+        nights that mark its turns, for a counting question too. `years` gives each
         year's count, typical minutes and longest performance. `standouts`
         groups the performances that stand out by kind (firsts and lasts,
         longest, picks of the performance and of its show with who made them,
@@ -1205,7 +1254,7 @@ def build_tools(
         next_offset = start + len(page)
         return _json(
             {
-                "song": context["song"],
+                "song": _without_notes(context["song"]),
                 "performance_count": len(performances),
                 "offset": start,
                 "limit": page_size,
@@ -1216,6 +1265,41 @@ def build_tools(
 
     _ALBUM_DETAILS = ("live_legacy", "tracks")
 
+    _NIGHTS_CEILING = 60_000
+    _NIGHT_PREVIEW = 5
+
+    def _group_tracks_by_night(payload: dict[str, Any], tracks: list[dict[str, Any]], show_of) -> None:
+        """A multi-show release's tracks, night by night and compact, inside the result ceiling."""
+
+        def compact(track: dict[str, Any]) -> dict[str, Any]:
+            return {
+                "track_number": track.get("track_number"),
+                "title": track.get("song_title") or track.get("title", ""),
+                "performance_id": track.get("performance_id"),
+                "duration_seconds": track.get("duration_seconds"),
+            }
+
+        nights = []
+        for entry in payload["contents"]["shows"]:
+            own = [compact(track) for track in tracks if show_of(track) == entry["show_id"]]
+            nights.append({**entry, "tracks": own})
+        # Studio cuts and unplaced material belong to no night but are still on the record.
+        unplaced = [compact(track) for track in tracks if not show_of(track)]
+        if unplaced:
+            payload["tracks_without_a_show"] = unplaced
+        summarized = _RESULT_CEILING.get() is not None and len(_dumps(nights)) > _NIGHTS_CEILING
+        if summarized:
+            for night in nights:
+                night["tracks"] = night["tracks"][:_NIGHT_PREVIEW]
+        payload["nights"] = nights
+        shown = "the first %d tracks of each night" % _NIGHT_PREVIEW if summarized else "every track"
+        elsewhere = "; tracks from no known show are listed after the nights" if unplaced else ""
+        payload["tracks_note"] = (
+            f"Tracks are grouped by night ({shown}{elsewhere}; Spotify links left out). "
+            + ("This box is too long to list in full: " if summarized else "")
+            + 'get_album with show="<show_id>" gives one night\'s full tracklist with Spotify links.'
+        )
+
     @tool
     def get_album(release_id_or_title: str, include: list[str] | None = None, show: str | None = None) -> str:
         """Get one official release: a summary first, with detail on request.
@@ -1223,7 +1307,9 @@ def build_tools(
         The summary names the release, its date and type, and what is on it:
         for a live release the shows its tracks come from (date, venue, how many
         tracks); for a studio album its songs. It carries the IDs you need to
-        place the album, its shows or its songs on the page. `available` lists
+        place the album, its shows or its songs on the page. A live box
+        from one tour names that tour, so its nights can become show rows and a
+        grid. `available` lists
         what the summary left out and how to ask for it. Ask only for what your
         answer will use:
         - include=["tracks"]: the full tracklist (each track's song or
@@ -1231,8 +1317,10 @@ def build_tools(
           narrows it to one show's tracks on a multi-show release.
         - include=["live_legacy"]: each song's life on stage (count, span, count
           by era, the performances most often issued on official live records).
+        `contents.tracks_without_a_show` counts tracks that come from no known show
+        (studio cuts, unplaced material); the rest are counted under their show.
         pathways lists the gathered lore for the release or the research sites
-        to search when nothing is cataloged.
+        to search when nothing is gathered.
         """
         release = store.resolve_release(release_id_or_title)
         if not release:
@@ -1255,7 +1343,7 @@ def build_tools(
             return performances.get(track.get("performance_id") or "", {}).get("show_id", "")
 
         payload: dict[str, Any] = {
-            "release": context["release"],
+            "release": _without_notes(context["release"]),
             "track_count": len(tracks),
             "personnel": context.get("personnel", []),
         }
@@ -1269,6 +1357,28 @@ def build_tools(
                 if show_of(track):
                     counts[show_of(track)] = counts.get(show_of(track), 0) + 1
             ordered = sorted(counts, key=lambda show_id: (shows[show_id].get("show_date", ""), show_id))
+            # A box from one tour is that tour; a compilation drawing a track
+            # from many tours is not, so it gets no tour pointer.
+            tour_counts: dict[str, int] = {}
+            for show_id in ordered:
+                if name := shows[show_id].get("tour_name"):
+                    tour_counts[name] = tour_counts.get(name, 0) + 1
+            leading = max(tour_counts, key=tour_counts.get) if tour_counts else ""
+            tours = [leading] if leading and tour_counts[leading] * 5 >= len(ordered) * 4 else []
+            if len(ordered) > 1 and tours:
+                # Right after the release, where the order steers the page.
+                payload = {
+                    "release": payload.pop("release"),
+                    "tour": {
+                        "names": tours,
+                        "nights": (
+                            "To show what is on this box, lay out the tour night by night: look_up shows with "
+                            "tour=<name> gives the nights as collapsed show rows (a show_unit from_result), and "
+                            "get_grid (show by song, tour=<name>, columns=the songs that define the tour) gives them across the nights."
+                        ),
+                    },
+                    **payload,
+                }
             payload["contents"] = {
                 "shows": [
                     {
@@ -1276,11 +1386,12 @@ def build_tools(
                         "show_date": shows[show_id].get("show_date", ""),
                         "venue_name": venues.get(shows[show_id].get("venue_id", ""), {}).get("name", ""),
                         "city": venues.get(shows[show_id].get("venue_id", ""), {}).get("city", ""),
+                        "tour": shows[show_id].get("tour_name", ""),
                         "track_count": counts[show_id],
                     }
                     for show_id in ordered
                 ],
-                "unattributed_track_count": len(tracks) - sum(counts.values()),
+                "tracks_without_a_show": len(tracks) - sum(counts.values()),
             }
         else:
             titles = {track["song_id"]: track.get("song_title") or track.get("title", "") for track in tracks if track.get("song_id")}
@@ -1294,12 +1405,10 @@ def build_tools(
                     return _json({"error": "Show not on this release", "shows": [entry["show_date"] for entry in payload["contents"].get("shows", [])]})
                 show_id = resolved["show_id"]
                 payload["tracks"] = [track for track in tracks if show_of(track) == show_id]
+            elif len(payload["contents"].get("shows", [])) > 1:
+                _group_tracks_by_night(payload, tracks, show_of)
             else:
                 payload["tracks"] = tracks
-                if len(payload["contents"].get("shows", [])) > 1:
-                    payload["tracks_note"] = (
-                        f'narrow to one show with show="{payload["contents"]["shows"][0]["show_date"]}"'
-                    )
         if "live_legacy" in wanted:
             payload["live_legacy"] = _album_live_legacy(song_ids)
             payload["live_legacy_note"] = (
@@ -1392,7 +1501,10 @@ def build_tools(
         song = store.resolve_song(song_id_or_title)
         if not song:
             return _json({"error": "Song not found or ambiguous", "query": song_id_or_title})
-        return _json(store.song_performance_profile(song))
+        profile = store.song_performance_profile(song)
+        if isinstance(profile.get("song"), dict):
+            profile = {**profile, "song": _without_notes(profile["song"])}
+        return _json(profile)
 
     def _versions_with_signals(song: dict[str, str]) -> dict[str, Any]:
         """Every rendition of one song that a source singled out, with the sources.
@@ -1474,7 +1586,7 @@ def build_tools(
             signal = {
                 "source": entry.get("source"),
                 "signal_type": entry.get("signal_type"),
-                "held": (entry.get("resolution_state") or "").removeprefix("held_").replace("_", " ") if str(entry.get("resolution_state") or "").startswith("held_") else None,
+                "held": _held_phrase(entry["resolution_state"]) if str(entry.get("resolution_state") or "").startswith("held_") else None,
                 "label": entry.get("selection_label") or entry.get("source_label") or entry.get("title"),
                 "source_url": entry.get("source_url"),
             }
@@ -1506,7 +1618,7 @@ def build_tools(
             if item["performance_id"] in lengths:
                 item["length_seconds"] = lengths[item["performance_id"]]
         return {
-            "song": context["song"],
+            "song": _without_notes(context["song"]),
             "performance_count": len(performances),
             "versions": ordered,
             "signal_summary": {
@@ -1541,7 +1653,7 @@ def build_tools(
         if total > cap:
             payload["note"] = f"Showing {cap} of {total} versions with a source; raise limit for more."
         payload["coverage_note"] = (
-            "Sources are official releases and reviewed selection evidence, not a ranking."
+            "Sources are official releases and the selections of critics, curators and fans, not a ranking."
         )
         return _json(payload)
 
@@ -1599,8 +1711,7 @@ def build_tools(
                 "signal_count": len(matched),
                 "selection_signals": matched,
                 "coverage_note": (
-                    "Reviewed, source-attributed signals only; absence means no reviewed source in the "
-                    "library named it, not that it is unremarkable."
+                    "Source-attributed signals only; no signal here means no source we read named it, not that it is unremarkable."
                 ),
             }
         )
@@ -1655,19 +1766,18 @@ def build_tools(
                 "selection_signals": matched,
                 "show_selections": picks,
                 "coverage_note": (
-                    "Reviewed, source-attributed signals only; absence means no reviewed source in the "
-                    "library named it, not that it is unremarkable."
+                    "Source-attributed signals only; no signal here means no source we read named it, not that it is unremarkable."
                 ),
             }
         )
 
     @tool
     def get_deadnet_song_context(song_id_or_title: str) -> str:
-        """Find the reviewed Dead.net metadata page for one canonical song.
+        """Find the reviewed Dead.net page for one song.
 
         Use after resolving a song when an outside editorial or lyric/source
         trail could make an answer more useful. This tool returns only a
-        title, link, and short page metadata for the main panel; it does not
+        title, link, and short page summary for the main panel; it does not
         retrieve article text, lyrics, audio, or a verdict about the song.
         Do not use it for every direct factual question.
         """
@@ -1679,9 +1789,9 @@ def build_tools(
                 {
                     "research": {
                         "state": "unavailable",
-                        "coverage": "metadata_only",
+                        "coverage": "links_only",
                         "source": "dead.net",
-                        "message": "The reviewed Dead.net metadata adapter is not enabled.",
+                        "message": "The reviewed Dead.net source is not enabled.",
                     }
                 }
             )
@@ -1720,18 +1830,18 @@ def build_tools(
     # reached through stored links, get_deadnet_song_context, and read_page.
 
     @tool
-    def get_deadcast_metadata(episode_id_or_slug: str) -> str:
-        """Read metadata for one official Deadcast episode.
+    def get_deadcast_episode(episode_id_or_slug: str) -> str:
+        """Read the title, link and short summary of one official Deadcast episode.
 
-        Returns only the episode title, link, and short page metadata. It never
+        Returns only the episode title, link, and short summary. It never
         retrieves or returns transcript, article body, or audio content.
         Use a slug or identifier from an official Deadcast link.
         """
         identifier = episode_id_or_slug.strip()
         if not identifier:
-            return _json({"research": {"state": "invalid", "coverage": "metadata_only", "source": "dead.net", "message": "An episode identifier is required."}})
+            return _json({"research": {"state": "invalid", "coverage": "links_only", "source": "dead.net", "message": "An episode identifier is required."}})
         if deadcast_adapter is None:
-            return _json({"research": {"state": "unavailable", "coverage": "metadata_only", "source": "dead.net", "message": "The reviewed Deadcast metadata adapter is not enabled."}})
+            return _json({"research": {"state": "unavailable", "coverage": "links_only", "source": "dead.net", "message": "The reviewed Deadcast source is not enabled."}})
         result = deadcast_adapter.read(EntityReadRequest(entity_type=EntityType.DEADCAST, identifier=identifier))
         return _json({
             "research": {
@@ -1751,12 +1861,12 @@ def build_tools(
 
     @tool
     def get_lore_source_trails(entity_type: _SongOrShowArg, entity_id_or_name: str) -> str:
-        """Return reviewed, metadata-only lore links for one canonical song or show.
+        """Return reviewed lore links (links only, no text) for one song or show.
 
         Use after resolving an entity when the visitor's question invites
         history, evolution, reputation, or show-context color. This offline
-        catalog supplies source titles, URLs, themes, and why-to-open hints;
-        it does not contain source text or canonical facts. Use the canonical
+        list supplies source titles, URLs, themes, and why-to-open hints;
+        it does not contain source text or show facts. Use the show and song
         tools for the direct answer first, and treat linked editorial claims
         as attributed until separately researched.
         """
@@ -1765,9 +1875,9 @@ def build_tools(
         elif entity_type == "show":
             entity = store.resolve_show(entity_id_or_name)
         else:
-            return _json({"research": {"state": "invalid", "coverage": "metadata_only", "records": [], "message": "entity_type must be song or show."}})
+            return _json({"research": {"state": "invalid", "coverage": "links_only", "records": [], "message": "entity_type must be song or show."}})
         if not entity:
-            return _json({"research": {"state": "empty", "coverage": "metadata_only", "records": [], "message": "Canonical entity not found or ambiguous.", "query": entity_id_or_name}})
+            return _json({"research": {"state": "empty", "coverage": "links_only", "records": [], "message": "Song or show not found or ambiguous.", "query": entity_id_or_name}})
         entity_id = entity["song_id"] if entity_type == "song" else entity["show_id"]
         result = source_trails_for_entity(entity_type, entity_id)
         return _json({"entity": {"entity_type": entity_type, "entity_id": entity_id}, "research": result})
@@ -1804,19 +1914,19 @@ def build_tools(
 
     @tool
     def get_show(show_id_or_date: str) -> str:
-        """Get a show's canonical data, lineup, named guitar/equipment claims, venue, setlist, recordings summary, and links.
+        """Get a show's details: lineup, named guitar/equipment claims, venue, setlist, recordings summary, and links.
 
         Each setlist entry says whether it has a playable track (audio_seconds
         gives its length); the page fills in the listening links itself.
 
-        Use a canonical show ID returned by another tool, or an unambiguous
+        Use a show ID returned by another tool, or an unambiguous
         date explicitly supplied by the visitor. Never use a date or show ID
         from model memory. For follow-up questions about who played,
         instruments, guests, or Jerry Garcia's named guitars, reuse the most
         recent retrieved show ID/date and call this tool before answering.
         pathways lists the gathered lore for each result (resources, source
         trail, selections) or the research sites to search when nothing is
-        cataloged.
+        gathered.
         """
         show = store.resolve_show(show_id_or_date)
         if not show:
@@ -1923,7 +2033,7 @@ def build_tools(
     def get_recording_reviews(recording: str, limit: int = 8) -> str:
         """Get archive.org listeners' reviews and star ratings for a recording or a show.
 
-        recording may be a canonical recording_id, an archive.org identifier,
+        recording may be a recording_id, an archive.org identifier,
         or a show ID or date such as 1977-05-08. For a show, the reviews come
         from its most-reviewed recording and every other recording's rating is
         listed too, so you can see which source listeners prefer and why.
@@ -2001,8 +2111,8 @@ def build_tools(
         opinion, history or musical character behind a question. Each site
         says how it can be searched (search_site) or, when it has no search,
         how to reach its pages with read_page. The list is a suggestion, not a
-        boundary: read_page opens any URL. Also describes the stored link
-        catalogs and reviewed metadata adapters.
+        boundary: read_page opens any URL. Also describes the stored links
+        and the reviewed sources.
         """
         try:
             registry = load_registry()
@@ -2015,7 +2125,7 @@ def build_tools(
                 "authority_level": source["authority_level"],
                 "access_state": source["access_state"],
                 "allowed_operations": source["allowed_operations"],
-                "retention_mode": source["retention_policy"].get("mode"),
+                "retention_mode": {"metadata_only": "links only"}.get(source["retention_policy"].get("mode"), source["retention_policy"].get("mode")),
                 "notes": source.get("notes"),
             }
             for source in registry
@@ -2040,14 +2150,14 @@ def build_tools(
                     "read_page": "Read any page's text; focus phrase and offset for long pages.",
                     "get_recording_reviews": "archive.org listener reviews and star ratings for a recording or show.",
                 },
-                "reviewed_metadata_adapters": sources,
+                "reviewed_sources": sources,
                 "stored_context_link_coverage": {
-                    "entity_scope": "specific canonical songs and shows only",
-                    "access": "metadata links only; source content is not in the library",
+                    "entity_scope": "specific songs and shows only",
+                    "access": "links only; the text of these sources is not stored",
                     "tool": "get_lore_source_trails",
                 },
-                "stored_resource_catalog": {
-                    "access": "searchable metadata and provenance notes for locally cataloged external links",
+                "stored_links": {
+                    "access": "searchable titles and notes for stored links to outside sources",
                     "tool": "search_stored_resources",
                 },
                 "selection_signal_coverage": {
@@ -2067,14 +2177,20 @@ def build_tools(
         context = store.performance_context(performance_id)
         if not context:
             return _json({"error": "Performance not found", "performance_id": performance_id})
+        context = dict(context)
+        if isinstance(context.get("song"), dict):
+            context["song"] = _without_notes(context["song"])
+        for key in ("links", "show_links", "recordings"):
+            if isinstance(context.get(key), list):
+                context[key] = _links_for_fans(context[key])
         return _json(context)
 
     @tool
     def get_media_links(entity_type: _ShowOrPerformanceArg, entity_id: str) -> str:
-        """Get listening and viewing links for a canonical show or performance.
+        """Get listening and viewing links for a show or performance.
 
-        For a show, use a canonical ID or unambiguous date such as 1972-08-27. URLs are external
-        link-outs; do not claim they prove facts beyond their stored metadata.
+        For a show, use a show ID or unambiguous date such as 1972-08-27. URLs are external
+        link-outs; do not claim they prove facts beyond their stored description.
         """
         if entity_type == "show":
             show = store.resolve_show(entity_id)
@@ -2082,7 +2198,7 @@ def build_tools(
                 return _json(_unresolved_show_payload(store, entity_id))
             show_id = show["show_id"]
             return _json(
-                {"show_id": show_id, "links": store.filtered_rows("show_links", show_id=show_id)}
+                {"show_id": show_id, "links": _links_for_fans(store.filtered_rows("show_links", show_id=show_id))}
             )
         if entity_type == "performance":
             if not store.performance_context(entity_id):
@@ -2090,16 +2206,16 @@ def build_tools(
             return _json(
                 {
                     "performance_id": entity_id,
-                    "links": store.filtered_rows(
+                    "links": _links_for_fans(store.filtered_rows(
                         "performance_links", performance_id=entity_id
-                    ),
+                    )),
                 }
             )
         return _json({"error": "entity_type must be 'show' or 'performance'"})
 
     @tool
     def get_historical_weather(show_id_or_date: str) -> str:
-        """Get historical weather for the venue and date of a canonical show.
+        """Get historical weather for the venue and date of a show.
 
         Use a show ID or an unambiguous show date such as 1972-08-27. The result
         comes from Open-Meteo's historical reanalysis, so it is an estimate for
@@ -2159,7 +2275,7 @@ def build_tools(
 
     @tool
     def get_astronomy(show_id_or_date: str) -> str:
-        """Get Sun and Moon events for the venue and date of a canonical show.
+        """Get Sun and Moon events for the venue and date of a show.
 
         Use a show ID or an unambiguous show date such as 1972-08-27. Returns
         local rise, set, transit, twilight, lunar phase, and illumination data
@@ -2213,7 +2329,7 @@ def build_tools(
 
     @tool
     def get_astrology(show_id_or_date: str) -> str:
-        """Get date-based Western zodiac context for a canonical show.
+        """Get date-based Western zodiac context for a show.
 
         Use a show ID or an unambiguous show date such as 1972-08-27. This is
         cultural/interpretive context based on the Sun's zodiac sign; astrology
@@ -2297,11 +2413,22 @@ def build_tools(
             )
         )
 
+    def _known_tours() -> list[str]:
+        return sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
+
+    def _stored_tour(tour: str) -> str:
+        """The stored tour name a fan's spelling means, or the spelling itself when it is not exactly one."""
+
+        found = matching_tours(_known_tours(), tour)
+        return found[0] if len(found) == 1 else tour
+
     def _closest_tours(tour: str) -> list[str]:
         """The library's tour names nearest a name the model gave (fans say "Europe '72")."""
 
-        known = sorted({row.get("tour_name", "") for row in store.rows("shows")} - {""})
-        return difflib.get_close_matches(tour, known, n=5, cutoff=0.4)
+        known = _known_tours()
+        by_form = {normalize_tour(name): name for name in known}
+        close = difflib.get_close_matches(normalize_tour(tour), list(by_form), n=5, cutoff=0.4)
+        return [by_form[form] for form in close]
 
     def _grid_rows(kind: str, rows: list[str], tour: str | None) -> list[str] | str:
         if kind == "song":
@@ -2335,7 +2462,7 @@ def build_tools(
                 return _json({"error": "Show not found or ambiguous", "query": missing})
             return [show["show_id"] for show in resolved if show]
         if tour:
-            found = sorted(store.rows_in("shows", "tour_name", [tour]), key=lambda row: row.get("show_date", ""))
+            found = sorted(store.rows_in("shows", "tour_name", [_stored_tour(tour)]), key=lambda row: row.get("show_date", ""))
             if not found:
                 return _json({"error": "No shows on that tour", "query": tour, "closest_tours": _closest_tours(tour)})
             return [row["show_id"] for row in found]
@@ -2351,6 +2478,8 @@ def build_tools(
             if not columns or None in years:
                 return _json({"error": "Give year columns as year_from and year_to, or as years"})
             return [grids.year_id(year) for year in years if year]
+        if not columns:
+            return _json({"error": "Name the songs as columns; the result then lists the songs on most of the nights to add"})
         resolved = [store.resolve_song(value) for value in columns]
         missing = [value for value, song in zip(columns, resolved) if not song]
         if missing:
@@ -2378,8 +2507,9 @@ def build_tools(
         tracks it spans. Guests across years (row_kind "guest", column_kind
         "year"): each cell is how many shows that guest sat in on that year.
         rows and columns take IDs, titles or names, in the order you want them.
-        For show rows, tour (a tour name) gathers that tour's nights in place
-        of rows; for year columns, year_from and year_to set the span. The
+        For show rows, tour (a tour name as fans say it: "Europe '72" works)
+        gathers that tour's nights in place of rows; look_up shows with
+        the same tour lays the nights out as show rows; for year columns, year_from and year_to set the span. The
         result carries a grid_id for a grid in finish_response, the filled
         cells as one compact table, and for nights or records the songs on most
         of them that are not yet columns.
@@ -2416,13 +2546,13 @@ def build_tools(
         limit: int = 20,
         fill_missing: bool = False,
     ) -> str:
-        """Count or group canonical Deadbot rows with a constrained, verified aggregation.
+        """Count or group shows, songs, performances and guest appearances with a constrained, verified aggregation.
 
         Only some dataset, group_by and measure combinations are valid; an
         invalid one returns an error naming what's wrong, not a guess.
 
-        Every ID filter (song_id, venue_id, guest_id, show_id) takes a
-        canonical ID only, never a name — resolve a name to an ID with
+        Every ID filter (song_id, venue_id, guest_id, show_id) takes an
+        ID only, never a name — resolve a name to an ID with
         search_entities or search_guest_musicians first. year, year_from,
         year_to filter by show year. exclude_song_ids (performances only)
         leaves the named songs out of the count entirely — the rows, the
@@ -2442,9 +2572,9 @@ def build_tools(
         question and reuse its aggregation_id rather than calling again with
         the same parameters.
 
-        A performances-dataset result also carries setlist_coverage: how many
-        shows are on record each year against how many of those have a
-        surviving setlist, so a performance count can be read against what
+        A performances-dataset result also carries setlist_counts: how many
+        shows were played each year against how many of those have a
+        known setlist, so a performance count can be read against what
         share of shows from that era could even show up in it.
         """
         filters = {
@@ -2515,7 +2645,7 @@ def build_tools(
         get_selections_for,
         get_selections_in,
         get_deadnet_song_context,
-        get_deadcast_metadata,
+        get_deadcast_episode,
         get_lore_source_trails,
         find_arrangements,
         get_equipment_history,
@@ -2539,7 +2669,7 @@ def build_tools(
     if callable(getattr(store, "run_catalog_query", None)):
 
         @tool
-        def query_catalog(
+        def look_up(
             name: str = "",
             song: str = "",
             venue: str = "",
@@ -2550,7 +2680,7 @@ def build_tools(
             limit: int = 25,
             sql: str = "",
         ) -> str:
-            """Find or list things across the catalog."""  # replaced below by catalog_tool_description()
+            """Find or list shows, songs and releases."""  # replaced below by catalog_tool_description()
             if not name and not sql:
                 return _json({"error": "Pass name (a listed query) or sql"})
             supplied = [
@@ -2573,7 +2703,7 @@ def build_tools(
             ]
             if missing:
                 return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
-            params: dict[str, Any] = {"venue": venue, "tour": tour, "limit": max(1, min(limit, 200))}
+            params: dict[str, Any] = {"venue": venue, "tour": _stored_tour(tour) if tour else "", "limit": max(1, min(limit, 200))}
             if song:
                 resolved = store.resolve_song(song)
                 if not resolved:
@@ -2592,15 +2722,21 @@ def build_tools(
             ignored = [key for key in supplied if key not in bound] + (["sql"] if sql else [])
             result = store.run_catalog_query(query.sql, bound, menu=True)
             payload = _with_row_units({"query": name, "result_id": _catalog_result_id(query.sql, bound), **result})
+            if "tour" in bound and tour and payload.get("rows"):
+                payload["tour_songs"] = (
+                    f'The songs across these nights fit one grid: get_grid (show by song, tour="{params["tour"]}").'
+                )
             if ignored:
                 payload["ignored"] = ignored
             if "tour" in bound and tour and not payload.get("rows"):
                 payload["closest_tours"] = _closest_tours(tour)
             return _json(payload)
 
-        query_catalog.description = catalog_tool_description()
-        tools.append(query_catalog)
+        look_up.description = catalog_tool_description()
+        tools.append(look_up)
     replayable = {item.name: item for item in tools}
+    if "look_up" in replayable:
+        replayable["query_catalog"] = replayable["look_up"]  # notebooks written before the rename
 
     def _notebook_result(entry: notebook.Entry, *, whole: bool = False) -> dict[str, Any]:
         """A stored web payload, or the canonical call run again against the library.

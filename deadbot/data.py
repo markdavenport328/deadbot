@@ -932,11 +932,11 @@ class CanonicalStore:
         else:  # distinct_songs
             total = len({fact["song_id"] for fact in included_facts if fact.get("song_id")})
 
-        setlist_coverage = None
+        setlist_counts = None
         if request.dataset == "performances":
-            setlist_coverage = self._setlist_coverage(shows_by_id, show_matches, show_year)
+            setlist_counts = self._setlist_counts(shows_by_id, show_matches, show_year)
 
-        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_coverage)
+        return aggregation.assemble_result(request, raw_rows, date_range, total, setlist_counts)
 
     def sequence_pairs(self, first_song_id: str, second_song_id: str) -> list[dict[str, str]]:
         """Nights song A was followed by song B in one set (see deadbot.sequences).
@@ -949,7 +949,7 @@ class CanonicalStore:
 
         return sequences.csv_sequence_pairs(self, first_song_id, second_song_id)
 
-    def _setlist_coverage(
+    def _setlist_counts(
         self,
         shows_by_id: dict[str, dict[str, str]],
         show_matches,
@@ -964,13 +964,13 @@ class CanonicalStore:
         show_ids_with_setlist = {
             performance["show_id"] for performance in self.rows("performances") if performance.get("show_id")
         }
-        shows_on_record = 0
+        shows_played = 0
         shows_with_setlist = 0
         by_year_counts: dict[int, list[int]] = {}
         for show in shows_by_id.values():
             if not show_matches(show):
                 continue
-            shows_on_record += 1
+            shows_played += 1
             has_setlist = show["show_id"] in show_ids_with_setlist
             if has_setlist:
                 shows_with_setlist += 1
@@ -982,8 +982,8 @@ class CanonicalStore:
             if has_setlist:
                 counts[1] += 1
 
-        return aggregation.build_setlist_coverage(
-            shows_on_record,
+        return aggregation.build_setlist_counts(
+            shows_played,
             shows_with_setlist,
             [(year, counts[0], counts[1]) for year, counts in by_year_counts.items()],
         )

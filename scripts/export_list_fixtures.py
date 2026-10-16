@@ -48,7 +48,7 @@ def main() -> None:
 
         fixtures: dict[str, tuple[str, list, dict]] = {}
 
-        releases = call("query_catalog", name="releases_covering_years", year_from=1972)
+        releases = call("look_up", name="releases_covering_years", year_from=1972)
         count = len(releases[2]["rows"])
         fixtures["releases1972"] = (
             "Which official releases cover 1972?",
@@ -61,7 +61,7 @@ def main() -> None:
             },
         )
 
-        shows = call("query_catalog", name="shows", year_from=1977)
+        shows = call("look_up", name="shows", year_from=1977)
         fixtures["shows1977"] = (
             "What shows did the Dead play in 1977?",
             [shows],
@@ -73,7 +73,7 @@ def main() -> None:
             },
         )
 
-        harrisburg = call("query_catalog", sql="SELECT show_id, show_date, venue_name, city FROM show_facts WHERE city = 'Harrisburg' ORDER BY show_date")
+        harrisburg = call("look_up", sql="SELECT show_id, show_date, venue_name, city FROM show_facts WHERE city = 'Harrisburg' ORDER BY show_date")
         fixtures["harrisburg"] = (
             "When did the Dead play Harrisburg PA?",
             [harrisburg],

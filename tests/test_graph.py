@@ -90,7 +90,7 @@ def test_prompt_requires_priority_actions_and_proportionate_scope():
     assert "perform an omission pass" not in prompt
     assert "avoid first-person singular" in prompt
     assert "each item's title names its subject" in prompt
-    assert "Song_overview units are the home for individual song stories and listening actions.".casefold() in prompt.casefold()
+    assert "Each card is the home for its own object's story" in prompt
     # The abstract "Five Jobs of Gestalt" list was retired; its ideas are stated concretely elsewhere.
     assert "gestalt" not in prompt.casefold()
 
@@ -224,7 +224,7 @@ def test_build_agent_compiles_with_a_fake_provider():
 
 def test_prompt_teaches_survey_then_detail_and_querying_sets():
     assert "Work like a researcher" in graph.SYSTEM_PROMPT
-    assert "query_catalog" in graph.SYSTEM_PROMPT
+    assert "look_up" in graph.SYSTEM_PROMPT
     assert 'include=["live_legacy"]' in graph.SYSTEM_PROMPT
 
 
@@ -245,7 +245,7 @@ def test_prompt_teaches_grid_and_get_grid():
     assert "get_grid" in prompt
     assert "a grid in finish_response" in prompt
     assert "Draw the rows that tell the story in reading order, fold the rest behind Show all" in prompt
-    assert "setlist_coverage" not in prompt
+    assert "setlist_counts" not in prompt
 
 
 _SEEN_KWARGS: list[dict] = []

@@ -71,7 +71,7 @@ def describe_tool_call(name: str, args: dict[str, Any] | None) -> str:
         return "Checking listener reviews of the recordings"
     if name == "get_media_links":
         return "Finding recordings and listening links"
-    if name in {"search_stored_resources", "get_lore_source_trails", "get_deadnet_song_context", "get_deadcast_metadata", "get_research_source_directory"}:
+    if name in {"search_stored_resources", "get_lore_source_trails", "get_deadnet_song_context", "get_deadcast_episode", "get_research_source_directory"}:
         return "Looking for lore and sources"
     if name == "find_arrangements":
         key = str(args.get("key_signature") or "").strip()

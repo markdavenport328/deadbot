@@ -36,6 +36,10 @@ setlist performances"). It comes from words in the tool output, such as
 
 ### Tier 1: small fixes in code, shipped together
 
+Tier 2 opening runs (October 16, two runs each, 30 pages) against the Tier 1
+run (15 pages): clean writing 40% (was 33%), usable 90% (was 80%), expected
+shape 28/30, catalog words 0.7 per page (was 1.9).
+
 **1. Every show card with tape plays in our player.** When a show card has a
 playable queue, its main listen control plays that queue ("Play the show"),
 and Relisten moves to a secondary link. Today `inPagePlay`
@@ -78,12 +82,26 @@ counts in plain terms ("750 times") and drop the meta-commentary ("that
 enthusiasm is subjective"). Tool wording steers page wording more reliably than
 a prompt rule. *Size: small to medium. Helps: Reckoning, Europe '72, most
 played, Veneta.*
+**Done (October 16):** a replay of every tool call from the opening runs found
+the sources: the `query_catalog` tool name (now `look_up`), a `cataloged` flag
+(now `has_lore`), import notes passed through from the data (now dropped from
+what the model reads), and keys such as `unattributed_track_count` and
+`shows_on_record` (renamed). `tests/test_fan_wording.py` keeps tool output and
+descriptions free of those words. Catalog words per page fell from 1.9 to 0.7
+across the opening runs; what remains ("documented", "surviving") is the
+model's own prose.
 
 **6. Say each thing once, for every kind of card.** Change the prompt's "a
 fact_grid of the same songs already given their own units" to cover anything
 that already has a card: records, shows, years. Also say plainly that the song
 timeline already shows the yearly counts. *Size: small. Helps: Dick's Picks,
 Dark Star. Prove it with item 4's duplication check.*
+**Done (October 16):** the persona's rule covers records, shows and years. The
+Dick's Picks chip had a second cause: release titles keep curly apostrophes
+("Dick’s Picks"), so searches and model-written queries for "Dick's Picks"
+found nothing and the cards fell back to text. SQLite's LIKE now treats curly
+and straight quotes, dashes and case alike. Two live runs: four album cards
+each, no restated cards on Dark Star.
 
 **7. Tours and live boxes get their nights and their grid.** When `get_album`
 returns a live release with several shows, its output names the tour and says
@@ -94,6 +112,15 @@ collapsed show rows. This is the open experiment in `UX-NEXT-STEPS.md` (around
 line 422). It needs no new component, because collapsed show rows are the tour
 outline once item 2 lands. *Size: medium. Helps: Europe '72, Reckoning, any
 "what's on this box" or "tell me about this tour" question.*
+**Partly done (October 16):** fan spellings find tours ("Europe '72"), a live
+box's `get_album` result names its tour and points to the nights and the grid,
+and its tracks come grouped by night (Europe '72 went from 73,800 characters,
+cut off, to 21,600 with every track). "Tell me about the Europe '72 tour" now
+gets 22 show rows and a grid. "What's on Europe '72: The Complete Recordings?"
+got its show rows in one of two opening runs; the model still often writes the
+box as one album card and text. Next try: let a collapsed `show_unit`
+`from_result` read the nights straight from the `get_album` result, so the box
+needs no second call.
 
 **8. Song timelines come with a listening path.** For a counting question, the
 model treats the card as a chart and skips stops. Two changes: the
@@ -103,6 +130,8 @@ or four stops; and when there are no stops, the timeline says how to listen
 (each year opens to its performances with play buttons) instead of hiding it.
 The model still chooses the stops; code never picks them. *Size: small to
 medium. Helps: Dark Star, Morning Dew, any song-by-year question.*
+**Done (October 16):** stops went from 0 to 4 on every live Dark Star and
+Sugaree run, and a timeline without stops says how to hear each year.
 
 ### Tier 3: new component capability
 

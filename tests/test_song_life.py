@@ -115,7 +115,7 @@ def test_standouts_are_grouped_by_kind_in_date_order_without_ranking(sqlite_stor
     facts = {(kind, item["date"]): item["facts"] for kind, items in kinds.items() for item in items}
     assert facts[("firsts_and_lasts", "1977-02-26")] == ["first performance"]
     assert facts[("firsts_and_lasts", "1995-07-08")] == ["last performance"]
-    assert facts[("longest", "1993-09-29")] == ["longest on record (25:14)"]
+    assert facts[("longest", "1993-09-29")] == ["longest ever (25:14)"]
     assert facts[("inside_another_song", "1981-12-31")] == ["inside Playing In The Band"]
     assert facts[("show_picks", "1981-12-31")] == ["its show was picked by Charlie Miller"]
     assert facts[("guests", "1989-12-06")] == ["with Clarence Clemons (saxophone)"]
@@ -147,7 +147,7 @@ def test_standouts_of_a_tiny_song():
     )
     kinds, left_out, patterns = standouts([lone])
     assert kinds["firsts_and_lasts"][0]["facts"] == ["first performance", "last performance"]
-    assert kinds["longest"][0]["facts"] == ["longest on record (5:00)"]
+    assert kinds["longest"][0]["facts"] == ["longest ever (5:00)"]
     assert kinds["picks"][0]["facts"] == ["picked by Charlie Miller"]
     assert left_out == {} and patterns == []
     assert standouts([]) == ({}, {}, [])

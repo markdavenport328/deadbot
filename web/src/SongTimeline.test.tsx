@@ -300,3 +300,14 @@ test("a stop named twice keeps its first number and draws without duplicate keys
   expect(screen.getAllByRole("button", { name: /^Play stop 1,/ }).length).toBeGreaterThan(0);
   errors.mockRestore();
 });
+
+test("with no stops the caption says how to listen, not where the gold marks are", () => {
+  setup({ stops: [], open_year: 1979 });
+  expect(screen.getAllByText(/then See all, to play its performances/).length).toBeGreaterThan(0);
+  expect(screen.queryByText(/Gold marks are the stops below/)).not.toBeInTheDocument();
+});
+
+test("with stops the caption points at the gold marks", () => {
+  setup();
+  expect(screen.getAllByText(/Gold marks are the stops below/).length).toBeGreaterThan(0);
+});

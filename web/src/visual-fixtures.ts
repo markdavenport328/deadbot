@@ -5,7 +5,7 @@
 import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock } from "./types";
 import type { StreamEvent } from "./stream-events";
 // Built from the real library by scripts/export_list_fixtures.py: the same
-// resolution the service runs, over real query_catalog and aggregate_data results.
+// resolution the service runs, over real look_up and aggregate_data results.
 import releases1972Json from "./fixtures/releases1972.json";
 import shows1977Json from "./fixtures/shows1977.json";
 import harrisburgJson from "./fixtures/harrisburg.json";

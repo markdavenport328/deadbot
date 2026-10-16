@@ -178,7 +178,7 @@ class GridData:
 
 
 GRID_NOTE = (
-    "A grid in finish_response draws these rows and columns with every cell filled by the library. "
+    "A grid in finish_response draws these rows and columns with every cell filled in by the server. "
     "Choose the rows to show and their order, how many open before Show all, the cells worth pointing at "
     "with a short note each."
 )
@@ -363,8 +363,8 @@ def _song_by_year(store: CanonicalStore, spec: GridSpec) -> GridData:
     year_from, year_to = min(years), max(years)
     baseline = _year_counts(store, year_from, year_to)
     coverage = {
-        int(entry["year"]): (int(entry["shows_on_record"]), int(entry["shows_with_setlist"]))
-        for entry in (baseline.setlist_coverage or {}).get("by_year", [])
+        int(entry["year"]): (int(entry["shows_played"]), int(entry["shows_with_setlist"]))
+        for entry in (baseline.setlist_counts or {}).get("by_year", [])
     }
     cells: dict[tuple[str, str], Cell] = {}
     rows = []

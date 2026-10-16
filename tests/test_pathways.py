@@ -13,7 +13,7 @@ def test_sugaree_is_cataloged_with_a_source_trail_and_a_non_catalog_resource():
     song = store.resolve_song("Sugaree")
     pathways = pathways_for(store, [("song", song["song_id"])])[song["song_id"]]
 
-    assert pathways["cataloged"] is True
+    assert pathways["has_lore"] is True
     assert "source_trail" in pathways
     assert pathways["source_trail"]["link_count"] >= 1
     assert pathways["resources"]["count"] >= 1
@@ -32,7 +32,7 @@ def test_a_song_with_only_catalog_resources_is_not_cataloged():
     pathways = pathways_for(store, [("song", song["song_id"])])[song["song_id"]]
 
     assert pathways == {
-        "cataloged": False,
+        "has_lore": False,
         "research_routes": ["Grateful Dead Guide (Deadessays)", "Deadhead High", "Dead.net"],
     }
 
@@ -42,7 +42,7 @@ def test_veneta_show_has_a_source_trail_and_resources():
     show = store.resolve_show("gd-1972-08-27")
     pathways = pathways_for(store, [("show", show["show_id"])])[show["show_id"]]
 
-    assert pathways["cataloged"] is True
+    assert pathways["has_lore"] is True
     assert pathways["source_trail"]["link_count"] >= 1
     assert pathways["resources"]["count"] >= 1
     assert pathways["research_routes"] == [
@@ -75,7 +75,7 @@ def test_search_entities_carries_pathways_for_the_show_and_the_song():
     pathways = result["pathways"]
     assert "gd-1972-08-27" in pathways
     assert "song-bird-song" in pathways
-    assert pathways["gd-1972-08-27"]["cataloged"] is True
+    assert pathways["gd-1972-08-27"]["has_lore"] is True
 
 
 def test_dark_star_selections_include_headyversion():

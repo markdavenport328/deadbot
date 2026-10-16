@@ -69,7 +69,7 @@ def source_trails_for_entity(entity_type: str, entity_id: str, *, path: Path = D
     """Return link metadata for one canonical song/show, without source text."""
 
     if entity_type not in _ENTITY_TYPES or not entity_id.strip():
-        return {"state": "invalid", "coverage": "metadata_only", "records": [], "message": "A canonical song or show ID is required."}
+        return {"state": "invalid", "coverage": "links_only", "records": [], "message": "A song or show ID is required."}
     trails = [trail for trail in load_lore_trails(path) if trail["entity_type"] == entity_type and trail["entity_id"] == entity_id]
     records = []
     for trail in trails:
@@ -87,4 +87,4 @@ def source_trails_for_entity(entity_type: str, entity_id: str, *, path: Path = D
                 "question_themes": trail["question_themes"],
                 "trail_id": trail["trail_id"],
             })
-    return {"state": "ok" if records else "empty", "coverage": "metadata_only", "records": records, "trail_ids": [trail["trail_id"] for trail in trails], "message": "Reviewed link metadata only; source content must be researched separately."}
+    return {"state": "ok" if records else "empty", "coverage": "links_only", "records": records, "trail_ids": [trail["trail_id"] for trail in trails], "message": "Links only; the text of these sources was not read, so research it separately."}

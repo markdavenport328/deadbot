@@ -201,32 +201,32 @@ def test_aggregate_data_no_longer_accepts_a_performance_id_parameter():
     assert "performance_id" not in _tool_by_name(store, "aggregate_data").args
 
 
-def test_aggregate_data_performances_result_carries_setlist_coverage():
+def test_aggregate_data_performances_result_carries_setlist_counts():
     store = CanonicalStore()
     payload = json.loads(
         _tool_by_name(store, "aggregate_data").invoke(
             {"dataset": "performances", "group_by": "year", "measure": "count", "song_id": "song-dark-star"}
         )
     )
-    coverage = payload["setlist_coverage"]
-    assert coverage["shows_on_record"] > 0
+    coverage = payload["setlist_counts"]
+    assert coverage["shows_played"] > 0
     assert coverage["shows_with_setlist"] > 0
-    assert coverage["shows_with_setlist"] <= coverage["shows_on_record"]
+    assert coverage["shows_with_setlist"] <= coverage["shows_played"]
     assert coverage["by_year"], "expected at least one year bucket"
     for entry in coverage["by_year"]:
-        assert entry["shows_with_setlist"] <= entry["shows_on_record"]
+        assert entry["shows_with_setlist"] <= entry["shows_played"]
     years = [entry["year"] for entry in coverage["by_year"]]
     assert years == sorted(years)
 
 
-def test_aggregate_data_shows_result_has_no_setlist_coverage():
+def test_aggregate_data_shows_result_has_no_setlist_counts():
     store = CanonicalStore()
     payload = json.loads(
         _tool_by_name(store, "aggregate_data").invoke(
             {"dataset": "shows", "group_by": "year", "measure": "count"}
         )
     )
-    assert "setlist_coverage" not in payload
+    assert "setlist_counts" not in payload
 
 
 def test_aggregate_data_response_has_no_scope_note():
@@ -341,7 +341,7 @@ def test_get_grid_misspelled_tour_suggests_known_tours():
     store = CanonicalStore()
     payload = json.loads(
         _tool_by_name(store, "get_grid").invoke(
-            {"row_kind": "show", "tour": "Europe 72", "column_kind": "song", "columns": ["Dark Star"]}
+            {"row_kind": "show", "tour": "Europ 1972", "column_kind": "song", "columns": ["Dark Star"]}
         )
     )
     assert payload["error"] == "No shows on that tour"

@@ -340,7 +340,7 @@ def test_resolve_body_resolves_research_and_canonical_resources_together():
     research_payload = {
         "research": {
             "state": "ok",
-            "coverage": "metadata_only",
+            "coverage": "links_only",
             "source": "dead.net",
             "records": [
                 {

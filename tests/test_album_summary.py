@@ -21,7 +21,7 @@ def test_live_box_set_summary_lists_shows_not_tracks(album):
     assert "tracks" not in payload and "live_legacy" not in payload
     shows = payload["contents"]["shows"]
     assert shows[0]["show_date"] == "1972-04-07" and shows[-1]["show_id"] == "gd-1972-05-26"
-    assert sum(show["track_count"] for show in shows) + payload["contents"].get("unattributed_track_count", 0) == payload["track_count"]
+    assert sum(show["track_count"] for show in shows) + payload["contents"].get("tracks_without_a_show", 0) == payload["track_count"]
     assert payload["available"]["tracks"]["count"] == payload["track_count"]
     assert "include" in payload["available"]["tracks"]["ask"]
     assert len(json.dumps(payload)) < 12_000
@@ -37,16 +37,17 @@ def test_studio_summary_lists_songs(album):
 def test_tracks_on_request_and_narrowed_to_one_show(album):
     full = album(release_id_or_title=BOX, include=["tracks"])
     one = album(release_id_or_title=BOX, show="1972-05-26")
-    # This box set's full tracklist (578 tracks) is 130,627 raw JSON characters,
-    # over the 80,000-char tool result ceiling (Task 3's _json safety net), so
-    # the untruncated case only applies to releases small enough to fit.
-    if "_truncated" in full:
-        assert len(full["tracks"]) < full["track_count"]
-    else:
-        assert len(full["tracks"]) == full["track_count"]
-    assert 0 < len(one["tracks"]) < full["track_count"]
+    assert "tracks" not in full and "_truncated" not in full
+    assert len(json.dumps(full)) < 80_000
+    nights = full["nights"]
+    assert len(nights) == len(full["contents"]["shows"]) == 22
+    assert nights[0]["tour"] == "Europe 1972" and nights[0]["show_id"] and nights[0]["track_count"]
+    assert list(full)[:2] == ["release", "tour"]
+    assert all(night["tracks"] and "performance_id" in night["tracks"][0] for night in nights)
+    assert "first 5 tracks" in full["tracks_note"] and "show=" in full["tracks_note"]
+    assert max(len(night["tracks"]) for night in nights) == 5
+    assert 0 < len(one["tracks"]) < full["track_count"] and "nights" not in one
     assert "tracks" not in one["available"]
-    assert "narrow to one show" in full["tracks_note"]
 
 
 def test_unresolvable_show_errors_rather_than_returning_unattributed_tracks(album):
@@ -67,3 +68,42 @@ def test_live_legacy_on_request_keyed_by_song(album):
 def test_bad_requests_explain_themselves(album):
     assert album(release_id_or_title=BOX, include=["lyrics"])["valid"] == ["live_legacy", "tracks"]
     assert "shows" in album(release_id_or_title=BOX, show="1977-05-08")
+
+
+def test_live_box_set_names_its_tour_right_after_the_release(album):
+    payload = album(release_id_or_title=BOX)
+    assert list(payload)[:2] == ["release", "tour"]
+    assert payload["tour"]["names"] == ["Europe 1972"]
+    assert "look_up" in payload["tour"]["nights"] and "get_grid" in payload["tour"]["nights"]
+
+
+def test_studio_album_has_no_tour_pointer(album):
+    assert "tour" not in album(release_id_or_title="American Beauty")
+
+
+def test_a_small_multi_show_release_lists_every_track_by_night(album):
+    payload = album(release_id_or_title="release-dicks-picks-volume-4-fillmore-east-1996", include=["tracks"])
+    assert len(payload["nights"]) == 2 and "tracks" not in payload
+    assert sum(len(night["tracks"]) for night in payload["nights"]) + payload["contents"]["tracks_without_a_show"] == payload["track_count"]
+    assert "every track" in payload["tracks_note"]
+
+
+def test_tracks_from_no_known_show_stay_on_the_record(album):
+    payload = album(release_id_or_title=BOX, include=["tracks"])
+    listed = sum(len(night["tracks"]) for night in payload["nights"]) + len(payload.get("tracks_without_a_show", []))
+    assert payload["contents"]["tracks_without_a_show"] == len(payload.get("tracks_without_a_show", []))
+    if "first" not in payload["tracks_note"]:
+        assert listed == payload["track_count"]
+    if payload["contents"]["tracks_without_a_show"]:
+        assert "no known show" in payload["tracks_note"]
+
+
+def test_a_compilation_across_many_tours_gets_no_tour_pointer(album):
+    payload = album(release_id_or_title="release-thankfully-grateful-2024")
+    assert "tour" not in payload
+
+
+def test_a_release_keeps_the_partial_date_its_source_gives(album):
+    payload = album(release_id_or_title="release-dicks-picks-volume-32-1982-08-07")
+    assert payload["release"]["release_date"]
+    assert "notes" not in payload["release"]

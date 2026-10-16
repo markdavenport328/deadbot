@@ -198,7 +198,7 @@ def test_aggregate_data_tool_ranks_most_played_songs_from_sqlite(store, csv_stor
     values = [row["value"] for row in result["rows"]]
     assert values == sorted(values, reverse=True) and values[0] > 0
     assert result["total"] == len(csv_store.rows("performances"))
-    assert result["setlist_coverage"]["shows_with_setlist"] > 0
+    assert result["setlist_counts"]["shows_with_setlist"] > 0
 
 
 @pytest.mark.parametrize("query", ["Bruce Hornsby", "person-bruce-hornsby", "hornsby"])

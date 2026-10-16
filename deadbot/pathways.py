@@ -377,7 +377,7 @@ def pathways_for(store: CanonicalStore, entities: list[tuple[str, str]]) -> dict
             if song_lore:
                 payload["song_lore"] = song_lore
 
-        entity_payload = {"cataloged": cataloged, **payload, "research_routes": list(_RESEARCH_ROUTES[kind])}
+        entity_payload = {"has_lore": cataloged, **payload, "research_routes": list(_RESEARCH_ROUTES[kind])}
         result[entity_id] = _fit_budget(entity_payload)
 
     return result

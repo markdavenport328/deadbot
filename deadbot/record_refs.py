@@ -23,7 +23,7 @@ _AGGREGATION_ID_COLUMNS = {"song": "song_id", "venue": "venue_id", "guest": "per
 def result_ids(payloads: list[dict[str, Any]], result_id: str, column: str) -> list[str]:
     """The ``column`` IDs in one tool result this turn, in its row order, without repeats.
 
-    ``result_id`` names a query_catalog result (its ``result_id``) or an
+    ``result_id`` names a look_up result (its ``result_id``) or an
     aggregate_data result (its ``aggregation_id``).
     """
 

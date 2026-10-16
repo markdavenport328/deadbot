@@ -485,7 +485,7 @@ CREATE INDEX selection_evidence_source_resource_idx
 CREATE INDEX selection_evidence_list_idx
     ON selection_evidence (selection_list_id);
 
--- Catalog views for query_catalog: each pre-joins what set questions usually
+-- Catalog views for look_up: each pre-joins what set questions usually
 -- need, so most queries are one table with WHERE, GROUP BY and ORDER BY.
 -- year is the integer year of show_date.
 

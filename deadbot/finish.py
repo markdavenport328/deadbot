@@ -77,7 +77,7 @@ class GroundedContext:
 
 def _walk(value: Any, ids: set[str], urls: set[str], key: str | None = None) -> None:
     if isinstance(value, dict) and isinstance(value.get("columns"), list) and isinstance(value.get("rows"), list):
-        # A query_catalog result: each row is a list, named by the columns.
+        # A look_up result: each row is a list, named by the columns.
         names = [name if isinstance(name, str) else None for name in value["columns"]]
         for row in value["rows"]:
             if isinstance(row, list):
@@ -191,7 +191,7 @@ class PersonRosterRef(_Ref):
     lists everyone uses several rosters, one per section, so that together they
     hold the complete set; a section is a scene, an instrument, an era or a
     pattern such as the people who kept coming back. The server hydrates each
-    person's name, roles, show count and span from the library.
+    person's name, roles, show count and span from the stored facts.
     """
 
     type: Literal["person_roster"]
@@ -398,7 +398,7 @@ _DISCLOSURE_DESCRIPTION = (
 
 def _from_result_description(record: str, column: str) -> str:
     return (
-        f"Instead of one {column}: the result_id of a query_catalog result, or the aggregation_id of an aggregate_data "
+        f"Instead of one {column}: the result_id of a look_up result, or the aggregation_id of an aggregate_data "
         f"result, whose rows carry {column}. The server makes one {record} card per row, in the result's order, each with "
         "this item's emphasis, disclosure and facets; this item's title and note speak for the whole set and appear once, above the cards. "
         f"The cards already include every row. To give particular {record}s a note of their own, name each by its {column} in place of from_result."
@@ -563,8 +563,9 @@ class SongOverviewRef(_Ref):
     representatives: list[SongStop] = Field(
         default_factory=list,
         description=(
-            "Your stops through the song's life, in listening order. With by_year they mark the timeline and form a "
-            "listening path; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
+            "Your stops through the song's life, in listening order: three or four nights that mark its turns. With "
+            "by_year they mark the timeline and form the listening path, how the visitor hears the song's life, for a "
+            "counting question too; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
             "(get_song_life lists the standouts)."
         ),
     )
@@ -1697,7 +1698,7 @@ def build_finish_tool() -> BaseTool:
             "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
             "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
             "mean the same on every unit. IDs and URLs come from this turn's tool results or the research notebook; the server fills each ID's facts "
-            "from the library."
+            "from the stored facts."
         ),
         args_schema=FinishPlan,
     )

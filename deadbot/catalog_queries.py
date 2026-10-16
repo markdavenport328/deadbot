@@ -119,7 +119,7 @@ def catalog_tool_description() -> str:
         for query in NAMED_QUERIES.values()
     )
     return (
-        "Find or list things across the catalog. For how many times, the most, or change "
+        "Find or list shows, songs, releases and the people who played on them. For how many times, the most, or change "
         "over the years, use aggregate_data instead: its results can become a chart. "
         "Use a listed query when one fits "
         "(song and show accept a title, ID or date; one year: set year_from only). "

@@ -181,7 +181,7 @@ def _messages_with(name, payload, call_id="x1", args=None):
 def test_a_failed_web_read_is_not_recorded_but_an_empty_one_is():
     for state in ("unavailable", "invalid"):
         assert notebook.tool_results(_messages_with("read_page", {"state": state, "url": PAGE["url"], "message": "x"})) == []
-        assert notebook.tool_results(_messages_with("get_deadcast_metadata", {"research": {"state": state}})) == []
+        assert notebook.tool_results(_messages_with("get_deadcast_episode", {"research": {"state": state}})) == []
     kept = notebook.tool_results(_messages_with("read_page", {"state": "empty", "url": PAGE["url"], "text": ""}))
     assert [name for name, *_ in kept] == ["read_page"]
 
@@ -204,7 +204,7 @@ def test_the_finish_call_is_excluded_by_name_even_with_a_json_payload():
 
 
 def test_entry_key_ignores_argument_order():
-    assert notebook.entry_key("query_catalog", {"a": 1, "b": [2, 3]}) == notebook.entry_key("query_catalog", {"b": [2, 3], "a": 1})
+    assert notebook.entry_key("look_up", {"a": 1, "b": [2, 3]}) == notebook.entry_key("look_up", {"b": [2, 3], "a": 1})
     assert notebook.entry_key("get_show", {"a": 1}) != notebook.entry_key("get_song", {"a": 1})
     assert len(notebook.entry_key("get_show", {})) == 10
 

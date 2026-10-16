@@ -13,7 +13,7 @@ def test_catalog_has_scoped_pilot_trails_and_metadata_only_payload():
     }
     result = source_trails_for_entity("song", "song-friend-of-the-devil")
     assert result["state"] == "ok"
-    assert result["coverage"] == "metadata_only"
+    assert result["coverage"] == "links_only"
     assert "content" not in result["records"][0]
     assert result["records"][0]["why_open"]
 
