@@ -832,7 +832,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* Ranked rows that open: a chart's bar, a ranked list's row, a roster's name.
    The name is the control; it opens in place to the record's facts in two
    aligned columns, one gold play and one blue ask. */
-.row-open { position: relative; display: inline; padding: 0 0.95rem 0 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.row-open { position: relative; display: inline; justify-self: start; padding: 0 0.95rem 0 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .row-open::after { content: ""; position: absolute; right: 0.2rem; top: 0.5em; width: 5px; height: 5px; border-right: 1.5px solid var(--quiet); border-bottom: 1.5px solid var(--quiet); transform: rotate(45deg); transition: transform 120ms ease; }
 .row-open[aria-expanded="true"]::after { transform: rotate(-135deg); top: 0.7em; }
 .row-open:hover { text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; }

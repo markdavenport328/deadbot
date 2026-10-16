@@ -265,6 +265,27 @@ describe("a chart's bar", () => {
 });
 
 describe("a year opened within a song", () => {
+  it("opens a year bar of a song's chart as that song's year", async () => {
+    const years: DataChartBlock = {
+      ...chart,
+      aggregation_id: "agg-years",
+      orientation: "vertical",
+      columns: [
+        { key: "year", label: "Year", type: "temporal" },
+        { key: "value", label: "Performances", type: "quantitative" }
+      ],
+      rows: [
+        { year: 1972, value: 36 },
+        { year: 1973, value: 30 }
+      ],
+      open_ids: ["1972", "1973"],
+      open_scope: "song-dark-star"
+    };
+    render(<DataChart block={years} />);
+    fireEvent.click(screen.getByRole("button", { name: "1972" }));
+    await waitFor(() => expect(rowRequests).toEqual(["/api/rows/1972?scope=song-dark-star"]));
+  });
+
   it("asks the server for that song's year and names the song in its focus", () => {
     expect(rowUrl("1972", "song-dark-star")).toBe("/api/rows/1972?scope=song-dark-star");
     const year: RowDetail = { id: "1972", kind: "year", title: "Dark Star in 1972", facts: [], play: null, ask: "Dark Star in 1972" };

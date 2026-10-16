@@ -67,7 +67,15 @@ def test_a_guest_known_only_by_show_plays_a_night_they_were_there(client):
 
 def test_a_band_member_asks_about_their_years_in_the_band(client):
     body = client.get("/api/rows/person-jerry-garcia").json()
+    assert facts(body)["Shows"] == "2,267"
     assert body["ask"] == "Tell me about Jerry Garcia in the Grateful Dead"
+
+
+def test_someone_who_sat_in_and_then_joined_has_both_counts(client):
+    body = client.get("/api/rows/person-bruce-hornsby").json()
+    assert facts(body)["Sat in"] == "16 shows"
+    assert facts(body)["In the band"] == "102 shows"
+    assert "Shows" not in facts(body)
 
 
 def test_a_venue_opens_to_its_shows_and_place(client):

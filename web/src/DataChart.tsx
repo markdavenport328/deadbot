@@ -73,6 +73,7 @@ type OpenTickProps = {
   y?: number | string;
   textAnchor?: "start" | "middle" | "end" | "inherit";
   verticalAnchor?: "start" | "middle" | "end";
+  width?: number | string;
   payload?: { value?: unknown; index?: number };
   index?: number;
 };
@@ -107,7 +108,7 @@ function OpenTick({
   const rowId = row ? rowIdOf(row) : null;
   const text = truncate ? truncateLabel(value) : value;
   const label = (
-    <Text x={tick.x} y={tick.y} textAnchor={tick.textAnchor} verticalAnchor={tick.verticalAnchor ?? "middle"} fill="var(--muted)">
+    <Text x={tick.x} y={tick.y} width={tick.width} textAnchor={tick.textAnchor} verticalAnchor={tick.verticalAnchor ?? "middle"} fill="var(--muted)" className="recharts-cartesian-axis-tick-value">
       {text}
     </Text>
   );

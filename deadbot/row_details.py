@@ -363,7 +363,16 @@ def _person(store: CanonicalStore, person_id: str, person: dict[str, str]) -> Ro
     guest_rows = [row for row in store.filtered_rows("performance_performers", person_id=person_id) if row.get("role") == "guest"]
     member = any(row.get("role") == "performer" for row in assignments)
     shows = store.rows_in("shows", "show_id", {row.get("show_id", "") for row in assignments} - {""})
-    facts = [RowFact(label="Shows", value=f"{len(shows):,}")]
+    guest_show_ids = {row.get("show_id") for row in assignments if row.get("role") == "guest"}
+    member_show_ids = {row.get("show_id") for row in assignments if row.get("role") == "performer"}
+    if guest_show_ids and member_show_ids:
+        # Someone who sat in and later joined (Bruce Hornsby) has both counts.
+        facts = [
+            RowFact(label="Sat in", value=_times(len(guest_show_ids), "show")),
+            RowFact(label="In the band", value=_times(len(member_show_ids), "show")),
+        ]
+    else:
+        facts = [RowFact(label="Shows", value=f"{len(shows):,}")]
     span = _span([int(show["show_date"][:4]) for show in shows if (show.get("show_date") or "")[:4].isdigit()])
     if span:
         facts.append(RowFact(label="Years", value=span))
