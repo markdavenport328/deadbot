@@ -1308,11 +1308,15 @@ def _resolve_reference(
         # A collapsed record's row plays the record, and opening it shows the
         # record itself: its listen control and its tracklist.
         facets = list(dict.fromkeys([*item.visible_facets, "listen", "tracklist"])) if item.disclosure == "collapsed" else item.visible_facets
+        context = store.album_context(release)
+        # A live box's nights are what the record is: its card always carries them.
+        if "tracklist" not in facets and release.get("release_type") == "live" and _spans_nights(context, store):
+            facets = [*facets, "tracklist"]
         unit_sources, sources = composition._unit_sources(
             item.supporting_sources if "sources" in selected_facets else [], grounded.urls, payloads
         )
         block, listen_sources = composition._album_unit(
-            store.album_context(release),
+            context,
             store,
             emphasis=_emphasis_for(item),
             judgments=item.judgments,
@@ -1535,6 +1539,14 @@ def resolve_item(
             update["tracks"] = playable_show_tracks(block.show_id, store)[0]
         block = block.model_copy(update=update)
     return block, sources
+
+
+def _spans_nights(context: dict[str, Any], store: CanonicalStore) -> bool:
+    """Whether a release's tracks come from more than one show."""
+
+    ids = {track["performance_id"] for track in context.get("tracks", []) if track.get("performance_id")}
+    shows = {row.get("show_id") for row in store.rows_in("performances", "performance_id", ids)} if ids else set()
+    return len(shows - {None, ""}) > 1
 
 
 # The ID field of each record unit, which a ``from_result`` fills row by row.
