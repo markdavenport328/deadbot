@@ -23,7 +23,7 @@ from typing import Annotated, Any, Literal, get_args
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
 
-from deadbot import composition, grids, record_refs, sequences
+from deadbot import composition, grids, record_refs, row_details, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
@@ -397,8 +397,9 @@ _DISCLOSURE_DESCRIPTION = (
 
 
 def _from_result_description(record: str, column: str) -> str:
+    albums = " (or of a get_album result of a live release, whose rows are its nights)" if column == "show_id" else ""
     return (
-        f"Instead of one {column}: the result_id of a look_up result, or the aggregation_id of an aggregate_data "
+        f"Instead of one {column}: the result_id of a look_up result{albums}, or the aggregation_id of an aggregate_data "
         f"result, whose rows carry {column}. The server makes one {record} card per row, in the result's order, each with "
         "this item's emphasis, disclosure and facets; this item's title and note speak for the whole set and appear once, above the cards. "
         f"The cards already include every row. To give particular {record}s a note of their own, name each by its {column} in place of from_result."
@@ -1307,11 +1308,15 @@ def _resolve_reference(
         # A collapsed record's row plays the record, and opening it shows the
         # record itself: its listen control and its tracklist.
         facets = list(dict.fromkeys([*item.visible_facets, "listen", "tracklist"])) if item.disclosure == "collapsed" else item.visible_facets
+        context = store.album_context(release)
+        # A live box's nights are what the record is: its card always carries them.
+        if "tracklist" not in facets and release.get("release_type") == "live" and _spans_nights(context, store):
+            facets = [*facets, "tracklist"]
         unit_sources, sources = composition._unit_sources(
             item.supporting_sources if "sources" in selected_facets else [], grounded.urls, payloads
         )
         block, listen_sources = composition._album_unit(
-            store.album_context(release),
+            context,
             store,
             emphasis=_emphasis_for(item),
             judgments=item.judgments,
@@ -1448,14 +1453,23 @@ def _resolve_reference(
             title=item.title,
             note=item.note,
         )
-        return (block, []) if block else (None, [])
+        if block is None:
+            return None, []
+        open_ids, scope = row_details.chart_openings(store, payload)
+        return block.model_copy(update={"open_ids": open_ids, "open_scope": scope}), []
 
     if kind == "ranked_list":
         payload = _find_aggregation_payload(payloads, item.aggregation_id)
         if payload is None:
             return None, []
         notes = {entry.key.strip(): entry.note.strip() for entry in item.notes if entry.key.strip() and entry.note.strip()}
-        return record_refs.ranked_list_block(payload, count=item.count, title=item.title, note=item.note, row_notes=notes), []
+        block = record_refs.ranked_list_block(payload, count=item.count, title=item.title, note=item.note, row_notes=notes)
+        if block is None:
+            return None, []
+        open_ids, scope = row_details.chart_openings(store, payload)
+        opens = set(open_ids)
+        rows = [row.model_copy(update={"opens": row.id in opens}) for row in block.rows]
+        return block.model_copy(update={"rows": rows, "open_scope": scope}), []
 
     if kind == "version_strip":
         block = sequences.version_strip_block(
@@ -1525,6 +1539,17 @@ def resolve_item(
             update["tracks"] = playable_show_tracks(block.show_id, store)[0]
         block = block.model_copy(update=update)
     return block, sources
+
+
+def _spans_nights(context: dict[str, Any], store: CanonicalStore) -> bool:
+    """Whether a release is a box of whole nights: several shows, about three tracks or more each.
+
+    A compilation drawing a song or two from many nights is not.
+    """
+
+    ids = {track["performance_id"] for track in context.get("tracks", []) if track.get("performance_id")}
+    shows = {row.get("show_id") for row in store.rows_in("performances", "performance_id", ids)} - {None, ""} if ids else set()
+    return len(shows) > 1 and len(ids) >= 3 * len(shows)
 
 
 # The ID field of each record unit, which a ``from_result`` fills row by row.

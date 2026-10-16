@@ -320,8 +320,10 @@ class AlbumTrackItem(ExperienceModel):
     # track: what the in-page player plays, its length, and the show it is from.
     audio_url: str | None = None
     audio_duration_seconds: int | None = Field(default=None, ge=0)
+    show_id: str | None = None
     show_date: str | None = None
     venue_name: str | None = None
+    city: str | None = None
 
 
 class AlbumCreditItem(ExperienceModel):
@@ -713,6 +715,12 @@ class DataChartBlock(ExperienceModel):
     excluded_count: int
     date_range: dict[str, int] | None = None
     empty_reason: str | None = None
+    # The row IDs (a song, person, venue or release ID, or a year) whose bars
+    # open to that record's facts; the server checked each against the library.
+    open_ids: list[str] = Field(default_factory=list, max_length=200)
+    # The song a year chart counts, when it counts one: its years open to that
+    # song's year rather than the whole year.
+    open_scope: str | None = None
 
 
 class VersionStripSong(ExperienceModel):
@@ -1059,11 +1067,13 @@ class EditorialBlock(ModelAuthored):
 
 class RankedListRow(ExperienceModel):
     rank: int = Field(ge=1)
-    # The row's record ID (a song, venue or guest), when the result has one.
+    # The row's record ID (a song, venue or guest, or a year), when the result has one.
     id: str | None = None
     label: str
     value: int
     note: str | None = None
+    # True when the row opens to its record's facts (see RowDetail).
+    opens: bool = False
 
 
 class RankedListBlock(ExperienceModel):
@@ -1078,6 +1088,39 @@ class RankedListBlock(ExperienceModel):
     rows: list[RankedListRow] = Field(min_length=1, max_length=LIST_CEILING)
     # Rows of the result not shown.
     more_count: int = Field(default=0, ge=0)
+    # As on a data_chart: the song whose years these are, when it counts one.
+    open_scope: str | None = None
+
+
+RowKind = Literal["song", "person", "venue", "release", "year"]
+
+
+class RowFact(ExperienceModel):
+    label: str
+    value: str
+
+
+class RowPlay(ExperienceModel):
+    """The one recording an opened row plays, chosen by the server from stored signals and tapes."""
+
+    show_id: str
+    show_date: str
+    venue_name: str | None = None
+    # Who picked it, when someone did ("Picked by Charlie Miller").
+    why: str | None = None
+    tracks: list[PlayableTrack] = Field(min_length=1)
+
+
+class RowDetail(ExperienceModel):
+    """What a ranked row, bar or roster name opens to: its record's key facts, one play, one question."""
+
+    id: str
+    kind: RowKind
+    title: str
+    facts: list[RowFact] = Field(default_factory=list)
+    play: RowPlay | None = None
+    # The follow-up the row's ask sends to the chat.
+    ask: str
 
 
 ExperienceBlock = Annotated[
@@ -1156,14 +1199,14 @@ def _trimmed_strings(value: Any, count: int, length: int, what: str) -> Any:
 
 
 class AskFocus(ExperienceModel):
-    """What the visitor was pointing at when they asked: a grid's cell, or a year on a song's timeline.
+    """What the visitor was pointing at when they asked: a grid's cell, a year on a song's timeline, or an opened ranked row.
 
     The browser reports it with the question; the server hands it to the model
     as a note and lets the IDs it names join the turn's grounded IDs.
     """
 
     label: str = Field(max_length=FOCUS_LABEL_CEILING)
-    block_type: Literal["grid", "song_overview"]
+    block_type: Literal["grid", "song_overview", "data_chart", "ranked_list", "person_roster"]
     block_id: str = Field(max_length=FOCUS_BLOCK_ID_CEILING)
     ids: list[str] = Field(default_factory=list, max_length=FOCUS_ID_CEILING)
     facts: list[str] = Field(default_factory=list, max_length=FOCUS_FACT_COUNT_CEILING)

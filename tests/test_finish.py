@@ -1853,3 +1853,30 @@ def test_song_overview_reader_keeps_every_usable_part():
     assert [(stop.performance_id, stop.label, stop.why) for stop in ref.representatives] == [("p1", None, "Kept."), ("p2", None, None)]
     assert ref.open_year is None
     assert [(question.year, question.question) for question in ref.year_questions] == [(1977, "Q?"), (1979, "R?")]
+
+
+def test_a_live_box_card_always_carries_its_nights(csv_store):
+    from deadbot.tools import build_tools
+
+    get_album = next(tool for tool in build_tools(csv_store) if tool.name == "get_album")
+    payloads = [json.loads(get_album.invoke({"release_id_or_title": release_id})) for release_id in (
+        "release-europe-72-the-complete-recordings-2011", "release-american-beauty")]
+    grounded = finish.grounded_context(payloads)
+    payload = payloads[0]
+    box = finish._BODY_ITEM_ADAPTER.validate_python(
+        {"type": "album_unit", "release_id": "release-europe-72-the-complete-recordings-2011", "visible_facets": ["listen"]}
+    )
+    block, _ = finish._resolve_reference(box, grounded, payloads, csv_store)
+    assert block is not None and len({track.show_id for track in block.tracks if track.show_id}) == 22
+    studio = finish._BODY_ITEM_ADAPTER.validate_python(
+        {"type": "album_unit", "release_id": "release-american-beauty", "visible_facets": ["listen"]}
+    )
+    block, _ = finish._resolve_reference(studio, grounded, payloads, csv_store)
+    assert block is not None and block.tracks == []
+
+
+def test_a_compilation_of_single_tracks_is_not_a_box(csv_store):
+    context = csv_store.album_context(csv_store.resolve_release("release-thankfully-grateful-2024"))
+    assert not finish._spans_nights(context, csv_store)
+    box = csv_store.album_context(csv_store.resolve_release("release-europe-72-the-complete-recordings-2011"))
+    assert finish._spans_nights(box, csv_store)

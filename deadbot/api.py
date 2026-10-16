@@ -19,11 +19,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import composition, finish, grids, notebook
+from deadbot import composition, finish, grids, notebook, row_details
 from deadbot.answer_stream import AnswerAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
-from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, SongYearDetail, fit
+from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, RowDetail, SongYearDetail, fit
 from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
@@ -56,7 +56,16 @@ def _trim_text(text: str | None, ceiling: int, what: str) -> str | None:
 
 
 # The tables a clicked cell's IDs can name, tried in order.
-FOCUS_TABLES = ("shows", "performances", "songs")
+FOCUS_TABLES = ("shows", "performances", "songs", "people", "venues", "official_releases")
+
+# Where the visitor asked from, in the note's words.
+FOCUS_PLACES = {
+    "grid": "a grid",
+    "song_overview": "a song's timeline",
+    "data_chart": "a row they opened on a chart",
+    "ranked_list": "a row they opened in a ranked list",
+    "person_roster": "a name they opened in a roster",
+}
 
 
 def focus_ids(store: Any, focus: AskFocus | None) -> set[str]:
@@ -94,7 +103,7 @@ def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
     them; only the library IDs are checked against the store.
     """
 
-    place = "a song's timeline" if focus.block_type == "song_overview" else "a grid"
+    place = FOCUS_PLACES.get(focus.block_type, "the page")
     lines = [f'The visitor asked from {place} on the page ("{_one_line(focus.label)}").']
     facts = [fact for fact in (_one_line(fact) for fact in focus.facts) if fact]
     if facts:
@@ -525,6 +534,24 @@ def create_app(
             raise HTTPException(status_code=404, detail="The library has no such song.")
         response.headers["Cache-Control"] = "public, max-age=3600"
         return SongYearDetail.model_validate(detail)
+
+    @app.get("/api/rows/{row_id}", response_model=RowDetail)
+    def row_detail(row_id: str, http_request: Request, response: Response, scope: str | None = None) -> RowDetail:
+        """What a ranked row, chart bar or roster name opens to; library facts only, no model call.
+
+        ``scope`` is the song a year chart counts, so its years open to that
+        song's year. It shares the grid's lookup limit and, like a song's
+        year, may be cached for an hour.
+        """
+
+        _enforce_rate_limit(http_request, grid=True)
+        if len(row_id) > 200 or (scope and len(scope) > 200):
+            raise HTTPException(status_code=404, detail="The library has no such record.")
+        detail = row_details.row_detail(app.state.store, row_id, scope)
+        if detail is None:
+            raise HTTPException(status_code=404, detail="The library has no such record.")
+        response.headers["Cache-Control"] = "public, max-age=3600"
+        return detail
 
     if client_dist.is_dir():
         assets = client_dist / "assets"

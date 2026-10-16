@@ -875,24 +875,28 @@ def _era_unit(
 
 
 def _album_track_audio(tracks: list[dict[str, Any]], store: CanonicalStore) -> dict[str, dict[str, Any]]:
-    """A live record's tracks mapped to their performances' archive tracks and shows."""
+    """A live record's tracks mapped to their performances' shows, and to archive tracks where there are any."""
 
-    performance_ids = [str(track.get("performance_id") or "") for track in tracks]
-    audio = _archive_tracks(performance_ids, store)
-    if not audio:
+    performance_ids = list(dict.fromkeys(str(track.get("performance_id") or "") for track in tracks if track.get("performance_id")))
+    if not performance_ids:
         return {}
-    performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", list(audio))}
+    audio = _archive_tracks(performance_ids, store)
+    performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", performance_ids)}
     shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", [row.get("show_id", "") for row in performances.values()])}
     venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", [row.get("venue_id", "") for row in shows.values() if row.get("venue_id")])}
     result: dict[str, dict[str, Any]] = {}
-    for performance_id, entry in audio.items():
+    for performance_id in performance_ids:
         show = shows.get((performances.get(performance_id) or {}).get("show_id", ""), {})
+        if not show:
+            continue
         venue = venues.get(show.get("venue_id", ""), {})
+        entry = audio.get(performance_id)
         result[performance_id] = {
-            "audio_url": entry["audio_url"],
-            "audio_duration_seconds": entry["duration_seconds"],
+            **({"audio_url": entry["audio_url"], "audio_duration_seconds": entry["duration_seconds"]} if entry else {}),
+            "show_id": show.get("show_id") or None,
             "show_date": show.get("show_date") or None,
             "venue_name": venue.get("name") or None,
+            "city": venue.get("city") or None,
         }
     return result
 

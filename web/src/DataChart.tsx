@@ -1,16 +1,20 @@
-import { useId } from "react";
+import { useId, type KeyboardEvent } from "react";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ResponsiveContainer,
+  Text,
   Tooltip,
   XAxis,
   YAxis,
   type TooltipContentProps
 } from "recharts";
 import type { ExperienceBlock } from "./types";
+import type { FollowUp } from "./ask-request";
 import { CardHeading, Drawer } from "./components";
+import { RowPanel, panelId, useOpenRow, type RowSource } from "./RowOpener";
 
 // `./types` re-exports several block types individually (ShowUnitBlock,
 // AlbumUnitBlock, ...) but not this one -- it only appears as a member of
@@ -57,6 +61,82 @@ function chartDescription(block: DataChartBlock): string {
 type DataChartColumn = DataChartBlock["columns"][number];
 type DataChartRow = { [key: string]: unknown };
 
+// A row's record ID: a song, person, venue or release ID, or its year.
+function rowIdOf(row: DataChartRow): string | null {
+  if (typeof row.id === "string" && row.id) return row.id;
+  if (typeof row.year === "number") return String(row.year);
+  return null;
+}
+
+type OpenTickProps = {
+  x?: number | string;
+  y?: number | string;
+  textAnchor?: "start" | "middle" | "end" | "inherit";
+  verticalAnchor?: "start" | "middle" | "end";
+  width?: number | string;
+  payload?: { value?: unknown; index?: number };
+  index?: number;
+};
+
+// An axis label that opens its row: a button inside the chart, so the label a
+// visitor reads is the control they press. A row that does not open keeps a
+// plain label.
+function OpenTick({
+  tick,
+  rows,
+  dimensionKey,
+  opens,
+  openId,
+  panelFor,
+  register,
+  onToggle,
+  truncate
+}: {
+  tick: OpenTickProps;
+  rows: DataChartRow[];
+  dimensionKey: string;
+  opens: Set<string>;
+  openId: string | null;
+  panelFor: (rowId: string) => string;
+  register: (rowId: string) => (element: SVGElement | null) => void;
+  onToggle: (rowId: string) => void;
+  truncate: boolean;
+}) {
+  const value = String(tick.payload?.value ?? "");
+  const byIndex = typeof tick.index === "number" ? rows[tick.index] : undefined;
+  const row = byIndex && String(byIndex[dimensionKey]) === value ? byIndex : rows.find((candidate) => String(candidate[dimensionKey]) === value);
+  const rowId = row ? rowIdOf(row) : null;
+  const text = truncate ? truncateLabel(value) : value;
+  const label = (
+    <Text x={tick.x} y={tick.y} width={tick.width} textAnchor={tick.textAnchor} verticalAnchor={tick.verticalAnchor ?? "middle"} fill="var(--muted)" className="recharts-cartesian-axis-tick-value">
+      {text}
+    </Text>
+  );
+  if (!rowId || !opens.has(rowId)) return label;
+  const open = openId === rowId;
+  function onKeyDown(event: KeyboardEvent<SVGGElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onToggle(rowId as string);
+    }
+  }
+  return (
+    <g
+      className={open ? "chart-open-tick is-open" : "chart-open-tick"}
+      role="button"
+      tabIndex={0}
+      aria-label={value}
+      aria-expanded={open}
+      aria-controls={open ? panelFor(rowId) : undefined}
+      ref={register(rowId)}
+      onClick={() => onToggle(rowId)}
+      onKeyDown={onKeyDown}
+    >
+      {label}
+    </g>
+  );
+}
+
 // A plain, reasonable plural: the dimension column's label is always a
 // count-friendly noun ("Venue", "Year", "Song"), never irregular, so a
 // trailing "s" (skipped when the label already ends in one) is sufficient.
@@ -81,9 +161,11 @@ function CoverageDetail({ block, dimensionLabel, shownCount }: { block: DataChar
 
 // ``embedded`` draws the chart inside a card that already names its subject:
 // no heading of its own, and a shorter plot.
-export function DataChart({ block, embedded = false }: { block: DataChartBlock; embedded?: boolean }) {
+export function DataChart({ block, embedded = false, onFollowUp }: { block: DataChartBlock; embedded?: boolean; onFollowUp?: FollowUp }) {
   const titleId = useId();
   const descId = useId();
+  const panelBase = useId();
+  const opened = useOpenRow();
 
   // Structural guards — defense in depth against a payload that somehow
   // violates the contract the server already guarantees. Render a safe,
@@ -117,8 +199,38 @@ export function DataChart({ block, embedded = false }: { block: DataChartBlock; 
   const isVertical = block.orientation === "vertical";
   const plotHeight = isVertical ? (embedded ? EMBEDDED_CHART_HEIGHT : VERTICAL_CHART_HEIGHT) : horizontalChartHeight(rows.length);
 
+  // Bars whose rows name a record open below the chart, one at a time.
+  const opens = new Set(block.open_ids ?? []);
+  const openRowId = opened.openId && opens.has(opened.openId) ? opened.openId : null;
+  const source: RowSource = { blockType: "data_chart", blockId: block.aggregation_id, scope: block.open_scope ?? null };
+  const panelFor = (rowId: string) => panelId(panelBase, rowId);
+  const tick = (truncate: boolean) =>
+    opens.size > 0
+      ? (props: OpenTickProps) => (
+          <OpenTick
+            tick={props}
+            rows={rows}
+            dimensionKey={dimensionColumn.key}
+            opens={opens}
+            openId={openRowId}
+            panelFor={panelFor}
+            register={opened.register}
+            onToggle={opened.toggle}
+            truncate={truncate}
+          />
+        )
+      : { fill: "var(--muted)" };
+  function onBarClick(_data: unknown, index: number) {
+    const rowId = rows[index] ? rowIdOf(rows[index]) : null;
+    if (rowId && opens.has(rowId)) opened.toggle(rowId);
+  }
+
   return (
-    <figure className={embedded ? "data-chart-figure embedded" : "data-chart-figure"} aria-labelledby={titleId} aria-describedby={descId}>
+    <figure
+      className={["data-chart-figure", embedded ? "embedded" : null, opens.size > 0 ? "opens" : null].filter(Boolean).join(" ")}
+      aria-labelledby={titleId}
+      aria-describedby={descId}
+    >
       {embedded ? (
         <figcaption id={titleId} className="visually-hidden">{block.title}</figcaption>
       ) : (
@@ -146,7 +258,7 @@ export function DataChart({ block, embedded = false }: { block: DataChartBlock; 
                 type="category"
                 tickLine={false}
                 axisLine={{ stroke: "var(--hair)" }}
-                tick={{ fill: "var(--muted)" }}
+                tick={tick(false)}
               />
               <YAxis
                 type="number"
@@ -172,7 +284,7 @@ export function DataChart({ block, embedded = false }: { block: DataChartBlock; 
                 type="category"
                 tickLine={false}
                 axisLine={{ stroke: "var(--hair)" }}
-                tick={{ fill: "var(--muted)" }}
+                tick={tick(true)}
                 tickFormatter={(value) => truncateLabel(String(value))}
                 interval={0}
                 width={120}
@@ -197,9 +309,26 @@ export function DataChart({ block, embedded = false }: { block: DataChartBlock; 
             // 2px matches --r, the design system's corner radius.
             radius={isVertical ? [2, 2, 0, 0] : [0, 2, 2, 0]}
             maxBarSize={24}
-          />
+            onClick={opens.size > 0 ? onBarClick : undefined}
+          >
+            {opens.size > 0 &&
+              rows.map((row, index) => (
+                <Cell key={`${rowIdOf(row) ?? index}`} fill={rowIdOf(row) === openRowId ? "var(--cream)" : "var(--muted)"} />
+              ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
+      {openRowId && (
+        <RowPanel
+          key={openRowId}
+          id={panelFor(openRowId)}
+          rowId={openRowId}
+          source={source}
+          onFollowUp={onFollowUp}
+          onClose={opened.close}
+          standalone
+        />
+      )}
       <CoverageDetail block={block} dimensionLabel={dimensionColumn.label} shownCount={rows.length} />
       <Drawer
         tabs={[

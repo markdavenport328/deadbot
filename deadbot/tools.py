@@ -1365,6 +1365,13 @@ def build_tools(
                     tour_counts[name] = tour_counts.get(name, 0) + 1
             leading = max(tour_counts, key=tour_counts.get) if tour_counts else ""
             tours = [leading] if leading and tour_counts[leading] * 5 >= len(ordered) * 4 else []
+            payload["result_id"] = f"album:{release['release_id']}"
+            nights_row = (
+                f'one show_unit with from_result="album:{release["release_id"]}" (disclosure="collapsed") '
+                "makes a row for each night, in date order"
+            )
+            if len(ordered) > 1 and not tours:
+                payload["on_the_page"] = f"To show what is on this release, lay out its nights: {nights_row}."
             if len(ordered) > 1 and tours:
                 # Right after the release, where the order steers the page.
                 payload = {
@@ -1372,9 +1379,8 @@ def build_tools(
                     "tour": {
                         "names": tours,
                         "nights": (
-                            "To show what is on this box, lay out the tour night by night: look_up shows with "
-                            "tour=<name> gives the nights as collapsed show rows (a show_unit from_result), and "
-                            "get_grid (show by song, tour=<name>, columns=the songs that define the tour) gives them across the nights."
+                            f"To show what is on this box, lay out its nights: {nights_row}. "
+                            "get_grid (show by song, tour=<name>, columns=the songs that define the tour) gives the songs across those nights."
                         ),
                     },
                     **payload,

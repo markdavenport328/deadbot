@@ -121,6 +121,13 @@ got its show rows in one of two opening runs; the model still often writes the
 box as one album card and text. Next try: let a collapsed `show_unit`
 `from_result` read the nights straight from the `get_album` result, so the box
 needs no second call.
+**Done (October 16):** a get_album result now carries a `result_id`, so a
+collapsed `show_unit` `from_result` lays out a box's nights with no second call
+(one live run in three took that route). Whichever card the model picks, a box
+of whole nights (several shows, three or more tracks each) now opens its
+tracklist night by night: one row per night with date, venue and a gold play
+for that night's tape, and an "Other tracks" row last. Compilations keep a plain
+tracklist.
 
 **8. Song timelines come with a listening path.** For a counting question, the
 model treats the card as a chart and skips stops. Two changes: the
@@ -147,6 +154,13 @@ becomes a guests-by-shows bar chart where every bar opens to that guest's
 nights. Design it for the whole family of ranked questions (songs, guests,
 venues, records, years), not just these two chips. *Size: large. Helps: most
 played, sat-in, albums, Santana, MSG.*
+**Done (October 16):** `data_chart` bars, `ranked_list` rows and `person_roster`
+names open in place, fetched on open from `GET /api/rows/{id}` (store facts
+only, no model call). Each row has two-column facts, at most one gold Play for a
+representative night with tape, and one blue ask that carries the row as focus.
+Songs, people, venues, releases and years open; a year chart narrowed to a guest
+or venue keeps its years plain. Open questions: guests with no song credits play
+the whole show's tape, and ties in picks go to the earlier date.
 
 **10. Spotify plays on the page.** Album cards render the Spotify embed
 (`MediaEmbed` in `App.tsx` already builds it for `media_link` blocks) in the
