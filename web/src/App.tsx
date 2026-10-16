@@ -9,6 +9,7 @@ import { Grid } from "./Grid";
 import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardSpotifyButton, SpotifyEmbed, SpotifyPanelEmbed, SpotifyTextButton, useSpotifyPanel, type SpotifyPanel } from "./spotify-embed";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
+import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { VersionStrip } from "./VersionStrip";
 import { SongTimeline } from "./SongTimeline";
 import type { SongTimelineData } from "./song-timeline-types";
@@ -597,19 +598,12 @@ function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMeta: Sho
   );
 }
 
-// A live record's track, as the tape of the performance it was taken from.
-function albumTrack(track: AlbumUnitBlock["tracks"][number]): PlayerTrack | null {
-  if (!track.audio_url) return null;
-  return toTrack(
-    { performance_id: track.performance_id ?? `track-${track.track_number}`, title: track.title, audio_url: track.audio_url, duration_seconds: track.audio_duration_seconds },
-    { showDate: track.show_date, venueName: track.venue_name }
-  );
-}
-
 // The album tracklist: the same numbered-link styling as the setlist, one
 // column, no set grouping. A track whose performance has a tape plays in-page
 // and continues through the record's other playable tracks.
 function TrackList({ tracks }: { tracks: AlbumUnitBlock["tracks"] }) {
+  const nights = groupByNight(tracks);
+  if (nights) return <NightList groups={nights} />;
   const playable = tracks.map(albumTrack);
   const queue = playable.filter((track): track is PlayerTrack => track !== null);
   return (

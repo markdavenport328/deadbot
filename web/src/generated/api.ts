@@ -166,6 +166,8 @@ export interface components {
             audio_duration_seconds?: number | null;
             /** Audio Url */
             audio_url?: string | null;
+            /** City */
+            city?: string | null;
             /** Duration Seconds */
             duration_seconds?: number | null;
             /**
@@ -179,6 +181,8 @@ export interface components {
             performance_id?: string | null;
             /** Show Date */
             show_date?: string | null;
+            /** Show Id */
+            show_id?: string | null;
             /** Song Id */
             song_id?: string | null;
             /** Title */

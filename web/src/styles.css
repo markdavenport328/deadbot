@@ -866,3 +866,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .chart-open-tick.is-open text { font-weight: 700; }
 @media (pointer: coarse) { .opened-play, .row-close { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .row-open::after { transition: none; } }
+/* A multi-show record's tracklist, read night by night: each night is a row
+   like a collapsed show row, opening to its tracks. */
+.night-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--hair); }
+.night-row { border-bottom: 1px solid var(--hair); }
+.night-row .collapsed-head { padding: 0.6rem 0; }
+.night-row .collapsed-title { font-size: 1rem; }
+.night-tracks { padding: 0 0 0.9rem; }

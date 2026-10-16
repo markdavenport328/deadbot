@@ -57,6 +57,17 @@
             ],
             "title": "Audio Url"
           },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
           "duration_seconds": {
             "anyOf": [
               {
@@ -106,6 +117,17 @@
               }
             ],
             "title": "Show Date"
+          },
+          "show_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Id"
           },
           "song_id": {
             "anyOf": [

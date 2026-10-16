@@ -320,8 +320,10 @@ class AlbumTrackItem(ExperienceModel):
     # track: what the in-page player plays, its length, and the show it is from.
     audio_url: str | None = None
     audio_duration_seconds: int | None = Field(default=None, ge=0)
+    show_id: str | None = None
     show_date: str | None = None
     venue_name: str | None = None
+    city: str | None = None
 
 
 class AlbumCreditItem(ExperienceModel):
