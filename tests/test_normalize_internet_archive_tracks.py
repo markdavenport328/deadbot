@@ -178,3 +178,73 @@ def test_fallback_prefers_an_alternate_item_that_aligns_every_performance(tmp_pa
     assert [row["chosen_for_show"] for row in review] == [False, True]
     assert managed == {"rec-a", "rec-b"}
     assert counts["accepted_full"] == 1
+
+
+def _keys(title):
+    return ia_tracks.title_keys(title, extended=True)
+
+
+def test_tape_title_variants_share_a_key_with_the_setlist_title():
+    pairs = [
+        ("St. Stephen ->", "Saint Stephen"),
+        ("Me & My Uncle [2]", "Me And My Uncle"),
+        ("It Hurts Me Too", "Hurts Me Too"),
+        ("Turn OnYour Lovelight", "Turn On Your Lovelight"),
+        ("Sittin' On Top Of The World", "Sitting On Top Of The World"),
+        ("Smokestack Lightnin'", "Smokestack Lightning"),
+        ("E: Brokedown Palace", "Brokedown Palace"),
+        ("Something On Your Mind", "There's Something On Your Mind"),
+        ("Hog For You", "Hog For You Baby"),
+        ("Look On Yonder Wall", "Look On Yonder's Wall"),
+        ("05 Looks Like Rain>", "Looks Like Rain"),
+    ]
+    for source, canonical in pairs:
+        assert _keys(source) & _keys(canonical), (source, canonical)
+
+
+def test_unrelated_titles_do_not_share_a_key():
+    assert not _keys("Sugaree") & _keys("Sugar Magnolia")
+    assert not _keys("Dark Star") & _keys("Dire Wolf")
+
+
+def test_default_title_keys_are_unchanged_so_the_chosen_tape_never_switches():
+    assert not ia_tracks.title_keys("E: Brokedown Palace") & ia_tracks.title_keys("Brokedown Palace")
+
+
+def test_near_spelling_needs_a_long_enough_close_title():
+    assert ia_tracks.near_spelling(_keys("Moring Dew"), _keys("Morning Dew"))
+    assert ia_tracks.near_spelling(_keys("Viola Lee Bues"), _keys("Viola Lee Blues"))
+    assert not ia_tracks.near_spelling(_keys("Casey Jones"), _keys("Dark Star"))
+    assert not ia_tracks.near_spelling(_keys("Wharf"), _keys("Wharf Rat"))
+
+
+def _recover(unlinked_titles, tracks, other=(), catalog=()):
+    unlinked = [(index, _keys(title)) for index, title in enumerate(unlinked_titles)]
+    other_keys = set().union(*(_keys(title) for title in other)) if other else set()
+    catalog_keys = set().union(*(_keys(title) for title in catalog)) if catalog else set()
+    return ia_tracks.recover_variant_tracks(unlinked, tracks, other_keys, catalog_keys)
+
+
+def test_recovery_links_a_typo_track_in_the_gap():
+    settled, held = _recover(["Morning Dew"], [(209, "Moring Dew")])
+    assert settled == [(0, 209, "typo")]
+    assert held == []
+
+
+def test_recovery_keeps_a_repeated_song_in_tape_order():
+    settled, held = _recover(
+        ["Saint Stephen", "Saint Stephen"], [(206, "St. Stephen >"), (208, "St. Stephen")]
+    )
+    assert settled == [(0, 206, "variant"), (1, 208, "variant")]
+    assert held == []
+
+
+def test_recovery_holds_a_repeated_song_with_one_track():
+    settled, held = _recover(["Saint Stephen", "Saint Stephen"], [(206, "St. Stephen")])
+    assert settled == []
+    assert [entry["performance_index"] for entry in held] == [0, 1]
+
+
+def test_recovery_never_reads_a_real_catalog_song_as_a_typo():
+    settled, held = _recover(["Me And My Uncle"], [(5, "Me And Bobby McGee")], catalog=["Me And Bobby McGee"])
+    assert settled == []

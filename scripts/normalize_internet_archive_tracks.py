@@ -11,6 +11,7 @@ retained in the review evidence and are not put into the performance graph.
 from __future__ import annotations
 
 import csv
+import difflib
 import json
 import re
 import unicodedata
@@ -129,7 +130,24 @@ def parse_duration(value: object) -> str:
 PARENTHETICAL = re.compile(r"\s*[\(\[\{][^\)\]\}]*[\)\]\}]")
 COMBINED_SEPARATOR = re.compile(r"\s*(?:->|-\s*>|>|/|→|\+)\s*")
 PREFIX_TOKEN = re.compile(r"^(?:gd\d{2,4}|\d{1,4}|[ds]\d{1,2}|t\d{1,3}|[ds]\d{1,2}t\d{1,3}|cd\d{1,2}|disc|disk|set|track)$")
+ENCORE_PREFIX = re.compile(r"^\s*(?:e\d?|encore)\s*[:;.\-]\s*", re.IGNORECASE)
 MIN_ALIGNED_SHARE = 0.5
+
+
+# Real alternate titles that tape labels use for a setlist song (normalized
+# form on the left, normalized setlist title on the right).  Spelling noise
+# ("Moring Dew") is not listed here; the typo rule in `recover_variant_tracks`
+# handles it.
+TAPE_TITLE_ALIASES = {
+    "something on your mind": "there s something on your mind",
+    "theres something on your mind": "there s something on your mind",
+    "hog for you": "hog for you baby",
+    "look on yonder wall": "look on yonder s wall",
+    "look on yonders wall": "look on yonder s wall",
+    "look over yonders wall": "look on yonder s wall",
+    "look over yonder wall": "look on yonder s wall",
+    "downsolong": "down so long",
+}
 
 
 def _extra_aliases() -> dict[str, str]:
@@ -141,15 +159,25 @@ def _extra_aliases() -> dict[str, str]:
 
 
 _ALIASES: dict[str, str] | None = None
+_TAPE_ALIASES: dict[str, str] | None = None
 
 
-def _fold(value: str) -> str:
-    """Fold a normalized title so spelling-only variants compare equal."""
+def _fold(value: str, extended: bool = False) -> str:
+    """Fold a normalized title so spelling-only variants compare equal.
 
-    global _ALIASES
+    ``extended`` adds the tape-title rules used by the recovery pass ("St" for
+    Saint and the curated `TAPE_TITLE_ALIASES`).
+    """
+
+    global _ALIASES, _TAPE_ALIASES
     if _ALIASES is None:
         _ALIASES = _extra_aliases()
-    value = _ALIASES.get(value, value)
+        _TAPE_ALIASES = {**_ALIASES, **TAPE_TITLE_ALIASES}
+    if extended:
+        value = " ".join("saint" if token == "st" else token for token in value.split())
+        value = _TAPE_ALIASES.get(value, value)
+    else:
+        value = _ALIASES.get(value, value)
     value = re.sub(r"^the ", "", value)
     value = re.sub(r"ing\b", "in", value)
     return value.replace(" ", "")
@@ -162,16 +190,25 @@ def _strip_prefix(value: str) -> str:
     return " ".join(tokens)
 
 
-def title_keys(value: str) -> set[str]:
-    """Comparable keys for one title: as written and without parentheticals."""
+def title_keys(value: str, extended: bool = False) -> set[str]:
+    """Comparable keys for one title: as written and without parentheticals.
+
+    ``extended`` also drops an encore prefix ("E: ") and applies the tape-title
+    rules of `_fold`; the alignment passes keep the default so the tape they
+    chose for a show never changes.
+    """
 
     keys: set[str] = set()
-    for variant in {value or "", PARENTHETICAL.sub("", value or "")}:
+    plain = PARENTHETICAL.sub("", value or "")
+    variants = {value or "", plain}
+    if extended:
+        variants.add(ENCORE_PREFIX.sub("", plain))
+    for variant in variants:
         base = normalized_title(variant)
         if not base:
             continue
         for candidate in {base, _strip_prefix(base)}:
-            folded = _fold(normalized_title(candidate))
+            folded = _fold(normalized_title(candidate), extended)
             if folded:
                 keys.add(folded)
     return keys
@@ -287,6 +324,268 @@ def align_tracks_tolerant(
     matches.sort(key=lambda match: match[1])
     status = "accepted_full" if len(matches) == len(performances) else "accepted_partial"
     return status, matches, "", sorted(skipped, key=lambda row: row["track_number"])
+
+
+# ---------------------------------------------------------------------------
+# Recovery of tracks lost to title variants
+#
+# The strict and fallback passes decide a whole item at once.  A tape the
+# strict pass accepted "partially" -- because one title ("Moring Dew") reads as
+# banter -- keeps that song unlinked even though the tape plainly plays it.
+# The pass below revisits a show whose rows all come from one recording and
+# looks, inside that same tape, for a track that names each unlinked setlist
+# song under a spelling variant or typo.  It never switches tapes and it
+# links a track only when:
+#
+# * the track sits between the tracks already linked to its neighbours in
+#   the setlist (setlist order and tape order agree);
+# * the title matches the song through the tolerant title keys (aliases,
+#   "St." for Saint, "&", "[2]" markers, "Lightnin'" ...), or, failing that,
+#   is a near-spelling of it (difflib ratio >= TYPO_RATIO) and of no other
+#   setlist or catalog song;
+# * every longest in-order pairing of the gap's unlinked songs and unused
+#   tracks agrees on the pair, so a repeated song is mapped in order or not
+#   at all.
+# ---------------------------------------------------------------------------
+
+RECOVERY_NOTE = (
+    "Source track title is a spelling or alternate-title variant of the canonical song and sits between "
+    "the tracks linked to its setlist neighbours on the same recording; duration comes from Internet "
+    "Archive item metadata; no audio downloaded."
+)
+TYPO_RATIO = 0.88
+TYPO_MIN_LENGTH = 7
+TYPO_MAX_LENGTH_GAP = 2
+
+
+def _loose(title: str) -> set[str]:
+    return {key for key in title_keys(title, extended=True) if key}
+
+
+def near_spelling(source_keys: set[str], song_keys: set[str]) -> bool:
+    """True when a source title is a near-spelling (typo) of a song title."""
+
+    for left in source_keys:
+        for right in song_keys:
+            if (
+                min(len(left), len(right)) >= TYPO_MIN_LENGTH
+                and abs(len(left) - len(right)) <= TYPO_MAX_LENGTH_GAP
+                and difflib.SequenceMatcher(None, left, right).ratio() >= TYPO_RATIO
+            ):
+                return True
+    return False
+
+
+def recover_variant_tracks(
+    unlinked: list[tuple[int, set[str]]],
+    tracks: list[tuple[int, str]],
+    other_song_keys: set[str],
+    catalog_keys: set[str],
+) -> tuple[list[tuple[int, int, str]], list[dict]]:
+    """Pair unlinked performances with unused tape tracks inside one gap.
+
+    ``unlinked`` is ``[(performance_index, song_keys)]`` in setlist order and
+    ``tracks`` is ``[(track_number, title)]`` in tape order, already limited
+    to the gap between the anchoring tracks.  Returns the settled
+    ``(performance_index, track_number, how)`` pairs and held cases.
+    """
+
+    relation: dict[tuple[int, int], str] = {}
+    for u, (_, song_keys) in enumerate(unlinked):
+        for t, (_, title) in enumerate(tracks):
+            keys = _loose(title)
+            if not keys:
+                continue
+            if keys & song_keys:
+                relation[(u, t)] = "variant"
+            elif not (keys & catalog_keys) and not (keys & other_song_keys) and near_spelling(keys, song_keys):
+                relation[(u, t)] = "typo"
+
+    rows, cols = len(unlinked), len(tracks)
+
+    def best_length(forbidden: tuple[int, int] | None = None) -> int:
+        suffix = [[0] * (cols + 1) for _ in range(rows + 1)]
+        for i in range(rows - 1, -1, -1):
+            for j in range(cols - 1, -1, -1):
+                value = max(suffix[i + 1][j], suffix[i][j + 1])
+                if (i, j) in relation and (i, j) != forbidden:
+                    value = max(value, suffix[i + 1][j + 1] + 1)
+                suffix[i][j] = value
+        return suffix[0][0]
+
+    best = best_length()
+    settled: list[tuple[int, int, str]] = []
+    held: list[dict] = []
+    if not best:
+        return settled, held
+    # A typo reading of a track is accepted only when no other song of the gap
+    # also reads it, and vice versa: one pair per track and per song.
+    for (u, t), how in sorted(relation.items()):
+        if best_length(forbidden=(u, t)) >= best:
+            continue
+        rivals = [1 for (u2, t2) in relation if (u2 == u) != (t2 == t) and (u2 == u or t2 == t)]
+        if how == "typo" and rivals:
+            continue
+        settled.append((unlinked[u][0], tracks[t][0], how))
+    placed = {performance_index for performance_index, _, _ in settled}
+    for u, (performance_index, _) in enumerate(unlinked):
+        if performance_index in placed:
+            continue
+        candidates = [tracks[t][0] for t in range(cols) if (u, t) in relation]
+        if candidates:
+            held.append(
+                {"performance_index": performance_index, "candidate_tracks": candidates, "reason": "ambiguous_or_out_of_order"}
+            )
+    return settled, held
+
+
+def recovery_pass(
+    songs: dict[str, str],
+    recordings: dict[str, dict],
+    performances: dict[str, list[dict]],
+    current_rows: list[dict],
+) -> tuple[list[dict], list[dict], dict[str, int]]:
+    """Add rows for unlinked songs whose tape title is a variant of the song."""
+
+    recording_identifier = {row["recording_id"]: row["archive_identifier"] for row in recordings.values()}
+    performance_show = {
+        row["performance_id"]: show_id for show_id, rows in performances.items() for row in rows
+    }
+    rows_by_show: dict[str, list[dict]] = defaultdict(list)
+    for row in current_rows:
+        rows_by_show[performance_show.get(row["performance_id"], "")].append(row)
+
+    catalog_keys: set[str] = set()
+    for title in songs.values():
+        catalog_keys |= _loose(title)
+
+    wanted = {
+        recording_identifier.get(row["recording_id"], "")
+        for show_rows in rows_by_show.values()
+        for row in show_rows
+    }
+    items: dict[str, dict] = {}
+    paths = sorted(RAW_DIR.glob("internet-archive-*-representatives.jsonl")) + [ALTERNATES_PATH]
+    for path in paths:
+        for record in read_item_records(path):
+            identifier = record.get("source_record_id", "")
+            if identifier in wanted and identifier not in items:
+                items[identifier] = record
+
+    additions: list[dict] = []
+    review: list[dict] = []
+    counts: dict[str, int] = defaultdict(int)
+    for show_id in sorted(rows_by_show):
+        show_rows = rows_by_show[show_id]
+        show_performances = performances.get(show_id, [])
+        if not show_id or not show_performances:
+            continue
+        linked_ids = {row["performance_id"] for row in show_rows}
+        if all(p["performance_id"] in linked_ids for p in show_performances):
+            continue
+        recording_ids = {row["recording_id"] for row in show_rows}
+        if len(recording_ids) != 1:
+            counts["skipped_show_mixes_recordings"] += 1
+            continue
+        recording_id = next(iter(recording_ids))
+        record = items.get(recording_identifier.get(recording_id, ""))
+        if record is None:
+            counts["skipped_no_item_metadata"] += 1
+            continue
+        source_tracks, error = audio_track_files(record.get("raw_payload", {}))
+        if error:
+            counts["skipped_item_track_error"] += 1
+            continue
+        track_file = dict(source_tracks)
+        track_title = {number: source_file.get("title", "") or "" for number, source_file in source_tracks}
+        track_by_performance: dict[str, int] = {}
+        for row in show_rows:
+            try:
+                track_by_performance[row["performance_id"]] = int(row["track_number"])
+            except ValueError:
+                pass
+        used_tracks = set(track_by_performance.values())
+
+        song_keys = [_loose(songs[p["song_id"]]) for p in show_performances]
+        # Anchors must already be in tape order, or the neighbours mean nothing.
+        anchored = [
+            (i, track_by_performance[p["performance_id"]])
+            for i, p in enumerate(show_performances)
+            if p["performance_id"] in track_by_performance
+        ]
+        if any(b[1] <= a[1] for a, b in zip(anchored, anchored[1:])):
+            counts["skipped_anchors_out_of_tape_order"] += 1
+            continue
+
+        boundaries = [(-1, 0)] + anchored + [(len(show_performances), 10**9)]
+        for (left_index, left_track), (right_index, right_track) in zip(boundaries, boundaries[1:]):
+            gap = list(range(left_index + 1, right_index))
+            if not gap:
+                continue
+            gap_keys = set().union(*(song_keys[i] for i in gap))
+            other_keys = set().union(*(k for i, k in enumerate(song_keys) if i not in gap)) - gap_keys
+            # A track that names a song linked elsewhere in the show is a
+            # different song, not a variant of this gap's.
+            tracks = [
+                (number, title)
+                for number, title in sorted(track_title.items())
+                if left_track < number < right_track
+                and number not in used_tracks
+                and title
+                and not (_loose(title) & other_keys)
+            ]
+            if not tracks:
+                continue
+            settled, held = recover_variant_tracks([(i, song_keys[i]) for i in gap], tracks, other_keys, catalog_keys)
+            for performance_index, track_number, how in settled:
+                performance = show_performances[performance_index]
+                source_file = track_file[track_number]
+                additions.append(
+                    {
+                        "performance_id": performance["performance_id"],
+                        "recording_id": recording_id,
+                        "track_number": track_number,
+                        "start_seconds": "",
+                        "duration_seconds": parse_duration(source_file.get("length")),
+                        "track_title": source_file.get("title", ""),
+                        "notes": RECOVERY_NOTE,
+                    }
+                )
+                used_tracks.add(track_number)
+                counts[f"recovered_{how}"] += 1
+                review.append(
+                    {
+                        "source": "internet-archive",
+                        "pass": "title-variant-recovery",
+                        "status": "linked",
+                        "how": how,
+                        "show_id": show_id,
+                        "recording_id": recording_id,
+                        "performance_id": performance["performance_id"],
+                        "canonical_song_title": songs[performance["song_id"]],
+                        "track_number": track_number,
+                        "source_title": source_file.get("title", ""),
+                    }
+                )
+            for entry in held:
+                performance = show_performances[entry["performance_index"]]
+                counts["held_ambiguous"] += 1
+                review.append(
+                    {
+                        "source": "internet-archive",
+                        "pass": "title-variant-recovery",
+                        "status": "held",
+                        "reason": entry["reason"],
+                        "show_id": show_id,
+                        "recording_id": recording_id,
+                        "performance_id": performance["performance_id"],
+                        "canonical_song_title": songs[performance["song_id"]],
+                        "candidate_tracks": [
+                            {"track_number": number, "title": track_title[number]} for number in entry["candidate_tracks"]
+                        ],
+                    }
+                )
+    return additions, review, counts
 
 
 def audio_track_files(raw_payload: dict) -> tuple[list[tuple[int, dict]], str]:
@@ -655,6 +954,15 @@ def main() -> None:
     additions.extend(fallback_additions)
     review.extend(fallback_review)
 
+    # Rows an earlier recovery run wrote are regenerated, not appended to.
+    existing = [row for row in existing if row["notes"] != RECOVERY_NOTE]
+    additions = [row for row in additions if row["notes"] != RECOVERY_NOTE]
+    recovery_additions, recovery_review, recovery_counts = recovery_pass(
+        songs, recordings, performances, existing + additions
+    )
+    additions.extend(recovery_additions)
+    review.extend(recovery_review)
+
     all_rows = existing + additions
     with (CANONICAL / "performance_recordings.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields, lineterminator="\n")
@@ -668,6 +976,7 @@ def main() -> None:
         f"Added {len(additions)} track links from {len(review)} representatives; "
         f"statuses: {dict(sorted(status_counts.items()))}. "
         f"Fallback pass: {dict(sorted(fallback_counts.items()))}. "
+        f"Title-variant recovery: {dict(sorted(recovery_counts.items()))}. "
         f"Review evidence: {REVIEW_PATH.relative_to(ROOT)}"
     )
 

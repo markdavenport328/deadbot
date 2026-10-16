@@ -2,6 +2,9 @@
 
 Updated 2026-09-08.
 
+Later update (2026-10-16): the title-variant recovery pass added 1,488 track
+links; see "Title-variant recovery" at the end of this file.
+
 Later update (2026-10-12): the Internet Archive gap pass added track links for
 26 more shows and brought the archive track-link total to 32,935 rows; see
 `docs/collection-status-gap-show-track-links.md`.
@@ -179,3 +182,56 @@ retrieved.
    recording, so the `-archive-track` ID suffix is collision-free. If a later
    pass maps performances to additional sources, the ID scheme will need a
    recording-specific component.
+
+## Title-variant recovery (2026-10-16)
+
+The strict aligner accepts a tape "partially" when one title reads as banter,
+so a song whose tape title is spelled differently ("Moring Dew" on Cornell
+5/8/77, "St. Stephen" for Saint Stephen, "It Hurts Me Too" for Hurts Me Too)
+stayed unlinked on a tape that plainly plays it. A third pass in
+`scripts/normalize_internet_archive_tracks.py` (`recovery_pass`) revisits each
+show whose rows all come from one recording and looks, on that same tape, for
+a track for each unlinked setlist song. It runs offline on preserved item
+metadata and never switches tapes.
+
+A track is linked only when:
+
+- it sits between the tracks already linked to its setlist neighbours (tape
+  order agrees with setlist order);
+- its title shares a key with the song after the tolerant folding (`&`,
+  `[2]` markers, track-number and encore prefixes, trailing `>` / `->` / `*`,
+  "St" for Saint, dropped-g "Lightnin'", squashed spaces, the existing alias
+  table plus `TAPE_TITLE_ALIASES` such as Something On Your Mind, Hog For You
+  and Look On Yonder Wall); or it is a near-spelling (difflib ratio at least
+  0.88, at least 7 characters, lengths within 2) that is not the exact title
+  of any other song in the catalog and not of any other song in the show;
+- every longest in-order pairing of the gap's unlinked songs and unused
+  tracks agrees on the pair, so a song played twice (Saint Stephen 2-4 and
+  2-6) maps in order or not at all, and a typo reading is dropped if another
+  song or track competes for it.
+
+`normalize_internet_archive_track_links.py` then turns each recovered row
+into a link, accepting the file whose title is exactly the recovered track
+title. The shared aligners are unchanged (the extended keys apply only to
+this pass), so no existing row or link moved.
+
+| Measure | Before | After |
+| --- | ---: | ---: |
+| Performances with an archive track link | 32,935 | 34,423 |
+| Shows with every performance linked | 391 | 835 |
+| `performance_recordings` rows | 32,945 | 34,433 |
+| `performance_links` rows | 32,937 | 34,425 |
+
+1,488 tracks across 962 shows were recovered: 1,321 by title variant and 167
+by near-spelling. `gd-1977-05-08-morning-dew-2-7` now links
+`gd77-05-08.s2t09.mp3` on the Betty Cantor tape the show already used.
+
+### Held for review
+
+230 unlinked songs in 127 shows had a matching track on the tape but no
+settled position, and stay unlinked (reason `ambiguous_or_out_of_order`, each
+with its candidate tracks, in `internet-archive-track-mapping-review.jsonl`
+under `"pass": "title-variant-recovery"`). Most are a repeated song with fewer
+tracks than setlist slots (Good Lovin', Turn On Your Lovelight, Not Fade Away,
+Alligator, Let It Grow) or a track placed outside its neighbours. Nothing
+was guessed.
