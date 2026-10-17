@@ -1,0 +1,149 @@
+/* Site menu. The toggle sits in the top-right corner of every page; the panel
+   slides in from the right and fills the screen with a few very large links,
+   each row an equal share of the height, separated by hairlines. Nothing else
+   competes with them. */
+
+.site-menu-toggle,
+.site-menu-close {
+  position: fixed;
+  top: 0.75rem;
+  right: 0.6rem;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--cream);
+}
+
+/* Three hairlines, drawn from one span and its two pseudo-elements. The
+   toggle sits on a soft ground halo so the warm rosette behind it never
+   swallows the lines. */
+.site-menu-toggle { background: radial-gradient(closest-side, rgba(20, 34, 27, 0.7), rgba(20, 34, 27, 0)); }
+.site-menu-toggle span,
+.site-menu-toggle span::before,
+.site-menu-toggle span::after {
+  display: block;
+  width: 1.4rem;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+}
+.site-menu-toggle span { position: relative; }
+.site-menu-toggle span::before,
+.site-menu-toggle span::after { content: ""; position: absolute; left: 0; }
+.site-menu-toggle span::before { top: -0.42rem; }
+.site-menu-toggle span::after { top: 0.42rem; }
+.site-menu-toggle span::after { transition: width var(--t-fade) var(--ease-out); }
+.site-menu-toggle:hover span::after { width: 0.95rem; }
+
+/* The close mark: two hairlines crossed. */
+.site-menu-close { position: static; }
+.site-menu-close span { position: relative; display: block; width: 1.3rem; height: 1.3rem; }
+.site-menu-close span::before,
+.site-menu-close span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: currentColor;
+}
+.site-menu-close span::before { transform: rotate(45deg); }
+.site-menu-close span::after { transform: rotate(-45deg); }
+
+.site-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--grid-sticky);
+  color: var(--cream);
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform 500ms var(--ease-in-out), visibility 0s linear 500ms;
+}
+.site-menu.open {
+  transform: none;
+  visibility: visible;
+  transition: transform 500ms var(--ease-in-out), visibility 0s;
+}
+html.site-menu-open { overflow: hidden; }
+
+/* The bar mirrors the page corner it replaces: the close mark lands exactly
+   where the toggle was. */
+.site-menu-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.6rem 0.75rem clamp(1rem, 4vw, 3rem);
+}
+
+.site-menu nav { display: flex; flex: 1; min-height: 0; }
+.site-menu-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.site-menu-list li { display: flex; flex: 1; min-height: 0; border-top: 1px solid rgba(243, 240, 226, 0.16); }
+
+.site-menu-link {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  padding: 0 clamp(1rem, 4vw, 3rem);
+  color: var(--cream);
+  font-family: var(--serif);
+  font-size: clamp(2.6rem, 8.5vw, 7.5rem);
+  font-weight: 400;
+  font-variation-settings: "SOFT" 40;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-decoration: none;
+  text-wrap: balance;
+  transition: opacity 400ms var(--ease-out);
+}
+.site-menu-out {
+  display: inline-block;
+  margin-left: 0.3em;
+  color: var(--read);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.42em;
+  font-weight: 300;
+  letter-spacing: 0;
+  transform: translateY(-0.55em);
+}
+
+/* Pointing at one link quiets the others. */
+.site-menu-list:hover .site-menu-link:not(:hover),
+.site-menu-list:focus-within .site-menu-link:not(:focus-visible):not(:hover) { opacity: 0.38; }
+.site-menu-link:focus-visible { outline-offset: -6px; }
+
+/* The links rise into place just behind the panel. */
+.site-menu-link { transform: translateY(0.35em); opacity: 0; }
+.site-menu.open .site-menu-link { transform: none; opacity: 1; transition: transform 700ms var(--ease-out) 260ms, opacity 500ms var(--ease-out) 260ms; }
+.site-menu.open li + li .site-menu-link { transition-delay: 340ms; }
+.site-menu.open .site-menu-list:hover .site-menu-link:not(:hover) { opacity: 0.38; transition-delay: 0ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .site-menu { transform: none; opacity: 0; transition: opacity 150ms linear, visibility 0s linear 150ms; }
+  .site-menu.open { opacity: 1; transition: opacity 150ms linear, visibility 0s; }
+  .site-menu-link,
+  .site-menu.open .site-menu-link { transform: none; transition: opacity 150ms linear; }
+}
+
+/* One column: the rail scrolls with the page, so the toggle does too, and
+   the rail's own top row leaves it room. */
+@media (max-width: 860px) {
+  .site-menu-toggle { position: absolute; }
+  .masthead-row { padding-right: 2.75rem; }
+}

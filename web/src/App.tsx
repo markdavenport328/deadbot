@@ -10,6 +10,10 @@ import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type P
 import { CardSpotifyButton, SpotifyEmbed, SpotifyPanelEmbed, SpotifyTextButton, useSpotifyPanel, type SpotifyPanel } from "./spotify-embed";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
+import { AboutPage } from "./AboutPage";
+import { SiteMenu } from "./SiteMenu";
+import { usePath } from "./site-nav";
+import { libraryStats as stats } from "./library-stats";
 import { VersionStrip } from "./VersionStrip";
 import { SongTimeline } from "./SongTimeline";
 import type { SongTimelineData } from "./song-timeline-types";
@@ -124,18 +128,6 @@ function formatReleaseType(releaseType: string): string {
   const capitalized = words.map((word, index) => (index === 0 ? capitalize(word) : word)).join(" ");
   return /album/i.test(releaseType) ? capitalized : `${capitalized} album`;
 }
-
-// Catalog counts shown on the home screen. These are read from the canonical
-// CSVs, not the live database, so they cost the page nothing to display.
-// tests/test_home_stats.py fails when an import moves them; recompute with:
-//   python scripts/home_stats.py
-const stats = [
-  { count: "2,358", noun: "shows" },
-  { count: "436", noun: "songs" },
-  { count: "39,774", noun: "performances" },
-  { count: "18,002", noun: "recordings" },
-  { count: "139", noun: "guests" }
-];
 
 const startingPoints = [
   {
@@ -2660,11 +2652,37 @@ function App() {
   );
 }
 
+// The About page replaces the app on screen without unmounting it, so the
+// conversation, its page, and its scroll position are all still there on the
+// way back, and the player bar comes along.
 export default function AppWithPlayer() {
+  const path = usePath();
+  const onAbout = path === "/about";
+  const homeScroll = useRef(0);
+
+  useLayoutEffect(() => {
+    if (onAbout) return undefined;
+    window.scrollTo(0, homeScroll.current);
+    const remember = () => {
+      homeScroll.current = window.scrollY;
+    };
+    window.addEventListener("scroll", remember, { passive: true });
+    return () => window.removeEventListener("scroll", remember);
+  }, [onAbout]);
+
   return (
     <PlayerProvider>
       <Rosettes />
-      <App />
+      <SiteMenu />
+      <div className="app-view" hidden={onAbout}>
+        <App />
+      </div>
+      {onAbout && (
+        <>
+          <AboutPage />
+          <div className="about-player"><NowPlayingBar /></div>
+        </>
+      )}
     </PlayerProvider>
   );
 }

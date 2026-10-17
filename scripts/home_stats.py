@@ -2,8 +2,8 @@
 """Compute the catalog counts the home screen prints.
 
 The home screen carries these numbers as literals so the page costs nothing
-to render. Run this after a data import and paste the result into the `stats`
-list in web/src/App.tsx; tests/test_home_stats.py fails until you do.
+to render. Run this after a data import and paste the result into the
+`libraryStats` list in web/src/library-stats.ts; tests/test_home_stats.py fails until you do.
 
     python scripts/home_stats.py
 """
