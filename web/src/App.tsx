@@ -14,7 +14,7 @@ import { VersionStrip } from "./VersionStrip";
 import { SongTimeline } from "./SongTimeline";
 import type { SongTimelineData } from "./song-timeline-types";
 import { askFocus } from "./song-timeline-text";
-import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
+import { AddToQueue, ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 import { RowPanel, panelId, useOpenRow, type RowSource } from "./RowOpener";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
@@ -278,7 +278,7 @@ function tapeLabels(tapes: Tape[]): Map<string, string> {
 function ExternalLink({ href, children, className, label }: { href: string; children: ReactNode; className?: string; label?: string }) {
   if (archiveTrack(href)) {
     const words = label ?? (typeof children === "string" ? children : "Play this track");
-    return <ListenControl url={href} label={words} className={className}>{children}</ListenControl>;
+    return <ListenControl url={href} label={words} className={className} queueable={false}>{children}</ListenControl>;
   }
   return (
     <a href={href} target="_blank" rel="noreferrer" className={className}>
@@ -411,7 +411,7 @@ function ListenFor({ items: allItems, queue }: { items: ListenItem[]; queue?: Pl
       {items.map((item, index) => (
         <span key={item.key}>
           {index > 0 && <span className="sep">·</span>}
-          <ListenControl url={item.url} label={item.title} track={item.track} queue={queue} />
+          <ListenControl url={item.url} label={item.title} track={item.track} queue={queue} queueable={false} />
         </span>
       ))}
     </p>
@@ -538,6 +538,7 @@ function SetlistRow({
             &gt;
           </span>
         )}
+        {track && <AddToQueue tracks={[track]} name={song.title} />}
       </span>
       <span className="row-duration">{track || song.duration_seconds ? formatClockTime(song.duration_seconds) : "—"}</span>
       {isCurrent && <span className="row-progress" style={{ width: `${progressPct}%` }} aria-hidden="true" />}
@@ -868,7 +869,7 @@ function CollapsedRow({ block, onFollowUp, children }: { block: UnitBlock; onFol
           ) : facts.embedId ? (
             <SpotifyTextButton panel={spotifyPanel} label="Listen" name={`Listen to ${facts.title} on Spotify`} className="collapsed-listen" />
           ) : facts.link ? (
-            <ListenControl url={facts.link.url} label={facts.title} className="collapsed-listen">Listen</ListenControl>
+            <ListenControl url={facts.link.url} label={facts.title} className="collapsed-listen" queueable={false}>Listen</ListenControl>
           ) : null}
           <button type="button" className="collapsed-toggle" aria-expanded={open} aria-controls={cardId} onClick={() => setOpen((value) => !value)}>
             {open ? "Less" : "More"}
@@ -1436,7 +1437,7 @@ function PerformanceUnit({
               <span key={row.key} className="leg">
                 <span className={row.here ? "stop here" : row.edge ? "stop edge" : "stop"}>
                   {row.n !== null && <span className="n">{row.n}</span>}
-                  {row.track ? <ListenControl label={row.title} track={row.track} queue={showQueue} /> : row.title}
+                  {row.track ? <ListenControl label={row.title} track={row.track} queue={showQueue} queueable={false} /> : row.title}
                 </span>
                 {index < rows.length - 1 && <span className="arrow" aria-hidden="true">→</span>}
               </span>
@@ -1758,7 +1759,7 @@ function Block({
                       {item.songs.map((song, index) => (
                         <span key={song.performance_id}>
                           {index > 0 && ", "}
-                          <ListenControl label={song.song_title} track={tracks[index]} queue={queue} />
+                          <ListenControl label={song.song_title} track={tracks[index]} queue={queue} queueable={false} />
                         </span>
                       ))}
                     </span>
@@ -2069,6 +2070,100 @@ function ComposedPage({
   );
 }
 
+function QueueIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="currentColor" d="M4 6h12v2H4zM4 11h12v2H4zM4 16h8v2H4zM18 13.5v6l4.5-3z" />
+    </svg>
+  );
+}
+
+function PlayNextIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M5 5h14M12 19V9M7.5 13.5 12 9l4.5 4.5" />
+    </svg>
+  );
+}
+
+function RemoveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+    </svg>
+  );
+}
+
+// The queue, opened from the bar: every queued track in order, the one
+// playing marked gold, the ones already heard dimmed. A title plays that
+// track; the quiet steps on the right move a track up to play next or take
+// it out. A run of tracks from one show names the show once, at its first
+// track, so a whole tape reads as one night.
+function UpNext({ id, onClose }: { id: string; onClose: () => void }) {
+  const player = usePlayer();
+  const currentRef = useRef<HTMLLIElement | null>(null);
+  const current = player.queue.findIndex((track) => track.id === player.currentTrack?.id);
+  const upcoming = Math.max(player.queue.length - current - 1, 0);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    // Scroll the panel alone (not the page) to bring the playing track near its top.
+    const panel = panelRef.current;
+    const item = currentRef.current;
+    if (panel && item) panel.scrollTop = Math.max(item.offsetTop - panel.offsetTop - 48, 0);
+    // Only on opening: later moves leave the visitor's scroll alone.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <div
+      ref={panelRef}
+      id={id}
+      className="now-playing-queue"
+      role="region"
+      aria-label="Queue"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onClose();
+      }}
+    >
+      <p className="queue-heading">
+        Up next <span className="queue-count">{upcoming === 1 ? "1 track" : `${upcoming} tracks`}</span>
+      </p>
+      <ol className="queue-list">
+        {player.queue.map((track, index) => {
+          const isCurrent = index === current;
+          const show = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
+          const previous = player.queue[index - 1];
+          const sameShow = previous && previous.showDate === track.showDate && previous.venueName === track.venueName;
+          const state = isCurrent ? "current" : index < current ? "heard" : "";
+          return (
+            <li key={track.id} ref={isCurrent ? currentRef : undefined} className={`queue-item${state ? ` ${state}` : ""}`} aria-current={isCurrent ? "true" : undefined}>
+              <span className="queue-n" aria-hidden="true">
+                {isCurrent ? <PlayPauseIcon playing={player.status === "playing"} /> : index + 1}
+              </span>
+              <button type="button" className="queue-title" onClick={() => player.jumpTo(index)} disabled={isCurrent} aria-label={isCurrent ? `${track.title}, playing now` : `Play ${track.title}`}>
+                <span className="queue-title-text">{track.title}</span>
+                {show && !sameShow && <span className="queue-show">{show}</span>}
+              </button>
+              <span className="queue-time">{track.durationSeconds ? formatClockTime(track.durationSeconds) : ""}</span>
+              <span className="queue-actions">
+                {!isCurrent && index !== current + 1 && (
+                  <button type="button" className="queue-step" onClick={() => player.playNext(index)} aria-label={`Play ${track.title} next`} title="Play next">
+                    <PlayNextIcon />
+                  </button>
+                )}
+                {!isCurrent && (
+                  <button type="button" className="queue-step" onClick={() => player.remove(index)} aria-label={`Remove ${track.title} from queue`} title="Remove">
+                    <RemoveIcon />
+                  </button>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
 // The one shared now-playing bar for the whole app: hidden until something
 // has played, then held at the bottom of the screen within the answer pane
 // (never over the left rail, since it renders inside .content-pane). A 44px
@@ -2077,9 +2172,14 @@ function ComposedPage({
 // the page's sources footer. When more than one track is queued (a set, a
 // path, a play-all), quiet back and next steps flank the gold button; each
 // dims at its end of the queue rather than vanishing, so the bar holds
-// still. Queueing and position are the shared PlayerProvider's job.
+// still. A queue toggle beside them opens the queue above the bar (UpNext)
+// and shows how many tracks are left. Queueing and position are the shared
+// PlayerProvider's job.
 export function NowPlayingBar() {
   const player = usePlayer();
+  const [queueOpen, setQueueOpen] = useState(false);
+  const queueToggleRef = useRef<HTMLButtonElement | null>(null);
+  const queueId = useId();
   const track = player.currentTrack;
   if (!track) return null;
   const isPlaying = player.status === "playing";
@@ -2089,8 +2189,14 @@ export function NowPlayingBar() {
   const position = Math.min(player.position, duration || 0);
   const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
   const queued = player.queue.length > 1;
+  const upcoming = Math.max(player.queue.length - player.queue.findIndex((item) => item.id === track.id) - 1, 0);
+  const closeQueue = () => {
+    setQueueOpen(false);
+    queueToggleRef.current?.focus();
+  };
   return (
-    <div className="now-playing-bar" role="region" aria-label="Now playing">
+    <div className={`now-playing-bar${queued && queueOpen ? " queue-open" : ""}`} role="region" aria-label="Now playing">
+      {queued && queueOpen && <UpNext id={queueId} onClose={closeQueue} />}
       {track.thumbnailUrl ? (
         <img className="now-playing-thumb" src={track.thumbnailUrl} alt="" loading="lazy" />
       ) : (
@@ -2127,6 +2233,21 @@ export function NowPlayingBar() {
         {queued && (
           <button type="button" className="now-playing-step" onClick={player.next} disabled={!player.hasNext} aria-label="Next track">
             <StepIcon direction="next" />
+          </button>
+        )}
+        {queued && (
+          <button
+            ref={queueToggleRef}
+            type="button"
+            className={`now-playing-queue-toggle${queueOpen ? " open" : ""}`}
+            onClick={() => setQueueOpen((open) => !open)}
+            aria-expanded={queueOpen}
+            aria-controls={queueOpen ? queueId : undefined}
+            aria-label={`Queue, ${upcoming === 1 ? "1 track" : `${upcoming} tracks`} up next`}
+            title={queueOpen ? "Hide queue" : "Show queue"}
+          >
+            <QueueIcon />
+            <span className="now-playing-queue-count" aria-hidden="true">{upcoming}</span>
           </button>
         )}
       </div>
