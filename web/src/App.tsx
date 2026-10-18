@@ -83,6 +83,23 @@ function StepIcon({ direction }: { direction: "previous" | "next" }) {
   );
 }
 
+function ChevronIcon({ up }: { up: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d={up ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"} />
+    </svg>
+  );
+}
+
+// The dock's send: an arrow up, the direction the question travels.
+function SendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
+    </svg>
+  );
+}
+
 function formatShowDate(iso: string | null | undefined): string {
   if (!iso) return "Undated";
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -2078,10 +2095,34 @@ function ComposedPage({
 // path, a play-all), quiet back and next steps flank the gold button; each
 // dims at its end of the queue rather than vanishing, so the bar holds
 // still. Queueing and position are the shared PlayerProvider's job.
-export function NowPlayingBar() {
+// On a phone the bar lives in the bottom dock above the ask box and can fold
+// to one slim row (cover, title, play) so the page keeps its room; the fold is
+// remembered on the device, and the ask box folds it while the keyboard is up.
+const COLLAPSED_PLAYER_KEY = "deadbot.player.collapsed";
+
+function readCollapsedPlayer(): boolean {
+  try {
+    return window.localStorage.getItem(COLLAPSED_PLAYER_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: { collapsible?: boolean; forceCollapsed?: boolean } = {}) {
   const player = usePlayer();
+  const [folded, setFolded] = useState(readCollapsedPlayer);
   const track = player.currentTrack;
   if (!track) return null;
+  const collapsed = collapsible && (folded || forceCollapsed);
+  function toggleFolded() {
+    const next = !folded;
+    setFolded(next);
+    try {
+      window.localStorage.setItem(COLLAPSED_PLAYER_KEY, next ? "1" : "0");
+    } catch {
+      // Private browsing: the fold just lasts the visit.
+    }
+  }
   const isPlaying = player.status === "playing";
   const isLoading = player.status === "loading";
   const isError = player.status === "error";
@@ -2089,19 +2130,20 @@ export function NowPlayingBar() {
   const position = Math.min(player.position, duration || 0);
   const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
   const queued = player.queue.length > 1;
+  const barClassName = ["now-playing-bar", collapsible ? "collapsible" : null, collapsed ? "collapsed" : null].filter(Boolean).join(" ");
   return (
-    <div className="now-playing-bar" role="region" aria-label="Now playing">
+    <div className={barClassName} role="region" aria-label="Now playing">
       {track.thumbnailUrl ? (
         <img className="now-playing-thumb" src={track.thumbnailUrl} alt="" loading="lazy" />
       ) : (
         <div className="now-playing-thumb placeholder" aria-hidden="true" />
       )}
-      <div className="now-playing-info">
+      <div className="now-playing-info" onClick={collapsible ? toggleFolded : undefined}>
         <p className="now-playing-title">{track.title}</p>
         {isError ? <p className="now-playing-error">Couldn’t play this track</p> : metaLine ? <p className="now-playing-meta">{metaLine}</p> : null}
       </div>
       <div className="now-playing-controls">
-        {queued && (
+        {queued && !collapsed && (
           <button type="button" className="now-playing-step" onClick={player.previous} disabled={!player.hasPrevious} aria-label="Previous track">
             <StepIcon direction="previous" />
           </button>
@@ -2124,12 +2166,24 @@ export function NowPlayingBar() {
             <PlayPauseIcon playing={isPlaying} />
           </button>
         )}
-        {queued && (
+        {queued && !collapsed && (
           <button type="button" className="now-playing-step" onClick={player.next} disabled={!player.hasNext} aria-label="Next track">
             <StepIcon direction="next" />
           </button>
         )}
       </div>
+      {collapsible && (
+        <button
+          type="button"
+          className="now-playing-fold"
+          onClick={toggleFolded}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? "Show player controls" : "Hide player controls"}
+        >
+          <ChevronIcon up={collapsed} />
+        </button>
+      )}
+      {!collapsed && (
       <div className="now-playing-scrubber">
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
         <input
@@ -2145,8 +2199,26 @@ export function NowPlayingBar() {
         />
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
       </div>
+      )}
     </div>
   );
+}
+
+// Below this width the layout is one column and the ask box and player move
+// into a dock fixed at the foot of the screen.
+const PHONE_QUERY = "(max-width: 860px)";
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(() => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(query).matches);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const list = window.matchMedia(query);
+    const update = () => setMatches(list.matches);
+    update();
+    list.addEventListener("change", update);
+    return () => list.removeEventListener("change", update);
+  }, [query]);
+  return matches;
 }
 
 function App() {
@@ -2175,6 +2247,12 @@ function App() {
   const threadContainer = useRef<HTMLElement>(null);
   const workspaceRef = useRef<HTMLDivElement>(null);
   const conversationPaneRef = useRef<HTMLElement>(null);
+  // Phone layout: the ask box and player sit in a dock fixed at the foot of
+  // the screen instead of in the rail and the answer pane.
+  const isPhone = useMediaQuery(PHONE_QUERY);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const dockTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [composerFocused, setComposerFocused] = useState(false);
   // Callbacks passed into askStreaming close over stale render state, so track
   // whether the answer has already started in a ref.
   const answerStartedRef = useRef(false);
@@ -2210,6 +2288,60 @@ function App() {
       behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth"
     });
   }, [loading, pendingQuestion, response, progress, streamingAnswer]);
+
+  // The page keeps room under the dock: its measured height becomes a CSS
+  // variable the shell pads by. Nothing to measure means no padding.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const dock = dockRef.current;
+    if (!dock) {
+      root.style.setProperty("--dock-h", "0px");
+      return;
+    }
+    const measure = () => root.style.setProperty("--dock-h", `${dock.getBoundingClientRect().height}px`);
+    measure();
+    if (typeof ResizeObserver !== "function") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(dock);
+    return () => observer.disconnect();
+  }, [isPhone, atStart]);
+
+  // On iOS the keyboard covers a fixed footer rather than shrinking the page,
+  // so the dock follows the visual viewport: the gap between the layout
+  // viewport's bottom and the visual one's is how far the dock lifts.
+  useEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    if (!isPhone || !viewport) {
+      root.style.setProperty("--kb", "0px");
+      return;
+    }
+    const update = () => {
+      const covered = Math.max(0, window.innerHeight - (viewport.height + viewport.offsetTop));
+      root.style.setProperty("--kb", `${Math.round(covered)}px`);
+    };
+    update();
+    viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
+    return () => {
+      viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
+      root.style.setProperty("--kb", "0px");
+    };
+  }, [isPhone]);
+
+  // The dock's ask box is one line tall and grows with what is typed; the
+  // stylesheet caps it at a few lines, after which it scrolls inside.
+  useLayoutEffect(() => {
+    const field = dockTextareaRef.current;
+    if (!field) return;
+    // Empty, the field is its one row; a wrapped placeholder must not grow it.
+    field.style.height = "";
+    if (question.trim()) {
+      field.style.height = "auto";
+      field.style.height = `${field.scrollHeight}px`;
+    }
+  }, [question, isPhone, atStart]);
 
   useEffect(() => {
     if (visualFixture || requestedStreamFixture) return;
@@ -2343,6 +2475,11 @@ function App() {
     setAnswerReadyMessage(null);
     answerStartedRef.current = false;
     if (cameFromStart) setPhase("opening");
+    if (isPhone && !cameFromStart) {
+      // The conversation is at the top of the one-column page; the ask box is
+      // at the foot. Return to where the answer will appear.
+      window.scrollTo({ top: 0, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+    }
 
     if (import.meta.env.DEV && requestedStreamFixture) {
       await replayStreamFixture();
@@ -2507,21 +2644,31 @@ function App() {
   // Shared by the rail and the start screen, which never render at the same
   // time (the rail is visually collapsed while atStart), but each needs its
   // own element id.
-  function renderComposer(variant: "rail" | "start") {
+  function renderComposer(variant: "rail" | "start" | "dock") {
+    const dock = variant === "dock";
     return (
-      <form className={variant === "start" ? "composer start-composer" : "composer"} onSubmit={submit}>
+      <form className={variant === "start" ? "composer start-composer" : dock ? "composer dock-composer" : "composer"} onSubmit={submit}>
         <div className="question-field">
           <textarea
             id={`question-${variant}`}
+            ref={dock ? dockTextareaRef : undefined}
             aria-label="Question"
-            rows={3}
-            placeholder="Ask about a song, show, source, or recording"
+            rows={dock ? 1 : 3}
+            placeholder={dock ? "Ask about a song, show, or recording" : "Ask about a song, show, source, or recording"}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             onKeyDown={submitOnEnter}
+            onFocus={dock ? () => setComposerFocused(true) : undefined}
+            onBlur={dock ? () => setComposerFocused(false) : undefined}
             disabled={loading}
           />
-          <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Explore"}</button>
+          {dock ? (
+            <button type="submit" className="dock-send" disabled={loading || !question.trim()} aria-label={loading ? "Looking…" : "Explore"} aria-busy={loading}>
+              <SendIcon />
+            </button>
+          ) : (
+            <button type="submit" disabled={loading || !question.trim()}>{loading ? "Looking…" : "Explore"}</button>
+          )}
         </div>
         {variant === "rail" && response && !loading && (
           <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
@@ -2587,7 +2734,13 @@ function App() {
 
             {error && !atStart && <p className="error" role="alert">{error}</p>}
 
-            {renderComposer("rail")}
+            {isPhone ? (
+              response && !loading && (
+                <a className="view-answer-link" href="#answer-title">View answer <span aria-hidden="true">↓</span></a>
+              )
+            ) : (
+              renderComposer("rail")
+            )}
           </section>
         </aside>
 
@@ -2653,9 +2806,15 @@ function App() {
             />
           ) : null}
           </div>
-          <NowPlayingBar />
+          {!isPhone && <NowPlayingBar />}
         </section>
       </div>
+      {isPhone && !atStart && (
+        <div className="mobile-dock" ref={dockRef}>
+          <NowPlayingBar collapsible forceCollapsed={composerFocused} />
+          {renderComposer("dock")}
+        </div>
+      )}
     </main>
   );
 }
