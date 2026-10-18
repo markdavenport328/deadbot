@@ -926,3 +926,81 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .night-row .collapsed-head { padding: 0.6rem 0; }
 .night-row .collapsed-title { font-size: 1rem; }
 .night-tracks { padding: 0 0 0.9rem; }
+
+/* Phone dock: below 860px the ask box and the player leave the rail and the
+   answer pane for one footer fixed to the screen, the player folded or open
+   above a one-line ask box that grows as the question does. The shell pads
+   its foot by the dock's measured height (--dock-h, set by the app) so the
+   page's last lines clear it, and the dock lifts by --kb while the keyboard
+   covers the layout viewport on iOS. */
+@media (max-width: 860px) {
+  .app-shell { padding-bottom: var(--dock-h, 0px); }
+  .mobile-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    transform: translateY(calc(-1 * var(--kb, 0px)));
+    padding: 0 0.625rem env(safe-area-inset-bottom, 0px);
+    background: var(--bar-scrim);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--hair);
+  }
+  /* The bar gives up its own ground and sticky position inside the dock. */
+  .mobile-dock .now-playing-bar {
+    position: static;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "thumb info controls fold" "scrub scrub scrub scrub";
+    column-gap: 0.7rem;
+    row-gap: 0.35rem;
+    margin: 0;
+    padding: 0.55rem 0 0.6rem;
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-top: 0;
+    border-bottom: 1px solid var(--hair);
+  }
+  .mobile-dock .now-playing-thumb { grid-area: thumb; }
+  .mobile-dock .now-playing-info { grid-area: info; }
+  .mobile-dock .now-playing-controls { grid-area: controls; }
+  .mobile-dock .now-playing-fold { grid-area: fold; }
+  .mobile-dock .now-playing-scrubber { grid-area: scrub; }
+  /* The queue opens above the strip, inside the dock, and never past half the screen. */
+  .mobile-dock .now-playing-bar.queue-open { grid-template-areas: "queue queue queue queue" "thumb info controls fold" "scrub scrub scrub scrub"; }
+  .mobile-dock .now-playing-queue { grid-area: queue; max-height: min(45vh, 22rem); margin: 0.2rem 0 0.5rem; }
+  /* Five controls share one phone row with the title: the quiet ones close ranks. */
+  .mobile-dock .now-playing-bar { column-gap: 0.5rem; }
+  .mobile-dock .now-playing-controls { gap: 0; }
+  .mobile-dock .now-playing-step { width: 34px; height: 40px; }
+  .mobile-dock .now-playing-queue-toggle { padding: 0 0.3rem; }
+  .mobile-dock .now-playing-fold { width: 32px; margin-right: -0.25rem; }
+  .mobile-dock .now-playing-bar.collapsed { grid-template-areas: "thumb info controls fold"; padding: 0.4rem 0; column-gap: 0.6rem; }
+  .mobile-dock .now-playing-bar.collapsed .now-playing-thumb { width: 28px; height: 28px; }
+  .mobile-dock .now-playing-bar.collapsed .now-playing-toggle { width: 36px; height: 36px; }
+  .mobile-dock .now-playing-bar.collapsed .now-playing-toggle svg { width: 14px; height: 14px; }
+  .mobile-dock .now-playing-bar.collapsed .now-playing-meta { display: none; }
+  .mobile-dock .now-playing-bar.collapsed .now-playing-title { font-size: 0.88rem; }
+  .mobile-dock .now-playing-bar.collapsible .now-playing-info { cursor: pointer; }
+  .now-playing-fold { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--quiet); flex-shrink: 0; }
+  .now-playing-fold svg { width: 18px; height: 18px; }
+
+  /* The dock's ask box: one line, a round blue send at its right, growing to
+     six lines before it scrolls. */
+  .mobile-dock .composer { position: static; padding: 0.55rem 0 0.6rem; background: none; }
+  .mobile-dock .composer::before { display: none; }
+  .mobile-dock .question-field { display: flex; align-items: flex-end; gap: 0.5rem; }
+  .mobile-dock textarea { flex: 1; min-height: 0; max-height: calc(1.4em * 6 + 1.2rem); overflow-y: auto; padding: 0.6rem 0.85rem; line-height: 1.4; }
+  /* The base rule pins the submit inside the field; the dock's sits beside it
+     as a round blue send with an arrow, matching the player's round toggle. */
+  .mobile-dock .question-field button[type="submit"] { position: static; right: auto; bottom: auto; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: var(--ask-deep); color: var(--cream); transition: background 120ms ease, opacity 120ms ease; }
+  .mobile-dock .question-field button[type="submit"] svg { width: 18px; height: 18px; }
+  .mobile-dock .question-field button[type="submit"]:focus-visible { background: var(--ask-deep-hover); }
+  /* The thread's own link down to the answer sits under the last message. */
+  .thread > .view-answer-link { margin: 0 0 0.5rem; }
+}
+@media (max-width: 860px) and (prefers-reduced-motion: no-preference) {
+  .mobile-dock { transition: transform 120ms var(--ease-out); }
+}
