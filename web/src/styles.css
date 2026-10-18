@@ -971,6 +971,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   /* The queue opens above the strip, inside the dock, and never past half the screen. */
   .mobile-dock .now-playing-bar.queue-open { grid-template-areas: "queue queue queue queue" "thumb info controls fold" "scrub scrub scrub scrub"; }
   .mobile-dock .now-playing-queue { grid-area: queue; max-height: min(45vh, 22rem); margin: 0.2rem 0 0.5rem; }
+  /* Five controls share one phone row with the title: the quiet ones close ranks. */
+  .mobile-dock .now-playing-bar { column-gap: 0.5rem; }
+  .mobile-dock .now-playing-controls { gap: 0; }
+  .mobile-dock .now-playing-step { width: 34px; height: 40px; }
+  .mobile-dock .now-playing-queue-toggle { padding: 0 0.3rem; }
+  .mobile-dock .now-playing-fold { width: 32px; margin-right: -0.25rem; }
   .mobile-dock .now-playing-bar.collapsed { grid-template-areas: "thumb info controls fold"; padding: 0.4rem 0; column-gap: 0.6rem; }
   .mobile-dock .now-playing-bar.collapsed .now-playing-thumb { width: 28px; height: 28px; }
   .mobile-dock .now-playing-bar.collapsed .now-playing-toggle { width: 36px; height: 36px; }
