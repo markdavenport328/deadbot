@@ -4282,6 +4282,17 @@
             "title": "Song Id",
             "type": "string"
           },
+          "song_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Title"
+          },
           "source_ids": {
             "items": {
               "type": "string"

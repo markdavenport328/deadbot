@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { askFocus } from "./song-timeline-text";
 import { visualFixtures } from "./visual-fixtures";
 
@@ -54,4 +54,22 @@ test("the timeline's focus becomes the question's AskFocus", () => {
   expect(
     askFocus({ label: "Terrapin Station in 1979", song_id: "song-terrapin-station", year: 1979, ids: ["song-terrapin-station", "p-msg"], facts: ["23 performances"] })
   ).toEqual({ block_type: "song_overview", block_id: "song-terrapin-station", label: "Terrapin Station in 1979", ids: ["song-terrapin-station", "p-msg"], facts: ["23 performances"] });
+});
+
+test("a retitled song card still names its tracks by the song", async () => {
+  window.history.replaceState({}, "", "/?fixture=timeline");
+  vi.resetModules();
+  const fixtures = await import("./visual-fixtures");
+  const block = fixtures.visualFixtures.timeline.blocks?.[0] as { title: string; song_title?: string | null };
+  block.title = "Ten years of a second-set anchor";
+  block.song_title = "Terrapin Station";
+  const { default: App } = await import("./App");
+  render(<App />);
+  const [play] = await screen.findAllByRole("button", { name: /^Play Terrapin Station, / });
+  await act(async () => {
+    fireEvent.click(play);
+  });
+  const bar = screen.getByRole("region", { name: "Now playing" });
+  expect(within(bar).getByText("Terrapin Station")).toBeInTheDocument();
+  expect(within(bar).queryByText("Ten years of a second-set anchor")).not.toBeInTheDocument();
 });

@@ -1401,6 +1401,7 @@ def _song_overview(
         type="song_overview",
         song_id=song["song_id"],
         title=song.get("title") or "Untitled song",
+        song_title=song.get("title") or None,
         original_artist=song.get("original_artist") or None,
         known_performance_count=len(performances),
         first_year=years[0] if years else None,

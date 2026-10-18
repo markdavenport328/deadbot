@@ -95,6 +95,14 @@ implementation status, repository-folder reconciliation, and remaining work.
 Read it for history and open items; this file's principles take precedence
 where the two differ.
 
+## Commands the owner runs
+
+Whenever the owner needs to run something (a push, a deploy step, a setup
+command), give the exact terminal command, ready to paste, on its own line in
+a shell code block. Use absolute paths (for example `git -C <worktree path>`)
+so the command works from any directory. Give the command every time, even
+when it was given earlier in the conversation or seems obvious.
+
 ## Pushing to GitHub
 
 The repository owner's administrator has blocked agents from pushing to
