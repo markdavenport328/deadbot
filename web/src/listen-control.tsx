@@ -130,6 +130,52 @@ export function PlayGlyph({ playing }: { playing: boolean }) {
   );
 }
 
+function QueueGlyph({ queued }: { queued: boolean }) {
+  return queued ? (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+// The quiet "+" beside a play: adds what it would play to the end of the
+// visitor's queue without interrupting what is playing. A track already
+// queued shows a check, and the check takes it back out (except the track
+// playing now). A whole-tape control adds the whole tape.
+export function AddToQueue({ tracks, name }: { tracks: PlayerTrack[]; name: string }) {
+  const player = usePlayer();
+  if (tracks.length === 0) return null;
+  // A track is the same track by id or by tape file (two cards can name one
+  // file under different ids).
+  const same = (a: PlayerTrack, b: PlayerTrack) => a.id === b.id || a.audioUrl === b.audioUrl;
+  const queued = tracks.every((track) => player.queue.some((item) => same(item, track)));
+  const current = player.currentTrack;
+  const playingHere = Boolean(current && tracks.some((track) => same(track, current)));
+  function onClick() {
+    if (!queued) return player.enqueue(tracks);
+    if (playingHere) return;
+    // Remove from the end so earlier positions stay valid.
+    for (let i = player.queue.length - 1; i >= 0; i--) if (tracks.some((track) => same(track, player.queue[i]))) player.remove(i);
+  }
+  const label = queued ? (playingHere ? `${name} is in your queue` : `Remove ${name} from queue`) : `Add ${name} to queue`;
+  return (
+    <button
+      type="button"
+      className={`queue-add${queued ? " queued" : ""}`}
+      aria-label={label}
+      title={queued ? (playingHere ? "In your queue" : "In your queue · remove") : "Add to queue"}
+      aria-disabled={queued && playingHere}
+      onClick={onClick}
+    >
+      <QueueGlyph queued={queued} />
+    </button>
+  );
+}
+
 // The shared player's state for one in-page play, and the click that
 // starts, pauses, resumes or retries it. "start" is current only while its
 // own track plays; "queue" is current while any track of its queue plays.
@@ -171,14 +217,24 @@ type ListenControlProps = {
   name?: string;
   // Another control on the same row already plays this; show the words only.
   playsElsewhere?: boolean;
+  // Offer the "+" that adds this to the queue. Off for a play set inline in
+  // running text, where a second mark would break the sentence.
+  queueable?: boolean;
   className?: string;
 };
 
 // Plays in-page when it can; otherwise a quiet external link; otherwise text.
-export function ListenControl({ url, label, children, track, queue, play: given, scope = "start", name, playsElsewhere, className }: ListenControlProps) {
+export function ListenControl({ url, label, children, track, queue, play: given, scope = "start", name, playsElsewhere, queueable = true, className }: ListenControlProps) {
   const play = given !== undefined ? given : resolvePlay(url, label, track, queue);
   if (play && playsElsewhere) return <span className={className}>{children ?? label}</span>;
-  if (play) return <InPageListen play={play} label={label} name={name} scope={scope} className={className}>{children}</InPageListen>;
+  if (play) {
+    return (
+      <>
+        <InPageListen play={play} label={label} name={name} scope={scope} className={className}>{children}</InPageListen>
+        {queueable && <AddToQueue tracks={scope === "queue" ? play.queue : [play.start]} name={name ?? label} />}
+      </>
+    );
+  }
   if (url) {
     return (
       <a

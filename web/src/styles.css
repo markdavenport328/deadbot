@@ -227,10 +227,47 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .now-playing-scrubber { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
 .now-playing-time { color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .now-playing-range { flex: 1; min-width: 0; accent-color: var(--listen); }
+/* The queue toggle: the list mark with the count of tracks left. */
+.now-playing-queue-toggle { display: flex; align-items: center; gap: 0.2rem; height: 40px; padding: 0 0.5rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.now-playing-queue-toggle svg { width: 18px; height: 18px; }
+.now-playing-queue-toggle:hover, .now-playing-queue-toggle.open { color: var(--cream); }
+/* The opened queue: a full-width row above the bar's controls, scrolling
+   inside itself so the bar never covers more than half the screen. */
+.now-playing-queue { grid-column: 1 / -1; max-height: min(50vh, 26rem); overflow-y: auto; margin: -0.2rem 0 0.7rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--hair); overscroll-behavior: contain; }
+.queue-heading { margin: 0 0 0.4rem; color: var(--cream); font-size: 0.82rem; font-weight: 600; }
+.queue-count { margin-left: 0.4rem; color: var(--quiet); font-weight: 400; }
+.queue-list { margin: 0; padding: 0; list-style: none; }
+.queue-item { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto 4.5rem; align-items: center; column-gap: 0.6rem; min-height: 2.5rem; border-radius: var(--r); }
+.queue-n { display: flex; justify-content: flex-end; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+.queue-n svg { width: 12px; height: 12px; color: var(--listen); }
+.queue-title { display: flex; flex-direction: column; min-width: 0; padding: 0.3rem 0; border: 0; background: none; color: var(--text); font: inherit; font-size: 0.88rem; text-align: left; cursor: pointer; }
+.queue-title:disabled { cursor: default; opacity: 1; }
+.queue-title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-show { color: var(--quiet); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-item.current .queue-title { color: var(--cream); font-weight: 600; }
+.queue-item.heard .queue-title-text { color: var(--quiet); }
+.queue-time { color: var(--quiet); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.queue-actions { display: flex; justify-content: flex-end; }
+.queue-step { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; padding: 0.45rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); }
+.queue-step svg { width: 100%; height: 100%; }
+.queue-step:hover { color: var(--cream); }
+@media (hover: hover) {
+  .queue-item:hover { background: rgba(var(--grid-cell), 0.04); }
+  .queue-item:hover .queue-title-text { text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.18em; }
+  .queue-item.current:hover .queue-title-text { text-decoration: none; }
+  .queue-actions { opacity: 0; transition: opacity var(--t-fade) ease; }
+  .queue-item:hover .queue-actions, .queue-actions:focus-within { opacity: 1; }
+}
+@media (pointer: coarse) {
+  .queue-step { width: 44px; height: 44px; padding: 0.8rem; }
+  .queue-item { grid-template-columns: 1.6rem minmax(0, 1fr) auto 5.5rem; }
+}
 /* The bar stacks by the answer pane's width, not the window's: beside the
    rail, a wide window can still leave the pane too narrow for one row. */
 @container (max-width: 720px) {
   .now-playing-bar { grid-template-columns: auto 1fr auto; grid-template-areas: "thumb info toggle" "scrub scrub scrub"; row-gap: 0.4rem; }
+  .now-playing-bar.queue-open { grid-template-areas: "queue queue queue" "thumb info toggle" "scrub scrub scrub"; }
+  .now-playing-queue { grid-area: queue; }
   .now-playing-thumb { grid-area: thumb; }
   .now-playing-info { grid-area: info; }
   .now-playing-controls { grid-area: toggle; }
@@ -758,6 +795,22 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 @media (pointer: coarse) {
   .listen-play { min-height: 44px; align-items: center; }
+}
+/* The quiet "+" after a play (AddToQueue): adds the track to the queue.
+   Not gold, since it plays nothing now; it turns to a check once queued.
+   With a mouse it waits until its row is hovered, + or check alike, so a
+   long list keeps one mark per row; on touch it is always there. */
+.queue-add { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; width: 1.5rem; height: 1.5rem; margin-left: 0.3rem; padding: 0.3rem; border: 0; border-radius: var(--r); background: none; color: var(--quiet); cursor: pointer; }
+.queue-add svg { width: 100%; height: 100%; }
+.queue-add:hover { color: var(--cream); }
+.queue-add.queued { color: var(--muted); }
+.queue-add[aria-disabled="true"] { cursor: default; }
+@media (hover: hover) {
+  .queue-add { opacity: 0; transition: opacity var(--t-fade) ease; }
+  li:hover .queue-add, :hover > .queue-add, .queue-add:focus-visible { opacity: 1; }
+}
+@media (pointer: coarse) {
+  .queue-add { width: 44px; height: 44px; margin: -0.6rem -0.6rem -0.6rem 0; padding: 0.85rem; }
 }
 .media-card .listen-links { margin-top: 1rem; }
 

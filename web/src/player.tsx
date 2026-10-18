@@ -55,6 +55,17 @@ export type PlayerContextValue = {
   // Reload the current track from scratch after an error, rather than
   // resuming (play() no-ops on an already-loaded track; this bypasses that).
   retry: () => void;
+  // The visitor's own queue edits. play() still replaces the queue; these
+  // add to it and rearrange it without interrupting what is playing.
+  // enqueue appends the tracks not already queued; into an empty player it
+  // loads the first one paused, so the bar appears ready to play.
+  enqueue: (tracks: PlayerTrack[]) => void;
+  // Move the track at a queue position to just after the current track.
+  playNext: (index: number) => void;
+  // Take a track out of the queue; the current track stays.
+  remove: (index: number) => void;
+  // Play the track at a queue position.
+  jumpTo: (index: number) => void;
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -215,6 +226,54 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [loadTrack]
   );
 
+  const enqueue = useCallback((tracks: PlayerTrack[]) => {
+    const current = stateRef.current;
+    // Two cards can name one tape file under different ids; the file is the track.
+    const seen = new Set(current.queue.flatMap((track) => [track.id, track.audioUrl]));
+    const added = tracks.filter((track) => {
+      if (seen.has(track.id) || seen.has(track.audioUrl)) return false;
+      seen.add(track.id).add(track.audioUrl);
+      return true;
+    });
+    if (added.length === 0) return;
+    if (current.index < 0) {
+      const element = audio();
+      fallbackRef.current = { trackId: added[0].id };
+      element.src = added[0].audioUrl;
+      setState({ queue: added, index: 0, status: "paused", position: 0, duration: added[0].durationSeconds ?? 0 });
+      return;
+    }
+    setState((previous) => ({ ...previous, queue: [...previous.queue, ...added] }));
+  }, []);
+
+  const playNext = useCallback((index: number) => {
+    setState((previous) => {
+      if (index === previous.index || index < 0 || index >= previous.queue.length) return previous;
+      const queue = previous.queue.slice();
+      const [track] = queue.splice(index, 1);
+      const current = index < previous.index ? previous.index - 1 : previous.index;
+      queue.splice(current + 1, 0, track);
+      return { ...previous, queue, index: current };
+    });
+  }, []);
+
+  const remove = useCallback((index: number) => {
+    setState((previous) => {
+      if (index === previous.index || index < 0 || index >= previous.queue.length) return previous;
+      const queue = previous.queue.filter((_, i) => i !== index);
+      return { ...previous, queue, index: index < previous.index ? previous.index - 1 : previous.index };
+    });
+  }, []);
+
+  const jumpTo = useCallback(
+    (index: number) => {
+      const current = stateRef.current;
+      const track = current.queue[index];
+      if (track && index !== current.index) loadTrack(track, current.queue, index);
+    },
+    [loadTrack]
+  );
+
   const next = useCallback(() => goTo(1), [goTo]);
   const previous = useCallback(() => goTo(-1), [goTo]);
 
@@ -235,9 +294,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       seek,
       next,
       previous,
-      retry
+      retry,
+      enqueue,
+      playNext,
+      remove,
+      jumpTo
     }),
-    [state, currentTrack, play, pause, toggle, seek, next, previous, retry]
+    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, enqueue, playNext, remove, jumpTo]
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
