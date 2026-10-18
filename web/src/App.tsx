@@ -706,7 +706,7 @@ function unitIdentity(block: UnitBlock): { title: string; url?: string | null; t
     case "song_overview": {
       // The first stop the library placed; a stop with only the model's words has no recording.
       const first = block.representative_performances.find((stop) => stop.show_id);
-      const track = first ? trackFor(first, block.title, { showDate: first.show_date, venueName: first.venue_name ?? splitShowLabel(first.show_label).venue }) : null;
+      const track = first ? trackFor(first, songName(block), { showDate: first.show_date, venueName: first.venue_name ?? splitShowLabel(first.show_label).venue }) : null;
       return { title: block.title, url: first?.listen_url, track };
     }
   }
@@ -1483,7 +1483,7 @@ function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { ty
   return {
     type: "data_chart",
     aggregation_id: `song-years:${block.song_id}`,
-    title: `${block.title} by year`,
+    title: `${songName(block)} by year`,
     note: null,
     chart: "bar",
     orientation: "vertical",
@@ -1500,12 +1500,18 @@ function songYearChart(block: SongOverviewBlockT): Extract<ExperienceBlock, { ty
   };
 }
 
+// The song's own name: its tracks and timeline are named by it, while the
+// card's heading (block.title) is the model's to rewrite.
+function songName(block: SongOverviewBlockT): string {
+  return block.song_title?.trim() || block.title;
+}
+
 // A song card's timeline data: the library's years and lengths, and the
 // model's stops, open year, first view and year questions.
 function timelineData(block: SongOverviewBlockT): SongTimelineData {
   return {
     song_id: block.song_id,
-    title: block.title,
+    title: songName(block),
     performance_count: block.known_performance_count,
     year_summaries: block.year_summaries ?? [],
     length_points: block.length_points ?? [],
@@ -1517,7 +1523,7 @@ function timelineData(block: SongOverviewBlockT): SongTimelineData {
       venue_name: stop.venue_name ?? null,
       seconds: stop.seconds ?? null,
       track: stop.audio_url
-        ? { performance_id: stop.performance_id, title: block.title, audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null }
+        ? { performance_id: stop.performance_id, title: songName(block), audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null }
         : null
     })),
     open_year: block.open_year ?? null,
@@ -1616,8 +1622,8 @@ function SongOverviewUnit({
                   <ListenControl
                     url={performance.listen_url}
                     label={venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}
-                    track={trackFor(performance, block.title, { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
-                    name={`${block.title}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
+                    track={trackFor(performance, songName(block), { showDate: performance.show_date, venueName: performance.venue_name ?? splitShowLabel(performance.show_label).venue })}
+                    name={`${songName(block)}, ${venueFirstShowLabel(performance.show_date, performance.venue_name, performance.show_label)}`}
                     className="list-item-label"
                   />
                   {[performance.label, performance.set_label].filter(Boolean).length > 0 && <span>{[performance.label, performance.set_label].filter(Boolean).join(" · ")}</span>}

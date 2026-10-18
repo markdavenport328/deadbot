@@ -1592,6 +1592,8 @@ export interface components {
             representative_performances?: components["schemas"]["SongRepresentativePerformance"][];
             /** Song Id */
             song_id: string;
+            /** Song Title */
+            song_title?: string | null;
             /** Source Ids */
             source_ids?: string[];
             /** Sources */

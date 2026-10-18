@@ -605,7 +605,10 @@ class SongYearCount(ExperienceModel):
 class SongOverviewBlock(ExperienceModel):
     type: Literal["song_overview"]
     song_id: str
+    # The card's heading, which the model may rewrite.
     title: str
+    # The song's own name from the library, which names its tracks.
+    song_title: str | None = None
     original_artist: str | None = None
     known_performance_count: int
     first_year: int | None = None
