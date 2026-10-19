@@ -654,6 +654,11 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
                 'in this order. disclosure="expanded" shows each as its full card; "collapsed" makes each one compact row '
                 "that opens in place, for a long list to scan. The group's title and lead introduce the whole list."
             )
+            if column == "show_id" and count >= 12:
+                result["on_the_page"] += (
+                    ' When they fell is a picture too: aggregate_data with dataset "shows", group_by "year" and the same '
+                    "venue, guest or song filter draws a bar per year."
+                )
             break
     return result
 
@@ -1167,7 +1172,9 @@ def build_tools(
 
         Use it to build a song_overview timeline (visible_facets with by_year)
         or to answer how a song changed over the years. The timeline already
-        draws the yearly counts, so your words go to what they mean; its stops
+        draws the yearly counts and lengths (chart_view "length" opens on how
+        long it ran each year, the picture of a song that stretched out or
+        tightened up), so your words go to what they mean; its stops
         are how the visitor hears the song's life, so choose three or four
         nights that mark its turns, for a counting question too. `years` gives each
         year's count, typical minutes and longest performance. `standouts`
@@ -1309,7 +1316,7 @@ def build_tools(
         tracks); for a studio album its songs. It carries the IDs you need to
         place the album, its shows or its songs on the page. A live box
         from one tour names that tour, so its nights can become show rows and a
-        grid. `available` lists
+        grid; a studio album's songs can become a grid of their years on stage. `available` lists
         what the summary left out and how to ask for it. Ask only for what your
         answer will use:
         - include=["tracks"]: the full tracklist (each track's song or
@@ -1402,6 +1409,11 @@ def build_tools(
         else:
             titles = {track["song_id"]: track.get("song_title") or track.get("title", "") for track in tracks if track.get("song_id")}
             payload["contents"] = {"songs": [{"song_id": song_id, "title": titles[song_id]} for song_id in song_ids]}
+            if len(song_ids) > 1:
+                payload["on_the_page"] = (
+                    'These songs\' lives on stage side by side: get_grid with row_kind "song", column_kind "year" and '
+                    "these song_ids as rows draws which ones stayed, which faded and when, every cell playable."
+                )
 
         if "tracks" in wanted:
             if show:
@@ -2476,6 +2488,9 @@ def build_tools(
 
     def _grid_columns(kind: str, columns: list[str], year_from: int | None, year_to: int | None) -> list[str] | str:
         if kind == "year":
+            # No years named: the band's whole touring life, so a grid needs only its rows.
+            if not columns:
+                year_from, year_to = year_from or 1965, year_to or 1995
             if year_from and year_to:
                 if year_from > year_to:
                     return _json({"error": "year_from is after year_to", "year_from": year_from, "year_to": year_to})
@@ -2515,7 +2530,8 @@ def build_tools(
         rows and columns take IDs, titles or names, in the order you want them.
         For show rows, tour (a tour name as fans say it: "Europe '72" works)
         gathers that tour's nights in place of rows; look_up shows with
-        the same tour lays the nights out as show rows; for year columns, year_from and year_to set the span. The
+        the same tour lays the nights out as show rows; for year columns, year_from and year_to set the span
+        (1965 to 1995 when left out). The
         result carries a grid_id for a grid in finish_response, the filled
         cells as one compact table, and for nights or records the songs on most
         of them that are not yet columns.

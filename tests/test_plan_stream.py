@@ -276,6 +276,21 @@ def test_items_written_beside_groups_stand_as_one_more_group_in_the_stream_and_t
         assert [group.title for group in plan.groups] == titles
 
 
+def test_the_listening_hero_field_leads_the_page_in_both_paths():
+    """The plan's listening_hero, written ahead of the groups as the schema asks, leads streamed and delivered."""
+
+    from deadbot.finish import FinishPlan, read_joining_repeats
+
+    group = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
+    text = '{"chat_answer": "a", "title": "t", "listening_hero": {"show_id": "gd-1973-11-11", "start_set": "2"}, "groups": [' + group + "]}"
+    events = drive(text, 6)
+    assert [event.payload["title"] for event in events if event.type == "group_open"] == [None, "One"]
+    plan = FinishPlan.model_validate(read_joining_repeats(text))
+    assert [group.title for group in plan.groups] == [None, "One"]
+    assert plan.groups[0].items[0].type == "listening_hero" and plan.groups[0].items[0].start_set == "2"
+    assert FinishPlan.model_validate({"chat_answer": "a", "title": "t", "listening_hero": {}, "groups": [{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}]}).groups[0].title == "One"
+
+
 def _streamed_page(text: str, pieces: int) -> list[tuple[str | None, str | None]]:
     """The page a browser keeps from the events: each group's title and first block id."""
 

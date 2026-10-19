@@ -296,7 +296,8 @@ def test_get_grid_reports_what_it_could_not_resolve():
     no_nights = json.loads(tool.invoke({"row_kind": "show", "column_kind": "song", "columns": ["Dark Star"]}))
     assert "error" in no_nights
     no_years = json.loads(tool.invoke({"row_kind": "song", "rows": ["Dark Star"], "column_kind": "year"}))
-    assert "error" in no_years
+    # Year columns left out span the band's whole touring life.
+    assert [column["id"] for column in no_years["columns"]][::30] == ["year:1965", "year:1995"]
 
 
 def test_get_grid_accepts_years_as_columns_and_the_tour_as_rows_by_id():

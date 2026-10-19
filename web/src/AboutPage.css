@@ -210,6 +210,13 @@
 .specimen:first-child { border-top: 0; padding-top: 0.5rem; }
 .specimen h3 { margin: 0.2rem 0 0.4rem; }
 .about-article .specimen p { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+/* Questions that tend to bring the block out; blue, because blue asks. */
+.about-article .specimen .specimen-try { margin-top: 0.9rem; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+.specimen-asks { margin: 0.3rem 0 0; padding: 0; list-style: none; }
+.specimen-asks li { margin: 0; padding: 0.15rem 0; font-size: 0.92rem; line-height: 1.4; }
+.about-article .specimen-asks a { color: var(--ask); text-decoration: none; }
+.about-article .specimen-asks a:hover,
+.about-article .specimen-asks a:focus-visible { text-decoration: underline; text-underline-offset: 0.2em; }
 /* A tall screenshot shows its top and fades into the panel. */
 .specimen .about-shot { position: relative; max-height: 24rem; margin: 0; }
 .specimen .about-shot::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 4.5rem; background: linear-gradient(rgba(13, 22, 17, 0), rgb(13, 22, 17)); pointer-events: none; }

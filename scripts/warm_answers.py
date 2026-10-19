@@ -29,20 +29,20 @@ from urllib.request import Request, urlopen
 # Keep in step with the `startingPoints` list in web/src/App.tsx; the build
 # bundles an answer to each (see --bundle above).
 OPENING_QUESTIONS = [
-    "Best shows of 1979",
+    "Put on a hot second set from fall '73",
     "What's the story with Veneta?",
-    "Best shows at Madison Square Garden",
+    "How many times did they play Madison Square Garden?",
     "What songs did they play the most?",
     "When did China-Rider become a combo?",
-    "Which albums most impacted the live repertoire?",
+    "Which American Beauty songs stayed in the rotation?",
     "How often did they play Dark Star each year?",
     "Best Morning Dew?",
-    "Find me a few good Ripples",
+    "Did Playing in the Band keep getting longer?",
     "Which Dick's Picks should I start with?",
-    "What's on Europe '72: The Complete Recordings?",
+    "Which songs defined Europe '72, night by night?",
     "What shows did Reckoning draw from?",
     "Best Santana contributions",
-    "What shows did Branford play?",
+    "Which guests kept coming back year after year?",
     "Who sat in with the Dead?",
 ]
 
