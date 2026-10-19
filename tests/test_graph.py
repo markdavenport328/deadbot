@@ -123,8 +123,7 @@ def test_prompt_teaches_data_chart_and_aggregate_data():
     assert "data_chart" in prompt
     assert "aggregate_data" in prompt
     assert (
-        "and data_chart when a quantitative comparison, distribution, or change over time is the point. "
-        "A data_chart draws one aggregate_data result"
+        "A count or ranking from aggregate_data becomes a ranked_list or data_chart"
         in prompt
     )
     assert "When the question asks how many or when, the answer is a number or a span" in prompt
@@ -243,7 +242,7 @@ def test_a_streamed_finish_call_keeps_both_groups_lists():
 def test_prompt_teaches_grid_and_get_grid():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "get_grid" in prompt
-    assert "a grid in finish_response" in prompt
+    assert "A grid in finish_response" in prompt
     assert "Draw the rows that tell the story in reading order, fold the rest behind Show all" in prompt
     assert "setlist_counts" not in prompt
 

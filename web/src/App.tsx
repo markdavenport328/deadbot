@@ -12,7 +12,7 @@ import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Roset
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
-import { usePath } from "./site-nav";
+import { useAskFromPage, usePath } from "./site-nav";
 import { libraryStats as stats } from "./library-stats";
 import { VersionStrip } from "./VersionStrip";
 import { SongTimeline } from "./SongTimeline";
@@ -150,9 +150,9 @@ const startingPoints = [
   {
     category: "Shows",
     questions: [
-      "Best shows of 1979",
+      "Put on a hot second set from fall '73",
       "What's the story with Veneta?",
-      "Best shows at Madison Square Garden"
+      "How many times did they play Madison Square Garden?"
     ]
   },
   {
@@ -160,7 +160,7 @@ const startingPoints = [
     questions: [
       "What songs did they play the most?",
       "When did China-Rider become a combo?",
-      "Which albums most impacted the live repertoire?"
+      "Which American Beauty songs stayed in the rotation?"
     ]
   },
   {
@@ -168,14 +168,14 @@ const startingPoints = [
     questions: [
       "How often did they play Dark Star each year?",
       "Best Morning Dew?",
-      "Find me a few good Ripples"
+      "Did Playing in the Band keep getting longer?"
     ]
   },
   {
     category: "Recordings",
     questions: [
       "Which Dick's Picks should I start with?",
-      "What's on Europe '72: The Complete Recordings?",
+      "Which songs defined Europe '72, night by night?",
       "What shows did Reckoning draw from?"
     ]
   },
@@ -183,7 +183,7 @@ const startingPoints = [
     category: "Guests",
     questions: [
       "Best Santana contributions",
-      "What shows did Branford play?",
+      "Which guests kept coming back year after year?",
       "Who sat in with the Dead?"
     ]
   }
@@ -2728,6 +2728,8 @@ function App() {
   function chooseFollowUp(prompt: string, focus?: AskFocus) {
     void askQuestion(prompt, { focus });
   }
+
+  useAskFromPage((prompt) => void askQuestion(prompt, { fresh: true }));
 
   function startNewChat() {
     if (loading) return;

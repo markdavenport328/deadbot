@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { followInSite } from "./site-nav";
+import { askFromPage, followInSite } from "./site-nav";
 import "./AboutPage.css";
 import { libraryStats } from "./library-stats";
 import answerShot from "./assets/about/answer.jpg";
@@ -37,14 +37,14 @@ const sources = [
 ];
 
 const specimens = [
-  { title: "Shows", text: "Each night with its venue, date, and a play button. Open one for its setlist, lineup, and tapes, or list a whole year as rows.", image: showShot, alt: "Every 1977 show as a row with a gold play button" },
-  { title: "A performance", text: "One song on one night, with what came before and after it in the set, and a way to hear it.", image: performanceShot, alt: "A performance card for Dark Star at the Carousel Ballroom in 1968" },
-  { title: "A song's life on stage", text: "Every year a song was played, how often, and the stops worth hearing along the way.", image: timelineShot, alt: "Terrapin Station's performances by year, with eight stops to play" },
-  { title: "Versions side by side", text: "The same song or pairing across the nights it was played, so you can hear how it changed.", image: versionsShot, alt: "China Cat Sunflower into I Know You Rider on eight nights, drawn to the same clock" },
-  { title: "A record", text: "An official release, its tracklist and personnel, the songs to listen for, and a way to play it.", image: albumShot, alt: "An album card for Workingman's Dead" },
-  { title: "Counts and rankings", text: "Charts and ranked lists, counted from the whole history rather than estimated.", image: chartShot, alt: "The ten songs the Dead played most" },
-  { title: "Grids", text: "Many nights or songs at once, compared on the same measure.", image: gridShot, alt: "A grid of the big jams on each night of Europe '72" },
-  { title: "Writing", text: "The model's own voice: the story, the numbers that matter, a timeline of the day.", image: writingShot, alt: "Narrative, figures, and a timeline about the Veneta show" }
+  { title: "Shows", asks: ["Put on a hot second set from fall '73", "What's the story with Veneta?"], text: "Each night with its venue, date, and a play button. Open one for its setlist, lineup, and tapes, or list a whole year as rows.", image: showShot, alt: "Every 1977 show as a row with a gold play button" },
+  { title: "A performance", asks: ["Best Morning Dew?", "Best Santana contributions"], text: "One song on one night, with what came before and after it in the set, and a way to hear it.", image: performanceShot, alt: "A performance card for Dark Star at the Carousel Ballroom in 1968" },
+  { title: "A song's life on stage", asks: ["How often did they play Dark Star each year?", "Did Playing in the Band keep getting longer?"], text: "Every year a song was played, how often, and the stops worth hearing along the way.", image: timelineShot, alt: "Terrapin Station's performances by year, with eight stops to play" },
+  { title: "Versions side by side", asks: ["When did China-Rider become a combo?", "How did Scarlet > Fire change over the years?"], text: "The same song or pairing across the nights it was played, so you can hear how it changed.", image: versionsShot, alt: "China Cat Sunflower into I Know You Rider on eight nights, drawn to the same clock" },
+  { title: "A record", asks: ["Which Dick's Picks should I start with?", "What shows did Reckoning draw from?"], text: "An official release, its tracklist and personnel, the songs to listen for, and a way to play it.", image: albumShot, alt: "An album card for Workingman's Dead" },
+  { title: "Counts and rankings", asks: ["What songs did they play the most?", "How many times did they play Madison Square Garden?"], text: "Charts and ranked lists, counted from the whole history rather than estimated.", image: chartShot, alt: "The ten songs the Dead played most" },
+  { title: "Grids", asks: ["Which songs defined Europe '72, night by night?", "Which American Beauty songs stayed in the rotation?", "Which guests kept coming back year after year?"], text: "Many nights or songs at once, compared on the same measure.", image: gridShot, alt: "A grid of the big jams on each night of Europe '72" },
+  { title: "Writing", asks: ["Why did the Dead stop touring in 1974?"], text: "The model's own voice: the story, the numbers that matter, a timeline of the day.", image: writingShot, alt: "Narrative, figures, and a timeline about the Veneta show" }
 ];
 
 export function AboutPage() {
@@ -296,6 +296,14 @@ export function AboutPage() {
                   <div>
                     <h3>{specimen.title}</h3>
                     <p>{specimen.text}</p>
+                    <p className="specimen-try">Try</p>
+                    <ul className="specimen-asks">
+                      {specimen.asks.map((ask) => (
+                        <li key={ask}>
+                          <a href="/" onClick={(event) => askFromPage(event, ask)}>{ask}</a>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                   <figure className="about-shot">
                     <img src={specimen.image} alt={specimen.alt} loading="lazy" />

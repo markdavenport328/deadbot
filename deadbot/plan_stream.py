@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING
-from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, read_joining_repeats, validate_body_item
+from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, page_lead, read_joining_repeats, validate_body_item
 
 logger = logging.getLogger(__name__)
 
@@ -366,6 +366,10 @@ class PlanStreamer:
             events.extend(self._group_closed(path[1], raw))
         elif path == ["items"] and frame.kind == "array":
             events.extend(self._loose_items_closed(raw))
+        elif path == ["listening_hero"] and frame.kind == "object":
+            # The page's lead, read as finish.loose_items_as_group reads it.
+            if (hero := page_lead(read_joining_repeats(raw))) is not None:
+                events.extend(self._loose_items_closed(json.dumps([hero])))
         elif not self._stack:
             self._done = True
             events.extend(self._emit_head())

@@ -28,7 +28,7 @@ def test_measure_returns_one_row_per_question_and_renders_a_table():
 
 
 def test_default_questions_include_the_opening_and_set_questions():
-    assert "What's on Europe '72: The Complete Recordings?" in DEFAULT_QUESTIONS
+    assert "Which songs defined Europe '72, night by night?" in DEFAULT_QUESTIONS
     assert "Which songs did they play most in 1977?" in DEFAULT_QUESTIONS
     assert len(DEFAULT_QUESTIONS) == 19
 

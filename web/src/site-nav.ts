@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // The site's few pages share one document so the conversation, the page it
 // composed and anything playing all survive a visit to About and back. A page
@@ -36,4 +36,26 @@ export function followInSite(event: React.MouseEvent<HTMLAnchorElement>, href: s
   event.preventDefault();
   navigate(href);
   return true;
+}
+
+const ASK_EVENT = "deadbot:ask";
+
+// A question asked from another page: back to the app, which is still mounted
+// underneath and takes it as a fresh question.
+export function askFromPage(event: React.MouseEvent<HTMLAnchorElement>, question: string) {
+  if (!followInSite(event, "/")) return;
+  window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: question }));
+}
+
+export function useAskFromPage(onAsk: (question: string) => void) {
+  const latest = useRef(onAsk);
+  latest.current = onAsk;
+  useEffect(() => {
+    const listen = (event: Event) => {
+      const question = (event as CustomEvent<unknown>).detail;
+      if (typeof question === "string") latest.current(question);
+    };
+    window.addEventListener(ASK_EVENT, listen);
+    return () => window.removeEventListener(ASK_EVENT, listen);
+  }, []);
 }

@@ -285,12 +285,13 @@ class EditorialItemPlan(_PlanModel, EditorialItemText):
 
 
 class EditorialPlan(_PlanModel):
-    """Prose, viewpoints and comparisons in your own words: narrative, fact_grid or timeline.
+    """Your own words: narrative, fact_grid or timeline.
 
-    Records belong in the reference-based items (the units and ranked_list),
-    where the server supplies their facts. Counts from an aggregate_data result
-    reach the page through its ranked_list or data_chart; what you would say
-    about each ranked row goes in the ranked_list's row notes.
+    Records belong in the reference-based items, where the server supplies
+    their facts. What the library counted, timed or paired is drawn: an
+    aggregate_data result as its ranked_list or data_chart (what you would say
+    about a ranked row goes in its row notes), a get_segue_pairing result as a
+    version_strip, a get_grid result as a grid.
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -303,7 +304,7 @@ class EditorialPlan(_PlanModel):
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
         default="narrative",
-        description="narrative: prose, written as paragraphs. fact_grid: a compact set judged on shared terms, including attributed viewpoints, one item per row. timeline: a sequence, one item per step.",
+        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: a story's sequence, one item per step; steps that are nights or performances, a song's years or a pairing's versions are drawn by their units, a song_overview's by_year or a version_strip.",
     )
     eyebrow: str | None = Field(default=None, description="A small label above the title, for a block that has a title of its own.")
     title: str | None = Field(default=None, description="The block's one heading. An item's title names the item; the block's heading is written once.")
@@ -708,6 +709,13 @@ BodyItem = Annotated[
 
 _BODY_ITEM_ADAPTER = TypeAdapter(BodyItem)
 
+def page_lead(value: Any) -> dict[str, Any] | None:
+    """The plan's listening_hero field as the body item it is, or ``None`` when it is empty."""
+
+    if isinstance(value, dict) and value:
+        return {**value, "type": "listening_hero"}
+    return None
+
 
 def _describe_validation_error(error: ValidationError) -> str:
     """The first problem in a validation error, as one short line for a log."""
@@ -886,7 +894,17 @@ def loose_items_as_group(data: Any) -> Any:
     close of the plan when they came after the groups.
     """
 
-    if not isinstance(data, dict) or not isinstance(data.get("items"), list) or not data["items"]:
+    if not isinstance(data, dict):
+        return data
+    # The page's listening_hero is a loose item where it was written (the
+    # schema asks for it ahead of the groups). Like the streamer, the first of
+    # it and a loose items list to be written is the one read.
+    keys = list(data)
+    hero = page_lead(data.get("listening_hero"))
+    loose_first = isinstance(data.get("items"), list) and bool(data["items"]) and keys.index("items") < keys.index("listening_hero") if hero else False
+    if hero is not None and not loose_first:
+        data = {(key if key != "listening_hero" else "items"): ([hero] if key == "listening_hero" else value) for key, value in data.items() if key != "items"}
+    if not isinstance(data.get("items"), list) or not data["items"]:
         return data
     keys = list(data)
     groups = data["groups"] if isinstance(data.get("groups"), list) else []
@@ -943,6 +961,13 @@ class FinishPlan(BaseModel):
     )
     title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
     lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
+    listening_hero: dict[str, Any] = Field(
+        default_factory=dict,
+        description=(
+            "The page's lead when the visitor asks to hear something, above the groups: a listening_hero item's "
+            "fields (show_id or release_id, line, play_label, start_set or start_performance_id)."
+        ),
+    )
     groups: list[GroupPlan] = Field(
         default_factory=list,
         description=(
