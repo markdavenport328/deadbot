@@ -20,7 +20,10 @@ const NAMES: Record<string, WorkspaceTab> = {
 };
 
 export function readTab(value: unknown): WorkspaceTab | null {
-  return typeof value === "string" ? NAMES[value.trim().toLowerCase()] ?? null : null;
+  if (typeof value !== "string") return null;
+  const name = value.trim().toLowerCase();
+  // Own keys only: "constructor" and "toString" must not resolve to inherited members.
+  return Object.hasOwn(NAMES, name) ? NAMES[name] : null;
 }
 
 const LISTEN = new Set(["show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "media_link"]);

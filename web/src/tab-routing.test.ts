@@ -20,6 +20,14 @@ test("readTab is lenient", () => {
   expect(readTab(3)).toBeNull();
 });
 
+test("inherited object names are not tabs", () => {
+  expect(readTab("constructor")).toBeNull();
+  expect(readTab("__proto__")).toBeNull();
+  expect(readTab("toString")).toBeNull();
+  const routed = routeGroups([g(["show_unit"], readTab("toString"))]);
+  expect(routed.listen).toHaveLength(1);
+});
+
 test.each([
   ["show_unit", "listen"], ["performance_unit", "listen"], ["album_unit", "listen"], ["song_overview", "listen"],
   ["show_selection", "listen"], ["listening_hero", "listen"], ["version_strip", "listen"], ["media_link", "listen"],

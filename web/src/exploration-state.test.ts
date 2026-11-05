@@ -115,3 +115,24 @@ test("new chat shows the start view and keeps history", () => {
   expect(s.entries).toHaveLength(1);
   expect(requestContext(s, false).notebook).toBeNull();
 });
+
+test("stale fail, page and status events leave the same state object", () => {
+  let s = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
+    { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
+  s = reduce(s, { type: "navigate", index: 0 });
+  expect(reduce(s, { type: "fail", requestId: "r2", message: "late" })).toBe(s);
+  expect(reduce(s, { type: "status", requestId: "r2", text: "late" })).toBe(s);
+  expect(reduce(s, { type: "page", requestId: "r2", event: { type: "page_reset" } })).toBe(s);
+});
+
+test("view patches go to the held page, then to the draft once content shows", () => {
+  let s = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
+    { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
+  s = reduce(s, { type: "view", patch: { tab: "charts" } });
+  expect(s.entries[0].view.tab).toBe("charts");
+  expect(s.pending?.view.tab).toBeNull();
+  s = reduce(s, { type: "answer", requestId: "r2", text: "Yes" });
+  s = reduce(s, { type: "view", patch: { tab: "read" }, interacted: true });
+  expect(s.pending?.view.tab).toBe("read");
+  expect(s.entries[0].view.tab).toBe("charts");
+});

@@ -21,7 +21,7 @@ export function emptyGroup(): RenderGroup {
 // The draft page grows in reading order. A block for a group we have not
 // heard of yet gets a provisional group; group_close fills the heading in.
 export function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
-  // A tab-opening event is handled by the exploration state, not the draft.
+  // A page_tab event (added in a later PR) carries no draft content; leave the draft as it is.
   if ((event as { type: string }).type === "page_tab") return draft;
   if (event.type === "page_reset") return null;
   if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;

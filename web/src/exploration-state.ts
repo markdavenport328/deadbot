@@ -158,7 +158,7 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
       return { ...state, pending: null, cursor: action.index, startView: false };
     case "newChat":
       if (isAsking(state)) return state;
-      return { ...state, startView: true, pending: pending && pending.error !== null ? null : pending };
+      return { ...state, startView: true, pending: null };
     case "view": {
       const mark = action.interacted && pending ? { ...pending, interacted: true } : pending;
       if (visible(state).kind === "draft" && mark) {
