@@ -173,3 +173,20 @@ test("with sessionStorage unavailable the notebook still travels in memory", asy
   await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
   expect(sent[1].notebook).toBe("v1.first.sig");
 });
+
+test("a question in the link is asked on arrival and leaves the address bar", async () => {
+  replies = [europe()];
+  window.history.replaceState({}, "", "/?q=What%27s%20on%20Europe%20%2772%3F");
+  await openApp();
+  await screen.findByRole("heading", { level: 1, name: "Europe '72" });
+  expect(sent).toHaveLength(1);
+  expect(sent[0].question).toBe("What's on Europe '72?");
+  expect(window.location.search).toBe("");
+});
+
+test("an empty question in the link leaves the home screen as it is", async () => {
+  window.history.replaceState({}, "", "/?q=%20");
+  await openApp();
+  expect(sent).toHaveLength(0);
+  expect(window.location.search).toBe("");
+});

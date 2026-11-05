@@ -38,6 +38,17 @@ export function followInSite(event: React.MouseEvent<HTMLAnchorElement>, href: s
   return true;
 }
 
+// A question carried in the link (`/?q=…`), taken once: it leaves the address
+// bar so a reload or a later visit to the same tab does not ask it again.
+export function takeQuestionFromUrl(): string | null {
+  const url = new URL(window.location.href);
+  const question = url.searchParams.get("q")?.trim();
+  if (!url.searchParams.has("q")) return null;
+  url.searchParams.delete("q");
+  window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+  return question || null;
+}
+
 const ASK_EVENT = "deadbot:ask";
 
 // A question asked from another page: back to the app, which is still mounted
