@@ -12,7 +12,7 @@ import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Roset
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
-import { useAskFromPage, usePath } from "./site-nav";
+import { currentPath, takeQuestionFromUrl, useAskFromPage, usePath } from "./site-nav";
 import { libraryStats as stats } from "./library-stats";
 import { VersionStrip } from "./VersionStrip";
 import { SongTimeline } from "./SongTimeline";
@@ -2730,6 +2730,16 @@ function App() {
   }
 
   useAskFromPage((prompt) => void askQuestion(prompt, { fresh: true }));
+
+  // A link can carry the opening question (`/?q=…`); it is asked as soon as
+  // the home screen is up, the same as if the visitor had typed it.
+  useEffect(() => {
+    if (visualFixture || currentPath() !== "/") return;
+    const linked = takeQuestionFromUrl();
+    if (linked) void askQuestion(linked, { fresh: true });
+    // Read once, on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function startNewChat() {
     if (loading) return;
