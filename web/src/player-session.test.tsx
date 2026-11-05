@@ -120,17 +120,29 @@ describe("loading the next track early", () => {
   });
 });
 
-describe("playback speed", () => {
-  it("steps through the speeds, keeps the speed on the next track, and remembers it", async () => {
+describe("speed and loop", () => {
+  const more = () => within(bar()).getByRole("button", { name: /^Speed and loop/ });
+  const panel = () => within(bar()).getByRole("region", { name: "Speed and loop" });
+
+  async function startPlaying() {
     renderPage();
     await click(screen.getByRole("button", { name: "Scarlet Begonias" }));
-    const speed = () => within(bar()).getByRole("button", { name: /^Playback speed/ });
-    expect(speed()).toHaveTextContent("1×");
-    await click(speed());
-    await click(speed());
-    expect(speed()).toHaveTextContent("0.5×");
-    expect(speed()).toHaveAccessibleName("Playback speed 0.5×, change to 1.25×");
+    const element = played[played.length - 1];
+    await act(async () => {
+      element.dispatchEvent(new Event("playing"));
+    });
+    return element;
+  }
+
+  it("sets the speed from the menu, keeps it on the next track, and remembers it", async () => {
+    await startPlaying();
+    await click(more());
+    await click(within(panel()).getByRole("button", { name: "0.5×" }));
+    expect(within(panel()).getByRole("button", { name: "0.5×" })).toHaveAttribute("aria-pressed", "true");
     expect(played[played.length - 1].playbackRate).toBe(0.5);
+    // The closed menu still says the speed changed.
+    expect(more()).toHaveAccessibleName("Speed and loop: 0.5×");
+    expect(more()).toHaveTextContent("0.5×");
 
     await click(within(bar()).getByRole("button", { name: "Next track" }));
     expect(played[played.length - 1].playbackRate).toBe(0.5);
@@ -138,20 +150,76 @@ describe("playback speed", () => {
 
     cleanup();
     renderPage();
-    expect(speed()).toHaveTextContent("0.5×");
+    expect(more()).toHaveTextContent("0.5×");
   });
 
-  it("steps up to the faster speeds after the slow ones, then back to normal", async () => {
-    window.localStorage.setItem(PLAYER_RATE_KEY, "0.5");
-    renderPage();
-    await click(screen.getByRole("button", { name: "Scarlet Begonias" }));
-    const speed = () => within(bar()).getByRole("button", { name: /^Playback speed/ });
-    await click(speed());
-    expect(speed()).toHaveTextContent("1.25×");
-    await click(speed());
-    expect(speed()).toHaveTextContent("1.5×");
-    await click(speed());
-    expect(speed()).toHaveTextContent("1×");
+  it("opens in the queue's place, one panel at a time", async () => {
+    await startPlaying();
+    await click(more());
+    expect(panel()).toBeInTheDocument();
+    await click(within(bar()).getByRole("button", { name: /^Queue/ }));
+    expect(within(bar()).queryByRole("region", { name: "Speed and loop" })).toBeNull();
+    expect(within(bar()).getByRole("region", { name: "Queue" })).toBeInTheDocument();
+  });
+
+  it("loops a passage: crossing the end jumps back to the start, and a new track clears it", async () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => frames.push(callback));
+    vi.stubGlobal("cancelAnimationFrame", () => {});
+    const runFrame = () => act(async () => frames.shift()?.(0));
+    try {
+      const element = await startPlaying();
+      await click(more());
+      setTime(element, 30);
+      await click(within(panel()).getByRole("button", { name: "Set loop start to now" }));
+      setTime(element, 41);
+      await click(within(panel()).getByRole("button", { name: "Set loop end to now" }));
+      expect(within(panel()).getByRole("button", { name: "Loop start 0:30, set to now" })).toBeInTheDocument();
+      expect(within(panel()).getByRole("button", { name: "Loop end 0:41, set to now" })).toBeInTheDocument();
+      expect(more()).toHaveAccessibleName("Speed and loop: looping");
+      expect(bar().querySelector(".now-playing-loop")).toHaveStyle({ left: "5%" });
+
+      // Setting the end while playing goes straight back to the start.
+      setTime(element, 41.02);
+      await runFrame();
+      expect(element.currentTime).toBe(30);
+
+      setTime(element, 40.9);
+      await runFrame();
+      expect(element.currentTime).toBe(40.9);
+      setTime(element, 41.05);
+      await runFrame();
+      expect(element.currentTime).toBe(30);
+
+      // A seek past the end is the visitor's choice: no jump back.
+      setTime(element, 200);
+      await runFrame();
+      expect(element.currentTime).toBe(200);
+
+      await click(within(panel()).getByRole("button", { name: "Clear" }));
+      expect(within(panel()).getByRole("button", { name: "Set loop start to now" })).toBeInTheDocument();
+
+      setTime(element, 50);
+      await click(within(panel()).getByRole("button", { name: "Set loop start to now" }));
+      await click(within(bar()).getByRole("button", { name: "Next track" }));
+      expect(bar().querySelector(".now-playing-loop")).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("goes round again when the loop's end is the track's end", async () => {
+    const element = await startPlaying();
+    await click(more());
+    setTime(element, 590);
+    await click(within(panel()).getByRole("button", { name: "Set loop start to now" }));
+    setTime(element, 600);
+    await click(within(panel()).getByRole("button", { name: "Set loop end to now" }));
+    await act(async () => {
+      element.dispatchEvent(new Event("ended"));
+    });
+    expect(element.currentTime).toBe(590);
+    expect(within(bar()).getByText("Scarlet Begonias")).toBeInTheDocument();
   });
 });
 

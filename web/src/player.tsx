@@ -34,6 +34,10 @@ export type PlayerTrack = {
   thumbnailUrl?: string | null;
 };
 
+export type PlayerLoop = { start: number | null; end: number | null };
+
+const NO_LOOP: PlayerLoop = { start: null, end: null };
+
 export type PlayerStatus = "idle" | "loading" | "playing" | "paused" | "error";
 
 type PlayerState = {
@@ -64,6 +68,12 @@ export type PlayerContextValue = {
   // Playback speed, kept for every track and remembered on the device.
   rate: number;
   setRate: (rate: number) => void;
+  // A practice loop within the current track: once both ends are set,
+  // playing past the end jumps back to the start. A new track clears it.
+  loop: PlayerLoop;
+  setLoopStart: () => void;
+  setLoopEnd: () => void;
+  clearLoop: () => void;
   // The visitor's own queue edits. play() still replaces the queue; these
   // add to it and rearrange it without interrupting what is playing.
   // enqueue appends the tracks not already queued; into an empty player it
@@ -93,12 +103,15 @@ const PRELOAD_LEAD_SECONDS = 30;
 // "Previous" restarts the current track once it has played this long.
 const RESTART_THRESHOLD_SECONDS = 3;
 const SKIP_SECONDS = 10;
+// Between two loop checks, playback advances well under this; a bigger move is a seek.
+const LOOP_SEEK_SECONDS = 1.5;
 
 export const PLAYER_STORAGE_KEY = "deadbot.player.v1";
 export const PLAYER_RATE_KEY = "deadbot.player.rate";
-// Slower first: the speed control is mostly for learning a solo by ear.
-// Browsers keep the pitch when they slow a recording, so it stays in key.
-export const PLAYBACK_RATES = [1, 0.75, 0.5, 1.25, 1.5] as const;
+// The speed control is mostly for learning a solo by ear, so it reaches
+// half speed. Browsers keep the pitch when they slow a recording, so it
+// stays in key.
+export const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5] as const;
 
 function readSavedRate(): number {
   try {
@@ -177,6 +190,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
   // A restored position, applied once the restored track's metadata loads.
   const pendingSeekRef = useRef<number | null>(state.position > 0 ? state.position : null);
+  const [loop, setLoop] = useState<PlayerLoop>(NO_LOOP);
+  const loopRef = useRef(loop);
+  loopRef.current = loop;
+  // Where the loop check last saw playback, to tell crossing the end from a seek.
+  const loopLastRef = useRef(0);
+
+  // Jump back to the loop's start when playback crosses its end. A move of
+  // more than a moment is a seek, the visitor's own choice, and is left alone.
+  function checkLoop(element: HTMLAudioElement) {
+    const { start, end } = loopRef.current;
+    const now = element.currentTime;
+    const last = loopLastRef.current;
+    if (start != null && end != null && last < end && now >= end && now - last < LOOP_SEEK_SECONDS) {
+      element.currentTime = start;
+      loopLastRef.current = start;
+    } else {
+      loopLastRef.current = now;
+    }
+  }
   const [rate, setRateState] = useState(readSavedRate);
   const rateRef = useRef(rate);
   rateRef.current = rate;
@@ -235,6 +267,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const loadTrack = useCallback((track: PlayerTrack, queue: PlayerTrack[], index: number) => {
     pendingSeekRef.current = null;
+    setLoop(NO_LOOP);
     let element = audio();
     if (spareHolds(track.audioUrl)) {
       // The spare loaded this track ahead of time: it becomes the player, and
@@ -266,6 +299,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (current && event.target === current) handler(current);
     };
     const onTimeUpdate = active((element) => {
+      // The frame watcher below stops in a background tab or on a locked
+      // phone; time updates keep the loop going there.
+      checkLoop(element);
       setState((previous) => ({ ...previous, position: element.currentTime }));
       const current = stateRef.current;
       const duration = Number.isFinite(element.duration) ? element.duration : current.duration;
@@ -303,7 +339,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         tryNextSource(fallback);
       });
     });
-    const onEnded = active(() => {
+    const onEnded = active((element) => {
+      // A loop whose end is the track's end goes round again.
+      const { start, end } = loopRef.current;
+      if (start != null && end != null) {
+        element.currentTime = start;
+        element.play().catch(onPlayRejected);
+        return;
+      }
       const current = stateRef.current;
       const nextIndex = current.index + 1;
       const track = current.queue[nextIndex];
@@ -378,6 +421,39 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setLoopStart = useCallback(() => {
+    const now = audio().currentTime;
+    // A start after the end begins a new loop from here.
+    setLoop((previous) => ({ start: now, end: previous.end != null && previous.end > now ? previous.end : null }));
+  }, []);
+
+  const setLoopEnd = useCallback(() => {
+    const now = audio().currentTime;
+    // Playback is at the end already: the next check goes straight back to
+    // the start, so the visitor hears the loop right away.
+    loopLastRef.current = now - 0.001;
+    // An end before the start (or with no start) loops from the top.
+    setLoop((previous) => ({ start: previous.start != null && previous.start < now ? previous.start : 0, end: now }));
+  }, []);
+
+  const clearLoop = useCallback(() => setLoop(NO_LOOP), []);
+
+  // While a loop plays on screen, check every frame (timeupdate comes only
+  // about four times a second), so the jump back lands right at the end.
+  const loopActive = loop.start != null && loop.end != null;
+  const playing = state.status === "playing";
+  useEffect(() => {
+    if (!loopActive || !playing) return;
+    let frame = 0;
+    const watch = () => {
+      checkLoop(audio());
+      frame = requestAnimationFrame(watch);
+    };
+    frame = requestAnimationFrame(watch);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loopActive, playing]);
+
   const retry = useCallback(() => {
     const current = stateRef.current;
     const track = current.queue[current.index];
@@ -401,6 +477,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const seek = useCallback((seconds: number) => {
     const element = audio();
     element.currentTime = seconds;
+    loopLastRef.current = seconds;
     setState((previous) => ({ ...previous, position: seconds }));
     // Keep the lock screen's scrubber where the visitor moved it.
     const session = mediaSession();
@@ -574,12 +651,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       retry,
       rate,
       setRate,
+      loop,
+      setLoopStart,
+      setLoopEnd,
+      clearLoop,
       enqueue,
       playNext,
       remove,
       jumpTo
     }),
-    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, rate, setRate, enqueue, playNext, remove, jumpTo]
+    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, rate, setRate, loop, setLoopStart, setLoopEnd, clearLoop, enqueue, playNext, remove, jumpTo]
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

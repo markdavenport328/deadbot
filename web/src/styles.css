@@ -226,9 +226,26 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .now-playing-retry { flex-shrink: 0; border: 1px solid #e17e64; border-radius: var(--r); background: transparent; color: #e17e64; font-size: 0.8rem; font-weight: 600; padding: 0.5rem 0.9rem; }
 .now-playing-scrubber { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
 .now-playing-time { color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.now-playing-range-wrap { position: relative; display: flex; flex: 1; min-width: 0; }
 .now-playing-range { flex: 1; min-width: 0; accent-color: var(--listen); }
-.now-playing-speed { min-width: 2.6rem; height: 32px; margin-right: -0.4rem; padding: 0 0.4rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
-.now-playing-speed:hover, .now-playing-speed.changed { color: var(--cream); }
+/* The practice loop under the scrubber's track: a gold band, or a tick at its start. */
+.now-playing-loop { position: absolute; bottom: -3px; height: 3px; border-radius: 2px; background: var(--listen); opacity: 0.75; pointer-events: none; }
+.now-playing-loop.open-ended { width: 2px; height: 9px; bottom: -4px; }
+/* Speed and loop: "⋯" at the scrubber's end, naming any change in cream. */
+.now-playing-more { display: flex; align-items: center; gap: 0.3rem; height: 32px; margin-right: -0.4rem; padding: 0 0.4rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.now-playing-more svg { width: 16px; height: 16px; }
+.now-playing-more:hover, .now-playing-more.open, .now-playing-more.changed { color: var(--cream); }
+.now-playing-practice { overflow: visible; display: grid; gap: 0.5rem; padding-top: 0.2rem; }
+.practice-row { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.practice-label { width: 3.2rem; color: var(--quiet); font-size: 0.78rem; }
+.practice-choices { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.practice-choice, .practice-clear { min-height: 32px; padding: 0 0.65rem; border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--text); font: inherit; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.practice-choice:hover, .practice-clear:hover { color: var(--cream); border-color: var(--quiet); }
+.practice-choice[aria-pressed="true"] { border-color: var(--listen); color: var(--cream); }
+.practice-clear { border-color: transparent; color: var(--quiet); }
+@media (pointer: coarse) {
+  .practice-choice, .practice-clear { min-height: 40px; }
+}
 /* The queue toggle: the list mark with the count of tracks left. */
 .now-playing-queue-toggle { display: flex; align-items: center; gap: 0.2rem; height: 40px; padding: 0 0.5rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .now-playing-queue-toggle svg { width: 18px; height: 18px; }

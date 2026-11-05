@@ -544,9 +544,15 @@ The shared player (`web/src/player.tsx`) gained three things:
   ends, the spare loads the next one and takes over when the current ends.
   Measured on Cornell's Fire → Estimated Prophet: 50 ms of silence between them.
 
-- **Speed.** A quiet "1×" at the end of the scrubber steps through 1, 0.75,
-  0.5, 1.25 and 1.5× (slower first, for learning a solo by ear; the pitch holds); any speed but normal shows in cream. The speed carries
-  across tracks and is remembered on the device (`deadbot.player.rate`).
+- **Speed and loop, for learning a solo by ear.** A "⋯" at the end of the
+  scrubber opens a panel in the queue's slot: speeds 0.5, 0.75, 1, 1.25 and
+  1.5× (the browser keeps the pitch), and a loop set with "Set start" / "Set
+  end" at the moment you tap. The loop shows as a gold band under the
+  scrubber; crossing its end jumps back (checked every frame on screen, and on
+  each time update when the tab is hidden or the phone locked); a seek past
+  it is left alone; a new track clears it. While the speed is not 1× or a loop
+  is on, the "⋯" names it in cream. Speed is remembered on the device
+  (`deadbot.player.rate`); the loop is not.
 
 Open: true gapless playback (Web Audio) for segues; `start_seconds` reaching the
 browser so a card can start partway into a tape file; keyboard shortcuts.
