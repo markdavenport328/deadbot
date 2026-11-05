@@ -21,6 +21,7 @@ import type { SongTimelineData } from "./song-timeline-types";
 import { askFocus } from "./song-timeline-text";
 import { AddToQueue, ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 import { RowPanel, panelId, useOpenRow, type RowSource } from "./RowOpener";
+import { createThreadId } from "./ask-client";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
 // rarely a page actually contains a data_chart block, so it loads lazily:
@@ -190,10 +191,6 @@ const startingPoints = [
   }
 ];
 
-function createThreadId(): string {
-  return `web-${crypto.randomUUID()}`;
-}
-
 // Reload after a deploy, checked only when a tab comes back into view and at
 // most every few minutes. A timer would keep every forgotten background tab
 // calling the server around the clock.
@@ -328,7 +325,7 @@ function plainText(text: string): string {
   return text.replace(inlineEmphasis, (_match, _bold, boldText, _italic, italicText) => boldText ?? italicText ?? "");
 }
 
-function renderInline(text: string): ReactNode[] {
+export function renderInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(inlineLink)) {
@@ -1927,15 +1924,10 @@ function ComposedPage({
   composing: boolean;
   onFollowUp: FollowUp;
 }) {
-  // A primary unit's facets start open only when it is the page's sole unit;
-  // typography blocks (era_unit, editorial, and the rest) do not count.
-  const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
   // A listening hero the model placed first leads the page, above the title.
   const firstBlock = groups[0]?.blocks[0];
   const hero = firstBlock?.type === "listening_hero" ? firstBlock : null;
   const bodyGroups = hero ? [{ ...groups[0], blocks: groups[0].blocks.slice(1) }, ...groups.slice(1)] : groups;
-  const tapes = composing ? [] : pageTapes(groups);
-  const tapeNames = tapeLabels(tapes);
   return (
     <>
       {hero && <ListeningHero block={hero} />}
@@ -1943,8 +1935,36 @@ function ComposedPage({
         <h1 id="answer-title" tabIndex={-1}>{title}</h1>
       </div>
       {lead && <p className="answer-lead">{renderInline(lead)}</p>}
-      {bodyGroups.map((group, groupIndex) => {
-        if (hero && groupIndex === 0 && group.blocks.length === 0) return null;
+      <PageGroups groups={bodyGroups} sources={sources} composing={composing} onFollowUp={onFollowUp} afterHero={Boolean(hero)} />
+      {composing && <p className="composing-note">Composing the page…</p>}
+      {!composing && <SourcesFooter groups={groups} sources={sources} />}
+    </>
+  );
+}
+
+// The page's groups in the model's order, each with its heading and its
+// blocks. Shared by both shells; the workspace calls it once per tab.
+export function PageGroups({
+  groups,
+  sources,
+  composing,
+  onFollowUp,
+  afterHero = false
+}: {
+  groups: RenderGroup[];
+  sources: SourceReference[];
+  composing: boolean;
+  onFollowUp: FollowUp;
+  // The first group's hero was lifted above the title, so an emptied first group is skipped.
+  afterHero?: boolean;
+}) {
+  // A primary unit's facets start open only when it is the page's sole unit;
+  // typography blocks (era_unit, editorial, and the rest) do not count.
+  const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
+  return (
+    <>
+      {groups.map((group, groupIndex) => {
+        if (afterHero && groupIndex === 0 && group.blocks.length === 0) return null;
         const groupTitle = group.blocks.length === 1 && sameHeading(group.title, blockHeading(group.blocks[0])) ? null : group.title;
         return (
         <section className={`experience-group group-${group.presentation}${groupTitle ? " has-heading" : ""}`} key={groupIndex}>
@@ -1999,33 +2019,40 @@ function ComposedPage({
         </section>
         );
       })}
-      {composing && <p className="composing-note">Composing the page…</p>}
-      {!composing && (sources.length > 0 || tapes.length > 0) && (
-        <footer className="sources-footer">
-          <p className="sources-footer-label">Sources</p>
-          <ul>
-            {dedupeSources(sources).map((source) => (
-              <li key={`${source.label}-${source.url ?? source.source_id}`}>
-                <span className="source-kind-chip">
-                  {source.kind === "canonical" ? "Canonical" : "External source"}
-                </span>
-                {source.url ? (
-                  <ExternalLink href={source.url}>{source.label}</ExternalLink>
-                ) : (
-                  <span>{source.label}</span>
-                )}
-              </li>
-            ))}
-            {tapes.map((tape) => (
-              <li key={tape.identifier}>
-                <span className="source-kind-chip">Internet Archive</span>
-                <ExternalLink href={`https://archive.org/details/${tape.identifier}`}>{tapeNames.get(tape.identifier)}</ExternalLink>
-              </li>
-            ))}
-          </ul>
-        </footer>
-      )}
     </>
+  );
+}
+
+// The page's sources and the Internet Archive tapes behind its playable
+// tracks, once the page is finished.
+export function SourcesFooter({ groups, sources }: { groups: RenderGroup[]; sources: SourceReference[] }) {
+  const tapes = pageTapes(groups);
+  const tapeNames = tapeLabels(tapes);
+  if (sources.length === 0 && tapes.length === 0) return null;
+  return (
+    <footer className="sources-footer">
+      <p className="sources-footer-label">Sources</p>
+      <ul>
+        {dedupeSources(sources).map((source) => (
+          <li key={`${source.label}-${source.url ?? source.source_id}`}>
+            <span className="source-kind-chip">
+              {source.kind === "canonical" ? "Canonical" : "External source"}
+            </span>
+            {source.url ? (
+              <ExternalLink href={source.url}>{source.label}</ExternalLink>
+            ) : (
+              <span>{source.label}</span>
+            )}
+          </li>
+        ))}
+        {tapes.map((tape) => (
+          <li key={tape.identifier}>
+            <span className="source-kind-chip">Internet Archive</span>
+            <ExternalLink href={`https://archive.org/details/${tape.identifier}`}>{tapeNames.get(tape.identifier)}</ExternalLink>
+          </li>
+        ))}
+      </ul>
+    </footer>
   );
 }
 

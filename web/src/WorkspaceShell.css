@@ -1,4 +1,6 @@
-/* Workspace shell: tabs and history. The shell task adds the layout. */
+/* Workspace shell (?shell=workspace): layout, tabs, history and the held
+   previous page. Everything is scoped under .workspace-shell so the old shell
+   is untouched. */
 
 .workspace-shell .workspace-tabs {
   position: sticky;
@@ -79,3 +81,57 @@
   font-size: 0.85rem;
 }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
+
+/* Layout: a narrow rail of history and the ask box beside the workspace. */
+.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: 100vh; column-gap: 2.5rem; }
+.workspace-shell.phone .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+.workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: 100vh; min-height: 0; padding: 0 0 1.25rem; font-size: 0.9rem; }
+.workspace-shell .workspace-rail .masthead { padding-bottom: 0; }
+.workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; }
+.workspace-menu-history { padding: 0 var(--space-content) var(--space-content); border-bottom: 1px solid var(--hair); }
+
+/* One exploration. A held previous page stays usable, only quieter. */
+.workspace-shell .exploration-pane { max-width: 58rem; }
+.workspace-shell .exploration-pane .content-heading h1 { font-size: clamp(1.8rem, 3vw, 2.8rem); }
+.workspace-shell .exploration-pane.previous { opacity: 0.55; transition: opacity 180ms var(--ease-out); }
+.workspace-shell .workspace-answer { max-width: 46rem; margin: 0 0 var(--space-content); color: var(--cream); font-size: 1.12rem; line-height: 1.55; }
+.workspace-shell .workspace-waiting { color: var(--quiet); font-size: 0.9rem; }
+.workspace-shell .workspace-panel > .experience-group + .experience-group { margin-top: var(--space-unit); }
+
+/* Cards are one per row here: comparison groups stack instead of pairing. */
+.workspace-shell .group-comparison .group-blocks { grid-template-columns: minmax(0, 1fr); }
+.workspace-shell .group-comparison .group-blocks > * { grid-column: 1 / -1; }
+
+/* The follow-up banner over the held page, and the failure line. */
+.workspace-shell .workspace-banner,
+.workspace-shell .workspace-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-identity) var(--space-part);
+  max-width: 58rem;
+  margin: 0 0 var(--space-content);
+  padding: var(--space-identity) var(--space-part);
+  border-left: 3px solid var(--ask);
+  border-radius: var(--r);
+  background: var(--panel);
+  font-size: 0.9rem;
+}
+.workspace-shell .workspace-alert { border-left-color: #e17e64; }
+.workspace-shell .workspace-banner p,
+.workspace-shell .workspace-alert p { margin: 0; }
+.workspace-shell .workspace-banner .banner-status,
+.workspace-shell .workspace-alert .alert-detail { flex: 1 1 12rem; color: var(--muted); }
+.workspace-shell .alert-actions { display: flex; gap: var(--space-identity); }
+.workspace-shell .workspace-banner button,
+.workspace-shell .workspace-alert button {
+  padding: var(--space-detail) var(--space-identity);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-shell .exploration-pane.previous { transition: none; }
+}
