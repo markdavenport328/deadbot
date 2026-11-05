@@ -1,0 +1,30 @@
+/* Workspace shell: tabs and history. The shell task adds the layout. */
+
+.workspace-shell .workspace-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  margin: var(--item) 0 var(--space-content);
+  border-bottom: 1px solid var(--hair);
+  background: var(--ground);
+}
+.workspace-shell .workspace-tabs [role="tab"] {
+  padding: var(--item) var(--space-part);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.workspace-shell .workspace-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--cream);
+  color: var(--cream);
+  font-weight: 600;
+}
+.workspace-shell .workspace-tabs [role="tab"].unused { color: var(--quiet); opacity: 0.7; cursor: default; }
+.workspace-shell .tab-mark { margin-left: var(--item); color: var(--quiet); font-size: 0.72rem; font-weight: 400; }
+.workspace-shell .tab-mark.new { color: var(--ask); }
+.workspace-shell .tab-dot { display: inline-block; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--ask); }
