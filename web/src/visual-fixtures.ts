@@ -950,11 +950,92 @@ const timeline: ExperienceResponse = fixture(
   { title: "The song's life on stage", lead: null }
 );
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline"] as const;
+// Illustrative fixture — not catalog records. A workspace page modeled on the
+// persistent-exploration sketch's Madison Square Garden answer: three nights
+// to hear (Listen), the Garden nights by year (Charts), and the story with Ask
+// chips (Read). Replayed with `?shell=workspace&stream=msg-workspace`, the
+// first Listen card lands before the Read narrative does. Dates, setlists and
+// counts follow the library; the notes and prose are placeholders.
+const msgShow = (id: string, date: string, title: string, note: string, identifier: string, sets: [string, string[]][]) =>
+  show({
+    id, date, venue: "Madison Square Garden", location: "New York, NY", title, note,
+    emphasis: "supporting", visible_facets: ["listen", "setlist"], setlist_disclosure: "collapsed",
+    listen: [{ label: "Listen on the Internet Archive", provider: "Internet Archive", url: `${archive}${identifier}`, is_official: false }],
+    recording_identifier: identifier, recording_details_url: `${archive}${identifier}`,
+    sets: sets.map(([label, titles]) => ({ label, songs: songs(titles.map((song, index) => [`${id}-${label}-${index + 1}`, song, null] as const)) }))
+  });
+
+const msgShows: ExperienceBlock[] = [
+  msgShow("gd-1979-01-07", "1979-01-07", "The first night in the room", "[Placeholder: the band finding its feet in the building on its first Garden visit.]", "gd1979-01-07.nak300-wagner.miller.87739.flac16", [
+    ["Set 1", ["Jack Straw", "They Love Each Other", "Cassidy", "Jack-A-Roe", "Looks Like Rain", "Tennessee Jed", "El Paso", "Stagger Lee", "Passenger"]],
+    ["Set 2", ["I Need A Miracle", "Shakedown Street", "From The Heart Of Me", "Estimated Prophet", "Eyes Of The World", "Drums", "Space", "Not Fade Away", "Black Peter", "Around And Around"]],
+    ["Encore", ["Good Lovin'"]]
+  ]),
+  msgShow("gd-1987-09-18", "1987-09-18", "Peak-era confidence", "[Placeholder: the first long Garden run after the summer of 1987.]", "gd1987-09-18.124840.sbd.sbeok.Eichorn.flac16", [
+    ["Set 1", ["Hell In A Bucket", "Sugaree", "Walkin' Blues", "Candyman", "When I Paint My Masterpiece", "Bird Song"]],
+    ["Set 2", ["Shakedown Street", "Man Smart (Woman Smarter)", "Terrapin Station", "Drums", "Space", "Goin' Down The Road Feelin' Bad", "All Along The Watchtower", "Morning Dew", "Good Lovin'", "La Bamba", "Good Lovin'"]],
+    ["Encore", ["Knockin' On Heaven's Door"]]
+  ]),
+  msgShow("gd-1990-09-20", "1990-09-20", "A new piano in the band", "[Placeholder: the September 1990 run with the new keyboard lineup.]", "gd1990-09-20.138036.mtx.photoleon.flac16", [
+    ["Set 1", ["Feel Like A Stranger", "Althea", "It's All Over Now", "Ramble On Rose", "El Paso", "Brown Eyed Women", "Greatest Story Ever Told", "U.S. Blues"]],
+    ["Set 2", ["Truckin'", "China Cat Sunflower", "I Know You Rider", "Man Smart (Woman Smarter)", "Drums", "Space", "Dark Star", "Playing In The Band Reprise", "Dark Star", "Throwing Stones", "Touch Of Grey"]],
+    ["Encore", ["Turn On Your Lovelight"]]
+  ])
+];
+
+const msgYears: [number, number][] = [[1979, 5], [1980, 0], [1981, 2], [1982, 2], [1983, 2], [1984, 0], [1985, 0], [1986, 0], [1987, 5], [1988, 9], [1989, 0], [1990, 6], [1991, 9], [1992, 0], [1993, 6], [1994, 6]];
+
+const msgChart = {
+  type: "data_chart", aggregation_id: "fixture:msg-nights-by-year", title: "Garden nights by year", note: null,
+  chart: "bar", orientation: "vertical",
+  columns: [{ key: "year", label: "Year", type: "temporal" }, { key: "value", label: "Nights", type: "quantitative" }],
+  rows: msgYears.map(([year, value]) => ({ year, value })),
+  metric_label: "Nights", total: 52, excluded_count: 0, date_range: { from: 1979, to: 1994 }, empty_reason: null
+} as unknown as ExperienceBlock;
+
+const msgStory: ExperienceBlock[] = [
+  {
+    type: "editorial", presentation: "narrative", eyebrow: null, title: "How the Garden runs changed",
+    paragraphs: [
+      "[Placeholder: how a short first visit in 1979 became a fixture of the New York calendar, with runs of five to nine nights by the late ’80s.]",
+      "[Placeholder: the September 1990 run and the new lineup, linked to the show in Listen.]"
+    ],
+    items: []
+  },
+  {
+    type: "editorial", presentation: "fact_grid", eyebrow: "Keep going", title: null, paragraphs: [],
+    items: [
+      { marker: "Late ’80s", title: "Five nights to nine", value: null, detail: "The runs grew between 1987 and 1988.", link: null, follow_ups: [{ label: "Focus on the late ’80s", question: "Focus on the late ’80s Garden runs" }] },
+      { marker: "Guests", title: "Who sat in", value: null, detail: "[Placeholder: guests across the Garden years.]", link: null, follow_ups: [{ label: "Garden guests", question: "Which Garden run had the most guests?" }] }
+    ]
+  }
+] as ExperienceBlock[];
+
+const msgWorkspace: ExperienceResponse = {
+  schema_version: "2",
+  thread_id: "visual-msg-workspace",
+  title: "The Garden years, 1979–1994",
+  answer: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all, usually in multi-night runs that became a fixture of the New York calendar.",
+  body_lead: null,
+  mode: "answer",
+  conversation: [
+    { role: "user", text: "What's their history at Madison Square Garden?" },
+    { role: "assistant", text: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all." }
+  ],
+  blocks: [...msgShows, msgChart, ...msgStory],
+  groups: [
+    { title: "Three ways into the Garden", lead: "One night from each era of the runs.", presentation: "comparison", criteria: [], block_indexes: [0, 1, 2] },
+    { title: "Garden nights by year", lead: null, presentation: "collection", criteria: [], block_indexes: [3] },
+    { title: null, lead: null, presentation: "argument", criteria: [], block_indexes: [4, 5] }
+  ],
+  sources: [{ source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }]
+};
+
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

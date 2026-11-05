@@ -293,3 +293,14 @@ test("on a phone, history lives in the site menu and choosing a row closes it", 
   expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
   expect(sent).toHaveLength(2);
 });
+
+test("the msg-workspace stream lands a Listen card before the Read story", async () => {
+  const { streamEventsFor } = await import("./visual-fixtures");
+  const { fallbackTab } = await import("./tab-routing");
+  const blocks = streamEventsFor("msg-workspace").flatMap((event) => (event.type === "block" ? [event.block] : []));
+  const firstListen = blocks.findIndex((block) => fallbackTab(block) === "listen");
+  const firstStory = blocks.findIndex((block) => block.type === "editorial");
+  expect(firstListen).toBeGreaterThanOrEqual(0);
+  expect(firstListen).toBeLessThan(firstStory);
+  expect(blocks.some((block) => fallbackTab(block) === "charts")).toBe(true);
+});

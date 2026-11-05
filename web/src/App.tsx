@@ -22,6 +22,9 @@ import { askFocus } from "./song-timeline-text";
 import { AddToQueue, ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 import { RowPanel, panelId, useOpenRow, type RowSource } from "./RowOpener";
 import { createThreadId } from "./ask-client";
+import { readShellMode } from "./shell-mode";
+import { MenuSlotProvider } from "./menu-slot";
+import { WorkspaceShell, type PageParts } from "./WorkspaceShell";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
 // rarely a page actually contains a data_chart block, so it loads lazily:
@@ -2297,6 +2300,40 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
   );
 }
 
+// The home screen's lead and the library with its starting points. Both
+// shells show it; whatever sits between the lead and the library (the old
+// shell's ask box) comes in as children.
+export function StartLibrary({ onAsk, disabled, children }: { onAsk(prompt: string): void; disabled: boolean; children?: ReactNode }) {
+  return (
+    <>
+      <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
+      {children}
+      <div className="library">
+        {stats.map(({ count, noun }) => {
+          const group = startingPoints.find((candidate) => candidate.category.toLowerCase() === noun);
+          return (
+            <section className="library-stat" key={noun}>
+              <p className="num">{count}</p>
+              <p className="noun">{noun}</p>
+              {group && (
+                <ul className="qs">
+                  {group.questions.map((prompt) => (
+                    <li key={prompt}>
+                      <button type="button" onClick={() => onAsk(prompt)} disabled={disabled}>
+                        {prompt}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 // Below this width the layout is one column and the ask box and player move
 // into a dock fixed at the foot of the screen.
 const PHONE_QUERY = "(max-width: 860px)";
@@ -2777,31 +2814,10 @@ function App() {
           <div className="content-body">
           {atStart ? (
             <div className={`start-screen${phase === "leaving" ? " leaving" : ""}`}>
-              <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
-              {renderComposer("start")}
-              {error && <p className="error" role="alert">{error}</p>}
-              <div className="library">
-                {stats.map(({ count, noun }) => {
-                  const group = startingPoints.find((candidate) => candidate.category.toLowerCase() === noun);
-                  return (
-                    <section className="library-stat" key={noun}>
-                      <p className="num">{count}</p>
-                      <p className="noun">{noun}</p>
-                      {group && (
-                        <ul className="qs">
-                          {group.questions.map((prompt) => (
-                            <li key={prompt}>
-                              <button type="button" onClick={() => void askQuestion(prompt, { fresh: true })} disabled={loading}>
-                                {prompt}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  );
-                })}
-              </div>
+              <StartLibrary onAsk={(prompt) => void askQuestion(prompt, { fresh: true })} disabled={loading}>
+                {renderComposer("start")}
+                {error && <p className="error" role="alert">{error}</p>}
+              </StartLibrary>
             </div>
           ) : loading && draft ? (
             <ComposedPage
@@ -2848,6 +2864,34 @@ function App() {
   );
 }
 
+// The workspace's page pieces are the old shell's renderers, so both shells
+// draw groups, units and sources the same way.
+const workspaceParts: PageParts = {
+  groups: (groups, sources, composing, onFollowUp) => <PageGroups groups={groups} sources={sources} composing={composing} onFollowUp={onFollowUp} />,
+  sources: (groups, sources) => <SourcesFooter groups={groups} sources={sources} />,
+  inline: renderInline
+};
+
+const workspaceStart = (ask: (question: string) => void) => <StartLibrary onAsk={ask} disabled={false} />;
+
+// The opt-in workspace shell (?shell=workspace) with the same player bar,
+// start screen and renderers as the old one.
+function WorkspaceApp() {
+  const isPhone = useMediaQuery(PHONE_QUERY);
+  const [linkedQuestion] = useState(() => (currentPath() === "/" ? takeQuestionFromUrl() : null));
+  return (
+    <WorkspaceShell
+      parts={workspaceParts}
+      startView={workspaceStart}
+      player={<NowPlayingBar />}
+      phonePlayer={<NowPlayingBar collapsible />}
+      isPhone={isPhone}
+      linkedQuestion={linkedQuestion}
+      registerAskFromPage={useAskFromPage}
+    />
+  );
+}
+
 // The About page replaces the app on screen without unmounting it, so the
 // conversation, its page, and its scroll position are all still there on the
 // way back, and the player bar comes along.
@@ -2855,6 +2899,7 @@ export default function AppWithPlayer() {
   const path = usePath();
   const onAbout = path === "/about";
   const homeScroll = useRef(0);
+  const [mode] = useState(() => readShellMode(window.location.search));
 
   useLayoutEffect(() => {
     if (onAbout) return undefined;
@@ -2868,17 +2913,19 @@ export default function AppWithPlayer() {
 
   return (
     <PlayerProvider>
-      <Rosettes />
-      <SiteMenu />
-      <div className="app-view" hidden={onAbout}>
-        <App />
-      </div>
-      {onAbout && (
-        <>
-          <AboutPage />
-          <div className="about-player"><NowPlayingBar /></div>
-        </>
-      )}
+      <MenuSlotProvider>
+        <Rosettes />
+        <SiteMenu />
+        <div className="app-view" hidden={onAbout}>
+          {mode === "workspace" ? <WorkspaceApp /> : <App />}
+        </div>
+        {onAbout && (
+          <>
+            <AboutPage />
+            <div className="about-player"><NowPlayingBar /></div>
+          </>
+        )}
+      </MenuSlotProvider>
     </PlayerProvider>
   );
 }
