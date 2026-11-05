@@ -544,6 +544,9 @@ The shared player (`web/src/player.tsx`) gained three things:
   ends, the spare loads the next one and takes over when the current ends.
   Measured on Cornell's Fire → Estimated Prophet: 50 ms of silence between them.
 
+- **Speed.** A quiet "1×" at the end of the scrubber steps through 1, 0.75,
+  0.5, 1.25 and 1.5× (slower first, for learning a solo by ear; the pitch holds); any speed but normal shows in cream. The speed carries
+  across tracks and is remembered on the device (`deadbot.player.rate`).
+
 Open: true gapless playback (Web Audio) for segues; `start_seconds` reaching the
-browser so a card can start partway into a tape file; keyboard shortcuts and a
-speed control.
+browser so a card can start partway into a tape file; keyboard shortcuts.

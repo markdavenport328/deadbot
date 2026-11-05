@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NowPlayingBar } from "./App";
 import { ListenControl } from "./listen-control";
-import { PLAYER_STORAGE_KEY, PlayerProvider, readSavedPlayer, type PlayerTrack } from "./player";
+import { PLAYER_RATE_KEY, PLAYER_STORAGE_KEY, PlayerProvider, readSavedPlayer, type PlayerTrack } from "./player";
 
 // The player beyond the page: a queue that survives a reload, the next track
 // loaded before the current one ends, and the phone's lock screen controls.
@@ -117,6 +117,41 @@ describe("loading the next track early", () => {
       spare.dispatchEvent(new Event("playing"));
     });
     expect(within(bar()).getByRole("button", { name: "Pause" })).toBeInTheDocument();
+  });
+});
+
+describe("playback speed", () => {
+  it("steps through the speeds, keeps the speed on the next track, and remembers it", async () => {
+    renderPage();
+    await click(screen.getByRole("button", { name: "Scarlet Begonias" }));
+    const speed = () => within(bar()).getByRole("button", { name: /^Playback speed/ });
+    expect(speed()).toHaveTextContent("1×");
+    await click(speed());
+    await click(speed());
+    expect(speed()).toHaveTextContent("0.5×");
+    expect(speed()).toHaveAccessibleName("Playback speed 0.5×, change to 1.25×");
+    expect(played[played.length - 1].playbackRate).toBe(0.5);
+
+    await click(within(bar()).getByRole("button", { name: "Next track" }));
+    expect(played[played.length - 1].playbackRate).toBe(0.5);
+    expect(window.localStorage.getItem(PLAYER_RATE_KEY)).toBe("0.5");
+
+    cleanup();
+    renderPage();
+    expect(speed()).toHaveTextContent("0.5×");
+  });
+
+  it("steps up to the faster speeds after the slow ones, then back to normal", async () => {
+    window.localStorage.setItem(PLAYER_RATE_KEY, "0.5");
+    renderPage();
+    await click(screen.getByRole("button", { name: "Scarlet Begonias" }));
+    const speed = () => within(bar()).getByRole("button", { name: /^Playback speed/ });
+    await click(speed());
+    expect(speed()).toHaveTextContent("1.25×");
+    await click(speed());
+    expect(speed()).toHaveTextContent("1.5×");
+    await click(speed());
+    expect(speed()).toHaveTextContent("1×");
   });
 });
 

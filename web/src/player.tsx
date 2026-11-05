@@ -61,6 +61,9 @@ export type PlayerContextValue = {
   // Reload the current track from scratch after an error, rather than
   // resuming (play() no-ops on an already-loaded track; this bypasses that).
   retry: () => void;
+  // Playback speed, kept for every track and remembered on the device.
+  rate: number;
+  setRate: (rate: number) => void;
   // The visitor's own queue edits. play() still replaces the queue; these
   // add to it and rearrange it without interrupting what is playing.
   // enqueue appends the tracks not already queued; into an empty player it
@@ -92,6 +95,19 @@ const RESTART_THRESHOLD_SECONDS = 3;
 const SKIP_SECONDS = 10;
 
 export const PLAYER_STORAGE_KEY = "deadbot.player.v1";
+export const PLAYER_RATE_KEY = "deadbot.player.rate";
+// Slower first: the speed control is mostly for learning a solo by ear.
+// Browsers keep the pitch when they slow a recording, so it stays in key.
+export const PLAYBACK_RATES = [1, 0.75, 0.5, 1.25, 1.5] as const;
+
+function readSavedRate(): number {
+  try {
+    const rate = Number(window.localStorage.getItem(PLAYER_RATE_KEY));
+    return rate >= 0.5 && rate <= 3 ? rate : 1;
+  } catch {
+    return 1;
+  }
+}
 
 type SavedPlayer = { queue: PlayerTrack[]; index: number; position: number };
 
@@ -161,6 +177,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
   // A restored position, applied once the restored track's metadata loads.
   const pendingSeekRef = useRef<number | null>(state.position > 0 ? state.position : null);
+  const [rate, setRateState] = useState(readSavedRate);
+  const rateRef = useRef(rate);
+  rateRef.current = rate;
+
+  // Loading a file resets an element's speed to its default, so both are set.
+  function applyRate(element: HTMLAudioElement) {
+    element.defaultPlaybackRate = rateRef.current;
+    element.playbackRate = rateRef.current;
+  }
   // The current load's second chance: archive.org links that fail get the
   // item's primary servers (see archive-fallback.ts). Undefined urls means
   // the lookup has not run yet.
@@ -179,6 +204,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.preload = "metadata";
+      applyRate(audioRef.current);
     }
     return audioRef.current;
   }
@@ -187,6 +213,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (!spareRef.current) {
       spareRef.current = new Audio();
       spareRef.current.preload = "auto";
+      applyRate(spareRef.current);
     }
     return spareRef.current;
   }
@@ -225,6 +252,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       element.src = track.audioUrl;
     }
     fallbackRef.current = { trackId: track.id };
+    applyRate(element);
     element.currentTime = 0;
     setState({ queue, index, status: "loading", position: 0, duration: track.durationSeconds ?? 0 });
     element.play().catch(onPlayRejected);
@@ -339,6 +367,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [loadTrack]
   );
 
+  const setRate = useCallback((next: number) => {
+    rateRef.current = next;
+    setRateState(next);
+    for (const element of [audioRef.current, spareRef.current]) if (element) applyRate(element);
+    try {
+      window.localStorage.setItem(PLAYER_RATE_KEY, String(next));
+    } catch {
+      // Storage blocked: the speed lasts the visit.
+    }
+  }, []);
+
   const retry = useCallback(() => {
     const current = stateRef.current;
     const track = current.queue[current.index];
@@ -368,7 +407,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const duration = Number.isFinite(element.duration) ? element.duration : stateRef.current.duration;
     if (session && typeof session.setPositionState === "function" && duration > 0) {
       try {
-        session.setPositionState({ duration, playbackRate: 1, position: Math.min(Math.max(seconds, 0), duration) });
+        session.setPositionState({ duration, playbackRate: rateRef.current, position: Math.min(Math.max(seconds, 0), duration) });
       } catch {
         // A position the browser rejects; the lock screen keeps its last one.
       }
@@ -510,12 +549,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // track changes; the browser advances it between updates.
     if (!currentTrack || !(sessionDuration > 0) || typeof session.setPositionState !== "function") return;
     try {
-      session.setPositionState({ duration: sessionDuration, playbackRate: 1, position: Math.min(audio().currentTime || state.position, sessionDuration) });
+      session.setPositionState({ duration: sessionDuration, playbackRate: rate, position: Math.min(audio().currentTime || state.position, sessionDuration) });
     } catch {
       // A position the browser rejects; the lock screen keeps its last one.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentTrack, state.status, sessionDuration]);
+  }, [currentTrack, state.status, sessionDuration, rate]);
 
   const value = useMemo<PlayerContextValue>(
     () => ({
@@ -533,12 +572,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       next,
       previous,
       retry,
+      rate,
+      setRate,
       enqueue,
       playNext,
       remove,
       jumpTo
     }),
-    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, enqueue, playNext, remove, jumpTo]
+    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, rate, setRate, enqueue, playNext, remove, jumpTo]
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

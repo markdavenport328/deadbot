@@ -6,7 +6,7 @@ import { CardHeading, Drawer, HeadingContext, MoreAbout, TopicChips, type Drawer
 import { askRequestBody, type FollowUp } from "./ask-request";
 import { clearStoredNotebook, readStoredNotebook, storeNotebook } from "./research-notebook";
 import { Grid } from "./Grid";
-import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
+import { PLAYBACK_RATES, PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardSpotifyButton, SpotifyEmbed, SpotifyPanelEmbed, SpotifyTextButton, useSpotifyPanel, type SpotifyPanel } from "./spotify-embed";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
@@ -2204,6 +2204,29 @@ function readCollapsedPlayer(): boolean {
   }
 }
 
+// Playback speed as a quiet "1×" at the end of the scrubber: each press steps
+// to the next speed, slower ones first, and any speed but normal shows in cream.
+function formatRate(rate: number): string {
+  return `${rate}×`;
+}
+
+function SpeedButton() {
+  const player = usePlayer();
+  const index = PLAYBACK_RATES.indexOf(player.rate as (typeof PLAYBACK_RATES)[number]);
+  const next = PLAYBACK_RATES[(index + 1) % PLAYBACK_RATES.length];
+  return (
+    <button
+      type="button"
+      className={`now-playing-speed${player.rate === 1 ? "" : " changed"}`}
+      onClick={() => player.setRate(next)}
+      aria-label={`Playback speed ${formatRate(player.rate)}, change to ${formatRate(next)}`}
+      title="Playback speed"
+    >
+      {formatRate(player.rate)}
+    </button>
+  );
+}
+
 export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: { collapsible?: boolean; forceCollapsed?: boolean } = {}) {
   const player = usePlayer();
   const [folded, setFolded] = useState(readCollapsedPlayer);
@@ -2320,6 +2343,7 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
           onChange={(event) => player.seek(Number(event.target.value))}
         />
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
+        <SpeedButton />
       </div>
       )}
     </div>

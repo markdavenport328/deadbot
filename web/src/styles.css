@@ -227,6 +227,8 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .now-playing-scrubber { display: flex; align-items: center; gap: 0.55rem; min-width: 0; }
 .now-playing-time { color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .now-playing-range { flex: 1; min-width: 0; accent-color: var(--listen); }
+.now-playing-speed { min-width: 2.6rem; height: 32px; margin-right: -0.4rem; padding: 0 0.4rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.now-playing-speed:hover, .now-playing-speed.changed { color: var(--cream); }
 /* The queue toggle: the list mark with the count of tracks left. */
 .now-playing-queue-toggle { display: flex; align-items: center; gap: 0.2rem; height: 40px; padding: 0 0.5rem; border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .now-playing-queue-toggle svg { width: 18px; height: 18px; }
