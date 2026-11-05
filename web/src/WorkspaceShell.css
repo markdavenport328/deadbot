@@ -28,3 +28,54 @@
 .workspace-shell .tab-mark { margin-left: var(--item); color: var(--quiet); font-size: 0.72rem; font-weight: 400; }
 .workspace-shell .tab-mark.new { color: var(--ask); }
 .workspace-shell .tab-dot { display: inline-block; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--ask); }
+
+.workspace-shell .exploration-history { display: grid; gap: var(--space-part); }
+.workspace-shell .history-head { display: flex; align-items: center; justify-content: space-between; }
+.workspace-shell .history-head h2 { margin: 0; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.workspace-shell .history-arrows { display: flex; gap: var(--space-detail); }
+.workspace-shell .history-arrows button,
+.workspace-shell .history-new,
+.workspace-shell .history-pending button {
+  padding: var(--space-detail) var(--space-identity);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+}
+.workspace-shell .history-arrows button:disabled,
+.workspace-shell .history-new:disabled { opacity: 0.4; cursor: default; }
+.workspace-shell .history-list { display: grid; gap: var(--space-detail); margin: 0; padding: 0; list-style: none; }
+.workspace-shell .history-row {
+  width: 100%;
+  padding: var(--space-identity);
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  text-align: left;
+}
+.workspace-shell .history-row small { display: block; color: var(--quiet); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.workspace-shell .history-row[aria-current="true"] { border-color: var(--hair); background: var(--panel); box-shadow: inset 3px 0 0 var(--ask); }
+.workspace-shell .history-row.ahead { opacity: 0.6; }
+.workspace-shell .thread-divider {
+  margin-top: var(--space-detail);
+  padding: var(--space-identity) var(--space-identity) var(--space-detail);
+  border-top: 1px dashed var(--hair);
+  color: var(--quiet);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.workspace-shell .history-pending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-identity);
+  padding: var(--space-identity);
+  border: 1px dashed var(--ask);
+  border-radius: var(--r);
+  font-size: 0.85rem;
+}
+.workspace-shell .history-pending.failed { border-color: var(--read); }
