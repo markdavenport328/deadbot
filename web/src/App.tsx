@@ -12,6 +12,7 @@ import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Roset
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
+import { applyPageEvent, groupsOfResponse, type Draft, type RenderGroup } from "./page-draft";
 import { currentPath, takeQuestionFromUrl, useAskFromPage, usePath } from "./site-nav";
 import { libraryStats as stats } from "./library-stats";
 import { VersionStrip } from "./VersionStrip";
@@ -1031,32 +1032,6 @@ function repeatsBlockTitle(block: EditorialBlockT, item: EditorialBlockT["items"
   return sameHeading(block.title ?? null, item.title) && (item.tracks ?? []).length === 0;
 }
 
-type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
-type Draft = { title: string; lead: string | null; groups: RenderGroup[] };
-
-function emptyGroup(): RenderGroup {
-  return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [] };
-}
-
-// The draft page grows in reading order. A block for a group we have not
-// heard of yet gets a provisional group; group_close fills the heading in.
-function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
-  if (event.type === "page_reset") return null;
-  if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;
-  if (event.type === "page_head") return { title: event.title, lead: event.lead, groups: draft?.groups ?? [] };
-  const current: Draft = draft ?? { title: "", lead: null, groups: [] };
-  const groups = current.groups.slice();
-  const index = event.type === "block" ? event.group_index : event.index;
-  if (!Number.isInteger(index) || index < 0) return draft;
-  while (groups.length <= index) groups.push(emptyGroup());
-  if (event.type === "block") {
-    groups[index] = { ...groups[index], blocks: [...groups[index].blocks, event.block] };
-  } else {
-    groups[index] = { ...groups[index], title: event.title, lead: event.lead, presentation: event.presentation, criteria: event.criteria };
-  }
-  return { ...current, groups };
-}
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -1080,16 +1055,6 @@ function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void
   else if (event.type === "response") handlers.onResponse(event.response);
   else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
   else if (PAGE_EVENT_TYPES.has(event.type)) handlers.onPage(event);
-}
-
-function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
-  return response.groups.map((group) => ({
-    title: group.title ?? null,
-    lead: group.lead ?? null,
-    presentation: group.presentation,
-    criteria: group.criteria ?? [],
-    blocks: group.block_indexes.map((index) => response.blocks[index]).filter((block): block is ExperienceBlock => Boolean(block)),
-  }));
 }
 
 function ShowUnit({
