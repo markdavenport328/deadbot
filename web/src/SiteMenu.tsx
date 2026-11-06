@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CloseSiteMenuProvider, MenuSlotOutlet } from "./menu-slot";
 import { followInSite, usePath } from "./site-nav";
 import "./SiteMenu.css";
 
@@ -68,6 +69,9 @@ export function SiteMenu() {
               <span aria-hidden="true" />
             </button>
           </div>
+          <CloseSiteMenuProvider value={() => setOpen(false)}>
+            <MenuSlotOutlet />
+          </CloseSiteMenuProvider>
           <nav aria-label="Site">
             <ul className="site-menu-list">
               <li>

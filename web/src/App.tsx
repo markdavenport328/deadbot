@@ -11,7 +11,7 @@ import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Roset
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
-import { ASK_ERROR, askPlain, askStreaming, replayStreamEvents } from "./ask-client";
+import { ASK_ERROR, askPlain, askStreaming, createThreadId, replayStreamEvents } from "./ask-client";
 import { applyPageEvent, groupsOfResponse, type Draft, type RenderGroup } from "./page-draft";
 import { currentPath, takeQuestionFromUrl, useAskFromPage, usePath } from "./site-nav";
 import { libraryStats as stats } from "./library-stats";
@@ -21,6 +21,9 @@ import type { SongTimelineData } from "./song-timeline-types";
 import { askFocus } from "./song-timeline-text";
 import { AddToQueue, ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 import { RowPanel, panelId, useOpenRow, type RowSource } from "./RowOpener";
+import { readShellMode } from "./shell-mode";
+import { MenuSlotProvider } from "./menu-slot";
+import { WorkspaceShell, type PageParts } from "./WorkspaceShell";
 
 // recharts (pulled in by DataChart) is a large dependency relative to how
 // rarely a page actually contains a data_chart block, so it loads lazily:
@@ -190,10 +193,6 @@ const startingPoints = [
   }
 ];
 
-function createThreadId(): string {
-  return `web-${crypto.randomUUID()}`;
-}
-
 // Reload after a deploy, checked only when a tab comes back into view and at
 // most every few minutes. A timer would keep every forgotten background tab
 // calling the server around the clock.
@@ -328,7 +327,7 @@ function plainText(text: string): string {
   return text.replace(inlineEmphasis, (_match, _bold, boldText, _italic, italicText) => boldText ?? italicText ?? "");
 }
 
-function renderInline(text: string): ReactNode[] {
+export function renderInline(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(inlineLink)) {
@@ -1927,15 +1926,10 @@ function ComposedPage({
   composing: boolean;
   onFollowUp: FollowUp;
 }) {
-  // A primary unit's facets start open only when it is the page's sole unit;
-  // typography blocks (era_unit, editorial, and the rest) do not count.
-  const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
   // A listening hero the model placed first leads the page, above the title.
   const firstBlock = groups[0]?.blocks[0];
   const hero = firstBlock?.type === "listening_hero" ? firstBlock : null;
   const bodyGroups = hero ? [{ ...groups[0], blocks: groups[0].blocks.slice(1) }, ...groups.slice(1)] : groups;
-  const tapes = composing ? [] : pageTapes(groups);
-  const tapeNames = tapeLabels(tapes);
   return (
     <>
       {hero && <ListeningHero block={hero} />}
@@ -1943,8 +1937,36 @@ function ComposedPage({
         <h1 id="answer-title" tabIndex={-1}>{title}</h1>
       </div>
       {lead && <p className="answer-lead">{renderInline(lead)}</p>}
-      {bodyGroups.map((group, groupIndex) => {
-        if (hero && groupIndex === 0 && group.blocks.length === 0) return null;
+      <PageGroups groups={bodyGroups} sources={sources} composing={composing} onFollowUp={onFollowUp} afterHero={Boolean(hero)} />
+      {composing && <p className="composing-note">Composing the page…</p>}
+      {!composing && <SourcesFooter groups={groups} sources={sources} />}
+    </>
+  );
+}
+
+// The page's groups in the model's order, each with its heading and its
+// blocks. Shared by both shells; the workspace calls it once per tab.
+export function PageGroups({
+  groups,
+  sources,
+  composing,
+  onFollowUp,
+  afterHero = false
+}: {
+  groups: RenderGroup[];
+  sources: SourceReference[];
+  composing: boolean;
+  onFollowUp: FollowUp;
+  // The first group's hero was lifted above the title, so an emptied first group is skipped.
+  afterHero?: boolean;
+}) {
+  // A primary unit's facets start open only when it is the page's sole unit;
+  // typography blocks (era_unit, editorial, and the rest) do not count.
+  const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
+  return (
+    <>
+      {groups.map((group, groupIndex) => {
+        if (afterHero && groupIndex === 0 && group.blocks.length === 0) return null;
         const groupTitle = group.blocks.length === 1 && sameHeading(group.title, blockHeading(group.blocks[0])) ? null : group.title;
         return (
         <section className={`experience-group group-${group.presentation}${groupTitle ? " has-heading" : ""}`} key={groupIndex}>
@@ -1999,33 +2021,40 @@ function ComposedPage({
         </section>
         );
       })}
-      {composing && <p className="composing-note">Composing the page…</p>}
-      {!composing && (sources.length > 0 || tapes.length > 0) && (
-        <footer className="sources-footer">
-          <p className="sources-footer-label">Sources</p>
-          <ul>
-            {dedupeSources(sources).map((source) => (
-              <li key={`${source.label}-${source.url ?? source.source_id}`}>
-                <span className="source-kind-chip">
-                  {source.kind === "canonical" ? "Canonical" : "External source"}
-                </span>
-                {source.url ? (
-                  <ExternalLink href={source.url}>{source.label}</ExternalLink>
-                ) : (
-                  <span>{source.label}</span>
-                )}
-              </li>
-            ))}
-            {tapes.map((tape) => (
-              <li key={tape.identifier}>
-                <span className="source-kind-chip">Internet Archive</span>
-                <ExternalLink href={`https://archive.org/details/${tape.identifier}`}>{tapeNames.get(tape.identifier)}</ExternalLink>
-              </li>
-            ))}
-          </ul>
-        </footer>
-      )}
     </>
+  );
+}
+
+// The page's sources and the Internet Archive tapes behind its playable
+// tracks, once the page is finished.
+export function SourcesFooter({ groups, sources }: { groups: RenderGroup[]; sources: SourceReference[] }) {
+  const tapes = pageTapes(groups);
+  const tapeNames = tapeLabels(tapes);
+  if (sources.length === 0 && tapes.length === 0) return null;
+  return (
+    <footer className="sources-footer">
+      <p className="sources-footer-label">Sources</p>
+      <ul>
+        {dedupeSources(sources).map((source) => (
+          <li key={`${source.label}-${source.url ?? source.source_id}`}>
+            <span className="source-kind-chip">
+              {source.kind === "canonical" ? "Canonical" : "External source"}
+            </span>
+            {source.url ? (
+              <ExternalLink href={source.url}>{source.label}</ExternalLink>
+            ) : (
+              <span>{source.label}</span>
+            )}
+          </li>
+        ))}
+        {tapes.map((tape) => (
+          <li key={tape.identifier}>
+            <span className="source-kind-chip">Internet Archive</span>
+            <ExternalLink href={`https://archive.org/details/${tape.identifier}`}>{tapeNames.get(tape.identifier)}</ExternalLink>
+          </li>
+        ))}
+      </ul>
+    </footer>
   );
 }
 
@@ -2396,6 +2425,40 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
       </div>
       )}
     </div>
+  );
+}
+
+// The home screen's lead and the library with its starting points. Both
+// shells show it; whatever sits between the lead and the library (the old
+// shell's ask box) comes in as children.
+export function StartLibrary({ onAsk, disabled, children }: { onAsk(prompt: string): void; disabled: boolean; children?: ReactNode }) {
+  return (
+    <>
+      <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
+      {children}
+      <div className="library">
+        {stats.map(({ count, noun }) => {
+          const group = startingPoints.find((candidate) => candidate.category.toLowerCase() === noun);
+          return (
+            <section className="library-stat" key={noun}>
+              <p className="num">{count}</p>
+              <p className="noun">{noun}</p>
+              {group && (
+                <ul className="qs">
+                  {group.questions.map((prompt) => (
+                    <li key={prompt}>
+                      <button type="button" onClick={() => onAsk(prompt)} disabled={disabled}>
+                        {prompt}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -2879,31 +2942,10 @@ function App() {
           <div className="content-body">
           {atStart ? (
             <div className={`start-screen${phase === "leaving" ? " leaving" : ""}`}>
-              <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
-              {renderComposer("start")}
-              {error && <p className="error" role="alert">{error}</p>}
-              <div className="library">
-                {stats.map(({ count, noun }) => {
-                  const group = startingPoints.find((candidate) => candidate.category.toLowerCase() === noun);
-                  return (
-                    <section className="library-stat" key={noun}>
-                      <p className="num">{count}</p>
-                      <p className="noun">{noun}</p>
-                      {group && (
-                        <ul className="qs">
-                          {group.questions.map((prompt) => (
-                            <li key={prompt}>
-                              <button type="button" onClick={() => void askQuestion(prompt, { fresh: true })} disabled={loading}>
-                                {prompt}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  );
-                })}
-              </div>
+              <StartLibrary onAsk={(prompt) => void askQuestion(prompt, { fresh: true })} disabled={loading}>
+                {renderComposer("start")}
+                {error && <p className="error" role="alert">{error}</p>}
+              </StartLibrary>
             </div>
           ) : loading && draft ? (
             <ComposedPage
@@ -2950,6 +2992,34 @@ function App() {
   );
 }
 
+// The workspace's page pieces are the old shell's renderers, so both shells
+// draw groups, units and sources the same way.
+const workspaceParts: PageParts = {
+  groups: (groups, sources, composing, onFollowUp) => <PageGroups groups={groups} sources={sources} composing={composing} onFollowUp={onFollowUp} />,
+  sources: (groups, sources) => <SourcesFooter groups={groups} sources={sources} />,
+  inline: renderInline
+};
+
+const workspaceStart = (ask: (question: string) => void) => <StartLibrary onAsk={ask} disabled={false} />;
+
+// The opt-in workspace shell (?shell=workspace) with the same player bar,
+// start screen and renderers as the old one.
+function WorkspaceApp() {
+  const isPhone = useMediaQuery(PHONE_QUERY);
+  const [linkedQuestion] = useState(() => (currentPath() === "/" ? takeQuestionFromUrl() : null));
+  return (
+    <WorkspaceShell
+      parts={workspaceParts}
+      startView={workspaceStart}
+      player={<NowPlayingBar />}
+      phonePlayer={(composerFocused) => <NowPlayingBar collapsible forceCollapsed={composerFocused} />}
+      isPhone={isPhone}
+      linkedQuestion={linkedQuestion}
+      registerAskFromPage={useAskFromPage}
+    />
+  );
+}
+
 // The About page replaces the app on screen without unmounting it, so the
 // conversation, its page, and its scroll position are all still there on the
 // way back, and the player bar comes along.
@@ -2957,6 +3027,7 @@ export default function AppWithPlayer() {
   const path = usePath();
   const onAbout = path === "/about";
   const homeScroll = useRef(0);
+  const [mode] = useState(() => readShellMode(window.location.search));
 
   useLayoutEffect(() => {
     if (onAbout) return undefined;
@@ -2970,17 +3041,19 @@ export default function AppWithPlayer() {
 
   return (
     <PlayerProvider>
-      <Rosettes />
-      <SiteMenu />
-      <div className="app-view" hidden={onAbout}>
-        <App />
-      </div>
-      {onAbout && (
-        <>
-          <AboutPage />
-          <div className="about-player"><NowPlayingBar /></div>
-        </>
-      )}
+      <MenuSlotProvider>
+        <Rosettes />
+        <SiteMenu />
+        <div className="app-view" hidden={onAbout}>
+          {mode === "workspace" ? <WorkspaceApp /> : <App />}
+        </div>
+        {onAbout && (
+          <>
+            <AboutPage />
+            <div className="about-player"><NowPlayingBar /></div>
+          </>
+        )}
+      </MenuSlotProvider>
     </PlayerProvider>
   );
 }

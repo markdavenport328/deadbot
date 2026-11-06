@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, expect, test } from "vitest";
 import { AboutPage } from "./AboutPage";
+import { MenuSlotProvider, useMenuSlot } from "./menu-slot";
 import { SiteMenu } from "./SiteMenu";
 import { usePath } from "./site-nav";
 
@@ -96,4 +97,22 @@ test("the About page lists its sections and credits Mark", () => {
   expect(contents.querySelectorAll("a")).toHaveLength(7);
   expect(screen.getByRole("link", { name: /Mark Davenport/ })).toHaveAttribute("href", "https://mark-davenport.vercel.app");
   expect(document.title).toBe("About Deadbot");
+});
+
+function Probe() {
+  useMenuSlot(<p>History here</p>);
+  return null;
+}
+
+test("slot content appears at the top of the menu, above the site links", () => {
+  const root = document.createElement("div");
+  root.id = "root";
+  document.body.appendChild(root);
+  render(<MenuSlotProvider><Probe /><SiteMenu /></MenuSlotProvider>, { container: root });
+  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+  const menu = document.getElementById("site-menu") as HTMLElement;
+  const slot = screen.getByText("History here");
+  const about = screen.getByRole("link", { name: "About Deadbot" });
+  expect(menu).toContainElement(slot);
+  expect(slot.compareDocumentPosition(about) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

@@ -4,6 +4,11 @@
 import type { ExperienceResponse } from "./types";
 import type { PageEvent, StreamEvent } from "./stream-events";
 
+// A conversation's id on the server; a fresh start gets a new one.
+export function createThreadId(): string {
+  return `web-${crypto.randomUUID()}`;
+}
+
 export const ASK_ERROR = "Deadbot could not answer just now. Try again, or rephrase the question.";
 
 export type StreamHandlers = {

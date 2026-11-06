@@ -1,0 +1,140 @@
+/* Workspace shell (?shell=workspace): layout, tabs, history and the held
+   previous page. Everything is scoped under .workspace-shell so the old shell
+   is untouched. */
+
+.workspace-shell .workspace-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  margin: var(--item) 0 var(--space-content);
+  border-bottom: 1px solid var(--hair);
+  background: var(--ground);
+}
+.workspace-shell .workspace-tabs [role="tab"] {
+  padding: var(--item) var(--space-part);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.workspace-shell .workspace-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--cream);
+  color: var(--cream);
+  font-weight: 600;
+}
+.workspace-shell .workspace-tabs [role="tab"].unused { color: var(--quiet); opacity: 0.7; cursor: default; }
+.workspace-shell .tab-mark { margin-left: var(--item); color: var(--quiet); font-size: 0.72rem; font-weight: 400; }
+.workspace-shell .tab-mark.new { color: var(--ask); }
+.workspace-shell .tab-dot { display: inline-block; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--ask); }
+
+.workspace-shell .exploration-history { display: grid; gap: var(--space-part); }
+.workspace-shell .history-head { display: flex; align-items: center; justify-content: space-between; }
+.workspace-shell .history-head h2 { margin: 0; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.workspace-shell .history-arrows { display: flex; gap: var(--space-detail); }
+.workspace-shell .history-arrows button,
+.workspace-shell .history-new,
+.workspace-shell .history-pending button {
+  padding: var(--space-detail) var(--space-identity);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+}
+.workspace-shell .history-arrows button:disabled,
+.workspace-shell .history-new:disabled { opacity: 0.4; cursor: default; }
+.workspace-shell .history-list { display: grid; gap: var(--space-detail); margin: 0; padding: 0; list-style: none; }
+.workspace-shell .history-row {
+  width: 100%;
+  padding: var(--space-identity);
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  text-align: left;
+}
+.workspace-shell .history-row small { display: block; color: var(--quiet); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.workspace-shell .history-row[aria-current="true"] { border-color: var(--hair); background: var(--panel); box-shadow: inset 3px 0 0 var(--ask); }
+.workspace-shell .history-row.ahead { opacity: 0.6; }
+.workspace-shell .thread-divider {
+  margin-top: var(--space-detail);
+  padding: var(--space-identity) var(--space-identity) var(--space-detail);
+  border-top: 1px dashed var(--hair);
+  color: var(--quiet);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.workspace-shell .history-pending {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-identity);
+  padding: var(--space-identity);
+  border: 1px dashed var(--ask);
+  border-radius: var(--r);
+  font-size: 0.85rem;
+}
+.workspace-shell .history-pending.failed { border-color: var(--read); }
+
+/* Layout: a narrow rail of history and the ask box beside the workspace. */
+.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: 100vh; column-gap: 2.5rem; }
+.workspace-shell.phone .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+.workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: 100vh; min-height: 0; padding: 0 0 1.25rem; font-size: 0.9rem; }
+.workspace-shell .workspace-rail .masthead { padding-bottom: 0; }
+.workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; }
+.workspace-menu-history { padding: 0 var(--space-content) var(--space-content); border-bottom: 1px solid var(--hair); }
+
+/* One exploration. A held previous page stays usable, only quieter. */
+.workspace-shell .exploration-pane { max-width: 58rem; }
+.workspace-shell .exploration-pane .content-heading h1 { font-size: clamp(1.8rem, 3vw, 2.8rem); }
+.workspace-shell .previous-label { margin: 0 0 var(--space-detail); color: var(--muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.workspace-shell .exploration-pane.previous { opacity: 0.55; transition: opacity 180ms var(--ease-out); }
+.workspace-shell .workspace-answer { max-width: 46rem; margin: 0 0 var(--space-content); color: var(--cream); font-size: 1.12rem; line-height: 1.55; }
+.workspace-shell .workspace-waiting { color: var(--quiet); font-size: 0.9rem; }
+.workspace-shell .workspace-panel > .experience-group + .experience-group { margin-top: var(--space-unit); }
+
+/* Cards are one per row here: comparison groups stack instead of pairing. */
+.workspace-shell .group-comparison .group-blocks { grid-template-columns: minmax(0, 1fr); }
+.workspace-shell .group-comparison .group-blocks > * { grid-column: 1 / -1; }
+/* Every unit card takes the full row, whatever its emphasis or group. */
+.workspace-shell .group-blocks > .card { grid-column: 1 / -1; }
+
+/* The follow-up banner over the held page, and the failure line. */
+.workspace-shell .workspace-banner,
+.workspace-shell .workspace-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-identity) var(--space-part);
+  max-width: 58rem;
+  margin: 0 0 var(--space-content);
+  padding: var(--space-identity) var(--space-part);
+  border-left: 3px solid var(--ask);
+  border-radius: var(--r);
+  background: var(--panel);
+  font-size: 0.9rem;
+}
+.workspace-shell .workspace-alert { border-left-color: #e17e64; }
+.workspace-shell .workspace-banner p,
+.workspace-shell .workspace-alert p { margin: 0; }
+.workspace-shell .workspace-banner .banner-status,
+.workspace-shell .workspace-alert .alert-detail { flex: 1 1 12rem; color: var(--muted); }
+.workspace-shell .alert-actions { display: flex; gap: var(--space-identity); }
+.workspace-shell .workspace-banner button,
+.workspace-shell .workspace-alert button {
+  padding: var(--space-detail) var(--space-identity);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-shell .exploration-pane.previous { transition: none; }
+}
