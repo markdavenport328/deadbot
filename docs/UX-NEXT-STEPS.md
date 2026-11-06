@@ -190,7 +190,10 @@ relying on visitor-facing internal badges such as Supporting.
 
 ### 5. Preserve exploration across turns
 
-Current App stores only one response; follow-ups replace it. Add experience history
+**Implemented (November 2026)** by the persistent exploration workspace, behind
+`?shell=workspace`. See "Batch: persistent exploration workspace" below.
+
+Original note: the App stores only one response; follow-ups replace it. Add experience history
 with presentation identifiers, originating question/object, scroll position and
 disclosure state. Same canonical performance may appear in different editorial
 contexts. Keep conversation state separate from the historical page being viewed,
@@ -556,3 +559,50 @@ The shared player (`web/src/player.tsx`) gained three things:
 
 Open: true gapless playback (Web Audio) for segues; `start_seconds` reaching the
 browser so a card can start partway into a tape file; keyboard shortcuts.
+
+## Batch: persistent exploration workspace (November 2026)
+
+Shipped behind `?shell=workspace` (the choice is remembered in the browser; the
+old shell stays the default). Three stacked branches:
+`claude/app-update-planning-2a4e74` (groundwork), `claude/workspace-shell`
+(the shell) and `claude/workspace-tabs-contract` (the model's tab choices).
+
+What it does:
+
+- Each answer is an exploration with three tabs: **Listen** (shows,
+  performances, albums, songs, version strips), **Charts** (data charts, grids,
+  a song's life on stage) and **Read** (the chat answer, lead, story and
+  sources). The model names the tab each group lives on and the tab the page
+  opens on (`initial_tab`, `GroupPlan.tab`, the `page_tab` stream event). A
+  group with no tab, or an unreadable one, falls back by block type. Unused
+  tabs go gray once the page is done and say "preparing" while it streams.
+- A history rail on desktop, and in the site menu on phones, lists every
+  exploration with back and forward. New chat starts a fresh root and keeps
+  history; a successful follow-up drops the entries after the page it was
+  asked from. While a new question works, the previous page stays visible,
+  labeled "Previous result"; interacting with it does not cancel anything.
+- The player is shared and survives every request. Unit cards are always one
+  per row.
+
+Limits to know:
+
+- History lives in memory for the session only; a reload clears it.
+- The workspace has no reload-on-deploy check and no static `?fixture=`
+  support yet. Add the reload check before the workspace becomes the default.
+- Small open items: New chat sits under the history list rather than in a
+  masthead; focus moves to a finished page's heading even while the visitor is
+  typing (the old shell does the same); an empty tab picked mid-stream stays
+  selected; dismissing a failed first question lands on the current entry
+  instead of the start view.
+
+Stream order: the chat answer still streams before the page. A groups-first
+variant was measured and rejected: the model writes the answer early whatever
+the field order, first playable content was no faster, and one run opened on an
+empty Charts tab. Live runs found sensible opening tabs (Dark Star on Charts,
+Veneta on Listen, plain facts on Read) at timings in line with main; a setlist
+question opened on Read two times in three, which is worth watching.
+
+- Spec: [docs/superpowers/specs/2026-11-05-persistent-exploration-design.md](superpowers/specs/2026-11-05-persistent-exploration-design.md)
+- Plan: [docs/superpowers/plans/2026-11-05-persistent-exploration.md](superpowers/plans/2026-11-05-persistent-exploration.md)
+- Sketch: [docs/plans/persistent-exploration/workspace-sketch.html](plans/persistent-exploration/workspace-sketch.html)
+- Live runs: [docs/plans/persistent-exploration/live-runs-2026-11.md](plans/persistent-exploration/live-runs-2026-11.md)
