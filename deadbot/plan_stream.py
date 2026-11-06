@@ -18,7 +18,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from deadbot.experience import PAGE_BLOCK_CEILING
+from deadbot.experience import PAGE_BLOCK_CEILING, workspace_tab
 from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, page_lead, read_joining_repeats, validate_body_item
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,7 @@ class PlanStreamer:
         self._lead: str | None = None
         self._groups: dict[int, dict[str, Any]] = {}
         self._head_sent = False
+        self._tab_sent = False
         self._blocks_sent = 0
         # The model can write "groups" more than once; later lists continue the
         # first. A later list's groups are held until each closes: one that
@@ -156,6 +157,7 @@ class PlanStreamer:
         group = self._group(index)
         return {
             "index": index,
+            "tab": workspace_tab(group.get("tab")),
             "title": group.get("title"),
             "lead": self._grounded(group.get("lead")),
             # The same reading finish.FinishPlan gives a group.
@@ -233,11 +235,16 @@ class PlanStreamer:
             top.key = value
             return []
         path = self._path()
-        if path == ["title"]:
+        if path == ["initial_tab"]:
+            tab = workspace_tab(value)
+            if tab is not None and not self._tab_sent:
+                self._tab_sent = True
+                return [PlanEvent("page_tab", {"tab": tab})]
+        elif path == ["title"]:
             self._title = value
         elif path == ["lead"]:
             self._lead = value
-        elif len(path) == 3 and path[0] == "groups" and path[2] in ("title", "lead", "presentation"):
+        elif len(path) == 3 and path[0] == "groups" and path[2] in ("tab", "title", "lead", "presentation"):
             self._group(path[1])[path[2]] = value
             if path[2] == "title":
                 return self._title_seen(path[1], value)
@@ -407,7 +414,7 @@ class PlanStreamer:
         """The loose items as one collection at ``index``; resolved once, placed again on request."""
 
         if self._loose_cache is None:
-            payload = {"index": 0, "title": None, "lead": None, "presentation": "collection", "criteria": []}
+            payload = {"index": 0, "tab": None, "title": None, "lead": None, "presentation": "collection", "criteria": []}
             events = [PlanEvent("group_open", dict(payload))]
             for position, item in enumerate(self._loose_items or []):
                 events.extend(self._item_events(0, position, json.dumps(item)))

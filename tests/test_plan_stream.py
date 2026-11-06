@@ -54,7 +54,7 @@ def test_events_arrive_in_reading_order_with_group_metadata():
     types = [event.type for event in events]
     assert types == ["page_head", "group_open", "block", "block", "group_close", "group_open", "block", "group_close"]
     assert events[0].payload == {"title": "Sugaree at Veneta", "lead": "A relaxed early version."}
-    assert events[1].payload == {"index": 0, "title": "The night", "lead": None, "presentation": "comparison", "criteria": ["Pace", "Jam"]}
+    assert events[1].payload == {"index": 0, "tab": None, "title": "The night", "lead": None, "presentation": "comparison", "criteria": ["Pace", "Jam"]}
     assert events[2].payload["group_index"] == 0 and events[2].payload["block"]["id"] == "gd-1972-08-27"
     assert events[3].payload["block"]["type"] == "editorial"
     assert events[5].payload["presentation"] == "collection" and events[5].payload["criteria"] == []
@@ -341,3 +341,15 @@ def test_loose_items_land_in_the_same_place_streamed_and_delivered_beside_repeat
         assert delivered == expected, name
         for pieces in (1, 7, len(text)):
             assert _streamed_page(text, pieces) == expected, (name, pieces)
+
+
+def test_the_opening_tab_streams_before_the_answer_and_groups_carry_tabs():
+    plan = {"initial_tab": "Listen", **PLAN, "groups": [{"tab": "charts", **PLAN["groups"][0]}, PLAN["groups"][1]]}
+    events = drive(json.dumps(plan), 1)
+    assert events[0].type == "page_tab" and events[0].payload == {"tab": "listen"}
+    assert [event.payload["tab"] for event in events if event.type == "group_open"] == ["charts", None]
+
+
+def test_an_unreadable_opening_tab_emits_nothing():
+    events = drive(json.dumps({"initial_tab": "sideways", **PLAN}), 1)
+    assert "page_tab" not in [event.type for event in events]

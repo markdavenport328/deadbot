@@ -133,7 +133,7 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
     case "complete": {
       if (!pending || pending.requestId !== action.requestId) return state;
       const { response } = action;
-      const tab = pending.view.tab ?? openingTab(readTab((response as { initial_tab?: unknown }).initial_tab), routeGroups(groupsOfResponse(response)));
+      const tab = pending.view.tab ?? openingTab(readTab(response.initial_tab), routeGroups(groupsOfResponse(response)));
       const entry: Entry = {
         id: pending.requestId, parentId: pending.baseEntryId, root: pending.baseEntryId === null,
         request: pending.question, source: pending.source, focus: pending.focus, threadId: pending.threadId,

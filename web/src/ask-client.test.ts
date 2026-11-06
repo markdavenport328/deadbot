@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { askPlain, askStreaming, isAbort, replayStreamEvents } from "./ask-client";
+import { askPlain, askStreaming, dispatchStreamEvent, isAbort, replayStreamEvents } from "./ask-client";
 
 const response = { schema_version: "2", thread_id: "t", title: "T", answer: "A", conversation: [], blocks: [], groups: [], sources: [] };
 
@@ -76,4 +76,10 @@ test("replay stops once aborted", async () => {
   await done;
   expect(statuses).toEqual(["one"]);
   vi.useRealTimers();
+});
+
+it("hands a page_tab event to the page handler", () => {
+  const seen: string[] = [];
+  dispatchStreamEvent({ type: "page_tab", tab: "listen" }, { onStatus() {}, onAnswer() {}, onPage: (event) => seen.push(event.type), onResponse() {} });
+  expect(seen).toEqual(["page_tab"]);
 });

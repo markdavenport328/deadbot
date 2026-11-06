@@ -666,6 +666,11 @@ export interface components {
              * @enum {string}
              */
             presentation: "collection" | "sequence" | "comparison" | "argument";
+            /**
+             * Tab
+             * @description The workspace tab this group lives on: listen, charts or read.
+             */
+            tab?: ("listen" | "charts" | "read") | null;
             /** Title */
             title?: string | null;
         };
@@ -696,6 +701,11 @@ export interface components {
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Groups */
             groups?: components["schemas"]["ExperienceGroup"][];
+            /**
+             * Initial Tab
+             * @description The workspace tab the page opens on.
+             */
+            initial_tab?: ("listen" | "charts" | "read") | null;
             /**
              * Mode
              * @default answer

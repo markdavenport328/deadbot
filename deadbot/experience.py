@@ -106,6 +106,21 @@ SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
 CardDisclosure = Literal["collapsed", "expanded"]
 GroupPresentation = Literal["collection", "sequence", "comparison", "argument"]
 
+WorkspaceTab = Literal["listen", "charts", "read"]
+_TAB_NAMES: dict[str, WorkspaceTab] = {
+    "listen": "listen", "listening": "listen", "hear": "listen",
+    "charts": "charts", "chart": "charts",
+    "read": "read", "context": "read", "story": "read", "info": "read",
+}
+
+
+def workspace_tab(value: Any) -> WorkspaceTab | None:
+    """Read a workspace tab leniently; anything unreadable is None, never an error."""
+
+    if not isinstance(value, str):
+        return None
+    return _TAB_NAMES.get(value.strip().lower())
+
 
 class ListenAction(ExperienceModel):
     """A listening destination attached to the object it plays."""
@@ -1271,6 +1286,7 @@ class ExperienceGroup(ExperienceModel):
     title: str | None = None
     lead: str | None = None
     presentation: GroupPresentation
+    tab: WorkspaceTab | None = Field(default=None, description="The workspace tab this group lives on: listen, charts or read.")
     criteria: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     block_indexes: list[int] = Field(min_length=1, max_length=PAGE_BLOCK_CEILING)
 
@@ -1281,6 +1297,7 @@ class ExperienceResponse(ExperienceModel):
     title: str
     answer: str
     body_lead: str | None = None
+    initial_tab: WorkspaceTab | None = Field(default=None, description="The workspace tab the page opens on.")
     mode: ExperienceMode = "answer"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)
     blocks: list[ExperienceBlock] = Field(default_factory=list, max_length=PAGE_BLOCK_CEILING)

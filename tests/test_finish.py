@@ -1064,7 +1064,7 @@ def test_optional_plan_fields_have_no_null_branch_in_the_schema_but_still_accept
     from langchain_core.utils.function_calling import convert_to_openai_tool
 
     text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
-    assert text.count('{"type": "null"}') <= 1  # only the top-level lead, which LangChain rebuilds
+    assert text.count('{"type": "null"}') <= 2  # only the top-level lead and initial_tab, which LangChain rebuilds
     plan = finish.FinishPlan.model_validate({
         "chat_answer": "a", "title": "t", "lead": None,
         "groups": [{"title": None, "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "title": None, "note": None, "emphasis": None}]}],
@@ -1194,6 +1194,44 @@ def test_build_experience_response_uses_the_finish_plan():
     assert response.groups[0].presentation == "collection" and response.groups[0].block_indexes == [0]
     assert response.conversation[-1].role == "assistant" and response.conversation[-1].text == response.answer
     assert response.conversation[0].text == "What opened Veneta?"
+
+
+def _veneta_response(extra, group_extra):
+    store = CanonicalStore()
+    payload = store.show_context(store.resolve_show("1972-08-27"))
+    plan = {
+        **extra,
+        "chat_answer": "They opened.",
+        "title": "Veneta, 1972",
+        "groups": [{**group_extra, "presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
+    }
+    messages = [
+        HumanMessage(content="Q"),
+        AIMessage(content="", tool_calls=[{"name": "get_show", "args": {"show_id_or_date": "1972-08-27"}, "id": "call-1", "type": "tool_call"}]),
+        tool_message(payload),
+        finish_call(plan),
+        delivered(),
+    ]
+    return finish.build_experience_response("Q", "web-1", messages, store)
+
+
+def test_tabs_come_through_the_built_response():
+    response = _veneta_response({"initial_tab": "listen"}, {"tab": "Charts"})
+    assert response.initial_tab == "listen" and response.groups[0].tab == "charts"
+    bare = _veneta_response({}, {})
+    assert bare.initial_tab is None and bare.groups[0].tab is None
+
+
+def test_finish_plan_reads_tabs_leniently_and_puts_initial_tab_first():
+    item = {"type": "editorial", "presentation": "narrative", "paragraphs": ["x"], "items": []}
+    plan = finish.FinishPlan.model_validate({"initial_tab": "Context", "chat_answer": "a", "title": "t", "groups": [
+        {"tab": "chart", "presentation": "collection", "items": [item]},
+        {"tab": 7, "presentation": "collection", "items": [item]},
+    ]})
+    assert plan.initial_tab == "read"
+    assert [group.tab for group in plan.groups] == ["charts", None]
+    assert list(finish.FinishPlan.model_json_schema()["properties"])[0] == "initial_tab"
+    assert list(finish.GroupPlan.model_json_schema()["properties"])[0] == "tab"
 
 
 def test_build_experience_response_falls_back_when_no_plan_was_delivered(caplog):

@@ -21,8 +21,8 @@ export function emptyGroup(): RenderGroup {
 // The draft page grows in reading order. A block for a group we have not
 // heard of yet gets a provisional group; group_close fills the heading in.
 export function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
-  // A page_tab event (added in a later PR) carries no draft content; leave the draft as it is.
-  if ((event as { type: string }).type === "page_tab") return draft;
+  // A page_tab event carries no draft content; leave the draft as it is.
+  if (event.type === "page_tab") return draft;
   if (event.type === "page_reset") return null;
   if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;
   if (event.type === "page_head") return { title: event.title, lead: event.lead, groups: draft?.groups ?? [] };
@@ -40,7 +40,7 @@ export function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | n
       lead: event.lead,
       presentation: event.presentation,
       criteria: event.criteria,
-      tab: readTab((event as { tab?: unknown }).tab) ?? groups[index].tab
+      tab: readTab(event.tab) ?? groups[index].tab
     };
   }
   return { ...current, groups };
@@ -53,6 +53,6 @@ export function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
     presentation: group.presentation,
     criteria: group.criteria ?? [],
     blocks: group.block_indexes.map((index) => response.blocks[index]).filter((block): block is ExperienceBlock => Boolean(block)),
-    tab: readTab((group as { tab?: unknown }).tab)
+    tab: readTab(group.tab)
   }));
 }
