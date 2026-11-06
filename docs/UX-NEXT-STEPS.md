@@ -528,3 +528,31 @@ releases can disagree on a performance's length (the one nearest the tape wins).
 Open: the "What came next" view (mocked, deferred); the play / see all / ask
 panel on other charts and lists; a measured eval of stop quality across more
 songs.
+
+## Player: lock screen, saved queue, early loading — November 5, 2026
+
+The shared player (`web/src/player.tsx`) gained three things:
+
+- **Lock screen and headphones.** Through the Media Session API, the phone's
+  lock screen shows the song, "May 8, 1977 · Barton Hall" and the tape's
+  thumbnail, and its play/pause, next, previous (restarts the track after the
+  first 3 s), seek and ±10 s buttons drive our queue.
+- **Saved queue.** The queue, the track and the position are saved in
+  localStorage (`deadbot.player.v1`) and restored paused on the next visit, so a
+  returning visitor sees the bar on the home page ready to resume.
+- **Early loading.** Two `<audio>` elements take turns; 30 s before a track
+  ends, the spare loads the next one and takes over when the current ends.
+  Measured on Cornell's Fire → Estimated Prophet: 50 ms of silence between them.
+
+- **Speed and loop, for learning a solo by ear.** A "⋯" at the end of the
+  scrubber opens a panel in the queue's slot: speeds 0.5, 0.75, 1, 1.25 and
+  1.5× (the browser keeps the pitch), and a loop set with "Set start" / "Set
+  end" at the moment you tap. The loop shows as a gold band under the
+  scrubber; crossing its end jumps back (checked every frame on screen, and on
+  each time update when the tab is hidden or the phone locked); a seek past
+  it is left alone; a new track clears it. While the speed is not 1× or a loop
+  is on, the "⋯" names it in cream. Speed is remembered on the device
+  (`deadbot.player.rate`); the loop is not.
+
+Open: true gapless playback (Web Audio) for segues; `start_seconds` reaching the
+browser so a card can start partway into a tape file; keyboard shortcuts.
