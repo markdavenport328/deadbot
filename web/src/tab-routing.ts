@@ -52,7 +52,8 @@ export function openingTab(initial: WorkspaceTab | null, routed: RoutedPage): Wo
 
 export function tabsWithContent(routed: RoutedPage, answer: string | null): Set<WorkspaceTab> {
   const tabs = new Set<WorkspaceTab>();
-  for (const { id } of WORKSPACE_TABS) if (routed[id].length > 0) tabs.add(id);
+  // A group opened mid-stream has no cards yet; a tab counts once one arrives.
+  for (const { id } of WORKSPACE_TABS) if (routed[id].some((group) => group.blocks.length > 0)) tabs.add(id);
   if (answer && answer.trim()) tabs.add("read");
   return tabs;
 }

@@ -64,3 +64,7 @@ test("tabs with content count the short answer for Read", () => {
   expect([...tabsWithContent(routeGroups([]), "Yes.")]).toEqual(["read"]);
   expect(tabsWithContent(routeGroups([g(["grid"])]), null).has("charts")).toBe(true);
 });
+
+test("a group still waiting for its first card does not make its tab ready", () => {
+  expect(tabsWithContent(routeGroups([g([], "listen"), g([])]), null).size).toBe(0);
+});
