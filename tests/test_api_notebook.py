@@ -251,3 +251,17 @@ def test_a_lone_surrogate_in_the_token_signature_or_an_answer_still_gets_an_answ
             "/api/experience", content=odd.encode("utf-8"), headers={"content-type": "application/json"},
         )
         assert response.status_code == 200, secret
+
+
+def test_a_follow_up_from_an_earlier_page_runs_on_an_isolated_thread():
+    # The workspace can resend an older entry's transcript on the same
+    # thread_id. The API must not replay a warm checkpoint holding later turns.
+    _, token = _token((EUROPE, EUROPE_ANSWER, LYCEUM))
+    agent = FakeAgent(turn("And Morning Dew?", "It closed the run.", []))
+    client = _client(agent)
+    client.post("/api/experience", json={"question": "And Morning Dew?", "thread_id": "browser-1", "conversation": FIRST_EXCHANGE, "notebook": token})
+    client.post("/api/experience", json={"question": "And Morning Dew?", "thread_id": "browser-1", "conversation": FIRST_EXCHANGE})
+    invoked = [config["configurable"]["thread_id"] for _, config in agent.calls]
+    assert len(invoked) == 2
+    assert all(thread.startswith("browser-1:request:") for thread in invoked)
+    assert invoked[0] != invoked[1]

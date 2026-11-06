@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workspace Sketch</title>
+<style>
+:root{
+  --bg:#ecebe6;--panel:#fff;--rail:#f3f2ed;--ink:#1f2420;--muted:#646b63;--line:#d5d2c8;--soft:#f7f6f2;
+  --hear:#8a6100;--hear-bg:#fbf3df;--read:#9a4256;--read-bg:#f8e9ed;--ask:#2d5b8a;--ask-bg:#e6eef7;
+  --warn:#8a3b12;--warn-bg:#fbeee5;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,sans-serif}
+button,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:2px;padding:6px 11px}
+button:hover:not(:disabled){background:var(--soft)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--ask);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.muted{color:var(--muted);font-size:13px}
+.eyebrow{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* page chrome around the sketch */
+.top{padding:18px 24px 10px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:end}
+.top h1{font-size:20px;margin:2px 0 0}
+.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.controls label{font-size:13px;color:var(--muted)}
+.illus{margin:0 24px 12px;font-size:12px;color:var(--warn);background:var(--warn-bg);padding:6px 10px;border-left:3px solid var(--warn)}
+
+/* the shell */
+.stage{padding:0 24px 24px}
+.shell{background:var(--panel);border:1px solid #b9b6ab;display:grid;grid-template-columns:270px minmax(0,1fr);min-height:640px}
+.stage.phone .shell{width:375px;grid-template-columns:1fr;height:740px;min-height:0;margin:0 auto;position:relative;overflow:hidden}
+.stage.phone .main{height:740px}
+
+.rail{background:var(--rail);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 14px;gap:14px;min-height:0}
+.stage.phone .rail{display:none}
+.masthead{display:flex;justify-content:space-between;align-items:center}
+.wordmark{font-weight:700;letter-spacing:.02em}
+.histhead{display:flex;justify-content:space-between;align-items:center}
+.histhead h2{font-size:13px;margin:0;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.arrows{display:flex;gap:4px}
+.arrows button{padding:3px 9px}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:4px;overflow:auto;max-height:340px}
+.hist button{width:100%;text-align:left;border:1px solid transparent;background:transparent;padding:7px 9px;font-size:13px;line-height:1.35}
+.hist button:hover:not(:disabled){background:#e9e7e0}
+.hist .cur button{background:var(--panel);border-color:var(--line);box-shadow:inset 3px 0 0 var(--ask)}
+.hist .fwd button{opacity:.6}
+.hist small{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.hist .thread{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:8px 9px 2px;border-top:1px dashed var(--line);margin-top:4px}
+.hist .pend{padding:7px 9px;font-size:13px;border:1px dashed var(--ask);background:var(--ask-bg)}
+.hist .pend.err{border-color:var(--warn);background:var(--warn-bg)}
+.composer{margin-top:auto;display:grid;gap:6px}
+.composer textarea{width:100%;min-height:78px;resize:vertical;border:1px solid #a9a597;border-radius:2px;padding:8px;background:var(--panel)}
+.composer .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.primary{background:var(--ask);color:#fff;border-color:var(--ask)}
+.primary:hover:not(:disabled){background:#244b72}
+.fresh-flag{font-size:12px;color:var(--ask)}
+
+.main{display:flex;flex-direction:column;min-width:0;min-height:0}
+.workspace{flex:1;padding:22px 28px 28px;overflow:auto;min-height:0}
+.stage.phone .workspace{padding:16px 16px 150px}
+.title h1{font-size:24px;line-height:1.2;margin:2px 0 10px;font-family:Georgia,serif;font-weight:600}
+.stage.phone .title h1{font-size:20px}
+
+.banner{padding:8px 12px;margin:0 0 14px;font-size:13px;border-left:3px solid var(--ask);background:var(--ask-bg);display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.banner.err{border-color:var(--warn);background:var(--warn-bg)}
+.banner .lines{display:grid;gap:1px}
+.spin{display:inline-block;width:9px;height:9px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .9s linear infinite;margin-right:6px;vertical-align:-1px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.previous{opacity:.55;pointer-events:auto}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:4px 0 18px;position:sticky;top:0;background:var(--panel);z-index:2}
+.tabs button{border:0;border-bottom:3px solid transparent;background:transparent;padding:9px 14px 7px;border-radius:0;font-size:14px}
+.tabs button[aria-selected=true]{border-bottom-color:var(--ink);font-weight:600}
+.tabs .st{font-size:11px;color:var(--muted);margin-left:6px;font-weight:400}
+.tabs .st.new{color:var(--ask)}
+.tabs .st.none{opacity:.7}
+.stage.phone .tabs button{padding:8px 10px;font-size:13px;flex:1}
+
+.statuses{border:1px dashed var(--line);padding:18px 20px;background:var(--soft)}
+.statuses ol{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+.statuses li.cur{color:var(--ink)}
+.preparing{border:1px dashed var(--line);padding:18px 20px;background:var(--soft)}
+.preparing .ghost{height:58px;background:repeating-linear-gradient(90deg,#ebe9e2,#ebe9e2 40%,#f3f2ed 40%,#f3f2ed 100%);margin-top:10px}
+.empty{padding:18px 0;color:var(--muted)}
+
+.group{margin:0 0 26px}
+.group > h2{font-size:17px;margin:0 0 2px;font-family:Georgia,serif}
+.group > .lead{margin:0 0 10px;color:#3d433c}
+.gtag{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-left:8px;font-family:system-ui;font-weight:400}
+.cards{display:grid;gap:10px}
+.tabs button.unused{color:#b3b0a6;cursor:default}
+.tabs button.unused:hover{background:transparent}
+.hist .pend button.stop{width:auto;display:inline;padding:0;margin-left:6px;border:0;background:none;color:var(--ask);text-decoration:underline;font-size:12px}
+.phonebar{display:none}
+.stage.phone .phonebar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--rail)}
+.phonebar .burger{padding:4px 9px;font-size:16px;position:relative}
+.phonebar .dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--ask)}
+.menu{position:absolute;inset:0;background:rgba(20,24,20,.35);z-index:9}
+.menu > div{background:var(--rail);width:86%;height:100%;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px;border-right:1px solid var(--line)}
+.menu .hist{max-height:none}
+.menu .site{border-top:1px solid var(--line);padding-top:10px;font-size:14px;display:grid;gap:6px}
+.card{border:1px solid var(--line);padding:12px 14px;background:var(--panel);border-radius:2px}
+.card .who{font-size:12px;color:var(--muted)}
+.card h3{font-size:15.5px;margin:2px 0 4px;font-family:Georgia,serif}
+.card p{margin:0 0 8px;font-size:14px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.play{border-color:var(--hear);color:var(--hear);background:var(--hear-bg);font-size:13px;padding:4px 10px}
+.queue-add{font-size:13px;padding:4px 10px;color:var(--hear)}
+details{font-size:13px;margin-top:6px}
+summary{cursor:pointer;color:var(--read)}
+details ol{margin:6px 0 0;padding-left:20px;columns:2}
+.stage.phone details ol{columns:1}
+.mini-arrival{animation:arrive .35s ease-out}
+@keyframes arrive{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.mini-arrival{animation:none}}
+
+.answer{font-size:16.5px;line-height:1.55;margin:0 0 8px;max-width:680px}
+.answer .caret{display:inline-block;width:2px;height:1em;background:var(--ink);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.lead-p{color:#3d433c;max-width:680px;margin:0 0 20px}
+.prose{max-width:680px}
+.prose p{margin:0 0 12px}
+.prose a{color:var(--read)}
+.quote{border-left:3px solid var(--read);padding:4px 14px;margin:6px 0 14px;font-family:Georgia,serif;font-style:italic;max-width:600px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 0}
+.linkish{border:0;background:none;padding:0;color:var(--read);text-decoration:underline;font-size:13px}
+.chip{border-color:var(--ask);color:var(--ask);background:var(--ask-bg);font-size:13px;padding:4px 10px;border-radius:14px}
+.sources{border-top:1px solid var(--line);padding-top:10px;margin-top:20px;font-size:13px;color:var(--muted)}
+.sources ul{margin:4px 0 0;padding-left:18px}
+
+.bars{display:flex;align-items:flex-end;gap:6px;height:170px;border-bottom:1px solid #888;padding:0 2px;overflow-x:auto}
+.bars button{width:34px;min-width:28px;padding:0;border:0;background:#d9dfd5;display:flex;align-items:flex-end;justify-content:center;font-size:10px;color:#3e463c;border-radius:2px 2px 0 0}
+.bars button[aria-pressed=true]{background:var(--hear);color:#fff}
+.axis{display:flex;gap:6px;font-size:10px;color:var(--muted);padding:3px 2px 0;overflow:hidden}
+.axis span{width:34px;min-width:28px;text-align:center}
+.pick{margin-top:14px}
+.tl{display:flex;align-items:flex-end;gap:2px;height:60px;margin:6px 0 8px}
+.tl i{flex:1;background:#d9dfd5}
+.tl i.hot{background:var(--hear)}
+.strip{display:grid;gap:10px}
+table.grid{border-collapse:collapse;font-size:13px;width:100%;max-width:560px}
+table.grid th,table.grid td{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
+
+.player{border-top:1px solid #b9b6ab;background:#f1efe8;padding:10px 18px}
+.prow{display:flex;align-items:center;gap:12px}
+.prow .track{flex:1;min-width:0}
+.prow .track strong{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qlist{margin:8px 0 0;padding-left:20px;font-size:13px}
+
+/* phone dock */
+.dock{display:none}
+.stage.phone .dock{display:block;position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid #b9b6ab;z-index:5}
+.stage.phone .main > .player{display:none}
+.dock .player{border-top:0;padding:8px 12px}
+.dock .nav{display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--line)}
+.dock .nav .label{flex:1;text-align:left;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:5px 8px}
+.dock form{display:flex;gap:6px;padding:4px 10px 12px}
+.dock textarea{flex:1;min-height:38px;height:38px;resize:none;border:1px solid #a9a597;border-radius:2px;padding:8px}
+.sheet{position:absolute;inset:0;background:rgba(20,24,20,.35);z-index:9;display:flex;align-items:flex-end}
+.sheet > div{background:var(--panel);width:100%;max-height:75%;overflow:auto;padding:14px 14px 20px;border-top:1px solid var(--line)}
+.sheet .hist{max-height:none}
+.newchat{font-size:12px;padding:3px 8px}
+
+/* notes below the shell */
+.notes{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:16px;padding:0 24px 40px}
+.notes article{background:var(--soft);border:1px solid var(--line);padding:12px 16px}
+.notes h3{font-size:11px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 6px;color:var(--muted)}
+.notes p,.notes li{font-size:14px;margin:0 0 6px}
+.notes ul{margin:0;padding-left:18px}
+.notes .q{border-color:var(--ask);background:var(--ask-bg)}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:7px 14px;font-size:13px;border-radius:2px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+@media (max-width:900px){.notes{grid-template-columns:1fr}.shell{grid-template-columns:220px minmax(0,1fr)}}
+@media (max-width:640px){.stage:not(.phone) .shell{grid-template-columns:1fr}.stage:not(.phone) .rail{border-right:0;border-bottom:1px solid var(--line)}.top,.stage,.notes{padding-left:16px;padding-right:16px}.illus{margin-left:16px;margin-right:16px}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div>
+    <div class="eyebrow">Persistent exploration · UX sketch</div>
+    <h1>One workspace, three tabs, a history of asks</h1>
+  </div>
+  <div class="controls">
+    <label for="scene">Scene</label>
+    <select id="scene"></select>
+    <button id="prev" aria-label="Previous scene">‹</button>
+    <button id="next" aria-label="Next scene">›</button>
+    <label><input type="checkbox" id="phone"> Phone frame</label>
+    <label for="names">Tab names</label>
+    <select id="names">
+      <option value="Listen|Charts|Read">Listen · Charts · Read</option>
+      <option value="Listen|Charts|Info">Listen · Charts · Info</option>
+      <option value="Listen|Charts|Answer">Listen · Charts · Answer</option>
+      <option value="Listen|Charts|Story">Listen · Charts · Story</option>
+      <option value="Listening|Charts|Context">Listening · Charts · Context (plan)</option>
+    </select>
+    <label><input type="checkbox" id="srcTab"> Sources tab</label>
+    <button id="run" class="primary">▶ Run MSG stream live</button>
+  </div>
+</div>
+<p class="illus">Illustrative content. Dates, counts and claims are placeholders standing in for catalog records; the sketch tests layout and behaviour, not answers. Only five questions have canned responses (MSG, “late ’80s”, Garcia’s birthday, Veneta ’72, Dark Star).</p>
+
+<div class="stage" id="stage">
+  <div class="shell" id="shell">
+    <aside class="rail" aria-label="Your explorations">
+      <div class="masthead"><span class="wordmark">Deadbot</span><button class="newchat" id="newchat">New chat</button></div>
+      <div>
+        <div class="histhead"><h2 id="histlabel">Your explorations</h2><div class="arrows"><button id="back" aria-label="Previous exploration">←</button><button id="fwd" aria-label="Next exploration">→</button></div></div>
+        <ul class="hist" id="hist" aria-labelledby="histlabel"></ul>
+      </div>
+      <form class="composer" id="form">
+        <label for="q" class="sr">Ask Deadbot</label>
+        <textarea id="q" placeholder="Ask about a song, show, source, or recording"></textarea>
+        <div class="row"><span class="fresh-flag" id="freshflag"></span><button class="primary" id="ask" type="submit">Explore</button></div>
+      </form>
+    </aside>
+    <div class="main">
+      <div class="phonebar" id="phonebar"></div>
+      <section class="workspace" id="ws" aria-label="Deadbot workspace"></section>
+      <footer class="player" id="player-desk"></footer>
+    </div>
+    <div class="dock" id="dock"></div>
+    <div id="sheetHost"></div>
+  </div>
+</div>
+<p role="status" class="sr" id="live"></p>
+
+<section class="notes">
+  <article><h3 id="n-title"></h3><p id="n-what"></p></article>
+  <article><h3>Check</h3><ul id="n-check"></ul></article>
+  <article class="q" id="n-qbox"><h3>Open question</h3><p id="n-q"></p></article>
+</section>
+<div id="toast"></div>
+
+<script>
+// ───────── Canned responses ─────────
+// Each response is a page plan: the model's chosen opening tab, a short
+// answer, an optional lead, and ordered groups that each name a tab. The
+// stream sketch replays them in the order the model writes them.
+const SHOW = (id, date, venue, headline, note, setlist) => ({type:'show', id, date, venue, headline, note, setlist});
+const R = {
+  msg: {
+    q: "What’s their history at Madison Square Garden?",
+    eyebrow: "Madison Square Garden", title: "The Garden years, 1979–1994", initialTab: "listening",
+    statuses: ["Finding shows at Madison Square Garden", "Counting runs by year", "Checking recordings for each run", "Reading notes on the 1987 and 1990 runs"],
+    answer: "The Dead first played the Garden in 1979 and came back most years through 1994, usually for multi-night runs that became a fixture of the New York calendar. The late-’80s runs, after the band’s commercial peak, are the ones fans return to most.",
+    lead: "Start with three nights that show how the room changed the band — then follow the runs year by year in Charts.",
+    groups: [
+      {tab:"listening", title:"Three ways into the Garden", lead:"One night from each era of the run.", presentation:"comparison", blocks:[
+        SHOW("s79","January 1979","Madison Square Garden","The first night in the room","A cautious, cavernous first visit — the band learning the building.",["Jack Straw","Tennessee Jed","Mama Tried","Scarlet Begonias","Fire on the Mountain"]),
+        SHOW("s87","September 1987","Madison Square Garden","Peak-era confidence","Five nights after the summer stadium tour; the band at full strength.",["Hell in a Bucket","Sugaree","Estimated Prophet","Eyes of the World","Drums"]),
+        SHOW("s90","September 1990","Madison Square Garden","A new piano in the band","A guest pianist sits in after the loss of the keyboard player that summer.",["Help on the Way","Slipknot!","Franklin’s Tower","Dark Star","Throwing Stones"])]},
+      {tab:"charts", title:"Garden nights by year", lead:"Pick a year to see its shows. Selecting never starts playback.", presentation:"collection", blocks:[
+        {type:"bars", id:"msgbars", years:[[1979,3],[1980,2],[1981,4],[1982,0],[1983,3],[1984,5],[1985,5],[1986,0],[1987,5],[1988,9],[1989,6],[1990,9],[1991,9],[1992,0],[1993,6],[1994,6]]}]},
+      {tab:"context", title:"How the Garden runs changed", presentation:"argument", blocks:[
+        {type:"prose", paras:["[Two or three paragraphs: how a single-night stop became a nine-night residency, what the room did to the sound, and how the audience changed after 1987.]","[A paragraph linking the September 1990 run to the band’s lineup change, with links that open the show in Listening without interrupting playback.]"]},
+        {type:"chips", asks:["Focus on the late ’80s","Which Garden run had the most guests?"]}]}
+    ],
+    sources:["Show records: Deadbot catalog (illustrative)","Run notes: placeholder source"]
+  },
+  m80: {
+    q: "Focus on the late ’80s",
+    eyebrow: "Madison Square Garden · 1987–1989", title: "The late-’80s Garden runs", initialTab: "listening",
+    statuses: ["Narrowing to 1987–1989", "Picking one night per run"],
+    answer: "Between 1987 and 1989 the Garden runs grew from five nights to nine, and the setlists loosened: the 1988 run is where the second sets start to stretch out again.",
+    lead: null,
+    groups: [
+      {tab:"listening", title:"One night per run", presentation:"sequence", blocks:[
+        SHOW("s87b","September 1987","Madison Square Garden","Where it starts","The first long run after the summer.",["Hell in a Bucket","Sugaree","Estimated Prophet","Eyes of the World"]),
+        SHOW("s88","September 1988","Madison Square Garden","The second sets open up","Nine nights; a benefit night closes the run.",["Shakedown Street","Bird Song","Playing in the Band","Uncle John’s Band"]),
+        SHOW("s89","October 1989","Madison Square Garden","Into the Dark Star revival","The run that sits just before the autumn 1989 tour.",["Feel Like a Stranger","Bird Song","Help on the Way","Dark Star"])]},
+      {tab:"charts", title:"Nights per run, 1987–1989", presentation:"collection", blocks:[{type:"bars", id:"m80bars", years:[[1987,5],[1988,9],[1989,6]]}]},
+      {tab:"context", title:"Why these three", presentation:"argument", blocks:[{type:"prose", paras:["[A short paragraph explaining the choice of each night, tied to the sequence above.]"]}]}
+    ],
+    sources:["Show records: Deadbot catalog (illustrative)"]
+  },
+  bday: {
+    q: "When was Jerry Garcia born?",
+    eyebrow: "Jerry Garcia", title: "Jerry Garcia’s birthday", initialTab: "context",
+    statuses: ["Looking up Jerry Garcia"],
+    answer: "August 1, 1942, in San Francisco.",
+    lead: null, groups: [], sources:["Person record: Deadbot catalog"]
+  },
+  veneta: {
+    q: "Tell me the story of Veneta ’72",
+    eyebrow: "Veneta, Oregon · August 1972", title: "Veneta ’72: the Springfield Creamery benefit", initialTab: "context",
+    statuses: ["Finding the Veneta show", "Reading the benefit’s background", "Checking the film and the release"],
+    answer: "On a hot afternoon in August 1972 the band played a field outside Veneta, Oregon, to save a local creamery. The show was filmed, and its Dark Star became one of the most celebrated in their history.",
+    lead: "The story is in Context; the show itself — with its full setlist — is in Listening.",
+    groups: [
+      {tab:"context", title:"How a benefit became a legend", presentation:"sequence", blocks:[
+        {type:"prose", paras:["[The creamery, the Kesey connection, the heat and the crowd.]","[The film, why it sat on a shelf, and how the release reframed the day.]"]},
+        {type:"quote", text:"[A short, sourced recollection from someone who was there.]"}]},
+      {tab:"listening", title:"The show", presentation:"collection", blocks:[
+        SHOW("veneta","August 1972","Old Renaissance Faire Grounds, Veneta","Sunshine Daydream","The full afternoon, with the long Dark Star at its centre.",["Promised Land","Sugaree","Me and My Uncle","Dark Star","El Paso","Sing Me Back Home","Sugar Magnolia"])]}
+    ],
+    sources:["Show record: Deadbot catalog (illustrative)","Background: placeholder source"]
+  },
+  dstar: {
+    q: "How did Dark Star change over the years?",
+    eyebrow: "Dark Star", title: "Dark Star’s life on stage", initialTab: "charts",
+    statuses: ["Finding every Dark Star", "Grouping performances by year", "Picking representative versions"],
+    answer: "Dark Star was a nightly launch pad from 1968 to 1972, all but vanished after 1974, and came back as a rare event in 1989–1994.",
+    lead: null,
+    groups: [
+      {tab:"charts", title:"Dark Star by year", lead:"The model placed the song unit in Charts: its timeline is the point.", presentation:"collection", blocks:[
+        {type:"song", id:"dssong", name:"Dark Star", headline:"From nightly to never to rare", tl:[2,9,10,8,9,6,2,0,0,0,0,1,0,0,0,0,0,0,0,0,0,4,3,2,2,1,1], picks:[["1969","The Live/Dead version"],["1972","The Veneta afternoon"],["1989","The return"]]}]},
+      {tab:"listening", title:"Hear it change", presentation:"sequence", blocks:[
+        {type:"strip", items:[["1968","Early, compact"],["1969","The Live/Dead arc"],["1972","At its longest"],["1973","Darker, spacier"],["1989","The return"],["1994","Late"]]}]},
+      {tab:"context", title:"What changed", presentation:"argument", blocks:[{type:"prose", paras:["[Why the song left, why it came back, and what the late versions keep.]"]}]}
+    ],
+    sources:["Performance records: Deadbot catalog (illustrative)"]
+  }
+};
+let TABS = [];
+function setTabs(){
+  const [a,b,c] = document.getElementById("names").value.split("|");
+  TABS = [["listening",a],["charts",b],["context",c]];
+  if (document.getElementById("srcTab").checked) TABS.push(["sources","Sources"]);
+}
+
+// The stream a response produces, in the order the model writes it:
+// tool statuses, then page_head (title + initial_tab, now first), then the
+// short answer in chunks, then the lead, then each group and its blocks.
+function streamOf(key){
+  const r = R[key], ev = [];
+  r.statuses.forEach(s => ev.push({k:"status", s}));
+  ev.push({k:"head"});
+  const words = r.answer.split(" "), n = Math.max(3, Math.ceil(words.length/6));
+  for (let i=1;i<=n;i++) ev.push({k:"answer", upto: Math.round(words.length*i/n)});
+  if (r.lead) ev.push({k:"lead"});
+  r.groups.forEach((g,gi) => { ev.push({k:"group", gi}); g.blocks.forEach((b,bi) => ev.push({k:"block", gi, bi})); });
+  ev.push({k:"done"});
+  return ev;
+}
+// Rough seconds from request start, for the status label (from the Sept traces).
+function secondsAt(key, step){
+  const ev = streamOf(key), head = ev.findIndex(e=>e.k==="head");
+  if (step <= head) return Math.round(10*step/Math.max(1,head));
+  return Math.round(10 + 22*(step-head)/Math.max(1, ev.length-head));
+}
+function draftOf(key, step){
+  const r = R[key], ev = streamOf(key).slice(0, step);
+  const d = {statuses:[], head:false, answerWords:0, lead:false, groups:[], done:false};
+  for (const e of ev){
+    if (e.k==="status") d.statuses.push(e.s);
+    if (e.k==="head") d.head = true;
+    if (e.k==="answer") d.answerWords = e.upto;
+    if (e.k==="lead") d.lead = true;
+    if (e.k==="group") d.groups.push({...r.groups[e.gi], blocks:[]});
+    if (e.k==="block") d.groups[d.groups.length-1].blocks.push(r.groups[e.gi].blocks[e.bi]);
+    if (e.k==="done") d.done = true;
+  }
+  return d;
+}
+function fullOf(key){ return draftOf(key, streamOf(key).length); }
+
+// ───────── State ─────────
+// entries: committed model turns. view: per-entry local state (tab, chart
+// pick, open disclosures) that never adds history. player: separate life.
+let S;
+function blank(){
+  return {entries:[], cursor:-1, pending:null, startView:false, freshNext:false,
+          phone:false, sheet:false, player:{now:"Your earlier recording", playing:true, queue:[], open:false}};
+}
+function entry(key, opts={}){ const r = R[key]; return {id: Math.random().toString(36).slice(2,7), key, q: opts.q || r.q, source: opts.source || "Typed", root: !!opts.root, view:{tab: r.initialTab, year:null, open:[]}}; }
+const cur = () => S.entries[S.cursor];
+
+// ───────── Rendering ─────────
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  $("stage").classList.toggle("phone", S.phone);
+  renderHistory($("hist"));
+  $("back").disabled = S.cursor <= 0 || S.startView;
+  $("fwd").disabled = S.cursor >= S.entries.length-1;
+  const busy = !!S.pending && !S.pending.error;
+  $("ask").disabled = busy; $("ask").textContent = busy ? "Looking…" : "Explore";
+  $("freshflag").textContent = S.startView ? "New thread" : "";
+  renderWorkspace();
+  renderPlayer($("player-desk"));
+  renderDock();
+  renderSheet();
+}
+
+function histItems(){
+  const out = [];
+  S.entries.forEach((e,i) => {
+    if (e.root && i>0) out.push(`<li class="thread">New thread</li>`);
+    const cls = i===S.cursor && !S.startView ? "cur" : i>S.cursor ? "fwd" : "";
+    out.push(`<li class="${cls}"><button ${i===S.cursor&&!S.startView?'aria-current="true"':""} onclick="go(${i})"><small>${i+1} · ${e.source}${i===S.cursor&&!S.startView?" · showing":""}</small>${esc(e.q)}</button></li>`);
+  });
+  const p = S.pending;
+  if (p) out.push(`<li class="pend ${p.error?"err":""}">${p.error ? "Didn’t finish · " : '<span class="spin" aria-hidden="true"></span>Asking · '}${esc(p.q)}${p.error ? "" : '<button class="stop" onclick="cancel()">Stop</button>'}</li>`);
+  return out.join("");
+}
+function renderHistory(el){ el.innerHTML = histItems(); }
+
+// What the workspace shows:
+//  - pending with draft content → the draft (streamed groups placed by tab)
+//  - pending follow-up with no content yet → the previous page, held, under a banner
+//  - pending root with no content → statuses in an empty pending view
+//  - otherwise the current entry
+function renderWorkspace(){
+  const ws = $("ws"), p = S.pending;
+  if (S.startView && !p){ ws.innerHTML = startView(); return; }
+  if (p){
+    const d = draftOf(p.key, p.step);
+    const hasContent = d.answerWords>0 || d.groups.length>0;
+    if (p.error){
+      const base = S.entries[p.base];
+      ws.innerHTML = `<div class="banner err" role="alert"><span>Deadbot couldn’t finish “${esc(p.q)}”. ${base && !p.fresh ? "The page below is the previous result, unchanged." : ""}</span><span><button onclick="retry()">Retry</button> <button onclick="dismiss()">Dismiss</button></span></div>` + (base && !p.fresh ? pageHTML(base.key, fullOf(base.key), base.view, false) : "");
+      return;
+    }
+    if (!hasContent){
+      const lines = d.statuses.length ? d.statuses.slice(-4) : ["Looking through the library"];
+      const banner = `<div class="banner" aria-live="polite"><div class="lines"><strong><span class="spin" aria-hidden="true"></span>Working on “${esc(p.q)}” · ${secondsAt(p.key,p.step)} s</strong><span class="muted">${esc(lines[lines.length-1])}…</span></div><button onclick="cancel()">Stop</button></div>`;
+      const base = S.entries[p.base];
+      if (base && !p.fresh){
+        ws.innerHTML = banner + `<p class="eyebrow">Previous result</p><div class="previous">${pageHTML(base.key, fullOf(base.key), base.view, false)}</div>`;
+      } else {
+        ws.innerHTML = `<div class="title"><div class="eyebrow">Working</div><h1>${esc(p.q)}</h1></div>${d.head?tabBar(p.key,d,p.view):""}<div class="statuses"><strong>Finding your way in</strong><ol>${lines.map((l,i,a)=>`<li class="${i===a.length-1?"cur":""}">${esc(l)}${i===a.length-1?"…":""}</li>`).join("")}</ol></div>`;
+      }
+      return;
+    }
+    // Once there's something to use, the page speaks for itself: the only
+    // sign of work left is a tab still marked "preparing" (and the rail row).
+    ws.innerHTML = pageHTML(p.key, d, p.view, true);
+    return;
+  }
+  const e = cur();
+  ws.innerHTML = e ? pageHTML(e.key, fullOf(e.key), e.view, false) : startView();
+}
+
+function startView(){
+  return `<div class="title"><div class="eyebrow">New thread</div><h1>Exploration and listening across the entire Dead catalog.</h1></div>
+  <p class="muted">Your earlier explorations stay in the list on the left. Asking here starts a new thread.</p>
+  <div class="chips">${Object.keys(R).filter(k=>k!=="m80").map(k=>`<button class="chip" onclick="ask('${k}',{fresh:true,source:'Chip'})">${esc(R[k].q)}</button>`).join("")}</div>`;
+}
+
+function tabState(d, t){
+  if (t==="sources") return d.done ? "" : "prep";
+  const has = d.groups.some(g => g.tab===t) || (t==="context" && d.answerWords>0);
+  if (has) return d.done ? "" : "new";
+  return d.done ? "none" : "prep";
+}
+function tabBar(key, d, view){
+  return `<div class="tabs" role="tablist" aria-label="Views of this exploration">${TABS.map(([t,label]) => {
+    const st = tabState(d,t), sel = view.tab===t;
+    const badge = st==="prep" ? `<span class="st">preparing</span>` : st==="new" ? `<span class="st new">●<span class="sr"> has new content</span></span>` : "";
+    // A tab with nothing in it, once the page is finished, is grayed and inert.
+    if (st==="none") return `<button role="tab" class="unused" aria-selected="false" aria-disabled="true" id="tab-${t}" title="Nothing here for this question">${label}</button>`;
+    return `<button role="tab" aria-selected="${sel}" id="tab-${t}" onclick="chooseTab('${t}')">${label}${badge}</button>`;
+  }).join("")}</div>`;
+}
+
+function pageHTML(key, d, view, live){
+  const r = R[key];
+  if (view.tab && !TABS.some(x => x[0]===view.tab)) view.tab = "context";
+  const head = `<div class="title"><div class="eyebrow">${esc(r.eyebrow)}</div><h1 id="answer-title" tabindex="-1">${esc(r.title)}</h1></div>`;
+  return head + tabBar(key, d, view) + `<div role="tabpanel" aria-labelledby="tab-${view.tab}">${panel(key, d, view, live)}</div>`;
+}
+
+function panel(key, d, view, live){
+  const r = R[key], t = view.tab;
+  const groups = d.groups.filter(g => g.tab===t);
+  let html = "";
+  if (t==="context"){
+    if (d.answerWords>0){
+      const words = r.answer.split(" ").slice(0, d.answerWords).join(" ");
+      html += `<p class="answer">${esc(words)}${d.answerWords < r.answer.split(" ").length ? '<span class="caret" aria-hidden="true"></span>' : ""}</p>`;
+    }
+    if (d.lead && r.lead) html += `<p class="lead-p">${esc(r.lead)}</p>`;
+  }
+  html += groups.map(g => groupHTML(g, view)).join("");
+  const srcList = `<ul>${r.sources.map(s=>`<li>${esc(s)}</li>`).join("")}</ul>`;
+  const srcTab = TABS.some(x => x[0]==="sources");
+  if (t==="sources" && d.done) html = `<div class="prose"><p class="muted">Where this exploration’s facts and recordings come from.</p>${srcList}</div>`;
+  if (t==="context" && d.done && !srcTab && r.sources.length) html += `<div class="sources"><strong>Sources</strong>${srcList}</div>`;
+  if (!html){
+    if (!d.done){
+      html = `<div class="preparing"><strong>${t==="listening"?"Finding recordings":t==="charts"?"Drawing the picture":t==="sources"?"Gathering sources":"Writing the answer"}</strong><p class="muted">This tab fills in as Deadbot writes it.</p><div class="ghost"></div></div>`;
+    } else {
+      html = `<p class="empty">${t==="listening"?"Nothing to play for this question.":t==="charts"?"Nothing to chart for this question.":"No written context for this one."}</p>`;
+    }
+  }
+  return html;
+}
+
+function groupHTML(g, view){
+  const cmp = g.presentation==="comparison";
+  return `<section class="group mini-arrival"><h2>${esc(g.title||"")}<span class="gtag">${g.presentation}</span></h2>${g.lead?`<p class="lead">${esc(g.lead)}</p>`:""}<div class="cards ${cmp?"cmp":""}">${g.blocks.map(b=>blockHTML(b, view)).join("")}</div></section>`;
+}
+
+function showCard(b, view){
+  const open = view.open.includes(b.id);
+  return `<div class="card mini-arrival"><div class="who">${esc(b.date)} · ${esc(b.venue)}</div><h3>${esc(b.headline)}</h3><p>${esc(b.note)}</p>
+    <div class="acts"><button class="play" onclick="play('${esc(b.date)} · ${esc(b.venue)}')">▶ Play</button><button class="queue-add" onclick="enqueue('${esc(b.date)} · ${esc(b.venue)}')">+ Queue</button></div>
+    <details ${open?"open":""} ontoggle="toggleOpen('${b.id}', this.open)"><summary>Setlist and source</summary><ol>${b.setlist.map(s=>`<li>${esc(s)}</li>`).join("")}</ol><p class="muted">Recording: audience/soundboard source named here (illustrative).</p></details></div>`;
+}
+
+function blockHTML(b, view){
+  if (b.type==="show") return showCard(b, view);
+  if (b.type==="prose") return `<div class="prose">${b.paras.map(p=>`<p>${esc(p)}</p>`).join("")}</div>`;
+  if (b.type==="quote") return `<blockquote class="quote">${esc(b.text)}</blockquote>`;
+  if (b.type==="chips") return `<div><p class="muted" style="margin:0">Keep going</p><div class="chips">${b.asks.map(a=>`<button class="chip" ${S.pending&&!S.pending.error?"disabled":""} onclick="askText(${esc(JSON.stringify(a))},'Chip')">Ask: ${esc(a)}</button>`).join("")}</div></div>`;
+  if (b.type==="bars"){
+    const max = Math.max(...b.years.map(y=>y[1]),1);
+    const bars = b.years.map(([y,n]) => `<button aria-pressed="${view.year===y}" aria-label="${y}: ${n} nights" style="height:${Math.max(4,150*n/max)}px" onclick="pickYear(${y})">${n||""}</button>`).join("");
+    const axis = b.years.map(([y]) => `<span>’${String(y).slice(2)}</span>`).join("");
+    const pick = view.year ? `<div class="pick"><h3 style="margin:0 0 6px;font-size:15px">${view.year} at the Garden</h3>${showCard(SHOW("pick"+view.year, "Autumn "+view.year, "Madison Square Garden", "A night from the "+view.year+" run", "Revealed by the chart selection; nothing plays until you choose.", ["Set one…","Set two…"]), view)}</div>` : `<p class="muted">Select a year to see its shows. Playback carries on.</p>`;
+    return `<div><div class="bars" role="group" aria-label="Nights per year">${bars}</div><div class="axis" aria-hidden="true">${axis}</div>${pick}</div>`;
+  }
+  if (b.type==="song"){
+    const max = Math.max(...b.tl);
+    return `<div class="card"><div class="who">Song</div><h3>${esc(b.name)}: ${esc(b.headline)}</h3><div class="tl" aria-label="Performances per year, 1968–1994">${b.tl.map((n,i)=>`<i class="${n>=max*.8?"hot":""}" style="height:${Math.max(2,58*n/max)}px"></i>`).join("")}</div><p class="muted" style="margin:0 0 6px">Representative versions</p><div class="strip">${b.picks.map(([y,l])=>`<div class="acts"><button class="play" onclick="play('Dark Star · ${y}')">▶ Play</button><button class="queue-add" onclick="enqueue('Dark Star · ${y}')">+ Queue</button><span>${y} · ${esc(l)}</span></div>`).join("")}</div></div>`;
+  }
+  if (b.type==="strip") return `<div class="strip">${b.items.map(([y,l])=>`<div class="card"><div class="who">${y}</div><h3>${esc(l)}</h3><div class="acts"><button class="play" onclick="play('Dark Star · ${y}')">▶ Play</button><button class="queue-add" onclick="enqueue('Dark Star · ${y}')">+ Queue</button></div></div>`).join("")}</div>`;
+  return `<p class="muted">[Unrecognised block — would render as prose in Context]</p>`;
+}
+
+function renderPlayer(el){
+  const pl = S.player;
+  el.innerHTML = `<div class="prow"><button aria-label="${pl.playing?"Pause":"Play"}" onclick="togglePlay()">${pl.playing?"❚❚":"▶"}</button><div class="track"><strong>${esc(pl.now)}</strong><span class="muted">Playback is independent of history · simulated</span></div><button aria-expanded="${pl.open}" onclick="S.player.open=!S.player.open;render()">Up next (${pl.queue.length})</button></div>${pl.open?`<ol class="qlist">${pl.queue.map(q=>`<li>${esc(q)}</li>`).join("")||'<li class="muted">Nothing queued</li>'}</ol>`:""}`;
+}
+
+function renderDock(){
+  const d = $("dock");
+  if (!S.phone){ d.innerHTML = ""; return; }
+  const p = S.pending;
+  d.innerHTML = `<div class="player" id="player-dock"></div>
+    <form onsubmit="event.preventDefault();askText(this.q.value,'Typed');"><label class="sr" for="dq">Ask Deadbot</label><textarea id="dq" name="q" placeholder="Ask about a song, show, or recording"></textarea><button class="primary" ${p&&!p.error?"disabled":""}>➤</button></form>`;
+  renderPlayer($("player-dock"));
+}
+// Phone: history lives behind the site's hamburger, beside the site links.
+// A dot on the hamburger says a request is running.
+function renderSheet(){
+  const bar = $("phonebar"), host = $("sheetHost");
+  const busy = S.pending && !S.pending.error;
+  bar.innerHTML = S.phone ? `<button class="burger" aria-label="Menu and your explorations" aria-expanded="${S.sheet}" onclick="S.sheet=true;render()">☰${busy?'<span class="dot" aria-hidden="true"></span>':""}</button><span class="wordmark">Deadbot</span>` : "";
+  if (!S.phone || !S.sheet){ host.innerHTML = ""; return; }
+  host.innerHTML = `<div class="menu" onclick="if(event.target===this){S.sheet=false;render()}"><div role="dialog" aria-label="Menu">
+    <div class="masthead"><span class="wordmark">Deadbot</span><button onclick="S.sheet=false;render()">Close</button></div>
+    <div class="histhead"><h2>Your explorations</h2><div class="arrows"><button aria-label="Previous exploration" ${S.cursor<=0||S.startView?"disabled":""} onclick="go(S.cursor-1)">←</button><button aria-label="Next exploration" ${S.cursor>=S.entries.length-1?"disabled":""} onclick="go(S.cursor+1)">→</button></div></div>
+    <ul class="hist">${histItems()}</ul>
+    <button class="newchat" style="align-self:start" onclick="S.sheet=false;newChat()">New chat</button>
+    <div class="site"><a href="#" onclick="return false">About Deadbot</a><a href="#" onclick="return false">How it works</a></div>
+  </div></div>`;
+}
+
+// ───────── Behaviour ─────────
+let timer = null;
+function viewNow(){ return S.pending && !S.pending.error ? S.pending.view : cur()?.view; }
+function chooseTab(t){
+  const v = viewNow(); if (!v) return;
+  v.tab = t; if (S.pending) S.pending.view.interacted = true;
+  render(); document.getElementById("tab-"+t)?.focus();
+}
+function pickYear(y){ const v = viewNow(); v.year = v.year===y ? null : y; if (S.pending) S.pending.view.interacted = true; render(); }
+function toggleOpen(id, open){ const v = viewNow(); if (!v) return; const had = v.open.includes(id); if (had===open) return; v.open = open ? [...v.open,id] : v.open.filter(x=>x!==id); if (S.pending) S.pending.view.interacted = true; }
+function play(t){ S.player.now = t; S.player.playing = true; if (S.pending) S.pending.view.interacted = true; render(); toast("Playing " + t); }
+function enqueue(t){ S.player.queue.push(t); render(); toast("Added to Up next: " + t); }
+function togglePlay(){ S.player.playing = !S.player.playing; render(); }
+function toast(s){ const t = $("toast"); t.textContent = s; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(()=>t.classList.remove("on"), 1600); }
+function announce(s){ $("live").textContent = s; }
+
+function go(i){
+  if (i<0 || i>=S.entries.length) return;
+  if (S.pending && !S.pending.error) cancel(true);
+  S.pending = null; S.cursor = i; S.startView = false; S.sheet = false; render();
+  announce("Showing: " + S.entries[i].q);
+}
+function newChat(){ if (S.pending && !S.pending.error) return; S.startView = true; S.pending = null; render(); }
+
+function keyFor(text){
+  const t = text.toLowerCase();
+  if (/80|eighties/.test(t)) return "m80";
+  if (/born|birthday/.test(t)) return "bday";
+  if (/veneta/.test(t)) return "veneta";
+  if (/dark star/.test(t)) return "dstar";
+  if (/garden|msg/.test(t)) return "msg";
+  return null;
+}
+function askText(text, source){
+  text = (text||"").trim(); if (!text) return;
+  const key = keyFor(text);
+  if (!key){ toast("Sketch only knows: MSG, late ’80s, Garcia’s birthday, Veneta, Dark Star"); return; }
+  ask(key, {q:text, source, fresh: S.startView});
+  $("q").value = "";
+}
+// A model request: the base entry is what is on screen. Follow-ups send that
+// entry's conversation and notebook; a fresh start sends neither.
+function ask(key, {q, source="Typed", fresh=false, failAt=null}={}){
+  if (S.pending && !S.pending.error) return;
+  const r = R[key];
+  S.pending = {key, q: q || r.q, source, fresh: fresh || S.entries.length===0, base: S.startView ? -1 : S.cursor, step:0, failAt, view:{tab:null, year:null, open:[], interacted:false}};
+  S.startView = false;
+  render(); tick();
+}
+function tick(){
+  clearTimeout(timer);
+  const p = S.pending; if (!p || p.error) return;
+  const ev = streamOf(p.key);
+  if (p.failAt!=null && p.step>=p.failAt){ p.error = true; render(); announce("Deadbot couldn’t finish."); return; }
+  if (p.step >= ev.length){ commit(); return; }
+  const e = ev[p.step]; p.step++;
+  if (e.k==="head" && !p.view.interacted) p.view.tab = R[p.key].initialTab;
+  if (e.k==="group" && p.step>1) announceTabs(p);
+  render();
+  timer = setTimeout(tick, e.k==="status" ? 700 : e.k==="answer" ? 220 : e.k==="block" ? 650 : 400);
+}
+function announceTabs(p){ const g = R[p.key].groups; const d = draftOf(p.key, p.step); const last = d.groups[d.groups.length-1]; if (last) announce(TABS.find(t=>t[0]===last.tab)[1] + " has new content"); }
+// Success: a follow-up drops the entries after its base (linear history);
+// a fresh start is appended at the end and drops nothing.
+function commit(){
+  const p = S.pending, e = entry(p.key, {q:p.q, source:p.source, root:p.fresh});
+  e.view = {tab: p.view.tab || R[p.key].initialTab, year: p.view.year, open: p.view.open};
+  if (p.fresh){ S.entries.push(e); }
+  else { S.entries = S.entries.slice(0, p.base+1); S.entries.push(e); }
+  S.cursor = S.entries.length-1; S.pending = null; render();
+  announce("Ready: " + R[p.key].title);
+}
+function cancel(silent){ clearTimeout(timer); S.pending = null; if (!silent) render(); }
+function retry(){ const p = S.pending; S.pending = null; S.startView = p.fresh && p.base<0; ask(p.key, {q:p.q, source:p.source, fresh:p.fresh}); }
+function dismiss(){ S.pending = null; render(); }
+
+// ───────── Scenes ─────────
+// Each scene builds a state directly so any moment can be inspected without
+// waiting for the stream. "Run" scenes start the timer from that point.
+function base(){ S = blank(); }
+function withMSG(){ base(); S.entries=[entry("msg")]; S.cursor=0; }
+function withMSG80(){ withMSG(); S.entries.push(entry("m80")); S.cursor=1; }
+function pend(key, step, opts={}){ const r=R[key]; S.pending={key, q:opts.q||r.q, source:opts.source||"Typed", fresh:!!opts.fresh, base:opts.fresh?-1:S.cursor, step, failAt:null, error:!!opts.error, view:{tab:null,year:null,open:[],interacted:false}}; const ev=streamOf(key); if (ev.slice(0,step).some(e=>e.k==="head")) S.pending.view.tab = r.initialTab; }
+const headStep = k => streamOf(k).findIndex(e=>e.k==="head")+1;
+const firstGroupStep = k => streamOf(k).findIndex(e=>e.k==="group")+2;
+
+const SCENES = [
+  {t:"1 · First ask: researching", build(){ base(); pend("msg", 2, {fresh:true}); },
+   what:"A first question with nothing on screen. The rail shows the request as a pending row; the workspace shows what Deadbot is doing. No tabs yet: the model hasn’t chosen one. Tool research runs about 10 seconds before the model starts writing the page.",
+   check:["Nothing about the request appears as an answer in the rail","Status lines live in the workspace","The player is untouched"]},
+  {t:"2 · Model chose Listening; answer arrives first", build(){ base(); pend("msg", headStep("msg")+3, {fresh:true}); },
+   what:"page_head arrived with initial_tab = Listening, so Listening opened. The short answer is already streaming, but into the third tab; Listening is still ‘preparing’ because the cards are written after the answer. No banner: the tab marks and the rail’s ‘Asking’ row are the only signs of work.",
+   check:["The third tab shows a ● because it has new content","Nothing switches tabs on its own","Stop lives on the rail’s pending row"],
+   q:"The timing gap remains: a few seconds on an empty Listening tab while the answer is ready next door. With the pointer gone, the remaining fix is to have the model write listening groups before the short answer when it opens on Listening. Worth testing live in PR 3?"},
+  {t:"3 · First listening cards arrive", build(){ base(); pend("msg", firstGroupStep("msg")+1, {fresh:true}); },
+   what:"The first group lands in Listening and is playable at once. Context has the full short answer and lead; Charts is still preparing.",
+   check:["Play and + Queue work on a card that’s still streaming","Neither Play nor arrival replaces the queue"]},
+  {t:"4 · Visitor took Charts mid-stream", build(){ base(); pend("msg", firstGroupStep("msg")+1, {fresh:true}); S.pending.view.tab="charts"; S.pending.view.interacted=true; },
+   what:"The visitor clicked Charts while it was still preparing. When chart and context groups arrive, the tab stays put: the badges change, the view does not.",
+   check:["Click tabs during the live run (top right) to feel it"]},
+  {t:"5 · MSG done · Listening", build(){ withMSG(); },
+   what:"A completed exploration. One history entry. Three comparable nights, stacked one per row (cards are always 1-up), each with Play, + Queue and a setlist disclosure.",
+   check:["Open a setlist, switch tabs, pick a year, queue a show: the history list doesn’t grow","Go to another scene and back: view state belongs to the entry"]},
+  {t:"6 · MSG done · Charts, 1988 picked", build(){ withMSG(); cur().view.tab="charts"; cur().view.year=1988; },
+   what:"Selecting a year reveals its shows beneath the chart. Selection never plays anything.",
+   check:["Bars are buttons with pressed state","A year with no shows has a bar with no number"]},
+  {t:"7 · MSG done · Context", build(){ withMSG(); cur().view.tab="context"; },
+   what:"Context holds the short answer once, then the lead, then the narrative group, the Ask chips, and sources at the foot.",
+   check:["The short answer isn’t repeated","Ask chips are the only things here that start a model request"],
+   q:"Should the Ask chips live in Context only, or at the foot of whichever tab is open?"},
+  {t:"8 · Follow-up pending: previous result held", build(){ withMSG(); cur().view.tab="charts"; cur().view.year=1988; pend("m80", 1, {source:"Chip", q:"Focus on the late ’80s"}); },
+   what:"The visitor clicked ‘Ask: Focus on the late ’80s’. The MSG page stays up, dimmed and labelled Previous result, still fully usable, until the new answer or first card arrives.",
+   check:["Ask buttons and the composer are disabled; Play, tabs and disclosures still work","Stop cancels and returns the MSG page to normal"]},
+  {t:"9 · Follow-up done · late ’80s", build(){ withMSG80(); },
+   what:"Two entries. The new one is current; the first is one click (or ←) away.",
+   check:["History rows are labelled by what was asked","The chip-started entry says ‘Chip’"]},
+  {t:"10 · Back to entry 1", build(){ withMSG80(); S.entries[1].source="Chip"; S.cursor=0; S.entries[0].view.tab="charts"; S.entries[0].view.year=1988; },
+   what:"Entry 1 is restored with its own tab and chart pick. Entry 2 stays in the list (dimmed, ahead of you) and → returns to it. No model call; the player and queue are untouched.",
+   check:["A follow-up asked from here sends entry 1’s conversation and notebook","If it succeeds, entry 2 is replaced; if it fails, entry 2 survives"]},
+  {t:"11 · Follow-up failed · Retry", build(){ withMSG(); pend("m80", 3, {error:true, source:"Typed", q:"Focus on the late ’80s"}); },
+   what:"The request died before the response. The previous page stays, unchanged, under an error line with Retry. History is untouched; the pending row in the rail says it didn’t finish.",
+   check:["Retry resends the same question with the same base entry","Dismiss clears the error and nothing else"]},
+  {t:"12 · Birthday: Context only", build(){ withMSG(); S.entries.push(entry("bday",{root:true, source:"Typed"})); S.cursor=1; },
+   what:"A one-line fact. The model opens the third tab; Listening and Charts are grayed and can’t be selected. Asked as a new thread, so the list shows a divider.",
+   check:["Nothing in the rail but the request","Grayed tabs are skipped by clicks; screen readers hear them as unavailable"]},
+  {t:"13 · Veneta: story first, show in Listening", build(){ base(); S.entries=[entry("veneta",{root:true})]; S.cursor=0; },
+   what:"A narrative question. The model opens Context and puts the show card — with its setlist — in Listening. The lead tells the visitor where the show is.",
+   check:["Switch to Listening: one show, playable, setlist in a disclosure","Charts is grayed"]},
+  {t:"14 · Dark Star: the model puts the song unit in Charts", build(){ base(); S.entries=[entry("dstar",{root:true})]; S.cursor=0; },
+   what:"A song’s life on stage. The model chose Charts and placed the song unit there because its timeline is the point; the version strip goes to Listening. Without the model’s choice, the fallback would have put the song unit in Listening.",
+   check:["The song unit keeps Play and + Queue in Charts — groups are never split","Listening has the versions, one per row, to play in order"]},
+  {t:"15 · New chat from an old entry", build(){ withMSG80(); S.cursor=0; S.startView=true; },
+   what:"From entry 1, the visitor pressed New chat. History stays; the workspace offers a fresh start. A fresh question is appended at the end as a new thread — it doesn’t drop the late-’80s entry.",
+   check:["Ask one of the chips and watch it land at the bottom of the list under ‘New thread’"],
+   q:"This changes the rule from section 1: only follow-ups replace the entries after them; fresh starts always append. OK?"},
+  {t:"16 · Phone · MSG done", build(){ withMSG80(); S.phone=true; },
+   what:"Phone frame. The dock is back to two rows: player and ask box. History lives behind the hamburger, top left; a dot on it means a request is running.",
+   check:["Tap ☰ to open history","Content clears the dock when scrolled to the end"]},
+  {t:"17 · Phone · menu with history open", build(){ withMSG80(); S.entries.push(entry("bday",{root:true})); S.cursor=1; S.phone=true; S.sheet=true; },
+   what:"The hamburger opens the site menu with history at the top: ← →, the list, New chat, then the site links (About and so on). Tapping an entry restores it and closes the menu.",
+   check:["Back and forward live in the menu, next to the list"],
+   q:"The phone has no one-tap ‘back’ now. Fine, or worth a small ← in the top bar beside the hamburger?"}
+];
+
+function loadScene(i){
+  clearTimeout(timer);
+  SCENES[i].build();
+  if ($("phone").checked) S.phone = true;
+  $("phone").checked = S.phone;
+  $("scene").value = i;
+  const sc = SCENES[i];
+  $("n-title").textContent = sc.t; $("n-what").textContent = sc.what;
+  $("n-check").innerHTML = sc.check.map(c=>`<li>${esc(c)}</li>`).join("");
+  $("n-qbox").hidden = !sc.q; $("n-q").textContent = sc.q || "";
+  render();
+}
+$("scene").innerHTML = SCENES.map((s,i)=>`<option value="${i}">${esc(s.t)}</option>`).join("");
+$("scene").onchange = e => loadScene(+e.target.value);
+$("prev").onclick = () => loadScene(Math.max(0, +$("scene").value-1));
+$("next").onclick = () => loadScene(Math.min(SCENES.length-1, +$("scene").value+1));
+$("phone").onchange = e => { S.phone = e.target.checked; S.sheet = false; render(); };
+$("names").onchange = $("srcTab").onchange = () => { setTabs(); render(); };
+setTabs();
+$("run").onclick = () => {
+  base(); S.phone = $("phone").checked;
+  $("n-title").textContent = "Live run · MSG"; $("n-what").textContent = "The MSG stream at sketch speed. Click a tab or play a card while it runs: once you act, nothing moves you. When it finishes, try the ‘Ask: Focus on the late ’80s’ chip in Context, then ← back.";
+  $("n-check").innerHTML = "<li>Watch which tab is open when the answer starts vs. when the first card lands</li><li>Queue something mid-stream, then navigate history: the queue stays</li>";
+  $("n-qbox").hidden = true;
+  ask("msg", {fresh:true});
+};
+$("back").onclick = () => go(S.cursor-1);
+$("fwd").onclick = () => go(S.cursor+1);
+$("newchat").onclick = newChat;
+$("form").onsubmit = e => { e.preventDefault(); askText($("q").value, "Typed"); };
+$("q").addEventListener("keydown", e => { if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); askText($("q").value, "Typed"); } });
+loadScene(0);
+</script>
+</body>
+</html>

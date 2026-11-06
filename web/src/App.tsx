@@ -1,6 +1,5 @@
 import { type FormEvent, type KeyboardEvent, type ReactNode, type RefObject, Suspense, createContext, lazy, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import type { AlbumUnitBlock, AskFocus, ExperienceBlock, ExperienceGroup, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
-import type { PageEvent, StreamEvent } from "./stream-events";
+import type { AlbumUnitBlock, AskFocus, ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
 import { CardHeading, Drawer, HeadingContext, MoreAbout, TopicChips, type DrawerTab } from "./components";
 import { askRequestBody, type FollowUp } from "./ask-request";
@@ -12,6 +11,8 @@ import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Roset
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
+import { ASK_ERROR, askPlain, askStreaming, replayStreamEvents } from "./ask-client";
+import { applyPageEvent, groupsOfResponse, type Draft, type RenderGroup } from "./page-draft";
 import { currentPath, takeQuestionFromUrl, useAskFromPage, usePath } from "./site-nav";
 import { libraryStats as stats } from "./library-stats";
 import { VersionStrip } from "./VersionStrip";
@@ -1031,65 +1032,8 @@ function repeatsBlockTitle(block: EditorialBlockT, item: EditorialBlockT["items"
   return sameHeading(block.title ?? null, item.title) && (item.tracks ?? []).length === 0;
 }
 
-type RenderGroup = { title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[]; blocks: ExperienceBlock[] };
-type Draft = { title: string; lead: string | null; groups: RenderGroup[] };
-
-function emptyGroup(): RenderGroup {
-  return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [] };
-}
-
-// The draft page grows in reading order. A block for a group we have not
-// heard of yet gets a provisional group; group_close fills the heading in.
-function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
-  if (event.type === "page_reset") return null;
-  if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;
-  if (event.type === "page_head") return { title: event.title, lead: event.lead, groups: draft?.groups ?? [] };
-  const current: Draft = draft ?? { title: "", lead: null, groups: [] };
-  const groups = current.groups.slice();
-  const index = event.type === "block" ? event.group_index : event.index;
-  if (!Number.isInteger(index) || index < 0) return draft;
-  while (groups.length <= index) groups.push(emptyGroup());
-  if (event.type === "block") {
-    groups[index] = { ...groups[index], blocks: [...groups[index].blocks, event.block] };
-  } else {
-    groups[index] = { ...groups[index], title: event.title, lead: event.lead, presentation: event.presentation, criteria: event.criteria };
-  }
-  return { ...current, groups };
-}
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-type StreamHandlers = {
-  onStatus: (status: string) => void;
-  onAnswer: (text: string) => void;
-  onPage: (event: PageEvent) => void;
-  onResponse: (response: ExperienceResponse) => void;
-};
-
-// Shared between the network reader and the fixture replay: turn one parsed
-// event into the matching handler call. Error throws; everything else is
-// handed to the caller's handlers, including the response, which the network
-// reader captures and the replay applies immediately.
-const PAGE_EVENT_TYPES = new Set(["page_head", "group_open", "group_close", "block", "page_reset", "groups_reset"]);
-
-function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void {
-  if (event.type === "status") handlers.onStatus(event.text);
-  else if (event.type === "answer") handlers.onAnswer(event.text);
-  else if (event.type === "response") handlers.onResponse(event.response);
-  else if (event.type === "error") throw new Error(event.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
-  else if (PAGE_EVENT_TYPES.has(event.type)) handlers.onPage(event);
-}
-
-function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
-  return response.groups.map((group) => ({
-    title: group.title ?? null,
-    lead: group.lead ?? null,
-    presentation: group.presentation,
-    criteria: group.criteria ?? [],
-    blocks: group.block_indexes.map((index) => response.blocks[index]).filter((block): block is ExperienceBlock => Boolean(block)),
-  }));
 }
 
 function ShowUnit({
@@ -2662,35 +2606,32 @@ function App() {
     const events = await loadRequestedStreamEvents();
     if (!events) return;
     let statusCount = 0;
-    for (const event of events) {
-      await delay(event.type === "block" ? 600 : event.type === "answer" ? 40 : 300);
-      dispatchStreamEvent(event, {
-        onStatus: (status) => {
-          statusCount += 1;
-          setProgress((lines) => [...lines, status]);
-        },
-        onAnswer: (text) => {
-          if (!answerStartedRef.current) {
-            answerStartedRef.current = true;
-            setAnswerProgressStart(statusCount);
-          }
-          setStreamingAnswer(text);
-        },
-        onPage: (pageEvent) => setDraft((current) => applyPageEvent(current, pageEvent)),
-        onResponse: (nextResponse) => {
-          setResponse(nextResponse);
-          setAnswerReadyMessage(`Answer ready: ${nextResponse.title}`);
-          askJustCompletedRef.current = true;
-          setLoading(false);
-          setPendingQuestion(null);
-          setPendingStartsFresh(false);
-          setProgress([]);
-          setStreamingAnswer(null);
-          setAnswerProgressStart(null);
-          setDraft(null);
+    await replayStreamEvents(events, {
+      onStatus: (status) => {
+        statusCount += 1;
+        setProgress((lines) => [...lines, status]);
+      },
+      onAnswer: (text) => {
+        if (!answerStartedRef.current) {
+          answerStartedRef.current = true;
+          setAnswerProgressStart(statusCount);
         }
-      });
-    }
+        setStreamingAnswer(text);
+      },
+      onPage: (pageEvent) => setDraft((current) => applyPageEvent(current, pageEvent)),
+      onResponse: (nextResponse) => {
+        setResponse(nextResponse);
+        setAnswerReadyMessage(`Answer ready: ${nextResponse.title}`);
+        askJustCompletedRef.current = true;
+        setLoading(false);
+        setPendingQuestion(null);
+        setPendingStartsFresh(false);
+        setProgress([]);
+        setStreamingAnswer(null);
+        setAnswerProgressStart(null);
+        setDraft(null);
+      }
+    });
   }
 
   async function askQuestion(nextQuestion?: string, { fresh = false, focus }: { fresh?: boolean; focus?: AskFocus } = {}) {
@@ -2763,7 +2704,7 @@ function App() {
       setAnswerReadyMessage(`Answer ready: ${finalResponse.title}`);
       askJustCompletedRef.current = true;
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Deadbot could not answer just now. Try again, or rephrase the question.");
+      setError(requestError instanceof Error ? requestError.message : ASK_ERROR);
       if (cameFromStart) setPhase("start");
     } finally {
       setLoading(false);
@@ -2774,79 +2715,6 @@ function App() {
       setAnswerProgressStart(null);
       setDraft(null);
     }
-  }
-
-  // The streaming endpoint sends one JSON object per line: statuses while the
-  // agent works, page events as the page is composed, then the response. A
-  // null return means the stream was not available and the caller should
-  // fall back to the plain request. A stream that started and then ended
-  // without its response is a failure, not a reason to run the question
-  // again: a second run writes a different answer, and the visitor would
-  // watch the first one be replaced without knowing why.
-  async function askStreaming(
-    body: string,
-    handlers: {
-      onStatus: (status: string) => void;
-      onAnswer: (text: string) => void;
-      onPage: (event: PageEvent) => void;
-    }
-  ): Promise<ExperienceResponse | null> {
-    const result = await fetch("/api/experience/stream", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body
-    });
-    if (result.status === 404 || result.status === 405) return null;
-    if (!result.ok) {
-      const detail = await result.json().catch(() => null) as { detail?: string } | null;
-      throw new Error(detail?.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
-    }
-    if (!result.body) return null;
-    const reader = result.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let answer: ExperienceResponse | null = null;
-    let sawEvent = false;
-    const consume = (line: string) => {
-      if (!line.trim()) return;
-      sawEvent = true;
-      const event = JSON.parse(line) as StreamEvent;
-      dispatchStreamEvent(event, {
-        onStatus: handlers.onStatus,
-        onAnswer: handlers.onAnswer,
-        onPage: handlers.onPage,
-        onResponse: (response) => { answer = response; }
-      });
-    };
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      let newline = buffer.indexOf("\n");
-      while (newline >= 0) {
-        consume(buffer.slice(0, newline));
-        buffer = buffer.slice(newline + 1);
-        newline = buffer.indexOf("\n");
-      }
-    }
-    consume(buffer);
-    if (answer === null && sawEvent) {
-      throw new Error("The connection closed before Deadbot finished the page. Please ask again.");
-    }
-    return answer;
-  }
-
-  async function askPlain(body: string): Promise<ExperienceResponse> {
-    const result = await fetch("/api/experience", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body
-    });
-    if (!result.ok) {
-      const detail = await result.json().catch(() => null) as { detail?: string } | null;
-      throw new Error(detail?.detail ?? "Deadbot could not answer just now. Try again, or rephrase the question.");
-    }
-    return await result.json() as ExperienceResponse;
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
