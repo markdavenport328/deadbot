@@ -1,11 +1,11 @@
-import { type FormEvent, type KeyboardEvent, type ReactNode, Suspense, createContext, lazy, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, type KeyboardEvent, type ReactNode, type RefObject, Suspense, createContext, lazy, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AlbumUnitBlock, AskFocus, ExperienceBlock, ExperienceResponse, ShowUnitBlock, SourceReference } from "./types";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "./visual-fixture-loader";
 import { CardHeading, Drawer, HeadingContext, MoreAbout, TopicChips, type DrawerTab } from "./components";
 import { askRequestBody, type FollowUp } from "./ask-request";
 import { clearStoredNotebook, readStoredNotebook, storeNotebook } from "./research-notebook";
 import { Grid } from "./Grid";
-import { PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
+import { PLAYBACK_RATES, PlayerProvider, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
 import { CardSpotifyButton, SpotifyEmbed, SpotifyPanelEmbed, SpotifyTextButton, useSpotifyPanel, type SpotifyPanel } from "./spotify-embed";
 import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Rosettes, splitListen, toTrack, type InPagePlay } from "./listening";
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
@@ -2177,19 +2177,126 @@ function readCollapsedPlayer(): boolean {
   }
 }
 
+// Speed and loop, for learning a passage by ear: a "⋯" at the end of the
+// scrubber opens them in the panel slot above the bar, where the queue opens.
+// While the speed is not normal or a loop is set, the button says so in cream.
+function formatRate(rate: number): string {
+  return `${rate}×`;
+}
+
+function MoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="5" cy="12" r="1.8" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.8" fill="currentColor" />
+      <circle cx="19" cy="12" r="1.8" fill="currentColor" />
+    </svg>
+  );
+}
+
+function LoopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4" />
+    </svg>
+  );
+}
+
+function PracticeToggle({ open, panelId, onToggle, toggleRef }: { open: boolean; panelId: string; onToggle: () => void; toggleRef: RefObject<HTMLButtonElement | null> }) {
+  const player = usePlayer();
+  const changedRate = player.rate !== 1;
+  const looping = player.loop.start != null && player.loop.end != null;
+  const state = [changedRate ? formatRate(player.rate) : null, looping ? "looping" : null].filter(Boolean).join(", ");
+  return (
+    <button
+      ref={toggleRef}
+      type="button"
+      className={`now-playing-more${open ? " open" : ""}${changedRate || looping ? " changed" : ""}`}
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={open ? panelId : undefined}
+      aria-label={state ? `Speed and loop: ${state}` : "Speed and loop"}
+      title="Speed and loop"
+    >
+      {changedRate && <span className="now-playing-more-rate">{formatRate(player.rate)}</span>}
+      {looping && <LoopIcon />}
+      <MoreIcon />
+    </button>
+  );
+}
+
+function PracticePanel({ id, onClose }: { id: string; onClose: () => void }) {
+  const player = usePlayer();
+  const { start, end } = player.loop;
+  return (
+    <div
+      id={id}
+      className="now-playing-queue now-playing-practice"
+      role="region"
+      aria-label="Speed and loop"
+      onKeyDown={(event) => {
+        if (event.key === "Escape") onClose();
+      }}
+    >
+      <div className="practice-row" role="group" aria-labelledby={`${id}-speed`}>
+        <span className="practice-label" id={`${id}-speed`}>Speed</span>
+        <span className="practice-choices">
+          {PLAYBACK_RATES.map((rate) => (
+            <button key={rate} type="button" className="practice-choice" aria-pressed={player.rate === rate} onClick={() => player.setRate(rate)}>
+              {formatRate(rate)}
+            </button>
+          ))}
+        </span>
+      </div>
+      <div className="practice-row" role="group" aria-labelledby={`${id}-loop`}>
+        <span className="practice-label" id={`${id}-loop`}>Loop</span>
+        <span className="practice-choices">
+          <button type="button" className="practice-choice" aria-pressed={start != null} onClick={player.setLoopStart} aria-label={start != null ? `Loop start ${formatClockTime(start)}, set to now` : "Set loop start to now"}>
+            {start != null ? `Start ${formatClockTime(start)}` : "Set start"}
+          </button>
+          <button type="button" className="practice-choice" aria-pressed={end != null} onClick={player.setLoopEnd} aria-label={end != null ? `Loop end ${formatClockTime(end)}, set to now` : "Set loop end to now"}>
+            {end != null ? `End ${formatClockTime(end)}` : "Set end"}
+          </button>
+          {(start != null || end != null) && (
+            <button type="button" className="practice-clear" onClick={player.clearLoop}>
+              Clear
+            </button>
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// The loop on the scrubber: a band from start to end, or a tick at the start
+// until the end is set.
+function LoopBand({ duration }: { duration: number }) {
+  const { start, end } = usePlayer().loop;
+  if (start == null || !(duration > 0)) return null;
+  const left = Math.min(start / duration, 1) * 100;
+  const width = end != null ? Math.max(((end - start) / duration) * 100, 0.5) : 0;
+  return <span className={`now-playing-loop${end == null ? " open-ended" : ""}`} style={{ left: `${left}%`, width: end != null ? `${width}%` : undefined }} aria-hidden="true" />;
+}
+
 export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: { collapsible?: boolean; forceCollapsed?: boolean } = {}) {
   const player = usePlayer();
   const [folded, setFolded] = useState(readCollapsedPlayer);
   const [queueOpen, setQueueOpen] = useState(false);
   const queueToggleRef = useRef<HTMLButtonElement | null>(null);
   const queueId = useId();
+  const [practiceOpen, setPracticeOpen] = useState(false);
+  const practiceToggleRef = useRef<HTMLButtonElement | null>(null);
+  const practiceId = useId();
   const track = player.currentTrack;
   if (!track) return null;
   const collapsed = collapsible && (folded || forceCollapsed);
   function toggleFolded() {
     const next = !folded;
     setFolded(next);
-    if (next) setQueueOpen(false);
+    if (next) {
+      setQueueOpen(false);
+      setPracticeOpen(false);
+    }
     try {
       window.localStorage.setItem(COLLAPSED_PLAYER_KEY, next ? "1" : "0");
     } catch {
@@ -2205,14 +2312,21 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
   const queued = player.queue.length > 1;
   const upcoming = Math.max(player.queue.length - player.queue.findIndex((item) => item.id === track.id) - 1, 0);
   const showQueue = queued && queueOpen && !collapsed;
+  const showPractice = practiceOpen && !collapsed && !showQueue;
   const closeQueue = () => {
     setQueueOpen(false);
     queueToggleRef.current?.focus();
   };
-  const barClassName = ["now-playing-bar", collapsible ? "collapsible" : null, collapsed ? "collapsed" : null, showQueue ? "queue-open" : null].filter(Boolean).join(" ");
+  const closePractice = () => {
+    setPracticeOpen(false);
+    practiceToggleRef.current?.focus();
+  };
+  // The queue and the speed-and-loop panel share the slot above the bar.
+  const barClassName = ["now-playing-bar", collapsible ? "collapsible" : null, collapsed ? "collapsed" : null, showQueue || showPractice ? "queue-open" : null].filter(Boolean).join(" ");
   return (
     <div className={barClassName} role="region" aria-label="Now playing">
       {showQueue && <UpNext id={queueId} onClose={closeQueue} />}
+      {showPractice && <PracticePanel id={practiceId} onClose={closePractice} />}
       {track.thumbnailUrl ? (
         <img className="now-playing-thumb" src={track.thumbnailUrl} alt="" loading="lazy" />
       ) : (
@@ -2256,7 +2370,10 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
             ref={queueToggleRef}
             type="button"
             className={`now-playing-queue-toggle${queueOpen ? " open" : ""}`}
-            onClick={() => setQueueOpen((open) => !open)}
+            onClick={() => {
+              setQueueOpen((open) => !open);
+              setPracticeOpen(false);
+            }}
             aria-expanded={queueOpen}
             aria-controls={queueOpen ? queueId : undefined}
             aria-label={`Queue, ${upcoming === 1 ? "1 track" : `${upcoming} tracks`} up next`}
@@ -2281,6 +2398,8 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
       {!collapsed && (
       <div className="now-playing-scrubber">
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
+        <span className="now-playing-range-wrap">
+        <LoopBand duration={duration} />
         <input
           type="range"
           className="now-playing-range"
@@ -2292,7 +2411,17 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
           aria-valuetext={formatSeekValueText(position, duration)}
           onChange={(event) => player.seek(Number(event.target.value))}
         />
+        </span>
         <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
+        <PracticeToggle
+          open={showPractice}
+          panelId={practiceId}
+          toggleRef={practiceToggleRef}
+          onToggle={() => {
+            setPracticeOpen((open) => !open);
+            setQueueOpen(false);
+          }}
+        />
       </div>
       )}
     </div>
