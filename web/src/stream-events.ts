@@ -5,7 +5,8 @@ import type { ExperienceBlock, ExperienceGroup, ExperienceResponse } from "./typ
 
 export type PageEvent =
   | { type: "page_head"; title: string; lead: string | null }
-  | { type: "group_open" | "group_close"; index: number; title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[] }
+  | { type: "page_tab"; tab: string }
+  | { type: "group_open" | "group_close"; index: number; tab?: string | null; title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[] }
   | { type: "block"; group_index: number; block: ExperienceBlock }
   | { type: "page_reset" }
   // The model restated the page's groups: the draft's groups start over.

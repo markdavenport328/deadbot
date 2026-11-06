@@ -21,12 +21,14 @@ from dataclasses import dataclass
 from typing import Annotated, Any, Literal, get_args
 
 from langchain_core.tools import BaseTool, StructuredTool
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
 from deadbot import composition, grids, record_refs, row_details, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
+    WorkspaceTab,
+    workspace_tab,
     ConversationTurn,
     EditorialBlock,
     EditorialItem,
@@ -856,6 +858,13 @@ class GroupPlan(_PlanModel):
 
     # A key the schema does not name is ignored, as the streamer ignores it.
     model_config = ConfigDict(extra="ignore")
+    tab: WorkspaceTab | None = Field(default=None, description="Where this group lives: listen, charts or read.")
+
+    @field_validator("tab", mode="before")
+    @classmethod
+    def _read_tab(cls, value: Any) -> Any:
+        return workspace_tab(value)
+
     title: str | None = Field(
         default=None,
         description=(
@@ -955,6 +964,16 @@ class FinishPlan(BaseModel):
                 {**group, "presentation": group_presentation(group.get("presentation")), "criteria": clean_criteria(group.get("criteria")), "items": items}
             )
         return {**data, "groups": groups}
+
+    initial_tab: WorkspaceTab | None = Field(
+        default=None,
+        description="The tab the page opens on: listen (to hear), charts (to see across time or categories) or read (the answer and its story). Write it first.",
+    )
+
+    @field_validator("initial_tab", mode="before")
+    @classmethod
+    def _read_initial_tab(cls, value: Any) -> Any:
+        return workspace_tab(value)
 
     chat_answer: str = Field(
         description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. Markdown links allowed."
@@ -1680,6 +1699,7 @@ def resolve_groups(
                 lead=keep_grounded_links(group.lead.strip(), grounded.urls) if group.lead and group.lead.strip() else None,
                 presentation=group.presentation,
                 criteria=clean_criteria(group.criteria),
+                tab=group.tab,
                 block_indexes=list(range(start, len(blocks))),
             )
         )
@@ -1861,6 +1881,7 @@ def build_experience_response(
         title=plan.title.strip() or "Deadbot",
         answer=chat_answer,
         body_lead=lead,
+        initial_tab=plan.initial_tab,
         mode="answer",
         conversation=_conversation(all_messages, chat_answer),
         blocks=blocks,

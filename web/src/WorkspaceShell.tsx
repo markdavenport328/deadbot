@@ -123,9 +123,8 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
       onStatus: (text) => dispatch({ type: "status", requestId, text }),
       onAnswer: (text) => dispatch({ type: "answer", requestId, text }),
       onPage: (event: PageEvent) => {
-        // The model's opening tab rides on its own event or on page_head.
-        const raw = event as { type: string; tab?: unknown; initial_tab?: unknown };
-        const opening = raw.type === "page_tab" ? readTab(raw.tab) : raw.type === "page_head" ? readTab(raw.initial_tab) : null;
+        // The model's opening tab arrives on its own event, ahead of the answer.
+        const opening = event.type === "page_tab" ? readTab(event.tab) : null;
         if (opening) dispatch({ type: "initialTab", requestId, tab: opening });
         dispatch({ type: "page", requestId, event });
       }

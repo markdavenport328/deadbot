@@ -22,7 +22,7 @@ export type StreamHandlers = {
 // event into the matching handler call. Error throws; everything else is
 // handed to the caller's handlers, including the response, which the network
 // reader captures and the replay applies immediately.
-const PAGE_EVENT_TYPES = new Set(["page_head", "group_open", "group_close", "block", "page_reset", "groups_reset"]);
+const PAGE_EVENT_TYPES = new Set(["page_head", "page_tab", "group_open", "group_close", "block", "page_reset", "groups_reset"]);
 
 export function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void {
   if (event.type === "status") handlers.onStatus(event.text);

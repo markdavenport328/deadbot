@@ -1438,6 +1438,23 @@
             "title": "Presentation",
             "type": "string"
           },
+          "tab": {
+            "anyOf": [
+              {
+                "enum": [
+                  "listen",
+                  "charts",
+                  "read"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The workspace tab this group lives on: listen, charts or read.",
+            "title": "Tab"
+          },
           "title": {
             "anyOf": [
               {
@@ -1664,6 +1681,23 @@
             "maxItems": 1000,
             "title": "Groups",
             "type": "array"
+          },
+          "initial_tab": {
+            "anyOf": [
+              {
+                "enum": [
+                  "listen",
+                  "charts",
+                  "read"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The workspace tab the page opens on.",
+            "title": "Initial Tab"
           },
           "mode": {
             "default": "answer",

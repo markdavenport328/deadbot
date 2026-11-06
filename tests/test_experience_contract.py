@@ -41,3 +41,11 @@ def test_show_unit_accepts_lineup_and_recordings_facets_and_song_overview_accept
         length_points=[experience.SongLengthPoint(performance_id="p1", show_date="1972-08-27", seconds=600)],
     )
     assert song.year_summaries[0].count == 1 and song.open_year == 1972
+
+
+def test_a_response_without_tabs_still_validates():
+    response = experience.ExperienceResponse.model_validate({"thread_id": "t", "title": "T", "answer": "A"})
+    assert response.initial_tab is None
+    group = experience.ExperienceGroup.model_validate({"presentation": "collection", "block_indexes": [0]})
+    assert group.tab is None
+    assert experience.workspace_tab("Hear") == "listen" and experience.workspace_tab("nope") is None
