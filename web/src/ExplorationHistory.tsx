@@ -34,7 +34,7 @@ export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewCh
               aria-current={index === cursor && !startView ? "true" : undefined}
               onClick={() => onNavigate(index)}
             >
-              <small>{index + 1} · {sourceLabel(entry.source)}</small>
+              <small>{index + 1} · {sourceLabel(entry.source)}<span className="visually-hidden">: </span></small>
               {entry.request}
             </button>
           </li>

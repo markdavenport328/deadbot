@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import type { AskFocus, ExperienceResponse } from "./types";
 import type { PageEvent } from "./stream-events";
 import { ASK_ERROR, askPlain, askStreaming, createThreadId, isAbort, replayStreamEvents, type StreamHandlers } from "./ask-client";
@@ -69,7 +69,7 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
   parts: PageParts;
   startView(ask: (question: string) => void): ReactNode; // the home screen's lead and starting points
   player: ReactNode;
-  phonePlayer: ReactNode;
+  phonePlayer(composerFocused: boolean): ReactNode; // the player folds while the dock's ask box has focus
   isPhone: boolean;
   linkedQuestion: string | null;
   registerAskFromPage(handler: (question: string) => void): void;
@@ -86,6 +86,7 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
   const announcedRef = useRef<{ requestId: string; tabs: Set<WorkspaceTab> } | null>(null);
   const lastShownRef = useRef<{ id: string; tab: WorkspaceTab | null } | null>(null);
   const [question, setQuestion] = useState("");
+  const [dockFocused, setDockFocused] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const railHeadingId = useId();
   const menuHeadingId = useId();
@@ -355,6 +356,14 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
     }
   }, [question, isPhone]);
 
+  // The wordmark goes to the start view in the app; a reload would lose every
+  // exploration. A modified click still opens a new tab as a link should.
+  function goHome(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    actions.newChat();
+  }
+
   function send() {
     if (actions.ask(question, { source: "typed", fresh: false })) setQuestion("");
   }
@@ -378,6 +387,8 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
             onKeyDown={sendOnEnter}
+            onFocus={dock ? () => setDockFocused(true) : undefined}
+            onBlur={dock ? () => setDockFocused(false) : undefined}
           />
           {dock ? (
             <button type="submit" className="dock-send" disabled={asking || !question.trim()} aria-label="Explore" aria-busy={asking}>
@@ -440,7 +451,7 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
         {!isPhone && (
           <aside className="workspace-rail" aria-label="Explorations">
             <header className="masthead">
-              <a className="wordmark" href="/">Deadbot</a>
+              <a className="wordmark" href="/" onClick={goHome}>Deadbot</a>
               <p>Grateful Dead knowledge, listening, and context</p>
             </header>
             <ExplorationHistory
@@ -481,7 +492,7 @@ export function WorkspaceShell({ parts, startView, player, phonePlayer, isPhone,
       </div>
       {isPhone && (
         <div className="mobile-dock" ref={dockRef}>
-          {phonePlayer}
+          {phonePlayer(dockFocused)}
           {composer(true)}
         </div>
       )}

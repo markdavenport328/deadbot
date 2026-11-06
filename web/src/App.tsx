@@ -11,7 +11,7 @@ import { CardPlayButton, ClampText, ListenLinks, ListeningHero, PullQuote, Roset
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
-import { ASK_ERROR, askPlain, askStreaming, replayStreamEvents } from "./ask-client";
+import { ASK_ERROR, askPlain, askStreaming, createThreadId, replayStreamEvents } from "./ask-client";
 import { applyPageEvent, groupsOfResponse, type Draft, type RenderGroup } from "./page-draft";
 import { currentPath, takeQuestionFromUrl, useAskFromPage, usePath } from "./site-nav";
 import { libraryStats as stats } from "./library-stats";
@@ -21,7 +21,6 @@ import type { SongTimelineData } from "./song-timeline-types";
 import { askFocus } from "./song-timeline-text";
 import { AddToQueue, ListenControl, archiveTrack, trackFor, type TrackMeta } from "./listen-control";
 import { RowPanel, panelId, useOpenRow, type RowSource } from "./RowOpener";
-import { createThreadId } from "./ask-client";
 import { readShellMode } from "./shell-mode";
 import { MenuSlotProvider } from "./menu-slot";
 import { WorkspaceShell, type PageParts } from "./WorkspaceShell";
@@ -2884,7 +2883,7 @@ function WorkspaceApp() {
       parts={workspaceParts}
       startView={workspaceStart}
       player={<NowPlayingBar />}
-      phonePlayer={<NowPlayingBar collapsible />}
+      phonePlayer={(composerFocused) => <NowPlayingBar collapsible forceCollapsed={composerFocused} />}
       isPhone={isPhone}
       linkedQuestion={linkedQuestion}
       registerAskFromPage={useAskFromPage}

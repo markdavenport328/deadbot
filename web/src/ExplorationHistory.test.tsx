@@ -18,7 +18,7 @@ test("rows, dividers, current and navigation", () => {
   const h = handlers();
   render(<ExplorationHistory state={threeAsks()} {...h} />);
   const rows = screen.getAllByRole("button", { name: /MSG history|Late 80s|Garcia birthday/ });
-  expect(rows.map((r) => r.textContent)).toEqual(["1 · TypedMSG history", "2 · ChipLate 80s", "3 · TypedGarcia birthday"]);
+  expect(rows.map((r) => r.textContent)).toEqual(["1 · Typed: MSG history", "2 · Chip: Late 80s", "3 · Typed: Garcia birthday"]);
   expect(screen.getAllByText("New thread")).toHaveLength(1);
   expect(screen.getByText("New thread").nextElementSibling).toContainElement(rows[2]);
   expect(rows[2]).toHaveAttribute("aria-current", "true");

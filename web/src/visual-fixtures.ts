@@ -950,12 +950,13 @@ const timeline: ExperienceResponse = fixture(
   { title: "The song's life on stage", lead: null }
 );
 
-// Illustrative fixture — not catalog records. A workspace page modeled on the
+// Illustrative fixture: real catalog facts, placeholder prose. A workspace page modeled on the
 // persistent-exploration sketch's Madison Square Garden answer: three nights
 // to hear (Listen), the Garden nights by year (Charts), and the story with Ask
 // chips (Read). Replayed with `?shell=workspace&stream=msg-workspace`, the
-// first Listen card lands before the Read narrative does. Dates, setlists and
-// counts follow the library; the notes and prose are placeholders.
+// first Listen card lands before the Read narrative does. Show ids, dates,
+// setlists, archive identifiers and nights per year come from data/canonical;
+// the card notes and the story are bracketed placeholders, not written copy.
 const msgShow = (id: string, date: string, title: string, note: string, identifier: string, sets: [string, string[]][]) =>
   show({
     id, date, venue: "Madison Square Garden", location: "New York, NY", title, note,

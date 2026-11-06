@@ -249,6 +249,7 @@ test("clicking the held previous page does not count as taking over the new one"
   expect(banner.closest("[role=status]")).not.toBeNull();
   const held = document.querySelector(".exploration-pane.previous") as HTMLElement;
   expect(held).not.toBeNull();
+  expect(within(held).getByText("Previous result")).toBeInTheDocument();
   fireEvent.pointerDown(held);
   fireEvent.click(tab("Read"));
   await act(async () => { release(); });
@@ -303,4 +304,61 @@ test("the msg-workspace stream lands a Listen card before the Read story", async
   expect(firstListen).toBeGreaterThanOrEqual(0);
   expect(firstListen).toBeLessThan(firstStory);
   expect(blocks.some((block) => fallbackTab(block) === "charts")).toBe(true);
+});
+
+test("the wordmark goes to the start view without reloading, and history stays", async () => {
+  replies = [{ kind: "plain", body: msg() }];
+  await openWorkspace();
+  ask("MSG");
+  await screen.findByRole("heading", { level: 1, name: "The Garden years" });
+  const wordmark = within(rail()).getByRole("link", { name: "Deadbot" });
+  expect(fireEvent.click(wordmark)).toBe(false);
+  expect(screen.getByRole("heading", { level: 1, name: /Exploration and listening/ })).toBeInTheDocument();
+  expect(rows()).toHaveLength(1);
+});
+
+test("a tab already looked at during a request does not get its new mark again", async () => {
+  const show = clone(visualFixtures.harrisburg.blocks[0]);
+  const second = clone(visualFixtures.harrisburg.blocks[1]);
+  let release!: () => void;
+  const hold = new Promise<void>((resolve) => { release = resolve; });
+  const final = page("Harrisburg", null, [{ role: "user", text: "Harrisburg?" }, { role: "assistant", text: "Twice." }], [show, second], [
+    { presentation: "collection", criteria: [], block_indexes: [0, 1] }
+  ]);
+  const meta = { index: 0, title: null, lead: null, presentation: "collection", criteria: [] };
+  replies = [{ kind: "stream", chunks: [
+    { type: "answer", text: "Twice." },
+    { type: "group_open", ...meta },
+    { type: "block", group_index: 0, block: show },
+    hold,
+    { type: "block", group_index: 0, block: second },
+    { type: "group_close", ...meta },
+    { type: "response", response: final }
+  ] }];
+  await openWorkspace();
+  ask("Harrisburg?");
+  await vi.waitFor(() => expect(tab("Listen")).toHaveTextContent("has new content"));
+  fireEvent.click(tab("Listen"));
+  fireEvent.click(tab("Read"));
+  expect(tab("Listen")).not.toHaveTextContent("has new content");
+  await act(async () => { release(); });
+  await vi.waitFor(() => expect(rows()).toHaveLength(1));
+});
+
+test("on a phone, the player folds while the dock's ask box has focus", async () => {
+  phone = true;
+  const withTape = clone(visualFixtures.harrisburg);
+  const show = withTape.blocks[0] as Extract<ExperienceBlock, { type: "show_unit" }>;
+  show.sets[0].songs.forEach((song, index) => {
+    song.audio_url = `https://archive.org/download/gd1983-06-22/d1t0${index + 1}.mp3`;
+  });
+  replies = [{ kind: "plain", body: { ...withTape, conversation: msgTurns } }];
+  await openWorkspace();
+  ask("MSG");
+  await screen.findByRole("heading", { level: 1, name: withTape.title });
+  const play = document.querySelector(".exploration-pane:not([hidden]) .card-head .card-play") as HTMLElement;
+  await act(async () => { fireEvent.click(play); });
+  const bar = () => document.querySelector(".mobile-dock .now-playing-bar") as HTMLElement;
+  fireEvent.focus(screen.getByLabelText("Question"));
+  expect(bar()).toHaveClass("collapsed");
 });

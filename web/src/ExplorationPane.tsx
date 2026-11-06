@@ -1,4 +1,4 @@
-import { memo, useMemo, type ReactNode } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 import type { FollowUp } from "./ask-request";
 import { groupsOfResponse, type RenderGroup } from "./page-draft";
 import type { ExperienceResponse, SourceReference } from "./types";
@@ -82,10 +82,12 @@ const WAITING: Record<WorkspaceTab, string> = {
   read: "Writing the answer"
 };
 
-export function tabStates(content: Set<WorkspaceTab>, active: WorkspaceTab, streaming: boolean): Record<WorkspaceTab, TabState> {
+// A tab is marked new when content arrives there while the visitor is
+// elsewhere and has not looked at it yet during this request.
+export function tabStates(content: Set<WorkspaceTab>, active: WorkspaceTab, streaming: boolean, seen: ReadonlySet<WorkspaceTab> = new Set()): Record<WorkspaceTab, TabState> {
   const states = {} as Record<WorkspaceTab, TabState>;
   for (const { id } of WORKSPACE_TABS) {
-    if (content.has(id)) states[id] = streaming && id !== active ? "new" : "ready";
+    if (content.has(id)) states[id] = streaming && id !== active && !seen.has(id) ? "new" : "ready";
     else states[id] = streaming ? "preparing" : "unused";
   }
   return states;
@@ -124,6 +126,9 @@ export const ExplorationPane = memo(function ExplorationPane({
   const routed = useMemo(() => routeGroups(content.groups), [content.groups]);
   const filled = useMemo(() => tabsWithContent(routed, content.answer), [routed, content.answer]);
   const titleId = `${paneId}-title`;
+  // Tabs the visitor has looked at in this pane; their "new" mark stays off.
+  const [seen, setSeen] = useState<ReadonlySet<WorkspaceTab>>(() => new Set([activeTab]));
+  if (!statuses && !seen.has(activeTab)) setSeen(new Set(seen).add(activeTab));
   const className = ["exploration-pane", previous ? "previous" : null].filter(Boolean).join(" ");
 
   if (statuses) {
@@ -143,7 +148,7 @@ export const ExplorationPane = memo(function ExplorationPane({
     );
   }
 
-  const states = tabStates(filled, activeTab, streaming);
+  const states = tabStates(filled, activeTab, streaming, seen);
   const panel = (tab: WorkspaceTab) => {
     if (!filled.has(tab)) return streaming ? <p className="workspace-waiting">{WAITING[tab]}…</p> : null;
     const groups = parts.groups(routed[tab], content.sources, streaming, onFollowUp);
@@ -168,6 +173,7 @@ export const ExplorationPane = memo(function ExplorationPane({
       onWheel={onInteract}
       onTouchMove={onInteract}
     >
+      {previous && <p className="previous-label">Previous result</p>}
       <div className="content-heading">
         <h1 id={titleId} tabIndex={-1}>{content.title}</h1>
       </div>
