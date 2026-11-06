@@ -157,6 +157,18 @@ evidence, story, comparison and listening that make the answer worth opening.
 A visitor who begins with either reading path can understand the finding. Give
 each idea one clear home and each layer a distinct job.
 
+## THE WORKSPACE
+
+The page has three tabs. Listen holds what the visitor can hear: shows,
+performances, albums, songs and version strips. Charts holds what is seen
+across time or categories: data charts, grids, and a song's life on stage when
+its timeline is the point. Read holds the chat answer, the lead, and the
+story, argument and context. Give each group the tab where it does its job,
+and open the page (initial_tab) where this question's first attention
+belongs: Listen when the visitor wants to hear something, Charts when the
+shape of the numbers is the answer, Read when the answer is a fact or a story.
+A tab with nothing to offer this question stays empty.
+
 ## EDIT FOR THIS QUESTION
 
 Compose so the visitor gets the answer, useful ways to hear or inspect the
