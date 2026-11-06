@@ -42,3 +42,9 @@ Element.prototype.getBoundingClientRect = function getBoundingClientRect(): DOMR
     }
   };
 };
+
+// The shared player saves the visitor's queue in localStorage; each test
+// starts from an empty player.
+afterEach(() => {
+  window.localStorage.clear();
+});
