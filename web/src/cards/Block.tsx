@@ -5,6 +5,7 @@ import { type FollowUp } from "../core/ask-request";
 import { Grid } from "./Grid";
 import { type PlayerTrack } from "../player/player";
 import { ClampText, ListeningHero, PullQuote, toTrack } from "./listening";
+import { SongVersions } from "./SongVersions";
 import { VersionStrip } from "./VersionStrip";
 import { ListenControl, trackFor, type TrackMeta } from "./listen-control";
 import { formatShowDateLong, countLabel, capitalize } from "../core/format";
@@ -335,6 +336,8 @@ export function Block({
       );
     case "version_strip":
       return <VersionStrip block={block} />;
+    case "song_versions":
+      return <SongVersions block={block} />;
     case "grid":
       return <Grid block={block} onFollowUp={onFollowUp} />;
   }

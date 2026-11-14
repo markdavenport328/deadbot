@@ -1,0 +1,60 @@
+/* Song versions: bars on one clock. Gold marks only what plays: the round
+   buttons and the bars; the playing row's bar and button run brighter. */
+.song-versions {
+  --sv-bar: color-mix(in srgb, var(--listen) 62%, transparent);
+  --sv-rule: color-mix(in srgb, var(--text) 8%, transparent);
+  --sv-wash: color-mix(in srgb, var(--listen) 9%, transparent);
+  grid-column: 1 / -1;
+  max-width: 60rem;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.sv-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid color-mix(in srgb, var(--text) 16%, transparent); }
+.sv-title { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
+.sv-queue-all { min-height: 44px; padding: 0 0.25rem; border: 0; background: none; color: var(--listen); font-size: 0.9rem; font-weight: 500; cursor: pointer; }
+.sv-queue-all:hover { color: var(--cream); }
+.sv-queue-all.queued { color: var(--muted); cursor: default; }
+
+.sv-rows { margin: 0; padding: 0; list-style: none; }
+.sv-row { display: grid; grid-template-columns: 44px minmax(10rem, 16rem) minmax(0, 1fr) 4.5rem 44px; gap: 0.5rem 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--sv-rule); }
+.sv-row.current { background: linear-gradient(90deg, var(--sv-wash), transparent 70%); }
+.sv-play, .sv-play-placeholder { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; }
+.sv-play { border: 0; background: var(--listen); color: var(--listen-ink); cursor: pointer; }
+.sv-play svg { width: 16px; height: 16px; }
+.sv-play:hover { background: color-mix(in srgb, var(--listen) 85%, var(--cream)); }
+.sv-play[aria-busy="true"] { opacity: 0.6; }
+.sv-row.current .sv-play { box-shadow: 0 0 0 3px var(--listen-soft); }
+.sv-play-placeholder { border: 1px dashed color-mix(in srgb, var(--text) 16%, transparent); }
+
+.sv-night { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sv-venue { color: var(--cream); font-size: 1rem; font-weight: 600; line-height: 1.3; text-wrap: balance; }
+.sv-row.current .sv-venue { color: var(--listen); }
+.sv-date { color: var(--quiet); font-size: 0.82rem; }
+.sv-release { color: var(--muted); font-size: 0.82rem; text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; overflow-wrap: anywhere; }
+span.sv-release { text-decoration: none; }
+
+.sv-bar { position: relative; height: 22px; }
+.sv-fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--sv-bar); }
+.sv-row:not(.playable) .sv-fill { background: color-mix(in srgb, var(--text) 22%, transparent); }
+.sv-row.current .sv-fill { background: var(--listen); }
+.sv-length { color: var(--muted); font-size: 0.9rem; text-align: right; white-space: nowrap; }
+.sv-row.current .sv-length { color: var(--cream); }
+
+/* The round add-to-queue, over the shared quiet "+". */
+.sv-add { display: flex; justify-content: center; }
+/* Always shown here: on this card the + is half of each row's action. */
+.sv-add .queue-add { width: 36px; height: 36px; margin: 0; padding: 0.6rem; opacity: 1; border: 1px solid var(--listen-soft); border-radius: 50%; color: var(--listen); }
+.sv-add .queue-add:hover { background: var(--sv-wash); color: var(--listen); }
+.sv-add .queue-add.queued { color: var(--muted); border-color: color-mix(in srgb, var(--text) 18%, transparent); }
+
+.sv-note { grid-column: 2 / -1; margin: -0.25rem 0 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; }
+
+@media (max-width: 40rem) {
+  .sv-row { grid-template-columns: 44px minmax(0, 1fr) auto 2.25rem; grid-template-rows: auto auto; }
+  .sv-play, .sv-play-placeholder { grid-row: 1 / 3; align-self: start; }
+  .sv-night { grid-column: 2 / 4; }
+  .sv-bar { grid-column: 2; grid-row: 2; }
+  .sv-length { grid-column: 3; grid-row: 2; }
+  .sv-add { grid-column: 4; grid-row: 1 / 3; align-self: start; }
+  .sv-note { grid-column: 2 / -1; }
+}

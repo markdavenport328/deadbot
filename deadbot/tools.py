@@ -1185,7 +1185,8 @@ def build_tools(
         unranked. `patterns` names placements too common to list one by
         one. Choose your stops from
         these and from what you know; give each a short label and a one-line
-        why in the song_overview's representatives.
+        why in the song_overview's representatives. Its performances can go on the
+        page as a song_versions (chosen versions on one clock).
         """
         from deadbot import song_life
 
@@ -1204,6 +1205,7 @@ def build_tools(
         ID, show date, set position, its length_seconds (the release's length,
         else the tape's) and any verified listening URLs. For rich
         context on a particular result, call `get_performance` with its ID.
+        Its performances can go on the page as a song_versions (chosen versions on one clock).
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
@@ -1660,6 +1662,7 @@ def build_tools(
         links. source_count counts distinct sources, never quality:
         present them as separate voices. Versions no source singled out are
         absent here and remain reachable through list_song_performances.
+        Its performances can go on the page as a song_versions (chosen versions on one clock).
         """
         song = store.resolve_song(song_id_or_title)
         if not song:

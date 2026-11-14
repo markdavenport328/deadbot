@@ -281,7 +281,8 @@ suits.
 What the library counted, timed or paired has a drawn home, and the drawn
 home is where the visitor acts on it: every bar, row and cell opens to its
 facts and plays. A count or ranking from aggregate_data becomes a ranked_list
-or data_chart, a pairing's nights from get_segue_pairing a version_strip, two
+or data_chart, a pairing's nights from get_segue_pairing a version_strip, chosen versions
+of one song a song_versions, two
 lists from get_grid a grid, one song's years a song_overview's by_year and
 several songs' years side by side one grid. Reach for
 them whenever the research produced one of those results; the words around

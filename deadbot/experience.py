@@ -789,6 +789,46 @@ class VersionStripBlock(ExperienceModel):
     year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
+class SongVersionsSong(ExperienceModel):
+    song_id: str
+    title: str
+
+
+class SongVersionsRelease(ExperienceModel):
+    release_id: str
+    title: str
+    url: str | None = None
+
+
+class SongVersionsRow(ExperienceModel):
+    """One version of the song: a night, its length, and the tape it plays."""
+
+    performance_id: str
+    show_id: str
+    show_date: str
+    venue_name: str
+    city: str | None = None
+    # The release's length when there is one, else the tape's; the tape is what plays.
+    length_seconds: int | None = Field(default=None, ge=0)
+    tape_seconds: int | None = Field(default=None, ge=0)
+    release: SongVersionsRelease | None = None
+    track: PlayableTrack | None = None
+    note: str | None = None
+
+
+class SongVersionsBlock(ExperienceModel):
+    """Chosen versions of one song on one clock, each row playable.
+
+    The model chose the performances, their order and any note; the server
+    filled each night, length, tape track and release from the store.
+    """
+
+    type: Literal["song_versions"]
+    title: str | None = None
+    song: SongVersionsSong
+    rows: list[SongVersionsRow] = Field(min_length=1, max_length=LIST_CEILING)
+
+
 class GridColumn(ExperienceModel):
     id: str
     label: str
@@ -1160,6 +1200,7 @@ ExperienceBlock = Annotated[
     | ArrangementSearchBlock
     | DataChartBlock
     | VersionStripBlock
+    | SongVersionsBlock
     | GridBlock
     | ProvenanceNoteBlock
     | GapStateBlock

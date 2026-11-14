@@ -71,6 +71,7 @@ export type ExperienceBlock =
   | components["schemas"]["PullQuoteBlock"]
   | FixedDataChartBlock
   | Require<components["schemas"]["VersionStripBlock"], "year_counts">
+  | components["schemas"]["SongVersionsBlock"]
   | Require<components["schemas"]["GridBlock"], "suggestions" | "follow_ups">
   | components["schemas"]["RankedListBlock"];
 

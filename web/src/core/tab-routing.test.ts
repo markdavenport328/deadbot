@@ -30,7 +30,7 @@ test("inherited object names are not tabs", () => {
 
 test.each([
   ["show_unit", "listen"], ["performance_unit", "listen"], ["album_unit", "listen"], ["song_overview", "listen"],
-  ["show_selection", "listen"], ["listening_hero", "listen"], ["version_strip", "listen"], ["media_link", "listen"],
+  ["show_selection", "listen"], ["listening_hero", "listen"], ["version_strip", "listen"], ["song_versions", "listen"], ["media_link", "listen"],
   ["data_chart", "charts"], ["grid", "charts"],
   ["editorial", "read"], ["pull_quote", "read"], ["person_roster", "read"], ["era_unit", "read"], ["gap_state", "read"],
   ["something_new", "read"]

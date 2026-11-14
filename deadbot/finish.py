@@ -278,6 +278,25 @@ class VersionStripRef(_Ref):
     )
 
 
+class SongVersionsRef(_Ref):
+    """Chosen versions of one song on one clock, each row playable: the way to
+    hear how a song changed over the years or to compare nights. The server
+    fills each version's night, length and tape.
+    """
+
+    type: Literal["song_versions"]
+    title: str | None = Field(
+        default=None, description="What the visitor should hear across these versions, in a few words."
+    )
+    performance_ids: list[str] = Field(
+        description="The performances of one song, at least 2 and at most 8, in the order to hear them.",
+    )
+    notes: dict[str, str] | None = Field(
+        default=None,
+        description="A short line for a version where a few words help the visitor hear it; most versions need none.",
+    )
+
+
 class EditorialItemPlan(_PlanModel, EditorialItemText):
     """One editorial item as the model writes it: its words, and the record it is about when it names one."""
 
@@ -293,7 +312,7 @@ class EditorialPlan(_PlanModel):
     their facts. What the library counted, timed or paired is drawn: an
     aggregate_data result as its ranked_list or data_chart (what you would say
     about a ranked row goes in its row notes), a get_segue_pairing result as a
-    version_strip, a get_grid result as a grid.
+    version_strip, a get_grid result as a grid, chosen versions of one song as song_versions.
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -704,6 +723,7 @@ BodyItem = Annotated[
     | ResourceListRef
     | DataChartRef
     | VersionStripRef
+    | SongVersionsRef
     | GridRef
     | RankedListRef,
     Field(discriminator="type"),
@@ -1529,6 +1549,16 @@ def _resolve_reference(
             title=item.title,
             note=item.note,
             show_year_counts=item.show_year_counts,
+        )
+        return (block, []) if block else (None, [])
+
+    if kind == "song_versions":
+        block = sequences.song_versions_block(
+            store,
+            grounded.ids,
+            performance_ids=item.performance_ids,
+            title=item.title,
+            notes=item.notes,
         )
         return (block, []) if block else (None, [])
 

@@ -1565,6 +1565,7 @@
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_unit": "#/components/schemas/ShowUnitBlock",
                   "song_overview": "#/components/schemas/SongOverviewBlock",
+                  "song_versions": "#/components/schemas/SongVersionsBlock",
                   "version_strip": "#/components/schemas/VersionStripBlock"
                 },
                 "propertyName": "type"
@@ -1623,6 +1624,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/VersionStripBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/SongVersionsBlock"
                 },
                 {
                   "$ref": "#/components/schemas/GridBlock"
@@ -4589,6 +4593,192 @@
           "scope"
         ],
         "title": "SongSignal",
+        "type": "object"
+      },
+      "SongVersionsBlock": {
+        "additionalProperties": false,
+        "description": "Chosen versions of one song on one clock, each row playable.\n\nThe model chose the performances, their order and any note; the server\nfilled each night, length, tape track and release from the store.",
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SongVersionsRow"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          },
+          "song": {
+            "$ref": "#/components/schemas/SongVersionsSong"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "song_versions",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "song",
+          "rows"
+        ],
+        "title": "SongVersionsBlock",
+        "type": "object"
+      },
+      "SongVersionsRelease": {
+        "additionalProperties": false,
+        "properties": {
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "release_id",
+          "title"
+        ],
+        "title": "SongVersionsRelease",
+        "type": "object"
+      },
+      "SongVersionsRow": {
+        "additionalProperties": false,
+        "description": "One version of the song: a night, its length, and the tape it plays.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "length_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length Seconds"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "release": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongVersionsRelease"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "tape_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tape Seconds"
+          },
+          "track": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayableTrack"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "venue_name": {
+            "title": "Venue Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_id",
+          "show_date",
+          "venue_name"
+        ],
+        "title": "SongVersionsRow",
+        "type": "object"
+      },
+      "SongVersionsSong": {
+        "additionalProperties": false,
+        "properties": {
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title"
+        ],
+        "title": "SongVersionsSong",
         "type": "object"
       },
       "SongYearCount": {

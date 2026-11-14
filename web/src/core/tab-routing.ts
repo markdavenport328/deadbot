@@ -26,7 +26,7 @@ export function readTab(value: unknown): WorkspaceTab | null {
   return Object.hasOwn(NAMES, name) ? NAMES[name] : null;
 }
 
-const LISTEN = new Set(["show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "media_link"]);
+const LISTEN = new Set(["show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "song_versions", "media_link"]);
 const CHARTS = new Set(["data_chart", "grid"]);
 
 export function fallbackTab(block: ExperienceBlock | undefined): WorkspaceTab {

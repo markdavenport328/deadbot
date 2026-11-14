@@ -906,6 +906,48 @@ const chinarider: ExperienceResponse = fixture(
   }
 );
 
+// Five real Dark Stars, first to last, drawn by a song_versions. Lengths are the
+// release's where one exists (1969: Dave's Picks 43), else the tape's.
+const darkStarVersions: [string, string, string, string, string, string, number, number | null, string | null][] = [
+  ["1968-01-17", "Carousel Ballroom", "San Francisco, CA", "1-2", "gd1968-01-17.sbd.cotsman.11795.shnf/gd68-01-17d1t03.mp3", "The first one on tape.", 161, null, null],
+  ["1969-11-02", "Family Dog On The Great Highway", "San Francisco, CA", "1-12", "gd1969-11-02.sbd.miller.32273.flac16/gd69-11-02d2t01.mp3", "", 1806, 1832, "release-daves-picks-volume-43-san-francisco-dallas-2022"],
+  ["1973-12-06", "Cleveland Convention Center", "Cleveland, OH", "2-5", "gd1973-12-06.132361.sbd.miller.flac16/gd73-12-06d3t01.mp3", "The longest, at 43:32.", 2612, null, null],
+  ["1989-10-26", "Miami Arena", "Miami, FL", "2-3", "gd1989-10-26.147714.sbd.miller.flac24/12%20Dark%20Star.mp3", "", 1602, null, null],
+  ["1994-03-30", "The Omni", "Atlanta, GA", "2-4", "gd94-03-30.sbd.miller.14832.sbeok.shnf/gd94-03-30d2t05.mp3", "The last one.", 629, null, null]
+];
+
+const darkStarVersionsBlock: ExperienceBlock = {
+  type: "song_versions",
+  title: "Five Dark Stars, first to last",
+  song: { song_id: "song-dark-star", title: "Dark Star" },
+  rows: darkStarVersions.map(([date, venue, city, slot, file, note, tape, release, releaseId]) => {
+    const performanceId = `gd-${date}-dark-star-${slot}`;
+    return {
+      performance_id: performanceId,
+      show_id: `gd-${date}`,
+      show_date: date,
+      venue_name: venue,
+      city,
+      length_seconds: release ?? tape,
+      tape_seconds: tape,
+      release: releaseId
+        ? { release_id: releaseId, title: "Dave’s Picks, Volume 43: San Francisco, 11/2/69 · Dallas, 12/26/69", url: "https://musicbrainz.org/release/4400a209-12d1-4600-b6cf-821c9a3975bb" }
+        : null,
+      track: { performance_id: performanceId, title: "Dark Star", audio_url: `https://archive.org/download/${file}`, duration_seconds: tape, set_label: `Set ${slot.split("-")[0]}` },
+      note: note || null
+    };
+  })
+};
+
+const versions: ExperienceResponse = fixture(
+  "How did Dark Star change over the years?",
+  "Dark Star, first to last",
+  "It starts as a 161-second tune in 1968, stretches past 43 minutes in Cleveland in 1973, and is back to ten minutes by 1994.",
+  [darkStarVersionsBlock],
+  "collection",
+  { title: null, lead: "Each bar is one night’s Dark Star on the same clock; press play to hear it." }
+);
+
 const releases1972 = releases1972Json as unknown as ExperienceResponse;
 const shows1977 = shows1977Json as unknown as ExperienceResponse;
 const harrisburg = harrisburgJson as unknown as ExperienceResponse;
@@ -1026,11 +1068,11 @@ const msgWorkspace: ExperienceResponse = {
   sources: [{ source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }]
 };
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "versions", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, versions, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
