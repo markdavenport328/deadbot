@@ -26,7 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.request import Request, urlopen
 
-# Keep in step with the `startingPoints` list in web/src/App.tsx; the build
+# Keep in step with the `startingPoints` list in web/src/shells/classic/StartLibrary.tsx; the build
 # bundles an answer to each (see --bundle above).
 OPENING_QUESTIONS = [
     "Put on a hot second set from fall '73",

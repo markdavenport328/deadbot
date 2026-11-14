@@ -1,6 +1,6 @@
 """The home screen's catalog numbers are literals; keep them true.
 
-They are written into web/src/library-stats.ts so the home screen and the
+They are written into web/src/core/library-stats.ts so the home screen and the
 About page render without a request.
 That trade is only safe if an import that moves a count fails a test rather
 than quietly shipping a wrong number to the first screen anyone sees.
@@ -15,8 +15,8 @@ from home_stats import home_stats
 from warm_answers import OPENING_QUESTIONS
 
 WEB = Path(__file__).resolve().parents[1] / "web" / "src"
-APP = WEB / "App.tsx"
-STATS = WEB / "library-stats.ts"
+APP = WEB / "shells" / "classic" / "StartLibrary.tsx"
+STATS = WEB / "core" / "library-stats.ts"
 ENTRY = re.compile(r'\{\s*count:\s*"([\d,]+)",\s*noun:\s*"(\w+)"\s*\}')
 
 
@@ -31,7 +31,7 @@ def test_home_screen_counts_match_the_canonical_csvs():
     assert published, "no stats found in library-stats.ts"
     assert published == home_stats(), (
         "Home screen counts are stale. Run `python scripts/home_stats.py` "
-        "and paste the result into the `libraryStats` list in web/src/library-stats.ts."
+        "and paste the result into the `libraryStats` list in web/src/core/library-stats.ts."
     )
 
 
