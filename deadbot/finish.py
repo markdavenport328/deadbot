@@ -325,7 +325,7 @@ class EditorialPlan(_PlanModel):
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
         default="narrative",
-        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: events in order, one item per step. When the steps are versions of one song, use a song_versions; a pairing's nights, a version_strip; shows or performances, their units; a song's years, a song_overview's by_year.",
+        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: events in order, one item per step.",
     )
     eyebrow: str | None = Field(default=None, description="A small label above the title, for a block that has a title of its own.")
     title: str | None = Field(default=None, description="The block's one heading. An item's title names the item; the block's heading is written once.")
@@ -586,10 +586,8 @@ class SongOverviewRef(_Ref):
     representatives: list[SongStop] = Field(
         default_factory=list,
         description=(
-            "Three or four performances that mark changes in the song, in date order, each with a label and a line on "
-            "why. With by_year they are marked on the chart. When the page has a song_versions for this song, the "
-            "versions go there and this list stays empty. Use performance IDs from a tool result (get_song_life lists "
-            "the standouts)."
+            "Performances of this song to list on the card, each with a label and a line on why; with by_year they "
+            "are marked on the chart."
         ),
     )
     open_year: int | None = Field(default=None, description="With by_year: the year whose panel opens first, such as the year the visitor asked about.")
@@ -640,7 +638,7 @@ class SongOverviewRef(_Ref):
 
 
 class ListeningHeroRef(_PlanModel):
-    """A large player at the top of the page, for an answer that is one show or record to put on.
+    """A large player for one show or release at the top of the page.
 
     A cover, the show's venue and date (or the record's title), your line, and
     one Play that starts the show's tape in-page where you say. The server
@@ -997,20 +995,18 @@ class FinishPlan(BaseModel):
 
     headline: str | None = Field(
         default=None,
-        description="Optional short line above the lead: the takeaway the lead's facts support, in a few words, such as \"Cornell\u2019s case is coherence, not consensus\". It says what the lead does not. Omit it when the lead already lands.",
+        description="Optional. A short line above the lead.",
     )
     lead: str = Field(
         description=(
-            "The page's opening and the answer: its first sentence answers the question on its own, and the rest gives the "
-            "reason to keep going. Proportionate to the question. Markdown links allowed."
+            "The answer to the visitor's question, at the top of the page. Markdown links allowed."
         )
     )
     listening_hero: dict[str, Any] = Field(
         default_factory=dict,
         description=(
-            "A large player above the groups, for an answer that is one show or record to put on: a listening_hero "
-            "item's fields (show_id or release_id, line, play_label, start_set or start_performance_id). When the "
-            "answer is several versions of a song, the song_versions is where listening starts."
+            "A large player for one show or release at the top of the page: a listening_hero item's fields "
+            "(show_id or release_id, line, play_label, start_set or start_performance_id)."
         ),
     )
     groups: list[GroupPlan] = Field(

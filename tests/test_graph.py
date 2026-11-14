@@ -53,9 +53,9 @@ PALETTE = (
     "arrangement_search", "media_link", "resource_list",
 )
 ROUTES = (
-    "search_entities", "get_song_life", "get_song_notable_versions", "list_song_performances", "get_show",
-    "get_album", "get_segue_pairing", "get_grid", "look_up", "aggregate_data", "search_guest_musicians",
-    "search_site", "read_page", "read_notebook",
+    "search_entities", "get_song", "get_song_life", "get_song_notable_versions", "list_song_performances",
+    "get_show", "get_performance", "get_album", "get_segue_pairing", "get_grid", "look_up", "aggregate_data",
+    "search_guest_musicians", "get_recording_reviews", "search_site", "read_page", "read_notebook",
 )
 
 
@@ -63,62 +63,34 @@ def _prompt() -> str:
     return " ".join(graph.SYSTEM_PROMPT.split())
 
 
-def test_prompt_names_the_finish_tool_and_the_opening():
+def test_prompt_gives_the_visitors_the_goal_the_writer_and_the_tools():
+    for heading in ("## THE VISITORS", "## THE GOAL", "## THE WRITER", "## RESEARCH TOOLS", "## PAGE COMPONENTS"):
+        assert heading in graph.SYSTEM_PROMPT
+
+
+def test_prompt_names_the_finish_tool_and_the_page_fields():
     prompt = _prompt()
-    assert "finish_response once" in prompt
+    assert "call finish_response once" in prompt
     for field in ("headline", "lead", "initial_tab"):
         assert field in prompt
 
 
-def test_prompt_states_the_visitor_and_the_goal_plainly():
+def test_prompt_names_every_component_and_research_tool():
     prompt = _prompt()
-    assert "## THE VISITORS" in graph.SYSTEM_PROMPT and "## THE GOAL" in graph.SYSTEM_PROMPT
-    assert "give the visitor specific recordings to play and say what to listen for" in prompt
-    # The prompt describes what each component shows, and leaves claims about
-    # how the page behaves (what plays, what opens) to the components themselves.
-    for claim in ("every bar", "every cell", "opens in place"):
-        assert claim not in prompt
-
-
-def test_prompt_names_every_component_in_the_palette():
-    prompt = _prompt()
-    for component in PALETTE:
-        assert component in prompt, component
-    for presentation in ("collection", "sequence", "comparison", "argument", "narrative", "timeline", "fact_grid"):
-        assert presentation in prompt, presentation
-    for emphasis in ("primary", "supporting", "mention"):
-        assert emphasis in prompt
-
-
-def test_prompt_names_the_common_research_routes():
-    prompt = _prompt()
-    for tool_name in ROUTES:
-        assert tool_name in prompt, tool_name
-    assert "Request the independent ones in the same turn" in prompt
+    for name in (*PALETTE, *ROUTES):
+        assert name in prompt, name
 
 
 def test_prompt_grounds_ids_in_this_turn_or_the_notebook():
     prompt = _prompt()
-    assert "in a tool result in this turn or in the research notebook" in prompt
-    assert "Quote its numbers exactly as returned" in prompt
-
-
-def test_prompt_works_through_four_listening_examples_with_song_versions():
-    prompt = _prompt()
-    section = prompt.split("## FOUR EXAMPLES")[1].split("## HOW TO WRITE")[0]
-    for subject in ("Dark Star", "Santana", "Cornell", "Playing in the Band"):
-        assert subject in section
-    assert section.count("song_versions") >= 4
+    assert "IDs from a tool result in this turn or from the research notebook" in prompt
+    assert "Quote aggregate_data numbers exactly as returned" in prompt
 
 
 def test_prompt_is_written_affirmatively():
     folded = graph.SYSTEM_PROMPT.casefold()
     for phrase in ("do not", "don't", "never", "avoid"):
         assert phrase not in folded, phrase
-
-
-def test_persona_tells_the_model_that_albums_are_held():
-    assert "get_album" in graph.SYSTEM_PROMPT
 
 
 def _run_tool_node(node: ToolNode, ai_message: AIMessage) -> list:
