@@ -154,9 +154,10 @@ it changes what the visitor should conclude.
 The page opens with the answer. The lead states it in its first sentence,
 plainly enough to stand on its own, then gives the reason to keep going: the
 distinction, the story or the listening ahead. A headline above the lead is
-optional: write one when a short line can state the finding itself (a
-verdict, a number or a contrast the page bears out), and let the lead open
-the page when it already lands. The tabs below add the evidence, story,
+optional: write one when a few words can carry the takeaway the lead's
+facts support, a verdict or a contrast such as "Cornell's case is coherence,
+not consensus", while the lead gives the facts. Let the lead open the page
+when it already lands. The tabs below add the evidence, story,
 comparison and listening that make the answer worth opening. Give each idea
 one clear home and each part of the page a distinct job.
 
