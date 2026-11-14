@@ -46,111 +46,76 @@ def test_agent_tools_include_finish_response():
     assert FINISH_TOOL_NAME in names and "get_show" in names
 
 
-def test_prompt_names_the_finish_tool():
-    prompt = graph.SYSTEM_PROMPT.casefold()
-    assert "finish_response" in prompt
+PALETTE = (
+    "song_versions", "version_strip", "show_unit", "performance_unit", "album_unit", "song_overview",
+    "era_unit", "data_chart", "ranked_list", "grid", "listening_hero", "editorial", "pull_quote",
+    "person_roster", "guest_appearance_list", "equipment_list", "show_selection", "arrangement",
+    "arrangement_search", "media_link", "resource_list",
+)
+ROUTES = (
+    "search_entities", "get_song_life", "get_song_notable_versions", "list_song_performances", "get_show",
+    "get_album", "get_segue_pairing", "get_grid", "look_up", "aggregate_data", "search_guest_musicians",
+    "search_site", "read_page", "read_notebook",
+)
 
 
-def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
-    prompt = graph.SYSTEM_PROMPT
-    unwrapped = " ".join(prompt.split())
-    for unit in ("show_unit", "performance_unit", "era_unit", "album_unit", "song_overview"):
-        assert unit in prompt
-    assert "Group by meaning and referent, not by tool, source or data type." in unwrapped
-    assert "Tool boundaries and database tables are not presentation boundaries." in unwrapped
-    assert '"More about"' in unwrapped
-    assert "Setlist songs, performances and semantic units retain the verified actions attached to them" in unwrapped
-    assert "show_explorer" not in prompt
-    assert "quick_fact" not in prompt
-    for word in ("primary", "supporting", "mention"):
-        assert word in unwrapped
-    assert "criteria" in unwrapped
-    # The research personality is preserved.
-    for heading in ("## RESEARCH THE ACTUAL QUESTION", "# PRESERVE DISCOVERY", "# TRUST"):
-        assert heading in prompt
+def _prompt() -> str:
+    return " ".join(graph.SYSTEM_PROMPT.split())
 
 
-def test_prompt_makes_chat_and_main_body_connected_independent_reading_paths():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "## ANSWER FIRST, THEN EARN THE REST" in graph.SYSTEM_PROMPT
-    assert "The page opens with the answer. The lead states it in its first sentence" in prompt
-    assert "A headline above the lead is optional" in prompt
-    assert "Give each idea one clear home and each part of the page a distinct job." in prompt
-    assert "When you recommend or discuss a specific performance, retrieve and preserve its direct listening path." in prompt
+def test_prompt_names_the_finish_tool_and_the_opening():
+    prompt = _prompt()
+    assert "finish_response once" in prompt
+    for field in ("headline", "lead", "initial_tab"):
+        assert field in prompt
 
 
-def test_prompt_requires_priority_actions_and_proportionate_scope():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "## EDIT FOR THIS QUESTION" in graph.SYSTEM_PROMPT
-    assert "A factual question can still deserve commentary and rich actions" in prompt
-    assert "Build on a factual spine" in prompt
-    assert "When you recommend or discuss a specific performance, retrieve and preserve its direct listening path." in prompt
-    assert '"Nassau Coliseum (March 29, 1990)"' in prompt
-    assert "one or two across the whole page" not in prompt
-    assert "perform an omission pass" not in prompt
-    assert "avoid first-person singular" in prompt
-    assert "each item's title names its subject" in prompt
-    assert "Each card is the home for its own object's story" in prompt
-    # The abstract "Five Jobs of Gestalt" list was retired; its ideas are stated concretely elsewhere.
-    assert "gestalt" not in prompt.casefold()
+def test_prompt_is_a_listening_companion_for_jam_band_fans():
+    prompt = _prompt()
+    assert "listening companion" in prompt
+    assert "listening path" in prompt
+    assert "jam-band culture" in prompt
 
 
-def test_prompt_batches_independent_research_and_uses_positive_composition_guidance():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "Request independent lookups together in the same turn so they run in parallel." in prompt
-    assert prompt.count("Give each idea one clear home") == 1
-    assert "do not" not in prompt.casefold()
+def test_prompt_names_every_component_in_the_palette():
+    prompt = _prompt()
+    for component in PALETTE:
+        assert component in prompt, component
+    for presentation in ("collection", "sequence", "comparison", "argument", "narrative", "timeline", "fact_grid"):
+        assert presentation in prompt, presentation
+    for emphasis in ("primary", "supporting", "mention"):
+        assert emphasis in prompt
 
 
-def test_prompt_teaches_pathways_and_show_unit_hydration():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert (
-        "Every entity result carries pathways: the lore already gathered for it, or the research sites "
-        "worth searching when nothing is. Answer the question directly, then offer the pathways that fit "
-        "as links or follow-up topics. When a pathway looks likely to change the answer, open it; otherwise offer it."
-        in prompt
-    )
-    assert (
-        "A show you only name or place on the page needs no lookup: a show_unit needs only a show_id that "
-        "appeared in a tool result, and the server fills in its card."
-        in prompt
-    )
-    assert "do not" not in prompt.casefold()
+def test_prompt_names_the_common_research_routes():
+    prompt = _prompt()
+    for tool_name in ROUTES:
+        assert tool_name in prompt, tool_name
+    assert "request the independent ones together in the same turn" in prompt
 
 
-def test_prompt_teaches_data_chart_and_aggregate_data():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "data_chart" in prompt
-    assert "aggregate_data" in prompt
-    assert (
-        "A count or ranking from aggregate_data becomes a ranked_list or data_chart"
-        in prompt
-    )
-    assert "When the question asks how many or when, the answer is a number or a span" in prompt
-    assert (
-        "Cross-show patterns. For counts, rankings or trends across many shows, performances or guests — "
-        "not any single show or performance — call aggregate_data. Its rows are server-verified: quote them "
-        "exactly as returned. Every aggregate_data result counts how often something was played or "
-        "appeared, and the words say exactly that"
-        in prompt
-    )
-    assert "do not" not in prompt.casefold()
+def test_prompt_grounds_ids_in_this_turn_or_the_notebook():
+    prompt = _prompt()
+    assert "from a tool result in this turn or from the research notebook" in prompt
+    assert "quote them exactly as returned" in prompt
 
 
-def test_prompt_states_each_repeated_rule_once():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "Ken Kesey" not in prompt  # the follow-up example lives on the follow_ups field
-    assert "Drums and Space" not in prompt  # aggregate_data says how to count without them
-    assert prompt.count("Say each thing once") == 1
-    assert prompt.count("this turn") == 1
-    assert "at least one" not in prompt.split("Every entity result carries pathways")[1].split("Separate facts")[0]
+def test_prompt_works_through_four_listening_examples_with_song_versions():
+    prompt = _prompt()
+    section = prompt.split("## FOUR PAGES THAT WORK")[1].split("## VOICE")[0]
+    for subject in ("Dark Star", "Santana", "Cornell", "Playing in the Band"):
+        assert subject in section
+    assert section.count("song_versions") >= 4
+
+
+def test_prompt_is_written_affirmatively():
+    folded = graph.SYSTEM_PROMPT.casefold()
+    for phrase in ("do not", "don't", "never", "avoid"):
+        assert phrase not in folded, phrase
 
 
 def test_persona_tells_the_model_that_albums_are_held():
-    from deadbot.graph import SYSTEM_PROMPT  # use the module's actual prompt constant
-
-    assert "album" in SYSTEM_PROMPT.casefold()
-    assert "get_album" in SYSTEM_PROMPT
+    assert "get_album" in graph.SYSTEM_PROMPT
 
 
 def _run_tool_node(node: ToolNode, ai_message: AIMessage) -> list:
@@ -221,12 +186,6 @@ def test_build_agent_compiles_with_a_fake_provider():
     assert compiled is not None
 
 
-def test_prompt_teaches_survey_then_detail_and_querying_sets():
-    assert "Work like a researcher" in graph.SYSTEM_PROMPT
-    assert "look_up" in graph.SYSTEM_PROMPT
-    assert 'include=["live_legacy"]' in graph.SYSTEM_PROMPT
-
-
 def test_a_streamed_finish_call_keeps_both_groups_lists():
     from langchain_core.messages import AIMessageChunk
 
@@ -237,14 +196,6 @@ def test_a_streamed_finish_call_keeps_both_groups_lists():
     message = repair_finish_arguments(first + rest)
     assert [group["title"] for group in message.tool_calls[0]["args"]["groups"]] == ["One", "Two"]
     assert message.tool_calls[0]["id"] == "c1"
-
-
-def test_prompt_teaches_grid_and_get_grid():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "get_grid" in prompt
-    assert "A grid in finish_response" in prompt
-    assert "Draw the rows that tell the story in reading order, fold the rest behind Show all" in prompt
-    assert "setlist_counts" not in prompt
 
 
 _SEEN_KWARGS: list[dict] = []
@@ -281,12 +232,3 @@ def test_other_providers_get_no_prompt_cache_key():
 def test_run_config_carries_the_notebook_only_when_given():
     assert "notebook" not in graph.run_config("t", Settings())["configurable"]
     assert graph.run_config("t", Settings(), notebook="book")["configurable"]["notebook"] == "book"
-
-
-def test_prompt_teaches_the_research_notebook():
-    prompt = " ".join(graph.SYSTEM_PROMPT.split())
-    assert "research notebook" in prompt
-    assert "read_notebook" in prompt
-    assert "this turn's tool results or the research notebook" in prompt
-    assert "do not" not in prompt.casefold()
-    assert prompt.count("this turn") == 1
