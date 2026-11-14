@@ -70,11 +70,14 @@ def test_prompt_names_the_finish_tool_and_the_opening():
         assert field in prompt
 
 
-def test_prompt_is_a_listening_companion_for_jam_band_fans():
+def test_prompt_states_the_visitor_and_the_goal_plainly():
     prompt = _prompt()
-    assert "listening companion" in prompt
-    assert "listening path" in prompt
-    assert "jam-band culture" in prompt
+    assert "## THE VISITORS" in graph.SYSTEM_PROMPT and "## THE GOAL" in graph.SYSTEM_PROMPT
+    assert "give the visitor specific recordings to play and say what to listen for" in prompt
+    # The prompt describes what each component shows, and leaves claims about
+    # how the page behaves (what plays, what opens) to the components themselves.
+    for claim in ("every bar", "every cell", "opens in place"):
+        assert claim not in prompt
 
 
 def test_prompt_names_every_component_in_the_palette():
@@ -91,18 +94,18 @@ def test_prompt_names_the_common_research_routes():
     prompt = _prompt()
     for tool_name in ROUTES:
         assert tool_name in prompt, tool_name
-    assert "request the independent ones together in the same turn" in prompt
+    assert "Request the independent ones in the same turn" in prompt
 
 
 def test_prompt_grounds_ids_in_this_turn_or_the_notebook():
     prompt = _prompt()
-    assert "from a tool result in this turn or from the research notebook" in prompt
-    assert "quote them exactly as returned" in prompt
+    assert "in a tool result in this turn or in the research notebook" in prompt
+    assert "Quote its numbers exactly as returned" in prompt
 
 
 def test_prompt_works_through_four_listening_examples_with_song_versions():
     prompt = _prompt()
-    section = prompt.split("## FOUR PAGES THAT WORK")[1].split("## VOICE")[0]
+    section = prompt.split("## FOUR EXAMPLES")[1].split("## HOW TO WRITE")[0]
     for subject in ("Dark Star", "Santana", "Cornell", "Playing in the Band"):
         assert subject in section
     assert section.count("song_versions") >= 4

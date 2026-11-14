@@ -309,7 +309,7 @@ class EditorialPlan(_PlanModel):
     """Your own words: narrative, fact_grid or timeline.
 
     Records belong in the reference-based items, where the server supplies
-    their facts. What the library counted, timed or paired is drawn: an
+    their facts. Counts, timings and pairings from the tools are drawn: an
     aggregate_data result as its ranked_list or data_chart (what you would say
     about a ranked row goes in its row notes), a get_segue_pairing result as a
     version_strip, a get_grid result as a grid, chosen versions of one song as song_versions.
@@ -325,7 +325,7 @@ class EditorialPlan(_PlanModel):
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
         default="narrative",
-        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: a story's sequence, one item per step; steps that are nights or performances, a song's years or a pairing's versions are drawn by their units, a song_overview's by_year or a version_strip.",
+        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: events in order, one item per step. When the steps are versions of one song, use a song_versions; a pairing's nights, a version_strip; shows or performances, their units; a song's years, a song_overview's by_year.",
     )
     eyebrow: str | None = Field(default=None, description="A small label above the title, for a block that has a title of its own.")
     title: str | None = Field(default=None, description="The block's one heading. An item's title names the item; the block's heading is written once.")
@@ -578,18 +578,18 @@ class SongOverviewRef(_Ref):
     visible_facets: list[SongFacet] = Field(
         default_factory=lambda: ["representatives"],
         description=(
-            "The song facets worth showing: representatives (your chosen renditions), credits, albums, by_year (the "
-            "song's life on stage as a timeline: plays and lengths per year, your representatives as its stops and "
-            "listening path, and a panel for each year with every performance)."
+            "The song facets worth showing: representatives (your chosen performances), credits, albums, by_year (a "
+            "chart of how often and how long the song was played each year, with a panel for each year listing every "
+            "performance)."
         ),
     )
     representatives: list[SongStop] = Field(
         default_factory=list,
         description=(
-            "Your stops through the song's life, in listening order: three or four nights that mark its turns. With "
-            "by_year they mark the timeline and form the listening path, how the visitor hears the song's life, for a "
-            "counting question too; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
-            "(get_song_life lists the standouts)."
+            "Three or four performances that mark changes in the song, in date order, each with a label and a line on "
+            "why. With by_year they are marked on the chart. When the page has a song_versions for this song, the "
+            "versions go there and this list stays empty. Use performance IDs from a tool result (get_song_life lists "
+            "the standouts)."
         ),
     )
     open_year: int | None = Field(default=None, description="With by_year: the year whose panel opens first, such as the year the visitor asked about.")
@@ -640,7 +640,7 @@ class SongOverviewRef(_Ref):
 
 
 class ListeningHeroRef(_PlanModel):
-    """The page's lead when the visitor wants to hear a show or recording.
+    """A large player at the top of the page, for an answer that is one show or record to put on.
 
     A cover, the show's venue and date (or the record's title), your line, and
     one Play that starts the show's tape in-page where you say. The server
@@ -1008,8 +1008,9 @@ class FinishPlan(BaseModel):
     listening_hero: dict[str, Any] = Field(
         default_factory=dict,
         description=(
-            "The page's lead when the visitor asks to hear something, above the groups: a listening_hero item's "
-            "fields (show_id or release_id, line, play_label, start_set or start_performance_id)."
+            "A large player above the groups, for an answer that is one show or record to put on: a listening_hero "
+            "item's fields (show_id or release_id, line, play_label, start_set or start_performance_id). When the "
+            "answer is several versions of a song, the song_versions is where listening starts."
         ),
     )
     groups: list[GroupPlan] = Field(

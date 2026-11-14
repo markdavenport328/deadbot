@@ -1170,23 +1170,16 @@ def build_tools(
     def get_song_life(song_id_or_title: str) -> str:
         """Get one song's life on stage: each year in brief and the performances that stand out.
 
-        Use it to build a song_overview timeline (visible_facets with by_year)
-        or to answer how a song changed over the years. The timeline already
-        draws the yearly counts and lengths (chart_view "length" opens on how
-        long it ran each year, the picture of a song that stretched out or
-        tightened up), so your words go to what they mean; its stops
-        are how the visitor hears the song's life, so choose three or four
-        nights that mark its turns, for a counting question too. `years` gives each
-        year's count, typical minutes and longest performance. `standouts`
-        groups the performances that stand out by kind (firsts and lasts,
-        longest, picks of the performance and of its show with who made them,
-        releases, guests, played inside another song, unusual placements, rare
-        neighbors), each with its ID and plain facts, in date order and
-        unranked. `patterns` names placements too common to list one by
-        one. Choose your stops from
-        these and from what you know; give each a short label and a one-line
-        why in the song_overview's representatives. Its performances can go on the
-        page as a song_versions (chosen versions on one clock).
+        Use it to answer how a song changed over the years, and to choose the
+        versions worth hearing. `years` gives each year's count, typical
+        minutes and longest performance. `standouts` groups notable
+        performances by kind (firsts and lasts, longest, picks of the
+        performance and of its show with who made them, releases, guests,
+        played inside another song, unusual placements, rare neighbors), each
+        with its ID and plain facts, in date order. `patterns` names
+        placements too common to list one by one. The versions you choose go
+        on the page as a song_versions; a song_overview with by_year charts the
+        years (chart_view "length" opens on how long it ran each year).
         """
         from deadbot import song_life
 
@@ -2081,7 +2074,7 @@ def build_tools(
                 payload["show"] = {"show_id": show["show_id"], "show_date": show.get("show_date"), "venue_id": show.get("venue_id")}
                 show_rows = [row for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("archive_identifier")]
                 if not show_rows:
-                    payload["message"] = "The library has no archive.org recording for this show."
+                    payload["message"] = "There is no archive.org recording of this show."
                     return _json(payload)
                 ratings = searcher.archive_ratings([row["archive_identifier"] for row in show_rows])
                 show_rows.sort(key=lambda row: -(ratings.get(row["archive_identifier"], {}).get("num_reviews") or 0))
@@ -2102,7 +2095,7 @@ def build_tools(
             payload["recording"] = {"recording_id": chosen.get("recording_id"), "show_id": chosen.get("show_id"), "source_url": chosen.get("source_url") or None}
             payload["state"] = "empty"
             payload["reviews"] = []
-            payload["message"] = "This recording has no archive.org identifier in the library, so it has no listener reviews to fetch. Pass its show date to see the show's reviewed recordings instead."
+            payload["message"] = "This recording has no archive.org identifier, so it has no listener reviews to fetch. Pass its show date to see the show's reviewed recordings instead."
             return _json(payload)
         identifier = (chosen or {}).get("archive_identifier") or wanted
         if chosen:
