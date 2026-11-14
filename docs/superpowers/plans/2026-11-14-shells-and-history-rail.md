@@ -131,6 +131,46 @@ after, and `App.tsx` is under about 100 lines.
   split.
 - The `queue/` folder waits for step 4.
 
+### 1b. One opening: an optional headline and a required lead
+
+The workspace has no separate chat column, so the model should stop writing
+three openings. Today it writes `chat_answer` (the conversation reply),
+`title` and an optional `lead`. Instead it writes:
+
+- `lead` (required): the answer, stated first, then whatever makes the page
+  worth opening. Markdown links allowed.
+- `headline` (optional): a short line stating the finding, used when a big
+  line sharpens the page.
+
+Changes:
+
+- **`finish_response` (`deadbot/finish.py`).** Replace `chat_answer`, `title`
+  and `lead` with `lead` and `headline`. Put `lead` first in the schema, so it
+  is the first thing to stream.
+- **Streaming (`deadbot/answer_stream.py`).** Stream `lead` the way
+  `chat_answer` streams today, so the answer still reaches the visitor first.
+- **Response contract (`deadbot/experience.py`).** `ExperienceResponse`
+  carries `headline` (nullable) and `lead`, in place of `title`, `answer` and
+  `body_lead`. Earlier assistant turns in `conversation` carry their lead.
+  Regenerate `openapi.json` and run `npm run gen:types`.
+- **Prompt (`deadbot/graph.py`).** Rewrite "ANSWER FIRST, THEN EARN THE REST"
+  and the workspace paragraph around one opening:
+  - the lead is the answer, and the page's first words
+  - the headline is optional
+  - the tabs hold the evidence, the listening and the story
+- **Workspace.** The headline and lead sit above the tabs, so the answer shows
+  on every tab, including one that opens on Listen.
+- **Classic.** It keeps working until it is retired: the lead goes in its
+  conversation column, and the headline is the page title. Nothing more is
+  invested in it.
+- **Fixtures, evals and scripts.** Update `visual-fixtures.ts`,
+  `scripts/export_list_fixtures.py`, `scripts/live_check.py`,
+  `page_quality.py` and their tests.
+
+Done when the Python and web tests pass, and your real questions run live on
+both shells. The lead should answer in its first sentence, and the page
+shouldn't repeat the answer.
+
 ### 2. Spacing tokens, then a spacing pass
 
 1. **Tokens (no visible change).** Adopt WAMU's ladder and name what each
@@ -261,3 +301,6 @@ the workspace before deleting the classic folder.
 - **The new layout evolves the existing workspace shell** rather than
   starting a third one. It is already opt-in and already has the tabs and
   history logic.
+- **The model writes one opening:** an optional headline and a required lead
+  that contains the answer (step 1b). There is no separate chat answer,
+  title and lead. The classic layout is retired if the workspace works out.
