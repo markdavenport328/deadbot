@@ -977,7 +977,7 @@ class FinishPlan(BaseModel):
 
     headline: str | None = Field(
         default=None,
-        description="Optional short line above the lead that sharpens the finding. Omit it when the lead already lands.",
+        description="Optional short line above the lead that states the finding itself, as a verdict, a number or a contrast the page bears out. Omit it when the lead already lands.",
     )
     lead: str = Field(
         description=(
