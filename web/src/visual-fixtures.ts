@@ -3,7 +3,7 @@
 // Open a fixture with `npm run dev --prefix web` and, for example,
 // `/?fixture=branford`. The available names are exported below.
 import type { ExperienceBlock, ExperienceResponse, ShowUnitBlock } from "./types";
-import type { StreamEvent } from "./stream-events";
+import type { StreamEvent } from "./core/stream-events";
 // Built from the real library by scripts/export_list_fixtures.py: the same
 // resolution the service runs, over real look_up and aggregate_data results.
 import releases1972Json from "./fixtures/releases1972.json";

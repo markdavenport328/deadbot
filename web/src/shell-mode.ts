@@ -1,11 +1,14 @@
-// Which shell the visitor sees. The classic page is the default; the
-// workspace is opt-in with ?shell=workspace and remembered until ?shell=classic.
-export type ShellMode = "classic" | "workspace";
+// Which shell the visitor sees. The default shell comes from the registry; the
+// others are opt-in with ?shell=<name> and remembered until another name is asked for
+// (?shell=classic returns to the default).
+import { defaultShell, shells } from "./shells";
+
+export type ShellMode = keyof typeof shells;
 
 const KEY = "deadbot-shell";
 
 function isMode(value: unknown): value is ShellMode {
-  return value === "classic" || value === "workspace";
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(shells, value);
 }
 
 export function readShellMode(search: string = window.location.search): ShellMode {
@@ -16,8 +19,8 @@ export function readShellMode(search: string = window.location.search): ShellMod
       return asked;
     }
     const stored = window.localStorage.getItem(KEY);
-    return isMode(stored) ? stored : "classic";
+    return isMode(stored) ? stored : defaultShell;
   } catch {
-    return "classic";
+    return defaultShell;
   }
 }
