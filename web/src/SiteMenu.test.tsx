@@ -1,9 +1,9 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, expect, test } from "vitest";
 import { AboutPage } from "./AboutPage";
-import { MenuSlotProvider, useMenuSlot } from "./menu-slot";
+import { MenuSlotProvider, useMenuSlot } from "./core/menu-slot";
 import { SiteMenu } from "./SiteMenu";
-import { usePath } from "./site-nav";
+import { usePath } from "./core/site-nav";
 
 function Page() {
   const path = usePath();

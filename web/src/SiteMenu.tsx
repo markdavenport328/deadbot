@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CloseSiteMenuProvider, MenuSlotOutlet } from "./menu-slot";
-import { followInSite, usePath } from "./site-nav";
+import { CloseSiteMenuProvider, MenuSlotOutlet } from "./core/menu-slot";
+import { followInSite, usePath } from "./core/site-nav";
 import "./SiteMenu.css";
 
 const RESUME_URL = "https://mark-davenport.vercel.app";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { askFromPage, followInSite } from "./site-nav";
+import { askFromPage, followInSite } from "./core/site-nav";
 import "./AboutPage.css";
-import { libraryStats } from "./library-stats";
+import { libraryStats } from "./core/library-stats";
 import answerShot from "./assets/about/answer.jpg";
 import showShot from "./assets/about/show.jpg";
 import performanceShot from "./assets/about/performance.jpg";

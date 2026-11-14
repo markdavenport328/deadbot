@@ -1,7 +1,7 @@
 // Keep the fixture packet out of production builds. The literal DEV branch is
 // replaced at build time, so Rollup can omit the dynamic fixture module.
 import type { ExperienceResponse } from "./types";
-import type { StreamEvent } from "./stream-events";
+import type { StreamEvent } from "./core/stream-events";
 import type { VisualFixtureName } from "./visual-fixtures";
 
 // `?live=<name>` shows a response a live model run produced, saved by

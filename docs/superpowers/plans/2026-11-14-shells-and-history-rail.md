@@ -121,6 +121,16 @@ opens with a short note saying what the idea is and when it was chosen.
 Done when tests and the build pass, fixture screenshots match before and
 after, and `App.tsx` is under about 100 lines.
 
+**Status (2026-11-14): done** on `claude/app-split`.
+
+- `App.tsx` is 49 lines, and `PageParts` is gone.
+- `shell-mode.ts` sits beside `shells.ts` at the root of `src`, rather than in
+  `core/`, because it reads the registry.
+- Checks: 310 tests pass and the build succeeds. The rendered HTML of all 22
+  visual fixtures and both start views is byte-identical before and after the
+  split.
+- The `queue/` folder waits for step 4.
+
 ### 2. Spacing tokens, then a spacing pass
 
 1. **Tokens (no visible change).** Adopt WAMU's ladder and name what each
@@ -233,7 +243,9 @@ First close the gaps listed in `docs/UX-NEXT-STEPS.md`:
 - add static `?fixture=` support
 
 Then flip the default in `shells.ts`, keep `?shell=classic` for one release,
-and delete `shells/classic/` after that.
+and delete `shells/classic/` after that. The workspace borrows
+`shells/classic/StartLibrary.tsx` for its start view, so move that file into
+the workspace before deleting the classic folder.
 
 ## Decisions (2026-11-14)
 
