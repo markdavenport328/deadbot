@@ -1537,10 +1537,6 @@
       "ExperienceResponse": {
         "additionalProperties": false,
         "properties": {
-          "answer": {
-            "title": "Answer",
-            "type": "string"
-          },
           "blocks": {
             "items": {
               "discriminator": {
@@ -1655,17 +1651,6 @@
             "title": "Blocks",
             "type": "array"
           },
-          "body_lead": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Body Lead"
-          },
           "conversation": {
             "items": {
               "$ref": "#/components/schemas/ConversationTurn"
@@ -1681,6 +1666,17 @@
             "maxItems": 1000,
             "title": "Groups",
             "type": "array"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
           },
           "initial_tab": {
             "anyOf": [
@@ -1698,6 +1694,10 @@
             ],
             "description": "The workspace tab the page opens on.",
             "title": "Initial Tab"
+          },
+          "lead": {
+            "title": "Lead",
+            "type": "string"
           },
           "mode": {
             "default": "answer",
@@ -1721,8 +1721,8 @@
             "title": "Notebook"
           },
           "schema_version": {
-            "const": "2",
-            "default": "2",
+            "const": "3",
+            "default": "3",
             "title": "Schema Version",
             "type": "string"
           },
@@ -1737,16 +1737,11 @@
           "thread_id": {
             "title": "Thread Id",
             "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
           }
         },
         "required": [
           "thread_id",
-          "title",
-          "answer"
+          "lead"
         ],
         "title": "ExperienceResponse",
         "type": "object"

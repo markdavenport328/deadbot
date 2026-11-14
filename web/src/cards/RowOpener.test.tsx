@@ -57,7 +57,7 @@ beforeAll(() => {
 
 function page() {
   return {
-    schema_version: "2", thread_id: "web-test", title: "Who sat in", answer: "Plenty of people.", body_lead: null, mode: "answer",
+    schema_version: "3", thread_id: "web-test", headline: "Who sat in", lead: "Plenty of people.", mode: "answer",
     conversation: [{ role: "user", text: "Who sat in with the Dead?" }, { role: "assistant", text: "Plenty of people." }],
     sources: [],
     blocks: [
@@ -120,7 +120,7 @@ afterEach(() => {
 });
 
 async function openPage() {
-  replies = [page(), { ...page(), title: "Ned Lagin" }];
+  replies = [page(), { ...page(), headline: "Ned Lagin" }];
   vi.resetModules();
   const { default: App } = await import("../App");
   render(<App />);

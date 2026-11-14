@@ -74,7 +74,7 @@ class Settings:
     # Reasoning effort for OpenAI reasoning models (minimal, low, medium, high).
     # Unset means the model's default. Lower effort cuts latency per model call.
     openai_reasoning_effort: str | None = None
-    # Stream model output so finish_response's chat_answer can reach the
+    # Stream model output so finish_response's lead can reach the
     # visitor before the whole turn finishes. Defaults to the openai provider
     # since Ollama tool-call streaming is not relied on here.
     model_streaming: bool = False

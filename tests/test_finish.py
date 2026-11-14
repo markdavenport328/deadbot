@@ -32,8 +32,7 @@ def test_keep_grounded_links_strips_urls_the_tools_did_not_return():
 def test_finish_plan_accepts_editorial_blocks_and_unit_references_in_groups():
     plan = finish.FinishPlan.model_validate(
         {
-            "chat_answer": "Sugaree opened the second set.",
-            "title": "Sugaree at Veneta",
+            "lead": "Sugaree opened the second set.",
             "lead": "A relaxed early version.",
             "groups": [
                 {
@@ -73,7 +72,7 @@ def test_emphasis_defaults_to_supporting_and_a_retired_role_is_ignored():
     assert finish._emphasis_for(explicit) == "mention"
     assert finish._emphasis_for(finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27", emphasis="primary")) == "primary"
     plan = finish.FinishPlan.model_validate({
-        "chat_answer": "a", "title": "t",
+        "lead": "a",
         "groups": [{"items": [{"type": "song_overview", "song_id": "song-dark-star", "role": "contrast"}]}],
     })
     assert plan.groups[0].items[0].type == "song_overview"
@@ -85,7 +84,7 @@ def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
     assert tool.args_schema is finish.FinishPlan
     assert "finished" in tool.description.casefold() or "deliver" in tool.description.casefold()
     result = tool.invoke(
-        {"chat_answer": "Hi", "title": "Deadbot", "lead": None, "groups": []}
+        {"lead": "Hi", "groups": []}
     )
     assert "delivered" in result.casefold()
 
@@ -101,9 +100,7 @@ def test_resolve_body_drops_references_the_tools_did_not_return():
     payloads = _veneta_payloads(store)
     grounded = finish.grounded_context(payloads)
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -126,9 +123,7 @@ def test_resolve_body_keeps_editorial_blocks_and_their_outside_links():
     grounded = finish.grounded_context(payloads)
     good_url = next(url for url in grounded.urls if "archive.org" in url)
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -167,9 +162,7 @@ def test_resolve_body_keeps_a_song_payload_listening_link_and_strips_an_unreturn
     )
     assert archive_url in grounded.urls
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -199,7 +192,7 @@ def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
     person_id = payload["guests"][0]["person_id"]
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.GuestAppearancesRef(type="guest_appearance_list", person_id=person_id)])],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
@@ -229,7 +222,7 @@ def test_resolve_body_hydrates_a_person_roster_from_the_turn_payload():
     ]
     entries.append(finish.PersonRosterEntry(person_id="person-nobody-mentioned-this-turn"))
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[
             finish.PersonRosterRef(type="person_roster", title="Everyone who sat in", lead="One line.", entries=entries)
         ])],
@@ -261,7 +254,7 @@ def test_resolve_body_hydrates_a_person_roster_from_a_summary_record_with_correc
     assert "appearances" not in hornsby
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[
             finish.PersonRosterRef(
                 type="person_roster",
@@ -322,7 +315,7 @@ def test_resolve_body_hydrates_a_person_roster_from_the_store_when_the_payload_h
     payload = {"lineup": [{"person_id": "person-bill-kreutzmann", "name": "Bill Kreutzmann"}]}
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[
             finish.PersonRosterRef(type="person_roster", title="Drummers", entries=[finish.PersonRosterEntry(person_id="person-bill-kreutzmann")])
         ])],
@@ -358,9 +351,7 @@ def test_resolve_body_resolves_research_and_canonical_resources_together():
     payloads = [song_payload, research_payload]
     grounded = finish.grounded_context(payloads)
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -388,7 +379,7 @@ def test_resolve_body_resolves_song_overview():
     payload = store.song_context(song)
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.SongOverviewRef(type="song_overview", song_id=song["song_id"], visible_facets=["credits"])])],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
@@ -405,9 +396,7 @@ def test_song_overview_keeps_model_chosen_representative_performance_links():
     payload = store.song_context(song)
     chosen = next(performance for performance in payload["performances"] if performance.get("listen"))
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -438,7 +427,7 @@ def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
     payload = store.song_context(song)
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.ArrangementRef(type="arrangement", arrangement_id=arrangement["arrangement_id"])])],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
@@ -467,7 +456,7 @@ def test_resolve_body_rejects_research_resources_from_unapproved_hosts():
     }
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -512,7 +501,7 @@ def test_resolve_body_resolves_performer_and_equipment_lists_for_a_show():
     payload = store.show_context(store.resolve_show("1972-08-27"))
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.EquipmentListRef(type="equipment_list", show_id="gd-1972-08-27")])],
     )
     blocks, sources = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
@@ -592,8 +581,7 @@ def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloa
 def test_finish_plan_accepts_semantic_units():
     plan = finish.FinishPlan.model_validate(
         {
-            "chat_answer": "Five shows.",
-            "title": "Branford with the Dead",
+            "lead": "Five shows.",
             "groups": [
                 {
                     "presentation": "collection",
@@ -621,8 +609,7 @@ def test_resolve_groups_preserves_order_criteria_and_judgments():
     store = CanonicalStore()
     payloads = _veneta_payloads(store)
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="Veneta",
+        lead="x",
         groups=[
             finish.GroupPlan(
                 title="Two readings",
@@ -649,8 +636,7 @@ def _show_item(show_id: str) -> dict:
 
 def test_extra_keys_are_ignored_and_an_item_with_nothing_to_show_is_skipped():
     plan = finish.FinishPlan.model_validate({
-        "chat_answer": "x",
-        "title": "T",
+        "lead": "x",
         "groups": [{"presentation": "collection", "items": [
             _show_item("gd-1972-08-27"),
             {"type": "song_overview", "song_id": "song-ripple", "mood": "wistful"},
@@ -665,7 +651,7 @@ def test_extra_keys_are_ignored_and_an_item_with_nothing_to_show_is_skipped():
 def test_a_group_keeps_every_item_the_model_planned():
     items = [_show_item(f"gd-1990-03-{day:02d}") for day in range(1, 24)]
     groups = [{"presentation": "collection", "items": items} for _ in range(10)]
-    plan = finish.FinishPlan.model_validate({"chat_answer": "x", "title": "T", "groups": groups})
+    plan = finish.FinishPlan.model_validate({"lead": "x", "groups": groups})
     assert len(plan.groups) == 10
     assert len(plan.groups[0].items) == 23
     assert plan.groups[0].items[-1].show_id == "gd-1990-03-23"
@@ -673,8 +659,7 @@ def test_a_group_keeps_every_item_the_model_planned():
 
 def test_a_group_left_with_no_usable_items_is_dropped_not_fatal():
     plan = finish.FinishPlan.model_validate({
-        "chat_answer": "x",
-        "title": "T",
+        "lead": "x",
         "groups": [
             {"title": "Broken", "presentation": "collection", "items": [{"type": "not_a_block"}]},
             {"title": "Fine", "presentation": "collection", "items": [_show_item("gd-1972-08-27")]},
@@ -683,11 +668,11 @@ def test_a_group_left_with_no_usable_items_is_dropped_not_fatal():
     assert [group.title for group in plan.groups] == ["Fine"]
 
 
-def test_a_plan_missing_its_title_still_fails_validation():
+def test_a_plan_missing_its_lead_still_fails_validation():
     from pydantic import ValidationError
 
     try:
-        finish.FinishPlan.model_validate({"chat_answer": "x", "groups": [{"presentation": "collection", "items": [_show_item("gd-1972-08-27")]}]})
+        finish.FinishPlan.model_validate({"groups": [{"presentation": "collection", "items": [_show_item("gd-1972-08-27")]}]})
     except ValidationError:
         pass
     else:
@@ -697,8 +682,7 @@ def test_a_plan_missing_its_title_still_fails_validation():
 def test_the_finish_tool_delivers_a_plan_that_carries_one_bad_item():
     tool = finish.build_finish_tool()
     result = tool.invoke({
-        "chat_answer": "x",
-        "title": "T",
+        "lead": "x",
         "groups": [{"presentation": "collection", "items": [{"type": "not_a_block"}, _show_item("gd-1972-08-27")]}],
     })
     assert result == "Response delivered to the visitor."
@@ -707,8 +691,8 @@ def test_the_finish_tool_delivers_a_plan_that_carries_one_bad_item():
 def test_the_last_finish_call_in_a_message_is_the_plan_that_is_delivered():
     from langchain_core.messages import AIMessage, HumanMessage
 
-    first = {"chat_answer": "first", "title": "First", "groups": []}
-    last = {"chat_answer": "last", "title": "Last", "groups": []}
+    first = {"lead": "first", "groups": []}
+    last = {"lead": "last", "groups": []}
     message = AIMessage(
         content="",
         tool_calls=[
@@ -717,13 +701,12 @@ def test_the_last_finish_call_in_a_message_is_the_plan_that_is_delivered():
         ],
     )
     plan = finish.finish_plan_from_messages([HumanMessage(content="q"), message])
-    assert plan is not None and plan.title == "Last"
+    assert plan is not None and plan.lead == "last"
 
 
 def test_a_plan_may_declare_an_album_unit():
     plan = finish.FinishPlan(
-        chat_answer="Truckin' closes American Beauty.",
-        title="American Beauty",
+        lead="Truckin' closes American Beauty.",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -745,8 +728,7 @@ def test_an_ungrounded_release_id_is_dropped():
     items = [{"type": "album_unit", "release_id": "release-american-beauty"}]
 
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="x",
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=items)],
     )
     blocks, _ = finish.resolve_items(
@@ -758,8 +740,7 @@ def test_an_ungrounded_release_id_is_dropped():
 def test_a_grounded_release_id_hydrates_into_an_album_unit():
     store = CanonicalStore()
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="x",
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -777,8 +758,7 @@ def test_a_grounded_release_id_hydrates_into_an_album_unit():
 def test_album_unit_hydrates_only_the_facets_selected_by_the_composer():
     store = CanonicalStore()
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="x",
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -839,7 +819,7 @@ def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
     preferred = next(row["recording_id"] for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("source_url"))
     good_url = payload["resources"][0]["source_url"]
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -892,8 +872,7 @@ def test_show_unit_only_hydrates_the_facets_the_composer_selected():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="Veneta",
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -946,8 +925,7 @@ def test_show_unit_with_no_selected_facets_stays_compact():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="Veneta",
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1972-08-27")])],
     )
     blocks, sources = finish.resolve_items(
@@ -973,8 +951,7 @@ def test_show_unit_setlist_songs_carry_the_player_s_audio_fields():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1977-05-08"))
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="Cornell",
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1977-05-08", visible_facets=["setlist"])])],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
@@ -1001,8 +978,7 @@ def test_show_unit_with_no_archive_links_has_no_recording_identifier():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1965-05-26"))
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="No tapes",
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=[finish.ShowUnitRef(type="show_unit", show_id="gd-1965-05-26", visible_facets=["setlist"])])],
     )
     blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
@@ -1020,7 +996,7 @@ def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_acti
     assert context["listen"]["archive_track_url"]
     grounded = finish.grounded_context([show_payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -1066,7 +1042,7 @@ def test_optional_plan_fields_have_no_null_branch_in_the_schema_but_still_accept
     text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
     assert text.count('{"type": "null"}') <= 2  # only the top-level lead and initial_tab, which LangChain rebuilds
     plan = finish.FinishPlan.model_validate({
-        "chat_answer": "a", "title": "t", "lead": None,
+        "lead": "a",
         "groups": [{"title": None, "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "title": None, "note": None, "emphasis": None}]}],
     })
     assert plan.groups[0].items[0].note is None and plan.groups[0].title is None
@@ -1077,7 +1053,7 @@ def test_show_unit_follow_ups_carry_label_and_question_and_drop_a_blank_label():
     payload = store.show_context(store.resolve_show("1972-08-27"))
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -1110,7 +1086,7 @@ def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
     grounded = finish.grounded_context([payload])
     with_listen = [performance for performance in payload["performances"] if "listen" in performance][:2]
     plan = finish.FinishPlan(
-        chat_answer="x", title="t", lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -1173,9 +1149,8 @@ def test_build_experience_response_uses_the_finish_plan():
     payload = store.show_context(show)
     good_url = next(url for url in sorted(finish.grounded_context([payload]).urls) if "archive.org" in url or "relisten.net" in url)
     plan = {
-        "chat_answer": f"They opened with [Promised Land]({good_url}).",
-        "title": "Veneta, 1972",
-        "lead": "The Sunshine Daydream show.",
+        "headline": "Veneta, 1972",
+        "lead": f"They opened with [Promised Land]({good_url}).",
         "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
     }
     messages = [
@@ -1186,13 +1161,12 @@ def test_build_experience_response_uses_the_finish_plan():
         delivered(),
     ]
     response = finish.build_experience_response("What opened Veneta?", "web-1", messages, store)
-    assert response.title == "Veneta, 1972"
-    assert response.answer == f"They opened with [Promised Land]({good_url})."
-    assert response.body_lead == "The Sunshine Daydream show."
+    assert response.headline == "Veneta, 1972"
+    assert response.lead == f"They opened with [Promised Land]({good_url})."
     assert response.mode == "answer"
     assert [block.type for block in response.blocks] == ["show_unit"]
     assert response.groups[0].presentation == "collection" and response.groups[0].block_indexes == [0]
-    assert response.conversation[-1].role == "assistant" and response.conversation[-1].text == response.answer
+    assert response.conversation[-1].role == "assistant" and response.conversation[-1].text == response.lead
     assert response.conversation[0].text == "What opened Veneta?"
 
 
@@ -1201,8 +1175,7 @@ def _veneta_response(extra, group_extra):
     payload = store.show_context(store.resolve_show("1972-08-27"))
     plan = {
         **extra,
-        "chat_answer": "They opened.",
-        "title": "Veneta, 1972",
+        "lead": "They opened.",
         "groups": [{**group_extra, "presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
     }
     messages = [
@@ -1224,7 +1197,7 @@ def test_tabs_come_through_the_built_response():
 
 def test_finish_plan_reads_tabs_leniently_and_puts_initial_tab_first():
     item = {"type": "editorial", "presentation": "narrative", "paragraphs": ["x"], "items": []}
-    plan = finish.FinishPlan.model_validate({"initial_tab": "Context", "chat_answer": "a", "title": "t", "groups": [
+    plan = finish.FinishPlan.model_validate({"initial_tab": "Context", "lead": "a", "groups": [
         {"tab": "chart", "presentation": "collection", "items": [item]},
         {"tab": 7, "presentation": "collection", "items": [item]},
     ]})
@@ -1239,7 +1212,7 @@ def test_build_experience_response_falls_back_when_no_plan_was_delivered(caplog)
     messages = [HumanMessage(content="Hi"), AIMessage(content="I could not find that show.")]
     with caplog.at_level("WARNING"):
         response = finish.build_experience_response("Hi", "web-1", messages, store)
-    assert response.answer == "I could not find that show."
+    assert response.lead == "I could not find that show." and response.headline is None
     assert response.mode == "gap"
     assert response.blocks[0].type == "gap_state"
     assert "finish_response" in caplog.text
@@ -1249,18 +1222,16 @@ def test_build_experience_response_only_uses_the_latest_turn():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
     earlier_plan = {
-        "chat_answer": "Earlier.",
-        "title": "Earlier",
-        "lead": None,
+        "lead": "Earlier.",
         "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
     }
-    later_plan = {"chat_answer": "Later.", "title": "Later", "lead": None, "groups": []}
+    later_plan = {"lead": "Later.", "groups": []}
     messages = [
         HumanMessage(content="First"), tool_message(store.show_context(show)), finish_call(earlier_plan), delivered(),
         HumanMessage(content="Second"), finish_call(later_plan), delivered(),
     ]
     response = finish.build_experience_response("Second", "web-1", messages, store)
-    assert response.title == "Later" and response.blocks == []
+    assert response.lead == "Later." and response.blocks == []
     assert [turn.text for turn in response.conversation] == ["First", "Earlier.", "Second", "Later."]
 
 
@@ -1268,8 +1239,8 @@ def test_build_experience_response_shows_one_assistant_turn_when_a_finish_call_i
     """A rejected finish call plus its retry is still one answer to the visitor."""
 
     store = CanonicalStore()
-    partial_plan = {"chat_answer": "A first draft answer.", "lead": None, "groups": []}
-    retry_plan = {"chat_answer": "The corrected answer.", "title": "Corrected", "lead": None, "groups": []}
+    partial_plan = {"lead": "A first draft answer.", "groups": []}
+    retry_plan = {"lead": "The corrected answer.", "groups": []}
     messages = [
         HumanMessage(content="Hi"),
         AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": partial_plan, "id": "finish-0", "type": "tool_call"}]),
@@ -1278,30 +1249,40 @@ def test_build_experience_response_shows_one_assistant_turn_when_a_finish_call_i
         delivered(),
     ]
     response = finish.build_experience_response("Hi", "web-1", messages, store)
-    assert response.title == "Corrected"
+    assert response.lead == "The corrected answer."
     assert [(turn.role, turn.text) for turn in response.conversation] == [
         ("user", "Hi"),
         ("assistant", "The corrected answer."),
     ]
 
 
-def test_build_experience_response_substitutes_a_placeholder_for_a_blank_chat_answer(caplog):
+def test_build_experience_response_substitutes_a_placeholder_for_a_blank_lead(caplog):
     store = CanonicalStore()
-    plan = {"chat_answer": "   ", "title": "t", "lead": None, "groups": []}
+    plan = {"lead": "   ", "groups": []}
     messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
     with caplog.at_level("WARNING"):
         response = finish.build_experience_response("Hi", "web-1", messages, store)
-    assert response.answer == "Deadbot could not write a chat answer for this response."
-    assert response.conversation[-1].text == response.answer
-    assert "blank chat_answer" in caplog.text
+    assert response.lead == "Deadbot could not write an answer for this response."
+    assert response.conversation[-1].text == response.lead
+    assert "blank lead" in caplog.text
 
 
-def test_build_experience_response_substitutes_the_lead_for_a_blank_chat_answer():
+def test_build_experience_response_reads_the_headline_and_leaves_a_blank_one_out():
     store = CanonicalStore()
-    plan = {"chat_answer": "   ", "title": "t", "lead": "A short lead.", "groups": []}
-    messages = [HumanMessage(content="Hi"), finish_call(plan), delivered()]
+    messages = [HumanMessage(content="Hi"), finish_call({"headline": "  Two nights  ", "lead": "Twice.", "groups": []}), delivered()]
     response = finish.build_experience_response("Hi", "web-1", messages, store)
-    assert response.answer == "A short lead."
+    assert (response.headline, response.lead) == ("Two nights", "Twice.")
+    messages = [HumanMessage(content="Hi"), finish_call({"headline": "  ", "lead": "Twice.", "groups": []}), delivered()]
+    assert finish.build_experience_response("Hi", "web-1", messages, store).headline is None
+
+
+def test_conversation_reads_an_older_thread_that_carried_chat_answer():
+    store = CanonicalStore()
+    older = AIMessage(content="", tool_calls=[{"name": finish.FINISH_TOOL_NAME, "args": {"chat_answer": "Old shape.", "title": "T", "groups": []}, "id": "f0", "type": "tool_call"}])
+    old_result = ToolMessage(content="Response delivered to the visitor.", tool_call_id="f0", name=finish.FINISH_TOOL_NAME)
+    messages = [HumanMessage(content="First"), older, old_result, HumanMessage(content="Second"), finish_call({"lead": "New shape.", "groups": []}), delivered()]
+    response = finish.build_experience_response("Second", "web-1", messages, store)
+    assert [turn.text for turn in response.conversation] == ["First", "Old shape.", "Second", "New shape."]
 
 
 def test_album_unit_hydrates_from_the_release_payload():
@@ -1439,9 +1420,7 @@ def test_a_performance_unit_with_chosen_facets_survives_the_streamed_and_final_p
         "visible_facets": ["listen"],
     }
     plan_args = {
-        "chat_answer": "x",
-        "title": "t",
-        "lead": None,
+        "lead": "x",
         "groups": [{"title": "A useful point of contrast", "presentation": "comparison", "criteria": ["Pace", "Solo"], "items": [item]}],
     }
 
@@ -1637,8 +1616,7 @@ def test_data_chart_rejects_a_column_with_a_non_string_key_instead_of_raising_ty
 def test_finish_plan_accepts_a_data_chart_ref_in_a_group():
     plan = finish.FinishPlan.model_validate(
         {
-            "chat_answer": "Attendance grew steadily.",
-            "title": "Shows per year",
+            "lead": "Attendance grew steadily.",
             "groups": [
                 {
                     "presentation": "collection",
@@ -1666,9 +1644,7 @@ def test_resolve_body_resolves_a_data_chart_from_the_turn_s_aggregate_data_paylo
     payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
     grounded = finish.grounded_context([payload])
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
-        lead=None,
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -1695,8 +1671,7 @@ def test_an_ungrounded_aggregation_id_is_dropped():
         }
     ]
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="x",
+        lead="x",
         groups=[finish.GroupPlan(presentation="collection", items=items)],
     )
     blocks, _ = finish.resolve_items(
@@ -1737,8 +1712,7 @@ def test_resolve_groups_preserves_order_with_a_data_chart_mixed_among_units():
     agg_payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
     all_payloads = [*payloads, agg_payload]
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="collection",
@@ -1763,8 +1737,7 @@ def test_resolve_groups_leaves_a_data_chart_unchanged_in_a_comparison_group_with
     agg_payload = json.loads(_aggregate_data_tool(store).invoke({"dataset": "shows", "group_by": "year", "measure": "count"}))
     all_payloads = [*payloads, agg_payload]
     plan = finish.FinishPlan(
-        chat_answer="x",
-        title="t",
+        lead="x",
         groups=[
             finish.GroupPlan(
                 presentation="comparison",
@@ -1814,7 +1787,7 @@ def test_the_catalog_query_tool_sends_counts_and_rankings_to_aggregate_data():
 
 def test_an_item_written_straight_into_groups_stands_as_its_own_group():
     plan = finish.FinishPlan.model_validate({
-        "chat_answer": "a", "title": "t",
+        "lead": "a",
         "groups": [{"type": "editorial", "presentation": "narrative", "title": "Listen for it", "paragraphs": ["The handoff."]}],
     })
     assert len(plan.groups) == 1 and plan.groups[0].items[0].title == "Listen for it"
@@ -1822,7 +1795,7 @@ def test_an_item_written_straight_into_groups_stands_as_its_own_group():
 
 def test_grid_rows_written_as_separate_blocks_read_as_one_grid():
     rows = [{"type": "editorial", "presentation": "fact_grid", "title": f"Row {n}", "value": "v", "detail": "d"} for n in range(3)]
-    plan = finish.FinishPlan.model_validate({"chat_answer": "a", "title": "t", "groups": [{"presentation": "argument", "items": rows}]})
+    plan = finish.FinishPlan.model_validate({"lead": "a", "groups": [{"presentation": "argument", "items": rows}]})
     blocks, groups, _ = finish.resolve_groups(plan, finish.GroundedContext(frozenset(), frozenset()), [], CanonicalStore())
     assert len(blocks) == 1 and blocks[0].title is None
     assert [item.title for item in blocks[0].items] == ["Row 0", "Row 1", "Row 2"]
@@ -1844,7 +1817,7 @@ def test_a_record_the_model_names_again_after_from_result_stays_on_the_page():
     store = CanonicalStore()
     payloads = [{"result_id": "query:h", "columns": ["show_id"], "rows": [["gd-1983-06-22"], ["gd-1984-06-23"]]}]
     plan = finish.FinishPlan.model_validate({
-        "chat_answer": "a", "title": "t",
+        "lead": "a",
         "groups": [{"presentation": "collection", "items": [
             {"type": "show_unit", "from_result": "query:h", "disclosure": "collapsed"},
             {"type": "show_unit", "show_id": "gd-1984-06-23", "note": "The return visit."},

@@ -868,7 +868,7 @@ class GroupPlan(_PlanModel):
     title: str | None = Field(
         default=None,
         description=(
-            "A concise heading that names this group's subject. Omit it when the page title already does that job, and when the "
+            "A concise heading that names this group's subject. Omit it when the headline or lead already does that job, and when the "
             "group holds one item that carries its own title: that title is the heading."
         ),
     )
@@ -924,7 +924,7 @@ def loose_items_as_group(data: Any) -> Any:
 
 
 class FinishPlan(BaseModel):
-    """The model's finished response: chat answer plus the main-body plan."""
+    """The model's finished response: the opening (headline and lead) plus the main-body plan."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -975,11 +975,16 @@ class FinishPlan(BaseModel):
     def _read_initial_tab(cls, value: Any) -> Any:
         return workspace_tab(value)
 
-    chat_answer: str = Field(
-        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. Markdown links allowed."
+    headline: str | None = Field(
+        default=None,
+        description="Optional short line above the lead that sharpens the finding. Omit it when the lead already lands.",
     )
-    title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
-    lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
+    lead: str = Field(
+        description=(
+            "The page's opening and the answer: its first sentence answers the question on its own, and the rest gives the "
+            "reason to keep going. Proportionate to the question. Markdown links allowed."
+        )
+    )
     listening_hero: dict[str, Any] = Field(
         default_factory=dict,
         description=(
@@ -1763,7 +1768,7 @@ def build_finish_tool() -> BaseTool:
         func=_deliver,
         name=FINISH_TOOL_NAME,
         description=(
-            "Deliver the finished response to the visitor. Call this once, when your research is done. chat_answer gives the "
+            "Deliver the finished response to the visitor. Call this once, when your research is done. The lead gives the "
             "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
             "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
             "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
@@ -1792,8 +1797,8 @@ def finish_plan_from_messages(messages: list[Any]) -> FinishPlan | None:
     return None
 
 
-def _conversation(all_messages: list[Any], chat_answer: str) -> list[ConversationTurn]:
-    """Visible turns: user text, earlier assistant answers, and this turn's chat answer.
+def _conversation(all_messages: list[Any], lead: str) -> list[ConversationTurn]:
+    """Visible turns: user text, earlier assistant leads, and this turn's lead.
 
     A single turn can carry more than one ``finish_response`` call: when the
     first one's arguments fail ``FinishPlan`` validation the model sees the tool
@@ -1816,7 +1821,8 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
         elif message_type == "ai":
             for call in getattr(message, "tool_calls", None) or []:
                 if call.get("name") == FINISH_TOOL_NAME and isinstance(call.get("args"), dict):
-                    answer = str(call["args"].get("chat_answer") or "").strip()
+                    # Threads in flight may carry the older shape, whose answer was chat_answer.
+                    answer = str(call["args"].get("lead") or call["args"].get("chat_answer") or "").strip()
                     if not answer:
                         continue
                     turn = ConversationTurn(role="assistant", text=answer[:8_000])
@@ -1827,7 +1833,7 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
                         turns[answer_index] = turn
             if text and not getattr(message, "tool_calls", None):
                 turns.append(ConversationTurn(role="assistant", text=text[:8_000]))
-    final = ConversationTurn(role="assistant", text=chat_answer[:8_000])
+    final = ConversationTurn(role="assistant", text=lead[:8_000])
     if turns and turns[-1].role == "assistant":
         turns[-1] = final
     else:
@@ -1859,8 +1865,8 @@ def build_experience_response(
         answer = last_text or "Deadbot could not finish shaping this answer. Please try again."
         return ExperienceResponse(
             thread_id=thread_id,
-            title="Deadbot",
-            answer=answer,
+            headline=None,
+            lead=answer,
             mode="gap",
             conversation=_conversation(all_messages, answer),
             blocks=[GapStateBlock(type="gap_state", message="The main body was not delivered for this answer.")],
@@ -1871,19 +1877,18 @@ def build_experience_response(
     if extra_grounding is not None:
         grounded = merge_grounding(grounded, extra_grounding)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
-    chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
-    lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None
-    if not chat_answer.strip():
-        logger.warning("finish_response delivered a blank chat_answer (question=%r); substituting the lead or a placeholder", question)
-        chat_answer = lead if lead else "Deadbot could not write a chat answer for this response."
+    lead = keep_grounded_links(plan.lead.strip(), grounded.urls)
+    if not lead.strip():
+        logger.warning("finish_response delivered a blank lead (question=%r); substituting a placeholder", question)
+        lead = "Deadbot could not write an answer for this response."
+    headline = plan.headline.strip() if plan.headline and plan.headline.strip() else None
     return ExperienceResponse(
         thread_id=thread_id,
-        title=plan.title.strip() or "Deadbot",
-        answer=chat_answer,
-        body_lead=lead,
+        headline=headline,
+        lead=lead,
         initial_tab=plan.initial_tab,
         mode="answer",
-        conversation=_conversation(all_messages, chat_answer),
+        conversation=_conversation(all_messages, lead),
         blocks=blocks,
         groups=groups,
         sources=sources,

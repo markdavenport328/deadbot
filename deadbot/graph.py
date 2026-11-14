@@ -151,19 +151,22 @@ it changes what the visitor should conclude.
 
 ## ANSWER FIRST, THEN EARN THE REST
 
-chat_answer and the main body express one researched editorial judgment at
-different scales. Chat gives the crisp answer immediately. The body adds the
-evidence, story, comparison and listening that make the answer worth opening.
-A visitor who begins with either reading path can understand the finding. Give
-each idea one clear home and each layer a distinct job.
+The page opens with the answer. The lead states it in its first sentence,
+plainly enough to stand on its own, then gives the reason to keep going: the
+distinction, the story or the listening ahead. A headline above the lead is
+optional: write one when a short line sharpens the finding, and let the lead
+open the page when it already lands. The tabs below add the evidence, story,
+comparison and listening that make the answer worth opening. Give each idea
+one clear home and each part of the page a distinct job.
 
 ## THE WORKSPACE
 
 The page has three tabs. Listen holds what the visitor can hear: shows,
 performances, albums, songs and version strips. Charts holds what is seen
 across time or categories: data charts, grids, and a song's life on stage when
-its timeline is the point. Read holds the chat answer, the lead, and the
-story, argument and context. Give each group the tab where it does its job,
+its timeline is the point. Read holds the story, argument and context. The
+headline and lead sit above the tabs, so the answer is there whichever tab
+opens. Give each group the tab where it does its job,
 and open the page (initial_tab) where this question's first attention
 belongs: Listen when the visitor wants to hear something, Charts when the
 shape of the numbers is the answer, Read when the answer is a fact or a story.
@@ -208,7 +211,7 @@ not by tool, source or data type. Tool boundaries and database tables are not
 presentation boundaries. Keep each object's explanation, evidence and actions
 together.
 
-The page title states the central finding. A lead or group introduction earns its
+The lead states the central finding. A group introduction earns its
 place only by adding a distinct idea, and so does a group: each group brings
 material the page has not shown yet. When what remains would only restate the
 finding in another form (a closing summary, a fact_grid naming the same
@@ -239,8 +242,8 @@ becomes collapsed cards they open one at a time, like the eight nights at
 Radio City Music Hall in October 1980. Dozens or hundreds of records make a
 pattern, and the pattern is the answer: 52 nights at Madison Square Garden,
 43 at Fillmore West or Dark Star's 276 performances read as a bar chart of
-years, with the few nights worth hearing given their own cards. The chat
-answer states the number; the page shows what the number looks like. Weigh
+years, with the few nights worth hearing given their own cards. The lead
+states the number; the page shows what the number looks like. Weigh
 stating the number, listing the records and drawing their shape by what the
 visitor learns from each: a modest count spread across decades can earn a
 chart, and a large count packed into one run can be the number and its best
@@ -353,13 +356,13 @@ than how the page is arranged. Name a gap in what is known only where it
 changes the conclusion, such as a first performance that may not be the
 debut, and then in one clause. Give lengths as minutes and seconds (13:04).
 
-Say each thing once. The chat answer states the answer. Every layer on the
-page (title, lead, group lead, note) adds something the chat did not say: a
+Say each thing once. The lead states the answer. Every other layer on the
+page (headline, group lead, note) adds something the lead did not say: a
 reason, a contrast, what to listen for, a story from the night. A layer with
 nothing new stays empty, and that is often the best page. For "When did the
-Dead play Harrisburg PA?" the chat says "Twice, both at City Island: June 22,
+Dead play Harrisburg PA?" the lead says "Twice, both at City Island: June 22,
 1983 and June 23, 1984." The page is the two show cards, each note saying
-what sets that night apart; no lead repeats the count, and no group lead
+what sets that night apart; no headline repeats the count, and no group lead
 introduces the cards.
 
 # SUCCESS
@@ -439,7 +442,7 @@ def build_agent(
     tools = agent_tools(store)
     model = provider.create_chat_model().bind_tools(tools)
     # Ollama tool-call streaming is not relied on here, so keep it
-    # non-streaming there; OpenAI streams so finish_response's chat_answer
+    # non-streaming there; OpenAI streams so finish_response's lead
     # can reach the visitor before the whole turn finishes.
     if not settings.model_streaming:
         model = model.bind(stream=False)

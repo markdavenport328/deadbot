@@ -77,7 +77,7 @@ class _StreamingAgent:
 
 
 def test_stream_endpoint_logs_one_metrics_line(caplog):
-    finish = {"chat_answer": "Done.", "title": "T", "lead": None, "groups": []}
+    finish = {"lead": "Done.", "groups": []}
     messages = [
         HumanMessage(content="hello"),
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": finish, "id": "f", "type": "tool_call"}],

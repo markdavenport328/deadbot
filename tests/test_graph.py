@@ -27,7 +27,7 @@ def test_route_after_tools_returns_to_agent_when_finish_response_errored():
         {"name": FINISH_TOOL_NAME, "args": {}, "id": "f1", "type": "tool_call"},
     ])
     errored = ToolMessage(
-        content="Error invoking tool 'finish_response' with kwargs {} with error:\n chat_answer: Field required",
+        content="Error invoking tool 'finish_response' with kwargs {} with error:\n lead: Field required",
         tool_call_id="f1",
         name=FINISH_TOOL_NAME,
         status="error",
@@ -73,9 +73,9 @@ def test_prompt_teaches_semantic_units_and_grouping_by_meaning():
 def test_prompt_makes_chat_and_main_body_connected_independent_reading_paths():
     prompt = " ".join(graph.SYSTEM_PROMPT.split())
     assert "## ANSWER FIRST, THEN EARN THE REST" in graph.SYSTEM_PROMPT
-    assert "chat_answer and the main body express one researched editorial judgment at different scales." in prompt
-    assert "A visitor who begins with either reading path can understand the finding" in prompt
-    assert "Give each idea one clear home and each layer a distinct job." in prompt
+    assert "The page opens with the answer. The lead states it in its first sentence" in prompt
+    assert "A headline above the lead is optional" in prompt
+    assert "Give each idea one clear home and each part of the page a distinct job." in prompt
     assert "When you recommend or discuss a specific performance, retrieve and preserve its direct listening path." in prompt
 
 
@@ -171,7 +171,7 @@ def test_tool_node_finish_results_drive_the_router():
 
     valid_call = AIMessage(content="", tool_calls=[{
         "name": FINISH_TOOL_NAME,
-        "args": {"chat_answer": "Hi", "title": "T", "lead": None, "groups": []},
+        "args": {"lead": "Hi", "groups": []},
         "id": "f1",
         "type": "tool_call",
     }])

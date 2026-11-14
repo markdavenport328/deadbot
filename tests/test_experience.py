@@ -13,10 +13,10 @@ from deadbot.data import CanonicalStore
 from deadbot.experience import ExperienceResponse
 
 
-def finish_call(chat_answer, *, title="Deadbot", lead=None, groups=None):
+def finish_call(lead, *, headline=None, groups=None):
     """The two messages a finished agent turn ends with: the call and its result."""
 
-    plan = {"chat_answer": chat_answer, "title": title, "lead": lead, "groups": groups or []}
+    plan = {"headline": headline, "lead": lead, "groups": groups or []}
     return [
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
         ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
@@ -43,7 +43,7 @@ class ConversationFakeAgent:
     def invoke(self, payload, config):
         self.calls.append((payload, config))
         question = payload["messages"][-1].content
-        plan = {"chat_answer": f"Reply to: {question}", "title": "Deadbot", "lead": None, "groups": []}
+        plan = {"lead": f"Reply to: {question}", "groups": []}
         self.messages.extend([
             HumanMessage(content=question),
             AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
@@ -77,8 +77,7 @@ def test_schema_rejects_an_unrecognized_browser_block():
         ExperienceResponse.model_validate(
             {
                 "thread_id": "web-test",
-                "title": "Test",
-                "answer": "Test",
+                "lead": "Test",
                 "blocks": [{"type": "raw_html", "html": "<script>bad()</script>"}],
             }
         )
@@ -92,9 +91,7 @@ def test_experience_endpoint_renders_the_finish_plan():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
     plan = {
-        "chat_answer": "Veneta opened with Promised Land.",
-        "title": "Veneta, 1972",
-        "lead": None,
+        "lead": "Veneta opened with Promised Land.",
         "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "title": "The whole night", "visible_facets": ["setlist"]}]}],
     }
     agent = FakeAgent([
@@ -105,7 +102,7 @@ def test_experience_endpoint_renders_the_finish_plan():
     ])
     client = TestClient(create_app(settings=Settings(), store=store, agent=agent))
     body = client.post("/api/experience", json={"question": "What opened Veneta?"}).json()
-    assert body["title"] == "Veneta, 1972"
+    assert body["headline"] is None
     assert body["blocks"][0]["type"] == "show_unit" and body["blocks"][0]["title"] == "The whole night"
     assert body["conversation"][-1] == {"role": "assistant", "text": "Veneta opened with Promised Land."}
 
@@ -115,9 +112,7 @@ def test_experience_endpoint_renders_a_show_unit_through_a_group():
     show = store.resolve_show("1972-08-27")
     payload = store.show_context(show)
     plan = {
-        "chat_answer": "One show, as a unit.",
-        "title": "Veneta as a unit",
-        "lead": None,
+        "lead": "One show, as a unit.",
         "groups": [
             {
                 "presentation": "collection",
@@ -174,10 +169,10 @@ class AnswerStreamingFakeAgent(FakeAgent):
         assert stream_mode == ["values", "messages"]
         yield ("values", {"messages": self.messages[:2]})
         fragments = [
-            '{"chat_answer": "Veneta ',
+            '{"headline": "Veneta, 1972", "lead": "Veneta ',
             'opened with ',
             'Promised Land."',
-            ', "title": "Veneta, 1972"}',
+            ', "groups": [{"lead": "A group intro", "items": []}]}',
         ]
         for index, fragment in enumerate(fragments):
             chunk = AIMessageChunk(
@@ -199,7 +194,7 @@ class AnswerStreamingFakeAgent(FakeAgent):
 class SurrogateStreamingFakeAgent(FakeAgent):
     """Streams a ``finish_response`` tool-call-argument fragment carrying an
     actual lone low surrogate character (not a ``\\u`` escape sequence, so
-    ``extract_chat_answer`` passes it straight through unmodified) so the
+    ``extract_lead`` passes it straight through unmodified) so the
     ``answer`` event reaching ``line()`` in ``api.py`` is the one holding
     the unpaired surrogate -- this exercises that layer's own defense
     (``.encode("utf-8", "replace")``) independent of the extractor's.
@@ -214,7 +209,7 @@ class SurrogateStreamingFakeAgent(FakeAgent):
             tool_call_chunks=[
                 {
                     "name": "finish_response",
-                    "args": '{"chat_answer": "Hi \udc00 there", "title": "Deadbot"}',
+                    "args": '{"lead": "Hi \udc00 there", "headline": "Deadbot"}',
                     "id": "f1",
                     "index": 0,
                     "type": "tool_call_chunk",
@@ -232,7 +227,7 @@ def _ndjson(text):
 def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     store = CanonicalStore()
     show = store.resolve_show("1972-08-27")
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None,
+    plan = {"lead": "Veneta opened with Promised Land.",
             "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}]}
     agent = StreamingFakeAgent([
         HumanMessage(content="What opened Veneta?"),
@@ -249,13 +244,13 @@ def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     assert [event["type"] for event in events] == ["status", "status", "response"]
     assert [event["text"] for event in events[:2]] == ["Reading the show on 1972-08-27", "Assembling the page"]
     response = ExperienceResponse.model_validate(events[-1]["response"])
-    assert response.title == "Veneta, 1972" and response.blocks[0].type == "show_unit"
+    assert response.lead == "Veneta opened with Promised Land." and response.blocks[0].type == "show_unit"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
 
 
-def test_streaming_endpoint_streams_the_chat_answer_as_it_is_generated():
+def test_streaming_endpoint_streams_the_lead_as_it_is_generated():
     store = CanonicalStore()
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None,
+    plan = {"lead": "Veneta opened with Promised Land.",
             "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}]}
     agent = AnswerStreamingFakeAgent([
         HumanMessage(content="What opened Veneta?"),
@@ -267,26 +262,26 @@ def test_streaming_endpoint_streams_the_chat_answer_as_it_is_generated():
     assert result.status_code == 200
     events = _ndjson(result.text)
 
-    answer_events = [event for event in events if event["type"] == "answer"]
+    lead_events = [event for event in events if event["type"] == "lead"]
     response_index = next(index for index, event in enumerate(events) if event["type"] == "response")
-    assert len(answer_events) >= 2
-    assert all(events.index(event) < response_index for event in answer_events)
+    assert len(lead_events) >= 2
+    assert all(events.index(event) < response_index for event in lead_events)
 
-    answer_texts = [event["text"] for event in answer_events]
-    for earlier, later in zip(answer_texts, answer_texts[1:]):
+    lead_texts = [event["text"] for event in lead_events]
+    for earlier, later in zip(lead_texts, lead_texts[1:]):
         assert later.startswith(earlier)
 
     response = ExperienceResponse.model_validate(events[response_index]["response"])
-    assert answer_texts[-1] == response.answer
+    assert lead_texts[-1] == response.lead
 
 
-def test_streaming_endpoint_announces_page_composition_once_the_chat_answer_completes():
+def test_streaming_endpoint_announces_page_composition_once_the_lead_completes():
     """Once the chat answer has fully streamed, the browser should learn the
     rest of the page (blocks, links, etc.) is still being put together, once
     and only once, before the final response arrives.
     """
     store = CanonicalStore()
-    plan = {"chat_answer": "Veneta opened with Promised Land.", "title": "Veneta, 1972", "lead": None,
+    plan = {"lead": "Veneta opened with Promised Land.",
             "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}]}
     agent = AnswerStreamingFakeAgent([
         HumanMessage(content="What opened Veneta?"),
@@ -301,14 +296,14 @@ def test_streaming_endpoint_announces_page_composition_once_the_chat_answer_comp
     composing_page_events = [event for event in events if event == {"type": "status", "text": "Composing the page"}]
     assert len(composing_page_events) == 1
 
-    last_answer_index = max(index for index, event in enumerate(events) if event["type"] == "answer")
+    last_answer_index = max(index for index, event in enumerate(events) if event["type"] == "lead")
     composing_index = next(index for index, event in enumerate(events) if event == {"type": "status", "text": "Composing the page"})
     response_index = next(index for index, event in enumerate(events) if event["type"] == "response")
     assert last_answer_index < composing_index < response_index
 
 
 def test_streaming_endpoint_delivers_a_lone_surrogate_answer_as_a_valid_line():
-    plan = {"chat_answer": "Hi there", "title": "Deadbot", "lead": None, "groups": []}
+    plan = {"lead": "Hi there", "groups": []}
     agent = SurrogateStreamingFakeAgent([
         HumanMessage(content="Hi"),
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
@@ -323,10 +318,10 @@ def test_streaming_endpoint_delivers_a_lone_surrogate_answer_as_a_valid_line():
     # UnicodeEncodeError, so the stream produced no usable "answer" line at
     # all; parsing every line here, with the surrogate gone, is the check.
     events = _ndjson(result.text)
-    answer_events = [event for event in events if event["type"] == "answer"]
-    assert answer_events
-    assert any("Hi" in event["text"] and "there" in event["text"] for event in answer_events)
-    assert not any(0xD800 <= ord(char) <= 0xDFFF for event in answer_events for char in event["text"])
+    lead_events = [event for event in events if event["type"] == "lead"]
+    assert lead_events
+    assert any("Hi" in event["text"] and "there" in event["text"] for event in lead_events)
+    assert not any(0xD800 <= ord(char) <= 0xDFFF for event in lead_events for char in event["text"])
     assert events[-1]["type"] == "response"
 
 
@@ -354,9 +349,8 @@ def test_streaming_endpoint_builds_the_page_progressively_then_delivers_the_resp
     store = CanonicalStore()
     show_payload = store.show_context(store.resolve_show("1972-08-27"))
     plan = {
-        "chat_answer": "Veneta opened with Promised Land.",
-        "title": "Veneta, 1972",
-        "lead": None,
+        "headline": "Veneta, 1972",
+        "lead": "Veneta opened with Promised Land.",
         "groups": [{"title": "The show", "presentation": "collection", "items": [
             {"type": "show_unit", "show_id": "gd-1972-08-27", "emphasis": "primary", "visible_facets": ["setlist"]},
             {"type": "editorial", "presentation": "narrative", "paragraphs": ["A benefit in the heat."], "items": []},
@@ -372,11 +366,11 @@ def test_streaming_endpoint_builds_the_page_progressively_then_delivers_the_resp
     client = TestClient(create_app(settings=Settings(), store=store, agent=PlanStreamingFakeAgent(messages, plan)))
     events = _ndjson(client.post("/api/experience/stream", json={"question": "What opened Veneta?", "thread_id": "b1"}).text)
     types = [event["type"] for event in events]
-    last_answer = max(index for index, event in enumerate(events) if event["type"] == "answer")
+    last_answer = max(index for index, event in enumerate(events) if event["type"] == "lead")
     assert types.index("page_head") > last_answer
     assert types[types.index("page_head") :] == ["page_head", "group_open", "block", "block", "group_close", "response"]
     head = events[types.index("page_head")]
-    assert head["title"] == "Veneta, 1972" and head["lead"] is None
+    assert head["headline"] == "Veneta, 1972" and head["lead"] == "Veneta opened with Promised Land."
     streamed_blocks = [event["block"] for event in events if event["type"] == "block"]
     final = events[-1]["response"]
     assert [block["type"] for block in streamed_blocks] == [block["type"] for block in final["blocks"]] == ["show_unit", "editorial"]
@@ -419,9 +413,8 @@ def test_streaming_endpoint_sends_no_page_events_for_a_cached_answer():
     # asked twice hits the cache the second time.
     store = _CachingStore()
     plan = {
-        "chat_answer": "Veneta opened with Promised Land.",
-        "title": "Veneta, 1972",
-        "lead": None,
+        "headline": "Veneta, 1972",
+        "lead": "Veneta opened with Promised Land.",
         "groups": [{"title": "The show", "presentation": "collection", "items": [
             {"type": "show_unit", "show_id": "gd-1972-08-27", "emphasis": "primary", "visible_facets": ["setlist"]},
         ]}],
@@ -449,7 +442,7 @@ def test_streaming_endpoint_falls_back_to_invoke_for_an_agent_without_stream():
     client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
     events = _ndjson(client.post("/api/experience/stream", json={"question": "Hi"}).text)
     assert [event["type"] for event in events] == ["status", "response"]
-    assert events[-1]["response"]["answer"] == "A plain answer."
+    assert events[-1]["response"]["lead"] == "A plain answer."
 
 
 def test_streaming_endpoint_reports_a_failure_as_an_error_event():
@@ -473,7 +466,7 @@ def test_api_returns_the_validated_experience_contract():
             tool_message(store.show_context(show)),
             *finish_call(
                 "The Veneta show was held on August 27, 1972.",
-                title="Veneta, 1972",
+                headline="Veneta, 1972",
                 groups=[{"presentation": "collection", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "visible_facets": ["setlist"]}]}],
             ),
         ]
@@ -489,7 +482,7 @@ def test_api_returns_the_validated_experience_contract():
     assert client.get("/api/version").json() == {"git_commit": health.json()["git_commit"]}
     assert result.status_code == 200
     body = result.json()
-    assert body["schema_version"] == "2"
+    assert body["schema_version"] == "3"
     assert body["thread_id"] == "browser-1"
     assert body["blocks"][0]["type"] == "show_unit"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
@@ -516,7 +509,7 @@ def test_api_uses_one_thread_for_follow_ups_and_returns_the_transcript():
     second = client.post("/api/experience", json={"question": "What came next?", "thread_id": "browser-1"})
     assert first.status_code == 200
     assert second.status_code == 200
-    assert second.json()["answer"] == "Reply to: What came next?"
+    assert second.json()["lead"] == "Reply to: What came next?"
     assert second.json()["conversation"] == [
         {"role": "user", "text": "Tell me about Veneta"},
         {"role": "assistant", "text": "Reply to: Tell me about Veneta"},
@@ -558,7 +551,7 @@ def test_requests_beyond_the_per_minute_limit_get_429_while_earlier_ones_succeed
         [
             HumanMessage(content="Tell me about Veneta"),
             tool_message(store.show_context(show)),
-            *finish_call("The Veneta show was held on August 27, 1972.", title="Veneta, 1972"),
+            *finish_call("The Veneta show was held on August 27, 1972.", headline="Veneta, 1972"),
         ]
     )
     settings = Settings(rate_limit_per_minute=2)

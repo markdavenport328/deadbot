@@ -60,11 +60,11 @@ test("opening tab: the model's choice, else Listen when it has groups, else Read
   expect(openingTab(null, routeGroups([g(["editorial"])]))).toBe("read");
 });
 
-test("tabs with content count the short answer for Read", () => {
-  expect([...tabsWithContent(routeGroups([]), "Yes.")]).toEqual(["read"]);
-  expect(tabsWithContent(routeGroups([g(["grid"])]), null).has("charts")).toBe(true);
+test("tabs with content count only groups with cards; the lead sits above the tabs", () => {
+  expect([...tabsWithContent(routeGroups([]))]).toEqual([]);
+  expect(tabsWithContent(routeGroups([g(["grid"])])).has("charts")).toBe(true);
 });
 
 test("a group still waiting for its first card does not make its tab ready", () => {
-  expect(tabsWithContent(routeGroups([g([], "listen"), g([])]), null).size).toBe(0);
+  expect(tabsWithContent(routeGroups([g([], "listen"), g([])])).size).toBe(0);
 });

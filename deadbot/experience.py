@@ -1292,11 +1292,10 @@ class ExperienceGroup(ExperienceModel):
 
 
 class ExperienceResponse(ExperienceModel):
-    schema_version: Literal["2"] = "2"
+    schema_version: Literal["3"] = "3"
     thread_id: str
-    title: str
-    answer: str
-    body_lead: str | None = None
+    headline: str | None = None
+    lead: str
     initial_tab: WorkspaceTab | None = Field(default=None, description="The workspace tab the page opens on.")
     mode: ExperienceMode = "answer"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)

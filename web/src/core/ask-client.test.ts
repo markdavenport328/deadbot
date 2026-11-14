@@ -1,7 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { askPlain, askStreaming, dispatchStreamEvent, isAbort, replayStreamEvents } from "./ask-client";
 
-const response = { schema_version: "2", thread_id: "t", title: "T", answer: "A", conversation: [], blocks: [], groups: [], sources: [] };
+const response = { schema_version: "3", thread_id: "t", headline: "T", lead: "A", conversation: [], blocks: [], groups: [], sources: [] };
 
 function streamOf(lines: string[], { status = 200 } = {}) {
   const text = lines.join("\n");
@@ -19,34 +19,34 @@ function streamOf(lines: string[], { status = 200 } = {}) {
 
 afterEach(() => vi.unstubAllGlobals());
 
-test("streams statuses, answer and page events, then returns the response", async () => {
+test("streams statuses, lead and page events, then returns the response", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => streamOf([
     JSON.stringify({ type: "status", text: "Looking" }),
-    JSON.stringify({ type: "answer", text: "Yes" }),
-    JSON.stringify({ type: "page_head", title: "T", lead: null }),
+    JSON.stringify({ type: "lead", text: "Yes" }),
+    JSON.stringify({ type: "page_head", headline: "T", lead: null }),
     JSON.stringify({ type: "response", response })
   ])));
   const seen: string[] = [];
   const result = await askStreaming("{}", {
-    onStatus: (t) => seen.push(`s:${t}`), onAnswer: (t) => seen.push(`a:${t}`), onPage: (e) => seen.push(`p:${e.type}`)
+    onStatus: (t) => seen.push(`s:${t}`), onLead: (t) => seen.push(`a:${t}`), onPage: (e) => seen.push(`p:${e.type}`)
   });
   expect(seen).toEqual(["s:Looking", "a:Yes", "p:page_head"]);
-  expect(result?.title).toBe("T");
+  expect(result?.headline).toBe("T");
 });
 
 test("404 means no stream: the caller falls back", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
-  expect(await askStreaming("{}", { onStatus() {}, onAnswer() {}, onPage() {} })).toBeNull();
+  expect(await askStreaming("{}", { onStatus() {}, onLead() {}, onPage() {} })).toBeNull();
 });
 
 test("a stream that ends without its response fails instead of re-asking", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => streamOf([JSON.stringify({ type: "status", text: "x" })])));
-  await expect(askStreaming("{}", { onStatus() {}, onAnswer() {}, onPage() {} })).rejects.toThrow("connection closed");
+  await expect(askStreaming("{}", { onStatus() {}, onLead() {}, onPage() {} })).rejects.toThrow("connection closed");
 });
 
 test("an error event throws its detail", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => streamOf([JSON.stringify({ type: "error", detail: "Nope" })])));
-  await expect(askStreaming("{}", { onStatus() {}, onAnswer() {}, onPage() {} })).rejects.toThrow("Nope");
+  await expect(askStreaming("{}", { onStatus() {}, onLead() {}, onPage() {} })).rejects.toThrow("Nope");
 });
 
 test("the signal reaches fetch, and an abort is recognisable", async () => {
@@ -67,7 +67,7 @@ test("replay stops once aborted", async () => {
   const statuses: string[] = [];
   const done = replayStreamEvents(
     [{ type: "status", text: "one" }, { type: "status", text: "two" }],
-    { onStatus: (t) => statuses.push(t), onAnswer() {}, onPage() {}, onResponse() {} },
+    { onStatus: (t) => statuses.push(t), onLead() {}, onPage() {}, onResponse() {} },
     controller.signal
   );
   await vi.advanceTimersByTimeAsync(300);
@@ -80,6 +80,6 @@ test("replay stops once aborted", async () => {
 
 it("hands a page_tab event to the page handler", () => {
   const seen: string[] = [];
-  dispatchStreamEvent({ type: "page_tab", tab: "listen" }, { onStatus() {}, onAnswer() {}, onPage: (event) => seen.push(event.type), onResponse() {} });
+  dispatchStreamEvent({ type: "page_tab", tab: "listen" }, { onStatus() {}, onLead() {}, onPage: (event) => seen.push(event.type), onResponse() {} });
   expect(seen).toEqual(["page_tab"]);
 });

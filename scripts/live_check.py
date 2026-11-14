@@ -148,10 +148,8 @@ def print_report(dump: dict[str, Any], response: dict[str, Any] | None) -> None:
             print("  ERROR: " + str(plan["result"]))
     if response:
         print("-- page")
-        print(f"  title: {response.get('title')}")
-        print(f"  answer: {response.get('answer', '')[:700]}")
-        if response.get("body_lead"):
-            print(f"  lead: {response['body_lead'][:300]}")
+        print(f"  headline: {response.get('headline')}")
+        print(f"  lead: {response.get('lead', '')[:700]}")
         for group in response.get("groups") or []:
             print(f"  group {group.get('presentation')} {group.get('title')!r} blocks={group.get('block_indexes')}")
         for index, block in enumerate(response.get("blocks") or []):

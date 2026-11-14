@@ -104,9 +104,9 @@ streaming is not relied on, so the local provider stays non-streaming: the graph
 waits for a full tool-call or final-answer message at each node, which is also the
 reliable request mode for the current local Ollama/LangChain combination. OpenAI
 streams instead, and `/api/experience/stream` requests LangGraph's `messages` mode
-alongside `values` so it can decode the `chat_answer` field out of the
+alongside `values` so it can decode the top-level `lead` field out of the
 `finish_response` tool call's arguments as they are generated and forward it to the
-browser as `answer` events, ahead of the rest of the plan.
+browser as `lead` events, ahead of the rest of the plan.
 
 ```bash
 ollama pull qwen3:8b

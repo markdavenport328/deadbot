@@ -12,7 +12,7 @@ export type RenderGroup = {
   blocks: ExperienceBlock[];
   tab: WorkspaceTab | null;
 };
-export type Draft = { title: string; lead: string | null; groups: RenderGroup[] };
+export type Draft = { headline: string | null; lead: string | null; groups: RenderGroup[] };
 
 export function emptyGroup(): RenderGroup {
   return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [], tab: null };
@@ -25,8 +25,8 @@ export function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | n
   if (event.type === "page_tab") return draft;
   if (event.type === "page_reset") return null;
   if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;
-  if (event.type === "page_head") return { title: event.title, lead: event.lead, groups: draft?.groups ?? [] };
-  const current: Draft = draft ?? { title: "", lead: null, groups: [] };
+  if (event.type === "page_head") return { headline: event.headline, lead: event.lead, groups: draft?.groups ?? [] };
+  const current: Draft = draft ?? { headline: null, lead: null, groups: [] };
   const groups = current.groups.slice();
   const index = event.type === "block" ? event.group_index : event.index;
   if (!Number.isInteger(index) || index < 0) return draft;

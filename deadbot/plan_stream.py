@@ -1,10 +1,10 @@
 """Turn the streamed ``finish_response`` arguments into page events.
 
-The model writes its plan as JSON text, in schema order: ``chat_answer``,
-``title``, ``lead``, then ``groups`` whose scalar fields precede ``items``.
+The model writes its plan as JSON text, in schema order: ``initial_tab``,
+``headline``, ``lead``, then ``groups`` whose scalar fields precede ``items``.
 :class:`PlanStreamer` scans that text once, character by character, tracking
 strings, the container stack and the key path, and emits an event when the
-title closes, a group's items begin, an item closes (after resolving it to
+head (headline and lead) is complete, a group's items begin, an item closes (after resolving it to
 hydrated blocks), and a group closes. Everything here is transport: it
 never chooses content, and any failure disables progressive events for the
 turn while the final response is built exactly as before.
@@ -65,7 +65,7 @@ class PlanStreamer:
         self._in_string = False
         self._escape = False
         self._string_start = 0
-        self._title: str | None = None
+        self._headline: str | None = None
         self._lead: str | None = None
         self._groups: dict[int, dict[str, Any]] = {}
         self._head_sent = False
@@ -169,7 +169,7 @@ class PlanStreamer:
         if self._head_sent:
             return []
         self._head_sent = True
-        return [PlanEvent("page_head", {"title": self._title or "", "lead": self._grounded(self._lead)})]
+        return [PlanEvent("page_head", {"headline": (self._headline or "").strip() or None, "lead": self._grounded(self._lead)})]
 
     def _begin_value(self) -> None:
         top = self._top()
@@ -240,8 +240,8 @@ class PlanStreamer:
             if tab is not None and not self._tab_sent:
                 self._tab_sent = True
                 return [PlanEvent("page_tab", {"tab": tab})]
-        elif path == ["title"]:
-            self._title = value
+        elif path == ["headline"]:
+            self._headline = value
         elif path == ["lead"]:
             self._lead = value
         elif len(path) == 3 and path[0] == "groups" and path[2] in ("tab", "title", "lead", "presentation"):

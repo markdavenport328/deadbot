@@ -54,9 +54,8 @@ def main() -> None:
             "Which official releases cover 1972?",
             [releases],
             {
-                "chat_answer": f"{count} official releases carry music from 1972, from the Europe '72 tour to the Veneta and Dick's Picks sets.",
-                "title": f"{count} official releases carry 1972",
-                "lead": "Every record below draws on 1972 shows, in release order. Open one for its tracklist and credits.",
+                "headline": f"{count} official releases carry 1972",
+                "lead": f"{count} official releases carry music from 1972, from the Europe '72 tour to the Veneta and Dick's Picks sets. Every record below draws on 1972 shows, in release order.",
                 "groups": [{"presentation": "collection", "items": [{"type": "album_unit", "from_result": releases[2]["result_id"], "disclosure": "collapsed", "visible_facets": ["listen", "tracklist", "personnel"]}]}],
             },
         )
@@ -66,9 +65,8 @@ def main() -> None:
             "What shows did the Dead play in 1977?",
             [shows],
             {
-                "chat_answer": f"The library lists {len(shows[2]['rows'])} Grateful Dead shows in 1977, from the February opener in San Bernardino to the year-end run at Winterland.",
-                "title": "The Dead's 1977, show by show",
-                "lead": "Every 1977 show in the library, in date order. Open a show for its setlist.",
+                "headline": "The Dead's 1977, show by show",
+                "lead": f"The library lists {len(shows[2]['rows'])} Grateful Dead shows in 1977, from the February opener in San Bernardino to the year-end run at Winterland, in date order.",
                 "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "from_result": shows[2]["result_id"], "disclosure": "collapsed", "visible_facets": ["setlist", "listen", "guests"]}]}],
             },
         )
@@ -78,8 +76,7 @@ def main() -> None:
             "When did the Dead play Harrisburg PA?",
             [harrisburg],
             {
-                "chat_answer": "Twice, both on City Island in the Susquehanna: June 22, 1983 and June 23, 1984.",
-                "title": "Harrisburg saw the Dead twice",
+                "lead": "Twice, both on City Island in the Susquehanna: June 22, 1983 and June 23, 1984.",
                 "groups": [{"presentation": "collection", "items": [{"type": "show_unit", "from_result": harrisburg[2]["result_id"], "disclosure": "expanded", "emphasis": "supporting", "visible_facets": ["setlist", "listen"]}]}],
             },
         )
@@ -90,8 +87,8 @@ def main() -> None:
             "When was Dark Star played?",
             [dark_star, years],
             {
-                "chat_answer": "Dark Star peaked in 1969, fell nearly silent after 1974, and came back for a run from 1989 to 1994.",
-                "title": "Dark Star peaked in 1969 and returned in 1989",
+                "headline": "Dark Star peaked in 1969 and returned in 1989",
+                "lead": "Dark Star peaked in 1969, fell nearly silent after 1974, and came back for a run from 1989 to 1994.",
                 "groups": [
                     {"presentation": "collection", "items": [{"type": "song_overview", "song_id": "song-dark-star", "emphasis": "primary", "visible_facets": ["by_year", "by_year"], "note": "Seventy nights in 1969, a handful after 1974, then a late revival that peaked in 1991."}]},
                     {"presentation": "collection", "items": [{"type": "data_chart", "aggregation_id": years[2]["aggregation_id"], "title": "The same years from aggregate_data"}]},
@@ -105,8 +102,8 @@ def main() -> None:
             "What songs did the Dead play most?",
             [top],
             {
-                "chat_answer": f"{first['label']} leads the count, since the percussion segment sits in nearly every second set; Playing in the Band leads the songs.",
-                "title": "The songs the Dead played most",
+                "headline": "The songs the Dead played most",
+                "lead": f"{first['label']} leads the count, since the percussion segment sits in nearly every second set; Playing in the Band leads the songs.",
                 "groups": [{"presentation": "collection", "items": [{"type": "ranked_list", "aggregation_id": top[2]["aggregation_id"], "count": 10, "title": "Ten most-played songs", "notes": [{"key": first["id"], "note": "The nightly second-set percussion segment, counted as its own entry."}]}]}],
             },
         )

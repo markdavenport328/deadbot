@@ -39,7 +39,7 @@ def test_model_evaluation_rejects_unknown_case_ids_without_calling_a_model():
         raise AssertionError("Unknown case IDs should fail clearly")
 
 
-def test_required_source_urls_counted_when_cited_in_the_body_not_the_chat_answer():
+def test_required_source_urls_counted_when_cited_in_the_body_not_the_lead():
     """A required URL delivered through a resolved block still counts as cited.
 
     Under the single agent loop the chat answer is deliberately short; the
@@ -61,9 +61,7 @@ def test_required_source_urls_counted_when_cited_in_the_body_not_the_chat_answer
     assert resource, f"expected {resource_id} in the canonical resources table"
 
     plan = {
-        "chat_answer": "Yes — the Deadcast covered the Creamery benefit.",
-        "title": "Oral history of Veneta",
-        "lead": None,
+        "lead": "Yes — the Deadcast covered the Creamery benefit.",
         "groups": [{"presentation": "collection", "items": [{"type": "resource_list", "resource_ids": [resource_id], "title": "Listen and read"}]}],
     }
 

@@ -198,9 +198,8 @@ The page isn't a chat transcript with cards bolted on. The model produces a stru
 
 When the model has gathered enough material, it calls `finish_response` — a terminal tool whose arguments *are* the answer. Those arguments are a `FinishPlan` containing:
 
-- **`chat_answer`** — the direct text answer for the conversation pane.
-- **`title`** — the page headline.
-- **`lead`** — optional expansion of the central finding.
+- **`headline`** — an optional short line above the lead.
+- **`lead`** — the page's opening and the answer: its first sentence answers the question on its own.
 - **`groups`** — groups, each containing items (semantic unit references and editorial blocks).
 
 The model writes this plan from what it retrieved. Every reference (a show ID, a song ID, a performance ID) must trace to a tool result from the same conversation. A reference that doesn't resolve keeps the model's own words for it as a narrative block, without a hydrated record — the page only shows records the model actually looked up.

@@ -85,12 +85,12 @@ afterEach(() => {
   window.history.replaceState({}, "", "/");
 });
 
-async function renderFixture(name: string, response: { title: string }) {
+async function renderFixture(name: string, response: { headline?: string | null }) {
   window.history.replaceState({}, "", `/?fixture=${name}`);
   vi.resetModules();
   const { default: App } = await import("../App");
   render(<App />);
-  await screen.findByRole("heading", { level: 1, name: response.title });
+  await screen.findByRole("heading", { level: 1, name: response.headline ?? "" });
 }
 
 describe("an album card's Spotify player", () => {

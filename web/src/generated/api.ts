@@ -691,21 +691,21 @@ export interface components {
         };
         /** ExperienceResponse */
         ExperienceResponse: {
-            /** Answer */
-            answer: string;
             /** Blocks */
             blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
-            /** Body Lead */
-            body_lead?: string | null;
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Groups */
             groups?: components["schemas"]["ExperienceGroup"][];
+            /** Headline */
+            headline?: string | null;
             /**
              * Initial Tab
              * @description The workspace tab the page opens on.
              */
             initial_tab?: ("listen" | "charts" | "read") | null;
+            /** Lead */
+            lead: string;
             /**
              * Mode
              * @default answer
@@ -719,16 +719,14 @@ export interface components {
             notebook?: string | null;
             /**
              * Schema Version
-             * @default 2
+             * @default 3
              * @constant
              */
-            schema_version: "2";
+            schema_version: "3";
             /** Sources */
             sources?: components["schemas"]["SourceReference"][];
             /** Thread Id */
             thread_id: string;
-            /** Title */
-            title: string;
         };
         /**
          * FollowUpTopic

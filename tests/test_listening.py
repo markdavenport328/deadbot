@@ -16,8 +16,7 @@ TERRAPIN = "gd-1977-06-09-terrapin-station-2-10"
 def _hero_plan(**hero):
     return finish.FinishPlan.model_validate(
         {
-            "chat_answer": "Cornell earns it.",
-            "title": "Cornell's case is coherence",
+            "lead": "Cornell earns it.",
             "groups": [
                 {
                     "presentation": "collection",
@@ -119,8 +118,7 @@ def test_the_streamer_and_the_plan_accept_the_same_hero_and_pulled_line():
     payload = store.show_context(store.resolve_show("1977-05-08"))
     grounded = finish.grounded_context([payload])
     raw = {
-        "chat_answer": "Cornell earns it.",
-        "title": "Cornell",
+        "lead": "Cornell earns it.",
         "groups": [
             {
                 "presentation": "collection",

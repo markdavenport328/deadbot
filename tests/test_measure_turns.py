@@ -9,7 +9,7 @@ from scripts.measure_turns import DEFAULT_QUESTIONS, SEQUENCES, measure, measure
 class _Agent:
     def stream(self, payload, config, stream_mode="values"):
         question = payload["messages"][-1].content
-        finish = {"chat_answer": f"About {question}", "title": "T", "lead": None, "groups": []}
+        finish = {"lead": f"About {question}", "groups": []}
         yield ("values", {"messages": [
             HumanMessage(content=question),
             AIMessage(content="", tool_calls=[{"name": "finish_response", "args": finish, "id": "f", "type": "tool_call"}],

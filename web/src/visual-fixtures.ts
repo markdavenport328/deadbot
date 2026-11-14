@@ -105,22 +105,21 @@ function show({
 
 function fixture(
   question: string,
-  title: string,
-  body_lead: string,
+  headline: string,
+  lead: string,
   blocks: ExperienceBlock[],
   presentation: NonNullable<ExperienceResponse["groups"]>[number]["presentation"] = "collection",
   group?: Pick<NonNullable<ExperienceResponse["groups"]>[number], "title" | "lead">
 ): ExperienceResponse {
   return {
-    schema_version: "2",
-    thread_id: `visual-${title.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`,
-    title,
-    answer: body_lead,
-    body_lead,
+    schema_version: "3",
+    thread_id: `visual-${headline.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`,
+    headline,
+    lead,
     mode: "answer",
     conversation: [
       { role: "user", text: question },
-      { role: "assistant", text: body_lead }
+      { role: "assistant", text: lead }
     ],
     blocks,
     groups: [{ presentation, criteria: [], ...group, block_indexes: blocks.map((_, index) => index) }],
@@ -326,11 +325,10 @@ const shakedown: ExperienceResponse = fixture(
 );
 
 const fact: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-fact",
-  title: "American Beauty came out in November 1970",
-  answer: "American Beauty was released on November 1, 1970.",
-  body_lead: null,
+  headline: "American Beauty came out in November 1970",
+  lead: "American Beauty was released on November 1, 1970.",
   mode: "answer",
   conversation: [
     { role: "user", text: "When was American Beauty released?" },
@@ -363,11 +361,10 @@ const fact: ExperienceResponse = {
 };
 
 const legacy: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-legacy",
-  title: "American Beauty split into durable staples and forgotten songs",
-  answer: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
-  body_lead: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
+  headline: "American Beauty split into durable staples and forgotten songs",
+  lead: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
   mode: "answer",
   conversation: [
     { role: "user", text: "What was the live legacy of American Beauty?" },
@@ -501,11 +498,10 @@ const viewsBlocks: ExperienceBlock[] = [
 ];
 
 const views: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-views",
-  title: "Soldier Field 1995 through three performances, and the songs that stayed",
-  answer: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
-  body_lead: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  headline: "Soldier Field 1995 through three performances, and the songs that stayed",
+  lead: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
   mode: "answer",
   conversation: [
     { role: "user", text: "How do Soldier Field 1995-07-09's key performances hold up, and which Wake of the Flood songs stuck around live?" },
@@ -659,11 +655,10 @@ const performanceBlocks: ExperienceBlock[] = [
 ];
 
 const performance: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-performance",
-  title: "The 1968 Dark Star is a route through episodes",
-  answer: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
-  body_lead: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
+  headline: "The 1968 Dark Star is a route through episodes",
+  lead: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
   mode: "answer",
   conversation: [
     { role: "user", text: "What is the 1968 Carousel Ballroom Dark Star like?" },
@@ -1013,11 +1008,10 @@ const msgStory: ExperienceBlock[] = [
 ] as ExperienceBlock[];
 
 const msgWorkspace: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-msg-workspace",
-  title: "The Garden years, 1979–1994",
-  answer: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all, usually in multi-night runs that became a fixture of the New York calendar.",
-  body_lead: null,
+  headline: "The Garden years, 1979–1994",
+  lead: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all, usually in multi-night runs that became a fixture of the New York calendar.",
   mode: "answer",
   conversation: [
     { role: "user", text: "What's their history at Madison Square Garden?" },
@@ -1054,10 +1048,10 @@ export function streamEventsFor(name: VisualFixtureName): StreamEvent[] {
     { type: "status", text: "Looking through the library" },
     { type: "status", text: "Reading the show" }
   ];
-  const words = response.answer.split(" ");
-  words.forEach((_, index) => events.push({ type: "answer", text: words.slice(0, index + 1).join(" ") }));
+  const words = response.lead.split(" ");
+  words.forEach((_, index) => events.push({ type: "lead", text: words.slice(0, index + 1).join(" ") }));
   events.push({ type: "status", text: "Composing the page" });
-  events.push({ type: "page_head", title: response.title, lead: response.body_lead ?? null });
+  events.push({ type: "page_head", headline: response.headline ?? null, lead: response.lead });
   response.groups.forEach((group, index) => {
     const meta = { index, title: group.title ?? null, lead: group.lead ?? null, presentation: group.presentation, criteria: group.criteria ?? [] };
     events.push({ type: "group_open", ...meta });

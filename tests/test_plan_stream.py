@@ -13,9 +13,8 @@ def chunk(args: str, *, name: str | None = None, call_id: str = "f1", index: int
 
 
 PLAN = {
-    "chat_answer": "Sugaree opened the \"second\" set, with a } brace and a \\ backslash.",
-    "title": "Sugaree at Veneta",
-    "lead": "A relaxed early version.",
+    "headline": "Sugaree at Veneta",
+    "lead": "Sugaree opened the \"second\" set, with a } brace and a \\ backslash.",
     "groups": [
         {
             "title": "The night",
@@ -53,7 +52,7 @@ def test_events_arrive_in_reading_order_with_group_metadata():
     events = drive(PLAN_TEXT, 1)
     types = [event.type for event in events]
     assert types == ["page_head", "group_open", "block", "block", "group_close", "group_open", "block", "group_close"]
-    assert events[0].payload == {"title": "Sugaree at Veneta", "lead": "A relaxed early version."}
+    assert events[0].payload == {"headline": "Sugaree at Veneta", "lead": "Sugaree opened the \"second\" set, with a } brace and a \\ backslash."}
     assert events[1].payload == {"index": 0, "tab": None, "title": "The night", "lead": None, "presentation": "comparison", "criteria": ["Pace", "Jam"]}
     assert events[2].payload["group_index"] == 0 and events[2].payload["block"]["id"] == "gd-1972-08-27"
     assert events[3].payload["block"]["type"] == "editorial"
@@ -67,37 +66,37 @@ def test_one_character_at_a_time_gives_identical_events():
 
 
 def test_a_plan_with_no_groups_emits_the_head_when_the_call_completes():
-    events = drive(json.dumps({"chat_answer": "Hi", "title": "Deadbot", "lead": None, "groups": []}), 3)
+    events = drive(json.dumps({"lead": "Hi", "groups": []}), 3)
     assert [event.type for event in events] == ["page_head"]
-    assert events[0].payload == {"title": "Deadbot", "lead": None}
+    assert events[0].payload == {"headline": None, "lead": "Hi"}
 
 
 def test_a_retried_call_resets_the_draft():
     streamer = PlanStreamer(fake_resolve)
-    first = streamer.feed(chunk('{"chat_answer": "x", "title": "First", "groups": [{"presentation": "collection", "items": [', name="finish_response"))
+    first = streamer.feed(chunk('{"headline": "First", "lead": "x", "groups": [{"presentation": "collection", "items": [', name="finish_response"))
     assert [event.type for event in first] == ["page_head", "group_open"]
-    second = streamer.feed(chunk('{"chat_answer": "y", "title": "Second", "groups": []}', name="finish_response", call_id="f2", index=1))
+    second = streamer.feed(chunk('{"headline": "Second", "lead": "y", "groups": []}', name="finish_response", call_id="f2", index=1))
     assert [event.type for event in second] == ["page_reset", "page_head"]
-    assert second[1].payload["title"] == "Second"
+    assert second[1].payload["headline"] == "Second"
 
 
 def test_malformed_json_disables_events_without_raising():
     streamer = PlanStreamer(fake_resolve)
-    events = streamer.feed(chunk('{"chat_answer": "x", "groups": ]]]', name="finish_response"))
+    events = streamer.feed(chunk('{"lead": "x", "groups": ]]]', name="finish_response"))
     assert events == []
     assert streamer.disabled is True
-    assert streamer.feed(chunk('{"title": "later"}')) == []
+    assert streamer.feed(chunk('{"headline": "later"}')) == []
 
 
 def test_chunks_from_other_tool_calls_are_ignored():
     streamer = PlanStreamer(fake_resolve)
     streamer.feed(chunk('{"query": "x"}', name="search_entities", call_id="s1", index=0))
-    events = streamer.feed(chunk('{"chat_answer": "x", "title": "T", "groups": []}', name="finish_response", call_id="f1", index=1))
+    events = streamer.feed(chunk('{"lead": "x", "groups": []}', name="finish_response", call_id="f1", index=1))
     assert [event.type for event in events] == ["page_head"]
 
 
 def test_an_item_with_nothing_to_show_is_skipped_and_judgments_are_kept():
-    plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "comparison", "criteria": ["A"], "items": [
+    plan = {"lead": "x", "groups": [{"presentation": "comparison", "criteria": ["A"], "items": [
         {"type": "not_a_block"},
         {"type": "show_unit", "show_id": "gd-1972-08-27", "judgments": ["one", "two"]},
     ]}]}
@@ -119,9 +118,7 @@ def test_an_item_with_nothing_to_show_is_skipped_and_judgments_are_kept():
 
 def test_group_leads_run_through_link_grounding():
     plan = {
-        "chat_answer": "x",
-        "title": "T",
-        "lead": None,
+        "lead": "x",
         "groups": [
             {"presentation": "collection", "lead": "See [x](https://example.com/not-returned) for more.", "items": []},
             {"presentation": "collection", "lead": "See [ok](https://archive.org/ok) for more.", "items": []},
@@ -136,7 +133,7 @@ def test_group_leads_run_through_link_grounding():
 
 
 def test_a_failing_item_is_skipped_without_disabling_the_streamer():
-    plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": [
+    plan = {"lead": "x", "groups": [{"presentation": "collection", "items": [
         {"type": "song_overview", "song_id": "bad-song"},
         {"type": "song_overview", "song_id": "good-song"},
     ]}]}
@@ -157,7 +154,7 @@ def test_a_failing_item_is_skipped_without_disabling_the_streamer():
 
 def test_every_planned_item_is_streamed():
     items = [{"type": "show_unit", "show_id": f"gd-1990-03-{day:02d}"} for day in range(1, 24)]
-    plan = {"chat_answer": "x", "title": "T", "groups": [{"presentation": "collection", "items": items}]}
+    plan = {"lead": "x", "groups": [{"presentation": "collection", "items": items}]}
     events = drive(json.dumps(plan), 7)
     blocks = [event for event in events if event.type == "block"]
     assert len(blocks) == 23
@@ -172,7 +169,7 @@ def test_indented_json_gives_identical_events_to_compact_json():
 
 
 def test_criteria_listed_after_items_still_reach_group_close():
-    plan = {"chat_answer": "x", "title": "T", "groups": [
+    plan = {"lead": "x", "groups": [
         {"presentation": "comparison", "items": [
             {"type": "show_unit", "show_id": "gd-1972-08-27", "judgments": ["one"]},
         ], "criteria": ["Pace"]},
@@ -188,7 +185,7 @@ def test_a_second_groups_list_continues_the_first_in_the_stream_and_the_plan():
     from deadbot.finish import FinishPlan, read_joining_repeats
 
     text = (
-        '{"chat_answer": "a", "title": "t", "groups": ['
+        '{"lead": "a", "groups": ['
         '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}], '
         '"groups": [{"title": "Two", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27"}]}]}'
     )
@@ -207,8 +204,8 @@ def test_a_second_groups_list_that_restates_the_page_replaces_it():
     one = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
     two = '{"title": "Two", "items": [{"type": "show_unit", "show_id": "gd-1972-08-27"}]}'
     for text, titles in (
-        ('{"chat_answer": "a", "title": "t", "groups": [' + one + '], "groups": [' + one + ", " + two + "]}", ["One", "Two"]),
-        ('{"chat_answer": "a", "title": "t", "groups": [' + one + '], "groups": [' + one + '], "groups": [' + one + "]}", ["One"]),
+        ('{"lead": "a", "groups": [' + one + '], "groups": [' + one + ", " + two + "]}", ["One", "Two"]),
+        ('{"lead": "a", "groups": [' + one + '], "groups": [' + one + '], "groups": [' + one + "]}", ["One"]),
     ):
         # The draft as the browser builds it: groups_reset starts its groups over.
         draft: dict[int, dict] = {}
@@ -233,9 +230,7 @@ def test_a_grid_survives_the_streamed_and_final_paths():
     payloads = [payload]
     grounded = finish.grounded_context(payloads)
     plan_args = {
-        "chat_answer": "Dark Star peaked early.",
-        "title": "Dark Star by year",
-        "lead": None,
+        "lead": "Dark Star peaked early.",
         "groups": [{"presentation": "collection", "items": [{"type": "grid", "grid_id": payload["grid_id"], "title": "Peak", "open_rows": 1}]}],
     }
 
@@ -261,9 +256,9 @@ def test_items_written_beside_groups_stand_as_one_more_group_in_the_stream_and_t
     group = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
     loose = '[{"type": "show_unit", "show_id": "gd-1972-08-27"}]'
     for text, titles, first_block in (
-        ('{"chat_answer": "a", "title": "t", "groups": [' + group + '], "items": ' + loose + "}", ["One", None], "song-sugaree"),
-        ('{"chat_answer": "a", "title": "t", "items": ' + loose + ', "groups": [' + group + "]}", [None, "One"], "gd-1972-08-27"),
-        ('{"chat_answer": "a", "title": "t", "items": ' + loose + "}", [None], "gd-1972-08-27"),
+        ('{"lead": "a", "groups": [' + group + '], "items": ' + loose + "}", ["One", None], "song-sugaree"),
+        ('{"lead": "a", "items": ' + loose + ', "groups": [' + group + "]}", [None, "One"], "gd-1972-08-27"),
+        ('{"lead": "a", "items": ' + loose + "}", [None], "gd-1972-08-27"),
     ):
         events = drive(text, 6)
         opened = [(event.payload["index"], event.payload["title"]) for event in events if event.type == "group_open"]
@@ -282,13 +277,13 @@ def test_the_listening_hero_field_leads_the_page_in_both_paths():
     from deadbot.finish import FinishPlan, read_joining_repeats
 
     group = '{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}'
-    text = '{"chat_answer": "a", "title": "t", "listening_hero": {"show_id": "gd-1973-11-11", "start_set": "2"}, "groups": [' + group + "]}"
+    text = '{"lead": "a", "listening_hero": {"show_id": "gd-1973-11-11", "start_set": "2"}, "groups": [' + group + "]}"
     events = drive(text, 6)
     assert [event.payload["title"] for event in events if event.type == "group_open"] == [None, "One"]
     plan = FinishPlan.model_validate(read_joining_repeats(text))
     assert [group.title for group in plan.groups] == [None, "One"]
     assert plan.groups[0].items[0].type == "listening_hero" and plan.groups[0].items[0].start_set == "2"
-    assert FinishPlan.model_validate({"chat_answer": "a", "title": "t", "listening_hero": {}, "groups": [{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}]}).groups[0].title == "One"
+    assert FinishPlan.model_validate({"lead": "a", "listening_hero": {}, "groups": [{"title": "One", "items": [{"type": "song_overview", "song_id": "song-sugaree"}]}]}).groups[0].title == "One"
 
 
 def _streamed_page(text: str, pieces: int) -> list[tuple[str | None, str | None]]:
@@ -317,7 +312,7 @@ def test_loose_items_land_in_the_same_place_streamed_and_delivered_beside_repeat
 
     a, b, c = group("A", "song-a"), group("B", "song-b"), group("C", "song-c")
     loose = '[{"type": "show_unit", "show_id": "gd-1972-08-27"}]'
-    head = '{"chat_answer": "a", "title": "t", '
+    head = '{"lead": "a", '
     cases = {
         "items then groups": (head + '"items": ' + loose + ', "groups": [' + a + "]}", [(None, "gd-1972-08-27"), ("A", "song-a")]),
         "groups then items": (head + '"groups": [' + a + '], "items": ' + loose + "}", [("A", "song-a"), (None, "gd-1972-08-27")]),

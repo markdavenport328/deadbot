@@ -95,7 +95,8 @@
 .workspace-shell .exploration-pane .content-heading h1 { font-size: clamp(1.8rem, 3vw, 2.8rem); }
 .workspace-shell .previous-label { margin: 0 0 var(--space-detail); color: var(--muted); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
 .workspace-shell .exploration-pane.previous { opacity: 0.55; transition: opacity 180ms var(--ease-out); }
-.workspace-shell .workspace-answer { max-width: 46rem; margin: 0 0 var(--space-content); color: var(--cream); font-size: 1.12rem; line-height: 1.55; }
+.workspace-shell .exploration-pane > .answer-lead { max-width: 46rem; margin: 0 0 var(--space-content); color: var(--cream); font-size: 1.12rem; line-height: 1.55; }
+.workspace-shell .exploration-pane > .content-heading:has(+ .answer-lead) { margin-bottom: var(--space-content); }
 .workspace-shell .workspace-waiting { color: var(--quiet); font-size: 0.9rem; }
 .workspace-shell .workspace-panel > .experience-group + .experience-group { margin-top: var(--space-unit); }
 

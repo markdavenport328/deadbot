@@ -1,12 +1,13 @@
-"""Decode ``chat_answer`` out of the growing ``finish_response`` arguments.
+"""Decode the top-level ``lead`` out of the growing ``finish_response`` arguments.
 
 The model streams its ``finish_response`` tool call as JSON text fragments.
-Rather than wait for the whole plan (title, body blocks, and all) to finish
-generating, :func:`extract_chat_answer` pulls the ``chat_answer`` string
-value out of the arguments text as far as it has been generated so far, and
-:class:`AnswerAccumulator` tracks that across a LangGraph ``messages``-mode
+Rather than wait for the whole plan (groups, body blocks, and all) to finish
+generating, :func:`extract_lead` pulls the page's ``lead`` string value out of
+the arguments text as far as it has been generated so far, and
+:class:`LeadAccumulator` tracks that across a LangGraph ``messages``-mode
 stream of ``AIMessageChunk``s so the visible answer can reach the browser
-while the rest of the plan is still on the wire.
+while the rest of the plan is still on the wire. Groups carry their own
+``lead`` keys; only the plan's top-level one is read.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from typing import Any
 
 from deadbot.finish import FINISH_TOOL_NAME
 
-_KEY = re.compile(r'"chat_answer"\s*:\s*"')
+_KEY = re.compile(r'"lead"\s*:\s*"')
 
 _SIMPLE_ESCAPES = {
     '"': '"',
@@ -30,8 +31,43 @@ _SIMPLE_ESCAPES = {
 }
 
 
-def extract_chat_answer(partial_json: str) -> tuple[str, bool]:
-    """Decode the ``chat_answer`` string value out of partial tool-call JSON.
+def _top_level_value_start(partial_json: str) -> int | None:
+    """Offset just past the opening quote of the top-level ``lead`` value, if reached.
+
+    Scans the text once, tracking strings and bracket depth, so a ``lead`` key
+    inside a group (depth 3: object, ``groups`` array, group object) is never
+    mistaken for the page's own.
+    """
+
+    depth = 0
+    in_string = False
+    escape = False
+    string_start = 0
+    for index, char in enumerate(partial_json):
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+            string_start = index
+            if depth == 1:
+                match = _KEY.match(partial_json, string_start)
+                if match:
+                    return match.end()
+        elif char in "{[":
+            depth += 1
+        elif char in "}]":
+            depth -= 1
+    return None
+
+
+def extract_lead(partial_json: str) -> tuple[str, bool]:
+    """Decode the top-level ``lead`` string value out of partial tool-call JSON.
 
     Returns the value decoded as far as it has been generated, and whether
     the string is complete (an unescaped closing quote has been seen). A
@@ -40,11 +76,11 @@ def extract_chat_answer(partial_json: str) -> tuple[str, bool]:
     text can complete it.
     """
 
-    match = _KEY.search(partial_json)
-    if not match:
+    start = _top_level_value_start(partial_json)
+    if start is None:
         return ("", False)
 
-    body = partial_json[match.end() :]
+    body = partial_json[start:]
     chars: list[str] = []
     index = 0
     length = len(body)
@@ -119,8 +155,8 @@ def extract_chat_answer(partial_json: str) -> tuple[str, bool]:
     return ("".join(chars), complete)
 
 
-class AnswerAccumulator:
-    """Track the cumulative ``chat_answer`` text across a ``messages`` stream.
+class LeadAccumulator:
+    """Track the cumulative top-level ``lead`` text across a ``messages`` stream.
 
     Feed it every ``AIMessageChunk`` yielded by LangGraph's ``messages``
     stream mode. It buffers the argument fragments that belong to the
@@ -149,7 +185,7 @@ class AnswerAccumulator:
         if not self._buffer:
             return None
 
-        answer, complete = extract_chat_answer(self._buffer)
+        answer, complete = extract_lead(self._buffer)
         self._complete = complete
         if answer == self._answer:
             return None

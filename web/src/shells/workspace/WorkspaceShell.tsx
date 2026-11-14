@@ -111,14 +111,14 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
   function complete(requestId: string, response: ExperienceResponse) {
     dispatch({ type: "complete", requestId, response });
     storeNotebook(response.notebook ?? null);
-    setAnnouncement(`Ready: ${response.title}`);
+    setAnnouncement(`Ready: ${response.headline ?? response.lead}`);
     if (interactedRef.current !== requestId) focusPaneRef.current = requestId;
   }
 
   async function run(requestId: string, body: string, signal: AbortSignal) {
     const handlers: Omit<StreamHandlers, "onResponse"> = {
       onStatus: (text) => dispatch({ type: "status", requestId, text }),
-      onAnswer: (text) => dispatch({ type: "answer", requestId, text }),
+      onLead: (text) => dispatch({ type: "lead", requestId, text }),
       onPage: (event: PageEvent) => {
         // The model's opening tab arrives on its own event, ahead of the answer.
         const opening = event.type === "page_tab" ? readTab(event.tab) : null;
@@ -264,7 +264,7 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
     if (!pending || pending.error !== null) return;
     if (announcedRef.current?.requestId !== pending.requestId) announcedRef.current = { requestId: pending.requestId, tabs: new Set() };
     const announced = announcedRef.current.tabs;
-    const filled = tabsWithContent(routeGroups(pending.draft?.groups ?? []), pending.answer);
+    const filled = tabsWithContent(routeGroups(pending.draft?.groups ?? []));
     const arrived = WORKSPACE_TABS.filter(({ id }) => filled.has(id) && !announced.has(id));
     if (arrived.length === 0) return;
     arrived.forEach(({ id }) => announced.add(id));

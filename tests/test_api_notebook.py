@@ -224,9 +224,9 @@ def test_a_url_the_notebook_holds_keeps_its_link_in_chat():
     answer = f"Hear it [here]({url})."
     request = {"question": "Where can I hear it?", "conversation": FIRST_EXCHANGE}
     linked = _client(FakeAgent(turn(request["question"], answer, []))).post("/api/experience", json={**request, "notebook": token}).json()
-    assert f"]({url})" in linked["answer"]
+    assert f"]({url})" in linked["lead"]
     unlinked = _client(FakeAgent(turn(request["question"], answer, []))).post("/api/experience", json=request).json()
-    assert f"]({url})" not in unlinked["answer"]
+    assert f"]({url})" not in unlinked["lead"]
 
 
 def test_notebook_ids_and_clicked_ids_both_ground_the_page():

@@ -3,10 +3,10 @@ import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
 
 type Turn = { role: "user" | "assistant"; text: string };
 
-function reply(title: string, notebook: string | null, conversation: Turn[]) {
+function reply(headline: string, notebook: string | null, conversation: Turn[]) {
   return {
-    schema_version: "2", thread_id: "web-test", title, answer: conversation[conversation.length - 1].text,
-    body_lead: null, mode: "answer", conversation, blocks: [], groups: [], sources: [],
+    schema_version: "3", thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
+    mode: "answer", conversation, blocks: [], groups: [], sources: [],
     ...(notebook ? { notebook } : {})
   };
 }

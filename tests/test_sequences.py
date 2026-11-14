@@ -192,9 +192,7 @@ def test_a_version_strip_survives_the_streamed_and_final_paths(csv_store):
     payloads = _strip_payloads(csv_store)
     grounded = finish.grounded_context(payloads)
     plan_args = {
-        "chat_answer": "It is one piece in two halves.",
-        "title": "One song in two halves",
-        "lead": None,
+        "lead": "It is one piece in two halves.",
         "groups": [{"presentation": "collection", "items": [_strip_item()]}],
     }
 

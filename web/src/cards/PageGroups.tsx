@@ -77,14 +77,13 @@ function tapeLabels(tapes: Tape[]): Map<string, string> {
 
 export function ComposedPage({
   title,
-  lead,
   groups,
   sources,
   composing,
   onFollowUp
 }: {
-  title: string;
-  lead: string | null;
+  // The model's headline, when it wrote one. The lead lives in the conversation column.
+  title: string | null;
   groups: RenderGroup[];
   sources: SourceReference[];
   composing: boolean;
@@ -97,10 +96,13 @@ export function ComposedPage({
   return (
     <>
       {hero && <ListeningHero block={hero} />}
-      <div className="content-heading">
-        <h1 id="answer-title" tabIndex={-1}>{title}</h1>
-      </div>
-      {lead && <p className="answer-lead">{renderInline(lead)}</p>}
+      {title ? (
+        <div className="content-heading">
+          <h1 id="answer-title" tabIndex={-1}>{title}</h1>
+        </div>
+      ) : (
+        <span id="answer-title" tabIndex={-1} />
+      )}
       <PageGroups groups={bodyGroups} sources={sources} composing={composing} onFollowUp={onFollowUp} afterHero={Boolean(hero)} />
       {composing && <p className="composing-note">Composing the page…</p>}
       {!composing && <SourcesFooter groups={groups} sources={sources} />}

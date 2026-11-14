@@ -8,7 +8,7 @@ from test_postgres_store import Connection
 
 
 def _response(answer: str = "Five shows.", mode: str = "answer") -> ExperienceResponse:
-    return ExperienceResponse(thread_id="original", title="Branford", answer=answer, mode=mode)
+    return ExperienceResponse(thread_id="original", lead=answer, mode=mode)
 
 
 def _postgres_cache(**kwargs) -> tuple[Connection, ResponseCache]:
@@ -41,7 +41,7 @@ def test_a_stored_answer_comes_back_under_the_new_thread():
     cache.remember(question, _response())
     hit = cache.lookup("what shows did branford play on", thread_id="second")
     assert hit is not None
-    assert hit.answer == "Five shows."
+    assert hit.lead == "Five shows."
     assert hit.thread_id == "second"
 
 
@@ -103,7 +103,7 @@ def test_a_bundle_of_exported_answers_seeds_a_fresh_cache(tmp_path):
     assert fresh.lookup("What shows did Branford play on?", thread_id="t") is None
     assert fresh.seed_from_bundle(bundle) == 1
     hit = fresh.lookup("what shows did branford play on", thread_id="new")
-    assert hit is not None and hit.answer == "Five shows." and hit.thread_id == "new"
+    assert hit is not None and hit.lead == "Five shows." and hit.thread_id == "new"
 
 
 def test_a_bundle_made_for_another_version_is_ignored(tmp_path):
@@ -126,7 +126,7 @@ def test_a_missing_or_broken_bundle_changes_nothing(tmp_path):
 def test_an_exported_answer_keeps_its_notebook_through_the_bundle():
     _, cache = _postgres_cache()
     question = "What's on Europe '72: The Complete Recordings?"
-    cache.remember(question, ExperienceResponse(thread_id="original", title="Europe '72", answer="Twenty-two nights.", notebook="v1.body.sig"))
+    cache.remember(question, ExperienceResponse(thread_id="original", lead="Twenty-two nights.", notebook="v1.body.sig"))
     (entry,) = cache.export([question])
     assert entry["response"]["notebook"] == "v1.body.sig"
     _, fresh = _postgres_cache()

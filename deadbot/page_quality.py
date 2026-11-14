@@ -57,7 +57,7 @@ def _content(text: str) -> set[str]:
 
 
 def model_layers(response: dict[str, Any]) -> list[tuple[str, str]]:
-    """(where, text) for every piece of the page the model wrote, chat answer excluded."""
+    """(where, text) for every piece of the page the model wrote, lead excluded (it is the answer the layers are measured against)."""
 
     layers: list[tuple[str, str]] = []
 
@@ -65,8 +65,7 @@ def model_layers(response: dict[str, Any]) -> list[tuple[str, str]]:
         if isinstance(value, str) and value.strip():
             layers.append((where, value.strip()))
 
-    add("title", response.get("title"))
-    add("lead", response.get("body_lead"))
+    add("headline", response.get("headline"))
     for index, group in enumerate(response.get("groups") or []):
         add(f"group[{index}].title", group.get("title"))
         add(f"group[{index}].lead", group.get("lead"))
@@ -105,7 +104,7 @@ def repeats(chat: str, layers: list[tuple[str, str]], threshold: float = 0.5) ->
     flagged: list[str] = []
     for where, text in layers:
         # A title naturally names what the answer names; repeats are sentences.
-        if where == "title" or where.endswith(".title"):
+        if where in {"headline", "title"} or where.endswith(".title"):
             continue
         words = _content(text)
         if len(words) < 5:
@@ -263,7 +262,7 @@ def restated_cards(blocks: list[dict[str, Any]]) -> list[str]:
 def score_page(response: dict[str, Any], expect: dict[str, Any] | None = None) -> dict[str, Any]:
     """Counts and examples for one delivered page."""
 
-    chat = response.get("answer") or ""
+    chat = response.get("lead") or ""
     layers = model_layers(response)
     blocks = response.get("blocks") or []
     result: dict[str, Any] = {

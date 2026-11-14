@@ -58,8 +58,7 @@ def test_the_streamed_page_and_the_delivered_page_have_the_same_blocks():
     performance_id = show["performances"][0]["performance_id"]
     follow_ups = [{"label": f"Topic {n}", "question": f"What about topic {n}?", "why": "extra key"} for n in range(6)]
     plan = {
-        "chat_answer": "Veneta was hot.",
-        "title": "Veneta and May 1977",
+        "lead": "Veneta was hot.",
         "groups": [
             {
                 "title": "The night",
