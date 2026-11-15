@@ -57,7 +57,7 @@ class PerformancesItem(_Item):
 
     type: Literal["performances"]
     performance_ids: list[str] = Field(description="The performances, in the order to hear them.")
-    notes: dict[str, str] | None = Field(default=None, description="Your line under a performance, keyed by performance_id.")
+    notes: dict[str, str] | None = Field(default=None, description="Your note on a performance, keyed by performance_id.")
 
 
 class PairingItem(_Item):
