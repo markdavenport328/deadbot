@@ -22,6 +22,7 @@ the response cache off, so every run is a fresh model turn.
 from __future__ import annotations
 
 import argparse
+import faulthandler
 import json
 import logging
 import os
@@ -291,7 +292,15 @@ def main() -> None:
         return
     args.out.mkdir(parents=True, exist_ok=True)
     if args.command == "ask":
+        # A turn still running after nine minutes is stuck somewhere: write
+        # every thread's stack to a file so the stall can be found.
+        slug = re.sub(r"[^a-z0-9]+", "-", args.question.lower()).strip("-")[:48]
+        stall = (args.out / f"stall-{time.strftime('%H%M%S')}-{os.getpid()}-{slug}.txt").open("w")
+        faulthandler.dump_traceback_later(540, file=stall)
         ask(args.question, args.out)
+        faulthandler.cancel_dump_traceback_later()
+        stall.close()
+        Path(stall.name).unlink(missing_ok=True)
     else:
         serve(args.out, args.port)
 

@@ -42,7 +42,7 @@ def _ask(question: str, out_dir: Path) -> Path | None:
             timeout=600,
         )
     except subprocess.TimeoutExpired:
-        print(f"timed out after 600 s: {question}", file=sys.stderr)
+        print(f"timed out after 600 s: {question} (stacks in {out_dir}/stall-*.txt)", file=sys.stderr)
         return None
     match = re.search(r"saved (\S+\.ndjson)", completed.stdout)
     return Path(match.group(1)) if match else None
