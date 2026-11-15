@@ -33,13 +33,17 @@ DEFAULT_SUITE = ROOT / "evals" / "page-quality-v1.json"
 def _ask(question: str, out_dir: Path) -> Path | None:
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
     env.setdefault("DEADBOT_OPENAI_REASONING_EFFORT", "low")
-    completed = subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "live_check.py"), "ask", question, "--out", str(out_dir)],
-        capture_output=True,
-        text=True,
-        env=env,
-        timeout=600,
-    )
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "live_check.py"), "ask", question, "--out", str(out_dir)],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=600,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"timed out after 600 s: {question}", file=sys.stderr)
+        return None
     match = re.search(r"saved (\S+\.ndjson)", completed.stdout)
     return Path(match.group(1)) if match else None
 
