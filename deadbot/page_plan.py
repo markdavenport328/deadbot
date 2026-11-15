@@ -49,6 +49,9 @@ class _Item(_Compact):
     title: str | None = Field(default=None, description="A heading for this item, when the section's heading does not cover it.")
 
 
+_OPEN = "True (the default) starts it open. False starts it as one row the visitor can open."
+
+
 class PerformancesItem(_Item):
     """Performances to play in order: one song across nights, or several songs from one night."""
 
@@ -72,6 +75,7 @@ class ShowItem(_Item):
     type: Literal["show"]
     show_id: str
     note: str | None = None
+    open: bool = Field(default=True, description=_OPEN)
     play: str | None = Field(
         default=None,
         description="Start the player here and make it the page's opening player: a set label such as 'Set 2', or a performance_id.",
@@ -93,6 +97,7 @@ class ReleaseItem(_Item):
     type: Literal["release"]
     release_id: str
     note: str | None = None
+    open: bool = Field(default=True, description=_OPEN)
 
 
 class SongYearsItem(_Item):
@@ -103,6 +108,7 @@ class SongYearsItem(_Item):
     view: Literal["count", "length"] = "count"
     open_year: int | None = Field(default=None, description="The year whose performances open first.")
     note: str | None = None
+    open: bool = Field(default=True, description=_OPEN)
 
 
 class ChartItem(_Item):
@@ -217,12 +223,17 @@ def _set_label(play: str) -> str:
     return words
 
 
+def _closed(item: dict[str, Any]) -> bool:
+    return item.get("open") is False or str(item.get("open")).lower() == "false"
+
+
 def body_items(item: Any) -> list[dict[str, Any]]:
     """One page item as the body items the pipeline hydrates. Unknown shapes pass through."""
 
     if not isinstance(item, dict):
         return []
     kind = item.get("type")
+    disclosure = "collapsed" if _closed(item) else "expanded"
     title = _text(item.get("title"))
     note = _text(item.get("note"))
     if kind == "performances":
@@ -249,7 +260,8 @@ def body_items(item: Any) -> list[dict[str, Any]]:
             "show_id": item.get("show_id"),
             "title": title,
             "note": note,
-            "visible_facets": ["listen", "setlist", "guests"],
+            "disclosure": disclosure,
+            "visible_facets": ["listen", "setlist"] if disclosure == "collapsed" else ["listen", "setlist", "guests"],
         }]
     if kind == "shows":
         notes = _string_map(item.get("notes"))
@@ -260,7 +272,7 @@ def body_items(item: Any) -> list[dict[str, Any]]:
             for show_id in _strings(item.get("show_ids"))
         ]
     if kind == "release":
-        return [{"type": "album_unit", "release_id": item.get("release_id"), "title": title, "note": note}]
+        return [{"type": "album_unit", "release_id": item.get("release_id"), "title": title, "note": note, "disclosure": disclosure}]
     if kind == "song_years":
         view = item.get("view") if item.get("view") in ("count", "length") else "count"
         return [{
@@ -268,6 +280,7 @@ def body_items(item: Any) -> list[dict[str, Any]]:
             "song_id": item.get("song_id"),
             "title": title,
             "note": note,
+            "disclosure": disclosure,
             "visible_facets": ["by_year"],
             "chart_view": view,
             "open_year": item.get("open_year"),

@@ -1893,6 +1893,19 @@ def test_a_page_reads_as_the_plan_the_pipeline_hydrates():
     assert group.items[6].notes == {"p1": "Long."}
 
 
+def test_the_model_chooses_which_cards_start_open():
+    plan = finish.FinishPlan.model_validate({
+        "answer": "Three from 1973.",
+        "sections": [{"items": [
+            {"type": "release", "release_id": "release-a"},
+            {"type": "release", "release_id": "release-b", "open": False},
+            {"type": "show", "show_id": "gd-1973-11-11", "open": False},
+            {"type": "song_years", "song_id": "song-dark-star", "open": False},
+        ]}],
+    })
+    assert [item.disclosure for item in plan.groups[0].items] == ["expanded", "collapsed", "collapsed", "collapsed"]
+
+
 def test_a_page_item_that_fits_no_component_leaves_the_rest_of_the_section():
     plan = finish.FinishPlan.model_validate({
         "answer": "a",
