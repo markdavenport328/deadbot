@@ -1906,6 +1906,21 @@ def test_the_model_chooses_which_cards_start_open():
     assert [item.disclosure for item in plan.groups[0].items] == ["expanded", "collapsed", "collapsed", "collapsed"]
 
 
+def test_many_releases_go_on_the_page_as_rows_with_their_notes():
+    plan = finish.FinishPlan.model_validate({
+        "answer": "Two from 1972.",
+        "sections": [{"items": [
+            {"type": "releases", "release_ids": ["release-a", "release-b"], "notes": {"release-b": "The fall run."}},
+        ]}],
+    })
+    rows = plan.groups[0].items
+    assert [(row.type, row.release_id, row.disclosure) for row in rows] == [
+        ("album_unit", "release-a", "collapsed"),
+        ("album_unit", "release-b", "collapsed"),
+    ]
+    assert rows[1].note == "The fall run."
+
+
 def test_a_page_item_that_fits_no_component_leaves_the_rest_of_the_section():
     plan = finish.FinishPlan.model_validate({
         "answer": "a",

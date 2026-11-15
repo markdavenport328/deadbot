@@ -95,7 +95,7 @@ def test_tracks_from_no_known_show_stay_on_the_record(album):
     if "first" not in payload["tracks_note"]:
         assert listed == payload["track_count"]
     if payload["contents"]["tracks_without_a_show"]:
-        assert "no known show" in payload["tracks_note"]
+        assert "not from one night" in payload["tracks_note"]
 
 
 def test_a_compilation_across_many_tours_gets_no_tour_pointer(album):

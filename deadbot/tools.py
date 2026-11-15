@@ -690,10 +690,62 @@ def _lean_signal(signal: dict[str, Any], *, song_id: str | None = None) -> dict[
     return lean
 
 
-_SIGNALS_NOTE = (
-    "Source-attributed signals, not one combined score or an objective best-of ranking. "
-    "held marks a signal its source could not pin to one show or performance."
-)
+_PICKERS = {
+    "charlie-miller-reddit": "Charlie Miller, taper",
+    "charlie-miller-user-provided-threads": "Charlie Miller, taper",
+    "deadnet-official-release-pass": "the Grateful Dead's official releases",
+    "headyversion": "Headyversion fan votes",
+    "rolling-stone-australia": "David Fricke, Rolling Stone",
+}
+_PICK_KINDS = {
+    "fan_ranked_version": "fan vote",
+    "critic_editorial_show_selection": "critic's pick",
+    "individual_curator_song_selection": "curator's pick",
+    "individual_curator_show_recommendation": "curator's pick",
+    "official_release_candidate": "official release",
+}
+
+
+def _plain_pick(signal: dict[str, Any]) -> dict[str, Any]:
+    """One pick in a fan's words: who picked what, with its IDs and link."""
+
+    source = str(signal.get("source") or "")
+    pick: dict[str, Any] = {
+        "picked_by": _PICKERS.get(source) or signal.get("source_handle") or source,
+        "kind": _PICK_KINDS.get(str(signal.get("signal_type") or ""), "pick"),
+    }
+    what = signal.get("title") or signal.get("source_context") or signal.get("selection_label") or signal.get("source_label")
+    if what:
+        pick["what"] = what
+    for key, plain in (("fan_vote_count", "fan_votes"), ("recommendation_rank", "rank"), ("matches", "matches"), ("held", "unsure_because")):
+        if signal.get(key) not in (None, ""):
+            pick[plain] = signal[key]
+    if signal.get("candidate_shows"):
+        pick["shows"] = signal["candidate_shows"]
+    if signal.get("candidate_performances"):
+        pick["performances"] = signal["candidate_performances"]
+    if signal.get("source_url"):
+        pick["link"] = signal["source_url"]
+    return pick
+
+
+def _plain_picks(raw: str) -> str:
+    """get_picks as a fan reads it: who picked which shows and versions, without the store's bookkeeping."""
+
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        return raw
+    out = {key: value for key, value in payload.items() if key not in {"selection_signals", "signal_count", "show_selections"}}
+    if isinstance(payload.get("selection_signals"), list):
+        out["picks"] = [_plain_pick(signal) for signal in payload["selection_signals"] if isinstance(signal, dict)]
+    if isinstance(payload.get("show_selections"), list):
+        # Critics' lists keep their shape (a page can still cite one by selection_id); only the hedge goes.
+        out["show_selections"] = [
+            {key: value for key, value in selection.items() if key not in {"coverage_note", "selection_type"}}
+            for selection in payload["show_selections"]
+            if isinstance(selection, dict)
+        ]
+    return _json(out)
 
 
 def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
@@ -727,7 +779,9 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
     for column, unit in _ROW_UNITS:
         if column in columns:
             result["on_the_page"] = (
-                f'A shows item with from_result="{result["result_id"]}" puts all {count} shows on the page, each one opening to its setlist.'
+                f'Any of these shows can go on the page by show_id; a shows item with from_result="{result["result_id"]}" '
+                f"lists all {count} as rows that open to their setlists. get_picks with the same years or venue names "
+                "the nights critics, tapers and fans picked."
                 if unit == "show_unit"
                 else f"Each of these {count} rows can go on the page by its id."
             )
@@ -884,7 +938,7 @@ def build_tools(
         sites to search when nothing is gathered. When the question is
         about a specific guest, ask for include=["appearances"] in the same
         call rather than looking the guest up twice. The guests a name
-        matches carry stories: the interviews and articles the library holds
+        matches carry stories: the interviews and articles we have
         about them, each with a line on what it covers, ready for a links item.
         """
         include = include or []
@@ -1405,7 +1459,7 @@ def build_tools(
                 night["tracks"] = night["tracks"][:_NIGHT_PREVIEW]
         payload["nights"] = nights
         shown = "the first %d tracks of each night" % _NIGHT_PREVIEW if summarized else "every track"
-        elsewhere = "; tracks from no known show are listed after the nights" if unplaced else ""
+        elsewhere = "; studio cuts and other tracks that are not from one night come after the nights" if unplaced else ""
         payload["tracks_note"] = (
             f"Tracks are grouped by night ({shown}{elsewhere}; Spotify links left out). "
             + ("This box is too long to list in full: " if summarized else "")
@@ -1429,8 +1483,8 @@ def build_tools(
           narrows it to one show's tracks on a multi-show release.
         - include=["live_legacy"]: each song's life on stage (count, span, count
           by era, the performances most often issued on official live records).
-        `contents.tracks_without_a_show` counts tracks that come from no known show
-        (studio cuts, unplaced material); the rest are counted under their show.
+        `contents.tracks_without_a_show` counts studio cuts and other tracks that
+        are not from one night; the rest are counted under their show.
         pathways lists the gathered lore for the release or the research sites
         to search when nothing is gathered.
         """
@@ -2633,7 +2687,7 @@ def build_tools(
         year_from: int | None = None,
         year_to: int | None = None,
     ) -> str:
-        """Two lists of library things and the fact where each pair meets, as one table.
+        """Two lists (songs, shows, records, years) and the fact where each pair meets, as one table.
 
         Songs across years (row_kind "song", column_kind "year"): each cell is
         how many shows that year had the song. Nights across songs (row_kind
@@ -2778,13 +2832,13 @@ def build_tools(
         wanted = song_or_show.strip()
         if wanted:
             if store.resolve_song(wanted):
-                return get_selections_for.func("song", wanted)
+                return _plain_picks(get_selections_for.func("song", wanted))
             if store.resolve_show(wanted):
-                return get_selections_for.func("show", wanted)
+                return _plain_picks(get_selections_for.func("show", wanted))
             return _json({"error": "No song or show matches that name.", "query": wanted})
         if year_from is not None or year_to is not None or venue.strip():
-            return get_selections_in.func(year_from, year_to, venue)
-        return get_show_selections.func()
+            return _plain_picks(get_selections_in.func(year_from, year_to, venue))
+        return _plain_picks(get_show_selections.func())
 
     @tool
     def search_stories(query: str = "", song_or_show: str = "") -> str:
@@ -2944,14 +2998,14 @@ def build_tools(
     def read_notebook(keys_or_ids: list[str], config: RunnableConfig, only: list[str] | None = None) -> str:
         """Bring earlier research back: the results of calls listed in the research notebook.
 
-        Pass the bracketed keys from the notebook's lines, or library IDs and
+        Pass the bracketed keys from the notebook's lines, or IDs and
         arguments (a show_id, song_id, performance_id, aggregation_id,
         result_id or date). A key, or an argument a call was made with, brings
-        that result back whole. A library ID that results hold brings back the
+        that result back whole. An ID that results hold brings back the
         part of each of those results that mentions it: one night's tracks
         from a box set, one song's rows in a long listing. Several keys and IDs
         in one call come back together. Each result is what the original call
-        returned, run again against the library, so its IDs, aggregation_id
+        returned, run again, so its IDs, aggregation_id
         and result_id can go on the page.
 
         only takes IDs, dates or names and narrows every result read to the

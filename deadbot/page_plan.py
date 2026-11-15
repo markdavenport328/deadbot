@@ -100,6 +100,14 @@ class ReleaseItem(_Item):
     open: bool = Field(default=True, description=_OPEN)
 
 
+class ReleasesItem(_Item):
+    """Many official releases as rows that open and play."""
+
+    type: Literal["releases"]
+    release_ids: list[str] = Field(description="The releases, in order.")
+    notes: dict[str, str] | None = Field(default=None, description="Your line on a release, keyed by release_id.")
+
+
 class SongYearsItem(_Item):
     """A song's life year by year: times played or typical length, with each year's performances."""
 
@@ -153,6 +161,7 @@ PageItem = Annotated[
     | ShowItem
     | ShowsItem
     | ReleaseItem
+    | ReleasesItem
     | SongYearsItem
     | ChartItem
     | GridItem
@@ -273,6 +282,12 @@ def body_items(item: Any) -> list[dict[str, Any]]:
         ]
     if kind == "release":
         return [{"type": "album_unit", "release_id": item.get("release_id"), "title": title, "note": note, "disclosure": disclosure}]
+    if kind == "releases":
+        notes = _string_map(item.get("notes"))
+        return [
+            {"type": "album_unit", "release_id": release_id, "note": notes.get(release_id), "disclosure": "collapsed"}
+            for release_id in _strings(item.get("release_ids"))
+        ]
     if kind == "song_years":
         view = item.get("view") if item.get("view") in ("count", "length") else "count"
         return [{

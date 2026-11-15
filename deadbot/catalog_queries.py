@@ -94,9 +94,11 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
         ),
         NamedQuery(
             "shows",
-            "shows filtered by venue, tour and/or year_from–year_to: date, venue, city, tour, setlist length",
+            "shows filtered by venue, tour and/or year_from–year_to: date, venue, city, tour, setlist length, official releases",
             (),
-            "SELECT show_id, show_date, venue_name, city, tour_name, performance_count FROM show_facts "
+            "SELECT show_id, show_date, venue_name, city, tour_name, performance_count, "
+            "(SELECT group_concat(release_title, ' | ') FROM (SELECT DISTINCT r.release_title FROM release_track_facts r "
+            "WHERE r.show_id = show_facts.show_id)) AS official_releases FROM show_facts "
             "WHERE (:venue = '' OR venue_name LIKE '%' || :venue || '%') "
             "AND (:tour = '' OR tour_name LIKE '%' || :tour || '%') "
             f"AND {_YEARS} ORDER BY show_date",

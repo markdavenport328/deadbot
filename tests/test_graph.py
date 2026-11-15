@@ -46,7 +46,7 @@ def test_agent_tools_include_finish_response():
     assert FINISH_TOOL_NAME in names and "get_show" in names
 
 
-PALETTE = ("performances", "pairing", "show", "shows", "release", "song_years", "chart", "grid", "people", "links")
+PALETTE = ("performances", "pairing", "show", "shows", "release", "releases", "song_years", "chart", "grid", "people", "links")
 ROUTES = (
     "search_entities", "get_song", "get_song_life", "get_song_notable_versions", "list_song_performances",
     "get_show", "get_performance", "get_album", "get_segue_pairing", "get_grid", "look_up", "aggregate_data",
