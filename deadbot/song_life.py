@@ -531,10 +531,6 @@ def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
         ],
         "standouts": kinds,
         "patterns": patterns,
-        "lengths_note": (
-            "Lengths are official release tracks where a release carries the performance, otherwise "
-            "Internet Archive tape tracks; a tape track can be partial."
-        ),
     }
     if left_out:
         payload["standouts_left_out"] = left_out

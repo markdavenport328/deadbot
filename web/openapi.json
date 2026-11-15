@@ -1556,6 +1556,7 @@
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "listening_hero": "#/components/schemas/ListeningHeroBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
+                  "people_timeline": "#/components/schemas/PeopleTimelineBlock",
                   "performance_unit": "#/components/schemas/PerformanceUnitBlock",
                   "person_roster": "#/components/schemas/PersonRosterBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
@@ -1594,6 +1595,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/PersonRosterBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PeopleTimelineBlock"
                 },
                 {
                   "$ref": "#/components/schemas/EquipmentListBlock"
@@ -2799,6 +2803,146 @@
           "is_official"
         ],
         "title": "MediaLinkBlock",
+        "type": "object"
+      },
+      "PeopleTimelineBlock": {
+        "additionalProperties": false,
+        "description": "People as bars across the years they played: the model chose who; the server drew each span and count.",
+        "properties": {
+          "first_year": {
+            "title": "First Year",
+            "type": "integer"
+          },
+          "last_year": {
+            "title": "Last Year",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PeopleTimelinePerson"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "People",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "people_timeline",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "first_year",
+          "last_year",
+          "people"
+        ],
+        "title": "PeopleTimelineBlock",
+        "type": "object"
+      },
+      "PeopleTimelinePerson": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "show_count": {
+            "minimum": 0.0,
+            "title": "Show Count",
+            "type": "integer"
+          },
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/PeopleTimelineSpan"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Spans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "show_count",
+          "spans"
+        ],
+        "title": "PeopleTimelinePerson",
+        "type": "object"
+      },
+      "PeopleTimelineSpan": {
+        "additionalProperties": false,
+        "description": "One stretch of a person's time with the band, from the stored memberships or lineups.",
+        "properties": {
+          "end_date": {
+            "title": "End Date",
+            "type": "string"
+          },
+          "member": {
+            "default": true,
+            "title": "Member",
+            "type": "boolean"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "start_date": {
+            "title": "Start Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "title": "PeopleTimelineSpan",
         "type": "object"
       },
       "PerformanceSpineNeighbor": {
@@ -4741,6 +4885,28 @@
           "show_id": {
             "title": "Show Id",
             "type": "string"
+          },
+          "song_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Id"
+          },
+          "song_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Title"
           },
           "tape_seconds": {
             "anyOf": [

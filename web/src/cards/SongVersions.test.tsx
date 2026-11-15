@@ -125,3 +125,22 @@ test("criteria show each version's judgments beside the points compared", () => 
   expect(screen.getAllByText("Length")).toHaveLength(1);
   expect(screen.getAllByText("What follows")).toHaveLength(2);
 });
+
+test("rows of several songs lead with the song title and name it in the controls", () => {
+  const mixed: Block = {
+    ...block,
+    title: null,
+    rows: [
+      row("1990-03-29", "Copps Coliseum", 600, { show_id: "gd-1990-03-29", song_id: "song-bird-song", song_title: "Bird Song" }),
+      row("1990-03-29", "Copps Coliseum", 900, { show_id: "gd-1990-03-29", performance_id: "gd-1990-03-29-eyes-1-1", song_id: "song-eyes", song_title: "Eyes of the World" })
+    ]
+  };
+  render(
+    <PlayerProvider>
+      <SongVersions block={mixed} />
+    </PlayerProvider>
+  );
+  expect(screen.getByRole("heading", { name: "Copps Coliseum, Mar 29, 1990" })).toBeInTheDocument();
+  expect(screen.getByText("Bird Song")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Play Eyes of the World, Copps Coliseum, Mar 29, 1990" })).toBeInTheDocument();
+});

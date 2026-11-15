@@ -948,6 +948,27 @@ const versions: ExperienceResponse = fixture(
   { title: null, lead: "Each bar is one night’s Dark Star on the same clock; press play to hear it." }
 );
 
+// Keyboard players as bars on one year axis; Keith and Pigpen overlap in
+// 1971-72, Vince and Bruce in 1990-92 (Bruce's earlier guest spell drawn quieter).
+const people: ExperienceResponse = fixture(
+  "How many keyboard players did the Dead have?",
+  "Keyboard players across the years",
+  "Six. Pigpen played organ from the start until June 1972, with Tom Constanten beside him from 1968 to 1970; Brent Mydland had the longest run.",
+  [{
+    type: "people_timeline", title: "Keyboard players", first_year: 1965, last_year: 1995,
+    people: [
+      { person_id: "p-pigpen", name: "Pigpen", show_count: 682, spans: [{ role: "keyboards, harmonica, vocals", start_date: "1965-05-05", end_date: "1972-06-17", member: true }] },
+      { person_id: "p-tom", name: "Tom Constanten", show_count: 146, spans: [{ role: "keyboards", start_date: "1968-11-25", end_date: "1970-01-30", member: true }] },
+      { person_id: "p-keith", name: "Keith Godchaux", show_count: 433, spans: [{ role: "keyboards", start_date: "1971-10-19", end_date: "1979-02-17", member: true }] },
+      { person_id: "p-brent", name: "Brent Mydland", show_count: 812, spans: [{ role: "keyboards, vocals", start_date: "1979-04-22", end_date: "1990-07-23", member: true }] },
+      { person_id: "p-vince", name: "Vince Welnick", show_count: 377, spans: [{ role: "keyboards, vocals", start_date: "1990-09-07", end_date: "1995-07-09", member: true }] },
+      { person_id: "p-bruce", name: "Bruce Hornsby", show_count: 102, note: "Sat in before and after his time in the band.", spans: [{ role: "keyboards", start_date: "1988-06-25", end_date: "1990-07-23", member: false }, { role: "keyboards", start_date: "1990-09-15", end_date: "1992-03-24", member: true }] }
+    ]
+  }] as unknown as ExperienceBlock[],
+  "collection",
+  { title: null, lead: "Six chairs, two overlaps:\n\n- 1971-72: Pigpen and Keith\n- 1990-92: Vince and Bruce" }
+);
+
 const releases1972 = releases1972Json as unknown as ExperienceResponse;
 const shows1977 = shows1977Json as unknown as ExperienceResponse;
 const harrisburg = harrisburgJson as unknown as ExperienceResponse;
@@ -1068,11 +1089,11 @@ const msgWorkspace: ExperienceResponse = {
   sources: [{ source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }]
 };
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "versions", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "versions", "people", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, versions, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, versions, people, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

@@ -178,9 +178,8 @@ class GridData:
 
 
 GRID_NOTE = (
-    "A grid in finish_response draws these rows and columns with every cell filled in by the server. "
-    "Choose the rows to show and their order, how many open before Show all, the cells worth pointing at "
-    "with a short note each."
+    "A grid item with this grid_id draws these rows and columns, every cell filled in by the server; "
+    "row_ids picks the rows and their order."
 )
 
 

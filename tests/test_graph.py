@@ -46,16 +46,12 @@ def test_agent_tools_include_finish_response():
     assert FINISH_TOOL_NAME in names and "get_show" in names
 
 
-PALETTE = (
-    "song_versions", "version_strip", "show_unit", "performance_unit", "album_unit", "song_overview",
-    "era_unit", "data_chart", "ranked_list", "grid", "listening_hero", "editorial", "pull_quote",
-    "person_roster", "guest_appearance_list", "equipment_list", "show_selection", "arrangement",
-    "arrangement_search", "media_link", "resource_list",
-)
+PALETTE = ("performances", "pairing", "show", "shows", "release", "song_years", "chart", "grid", "people", "links")
 ROUTES = (
     "search_entities", "get_song", "get_song_life", "get_song_notable_versions", "list_song_performances",
     "get_show", "get_performance", "get_album", "get_segue_pairing", "get_grid", "look_up", "aggregate_data",
-    "search_guest_musicians", "get_recording_reviews", "search_site", "read_page", "read_notebook",
+    "search_guest_musicians", "get_picks", "get_recording_reviews", "search_stories", "read_page", "search_site",
+    "get_historical_weather", "get_equipment_history", "find_arrangements", "read_notebook",
 )
 
 
@@ -71,20 +67,36 @@ def test_prompt_gives_the_visitors_the_goal_the_writer_and_the_tools():
 def test_prompt_names_the_finish_tool_and_the_page_fields():
     prompt = _prompt()
     assert "call finish_response once" in prompt
-    for field in ("headline", "lead", "initial_tab"):
+    for field in ("headline", "the answer", "sections"):
         assert field in prompt
 
 
 def test_prompt_names_every_component_and_research_tool():
     prompt = _prompt()
     for name in (*PALETTE, *ROUTES):
-        assert name in prompt, name
+        assert f"- {name}" in prompt, name
+
+
+def test_prompt_tools_are_the_agent_tools():
+    # look_up needs the SQLite store; the CSV store builds every other tool.
+    names = {tool.name for tool in graph.agent_tools(CanonicalStore())} - {FINISH_TOOL_NAME}
+    assert names == set(ROUTES) - {"look_up"}
+
+
+def test_prompt_components_are_the_page_items():
+    from typing import get_args
+
+    from deadbot.page_plan import PageItem
+
+    union = get_args(PageItem)[0]
+    kinds = {get_args(model.model_fields["type"].annotation)[0] for model in get_args(union)}
+    assert kinds == set(PALETTE)
 
 
 def test_prompt_grounds_ids_in_this_turn_or_the_notebook():
     prompt = _prompt()
     assert "IDs from a tool result in this turn or from the research notebook" in prompt
-    assert "Quote aggregate_data numbers exactly as returned" in prompt
+    assert "Quote counts exactly as the tools return them" in prompt
 
 
 def test_prompt_is_written_affirmatively():
@@ -111,7 +123,7 @@ def test_tool_node_finish_results_drive_the_router():
 
     valid_call = AIMessage(content="", tool_calls=[{
         "name": FINISH_TOOL_NAME,
-        "args": {"lead": "Hi", "groups": []},
+        "args": {"answer": "Hi", "sections": []},
         "id": "f1",
         "type": "tool_call",
     }])

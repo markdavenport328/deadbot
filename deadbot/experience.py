@@ -444,6 +444,34 @@ class PersonRosterBlock(ExperienceModel):
     items: list[PersonRosterItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
+class PeopleTimelineSpan(ExperienceModel):
+    """One stretch of a person's time with the band, from the stored memberships or lineups."""
+
+    role: str | None = None
+    start_date: str
+    end_date: str
+    member: bool = True
+
+
+class PeopleTimelinePerson(ExperienceModel):
+    person_id: str
+    name: str
+    show_count: int = Field(ge=0)
+    spans: list[PeopleTimelineSpan] = Field(min_length=1, max_length=LIST_CEILING)
+    note: str | None = None
+
+
+class PeopleTimelineBlock(ExperienceModel):
+    """People as bars across the years they played: the model chose who; the server drew each span and count."""
+
+    type: Literal["people_timeline"]
+    title: str | None = None
+    note: str | None = None
+    first_year: int
+    last_year: int
+    people: list[PeopleTimelinePerson] = Field(min_length=1, max_length=LIST_CEILING)
+
+
 class EquipmentItem(ExperienceModel):
     equipment_id: str
     name: str
@@ -814,6 +842,9 @@ class SongVersionsRow(ExperienceModel):
     release: SongVersionsRelease | None = None
     track: PlayableTrack | None = None
     note: str | None = None
+    # The row's own song; a block can hold several songs from one night.
+    song_id: str | None = None
+    song_title: str | None = None
     # The model's answer for each of the block's criteria, in their order; "" where it gave none.
     judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
 
@@ -1194,6 +1225,7 @@ ExperienceBlock = Annotated[
     | ShowSelectionBlock
     | GuestAppearanceListBlock
     | PersonRosterBlock
+    | PeopleTimelineBlock
     | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock

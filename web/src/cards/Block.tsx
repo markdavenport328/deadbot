@@ -6,6 +6,7 @@ import { Grid } from "./Grid";
 import { type PlayerTrack } from "../player/player";
 import { ClampText, ListeningHero, PullQuote, toTrack } from "./listening";
 import { SongVersions } from "./SongVersions";
+import { PeopleTimeline } from "./PeopleTimeline";
 import { VersionStrip } from "./VersionStrip";
 import { ListenControl, trackFor, type TrackMeta } from "./listen-control";
 import { formatShowDateLong, countLabel, capitalize } from "../core/format";
@@ -338,6 +339,8 @@ export function Block({
       return <VersionStrip block={block} />;
     case "song_versions":
       return <SongVersions block={block} />;
+    case "people_timeline":
+      return <PeopleTimeline block={block} />;
     case "grid":
       return <Grid block={block} onFollowUp={onFollowUp} />;
   }

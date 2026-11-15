@@ -348,3 +348,37 @@ def test_the_opening_tab_streams_before_the_answer_and_groups_carry_tabs():
 def test_an_unreadable_opening_tab_emits_nothing():
     events = drive(json.dumps({"initial_tab": "sideways", **PLAN}), 1)
     assert "page_tab" not in [event.type for event in events]
+
+
+PAGE = {
+    "headline": "Fall '73",
+    "answer": "Winterland, November 11, 1973.",
+    "sections": [
+        {"heading": "Play it", "text": "- Dark Star\n- Eyes", "items": [{"type": "show", "show_id": "gd-1973-11-11", "play": "Set 2"}]},
+        {"heading": "Two more", "items": [{"type": "shows", "show_ids": ["gd-1973-12-06", "gd-1973-11-17"]}]},
+    ],
+}
+
+
+def resolve_all(items):
+    return [{"type": item.type, "id": getattr(item, "show_id", None)} for item in items]
+
+
+def test_a_page_streams_as_its_plan_answer_sections_and_items():
+    from deadbot.finish import FinishPlan
+
+    for pieces in (1, 7, 40):
+        streamer = PlanStreamer(resolve_all)
+        events: list[PlanEvent] = []
+        text = json.dumps(PAGE)
+        size = max(1, len(text) // pieces)
+        for offset in range(0, len(text), size):
+            events.extend(streamer.feed(chunk(text[offset : offset + size], name="finish_response" if offset == 0 else None)))
+        assert events[0].type == "page_head" and events[0].payload["lead"] == "Winterland, November 11, 1973."
+        opens = [event.payload for event in events if event.type == "group_open"]
+        assert [(group["title"], group["lead"]) for group in opens] == [("Play it", "- Dark Star\n- Eyes"), ("Two more", None)]
+        blocks = [(event.payload["group_index"], event.payload["block"]["type"], event.payload["block"]["id"]) for event in events if event.type == "block"]
+        assert blocks == [(0, "listening_hero", "gd-1973-11-11"), (1, "show_unit", "gd-1973-12-06"), (1, "show_unit", "gd-1973-11-17")]
+    # The delivered plan reads the same page into the same items.
+    plan = FinishPlan.model_validate(PAGE)
+    assert [[item.type for item in group.items] for group in plan.groups] == [["listening_hero"], ["show_unit", "show_unit"]]

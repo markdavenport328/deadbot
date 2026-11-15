@@ -3,7 +3,7 @@ import json
 import pytest
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-from deadbot import composition, experience, finish, grids
+from deadbot import composition, experience, finish, grids, page_plan
 from deadbot.data import CanonicalStore
 
 
@@ -81,10 +81,10 @@ def test_emphasis_defaults_to_supporting_and_a_retired_role_is_ignored():
 def test_finish_tool_uses_the_plan_schema_and_confirms_delivery():
     tool = finish.build_finish_tool()
     assert tool.name == finish.FINISH_TOOL_NAME
-    assert tool.args_schema is finish.FinishPlan
+    assert tool.args_schema is page_plan.PagePlan
     assert "finished" in tool.description.casefold() or "deliver" in tool.description.casefold()
     result = tool.invoke(
-        {"lead": "Hi", "groups": []}
+        {"answer": "Hi", "sections": []}
     )
     assert "delivered" in result.casefold()
 
@@ -529,10 +529,10 @@ def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloa
     )
     assert arrangement_payload["arrangements"], "expected a documented arrangement in B for this test"
 
-    # get_show_selections reads selection signals, which the CSV store does not
+    # get_picks with no arguments reads show selections, which the CSV store does not
     # serve; a reference to a selection it did not return must be dropped.
     empty_selection_payload = json.loads(
-        next(tool for tool in build_tools(plain_store) if tool.name == "get_show_selections").invoke({})
+        next(tool for tool in build_tools(plain_store) if tool.name == "get_picks").invoke({})
     )
     assert empty_selection_payload["show_selections"] == []
     dropped, _ = finish.resolve_items(
@@ -546,7 +546,7 @@ def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloa
     # With the reviewed selection rows present, the same reference resolves.
     store = _store_with_selection_evidence()
     selection_payload = json.loads(
-        next(tool for tool in build_tools(store) if tool.name == "get_show_selections").invoke({})
+        next(tool for tool in build_tools(store) if tool.name == "get_picks").invoke({})
     )
     selection_id = selection_payload["show_selections"][0]["selection_id"]
     payloads = [arrangement_payload, selection_payload]
@@ -670,8 +670,8 @@ def test_a_plan_missing_its_lead_still_fails_validation():
 def test_the_finish_tool_delivers_a_plan_that_carries_one_bad_item():
     tool = finish.build_finish_tool()
     result = tool.invoke({
-        "lead": "x",
-        "groups": [{"presentation": "collection", "items": [{"type": "not_a_block"}, _show_item("gd-1972-08-27")]}],
+        "answer": "x",
+        "sections": [{"heading": "One", "items": [{"type": "not_a_block"}, {"type": "show", "show_id": "gd-1972-08-27"}]}],
     })
     assert result == "Response delivered to the visitor."
 
@@ -1009,26 +1009,13 @@ def test_follow_up_contract_reserves_ask_for_exploration():
     assert "explanation, comparison, history, lore or evidence" in description
 
 
-def test_shared_unit_fields_are_described_once_in_the_tool_schema():
-    import json
-
-    from langchain_core.utils.function_calling import convert_to_openai_tool
-
-    text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
-    for description in (finish._FOLLOW_UPS_DESCRIPTION, finish._EMPHASIS_DESCRIPTION, finish._DISCLOSURE_DESCRIPTION,
-                        finish._SOURCES_DESCRIPTION, finish._JUDGMENTS_DESCRIPTION, finish._from_result_description("show", "show_id"),
-                        finish._NOTE_DESCRIPTION):
-        assert text.count(json.dumps(description)) == 1, description[:40]
-    assert "described once, on show_unit" in finish.build_finish_tool().description
-
-
 def test_optional_plan_fields_have_no_null_branch_in_the_schema_but_still_accept_null():
     import json
 
     from langchain_core.utils.function_calling import convert_to_openai_tool
 
     text = json.dumps(convert_to_openai_tool(finish.build_finish_tool()))
-    assert text.count('{"type": "null"}') <= 2  # only the top-level lead and initial_tab, which LangChain rebuilds
+    assert text.count('{"type": "null"}') <= 1  # only the top-level headline, which LangChain rebuilds
     plan = finish.FinishPlan.model_validate({
         "lead": "a",
         "groups": [{"title": None, "items": [{"type": "show_unit", "show_id": "gd-1972-08-27", "title": None, "note": None, "emphasis": None}]}],
@@ -1874,3 +1861,55 @@ def test_a_compilation_of_single_tracks_is_not_a_box(csv_store):
     assert not finish._spans_nights(context, csv_store)
     box = csv_store.album_context(csv_store.resolve_release("release-europe-72-the-complete-recordings-2011"))
     assert finish._spans_nights(box, csv_store)
+
+
+def test_a_page_reads_as_the_plan_the_pipeline_hydrates():
+    plan = finish.FinishPlan.model_validate({
+        "headline": "Six",
+        "answer": "Six keyboard players.",
+        "sections": [
+            {"heading": "Who", "text": "- Pigpen\n- Keith", "items": [
+                {"type": "people", "person_ids": ["person-keith-godchaux"]},
+                {"type": "shows", "show_ids": ["gd-1972-08-27", "gd-1977-05-08"], "notes": {"gd-1977-05-08": "Cornell."}},
+                {"type": "show", "show_id": "gd-1973-11-11", "play": "2"},
+                {"type": "chart", "aggregation_id": "agg:x", "view": "ranked", "rows": 5, "notes": {"song-a": "Top."}},
+                {"type": "song_years", "song_id": "song-dark-star", "view": "length", "open_year": 1973},
+                {"type": "performances", "performance_ids": ["p1", "p2"], "criteria": ["Length"], "judgments": {"p1": ["Long"]}},
+                {"type": "links", "urls": ["https://example.org/a"], "resource_ids": ["r1"]},
+            ]},
+        ],
+    })
+    assert plan.headline == "Six" and plan.lead == "Six keyboard players."
+    group = plan.groups[0]
+    assert group.title == "Who" and group.lead == "- Pigpen\n- Keith"
+    kinds = [item.type for item in group.items]
+    assert kinds == ["people_timeline", "show_unit", "show_unit", "listening_hero", "ranked_list", "song_overview", "song_versions", "media_link", "resource_list"]
+    shows = group.items[1:3]
+    assert [item.disclosure for item in shows] == ["collapsed", "collapsed"] and shows[1].note == "Cornell."
+    hero = group.items[3]
+    assert hero.start_set == "Set 2" and hero.show_id == "gd-1973-11-11"
+    assert group.items[4].count == 5 and group.items[4].notes[0].note == "Top."
+    assert group.items[5].visible_facets == ["by_year"] and group.items[5].chart_view == "length"
+    assert group.items[6].criteria == ["Length"]
+
+
+def test_a_page_item_that_fits_no_component_leaves_the_rest_of_the_section():
+    plan = finish.FinishPlan.model_validate({
+        "answer": "a",
+        "sections": [{"items": [{"type": "show"}, {"type": "release", "release_id": "release-europe-72"}]}],
+    })
+    assert "album_unit" in [item.type for item in plan.groups[0].items]
+
+
+def test_a_people_timeline_draws_membership_spans_and_counts_shows_inside_them():
+    store = CanonicalStore()
+    grounded = finish.GroundedContext(ids=frozenset({"person-brent-mydland", "person-bruce-hornsby"}), urls=frozenset())
+    item = finish.validate_body_item({"type": "people_timeline", "person_ids": ["person-brent-mydland", "person-bruce-hornsby"]}, where="planned")
+    (block,), _ = finish.resolve_items([item], grounded, [], store)
+    assert block.type == "people_timeline"
+    brent, bruce = block.people
+    assert brent.spans[0].start_date == "1979-04-22" and brent.spans[0].member
+    assert brent.show_count > 700
+    # Hornsby's guest sit-ins before and after his membership are not counted as member shows.
+    assert bruce.spans[0].start_date == "1990-09-15" and bruce.show_count < 120
+    assert block.first_year == 1979 and block.last_year >= 1992

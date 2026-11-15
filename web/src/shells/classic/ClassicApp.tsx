@@ -10,6 +10,7 @@ import { ASK_ERROR, askPlain, askStreaming, createThreadId, replayStreamEvents }
 import { applyPageEvent, groupsOfResponse, type Draft } from "../../core/page-draft";
 import { currentPath, takeQuestionFromUrl, useAskFromPage } from "../../core/site-nav";
 import { renderInline } from "../../cards/inline";
+import { renderText } from "../../cards/text";
 import { ComposedPage } from "../../cards/PageGroups";
 import { NowPlayingBar } from "../../player/NowPlayingBar";
 import { PHONE_QUERY, useMediaQuery } from "../../core/media-query";
@@ -468,14 +469,14 @@ export function ClassicApp() {
             <div className="thread-messages" aria-live="polite">
               {visibleConversation.map((turn, index) => (
                 <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
-                  <div>{renderInline(turn.text)}</div>
+                  <div>{turn.role === "assistant" ? renderText(turn.text) : renderInline(turn.text)}</div>
                 </article>
               ))}
               {loading && (
                 <article className="message assistant pending">
                   {streamingAnswer ? (
                     <div className="streaming-answer">
-                      {renderInline(streamingAnswer)}
+                      {renderText(streamingAnswer)}
                       {postAnswerStatus ? (
                         <p className="post-answer-status">{postAnswerStatus}…</p>
                       ) : (

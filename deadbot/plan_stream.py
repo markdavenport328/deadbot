@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING, workspace_tab
+from deadbot.page_plan import SECTION_KEYS, TOP_KEYS, body_items
 from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, page_lead, read_joining_repeats, validate_body_item
 
 logger = logging.getLogger(__name__)
@@ -232,6 +233,12 @@ class PlanStreamer:
             return []
         value = json.loads(self._text[start:end])
         if top.kind == "object" and top.expecting_key:
+            # The page's keys read as the plan's: answer is the lead, sections are groups.
+            where = self._path()[:-1]
+            if where == []:
+                value = TOP_KEYS.get(value, value)
+            elif len(where) == 2 and where[0] == "groups":
+                value = SECTION_KEYS.get(value, value)
             top.key = value
             return []
         path = self._path()
@@ -438,11 +445,12 @@ class PlanStreamer:
         if parsed is None:
             logger.info("Skipped a streamed item that was not JSON")
             return []
-        item = validate_body_item(parsed, where="streamed")
-        if item is None:
+        # A page item reads as the body items it stands for (page_plan.body_items), as the delivered plan reads it.
+        items = [item for body in body_items(parsed) if (item := validate_body_item(body, where="streamed")) is not None]
+        if not items:
             return []
         try:
-            resolved = self._resolve([item])
+            resolved = self._resolve(items)
         except Exception:  # One bad item must not disable the whole streamer.
             logger.exception("Skipped a streamed item that failed to hydrate")
             return []

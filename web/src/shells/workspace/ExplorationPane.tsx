@@ -5,7 +5,7 @@ import type { ExperienceResponse, SourceReference } from "../../types";
 import { WORKSPACE_TABS, openingTab, readTab, routeGroups, tabsWithContent, type WorkspaceTab } from "../../core/tab-routing";
 import { visible, type Entry, type EntryView, type ExplorationState, type Pending } from "../../core/exploration-state";
 import { WorkspaceTabs, type TabState } from "./WorkspaceTabs";
-import { renderInline } from "../../cards/inline";
+import { RichText } from "../../cards/text";
 import { PageGroups, SourcesFooter } from "../../cards/PageGroups";
 
 // One exploration's page as the pane draws it: a finished response, or the
@@ -174,9 +174,7 @@ export const ExplorationPane = memo(function ExplorationPane({
         </div>
       )}
       {content.lead && content.lead.trim() && (
-        <p className="answer-lead" id={content.headline ? undefined : titleId} tabIndex={content.headline ? undefined : -1}>
-          {renderInline(content.lead)}
-        </p>
+        <RichText className="answer-lead" text={content.lead} id={content.headline ? undefined : titleId} tabIndex={content.headline ? undefined : -1} />
       )}
       <WorkspaceTabs active={activeTab} states={states} onSelect={onSelectTab} idPrefix={paneId} />
       {WORKSPACE_TABS.map(({ id }) => (

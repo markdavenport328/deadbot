@@ -313,9 +313,8 @@ def candidate_nights(versions: list[Version], era_of: Callable[[str], str]) -> l
 
 
 STRIP_NOTE = (
-    "Any pair_id in this result can go on the page: a version_strip in finish_response with this pairing_id and the "
-    "pair_ids you choose draws those nights to one clock, both songs' lengths as one bar, each row playing that "
-    "night's two songs in turn; show_year_counts adds the nights-per-year strip."
+    "A pairing item with this pairing_id and the pair_ids you choose plays those nights, "
+    "each row both songs in turn on one clock."
 )
 
 
@@ -375,7 +374,6 @@ def pairing_payload(
         "second_song": _extremes(in_range, lambda version: version.second_seconds),
         "together": _extremes(in_range, _total_seconds),
     }
-    payload["lengths_note"] = LENGTHS_NOTE
     if include_versions or len(in_range) <= VERSION_LIST_THRESHOLD:
         payload["versions"] = {"columns": VERSION_COLUMNS, "rows": [version_row(version) for version in in_range]}
     else:
@@ -521,10 +519,8 @@ def song_versions_block(
 
     song_ids = [performances[p]["song_id"] for p in wanted]
     song_id = song_ids[0]
-    if len(set(song_ids)) > 1:
-        logger.info("song_versions: versions span several songs %s; using %s", sorted(set(song_ids)), song_id)
-    song = store.one("songs", song_id) or {}
-    song_title = song.get("title") or song_id
+    titles = {row["song_id"]: row.get("title") or row["song_id"] for row in store.rows_in("songs", "song_id", set(song_ids))}
+    song_title = titles.get(song_id) or song_id
 
     notes = {key: value.strip() for key, value in (notes or {}).items() if isinstance(value, str) and value.strip()}
     rows = []
@@ -554,9 +550,11 @@ def song_versions_block(
                 length_seconds=release_seconds or (track.duration_seconds if track else None),
                 tape_seconds=track.duration_seconds if track else None,
                 release=release,
+                song_id=performance["song_id"],
+                song_title=titles.get(performance["song_id"]) or performance["song_id"],
                 track=PlayableTrack(
                     performance_id=performance_id,
-                    title=song_title,
+                    title=titles.get(performance["song_id"]) or song_title,
                     audio_url=track.url,
                     duration_seconds=track.duration_seconds,
                     set_label=performance.get("set_label") or None,

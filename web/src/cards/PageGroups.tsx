@@ -5,7 +5,8 @@ import { ListeningHero } from "./listening";
 import { type RenderGroup } from "../core/page-draft";
 import { archiveTrack } from "./listen-control";
 import { formatShowDateLong } from "../core/format";
-import { ExternalLink, renderInline } from "./inline";
+import { ExternalLink } from "./inline";
+import { RichText } from "./text";
 import { isUnit, unitKey } from "./units/shared";
 import { MentionRow, chunkMentions, CollapsedRow } from "./units/rows";
 import { blockHeading, sameHeading } from "./headings";
@@ -140,12 +141,12 @@ export function PageGroups({
             group.presentation === "argument" ? (
               <header className="group-heading claim">
                 {groupTitle && <h2>{groupTitle}</h2>}
-                {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
+                {group.lead && <RichText className="claim-text" text={group.lead} />}
               </header>
             ) : (
               <header className="group-heading">
                 {groupTitle && <h2>{groupTitle}</h2>}
-                {group.lead && <p>{renderInline(group.lead)}</p>}
+                {group.lead && <RichText text={group.lead} />}
               </header>
             )
           )}

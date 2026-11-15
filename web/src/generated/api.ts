@@ -692,7 +692,7 @@ export interface components {
         /** ExperienceResponse */
         ExperienceResponse: {
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["SongVersionsBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["PeopleTimelineBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["SongVersionsBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Groups */
@@ -1079,6 +1079,57 @@ export interface components {
             type: "media_link";
             /** Url */
             url: string;
+        };
+        /**
+         * PeopleTimelineBlock
+         * @description People as bars across the years they played: the model chose who; the server drew each span and count.
+         */
+        PeopleTimelineBlock: {
+            /** First Year */
+            first_year: number;
+            /** Last Year */
+            last_year: number;
+            /** Note */
+            note?: string | null;
+            /** People */
+            people: components["schemas"]["PeopleTimelinePerson"][];
+            /** Title */
+            title?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "people_timeline";
+        };
+        /** PeopleTimelinePerson */
+        PeopleTimelinePerson: {
+            /** Name */
+            name: string;
+            /** Note */
+            note?: string | null;
+            /** Person Id */
+            person_id: string;
+            /** Show Count */
+            show_count: number;
+            /** Spans */
+            spans: components["schemas"]["PeopleTimelineSpan"][];
+        };
+        /**
+         * PeopleTimelineSpan
+         * @description One stretch of a person's time with the band, from the stored memberships or lineups.
+         */
+        PeopleTimelineSpan: {
+            /** End Date */
+            end_date: string;
+            /**
+             * Member
+             * @default true
+             */
+            member: boolean;
+            /** Role */
+            role?: string | null;
+            /** Start Date */
+            start_date: string;
         };
         /** PerformanceSpineNeighbor */
         PerformanceSpineNeighbor: {
@@ -1737,6 +1788,10 @@ export interface components {
             show_date: string;
             /** Show Id */
             show_id: string;
+            /** Song Id */
+            song_id?: string | null;
+            /** Song Title */
+            song_title?: string | null;
             /** Tape Seconds */
             tape_seconds?: number | null;
             track?: components["schemas"]["PlayableTrack"] | null;

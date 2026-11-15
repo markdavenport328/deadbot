@@ -23,7 +23,7 @@ from typing import Annotated, Any, Literal, get_args
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
-from deadbot import composition, grids, record_refs, row_details, sequences
+from deadbot import composition, grids, page_plan, record_refs, row_details, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
@@ -40,6 +40,9 @@ from deadbot.experience import (
     ExperienceResponse,
     GapStateBlock,
     PullQuoteBlock,
+    PeopleTimelineBlock,
+    PeopleTimelinePerson,
+    PeopleTimelineSpan,
     PersonRosterBlock,
     PersonRosterItem,
     ResourceListBlock,
@@ -202,6 +205,14 @@ class PersonRosterRef(_Ref):
     entries: list[PersonRosterEntry] = Field(
         description="Everyone who belongs in this section, in the order you want them read. Across the page's rosters, every person appears once.",
     )
+
+
+class PeopleTimelineRef(_Ref):
+    """People as bars across the years they played with the band."""
+
+    type: Literal["people_timeline"]
+    person_ids: list[str]
+    note: str | None = None
 
 
 class ShowSelectionRef(_Ref):
@@ -708,6 +719,7 @@ BodyItem = Annotated[
     | EquipmentListRef
     | GuestAppearancesRef
     | PersonRosterRef
+    | PeopleTimelineRef
     | ShowSelectionRef
     | ArrangementRef
     | ArrangementSearchRef
@@ -953,6 +965,8 @@ class FinishPlan(BaseModel):
         visitor has already watched the first one compose.
         """
 
+        if page_plan.is_page_plan(data):
+            data = page_plan.finish_args(data)
         data = loose_items_as_group(data)
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
             return data
@@ -1292,6 +1306,49 @@ def _resolve_person_roster(
     )
 
 
+def _resolve_people_timeline(item: Any, grounded: GroundedContext, store: CanonicalStore) -> PeopleTimelineBlock | None:
+    """Each person's spans with the band and show count, from the stored memberships and lineups."""
+
+    wanted = list(dict.fromkeys(pid for pid in item.person_ids if pid in grounded.ids))
+    if not wanted:
+        return None
+    facts = _person_facts_from_store(wanted, store)
+    assignments = store.rows_in("show_performers", "person_id", wanted)
+    dates = {row["show_id"]: row.get("show_date", "") for row in store.rows_in("shows", "show_id", {row.get("show_id", "") for row in assignments})}
+    by_person: dict[str, list[str]] = {}
+    for row in assignments:
+        if dates.get(row.get("show_id", "")):
+            by_person.setdefault(row["person_id"], []).append(dates[row["show_id"]])
+    people: list[PeopleTimelinePerson] = []
+    for person_id in wanted:
+        person = facts.get(person_id)
+        if not person:
+            continue
+        shown = sorted(set(by_person.get(person_id, [])))
+        memberships = [row for row in store.person_band_memberships(person_id) if row.get("start_date") and row.get("end_date")]
+        if memberships:
+            spans = [PeopleTimelineSpan(role=row.get("role") or None, start_date=row["start_date"], end_date=row["end_date"]) for row in memberships]
+            # A member's count is the shows inside their membership, not their guest sit-ins before or after.
+            count = sum(1 for date in shown if any(span.start_date <= date <= span.end_date for span in spans))
+        elif shown:
+            spans = [PeopleTimelineSpan(role=", ".join(person["roles"]) or None, start_date=shown[0], end_date=shown[-1], member=False)]
+            count = len(shown)
+        else:
+            continue
+        people.append(PeopleTimelinePerson(person_id=person_id, name=person["name"], show_count=count, spans=spans))
+    if not people:
+        return None
+    years = [int(span.start_date[:4]) for person in people for span in person.spans] + [int(span.end_date[:4]) for person in people for span in person.spans]
+    return PeopleTimelineBlock(
+        type="people_timeline",
+        title=(item.title or "").strip() or None,
+        note=(item.note or "").strip() or None,
+        first_year=min(years),
+        last_year=max(years),
+        people=fit(people, "timeline people"),
+    )
+
+
 def _resolve_reference(
     item: Any,
     grounded: GroundedContext,
@@ -1436,6 +1493,9 @@ def _resolve_reference(
 
     if kind == "person_roster":
         return _resolve_person_roster(item, grounded, payloads, store), []
+
+    if kind == "people_timeline":
+        return _resolve_people_timeline(item, grounded, store), []
 
     if kind == "show_selection":
         selection = _find_in_payloads(payloads, "show_selections", "selection_id", item.selection_id)
@@ -1739,7 +1799,7 @@ def _deliver(**_: Any) -> str:
 
 def _first_group_title(groups: list[Any]) -> str | None:
     first = groups[0] if groups else None
-    title = first.get("title") if isinstance(first, dict) else None
+    title = (first.get("title") or first.get("heading")) if isinstance(first, dict) else None
     return title.strip() if isinstance(title, str) and title.strip() else None
 
 
@@ -1768,7 +1828,7 @@ def read_joining_repeats(raw: str) -> Any:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result and isinstance(result[key], list) and isinstance(value, list):
-                if key == "groups" and is_groups_revision(result[key], value):
+                if key in ("groups", "sections") and is_groups_revision(result[key], value):
                     result[key] = value
                 else:
                     result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
@@ -1789,14 +1849,10 @@ def build_finish_tool() -> BaseTool:
         func=_deliver,
         name=FINISH_TOOL_NAME,
         description=(
-            "Deliver the finished response to the visitor. Call this once, when your research is done. The lead gives the "
-            "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
-            "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
-            "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
-            "mean the same on every unit. IDs and URLs come from this turn's tool results or the research notebook; the server fills each ID's facts "
-            "from the stored facts."
+            "Deliver the finished page: the answer, then sections in reading order. Call it once, when your research is done. "
+            "IDs and URLs come from this turn's tool results or the research notebook; the server fills in their facts and players."
         ),
-        args_schema=FinishPlan,
+        args_schema=page_plan.PagePlan,
     )
 
 
@@ -1843,7 +1899,7 @@ def _conversation(all_messages: list[Any], lead: str) -> list[ConversationTurn]:
             for call in getattr(message, "tool_calls", None) or []:
                 if call.get("name") == FINISH_TOOL_NAME and isinstance(call.get("args"), dict):
                     # Threads in flight may carry the older shape, whose answer was chat_answer.
-                    answer = str(call["args"].get("lead") or call["args"].get("chat_answer") or "").strip()
+                    answer = str(call["args"].get("answer") or call["args"].get("lead") or call["args"].get("chat_answer") or "").strip()
                     if not answer:
                         continue
                     turn = ConversationTurn(role="assistant", text=answer[:8_000])

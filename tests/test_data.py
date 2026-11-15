@@ -3,7 +3,6 @@ import json
 from pathlib import Path
 
 from deadbot.data import CanonicalStore, _archive_identifier
-from deadbot.deadnet import MetadataRecord, ResearchResult, ResultState
 from deadbot.people_names import QUALIFIER
 import deadbot.tools as tools_module
 from deadbot.tools import build_tools
@@ -79,76 +78,22 @@ def test_song_context_adds_a_compact_listening_path_per_performance():
     assert "listen" not in no_links
 
 
-def test_deadnet_song_context_returns_metadata_only_research_packet(monkeypatch):
-    store = CanonicalStore()
-
-    class FakeAdapter:
-        def read(self, request):
-            assert request.identifier == "sugaree"
-            return ResearchResult(
-                state=ResultState.OK,
-                records=(
-                    MetadataRecord(
-                        entity_type="song",
-                        identifier="sugaree",
-                        title="Sugaree | Dead.net",
-                        url="https://www.dead.net/song/sugaree",
-                    ),
-                ),
-                requested={"operation": "read", "entity_type": "song"},
-            )
-
-    monkeypatch.setattr(tools_module, "_reviewed_deadnet_adapter", lambda: FakeAdapter())
-    payload = json.loads(
-        tool_by_name(store, "get_deadnet_song_context").invoke({"song_id_or_title": "Sugaree"})
-    )
-    assert payload["song"]["song_id"] == "song-sugaree"
-    assert payload["research"]["coverage"] == "links_only"
-    assert payload["research"]["records"] == [
-        {
-            "entity_type": "song",
-            "identifier": "sugaree",
-            "title": "Sugaree | Dead.net",
-            "url": "https://www.dead.net/song/sugaree",
-            "source": "dead.net",
-        }
-    ]
 
 
-def test_deadcast_metadata_returns_bounded_metadata_only_packet(monkeypatch):
-    store = CanonicalStore()
-
-    class FakeAdapter:
-        def read(self, request):
-            assert request.entity_type.value == "deadcast"
-            assert request.identifier == "episode-1"
-            return ResearchResult(
-                state=ResultState.OK,
-                records=(MetadataRecord(entity_type="deadcast", identifier="episode-1", title="Deadcast: Veneta", url="https://www.dead.net/deadcast/episode-1"),),
-            )
-
-    monkeypatch.setattr(tools_module, "_reviewed_deadcast_adapter", lambda: FakeAdapter())
-    payload = json.loads(tool_by_name(store, "get_deadcast_episode").invoke({"episode_id_or_slug": "episode-1"}))
-    assert payload["research"]["state"] == "ok"
-    assert payload["research"]["records"][0]["title"] == "Deadcast: Veneta"
-    assert "transcript" not in payload["research"]["records"][0]
 
 
 def test_lore_source_trails_resolve_canonical_song_and_show_scopes():
     store = CanonicalStore()
-    tool = tool_by_name(store, "get_lore_source_trails")
-    song_payload = json.loads(
-        tool.invoke({"entity_type": "song", "entity_id_or_name": "Friend Of The Devil"})
-    )
-    assert song_payload["entity"]["entity_id"] == "song-friend-of-the-devil"
-    assert song_payload["research"]["state"] == "ok"
-    assert any(record["source_kind"] == "official" for record in song_payload["research"]["records"])
+    tool = tool_by_name(store, "search_stories")
+    song_payload = json.loads(tool.invoke({"song_or_show": "Friend Of The Devil"}))
+    assert song_payload["about"]["entity_id"] == "song-friend-of-the-devil"
+    assert any(record["source_kind"] == "official" for record in song_payload["trails"])
 
-    show_payload = json.loads(
-        tool.invoke({"entity_type": "show", "entity_id_or_name": "1972-08-27"})
-    )
-    assert show_payload["entity"]["entity_id"] == "gd-1972-08-27"
-    assert show_payload["research"]["trail_ids"] == ["show-veneta-heat-context"]
+    show_payload = json.loads(tool.invoke({"song_or_show": "1972-08-27"}))
+    assert show_payload["about"]["entity_id"] == "gd-1972-08-27"
+    assert show_payload["trails"]
+    assert all(record["entity_id"] == "gd-1972-08-27" for record in show_payload["trails"])
+    assert any("show-veneta-heat-context" in record["resource_id"] for record in show_payload["trails"])
 
 
 def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
@@ -177,7 +122,7 @@ def test_guest_directory_uses_all_guest_credits_not_a_curated_guest_list():
         "Los Angeles Memorial Sports Arena",
     ]
     enrichment = json.loads(
-        tool_by_name(store, "search_stored_resources").invoke({"query": branford["name"]})
+        tool_by_name(store, "search_stories").invoke({"query": branford["name"]})
     )
     assert {resource["resource_type"] for resource in enrichment["resources"]} >= {
         "community-show-page",
@@ -311,19 +256,12 @@ def test_performance_context_lists_the_guests_credited_on_that_performance():
 
 def test_resource_directory_searches_cataloged_anecdotal_sources_across_scopes():
     store = CanonicalStore()
-    payload = json.loads(tool_by_name(store, "search_stored_resources").invoke({"query": "Veneta"}))
+    payload = json.loads(tool_by_name(store, "search_stories").invoke({"query": "Veneta"}))
     assert payload["resources"]
     assert any(resource["resource_type"] == "eyewitness-memoir" for resource in payload["resources"])
     assert all(resource["url"].startswith("https://") for resource in payload["resources"])
 
 
-def test_selection_signal_tool_preserves_critic_fan_and_curator_provenance():
-    store = store_with_selection_evidence()
-    payload = json.loads(tool_by_name(store, "get_selection_signals").invoke({}))
-    signal_types = {signal["signal_type"] for signal in payload["selection_signals"]}
-    assert {"critic_editorial_show_selection", "fan_ranked_version", "individual_curator_song_selection"} <= signal_types
-    assert "headyversion" in payload["source_constraints"]
-    assert payload["show_selections"][0]["selector_name"] == "David Fricke / Rolling Stone"
 
 
 def test_every_veneta_song_has_a_context_resource():
@@ -347,21 +285,6 @@ def test_song_tool_returns_sugaree_resources_and_arrangement():
     assert len(result["resources"]) == len({resource["resource_id"] for resource in result["resources"]})
 
 
-def test_song_performance_profile_is_bounded_and_reports_neighbor_denominators():
-    store = CanonicalStore()
-    result = json.loads(
-        tool_by_name(store, "get_song_performance_profile").invoke({"song_id_or_title": "Sugaree"})
-    )
-    assert result["song"]["song_id"] == "song-sugaree"
-    assert result["performance_count"] == 364
-    assert result["first_performance"]["show_date"] == "1971-07-31"
-    assert result["last_performance"]["show_date"] == "1995-07-08"
-    assert result["immediate_predecessors"] == [
-        {"song_id": "song-hell-in-a-bucket", "title": "Hell In A Bucket", "count": 66}
-    ]
-    assert result["predecessor_denominator"] == 338
-    assert result["successor_denominator"] == 359
-    assert "coverage" not in result
 
 
 def test_arrangement_tool_finds_source_specific_keys():
@@ -466,7 +389,6 @@ def test_show_tool_compacts_recordings_to_a_count_and_lists_ids_only_when_few():
     assert result["recordings"]["count"] == full_recording_count
     # A long inventory is a count; get_recording_reviews lists its tapes with their IDs.
     assert full_recording_count > 8 and "recording_ids" not in result["recordings"]
-    assert "get_recording_reviews" in result["recordings_note"]
     veneta = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "1972-08-27"}))
     assert "recording-gd-1972-08-27-sbd-4682" in veneta["recordings"]["recording_ids"]
 
@@ -543,16 +465,6 @@ def test_show_tool_payload_is_compact_json():
         assert set(link) <= show_link_columns
 
 
-def test_show_media_lookup_resolves_a_date_to_the_canonical_show():
-    store = CanonicalStore()
-    result = json.loads(
-        tool_by_name(store, "get_media_links").invoke(
-            {"entity_type": "show", "entity_id": "1972-08-27"}
-        )
-    )
-    assert result["show_id"] == "gd-1972-08-27"
-    video = next(link for link in result["links"] if link["link_type"] == "full-show-video")
-    assert video["platform"] == "youtube"
 
 
 def test_branford_debut_has_verified_show_and_performance_video_links():
@@ -603,55 +515,15 @@ def test_historical_weather_resolves_show_venue_and_returns_reanalysis(monkeypat
     assert "not a station observation" in result["source"]["note"]
 
 
-def test_astronomy_returns_local_sun_moon_events_and_source(monkeypatch):
-    store = CanonicalStore()
-    tools_module._geocode.cache_clear()
-
-    def fake_fetch(url):
-        if url.startswith(tools_module.OPEN_METEO_GEOCODING_URL):
-            return {
-                "results": [{
-                    "name": "Veneta",
-                    "latitude": 44.05,
-                    "longitude": -123.35,
-                    "timezone": "America/Los_Angeles",
-                }]
-            }
-        assert url.startswith(tools_module.USNO_RISE_SET_URL)
-        return {
-            "properties": {
-                "data": {
-                    "curphase": "Waxing crescent",
-                    "fracillum": 0.22,
-                    "closestphase": {"phase": "First Quarter", "month": 8, "day": 29, "year": 1972, "time": "11:20"},
-                    "sundata": [{"phen": "Begin civil twilight", "time": "05:12"}, {"phen": "Sunset", "time": "20:02"}],
-                    "moondata": [{"phen": "Moonrise", "time": "12:11"}, {"phen": "Moonset", "time": "22:14"}],
-                }
-            }
-        }
-
-    monkeypatch.setattr(tools_module, "_fetch_json", fake_fetch)
-    result = json.loads(tool_by_name(store, "get_astronomy").invoke({"show_id_or_date": "1972-08-27"}))
-    assert result["astronomy"]["timezone_offset_hours"] == -7
-    assert result["astronomy"]["sun"][1] == {"event": "Sunset", "time": "20:02"}
-    assert result["astronomy"]["moon_phase"] == "Waxing crescent"
-    assert result["source"]["name"].startswith("U.S. Naval Observatory")
 
 
-def test_astrology_is_date_based_and_explicitly_interpretive():
-    store = CanonicalStore()
-    result = json.loads(tool_by_name(store, "get_astrology").invoke({"show_id_or_date": "1972-08-27"}))
-    assert result["astrology"]["sun_sign"] == "Virgo"
-    assert result["astrology"]["system"] == "Western tropical zodiac"
-    assert "not scientific evidence" in result["disclaimer"]
 
 
 def test_context_tools_return_a_safe_error_for_unknown_show_without_fetching(monkeypatch):
     store = CanonicalStore()
     monkeypatch.setattr(tools_module, "_fetch_json", lambda _url: (_ for _ in ()).throw(AssertionError("should not fetch")))
-    for name in ("get_historical_weather", "get_astronomy", "get_astrology"):
-        result = json.loads(tool_by_name(store, name).invoke({"show_id_or_date": "1900-01-01"}))
-        assert result["error"] == "Show not found"
+    result = json.loads(tool_by_name(store, "get_historical_weather").invoke({"show_id_or_date": "1900-01-01"}))
+    assert result["error"] == "Show not found"
 
 
 def test_ambiguous_show_date_returns_candidates_instead_of_a_dead_end():
@@ -673,13 +545,6 @@ def test_unknown_show_date_still_reports_not_found_without_candidates():
     assert "candidates" not in result
 
 
-def test_media_links_tool_returns_candidates_for_an_ambiguous_show_date():
-    store = CanonicalStore()
-    result = json.loads(
-        tool_by_name(store, "get_media_links").invoke({"entity_type": "show", "entity_id": "1966-10-08"})
-    )
-    assert "Multiple shows match" in result["error"]
-    assert len(result["candidates"]) == 2
 
 
 def test_show_payload_keeps_source_setlist_gap_note_without_raw_provenance():

@@ -17,7 +17,8 @@ from typing import Any
 
 from deadbot.finish import FINISH_TOOL_NAME
 
-_KEY = re.compile(r'"lead"\s*:\s*"')
+# The page's answer, or the older plan's lead.
+_KEY = re.compile(r'"(?:answer|lead)"\s*:\s*"')
 
 _SIMPLE_ESCAPES = {
     '"': '"',

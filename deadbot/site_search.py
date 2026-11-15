@@ -376,8 +376,8 @@ class SiteSearcher:
             "reviews": reviews[: max(1, min(limit, 20))],
         }
 
-    def listener_remarks(self, identifier: str, song_title: str, limit: int = 3) -> list[dict[str, Any]]:
-        """What archive.org listeners wrote about one song on this tape: a sentence from each review that names it."""
+    def listener_remarks(self, identifier: str, song_title: str | list[str], limit: int = 3) -> list[dict[str, Any]]:
+        """What archive.org listeners wrote on this tape: a sentence from each review that names the song (or any of the songs)."""
 
         reviews = self.archive_reviews(identifier, 20, max_chars=5000).get("reviews") or []
         return remarks_from_reviews(reviews, song_title, limit)
@@ -413,10 +413,11 @@ def _song_names(song_title: str) -> list[str]:
     return names
 
 
-def remarks_from_reviews(reviews: list[dict[str, Any]], song_title: str, limit: int = 3) -> list[dict[str, Any]]:
-    """One sentence per review that names the song, longest reviews first, up to ``limit``."""
+def remarks_from_reviews(reviews: list[dict[str, Any]], song_title: str | list[str], limit: int = 3) -> list[dict[str, Any]]:
+    """One sentence per review that names the song (or any of several), longest reviews first, up to ``limit``."""
 
-    names = _song_names(song_title)
+    titles = [song_title] if isinstance(song_title, str) else song_title
+    names = list(dict.fromkeys(name for title in titles for name in _song_names(title)))
     if not names:
         return []
     pattern = re.compile(r"\b(?:" + "|".join(re.escape(name) for name in names) + r")", re.IGNORECASE)

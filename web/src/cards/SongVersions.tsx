@@ -35,13 +35,13 @@ function rowTrack(row: SongVersionsRow): PlayerTrack | null {
   return row.track ? toTrack(row.track, { showDate: row.show_date, venueName: row.venue_name }) : null;
 }
 
-function Row({ block, row, longest, queue }: { block: SongVersionsBlock; row: SongVersionsRow; longest: number; queue: PlayerTrack[] }) {
+function Row({ block, row, longest, queue, mixed }: { block: SongVersionsBlock; row: SongVersionsRow; longest: number; queue: PlayerTrack[]; mixed: boolean }) {
   const track = rowTrack(row);
   const play: InPagePlay | null = track ? { start: track, queue } : null;
   const control = usePlayControl(play, "start");
   const criteria = block.criteria ?? [];
   const judgments = row.judgments ?? [];
-  const name = `${block.song.title}, ${row.venue_name}, ${shortDate(row.show_date)}`;
+  const name = `${mixed ? (row.song_title || block.song.title) : block.song.title}, ${row.venue_name}, ${shortDate(row.show_date)}`;
   const label = control.errored ? `Retry ${name}` : control.playing ? `Pause ${name}` : control.loading ? `Loading ${name}` : `Play ${name}`;
   const width = row.length_seconds != null && longest > 0 ? Math.max((row.length_seconds / longest) * 100, 1) : 0;
   return (
@@ -54,8 +54,17 @@ function Row({ block, row, longest, queue }: { block: SongVersionsBlock; row: So
         <span className="sv-play-placeholder" aria-hidden="true" />
       )}
       <div className="sv-night">
-        <strong className="sv-venue">{row.venue_name}</strong>
-        <span className="sv-date">{[row.city, shortDate(row.show_date)].filter(Boolean).join(" · ")}</span>
+        {mixed ? (
+          <>
+            <strong className="sv-venue">{row.song_title || block.song.title}</strong>
+            <span className="sv-date">{[row.venue_name, row.city, shortDate(row.show_date)].filter(Boolean).join(" · ")}</span>
+          </>
+        ) : (
+          <>
+            <strong className="sv-venue">{row.venue_name}</strong>
+            <span className="sv-date">{[row.city, shortDate(row.show_date)].filter(Boolean).join(" · ")}</span>
+          </>
+        )}
         {!track && row.release &&
           (row.release.url ? (
             <a className="sv-release" href={row.release.url} target="_blank" rel="noreferrer">
@@ -87,16 +96,26 @@ function Row({ block, row, longest, queue }: { block: SongVersionsBlock; row: So
   );
 }
 
+// A card of several songs with no title of its own: the night they share, or
+// plain "Performances".
+function mixedHeading(rows: SongVersionsRow[]): string {
+  const first = rows[0];
+  const oneShow = first && rows.every((row) => row.show_id === first.show_id);
+  return oneShow ? [first.venue_name, shortDate(first.show_date)].join(", ") : "Performances";
+}
+
 export function SongVersions({ block }: { block: SongVersionsBlock }) {
   const player = usePlayer();
   const tracks = block.rows.map(rowTrack).filter((track): track is PlayerTrack => track != null);
   const seconds = block.rows.reduce((sum, row) => sum + (row.track ? (row.tape_seconds ?? 0) : 0), 0);
   const queued = tracks.length > 0 && tracks.every((track) => player.queue.some((item) => item.id === track.id || item.audioUrl === track.audioUrl));
   const longest = Math.max(0, ...block.rows.map((row) => row.length_seconds ?? 0));
+  const mixed = new Set(block.rows.map((row) => row.song_id).filter(Boolean)).size > 1;
+  const heading = block.title || (mixed ? mixedHeading(block.rows) : block.song.title);
   return (
     <section className="song-versions">
       <div className="sv-head">
-        <CardHeading className="sv-title">{block.title || block.song.title}</CardHeading>
+        <CardHeading className="sv-title">{heading}</CardHeading>
         {tracks.length > 0 && (
           <button type="button" className={`sv-queue-all${queued ? " queued" : ""}`} aria-label={queued ? "In the queue" : "Queue all"} onClick={() => !queued && player.enqueue(tracks)}>
             {queued ? "✓ In the queue" : `+ Queue all ${tracks.length} · ${total(seconds)}`}
@@ -105,7 +124,7 @@ export function SongVersions({ block }: { block: SongVersionsBlock }) {
       </div>
       <ol className="sv-rows">
         {block.rows.map((row) => (
-          <Row key={row.performance_id} block={block} row={row} longest={longest} queue={tracks} />
+          <Row key={row.performance_id} block={block} row={row} longest={longest} queue={tracks} mixed={mixed} />
         ))}
       </ol>
     </section>

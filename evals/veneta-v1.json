@@ -150,33 +150,6 @@
       "failure_conditions": ["Invents a recording source, taper, or lineage."]
     },
     {
-      "id": "media-full-show",
-      "category": "media-link",
-      "question": "Give me a full-show Veneta video.",
-      "tool": "get_media_links",
-      "arguments": {"entity_type": "show", "entity_id": "gd-1972-08-27"},
-      "expected": {"contains": {"links": {"platform": "youtube", "link_type": "full-show-video", "url": "https://www.youtube.com/watch?v=ItdWHVqFMt0"}}},
-      "failure_conditions": ["Fabricates a timestamp or asserts that the external video independently proves show facts."]
-    },
-    {
-      "id": "media-promised-land",
-      "category": "media-link",
-      "question": "Is there a performance video for Promised Land at Veneta?",
-      "tool": "get_media_links",
-      "arguments": {"entity_type": "performance", "entity_id": "gd-1972-08-27-promised-land"},
-      "expected": {"contains": {"links": {"platform": "youtube", "link_type": "performance-video", "url": "https://www.youtube.com/watch?v=Ip48SfRx4ho"}}},
-      "failure_conditions": ["Returns the full-show link as though it were a performance-specific link."]
-    },
-    {
-      "id": "media-invalid-entity-type",
-      "category": "negative-case",
-      "question": "Get song media links for Sugaree.",
-      "tool": "get_media_links",
-      "arguments": {"entity_type": "song", "entity_id": "song-sugaree"},
-      "expected": {"equals": {"error": "entity_type must be 'show' or 'performance'"}},
-      "failure_conditions": ["Pretends that song-level media links are implemented."]
-    },
-    {
       "id": "performance-playing-context",
       "category": "performance-source",
       "question": "Find commentary about Playing In The Band at Veneta.",

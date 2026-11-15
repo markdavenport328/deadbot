@@ -88,7 +88,7 @@ def test_the_default_result_offers_a_spread_of_nights_to_draw(csv_store):
     assert any(why == "first night" for why in reasons.values())
     assert any(why.startswith("longest of 1991") for why in reasons.values())
     assert [night["show_date"] for night in nights] == sorted(night["show_date"] for night in nights)
-    assert "version_strip" in payload["on_the_page"]
+    assert "pairing item" in payload["on_the_page"]
     assert len(json.dumps(payload)) < 12_000
 
 

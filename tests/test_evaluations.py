@@ -6,7 +6,7 @@ from deadbot.evaluations import DEFAULT_SUITE_PATH, evaluate_suite, load_suite, 
 
 def test_veneta_tool_retrieval_suite_passes_against_canonical_data():
     result = evaluate_suite()
-    assert result["total"] == 30
+    assert result["total"] == 27
     assert result["failed"] == 0
     assert result["passed"] == result["total"]
 
