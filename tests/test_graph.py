@@ -60,7 +60,7 @@ def _prompt() -> str:
 
 
 def test_prompt_gives_the_visitors_the_goal_the_writer_and_the_tools():
-    for heading in ("## THE VISITORS", "## THE GOAL", "## THE WRITER", "## RESEARCH TOOLS", "## PAGE COMPONENTS"):
+    for heading in ("## THE VISITORS", "## THE GOAL", "## THE WRITER", "## RESEARCH TOOLS", "## THE PAGE"):
         assert heading in graph.SYSTEM_PROMPT
 
 
