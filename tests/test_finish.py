@@ -1874,7 +1874,7 @@ def test_a_page_reads_as_the_plan_the_pipeline_hydrates():
                 {"type": "show", "show_id": "gd-1973-11-11", "play": "2"},
                 {"type": "chart", "aggregation_id": "agg:x", "view": "ranked", "rows": 5, "notes": {"song-a": "Top."}},
                 {"type": "song_years", "song_id": "song-dark-star", "view": "length", "open_year": 1973},
-                {"type": "performances", "performance_ids": ["p1", "p2"], "criteria": ["Length"], "judgments": {"p1": ["Long"]}},
+                {"type": "performances", "performance_ids": ["p1", "p2"], "notes": {"p1": "Long."}},
                 {"type": "links", "urls": ["https://example.org/a"], "resource_ids": ["r1"]},
             ]},
         ],
@@ -1890,7 +1890,7 @@ def test_a_page_reads_as_the_plan_the_pipeline_hydrates():
     assert hero.start_set == "Set 2" and hero.show_id == "gd-1973-11-11"
     assert group.items[4].count == 5 and group.items[4].notes[0].note == "Top."
     assert group.items[5].visible_facets == ["by_year"] and group.items[5].chart_view == "length"
-    assert group.items[6].criteria == ["Length"]
+    assert group.items[6].notes == {"p1": "Long."}
 
 
 def test_a_page_item_that_fits_no_component_leaves_the_rest_of_the_section():

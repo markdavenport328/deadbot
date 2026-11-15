@@ -55,10 +55,6 @@ class PerformancesItem(_Item):
     type: Literal["performances"]
     performance_ids: list[str] = Field(description="The performances, in the order to hear them.")
     notes: dict[str, str] | None = Field(default=None, description="Your line under a performance, keyed by performance_id.")
-    criteria: list[str] = Field(default_factory=list, description="Points to compare the performances on, such as 'Length' or 'What follows'.")
-    judgments: dict[str, list[str]] = Field(
-        default_factory=dict, description="With criteria, keyed by performance_id: your answer for each point, in order."
-    )
 
 
 class PairingItem(_Item):
@@ -235,8 +231,6 @@ def body_items(item: Any) -> list[dict[str, Any]]:
             "title": title,
             "performance_ids": _strings(item.get("performance_ids")),
             "notes": _string_map(item.get("notes")) or None,
-            "criteria": item.get("criteria"),
-            "judgments": item.get("judgments"),
         }]
     if kind == "pairing":
         return [{"type": "version_strip", "pairing_id": item.get("pairing_id"), "pair_ids": item.get("pair_ids"), "title": title, "note": note}]

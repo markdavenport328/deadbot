@@ -181,14 +181,14 @@ def test_every_tool_states_the_same_length_as_the_timeline(sqlite_store):
     assert lengths == {"gd-1974-03-23-cassidy-1-12": 249, "gd-1972-05-26-truckin-2-1": 1138}
     versions = json.loads(tools["get_song_notable_versions"].invoke({"song_id_or_title": "Cassidy", "limit": 30}))
     debut = next(item for item in versions["versions"] if item["performance_id"] == "gd-1974-03-23-cassidy-1-12")
-    assert debut["length_seconds"] == 249
+    assert debut["length"] == "4:09"
     assert "archive_track_duration_seconds" not in json.dumps(versions)
     listed = json.loads(tools["list_song_performances"].invoke({"song_id_or_title": "Cassidy", "offset": 0, "limit": 5}))
-    assert listed["performances"][0]["length_seconds"] == 249
+    assert listed["performances"][0]["length"] == "4:09"
     assert "archive_track_duration_seconds" not in json.dumps(listed)
     show = json.loads(tools["get_show"].invoke({"show_id_or_date": "1972-05-26"}))
     row = next(row for row in show["performances"] if row["performance_id"] == "gd-1972-05-26-truckin-2-1")
-    assert row["length_seconds"] == 1138 and row["audio"] is True
+    assert row["length"] == "18:58" and row["audio"] is True
 
 
 def test_version_picks_and_show_picks_are_told_apart(sqlite_store):

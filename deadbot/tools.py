@@ -299,12 +299,75 @@ def _largest_list(value: Any, path: str = "") -> tuple[str, list | None, int]:
     return best
 
 
+def _clock(seconds: int) -> str:
+    """A length the way a fan reads it: 9:05, or 1:02:40 past an hour."""
+
+    hours, rest = divmod(int(seconds), 3600)
+    minutes, secs = divmod(rest, 60)
+    return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes}:{secs:02d}"
+
+
+def _length_key(key: str) -> str | None:
+    """The fan's name for a field counted in seconds ("length_seconds" -> "length"), else None."""
+
+    if key == "seconds":
+        return "length"
+    if not key.endswith("_seconds"):
+        return None
+    base = key.removesuffix("_seconds")
+    if base in ("length", "duration", "audio", "archive_track_duration", "audio_duration"):
+        return "length"
+    if base == "start":
+        return "starts_at"
+    return base.replace("duration", "length") if "duration" in base else f"{base}_length"
+
+
+def _as_length(value: Any) -> Any:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value >= 0:
+        return _clock(round(value))
+    if isinstance(value, str) and value.strip().isdigit():
+        return _clock(int(value.strip()))
+    return value
+
+
 def _json(value: Any) -> str:
-    """Serialize a lean tool payload, bounded by the tool result ceiling."""
+    """Serialize a lean tool payload, bounded by the tool result ceiling.
+
+    Lengths stored in seconds reach the model as clock time (9:05), the way
+    a fan says them, so the page says them that way too.
+    """
 
     def compact(item: Any) -> Any:
         if isinstance(item, dict):
-            return {key: compact(nested) for key, nested in item.items() if nested not in (None, "")}
+            out: dict[str, Any] = {}
+            columns = item.get("columns")
+            timed = (
+                [index for index, name in enumerate(columns) if isinstance(name, str) and _length_key(name)]
+                if isinstance(columns, list) and isinstance(item.get("rows"), list)
+                else []
+            )
+            for key, nested in item.items():
+                if nested in (None, ""):
+                    continue
+                if timed and key == "columns":
+                    out[key] = [_length_key(name) if index in timed else name for index, name in enumerate(columns)]
+                    continue
+                if timed and key == "rows":
+                    out[key] = [
+                        [_as_length(cell) if index in timed else compact(cell) for index, cell in enumerate(row)]
+                        if isinstance(row, list)
+                        else compact(row)
+                        for row in nested
+                    ]
+                    continue
+                name = _length_key(key) if isinstance(key, str) else None
+                if name:
+                    out.setdefault(name, _as_length(nested))
+                else:
+                    out[key] = compact(nested)
+            return out
         if isinstance(item, list):
             return [compact(nested) for nested in item]
         return item
@@ -580,6 +643,18 @@ def _links_for_fans(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{**row, "notes": _fan_notes(row.get("notes"))} if isinstance(row, dict) and "notes" in row else row for row in rows]
 
 
+def _story(resource: dict[str, Any]) -> dict[str, Any]:
+    """A story as the model reads it: what it is, who made it, its link, and a line on what it covers."""
+
+    story = {key: resource.get(key) for key in ("resource_id", "title", "creator", "source_name", "url")}
+    notes = _fan_notes(resource.get("notes"))
+    notes = re.sub(r"^\s*Visitor context:\s*", "", notes)
+    notes = " ".join(sentence for sentence in re.split(r"(?<=\.)\s+", notes) if not sentence.startswith("Treat ")).strip()
+    if notes:
+        story["covers"] = notes if len(notes) <= 280 else notes[:277].rsplit(" ", 1)[0] + "…"
+    return story
+
+
 def _held_phrase(state: str) -> str:
     """Why a signal was held back, in plain words ("multiple performances")."""
 
@@ -808,7 +883,9 @@ def build_tools(
         each show (resources, source trail, selections) or the research
         sites to search when nothing is gathered. When the question is
         about a specific guest, ask for include=["appearances"] in the same
-        call rather than looking the guest up twice.
+        call rather than looking the guest up twice. The guests a name
+        matches carry stories: the interviews and articles the library holds
+        about them, each with a line on what it covers, ready for a links item.
         """
         include = include or []
         valid_includes = {"appearances"}
@@ -954,6 +1031,12 @@ def build_tools(
         # Recurring guests first: the shape of the directory shows who became a
         # thread in the band's story before it shows who dropped by once.
         guests.sort(key=lambda guest: (-guest["guest_show_count"], guest["name"].casefold()))
+        # The stories told about a guest travel with them, so the page links
+        # what the library holds rather than what memory suggests.
+        stories = {guest["person_id"]: stories_about(guest["name"]) for guest in guests[:3]} if needle else {}
+        for guest in guests:
+            if stories.get(guest["person_id"]):
+                guest["stories"] = stories[guest["person_id"]]
         if want_appearances:
             show_ids = []
             for guest in guests:
@@ -982,6 +1065,7 @@ def build_tools(
                     "first_show_date": appearances[0]["show_date"] if appearances else None,
                     "last_show_date": appearances[-1]["show_date"] if appearances else None,
                     "instruments": instruments,
+                    "stories": guest.get("stories"),
                 }
             )
         payload = {
@@ -999,6 +1083,12 @@ def build_tools(
             },
         }
         return _json(payload)
+
+    def stories_about(topic: str, limit: int = 4) -> list[dict[str, Any]]:
+        """The stored interviews and articles that name a person or topic, each with a line on what it covers."""
+
+        found = json.loads(search_stored_resources.func(topic)).get("resources") or []
+        return [_story(resource) for resource in found[:limit]]
 
     @tool
     def search_stored_resources(query: str) -> str:
@@ -1215,8 +1305,8 @@ def build_tools(
         Use after `get_song` when a question needs concrete renditions, dates,
         or per-performance listening paths. Start with the first page unless a
         prior result tells you to continue. Each performance carries its stable
-        ID, show date, set position, its length_seconds (the release's length,
-        else the tape's) and any verified listening URLs. For rich
+        ID, show date, set position, its length and any verified listening
+        URLs. For rich
         context on a particular result, call `get_performance` with its ID.
         Its performances can go on the page as a performances item.
         """
@@ -1670,9 +1760,8 @@ def build_tools(
         Use this first for "best", "notable", "essential" or "where do I start"
         questions about a song. Each version carries the official releases that
         include it (Dick's Picks, Dave's Picks, box sets), the reviewed critic,
-        curator and fan signals that name it or its show, its length_seconds
-        (the release's length, else the tape's) and its direct listening
-        links. source_count counts distinct sources, never quality:
+        curator and fan signals that name it or its show, its length and its
+        direct listening links. source_count counts distinct sources, never quality:
         present them as separate voices. Versions no source singled out are
         absent here and remain reachable through list_song_performances.
         Each version with a tape carries listeners: what archive.org listeners
@@ -1944,8 +2033,8 @@ def build_tools(
     def get_show(show_id_or_date: str) -> str:
         """Get a show's details: lineup, named guitar/equipment claims, venue, setlist, recordings summary, and links.
 
-        Each setlist entry says whether it has a playable track (audio_seconds
-        gives its length); the page fills in the listening links itself.
+        Each setlist entry gives its length and says whether it has a playable
+        track; the page fills in the listening links itself.
 
         Use a show ID returned by another tool, or an unambiguous
         date explicitly supplied by the visitor. Never use a date or show ID
@@ -1954,8 +2043,10 @@ def build_tools(
         recent retrieved show ID/date and call this tool before answering.
         pathways lists the gathered lore for each result (resources, source
         trail, selections) or the research sites to search when nothing is
-        gathered. listeners holds what archive.org listeners wrote about this
-        night, one sentence per review.
+        gathered. stories lists the interviews and articles about this night,
+        each with a line on what it covers, ready for a links item. listeners
+        holds what archive.org listeners wrote about this night, one sentence
+        per review.
         """
         show = store.resolve_show(show_id_or_date)
         if not show:
@@ -1975,10 +2066,7 @@ def build_tools(
         venue = payload.get("venue")
         if isinstance(venue, dict):
             payload["venue"] = {key: value for key, value in venue.items() if key not in {"notes", "latitude", "longitude"}}
-        payload["resources"] = [
-            {key: value for key, value in resource.items() if key not in {"notes", "relationships"}}
-            for resource in payload.get("resources") or []
-        ]
+        payload["stories"] = [_story({**resource, "url": resource.get("url") or resource.get("source_url")}) for resource in payload.pop("resources", None) or []]
         payload["show_links"] = [
             {
                 **{key: link[key] for key in ("platform", "link_type", "url", "title") if link.get(key)},
@@ -2220,7 +2308,16 @@ def build_tools(
             context["song"] = _without_notes(context["song"])
         for key in ("links", "show_links", "recordings"):
             if isinstance(context.get(key), list):
-                context[key] = _links_for_fans(context[key])
+                # A track's own length is the player's business; the
+                # performance has one length, given once below.
+                context[key] = [
+                    {k: v for k, v in row.items() if k not in ("duration_seconds", "start_seconds")} if isinstance(row, dict) else row
+                    for row in _links_for_fans(context[key])
+                ]
+        from deadbot import song_life
+
+        if seconds := song_life.performance_lengths(store, [performance_id]).get(performance_id):
+            context["length_seconds"] = seconds
         return _json(context)
 
     @tool
@@ -2419,7 +2516,7 @@ def build_tools(
         candidate_nights is a spread to choose from: the first and last
         nights, the longest and shortest together, and the longest of each
         era, each with why it is there. Each night names its show_id, date,
-        venue, place and set, its pair_id, both lengths in seconds, and
+        venue, place and set, its pair_id, both lengths, and
         whether both tape tracks exist to play. A short pairing lists every
         version; a long one lists them on request with include=["versions"]
         as one compact table, narrowed by year_from and year_to. A

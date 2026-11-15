@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from pathlib import Path
 
 from deadbot.data import CanonicalStore, _archive_identifier
@@ -401,8 +402,10 @@ def test_show_tool_setlist_rows_carry_real_booleans_and_an_audio_length_not_trac
     assert "segue_into_next" not in rows["gd-1972-08-27-sugaree"]
     assert rows["gd-1972-08-27-one-more-saturday-night"]["encore"] is True
     assert all("listen" not in row and "archive_track_url" not in row for row in result["performances"])
-    assert any(row.get("audio_seconds") or row.get("audio") for row in result["performances"])
-    assert all("notes" not in resource and "relationships" not in resource for resource in result["resources"])
+    assert any(row.get("audio") for row in result["performances"])
+    # Lengths read as clock time, the way a fan says them.
+    assert all(re.fullmatch(r"\d+:\d\d(:\d\d)?", row["length"]) for row in result["performances"] if "length" in row)
+    assert result["stories"] and all({"title", "url"} <= set(story) and "relationships" not in story for story in result["stories"])
     assert all("notes" not in link for link in result["show_links"])
     # Every member of the band that night is among the performers, so the membership rows are left out.
     assert "band_memberships" not in result
@@ -728,3 +731,23 @@ def test_canonical_resources_satisfy_the_unique_and_foreign_key_constraints():
     for table in ("resource_shows", "resource_songs", "resource_performances"):
         dangling = sorted({row["resource_id"] for row in rows(table)} - known)
         assert dangling == [], table
+
+
+def test_tool_output_states_lengths_as_clock_time():
+    payload = json.loads(tools_module._json({"length_seconds": 545, "rows": [[1, 3760]], "columns": ["pair_id", "first_seconds"], "start_seconds": 65}))
+    assert payload == {"length": "9:05", "rows": [[1, "1:02:40"]], "columns": ["pair_id", "first_length"], "starts_at": "1:05"}
+
+
+def test_a_guest_carries_the_stories_the_library_holds_about_them():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "search_guest_musicians").invoke({"query": "Branford Marsalis"}))
+    stories = result["guests"][0]["stories"]
+    assert any("branfordmarsalis.com" in story["url"] for story in stories)
+    assert all(not story.get("covers", "").startswith("Visitor context") for story in stories)
+
+
+def test_a_performance_states_one_length():
+    store = CanonicalStore()
+    result = json.loads(tool_by_name(store, "get_performance").invoke({"performance_id": "gd-1977-05-08-estimated-prophet-2-3"}))
+    assert result["length"] == "9:05"
+    assert all("length" not in row for key in ("links", "recordings") for row in result.get(key, []))

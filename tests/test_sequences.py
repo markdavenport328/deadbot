@@ -66,12 +66,12 @@ def test_the_summary_names_the_extremes_and_asks_before_listing_every_version(cs
     assert payload["available"]["versions"]["count"] == 544
     longest = payload["lengths"]["first_song"]["longest"]
     assert longest["pair_id"] == PROVIDENCE
-    assert (longest["first_seconds"], longest["second_seconds"]) == (784, 365)
+    assert (longest["first_length"], longest["second_length"]) == ("13:04", "6:05")
     assert longest["venue_name"] == "Providence Civic Center"
     assert longest["tape"] is True and "first_track_url" not in longest
-    assert payload["lengths"]["first_song"]["shortest"]["first_seconds"] > 0
+    assert payload["lengths"]["first_song"]["shortest"]["first_length"] != "0:00"
     assert [row["era"] for row in payload["by_era"]][0] == "1965–1970"
-    assert all("median_first_seconds" in row for row in payload["by_era"])
+    assert all("median_first_length" in row for row in payload["by_era"])
 
 
 def _versions(payload):
