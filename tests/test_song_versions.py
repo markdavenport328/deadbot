@@ -89,3 +89,22 @@ def test_the_plan_reads_leniently():
         {"lead": "Five of them.", "groups": [{"presentation": "collection", "items": [{"type": "song_versions", "performance_ids": [FIRST, LONGEST], "notes": {FIRST: "First."}}]}]}
     )
     assert plan.groups[0].items[0].type == "song_versions"
+
+
+def test_criteria_and_judgments_compare_the_versions(store):
+    (block,) = _resolve(
+        store,
+        [FIRST, LONGEST],
+        criteria=["Length", "What follows"],
+        judgments={FIRST: ["Under three minutes", "China Cat"], LONGEST: ["Over forty minutes", 7], "elsewhere": ["x"]},
+    )
+    assert block.criteria == ["Length", "What follows"]
+    assert block.rows[0].judgments == ["Under three minutes", "China Cat"]
+    # A judgment that is not text keeps its place, empty, so the rest still line up with the criteria.
+    assert block.rows[1].judgments == ["Over forty minutes", ""]
+
+
+def test_bad_criteria_or_notes_keep_the_rows(store):
+    (block,) = _resolve(store, [FIRST, LONGEST], criteria="Length", judgments=["x"], notes={FIRST: "The first.", LONGEST: 3})
+    assert block.criteria == [] and [row.judgments for row in block.rows] == [[], []]
+    assert block.rows[0].note == "The first." and block.rows[1].note is None

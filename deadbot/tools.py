@@ -5,7 +5,9 @@ from __future__ import annotations
 import difflib
 import hashlib
 import json
+import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
@@ -679,6 +681,27 @@ def build_tools(
     deadcast_adapter = _reviewed_deadcast_adapter()
     reader = page_reader or default_reader()
     searcher = site_searcher or SiteSearcher()
+    # Listener remarks ride along with versions; a slow archive.org answer is skipped, not waited on.
+    remarks_searcher = SiteSearcher(searcher.transport, sites=[], timeout=4)
+
+    def _with_listener_remarks(items: list[dict[str, Any]], song_title: str) -> None:
+        """Add what archive.org listeners wrote about this song on each item's tape, as ``listeners``."""
+
+        wanted = [item for item in items if isinstance(item.get("listen"), dict) and item["listen"].get("archive_identifier")]
+        if not wanted or not song_title:
+            return
+
+        def fetch(item: dict[str, Any]) -> list[dict[str, Any]]:
+            try:
+                return remarks_searcher.listener_remarks(item["listen"]["archive_identifier"], song_title)
+            except Exception as error:  # a remark is extra; the version stands without it
+                logging.getLogger(__name__).info("listener remarks skipped for %s: %s", item["listen"]["archive_identifier"], error)
+                return []
+
+        with ThreadPoolExecutor(max_workers=min(8, len(wanted))) as pool:
+            for item, remarks in zip(wanted, pool.map(fetch, wanted)):
+                if remarks:
+                    item["listeners"] = remarks
 
     @tool
     def search_entities(query: str) -> str:
@@ -1137,8 +1160,8 @@ def build_tools(
             ]
             payload["plays_by_year_chart"] = (
                 "A song_overview for this song with visible_facets including by_year draws these counts as the song's "
-                "timeline, with your representatives as its stops. get_song_life lists the performances that stand out "
-                "in each era to choose those stops from."
+                "timeline. get_song_life lists the performances that stand out in each era; the ones you choose go on "
+                "the page as a song_versions."
             )
         payload["release_count"] = len(releases)
         # A widely released song (Sugar Magnolia: 135 records) turned this
@@ -1655,6 +1678,8 @@ def build_tools(
         links. source_count counts distinct sources, never quality:
         present them as separate voices. Versions no source singled out are
         absent here and remain reachable through list_song_performances.
+        Each version with a tape carries listeners: what archive.org listeners
+        wrote about this song on that tape, one sentence per review.
         Its performances can go on the page as a song_versions (chosen versions on one clock).
         """
         song = store.resolve_song(song_id_or_title)
@@ -1664,6 +1689,7 @@ def build_tools(
         cap = min(max(1, limit), 30)
         total = len(payload["versions"])
         payload["versions"] = payload["versions"][:cap]
+        _with_listener_remarks(payload["versions"], song.get("title") or "")
         if total > cap:
             payload["note"] = f"Showing {cap} of {total} versions with a source; raise limit for more."
         payload["coverage_note"] = (
@@ -2185,13 +2211,16 @@ def build_tools(
     def get_performance(performance_id: str) -> str:
         """Get one rendition's song/show context, performance-specific sources, recordings, and media links.
 
-        Performance-specific commentary concerns this rendition only and must
-        not be generalized to every performance of the song.
+        listeners holds what archive.org listeners wrote about this song on
+        the tape that plays, one sentence per review. Performance-specific
+        commentary concerns this rendition only.
         """
         context = store.performance_context(performance_id)
         if not context:
             return _json({"error": "Performance not found", "performance_id": performance_id})
         context = dict(context)
+        song_title = context["song"].get("title") if isinstance(context.get("song"), dict) else ""
+        _with_listener_remarks([context], song_title or "")
         if isinstance(context.get("song"), dict):
             context["song"] = _without_notes(context["song"])
         for key in ("links", "show_links", "recordings"):

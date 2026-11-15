@@ -1695,6 +1695,8 @@ export interface components {
          *     filled each night, length, tape track and release from the store.
          */
         SongVersionsBlock: {
+            /** Criteria */
+            criteria?: string[];
             /** Rows */
             rows: components["schemas"]["SongVersionsRow"][];
             song: components["schemas"]["SongVersionsSong"];
@@ -1722,6 +1724,8 @@ export interface components {
         SongVersionsRow: {
             /** City */
             city?: string | null;
+            /** Judgments */
+            judgments?: string[];
             /** Length Seconds */
             length_seconds?: number | null;
             /** Note */

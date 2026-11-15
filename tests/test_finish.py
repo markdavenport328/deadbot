@@ -390,33 +390,21 @@ def test_resolve_body_resolves_song_overview():
     assert block.credits and all(credit.name for credit in block.credits)
 
 
-def test_song_overview_keeps_model_chosen_representative_performance_links():
+def test_song_overview_from_a_plan_is_the_song_and_its_years_without_chosen_stops():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
     payload = store.song_context(song)
     chosen = next(performance for performance in payload["performances"] if performance.get("listen"))
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[
-            finish.GroupPlan(
-                presentation="collection",
-                items=[
-                    finish.SongOverviewRef(
-                        type="song_overview",
-                        song_id=song["song_id"],
-                        note="A song with a long onstage life.",
-                        representative_performance_ids=[chosen["performance_id"]],
-                    )
-                ],
-            )
-        ],
+    item = finish.validate_body_item(
+        {"type": "song_overview", "song_id": song["song_id"], "note": "A song with a long onstage life.", "representative_performance_ids": [chosen["performance_id"]]},
+        where="planned",
     )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, finish.grounded_context([payload]), [payload], store)
+    blocks, _ = finish.resolve_items([item], finish.grounded_context([payload]), [payload], store)
     block = blocks[0]
     assert block.type == "song_overview"
     assert block.note == "A song with a long onstage life."
-    assert [performance.performance_id for performance in block.representative_performances] == [chosen["performance_id"]]
-    assert block.representative_performances[0].listen_url == chosen["listen"]["archive_track_url"]
+    # Chosen versions belong in a song_versions; the card draws the song's years.
+    assert block.representative_performances == [] and block.year_counts
 
 
 def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
@@ -1827,26 +1815,23 @@ def test_a_record_the_model_names_again_after_from_result_stays_on_the_page():
     assert [block.show_id for block in blocks] == ["gd-1983-06-22", "gd-1984-06-23", "gd-1984-06-23"]
 
 
-def test_song_overview_reads_stops_and_the_old_ids_key():
+def test_song_overview_reads_the_chart_fields_and_ignores_old_stops():
     from deadbot.finish import SongOverviewRef
 
     ref = SongOverviewRef.model_validate({
         "type": "song_overview", "song_id": "song-terrapin-station",
-        "representatives": [{"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Charlie Miller's pick", "why": "The 1979 one."}],
+        "representatives": [{"performance_id": "gd-1979-01-08-terrapin-station-2-4", "label": "Charlie Miller's pick"}],
         "open_year": 1979, "chart_view": "length",
         "year_questions": [{"year": 1979, "question": "How did 1979 differ?"}],
     })
-    assert ref.representatives[0].label == "Charlie Miller's pick"
+    # Chosen versions go in a song_versions; the card keeps the rest of the plan.
+    assert not hasattr(ref, "representatives") and ref.visible_facets == ["by_year"]
     assert ref.open_year == 1979 and ref.chart_view == "length"
-    old = SongOverviewRef.model_validate({"type": "song_overview", "song_id": "song-terrapin-station", "representative_performance_ids": ["p1", "p2"]})
-    assert [stop.performance_id for stop in old.representatives] == ["p1", "p2"]
     loose = SongOverviewRef.model_validate({
         "type": "song_overview", "song_id": "s", "chart_view": "sideways", "open_year": "1979",
-        "representatives": ["p1", {"performance_id": "p2", "label": "Two"}, 7],
         "year_questions": [{"year": 1979, "question": "Q?"}, {"question": "no year"}],
     })
     assert loose.chart_view is None and loose.open_year == 1979
-    assert [stop.performance_id for stop in loose.representatives] == ["p1", "p2"]
     assert [question.year for question in loose.year_questions] == [1979]
 
 
@@ -1855,13 +1840,11 @@ def test_song_overview_reader_keeps_every_usable_part():
 
     ref = SongOverviewRef.model_validate({
         "type": "song_overview", "song_id": "s",
-        "visible_facets": ["history", "by_year", "credits", "bogus"],
-        "representatives": [{"performance_id": "p1", "label": 5, "why": "Kept."}, {"performance_id": "p2", "label": ["a"]}],
+        "visible_facets": ["history", "by_year", "credits", "representatives", "bogus"],
         "open_year": True,
         "year_questions": [{"year": "1977", "question": "Q?"}, {"year": 1979.0, "question": "R?"}, {"year": False, "question": "no"}],
     })
     assert ref.visible_facets == ["by_year", "credits"]
-    assert [(stop.performance_id, stop.label, stop.why) for stop in ref.representatives] == [("p1", None, "Kept."), ("p2", None, None)]
     assert ref.open_year is None
     assert [(question.year, question.question) for question in ref.year_questions] == [(1977, "Q?"), (1979, "R?")]
 

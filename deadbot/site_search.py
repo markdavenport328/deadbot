@@ -376,6 +376,12 @@ class SiteSearcher:
             "reviews": reviews[: max(1, min(limit, 20))],
         }
 
+    def listener_remarks(self, identifier: str, song_title: str, limit: int = 3) -> list[dict[str, Any]]:
+        """What archive.org listeners wrote about one song on this tape: a sentence from each review that names it."""
+
+        reviews = self.archive_reviews(identifier, 20, max_chars=5000).get("reviews") or []
+        return remarks_from_reviews(reviews, song_title, limit)
+
     def _sitemap_locations(self, url: str, depth: int, budget: list[int] | None = None) -> list[str]:
         budget = budget if budget is not None else [_MAX_SITEMAP_FILES]
         if budget[0] <= 0 or depth > 2:
@@ -392,3 +398,39 @@ class SiteSearcher:
                 locations.extend(self._sitemap_locations(unescape(child), depth + 1, budget))
             return locations
         return [unescape(match) for match in re.findall(r"<loc>\s*([^<\s]+)\s*</loc>", body)]
+
+
+def _song_names(song_title: str) -> list[str]:
+    """The ways listeners write a song's name: its title, and a long first word alone ("Estimated", "Playing")."""
+
+    title = re.sub(r"\s+", " ", song_title).strip()
+    if not title:
+        return []
+    words = title.split(" ")
+    names = [title]
+    if len(words) > 1 and len(words[0]) >= 6:
+        names.append(words[0])
+    return names
+
+
+def remarks_from_reviews(reviews: list[dict[str, Any]], song_title: str, limit: int = 3) -> list[dict[str, Any]]:
+    """One sentence per review that names the song, longest reviews first, up to ``limit``."""
+
+    names = _song_names(song_title)
+    if not names:
+        return []
+    pattern = re.compile(r"\b(?:" + "|".join(re.escape(name) for name in names) + r")", re.IGNORECASE)
+    remarks: list[dict[str, Any]] = []
+    for review in reviews:
+        text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", unescape(str(review.get("text") or "")))).strip()
+        for sentence in re.split(r"(?<=[.!?])\s+", text):
+            if pattern.search(sentence) and len(sentence) >= 25:
+                remarks.append({
+                    "reviewer": review.get("reviewer"),
+                    "stars": review.get("stars"),
+                    "text": sentence[:400] + ("…" if len(sentence) > 400 else ""),
+                })
+                break
+        if len(remarks) >= limit:
+            break
+    return remarks

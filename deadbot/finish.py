@@ -293,8 +293,34 @@ class SongVersionsRef(_Ref):
     )
     notes: dict[str, str] | None = Field(
         default=None,
-        description="A short line for a version where a few words help the visitor hear it; most versions need none.",
+        description="A line under a version, keyed by performance_id: what to hear in it.",
     )
+    criteria: list[str] = Field(
+        default_factory=list,
+        description="To compare the versions: the points to compare them on, such as 'Length' or 'What follows'.",
+    )
+    judgments: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="With criteria, keyed by performance_id: your answer for each criterion, in the criteria's order.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_leniently(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        value = dict(value)
+        notes = value.get("notes")
+        value["notes"] = {k: v for k, v in notes.items() if isinstance(k, str) and isinstance(v, str)} if isinstance(notes, dict) else None
+        criteria = value.get("criteria")
+        value["criteria"] = [item for item in criteria if isinstance(item, str)] if isinstance(criteria, list) else []
+        judgments = value.get("judgments")
+        value["judgments"] = {
+            key: [item if isinstance(item, str) else "" for item in items]
+            for key, items in (judgments.items() if isinstance(judgments, dict) else [])
+            if isinstance(key, str) and isinstance(items, list)
+        }
+        return value
 
 
 class EditorialItemPlan(_PlanModel, EditorialItemText):
@@ -531,16 +557,6 @@ class AlbumUnitRef(_Ref):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
-class SongStop(_PlanModel):
-    """One stop through a song's life: a performance, a few words, and why."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    performance_id: str
-    label: str | None = Field(default=None, description="A few words a fan would recognize: 'The debut', 'At the pyramids'.")
-    why: str | None = Field(default=None, description="One line on why this performance is worth hearing.")
-
-
 class YearQuestion(_PlanModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -562,11 +578,12 @@ def _plan_year(value: Any) -> int | None:
     return None
 
 
-_SONG_FACETS = frozenset(get_args(SongFacet))
+SongCardFacet = Literal["by_year", "credits", "albums"]
+_SONG_CARD_FACETS = frozenset(get_args(SongCardFacet))
 
 
 class SongOverviewRef(_Ref):
-    """One song as a primary object, with model-chosen representative performances."""
+    """One song as a primary object: its life year by year, credits and records."""
 
     type: Literal["song_overview"]
     song_id: str | None = None
@@ -575,19 +592,11 @@ class SongOverviewRef(_Ref):
     emphasis: Emphasis | None = None
     judgments: list[str] = Field(default_factory=list)
     note: str | None = None
-    visible_facets: list[SongFacet] = Field(
-        default_factory=lambda: ["representatives"],
+    visible_facets: list[SongCardFacet] = Field(
+        default_factory=lambda: ["by_year"],
         description=(
-            "The song facets worth showing: representatives (your chosen performances), credits, albums, by_year (a "
-            "chart of how often and how long the song was played each year, with a panel for each year listing every "
-            "performance)."
-        ),
-    )
-    representatives: list[SongStop] = Field(
-        default_factory=list,
-        description=(
-            "Performances of this song to list on the card, each with a label and a line on why; with by_year they "
-            "are marked on the chart."
+            "The song facets worth showing: by_year (a chart of how often and how long the song was played each "
+            "year, with a panel for each year listing every performance), credits, albums."
         ),
     )
     open_year: int | None = Field(default=None, description="With by_year: the year whose panel opens first, such as the year the visitor asked about.")
@@ -604,26 +613,11 @@ class SongOverviewRef(_Ref):
         value = dict(value)
         # The timeline is the song's history now; an older plan's "history" facet asks for it.
         # A facet this card cannot show is left out here, so the rest of the list stays.
+        # Chosen versions belong in a song_versions; an older plan's "representatives" facet is left out.
         facets = value.get("visible_facets")
         if isinstance(facets, list):
             mapped = ("by_year" if facet == "history" else facet for facet in facets)
-            value["visible_facets"] = list(dict.fromkeys(facet for facet in mapped if facet in _SONG_FACETS))
-        stops = value.get("representatives")
-        if stops is None and isinstance(value.get("representative_performance_ids"), list):
-            stops = value["representative_performance_ids"]
-        # Keep every usable stop; a bare ID string is a stop without words, and a
-        # label or why that is not text is left out without losing the stop.
-        value["representatives"] = [
-            {"performance_id": item}
-            if isinstance(item, str)
-            else {
-                "performance_id": item["performance_id"],
-                "label": item.get("label") if isinstance(item.get("label"), str) else None,
-                "why": item.get("why") if isinstance(item.get("why"), str) else None,
-            }
-            for item in (stops if isinstance(stops, list) else [])
-            if isinstance(item, str) or (isinstance(item, dict) and isinstance(item.get("performance_id"), str))
-        ]
+            value["visible_facets"] = list(dict.fromkeys(facet for facet in mapped if facet in _SONG_CARD_FACETS))
         if value.get("chart_view") not in (None, "count", "length"):
             value["chart_view"] = None
         value["open_year"] = _plan_year(value.get("open_year"))
@@ -1426,8 +1420,6 @@ def _resolve_reference(
                 judgments=item.judgments,
                 note=item.note,
                 visible_facets=item.visible_facets,
-                # Every stop in the model's order; only a grounded one may resolve.
-                representatives=[{**stop.model_dump(), "grounded": stop.performance_id in grounded.ids} for stop in item.representatives],
                 open_year=item.open_year,
                 chart_view=item.chart_view,
                 year_questions=[question.model_dump() for question in item.year_questions],
@@ -1556,6 +1548,8 @@ def _resolve_reference(
             performance_ids=item.performance_ids,
             title=item.title,
             notes=item.notes,
+            criteria=item.criteria,
+            judgments=item.judgments,
         )
         return (block, []) if block else (None, [])
 

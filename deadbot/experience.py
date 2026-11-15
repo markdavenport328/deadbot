@@ -814,6 +814,8 @@ class SongVersionsRow(ExperienceModel):
     release: SongVersionsRelease | None = None
     track: PlayableTrack | None = None
     note: str | None = None
+    # The model's answer for each of the block's criteria, in their order; "" where it gave none.
+    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
 class SongVersionsBlock(ExperienceModel):
@@ -825,6 +827,8 @@ class SongVersionsBlock(ExperienceModel):
 
     type: Literal["song_versions"]
     title: str | None = None
+    # Points the model compares the versions on; each row's judgments answer them.
+    criteria: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
     song: SongVersionsSong
     rows: list[SongVersionsRow] = Field(min_length=1, max_length=LIST_CEILING)
 

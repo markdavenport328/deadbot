@@ -107,3 +107,21 @@ test("a note shows only on the row that has one", () => {
   expect(screen.getAllByText("The first one on tape.")).toHaveLength(1);
   expect(screen.getAllByRole("listitem")[1]).not.toHaveTextContent("first one");
 });
+
+test("criteria show each version's judgments beside the points compared", () => {
+  const compared: Block = {
+    ...block,
+    criteria: ["Length", "What follows"],
+    rows: [row("1977-05-08", "Barton Hall", 540, { judgments: ["About nine minutes", "St. Stephen"] }), row("1977-05-09", "Buffalo Memorial Auditorium", 610, { judgments: ["", "The Other One"] })]
+  };
+  render(
+    <PlayerProvider>
+      <SongVersions block={compared} />
+    </PlayerProvider>
+  );
+  expect(screen.getByText("St. Stephen")).toBeInTheDocument();
+  expect(screen.getByText("The Other One")).toBeInTheDocument();
+  // An empty judgment leaves its point out of that row only.
+  expect(screen.getAllByText("Length")).toHaveLength(1);
+  expect(screen.getAllByText("What follows")).toHaveLength(2);
+});

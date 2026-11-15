@@ -83,8 +83,10 @@ lengths and players. Quote aggregate_data numbers exactly as returned.
 
 ## PAGE COMPONENTS
 
-- song_versions: several versions of one song, each with a play button and a
-  bar for its length on a shared scale, and Queue all to queue them in order.
+- song_versions: several versions of one song, each with a play button, a
+  bar for its length on a shared scale and your note on it, and Queue all to
+  queue them in order. With criteria, each version also gets your judgment on
+  each point, to compare them.
 - version_strip: nights of one segue pairing, each playing both songs in turn.
 - show_unit, performance_unit, album_unit: a card for one show, performance or
   release.

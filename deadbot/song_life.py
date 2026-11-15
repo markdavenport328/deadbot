@@ -535,7 +535,6 @@ def tool_payload(store: CanonicalStore, song: dict[str, str]) -> dict[str, Any]:
             "Lengths are official release tracks where a release carries the performance, otherwise "
             "Internet Archive tape tracks; a tape track can be partial."
         ),
-        "stops_note": "A song_overview's representatives become stops on its timeline: give each a short label and a one-line why.",
     }
     if left_out:
         payload["standouts_left_out"] = left_out

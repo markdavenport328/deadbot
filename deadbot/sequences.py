@@ -481,6 +481,8 @@ def song_versions_block(
     performance_ids: list[str],
     title: str | None,
     notes: dict[str, str] | None,
+    criteria: list[str] | None = None,
+    judgments: dict[str, list[str]] | None = None,
 ) -> Any:
     """Hydrate a model-planned song_versions, or None when no version resolved.
 
@@ -562,11 +564,13 @@ def song_versions_block(
                 if track
                 else None,
                 note=notes.get(performance_id),
+                judgments=[str(item).strip() for item in (judgments or {}).get(performance_id, [])],
             )
         )
     return SongVersionsBlock(
         type="song_versions",
         title=(title or "").strip() or None,
+        criteria=[item.strip() for item in criteria or [] if item.strip()],
         song=SongVersionsSong(song_id=song_id, title=song_title),
         rows=rows,
     )

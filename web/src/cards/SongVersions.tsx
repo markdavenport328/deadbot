@@ -39,6 +39,8 @@ function Row({ block, row, longest, queue }: { block: SongVersionsBlock; row: So
   const track = rowTrack(row);
   const play: InPagePlay | null = track ? { start: track, queue } : null;
   const control = usePlayControl(play, "start");
+  const criteria = block.criteria ?? [];
+  const judgments = row.judgments ?? [];
   const name = `${block.song.title}, ${row.venue_name}, ${shortDate(row.show_date)}`;
   const label = control.errored ? `Retry ${name}` : control.playing ? `Pause ${name}` : control.loading ? `Loading ${name}` : `Play ${name}`;
   const width = row.length_seconds != null && longest > 0 ? Math.max((row.length_seconds / longest) * 100, 1) : 0;
@@ -69,6 +71,18 @@ function Row({ block, row, longest, queue }: { block: SongVersionsBlock; row: So
       <span className="sv-length">{length(row.length_seconds)}</span>
       <span className="sv-add">{track && <AddToQueue tracks={[track]} name={name} />}</span>
       {row.note && <p className="sv-note">{row.note}</p>}
+      {criteria.some((_, index) => judgments[index]) && (
+        <dl className="sv-judgments">
+          {criteria.map((criterion, index) =>
+            judgments[index] ? (
+              <div key={criterion}>
+                <dt>{criterion}</dt>
+                <dd>{judgments[index]}</dd>
+              </div>
+            ) : null,
+          )}
+        </dl>
+      )}
     </li>
   );
 }

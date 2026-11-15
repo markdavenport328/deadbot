@@ -4599,6 +4599,14 @@
         "additionalProperties": false,
         "description": "Chosen versions of one song on one clock, each row playable.\n\nThe model chose the performances, their order and any note; the server\nfilled each night, length, tape track and release from the store.",
         "properties": {
+          "criteria": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Criteria",
+            "type": "array"
+          },
           "rows": {
             "items": {
               "$ref": "#/components/schemas/SongVersionsRow"
@@ -4680,6 +4688,14 @@
               }
             ],
             "title": "City"
+          },
+          "judgments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Judgments",
+            "type": "array"
           },
           "length_seconds": {
             "anyOf": [

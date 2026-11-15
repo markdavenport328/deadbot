@@ -158,7 +158,6 @@ def test_tool_payload_stays_compact(sqlite_store, song_id):
     payload = song_life.tool_payload(sqlite_store, sqlite_store.one("songs", song_id))
     assert len(json.dumps(payload, ensure_ascii=False)) < 10000
     assert payload["years"][0]["count"] > 0
-    assert payload["stops_note"]
 
 
 def test_disagreeing_releases_take_the_full_performance(sqlite_store):

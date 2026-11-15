@@ -165,7 +165,6 @@ def test_song_life_states_years_and_standouts(built_sqlite, tmp_path):
     assert (payload["years"][0]["year"], payload["years"][0]["count"]) == (1977, 28)
     assert payload["standouts"]["longest"][0]["facts"] == ["longest ever (25:14)"]
     assert payload["years"][0]["longest"]["minutes"] == 14.9
-    assert payload["stops_note"]
     missing = json.loads(tool.invoke({"song_id_or_title": "Qzxvplm"}))
     assert missing["error"] == "Song not found or ambiguous"
 
