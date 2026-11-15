@@ -58,14 +58,14 @@ def _row(case_id: str, run: int, scored: dict | None) -> str:
     expected = scored.get("expected")
     shape = "—" if expected is None else ("yes" if expected["met"] else f"NO ({expected['wanted']})")
     return (
-        f"{case_id:<18} {run:>3}  {shape:<24} {len(scored['repeats']):>7} {len(scored['catalog']):>7} "
+        f"{case_id:<18} {run:>3}  {shape:<24} {len(scored['repeats']):>7} {len(scored.get('retold', [])):>6} {len(scored['catalog']):>7} "
         f"{len(scored['narration']):>9} {len(scored['hedges']):>6} {scored['page_words']:>6}"
         f" {len(scored.get('silent', [])):>6} {len(scored.get('empty_rows', [])):>5} {len(scored.get('restated', [])):>8}"
     )
 
 
 def report(results: list[dict]) -> None:
-    print(f"{'case':<18} {'run':>3}  {'expected shape':<24} {'repeats':>7} {'catalog':>7} {'narration':>9} {'hedges':>6} {'words':>6} {'silent':>6} {'empty':>5} {'restated':>8}")
+    print(f"{'case':<18} {'run':>3}  {'expected shape':<24} {'repeats':>7} {'retold':>6} {'catalog':>7} {'narration':>9} {'hedges':>6} {'words':>6} {'silent':>6} {'empty':>5} {'restated':>8}")
     for result in results:
         print(_row(result["case"], result["run"], result.get("score")))
     scored = [result["score"] for result in results if result.get("score")]
@@ -75,6 +75,7 @@ def report(results: list[dict]) -> None:
             f"\n{len(scored)} pages · clean writing {sum(score['clean'] for score in scored)}/{len(scored)}"
             f" · expected shape {sum(shapes)}/{len(shapes)}"
             f" · repeats {sum(len(score['repeats']) for score in scored)}"
+            f" · retold {sum(len(score.get('retold', [])) for score in scored)}"
             f" · catalog {sum(len(score['catalog']) for score in scored)}"
             f" · narration {sum(len(score['narration']) for score in scored)}"
             f" · hedges {sum(len(score['hedges']) for score in scored)}"
@@ -84,7 +85,7 @@ def report(results: list[dict]) -> None:
     print("\nFindings:")
     for result in results:
         score = result.get("score") or {}
-        for kind in ("repeats", "catalog", "narration", "hedges", "silent", "empty_rows", "restated"):
+        for kind in ("repeats", "retold", "catalog", "narration", "hedges", "silent", "empty_rows", "restated"):
             for finding in score.get(kind, []):
                 print(f"  {result['case']} #{result['run']} {kind}: {finding}")
 

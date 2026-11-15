@@ -727,7 +727,7 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
     for column, unit in _ROW_UNITS:
         if column in columns:
             result["on_the_page"] = (
-                f'A shows item with from_result="{result["result_id"]}" puts all {count} rows on the page as compact rows, in this order.'
+                f'A shows item with from_result="{result["result_id"]}" puts all {count} shows on the page, each one opening to its setlist.'
                 if unit == "show_unit"
                 else f"Each of these {count} rows can go on the page by its id."
             )

@@ -79,7 +79,7 @@ class ShowItem(_Item):
 
 
 class ShowsItem(_Item):
-    """Many shows as compact rows that open and play."""
+    """Many shows as rows that open and play."""
 
     type: Literal["shows"]
     show_ids: list[str] = Field(default_factory=list, description="The shows, in order.")

@@ -117,3 +117,35 @@ def test_a_one_word_venue_needs_the_whole_row_to_match():
     shows = [{"type": "show_unit", "venue_name": "Winterland", "tracks": [{"audio_url": "x"}]}]
     grid = {"type": "editorial", "title": "Bay Area nights", "items": [{"title": "Winterland opens"}, {"title": "Winterland closes"}]}
     assert score_page(_page(blocks=[*shows, grid]))["restated"] == []
+
+
+def _show_section(lead, row_note):
+    sets = [{"songs": [{"title": title} for title in ("Eyes of the World", "Estimated Prophet", "Dark Star", "The Wheel", "Throwing Stones")]}]
+    row = {"show_date": "1990-03-29", "venue_name": "Nassau Veterans Memorial Coliseum", "length_seconds": 789, "note": row_note}
+    return _page(
+        groups=[{"title": "The debut", "lead": lead, "block_indexes": [0, 1]}],
+        blocks=[
+            {"type": "show_unit", "sets": sets},
+            {"type": "song_versions", "rows": [row]},
+        ],
+    )
+
+
+def test_words_that_tell_what_the_cards_show_are_retold():
+    scored = score_page(_show_section(
+        "The second set ran Eyes of the World > Estimated Prophet > Dark Star > The Wheel.",
+        "March 29 at Nassau Veterans Memorial Coliseum, 13:09 long.",
+    ))
+    assert scored["retold"] == [
+        "group[0].lead: walks the setlist (4 songs on its show card)",
+        "song_versions[1].row[0].note: gives its row's march 29, Nassau Veterans Memorial Coliseum, 13:09",
+    ]
+    assert not scored["clean"]
+
+
+def test_words_about_what_happens_in_the_music_are_not_retold():
+    scored = score_page(_show_section(
+        "Phil invited him backstage; the band tried him on Bird Song, then kept him for Dark Star.",
+        "Listen for the sax answering Jerry in the second verse.",
+    ))
+    assert scored["retold"] == []
