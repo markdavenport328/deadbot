@@ -56,7 +56,6 @@ class OpenAIProvider:
 
         options = {
             "model": self.model,
-            "temperature": 0,
             # GPT-5.6 reasoning models require the Responses API when they
             # make function calls. It is also the API OpenAI recommends for
             # reasoning and multi-turn workflows.
@@ -67,8 +66,12 @@ class OpenAIProvider:
             "timeout": 90,
             "max_retries": 2,
         }
+        # A reasoning model sets its own sampling, and GPT-6 models refuse a
+        # temperature outright; a model without reasoning keeps temperature 0.
         if self.reasoning_effort:
             options["reasoning"] = {"effort": self.reasoning_effort}
+        else:
+            options["temperature"] = 0
         if self.api_key:
             options["api_key"] = self.api_key
         if self.base_url:

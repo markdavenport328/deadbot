@@ -171,3 +171,11 @@ def test_a_fan_spelling_of_a_tour_finds_its_nights_and_points_to_the_grid(run):
 def test_an_unknown_tour_names_the_library_tours_nearest_it(run):
     result = run(name="shows", tour="Europe Spring Fling", year_from=1972)
     assert result["rows"] == [] and "closest_tours" in result and "tour_songs" not in result
+
+
+def test_shows_on_day(run):
+    expected = sorted(show_id for show_id, show in SHOWS.items() if show["show_date"][5:10] == "03-15")
+    for day in ("03-15", "3/15", "1940-03-15", "3/15/1990", "March 15", "15 March 1940"):
+        assert _column(run(name="shows_on_day", day=day), "show_id") == expected
+    assert "gd-1990-03-15" in expected
+    assert run(name="shows_on_day")["error"] == "Missing parameter"

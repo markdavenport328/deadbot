@@ -47,7 +47,7 @@ function SendIcon() {
 
 const UNDO_CLEAR_SECONDS = 10;
 
-// The site menu's two links, at the top of the rail on a desktop, above New chat.
+// The site menu's two links, at the foot of the rail on a desktop, under the history.
 function RailLinks() {
   const path = usePath();
   return (
@@ -534,9 +534,8 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
                 {railOpen && <a className="wordmark" href="/" onClick={goHome}>Deadbot</a>}
                 <PanelToggle side="left" open={railOpen} label="sidebar" onToggle={() => setRailOpen(!railOpen)} />
               </div>
-              {railOpen && <p>Grateful Dead knowledge, listening, and context</p>}
+              {railOpen && <p className="tagline">Grateful Dead knowledge, listening, and context</p>}
             </header>
-            {railOpen && <RailLinks />}
             {railOpen ? <ExplorationHistory
               state={state}
               headingId={railHeadingId}
@@ -552,6 +551,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
                 <PenIcon />
               </button>
             )}
+            {railOpen && <RailLinks />}
           </aside>
         )}
         <section className="content-pane workspace-main" aria-label="Deadbot guide">

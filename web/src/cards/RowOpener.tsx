@@ -5,7 +5,8 @@
 // this file only fetches, draws and wires the two actions.
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import type { FollowUp } from "../core/ask-request";
-import { PlayGlyph, toTrack, usePlayControl, type InPagePlay } from "./listen-control";
+import { toTrack } from "./listen-control";
+import { CardPlayButton } from "./listening";
 import type { AskFocus } from "../types";
 import type { components } from "../generated/api";
 
@@ -95,24 +96,11 @@ export function panelId(base: string, rowId: string): string {
 
 function RowPlayButton({ play, title }: { play: NonNullable<RowDetail["play"]>; title: string }) {
   const queue = play.tracks.map((track) => toTrack(track, { showDate: play.show_date, venueName: play.venue_name ?? null }));
-  const inPage: InPagePlay | null = queue.length > 0 ? { start: queue[0], queue } : null;
-  const control = usePlayControl(inPage, "queue");
-  if (!inPage) return null;
+  if (queue.length === 0) return null;
   const when = [longDate(play.show_date), play.venue_name].filter(Boolean).join(", ");
   return (
     <div className="opened-play-line">
-      <button
-        type="button"
-        className="opened-play"
-        data-playable="in-page"
-        aria-label={`${control.playing ? "Pause" : control.errored ? "Retry" : "Play"} ${title}, ${when}`}
-        aria-pressed={control.mine}
-        aria-busy={control.loading}
-        onClick={control.onClick}
-      >
-        <PlayGlyph playing={control.playing} />
-        {control.playing ? "Pause" : "Play"}
-      </button>
+      <CardPlayButton play={{ start: queue[0], queue }} label={`Play ${title}, ${when}`} scope="queue" />
       <span className="opened-play-when">
         {when}
         {play.why && <span className="opened-play-why">{play.why}</span>}

@@ -799,6 +799,24 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+_MONTHS = ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec")
+
+
+def _month_day(day: str) -> str:
+    """A calendar day as MM-DD, from "3-15", "03/15/1990", "1990-03-15", "March 15" and the like."""
+
+    text = day.strip().lower()
+    numbers = [int(part) for part in re.findall(r"[0-9]+", text)]
+    month = next((index + 1 for index, name in enumerate(_MONTHS) if name in text), None)
+    if month is not None:
+        days = [number for number in numbers if 1 <= number <= 31]
+        return f"{month:02d}-{days[0]:02d}" if days else text
+    numbers = [number for number in numbers if number <= 31]  # a year is not a month or a day
+    if len(numbers) >= 2:
+        return f"{numbers[0]:02d}-{numbers[1]:02d}"
+    return text
+
+
 def build_tools(
     store: CanonicalStore,
     *,
@@ -836,6 +854,19 @@ def build_tools(
             for item, remarks in zip(wanted, pool.map(fetch, wanted)):
                 if remarks:
                     item["listeners"] = remarks
+
+    def _birthday_shows(birth_date: str | None) -> dict[str, Any] | None:
+        """How many shows fell on a person's birthday, and the query that lists them."""
+
+        run_query = getattr(store, "run_catalog_query", None)
+        if not birth_date or len(birth_date) < 10 or not callable(run_query):
+            return None
+        day = birth_date[5:10]
+        result = run_query(
+            "SELECT COUNT(*) FROM show_facts WHERE substr(show_date, 6, 5) = :day", {"day": day}, menu=True,
+        )
+        count = (result.get("rows") or [[0]])[0][0]
+        return {"count": count, "list_with": f'look_up name="shows_on_day" day="{day}"'} if count else None
 
     @tool
     def search_entities(query: str) -> str:
@@ -890,6 +921,14 @@ def build_tools(
                     # A core/officially-recognized member's tenure (band_memberships)
                     # answers "when did they join/leave" directly, without a
                     # separate person lookup tool.
+                    # Birth and death dates answer "when was ... born" from the
+                    # record, and give the model the calendar day to look up.
+                    for key in ("birth_date", "death_date"):
+                        if row.get(key):
+                            extra[key] = row[key]
+                    birthday_shows = _birthday_shows(row.get("birth_date"))
+                    if birthday_shows:
+                        extra["birthday_shows"] = birthday_shows
                     memberships = store.person_band_memberships(row[id_field])
                     if memberships:
                         extra["band_memberships"] = [
@@ -2908,6 +2947,7 @@ def build_tools(
             venue: str = "",
             show: str = "",
             tour: str = "",
+            day: str = "",
             year_from: int | None = None,
             year_to: int | None = None,
             limit: int = 25,
@@ -2918,7 +2958,7 @@ def build_tools(
                 return _json({"error": "Pass name (a listed query) or sql"})
             supplied = [
                 key for key, value in (
-                    ("song", song), ("venue", venue), ("show", show), ("tour", tour),
+                    ("song", song), ("venue", venue), ("show", show), ("tour", tour), ("day", day),
                     ("year_from", year_from), ("year_to", year_to),
                 )
                 if value is not None and value != ""
@@ -2929,14 +2969,16 @@ def build_tools(
             query = NAMED_QUERIES.get(name)
             if query is None:
                 return _json({"error": "Unknown query", "queries": list(NAMED_QUERIES)})
-            given = {"song": song, "venue": venue, "show": show}
+            given = {"song": song, "venue": venue, "show": show, "day": day}
             missing = [
                 required for required in query.requires
                 if (year_from is None if required == "year_from" else not given.get(required))
             ]
             if missing:
                 return _json({"error": "Missing parameter", "query": name, "requires": list(query.requires)})
-            params: dict[str, Any] = {"venue": venue, "tour": _stored_tour(tour) if tour else "", "limit": max(1, min(limit, 200))}
+            params: dict[str, Any] = {
+                "venue": venue, "tour": _stored_tour(tour) if tour else "", "day": _month_day(day), "limit": max(1, min(limit, 200)),
+            }
             if song:
                 resolved = store.resolve_song(song)
                 if not resolved:

@@ -1,16 +1,17 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { formatClockTime, usePlayer, type PlayerTrack } from "./player";
-import { formatShowDate } from "../core/format";
-import { askQuestion } from "../core/site-nav";
+import { formatShowDate, formatShowDateLong } from "../core/format";
 import { Equalizer, MoreIcon, QueueIcon } from "./icons";
 import { PanelToggle, useRememberedOpen } from "../core/side-panel";
 
 // The queue: what is playing, then what plays next, then what has already
 // played. A row's title plays it; its grip drags it to a new place (or moves
-// it with the arrow keys); its ⋯ menu holds every other action. A run of
-// tracks from one show names the show once, at its first track, so a tape
-// reads as one night. Clear keeps the playing track and offers Undo for ten
-// seconds. Each change is announced.
+// it with the arrow keys); its ⋯ menu holds every other action, including
+// Details, which opens the row in place to the song's show and recording. A
+// run of tracks from one show names the show once, at its first track, so a
+// tape reads as one night. Clear on the Up next line empties it and Clear
+// on the Played line empties what has played; each keeps the playing track and
+// offers Undo for ten seconds. Each change is announced.
 //
 // The same panel serves as the workspace's right rail ("rail"), and as the
 // panel the bar opens above itself on phones, on narrow desktops and in the
@@ -134,6 +135,40 @@ function RowMenu({ title, items }: { title: string; items: MenuItem[] }) {
   );
 }
 
+// A row opened in place from its ⋯ menu: the facts the queue holds about the
+// track. The recording page leaves the site; nothing here asks Deadbot.
+function TrackDetails({ track, onClose }: { track: PlayerTrack; onClose: () => void }) {
+  const facts: [string, ReactNode][] = [];
+  if (track.showDate) facts.push(["Show", formatShowDateLong(track.showDate)]);
+  if (track.venueName) facts.push(["Venue", track.venueName]);
+  if (track.durationSeconds) facts.push(["Length", formatClockTime(track.durationSeconds)]);
+  if (track.recordingDetailsUrl) {
+    facts.push([
+      "Recording",
+      <a href={track.recordingDetailsUrl} target="_blank" rel="noreferrer">
+        Internet Archive<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
+      </a>
+    ]);
+  }
+  return (
+    <div className="queue-details" role="group" aria-label={`Details for ${track.title}`}>
+      {facts.length > 0 ? (
+        <dl>
+          {facts.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : (
+        <p>No details for this track.</p>
+      )}
+      <button type="button" className="queue-clear" onClick={onClose}>Hide details</button>
+    </div>
+  );
+}
+
 type Drag = { from: number; to: number; mids: number[]; first: number };
 
 export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
@@ -146,7 +181,9 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
   const player = usePlayer();
   const headingId = useId();
   const [announcement, setAnnouncement] = useState("");
-  const [cleared, setCleared] = useState<PlayerTrack[] | null>(null);
+  // The queue before a Clear, and which list was cleared, for Undo.
+  const [cleared, setCleared] = useState<{ queue: PlayerTrack[]; what: "upcoming" | "played" } | null>(null);
+  const [opened, setOpened] = useState<Set<string>>(() => new Set());
   const [drag, setDrag] = useState<Drag | null>(null);
   const listRef = useRef<HTMLOListElement | null>(null);
   const currentRef = useRef<HTMLDivElement | null>(null);
@@ -182,18 +219,35 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
     setAnnouncement(`Removed ${track.title} from the queue`);
   }
 
+  // Clear queue empties Up next; what has played stays listed.
   function clear() {
     if (!nowPlaying) return;
-    setCleared(queue.slice());
-    player.replaceQueue([nowPlaying]);
+    setCleared({ queue: queue.slice(), what: "upcoming" });
+    player.replaceQueue(queue.slice(0, current + 1));
     setAnnouncement("Cleared the queue. Undo is available for ten seconds.");
+  }
+
+  function clearPlayed() {
+    if (!nowPlaying) return;
+    setCleared({ queue: queue.slice(), what: "played" });
+    player.replaceQueue(queue.slice(current));
+    setAnnouncement("Cleared what has played. Undo is available for ten seconds.");
   }
 
   function undo() {
     if (!cleared) return;
-    player.replaceQueue(cleared);
+    player.replaceQueue(cleared.queue);
     setCleared(null);
-    setAnnouncement("Restored the queue");
+    setAnnouncement(cleared.what === "played" ? "Restored what has played" : "Restored the queue");
+  }
+
+  function toggleDetails(track: PlayerTrack) {
+    setOpened((previous) => {
+      const next = new Set(previous);
+      if (next.has(track.id)) next.delete(track.id);
+      else next.add(track.id);
+      return next;
+    });
   }
 
   // Dragging by the grip: the other rows' midpoints are measured once, and
@@ -234,18 +288,13 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
     requestAnimationFrame(() => listRef.current?.querySelector<HTMLButtonElement>(`[data-queue-index="${to}"] .queue-grip`)?.focus());
   }
 
-  function goToShow(track: PlayerTrack) {
-    const date = formatShowDate(track.showDate);
-    askQuestion(track.venueName ? `Tell me about the ${date} show at ${track.venueName}` : `Tell me about the ${date} show`);
-  }
-
   function rowMenu(track: PlayerTrack, index: number, upcoming: boolean): MenuItem[] {
     return [
       { label: "Play now", run: () => player.jumpTo(index) },
       { label: "Play next", run: () => { player.playNext(index); setAnnouncement(`${track.title} plays next`); }, disabled: index === first },
       { label: "Move up", run: () => moveTo(index, index - 1), disabled: !upcoming || index <= first },
       { label: "Move down", run: () => moveTo(index, index + 1), disabled: !upcoming || index >= queue.length - 1 },
-      { label: "Go to this show", run: () => goToShow(track), disabled: !track.showDate },
+      { label: opened.has(track.id) ? "Hide details" : "Details", run: () => toggleDetails(track) },
       { label: "Remove from queue", run: () => remove(index) }
     ];
   }
@@ -279,6 +328,7 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
           <span className="queue-grip-space" aria-hidden="true" />
         )}
         <RowMenu title={track.title} items={rowMenu(track, index, upcoming)} />
+        {opened.has(track.id) && <TrackDetails track={track} onClose={() => toggleDetails(track)} />}
       </li>
     );
   }
@@ -298,11 +348,6 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
       <header className="queue-panel-head">
         <h2 id={headingId}>Queue</h2>
         <span className="queue-head-actions">
-          {cleared ? (
-            <button type="button" className="queue-clear" onClick={undo}>Cleared. Undo</button>
-          ) : (
-            queue.length > 1 && <button type="button" className="queue-clear" onClick={clear}>Clear queue</button>
-          )}
           {headExtra}
         </span>
       </header>
@@ -328,6 +373,11 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
           {upNext.length === 1 ? "1 track" : `${upNext.length} tracks`}
           {upNextSeconds > 0 ? ` · ${formatListeningTime(upNextSeconds)}` : ""}
         </span>
+        {cleared?.what === "upcoming" ? (
+          <button type="button" className="queue-clear queue-link queue-section-action" onClick={undo}>Cleared. Undo</button>
+        ) : (
+          upNext.length > 0 && <button type="button" className="queue-clear queue-link queue-section-action" onClick={clear} aria-label="Clear queue">Clear</button>
+        )}
       </p>
       {upNext.length > 0 ? (
         <ol className="queue-list" ref={listRef}>
@@ -337,9 +387,16 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
         <p className="queue-empty">Nothing queued after this. Use + on any track to add it.</p>
       )}
 
-      {played.length > 0 && (
+      {(played.length > 0 || cleared?.what === "played") && (
         <>
-          <p className="queue-section">Played</p>
+          <p className="queue-section">
+            Played
+            {cleared?.what === "played" ? (
+              <button type="button" className="queue-clear queue-link queue-section-action" onClick={undo}>Cleared. Undo</button>
+            ) : (
+              <button type="button" className="queue-clear queue-link queue-section-action" onClick={clearPlayed} aria-label="Clear played">Clear</button>
+            )}
+          </p>
           <ol className="queue-list played">
             {played.map((track, index) => row(track, index, played[index - 1], false))}
           </ol>

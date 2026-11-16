@@ -103,6 +103,16 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
             "AND (:tour = '' OR tour_name LIKE '%' || :tour || '%') "
             f"AND {_YEARS} ORDER BY show_date",
         ),
+        NamedQuery(
+            "shows_on_day",
+            "shows played on one calendar day across the years, such as a birthday, an anniversary or New Year's Eve "
+            "(day as MM-DD, e.g. 12-31): date, venue, city, tour, setlist length, official releases",
+            ("day",),
+            "SELECT show_id, show_date, venue_name, city, metro_area, tour_name, performance_count, "
+            "(SELECT group_concat(release_title, ' | ') FROM (SELECT DISTINCT r.release_title FROM release_track_facts r "
+            "WHERE r.show_id = show_facts.show_id)) AS official_releases FROM show_facts "
+            "WHERE substr(show_date, 6, 5) = :day ORDER BY show_date",
+        ),
     )
 }
 
