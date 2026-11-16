@@ -281,7 +281,15 @@ def body_items(item: Any) -> list[dict[str, Any]]:
             for show_id in _strings(item.get("show_ids"))
         ]
     if kind == "release":
-        return [{"type": "album_unit", "release_id": item.get("release_id"), "title": title, "note": note, "disclosure": disclosure}]
+        # The prompt promises a release's play button, tracklist and personnel.
+        return [{
+            "type": "album_unit",
+            "release_id": item.get("release_id"),
+            "title": title,
+            "note": note,
+            "disclosure": disclosure,
+            "visible_facets": ["listen", "tracklist", "personnel"],
+        }]
     if kind == "releases":
         notes = _string_map(item.get("notes"))
         return [
