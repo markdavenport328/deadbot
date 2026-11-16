@@ -299,16 +299,17 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .queue-now-text { display: flex; flex-direction: column; min-width: 0; color: var(--cream); font-size: 0.92rem; font-weight: 600; }
 .queue-progress { display: block; height: 3px; border-radius: 2px; background: rgba(var(--cream-rgb), 0.14); overflow: hidden; }
 .queue-progress > span { display: block; height: 100%; background: var(--listen); }
-.queue-eq { display: inline-flex; align-items: flex-end; justify-content: center; gap: 2px; height: 14px; }
-.queue-eq > span { width: 3px; height: 40%; border-radius: 1px; background: var(--listen); }
-.queue-eq > span:nth-child(2) { height: 80%; }
-.queue-eq > span:nth-child(3) { height: 55%; }
+.queue-now-row .eq { color: var(--listen); }
+.eq { display: inline-flex; align-items: flex-end; justify-content: center; gap: 2px; height: 14px; }
+.eq > span { width: 3px; height: 40%; border-radius: 1px; background: currentColor; }
+.eq > span:nth-child(2) { height: 80%; }
+.eq > span:nth-child(3) { height: 55%; }
 @media (prefers-reduced-motion: no-preference) {
-  .queue-eq.playing > span { animation: queue-eq 900ms ease-in-out infinite alternate; }
-  .queue-eq.playing > span:nth-child(2) { animation-delay: -300ms; }
-  .queue-eq.playing > span:nth-child(3) { animation-delay: -600ms; }
+  .eq.playing > span { animation: eq 900ms ease-in-out infinite alternate; }
+  .eq.playing > span:nth-child(2) { animation-delay: -300ms; }
+  .eq.playing > span:nth-child(3) { animation-delay: -600ms; }
 }
-@keyframes queue-eq { from { height: 25%; } to { height: 100%; } }
+@keyframes eq { from { height: 25%; } to { height: 100%; } }
 .queue-empty { margin: 0; color: var(--quiet); font-size: 0.85rem; }
 .queue-list { margin: 0; padding: 0; list-style: none; }
 .queue-item { position: relative; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto 32px 32px; align-items: center; column-gap: var(--space-tight); min-height: 2.75rem; border-radius: var(--r); }
@@ -568,12 +569,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
    and a progress line along its bottom edge; a segue connects down into the
    next row's button column. */
 .setlist-rows { margin: 0; padding: 0; list-style: none; color: var(--quiet); font-size: 0.93rem; font-variant-numeric: tabular-nums; }
-.setlist-rows li { position: relative; display: grid; grid-template-columns: 2.75rem 1fr auto; align-items: center; column-gap: var(--space-part); padding: var(--space-line) var(--space-tight); border-radius: var(--r); }
+.setlist-rows li { position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: var(--space-part); padding: var(--space-line) var(--space-tight); border-radius: var(--r); }
 .setlist-rows li.current { background: linear-gradient(90deg, rgba(231, 185, 78, 0.16), rgba(231, 185, 78, 0.02)); }
-.setlist-rows .row-play-cell { position: relative; display: flex; align-items: center; justify-content: center; }
-.setlist-rows li.segue .row-play-cell::after { content: ""; position: absolute; top: 100%; left: 50%; width: 2px; height: 0.7rem; background: rgba(231, 185, 78, 0.6); transform: translateX(-50%); }
-.row-play { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 1.5px solid var(--listen); background: transparent; color: var(--listen); flex-shrink: 0; }
-.row-play svg { width: 16px; height: 16px; }
+.setlist-rows .row-play-cell { position: relative; display: flex; align-items: center; gap: var(--space-tight); }
+.setlist-rows li.segue .row-play-cell::after { content: ""; position: absolute; top: 100%; left: 18px; width: 2px; height: 0.7rem; background: rgba(231, 185, 78, 0.6); transform: translateX(-50%); }
+.row-play { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; border: 1.5px solid var(--listen); background: transparent; color: var(--listen); flex-shrink: 0; }
+.row-play svg { width: 14px; height: 14px; }
 .row-play.current { background: var(--listen); border-color: var(--listen); color: var(--listen-ink); }
 .row-play.disabled { border-color: var(--hair); color: var(--quiet); opacity: 0.5; cursor: not-allowed; }
 .row-play[aria-busy="true"] { opacity: 0.6; }
@@ -776,7 +777,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .collapsed-meta { margin: var(--space-line) 0 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
 .collapsed-note { margin: var(--space-line) 0 0; color: var(--text); font-size: 0.92rem; line-height: 1.5; max-width: var(--measure); }
 .collapsed-actions { display: flex; align-items: center; gap: var(--space-part); flex-shrink: 0; }
-.collapsed-actions .card-play { width: 44px; height: 44px; }
+
 .collapsed-toggle { min-height: 44px; min-width: 4.25rem; text-align: left; border: 0; background: none; color: var(--muted); font-size: 0.9rem; font-weight: 500; padding: 0 var(--space-line); }
 .collapsed-toggle::after { content: " \25BE"; }
 .collapsed-toggle[aria-expanded="true"]::after { content: " \25B4"; }
@@ -836,10 +837,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .card-head { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--space-part); align-items: center; margin-top: var(--space-tight); }
 .card-head-text { min-width: 0; }
 .card-head-text > :first-child { margin-top: 0; }
-.card-play { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 50%; background: var(--listen); color: var(--listen-ink); flex-shrink: 0; }
-.card-play svg { width: 18px; height: 18px; }
+.card-play { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--listen); color: var(--listen-ink); flex-shrink: 0; }
+.card-play svg { width: 14px; height: 14px; }
 .card-play[aria-busy="true"] { opacity: 0.6; }
-.card.emphasis-supporting .card-play { width: 44px; height: 44px; }
 
 /* Every other listen action is quiet text in one line. */
 .listen-links { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-line) var(--space-content); margin: var(--space-part) 0 0; padding: 0; list-style: none; }
@@ -879,12 +879,34 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .queue-add:hover { color: var(--cream); }
 .queue-add.queued { color: var(--muted); }
 .queue-add[aria-disabled="true"] { cursor: default; }
+/* The +, beside a play: the same button as that play, always shown, a check
+   once the tracks are in. Beside a card's solid gold play it is solid gold;
+   beside a setlist row's gold ring it is the same ring. Once queued it keeps
+   its shape in a softer gold, so it still reads as a button. */
+.queue-add.round { width: 36px; height: 36px; margin: 0; padding: 10px; opacity: 1; border: 0; border-radius: 50%; background: var(--listen); color: var(--listen-ink); flex-shrink: 0; }
+.queue-add.round:hover { background: color-mix(in srgb, var(--listen) 85%, var(--cream)); color: var(--listen-ink); }
+.queue-add.round.queued { background: var(--listen-soft); color: var(--listen-ink); }
+.row-play-cell .queue-add.round { border: 1.5px solid var(--listen); background: transparent; color: var(--listen); }
+.row-play-cell .queue-add.round:hover { background: rgba(231, 185, 78, 0.12); color: var(--listen); }
+.row-play-cell .queue-add.round.queued { border-color: var(--listen-soft); background: transparent; color: var(--listen-soft); }
+.queue-add-space { display: inline-block; width: 36px; height: 36px; flex-shrink: 0; }
+.card-controls { display: inline-flex; align-items: center; gap: var(--space-tight); flex-shrink: 0; }
+/* A playing card shows an equalizer in its play, and pause on hover or focus. */
+.card-play .eq { height: 13px; }
+.card-play .card-play-pause { display: none; }
+.card-play.playing:is(:hover, :focus-visible) .eq { display: none; }
+.card-play.playing:is(:hover, :focus-visible) .card-play-pause { display: inline-flex; }
+.card-play .card-play-pause svg { width: 14px; height: 14px; }
 @media (hover: hover) {
   .queue-add { opacity: 0; transition: opacity var(--t-fade) ease; }
   li:hover .queue-add, :hover > .queue-add, .queue-add:focus-visible { opacity: 1; }
+  .queue-add.round { opacity: 1; }
 }
 @media (pointer: coarse) {
   .queue-add { width: 44px; height: 44px; margin: calc(-1 * var(--space-tight)) calc(-1 * var(--space-tight)) calc(-1 * var(--space-tight)) 0; padding: var(--space-part); }
+  .queue-add.round, .queue-add-space, .card-play, .row-play, .sv-play, .sv-play-placeholder { width: 44px; height: 44px; margin: 0; }
+  .queue-add.round { padding: 12px; }
+  .setlist-rows li.segue .row-play-cell::after { left: 22px; }
 }
 .media-card .listen-links { margin-top: var(--space-part); }
 
@@ -1077,3 +1099,34 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 @media (max-width: 860px) and (prefers-reduced-motion: no-preference) {
   .mobile-dock { transition: transform 120ms var(--ease-out); }
 }
+
+/* Hover labels on the round play and + controls: a small glass label above
+   the button on hover or keyboard focus, so "Play now" and "Add to queue"
+   are named where the marks are. */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + var(--space-tight));
+  left: 50%;
+  z-index: 50;
+  padding: var(--space-line) var(--space-tight);
+  border: 1px solid var(--hair);
+  border-radius: var(--r);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  color: var(--cream);
+  font: 500 0.75rem/1.3 Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 2px);
+}
+[data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+@media (hover: hover) {
+  [data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); transition: opacity 120ms var(--ease-out) 300ms, transform 120ms var(--ease-out) 300ms; }
+}
+

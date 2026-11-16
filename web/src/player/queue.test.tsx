@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NowPlayingBar } from "./NowPlayingBar";
 import { ListenControl } from "../cards/listen-control";
+import { CardPlayButton } from "../cards/listening";
 import { PlayerProvider, usePlayer, type PlayerTrack } from "./player";
 
 // The visitor's queue: a "+" beside a play adds to it without interrupting,
@@ -215,3 +216,45 @@ describe("the queue panel", () => {
     expect(screen.getByRole("button", { name: /^Queue,/ })).toHaveFocus();
   });
 });
+
+describe("a card's play and + pair", () => {
+  function renderCard() {
+    render(
+      <PlayerProvider>
+        <CardPlayButton play={{ start: show[0], queue: show }} label="Play the Olympia set" />
+        <ListenControl label="Scarlet Begonias" track={other} />
+        <QueueProbe />
+        <NowPlayingBar />
+      </PlayerProvider>
+    );
+  }
+
+  it("puts + beside play, and + queues the card's tracks without interrupting", async () => {
+    renderCard();
+    const pair = document.querySelector(".card-controls") as HTMLElement;
+    const [play, add] = within(pair).getAllByRole("button");
+    expect(play).toHaveAccessibleName("Play the Olympia set");
+    expect(add).toHaveAccessibleName("Add the Olympia set to queue");
+    await click(screen.getByRole("button", { name: "Scarlet Begonias" }));
+    await click(add);
+    expect(queueText()).toBe("Scarlet Begonias | Bertha | Playing In The Band | Loser");
+    expect(within(pair).getByRole("button", { name: "Remove the Olympia set from queue" })).toHaveClass("queued");
+  });
+
+  it("shows an equalizer while the card plays, and pauses from the same button", async () => {
+    let audio: HTMLMediaElement | null = null;
+    const original = HTMLMediaElement.prototype.play;
+    HTMLMediaElement.prototype.play = function play(this: HTMLMediaElement) {
+      audio = this;
+      return Promise.resolve();
+    };
+    renderCard();
+    const play = screen.getByRole("button", { name: "Play the Olympia set" });
+    await click(play);
+    await act(async () => { audio?.dispatchEvent(new Event("playing")); });
+    HTMLMediaElement.prototype.play = original;
+    const playing = screen.getByRole("button", { name: "Pause: Play the Olympia set" });
+    expect(playing.querySelector(".eq.playing")).not.toBeNull();
+  });
+});
+

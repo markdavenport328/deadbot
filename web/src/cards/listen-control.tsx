@@ -146,7 +146,9 @@ function QueueGlyph({ queued }: { queued: boolean }) {
 // visitor's queue without interrupting what is playing. A track already
 // queued shows a check, and the check takes it back out (except the track
 // playing now). A whole-tape control adds the whole tape.
-export function AddToQueue({ tracks, name }: { tracks: PlayerTrack[]; name: string }) {
+// "round" is the card's control beside its play button; the default is the
+// quiet mark after a title in running lists.
+export function AddToQueue({ tracks, name, variant = "quiet" }: { tracks: PlayerTrack[]; name: string; variant?: "quiet" | "round" }) {
   const player = usePlayer();
   if (tracks.length === 0) return null;
   // A track is the same track by id or by tape file (two cards can name one
@@ -165,9 +167,10 @@ export function AddToQueue({ tracks, name }: { tracks: PlayerTrack[]; name: stri
   return (
     <button
       type="button"
-      className={`queue-add${queued ? " queued" : ""}`}
+      className={`queue-add${variant === "round" ? " round" : ""}${queued ? " queued" : ""}`}
       aria-label={label}
-      title={queued ? (playingHere ? "In your queue" : "In your queue · remove") : "Add to queue"}
+      title={variant === "round" ? undefined : queued ? (playingHere ? "In your queue" : "In your queue · remove") : "Add to queue"}
+      data-tip={variant === "round" ? (queued ? (playingHere ? "In your queue" : "Remove from queue") : "Add to queue") : undefined}
       aria-disabled={queued && playingHere}
       onClick={onClick}
     >

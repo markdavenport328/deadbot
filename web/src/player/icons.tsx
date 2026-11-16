@@ -75,3 +75,15 @@ export function LoopIcon() {
     </svg>
   );
 }
+
+// Three bars that move while a track plays and rest when it pauses. The
+// queue's Now playing row and a playing card's play button both show it.
+export function Equalizer({ playing }: { playing: boolean }) {
+  return (
+    <span className={`eq${playing ? " playing" : ""}`} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}

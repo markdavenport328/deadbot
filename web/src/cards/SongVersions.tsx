@@ -46,13 +46,16 @@ function Row({ block, row, longest, queue, mixed }: { block: SongVersionsBlock; 
   const width = row.length_seconds != null && longest > 0 ? Math.max((row.length_seconds / longest) * 100, 1) : 0;
   return (
     <li className={`sv-row${control.mine ? " current" : ""}${track ? " playable" : ""}`}>
-      {track ? (
-        <button type="button" className="sv-play" aria-label={label} aria-pressed={control.mine} aria-busy={control.loading} onClick={control.onClick}>
-          <PlayGlyph playing={control.playing} />
-        </button>
-      ) : (
-        <span className="sv-play-placeholder" aria-hidden="true" />
-      )}
+      <span className="sv-controls">
+        {track ? (
+          <button type="button" className="sv-play" aria-label={label} aria-pressed={control.mine} aria-busy={control.loading} onClick={control.onClick} data-tip={control.errored ? "Try again" : control.playing ? "Pause" : "Play now"}>
+            <PlayGlyph playing={control.playing} />
+          </button>
+        ) : (
+          <span className="sv-play-placeholder" aria-hidden="true" />
+        )}
+        {track ? <AddToQueue tracks={[track]} name={name} variant="round" /> : <span className="queue-add-space" aria-hidden="true" />}
+      </span>
       <div className="sv-night">
         {mixed ? (
           <>
@@ -78,7 +81,6 @@ function Row({ block, row, longest, queue, mixed }: { block: SongVersionsBlock; 
         {width > 0 && <span className="sv-fill" style={{ width: `${width}%` }} />}
       </div>
       <span className="sv-length">{length(row.length_seconds)}</span>
-      <span className="sv-add">{track && <AddToQueue tracks={[track]} name={name} />}</span>
       {row.note && <p className="sv-note">{row.note}</p>}
       {criteria.some((_, index) => judgments[index]) && (
         <dl className="sv-judgments">

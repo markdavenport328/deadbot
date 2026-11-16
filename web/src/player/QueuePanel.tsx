@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEve
 import { formatClockTime, usePlayer, type PlayerTrack } from "./player";
 import { formatShowDate } from "../core/format";
 import { askQuestion } from "../core/site-nav";
-import { MoreIcon } from "./icons";
+import { Equalizer, MoreIcon } from "./icons";
 
 // The queue: what is playing, then what plays next, then what has already
 // played. A row's title plays it; its grip drags it to a new place (or moves
@@ -50,17 +50,6 @@ function GripIcon() {
         </g>
       ))}
     </svg>
-  );
-}
-
-// Three bars that move while the track plays and rest when it pauses.
-function Equalizer({ playing }: { playing: boolean }) {
-  return (
-    <span className={`queue-eq${playing ? " playing" : ""}`} aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </span>
   );
 }
 

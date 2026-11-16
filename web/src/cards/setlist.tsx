@@ -3,7 +3,8 @@ import { AddToQueue, ListenControl } from "./listen-control";
 import { type SetlistSections, type SetlistSongType, type ShowMeta, toPlayerTrack } from "./parts";
 import { PlayPauseIcon } from "../player/icons";
 
-// One playable setlist row: a 44px round play button at left, the title
+// One playable setlist row: a 44px round play button at left with + beside
+// it (adds the track to the queue), the title
 // (still a listening link when the library has one), and a right-aligned
 // duration. Segue rows carry a muted " >" and a thin connector down to the
 // next row's button; the current track's row gets a faint gold wash and a
@@ -52,9 +53,11 @@ function SetlistRow({
           disabled={!track}
           aria-busy={isLoading}
           aria-label={playLabel}
+          data-tip={!track ? undefined : isError ? "Try again" : isCurrent && isPlaying ? "Pause" : "Play now"}
         >
           <PlayPauseIcon playing={isCurrent && isPlaying} />
         </button>
+        {track ? <AddToQueue tracks={[track]} name={song.title} variant="round" /> : <span className="queue-add-space" aria-hidden="true" />}
       </div>
       <span className="row-title">
         {/* The row's own button plays the track; the title leaves the site only for another destination. */}
@@ -65,7 +68,6 @@ function SetlistRow({
             &gt;
           </span>
         )}
-        {track && <AddToQueue tracks={[track]} name={song.title} />}
       </span>
       <span className="row-duration">{track || song.duration_seconds ? formatClockTime(song.duration_seconds) : "—"}</span>
       {isCurrent && <span className="row-progress" style={{ width: `${progressPct}%` }} aria-hidden="true" />}

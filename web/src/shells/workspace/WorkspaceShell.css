@@ -193,8 +193,9 @@
 .workspace-shell .player-dock .now-playing-title { font-size: 1rem; }
 .workspace-shell .player-dock .now-playing-meta { font-size: 0.86rem; }
 .workspace-shell .player-dock .now-playing-controls { gap: var(--space-tight); }
-.workspace-shell .player-dock .now-playing-toggle { width: 48px; height: 48px; }
-.workspace-shell .player-dock .now-playing-toggle svg { width: 18px; height: 18px; }
+/* The play disc reads at the size of the 24px icons around it, not bigger. */
+.workspace-shell .player-dock .now-playing-toggle { width: 40px; height: 40px; margin: 0 var(--space-line); }
+.workspace-shell .player-dock .now-playing-toggle svg { width: 16px; height: 16px; }
 .workspace-shell .player-dock .now-playing-step { width: 48px; height: 48px; color: var(--muted); }
 .workspace-shell .player-dock .now-playing-step svg { width: 24px; height: 24px; }
 .workspace-shell .player-dock .now-playing-queue-toggle { height: 48px; padding: 0 var(--space-tight); color: var(--muted); font-size: 0.95rem; }
