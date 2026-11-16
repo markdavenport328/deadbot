@@ -372,8 +372,9 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
     send();
   }
 
-  // One ask box: in the phone's dock, or held at the foot of the answer pane
-  // on a desktop. Either way it is one line that grows with the question.
+  // One ask box: in the phone's dock (one line, a round send), or held at the
+  // foot of the answer pane on a desktop (two lines, the blue Explore inside
+  // it). Either way it grows with the question.
   function composer(dock: boolean) {
     return (
       <form className={dock ? "composer dock-composer" : "composer pane-composer"} onSubmit={(event) => { event.preventDefault(); send(); }}>
@@ -382,7 +383,7 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
             id={dock ? "question-dock" : "question-pane"}
             ref={dockTextareaRef}
             aria-label="Question"
-            rows={1}
+            rows={dock ? 1 : 2}
             placeholder={dock ? "Ask about a song, show, or recording" : "Ask about a song, show, source, or recording"}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
@@ -390,9 +391,13 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
             onFocus={dock ? () => setDockFocused(true) : undefined}
             onBlur={dock ? () => setDockFocused(false) : undefined}
           />
-          <button type="submit" className="dock-send" disabled={asking || !question.trim()} aria-label="Explore" aria-busy={asking}>
-            <SendIcon />
-          </button>
+          {dock ? (
+            <button type="submit" className="dock-send" disabled={asking || !question.trim()} aria-label="Explore" aria-busy={asking}>
+              <SendIcon />
+            </button>
+          ) : (
+            <button type="submit" disabled={asking || !question.trim()} aria-busy={asking}>Explore</button>
+          )}
         </div>
       </form>
     );

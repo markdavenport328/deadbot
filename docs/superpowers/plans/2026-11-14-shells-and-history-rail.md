@@ -273,6 +273,9 @@ version strip, setlist row) uses the same two round controls at its edge:
 component in `cards/`. Spotify stays a quieter text action. One primary
 action per card.
 
+**The Deadbot name stays put** at the top of the rail (owner, 2026-11-15); only
+the history under it scrolls.
+
 **History rail**, modeled on CFP:
 
 - Threads are saved in this browser: the root question as the title, the

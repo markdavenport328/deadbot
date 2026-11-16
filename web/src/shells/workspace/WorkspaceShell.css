@@ -93,16 +93,15 @@
 .workspace-shell:not(.phone) { padding-bottom: var(--dock-h, 0px); }
 .workspace-shell:not(.phone) .workspace-main { min-height: calc(100vh - var(--dock-h, 0px)); padding-bottom: 0; }
 
-/* The pane's ask box: one line with a round send beside it, growing to eight
-   lines before it scrolls. It keeps the answer's width and sits on the player,
-   with the base composer's fade above it. */
+/* The pane's ask box: two lines tall, growing to eight before it scrolls,
+   with the blue Explore inside its lower right as it always had. It keeps the
+   answer's width and sits on the player, with the base composer's fade above
+   it. */
 .workspace-shell .pane-composer { bottom: var(--dock-h, 0px); z-index: 3; max-width: 58rem; padding: var(--space-content) 0 var(--space-part); }
-.workspace-shell .pane-composer .question-field { display: flex; align-items: flex-end; gap: var(--space-tight); }
-.workspace-shell .pane-composer textarea { flex: 1; min-height: 0; max-height: calc(1.4em * 8 + 1.2rem); overflow-y: auto; padding: var(--space-tight) var(--space-part); line-height: 1.4; }
-.workspace-shell .pane-composer .question-field button[type="submit"] { position: static; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 42px; padding: 0; border-radius: 50%; }
-.workspace-shell .pane-composer .question-field button[type="submit"] svg { width: 18px; height: 18px; }
-/* A one-line box keeps its hint on one line, trimmed rather than cut in half. */
-.workspace-shell :is(.pane-composer, .dock-composer) textarea::placeholder { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.workspace-shell .pane-composer textarea { max-height: calc(1.4em * 8 + 2rem); overflow-y: auto; padding: var(--space-part) 7.5rem var(--space-part) var(--space-part); }
+.workspace-shell .pane-composer .question-field button[type="submit"] { right: var(--space-tight); bottom: var(--space-tight); }
+/* The phone's one-line box keeps its hint on one line, trimmed rather than cut in half. */
+.workspace-shell .dock-composer textarea::placeholder { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
 /* The player across the full window. Its contents line up with the shell's
    edges; the bar gives up its own sticky position and ground to the dock. */
@@ -121,7 +120,9 @@
 .workspace-shell .player-dock-inner { width: min(1440px, calc(100% - 2rem)); margin: 0 auto; }
 .workspace-shell .player-dock .now-playing-bar { position: static; margin: 0; padding: var(--space-tight) 0; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-top: 0; }
 .workspace-shell .player-dock:has(.now-playing-bar) { border-top: 1px solid var(--hair); }
-.workspace-shell .workspace-rail .masthead { padding-bottom: 0; }
+/* The Deadbot name stays put at the top of the rail; only the history under
+   it scrolls, however long it grows. */
+.workspace-shell .workspace-rail .masthead { flex-shrink: 0; padding-bottom: 0; }
 .workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; }
 .workspace-menu-history { padding: 0 var(--space-content) var(--space-content); border-bottom: 1px solid var(--hair); }
 
@@ -174,3 +175,21 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace-shell .exploration-pane.previous { transition: none; }
 }
+
+/* Across the full window the bar has room, so its controls grow to match:
+   a larger play, steps and queue button, and a cover a little bigger. The
+   phone dock keeps its own compact sizes. */
+.workspace-shell .player-dock .now-playing-bar { column-gap: var(--space-content); }
+.workspace-shell .player-dock .now-playing-thumb { width: 48px; height: 48px; }
+.workspace-shell .player-dock .now-playing-title { font-size: 1rem; }
+.workspace-shell .player-dock .now-playing-meta { font-size: 0.85rem; }
+.workspace-shell .player-dock .now-playing-controls { gap: var(--space-tight); }
+.workspace-shell .player-dock .now-playing-toggle { width: 52px; height: 52px; }
+.workspace-shell .player-dock .now-playing-toggle svg { width: 20px; height: 20px; }
+.workspace-shell .player-dock .now-playing-step { width: 44px; height: 44px; }
+.workspace-shell .player-dock .now-playing-step svg { width: 20px; height: 20px; }
+.workspace-shell .player-dock .now-playing-queue-toggle { height: 44px; font-size: 0.9rem; }
+.workspace-shell .player-dock .now-playing-queue-toggle svg { width: 22px; height: 22px; }
+.workspace-shell .player-dock .now-playing-time { font-size: 0.85rem; }
+.workspace-shell .player-dock .now-playing-more { height: 40px; }
+.workspace-shell .player-dock .now-playing-more svg { width: 20px; height: 20px; }
