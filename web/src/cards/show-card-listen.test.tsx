@@ -44,7 +44,7 @@ async function renderResponse(response: ExperienceResponse) {
   vi.resetModules();
   const { default: App } = await import("../App");
   render(<App />);
-  await screen.findByRole("heading", { level: 1, name: response.title });
+  await screen.findByRole("heading", { level: 1, name: response.headline ?? "" });
 }
 
 function clone(response: ExperienceResponse): ExperienceResponse {

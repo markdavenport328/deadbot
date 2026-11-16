@@ -37,7 +37,7 @@ async function renderTimeline() {
   vi.resetModules();
   const { default: App } = await import("../App");
   render(<App />);
-  await screen.findByRole("heading", { level: 1, name: visualFixtures.timeline.title });
+  await screen.findByRole("heading", { level: 1, name: visualFixtures.timeline.headline ?? "" });
 }
 
 test("the song card shows its timeline open on the model's year, without a History tab", async () => {

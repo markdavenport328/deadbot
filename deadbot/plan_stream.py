@@ -1,10 +1,10 @@
 """Turn the streamed ``finish_response`` arguments into page events.
 
-The model writes its plan as JSON text, in schema order: ``chat_answer``,
-``title``, ``lead``, then ``groups`` whose scalar fields precede ``items``.
+The model writes its plan as JSON text, in schema order: ``initial_tab``,
+``headline``, ``lead``, then ``groups`` whose scalar fields precede ``items``.
 :class:`PlanStreamer` scans that text once, character by character, tracking
 strings, the container stack and the key path, and emits an event when the
-title closes, a group's items begin, an item closes (after resolving it to
+head (headline and lead) is complete, a group's items begin, an item closes (after resolving it to
 hydrated blocks), and a group closes. Everything here is transport: it
 never chooses content, and any failure disables progressive events for the
 turn while the final response is built exactly as before.
@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING, workspace_tab
+from deadbot.page_plan import SECTION_KEYS, TOP_KEYS, body_items
 from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, page_lead, read_joining_repeats, validate_body_item
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,7 @@ class PlanStreamer:
         self._in_string = False
         self._escape = False
         self._string_start = 0
-        self._title: str | None = None
+        self._headline: str | None = None
         self._lead: str | None = None
         self._groups: dict[int, dict[str, Any]] = {}
         self._head_sent = False
@@ -169,7 +170,7 @@ class PlanStreamer:
         if self._head_sent:
             return []
         self._head_sent = True
-        return [PlanEvent("page_head", {"title": self._title or "", "lead": self._grounded(self._lead)})]
+        return [PlanEvent("page_head", {"headline": (self._headline or "").strip() or None, "lead": self._grounded(self._lead)})]
 
     def _begin_value(self) -> None:
         top = self._top()
@@ -232,6 +233,12 @@ class PlanStreamer:
             return []
         value = json.loads(self._text[start:end])
         if top.kind == "object" and top.expecting_key:
+            # The page's keys read as the plan's: answer is the lead, sections are groups.
+            where = self._path()[:-1]
+            if where == []:
+                value = TOP_KEYS.get(value, value)
+            elif len(where) == 2 and where[0] == "groups":
+                value = SECTION_KEYS.get(value, value)
             top.key = value
             return []
         path = self._path()
@@ -240,8 +247,8 @@ class PlanStreamer:
             if tab is not None and not self._tab_sent:
                 self._tab_sent = True
                 return [PlanEvent("page_tab", {"tab": tab})]
-        elif path == ["title"]:
-            self._title = value
+        elif path == ["headline"]:
+            self._headline = value
         elif path == ["lead"]:
             self._lead = value
         elif len(path) == 3 and path[0] == "groups" and path[2] in ("tab", "title", "lead", "presentation"):
@@ -438,11 +445,12 @@ class PlanStreamer:
         if parsed is None:
             logger.info("Skipped a streamed item that was not JSON")
             return []
-        item = validate_body_item(parsed, where="streamed")
-        if item is None:
+        # A page item reads as the body items it stands for (page_plan.body_items), as the delivered plan reads it.
+        items = [item for body in body_items(parsed) if (item := validate_body_item(body, where="streamed")) is not None]
+        if not items:
             return []
         try:
-            resolved = self._resolve([item])
+            resolved = self._resolve(items)
         except Exception:  # One bad item must not disable the whole streamer.
             logger.exception("Skipped a streamed item that failed to hydrate")
             return []

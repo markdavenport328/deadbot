@@ -11,6 +11,7 @@ listening paths.
 
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
 from dataclasses import dataclass
 from statistics import median
@@ -18,6 +19,8 @@ from typing import Any, Callable, Iterable
 
 from deadbot.data import CanonicalStore
 from deadbot.experience import fit
+
+logger = logging.getLogger(__name__)
 
 TRANSITIONS = ("segue", "any")
 
@@ -310,9 +313,8 @@ def candidate_nights(versions: list[Version], era_of: Callable[[str], str]) -> l
 
 
 STRIP_NOTE = (
-    "Any pair_id in this result can go on the page: a version_strip in finish_response with this pairing_id and the "
-    "pair_ids you choose draws those nights to one clock, both songs' lengths as one bar, each row playing that "
-    "night's two songs in turn; show_year_counts adds the nights-per-year strip."
+    "A pairing item with this pairing_id and the pair_ids you choose plays those nights, "
+    "each row both songs in turn on one clock."
 )
 
 
@@ -372,7 +374,6 @@ def pairing_payload(
         "second_song": _extremes(in_range, lambda version: version.second_seconds),
         "together": _extremes(in_range, _total_seconds),
     }
-    payload["lengths_note"] = LENGTHS_NOTE
     if include_versions or len(in_range) <= VERSION_LIST_THRESHOLD:
         payload["versions"] = {"columns": VERSION_COLUMNS, "rows": [version_row(version) for version in in_range]}
     else:
@@ -464,4 +465,110 @@ def version_strip_block(
         total_count=len(counted),
         rows=rows,
         year_counts=[VersionStripYear(**entry) for entry in year_counts(counted)] if show_year_counts else [],
+    )
+
+
+# Versions of one song on a page: a handful to hear against each other.
+SONG_VERSIONS_MAX = 8
+
+
+def song_versions_block(
+    store: CanonicalStore,
+    grounded_ids: frozenset[str],
+    *,
+    performance_ids: list[str],
+    title: str | None,
+    notes: dict[str, str] | None,
+    criteria: list[str] | None = None,
+    judgments: dict[str, list[str]] | None = None,
+) -> Any:
+    """Hydrate a model-planned song_versions, or None when no version resolved.
+
+    Each performance must have appeared in this turn's tool output. Rows keep
+    the model's order; venue, date, tape track and release come from the store.
+    The length shown is the release's when there is one, else the tape's.
+    """
+
+    from deadbot.experience import PlayableTrack, SongVersionsBlock, SongVersionsRelease, SongVersionsRow, SongVersionsSong
+
+    wanted: list[str] = []
+    for performance_id in dict.fromkeys(performance_ids or []):
+        if performance_id in grounded_ids:
+            wanted.append(performance_id)
+        else:
+            logger.info("song_versions: dropped %s, not in this turn's tool results", performance_id)
+    if len(wanted) > SONG_VERSIONS_MAX:
+        logger.warning("song_versions: truncated %d versions to %d", len(wanted), SONG_VERSIONS_MAX)
+        wanted = wanted[:SONG_VERSIONS_MAX]
+    performances = {row["performance_id"]: row for row in store.rows_in("performances", "performance_id", wanted)}
+    wanted = [performance_id for performance_id in wanted if performance_id in performances or logger.info("song_versions: dropped unknown %s", performance_id)]
+    if not wanted:
+        return None
+    shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {performances[p]["show_id"] for p in wanted})}
+    venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", {s.get("venue_id", "") for s in shows.values()})}
+    tape = _archive_tracks(store, wanted)
+
+    longest: dict[str, dict[str, str]] = {}
+    for row in store.rows_in("official_release_tracks", "performance_id", wanted):
+        text = str(row.get("duration_seconds") or "").strip()
+        seconds = int(text) if text.isdigit() else 0
+        current = longest.get(row["performance_id"])
+        if current is None or seconds > int(str(current.get("duration_seconds") or "").strip() or 0):
+            longest[row["performance_id"]] = row
+    releases = {row["release_id"]: row for row in store.rows_in("official_releases", "release_id", {r["release_id"] for r in longest.values()})}
+
+    song_ids = [performances[p]["song_id"] for p in wanted]
+    song_id = song_ids[0]
+    titles = {row["song_id"]: row.get("title") or row["song_id"] for row in store.rows_in("songs", "song_id", set(song_ids))}
+    song_title = titles.get(song_id) or song_id
+
+    notes = {key: value.strip() for key, value in (notes or {}).items() if isinstance(value, str) and value.strip()}
+    rows = []
+    for performance_id in wanted:
+        performance = performances[performance_id]
+        show = shows.get(performance["show_id"], {})
+        venue = venues.get(show.get("venue_id", ""), {})
+        track = tape.get(performance_id)
+        release_track = longest.get(performance_id)
+        release_row = releases.get(release_track["release_id"]) if release_track else None
+        release_text = str((release_track or {}).get("duration_seconds") or "").strip()
+        release_seconds = int(release_text) if release_text.isdigit() and int(release_text) > 0 else None
+        release = None
+        if release_track and release_row:
+            release = SongVersionsRelease(
+                release_id=release_row["release_id"],
+                title=release_row.get("title") or release_row["release_id"],
+                url=release_track.get("spotify_track_url") or release_row.get("spotify_album_url") or release_row.get("source_url") or None,
+            )
+        rows.append(
+            SongVersionsRow(
+                performance_id=performance_id,
+                show_id=performance["show_id"],
+                show_date=show.get("show_date", ""),
+                venue_name=venue.get("name") or performance["show_id"],
+                city=", ".join(v for v in (venue.get("city", ""), venue.get("state_region", "")) if v) or None,
+                length_seconds=release_seconds or (track.duration_seconds if track else None),
+                tape_seconds=track.duration_seconds if track else None,
+                release=release,
+                song_id=performance["song_id"],
+                song_title=titles.get(performance["song_id"]) or performance["song_id"],
+                track=PlayableTrack(
+                    performance_id=performance_id,
+                    title=titles.get(performance["song_id"]) or song_title,
+                    audio_url=track.url,
+                    duration_seconds=track.duration_seconds,
+                    set_label=performance.get("set_label") or None,
+                )
+                if track
+                else None,
+                note=notes.get(performance_id),
+                judgments=[str(item).strip() for item in (judgments or {}).get(performance_id, [])],
+            )
+        )
+    return SongVersionsBlock(
+        type="song_versions",
+        title=(title or "").strip() or None,
+        criteria=[item.strip() for item in criteria or [] if item.strip()],
+        song=SongVersionsSong(song_id=song_id, title=song_title),
+        rows=rows,
     )

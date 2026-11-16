@@ -92,7 +92,7 @@ def test_the_page_digest_names_each_block_and_the_chips():
     }
     book, response = record(notebook.Notebook(), "Tell me about May 26, 1972.", "The last Lyceum night.", LYCEUM, items=[item])
     (page,) = book.pages
-    assert page.answer_key == notebook.answer_key(response.answer)
+    assert page.answer_key == notebook.answer_key(response.lead)
     assert page.blocks[0]["type"] == "show_unit" and page.blocks[0]["ids"] == ["gd-1972-05-26"]
     assert page.blocks[0]["note"] == "Morning Dew out of The Other One."
     assert page.chips == ["Lyceum Morning Dew"]
@@ -311,7 +311,7 @@ def test_the_digest_keeps_every_block_whole_and_eight_chips():
         _Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": f"T{index}", "note": long_note if index == 0 else "", "follow_ups": [{"label": f"Chip {index}"}]})
         for index in range(20)
     ]
-    response = SimpleNamespace(blocks=blocks, answer="A", title="Title")
+    response = SimpleNamespace(blocks=blocks, lead="A", headline="Title")
     page = notebook.page_digest(response, 3)
     assert len(page.blocks) == 20
     assert page.chips == [f"Chip {index}" for index in range(8)]
@@ -320,7 +320,7 @@ def test_the_digest_keeps_every_block_whole_and_eight_chips():
 
 def test_the_digest_trims_only_past_its_character_budget():
     blocks = [_Block({"type": "show_unit", "show_id": f"gd-1972-{index:04d}", "title": "T" * 500}) for index in range(40)]
-    page = notebook.page_digest(SimpleNamespace(blocks=blocks, answer="A", title="Title"), 3)
+    page = notebook.page_digest(SimpleNamespace(blocks=blocks, lead="A", headline="Title"), 3)
     assert 0 < len(page.blocks) < 40
     assert sum(len(block["title"]) for block in page.blocks) <= notebook.DIGEST_CHAR_CEILING
 
@@ -472,6 +472,6 @@ def test_the_digest_logs_when_it_trims_chips_or_block_ids(caplog):
     ids = {f"x{index}_id": f"id-{index}" for index in range(9)}
     blocks = [_Block({"type": "show_unit", **ids, "follow_ups": [{"label": f"Chip {index}"} for index in range(10)]})]
     with caplog.at_level(logging.INFO, logger="deadbot.notebook"):
-        page = notebook.page_digest(SimpleNamespace(blocks=blocks, answer="A", title="Title"), 1)
+        page = notebook.page_digest(SimpleNamespace(blocks=blocks, lead="A", headline="Title"), 1)
     assert len(page.blocks[0]["ids"]) == notebook.BLOCK_ID_CEILING and len(page.chips) == notebook.CHIP_CEILING
     assert "kept 6 of 9 IDs" in caplog.text and "kept 8 of 10 follow-up chips" in caplog.text

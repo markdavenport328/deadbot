@@ -153,9 +153,9 @@ def main() -> None:
             continue
         result = agent.invoke({"messages": [HumanMessage(content=question)]}, config=config)
         response = build_experience_response(question, thread_id, result["messages"], store)
-        print(f"\nDeadbot: {response.answer}")
-        if response.body_lead:
-            print(f"\n{response.title}\n{response.body_lead}")
+        if response.headline:
+            print(f"\n{response.headline}")
+        print(f"\nDeadbot: {response.lead}")
 
 
 if __name__ == "__main__":

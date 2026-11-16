@@ -4,7 +4,7 @@
 import type { ExperienceBlock, ExperienceGroup, ExperienceResponse } from "../types";
 
 export type PageEvent =
-  | { type: "page_head"; title: string; lead: string | null }
+  | { type: "page_head"; headline: string | null; lead: string | null }
   | { type: "page_tab"; tab: string }
   | { type: "group_open" | "group_close"; index: number; tab?: string | null; title: string | null; lead: string | null; presentation: ExperienceGroup["presentation"]; criteria: string[] }
   | { type: "block"; group_index: number; block: ExperienceBlock }
@@ -14,7 +14,8 @@ export type PageEvent =
 
 export type StreamEvent =
   | { type: "status"; text: string }
-  | { type: "answer"; text: string }
+  // The page's lead as it grows: each event carries the text so far.
+  | { type: "lead"; text: string }
   | { type: "response"; response: ExperienceResponse }
   | { type: "error"; detail?: string }
   | PageEvent;

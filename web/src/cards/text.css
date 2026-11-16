@@ -1,0 +1,24 @@
+/* Multi-block text: a lead the model wrote as paragraphs, lists or a table.
+   The wrapper carries the lead's own type; blocks inherit it. */
+.rich-text { font-variant-numeric: tabular-nums; }
+.group-heading .rich-text { max-width: 58rem; margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
+.rich-text > p,
+.group-heading .rich-text > p { max-width: none; margin: 0 0 0.75em; color: inherit; font-size: inherit; line-height: inherit; }
+.rich-text > ul,
+.rich-text > ol { max-width: 62ch; margin: 0 0 0.75em; padding-left: 1.4em; }
+.rich-text > ul { list-style: disc; }
+.rich-text > ol { list-style: decimal; }
+.rich-text li { margin: 0 0 0.3em; padding-left: 0.2em; }
+.rich-text li::marker { color: var(--quiet); }
+.rich-text > :last-child { margin-bottom: 0; }
+
+.text-table { max-width: 100%; margin: 0.25rem 0 0.75em; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.text-table table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 0.9375rem; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.text-table th,
+.text-table td { padding: 0.5rem 1rem 0.5rem 0; border-bottom: 1px solid var(--hair); text-align: left; vertical-align: top; }
+.text-table th { border-bottom-color: color-mix(in srgb, var(--text) 28%, transparent); color: var(--quiet); font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.04em; }
+.text-table td { color: var(--text); }
+.text-table th.num,
+.text-table td.num { text-align: right; white-space: nowrap; padding-right: 0; padding-left: 1rem; }
+.text-table th:last-child,
+.text-table td:last-child { padding-right: 0; }

@@ -6,7 +6,7 @@ from deadbot.evaluations import DEFAULT_SUITE_PATH, evaluate_suite, load_suite, 
 
 def test_veneta_tool_retrieval_suite_passes_against_canonical_data():
     result = evaluate_suite()
-    assert result["total"] == 30
+    assert result["total"] == 27
     assert result["failed"] == 0
     assert result["passed"] == result["total"]
 
@@ -39,7 +39,7 @@ def test_model_evaluation_rejects_unknown_case_ids_without_calling_a_model():
         raise AssertionError("Unknown case IDs should fail clearly")
 
 
-def test_required_source_urls_counted_when_cited_in_the_body_not_the_chat_answer():
+def test_required_source_urls_counted_when_cited_in_the_body_not_the_lead():
     """A required URL delivered through a resolved block still counts as cited.
 
     Under the single agent loop the chat answer is deliberately short; the
@@ -61,9 +61,7 @@ def test_required_source_urls_counted_when_cited_in_the_body_not_the_chat_answer
     assert resource, f"expected {resource_id} in the canonical resources table"
 
     plan = {
-        "chat_answer": "Yes — the Deadcast covered the Creamery benefit.",
-        "title": "Oral history of Veneta",
-        "lead": None,
+        "lead": "Yes — the Deadcast covered the Creamery benefit.",
         "groups": [{"presentation": "collection", "items": [{"type": "resource_list", "resource_ids": [resource_id], "title": "Listen and read"}]}],
     }
 

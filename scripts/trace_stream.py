@@ -18,7 +18,7 @@ from typing import Any
 
 # Mirrors fallbackTab in web/src/tab-routing.ts: where a block goes when its
 # group names no tab. Keep the two in step.
-LISTEN_TYPES = {"show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "media_link"}
+LISTEN_TYPES = {"show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "song_versions", "media_link"}
 CHARTS_TYPES = {"data_chart", "grid"}
 TABS = ("listen", "charts", "read")
 
@@ -54,7 +54,7 @@ def trace(question: str, base_url: str = "http://127.0.0.1:8000", conversation: 
             event = json.loads(raw)
             now = time.monotonic() - start
             kind = event.get("type")
-            if kind == "answer":
+            if kind == "lead":
                 marks["first_answer"] = marks["first_answer"] if marks["first_answer"] is not None else now
                 answer = event.get("text") or answer  # each event carries the answer so far
             elif kind == "status" and event.get("text") == "Composing the page":
@@ -82,7 +82,7 @@ def trace(question: str, base_url: str = "http://127.0.0.1:8000", conversation: 
                     indexes = [i for i in group.get("block_indexes") or [] if 0 <= i < len(blocks)]
                     tab = group.get("tab") or (fallback_tab(blocks[indexes[0]]) if indexes else "read")
                     group_counts[tab] += 1
-                answer = response.get("answer") or answer
+                answer = response.get("lead") or answer
     return {"marks": marks, "opening_tab": opening_tab, "groups": dict(group_counts), "answer": answer}
 
 

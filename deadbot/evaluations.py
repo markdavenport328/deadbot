@@ -165,7 +165,7 @@ def model_evaluate_suite(
         )
         messages = result["messages"]
         response = build_experience_response(case["question"], f"model-eval-{case['id']}", messages, store)
-        answer = response.answer
+        answer = response.lead
         body_types = [block.type for block in response.blocks]
         tool_calls = [
             {"name": call["name"], "arguments": call["args"]}

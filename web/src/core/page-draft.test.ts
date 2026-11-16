@@ -19,7 +19,7 @@ describe("applyPageEvent", () => {
   });
 
   test("page_reset clears, groups_reset keeps the head", () => {
-    const head = applyPageEvent(null, { type: "page_head", title: "A", lead: null });
+    const head = applyPageEvent(null, { type: "page_head", headline: "A", lead: null });
     expect(applyPageEvent(head, { type: "page_reset" })).toBeNull();
     expect(applyPageEvent({ ...head!, groups: [{ title: null, lead: null, presentation: "collection", criteria: [], blocks: [], tab: null }] }, { type: "groups_reset" })?.groups).toEqual([]);
   });
@@ -27,7 +27,7 @@ describe("applyPageEvent", () => {
 
 test("groupsOfResponse carries each group's tab when present", () => {
   const response = {
-    schema_version: "2", thread_id: "t", title: "x", answer: "a", conversation: [], sources: [],
+    schema_version: "3", thread_id: "t", headline: "x", lead: "a", conversation: [], sources: [],
     blocks: [block, block],
     groups: [
       { title: null, lead: null, presentation: "collection", criteria: [], block_indexes: [0], tab: "charts" },

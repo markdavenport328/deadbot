@@ -5,15 +5,18 @@ import type { ExperienceResponse, SourceReference } from "../../types";
 import { WORKSPACE_TABS, openingTab, readTab, routeGroups, tabsWithContent, type WorkspaceTab } from "../../core/tab-routing";
 import { visible, type Entry, type EntryView, type ExplorationState, type Pending } from "../../core/exploration-state";
 import { WorkspaceTabs, type TabState } from "./WorkspaceTabs";
-import { renderInline } from "../../cards/inline";
+import { RichText } from "../../cards/text";
 import { PageGroups, SourcesFooter } from "../../cards/PageGroups";
 
 // One exploration's page as the pane draws it: a finished response, or the
 // draft while it streams. The same shape either way, so the pane (and every
 // disclosure and chart pick inside it) carries straight from draft to final.
 export type PaneContent = {
-  title: string;
-  answer: string | null;
+  // The visitor's question, shown while Deadbot is still working.
+  question: string;
+  // The model's optional line above the lead, then the lead itself: both sit
+  // above the tabs, so the answer is there whichever tab is open.
+  headline: string | null;
   lead: string | null;
   groups: RenderGroup[];
   sources: SourceReference[];
@@ -27,7 +30,7 @@ const finishedContent = new WeakMap<ExperienceResponse, PaneContent>();
 export function contentOf(response: ExperienceResponse): PaneContent {
   let content = finishedContent.get(response);
   if (!content) {
-    content = { title: response.title, answer: response.answer, lead: response.body_lead ?? null, groups: groupsOfResponse(response), sources: response.sources };
+    content = { question: "", headline: response.headline ?? null, lead: response.lead, groups: groupsOfResponse(response), sources: response.sources };
     finishedContent.set(response, content);
   }
   return content;
@@ -35,9 +38,10 @@ export function contentOf(response: ExperienceResponse): PaneContent {
 
 export function draftContent(pending: Pending): PaneContent {
   return {
-    title: pending.draft?.title || pending.question,
-    answer: pending.answer,
-    lead: pending.draft?.lead ?? null,
+    question: pending.question,
+    headline: pending.draft?.headline ?? null,
+    // The lead streams ahead of the page head; the head's copy replaces it once it lands.
+    lead: pending.draft?.lead ?? pending.lead,
     groups: pending.draft?.groups ?? [],
     sources: []
   };
@@ -116,7 +120,7 @@ export const ExplorationPane = memo(function ExplorationPane({
   onFollowUp: FollowUp;
 }) {
   const routed = useMemo(() => routeGroups(content.groups), [content.groups]);
-  const filled = useMemo(() => tabsWithContent(routed, content.answer), [routed, content.answer]);
+  const filled = useMemo(() => tabsWithContent(routed), [routed]);
   const titleId = `${paneId}-title`;
   // Tabs the visitor has looked at in this pane; their "new" mark stays off.
   const [seen, setSeen] = useState<ReadonlySet<WorkspaceTab>>(() => new Set([activeTab]));
@@ -128,7 +132,7 @@ export const ExplorationPane = memo(function ExplorationPane({
     return (
       <article className={`${className} content-working`} hidden={hidden} aria-labelledby={titleId}>
         <p className="eyebrow">Working</p>
-        <h1 id={titleId} tabIndex={-1}>{content.title}</h1>
+        <h1 id={titleId} tabIndex={-1}>{content.question}</h1>
         <ol className="progress-lines" aria-hidden="true">
           {lines.map((line, index) => (
             <li key={`${index}-${line}`} className={index === lines.length - 1 ? "current" : undefined}>
@@ -147,8 +151,6 @@ export const ExplorationPane = memo(function ExplorationPane({
     if (tab !== "read") return groups;
     return (
       <>
-        {content.answer && content.answer.trim() && <p className="workspace-answer">{renderInline(content.answer)}</p>}
-        {content.lead && <p className="answer-lead">{renderInline(content.lead)}</p>}
         {groups}
         {!streaming && <SourcesFooter groups={content.groups} sources={content.sources} />}
       </>
@@ -166,9 +168,14 @@ export const ExplorationPane = memo(function ExplorationPane({
       onTouchMove={onInteract}
     >
       {previous && <p className="previous-label">Previous result</p>}
-      <div className="content-heading">
-        <h1 id={titleId} tabIndex={-1}>{content.title}</h1>
-      </div>
+      {content.headline && (
+        <div className="content-heading">
+          <h1 id={titleId} tabIndex={-1}>{content.headline}</h1>
+        </div>
+      )}
+      {content.lead && content.lead.trim() && (
+        <RichText className="answer-lead" text={content.lead} id={content.headline ? undefined : titleId} tabIndex={content.headline ? undefined : -1} />
+      )}
       <WorkspaceTabs active={activeTab} states={states} onSelect={onSelectTab} idPrefix={paneId} />
       {WORKSPACE_TABS.map(({ id }) => (
         <div

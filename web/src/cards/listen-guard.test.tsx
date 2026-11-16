@@ -69,7 +69,7 @@ async function renderFixture(name: string, response: ExperienceResponse) {
   vi.resetModules();
   const { default: App } = await import("../App");
   render(<App />);
-  await screen.findByRole("heading", { level: 1, name: response.title });
+  await screen.findByRole("heading", { level: 1, name: response.headline ?? "" });
 }
 
 // Open every tab of every drawer in turn: a closed panel is not in the DOM.

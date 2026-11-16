@@ -105,22 +105,21 @@ function show({
 
 function fixture(
   question: string,
-  title: string,
-  body_lead: string,
+  headline: string,
+  lead: string,
   blocks: ExperienceBlock[],
   presentation: NonNullable<ExperienceResponse["groups"]>[number]["presentation"] = "collection",
   group?: Pick<NonNullable<ExperienceResponse["groups"]>[number], "title" | "lead">
 ): ExperienceResponse {
   return {
-    schema_version: "2",
-    thread_id: `visual-${title.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`,
-    title,
-    answer: body_lead,
-    body_lead,
+    schema_version: "3",
+    thread_id: `visual-${headline.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`,
+    headline,
+    lead,
     mode: "answer",
     conversation: [
       { role: "user", text: question },
-      { role: "assistant", text: body_lead }
+      { role: "assistant", text: lead }
     ],
     blocks,
     groups: [{ presentation, criteria: [], ...group, block_indexes: blocks.map((_, index) => index) }],
@@ -326,11 +325,10 @@ const shakedown: ExperienceResponse = fixture(
 );
 
 const fact: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-fact",
-  title: "American Beauty came out in November 1970",
-  answer: "American Beauty was released on November 1, 1970.",
-  body_lead: null,
+  headline: "American Beauty came out in November 1970",
+  lead: "American Beauty was released on November 1, 1970.",
   mode: "answer",
   conversation: [
     { role: "user", text: "When was American Beauty released?" },
@@ -363,11 +361,10 @@ const fact: ExperienceResponse = {
 };
 
 const legacy: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-legacy",
-  title: "American Beauty split into durable staples and forgotten songs",
-  answer: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
-  body_lead: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
+  headline: "American Beauty split into durable staples and forgotten songs",
+  lead: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
   mode: "answer",
   conversation: [
     { role: "user", text: "What was the live legacy of American Beauty?" },
@@ -501,11 +498,10 @@ const viewsBlocks: ExperienceBlock[] = [
 ];
 
 const views: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-views",
-  title: "Soldier Field 1995 through three performances, and the songs that stayed",
-  answer: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
-  body_lead: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  headline: "Soldier Field 1995 through three performances, and the songs that stayed",
+  lead: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
   mode: "answer",
   conversation: [
     { role: "user", text: "How do Soldier Field 1995-07-09's key performances hold up, and which Wake of the Flood songs stuck around live?" },
@@ -659,11 +655,10 @@ const performanceBlocks: ExperienceBlock[] = [
 ];
 
 const performance: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-performance",
-  title: "The 1968 Dark Star is a route through episodes",
-  answer: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
-  body_lead: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
+  headline: "The 1968 Dark Star is a route through episodes",
+  lead: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
   mode: "answer",
   conversation: [
     { role: "user", text: "What is the 1968 Carousel Ballroom Dark Star like?" },
@@ -911,6 +906,69 @@ const chinarider: ExperienceResponse = fixture(
   }
 );
 
+// Five real Dark Stars, first to last, drawn by a song_versions. Lengths are the
+// release's where one exists (1969: Dave's Picks 43), else the tape's.
+const darkStarVersions: [string, string, string, string, string, string, number, number | null, string | null][] = [
+  ["1968-01-17", "Carousel Ballroom", "San Francisco, CA", "1-2", "gd1968-01-17.sbd.cotsman.11795.shnf/gd68-01-17d1t03.mp3", "The first one on tape.", 161, null, null],
+  ["1969-11-02", "Family Dog On The Great Highway", "San Francisco, CA", "1-12", "gd1969-11-02.sbd.miller.32273.flac16/gd69-11-02d2t01.mp3", "", 1806, 1832, "release-daves-picks-volume-43-san-francisco-dallas-2022"],
+  ["1973-12-06", "Cleveland Convention Center", "Cleveland, OH", "2-5", "gd1973-12-06.132361.sbd.miller.flac16/gd73-12-06d3t01.mp3", "The longest, at 43:32.", 2612, null, null],
+  ["1989-10-26", "Miami Arena", "Miami, FL", "2-3", "gd1989-10-26.147714.sbd.miller.flac24/12%20Dark%20Star.mp3", "", 1602, null, null],
+  ["1994-03-30", "The Omni", "Atlanta, GA", "2-4", "gd94-03-30.sbd.miller.14832.sbeok.shnf/gd94-03-30d2t05.mp3", "The last one.", 629, null, null]
+];
+
+const darkStarVersionsBlock: ExperienceBlock = {
+  type: "song_versions",
+  title: "Five Dark Stars, first to last",
+  song: { song_id: "song-dark-star", title: "Dark Star" },
+  rows: darkStarVersions.map(([date, venue, city, slot, file, note, tape, release, releaseId]) => {
+    const performanceId = `gd-${date}-dark-star-${slot}`;
+    return {
+      performance_id: performanceId,
+      show_id: `gd-${date}`,
+      show_date: date,
+      venue_name: venue,
+      city,
+      length_seconds: release ?? tape,
+      tape_seconds: tape,
+      release: releaseId
+        ? { release_id: releaseId, title: "Dave’s Picks, Volume 43: San Francisco, 11/2/69 · Dallas, 12/26/69", url: "https://musicbrainz.org/release/4400a209-12d1-4600-b6cf-821c9a3975bb" }
+        : null,
+      track: { performance_id: performanceId, title: "Dark Star", audio_url: `https://archive.org/download/${file}`, duration_seconds: tape, set_label: `Set ${slot.split("-")[0]}` },
+      note: note || null
+    };
+  })
+};
+
+const versions: ExperienceResponse = fixture(
+  "How did Dark Star change over the years?",
+  "Dark Star, first to last",
+  "It starts as a 161-second tune in 1968, stretches past 43 minutes in Cleveland in 1973, and is back to ten minutes by 1994.",
+  [darkStarVersionsBlock],
+  "collection",
+  { title: null, lead: "Each bar is one night’s Dark Star on the same clock; press play to hear it." }
+);
+
+// Keyboard players as bars on one year axis; Keith and Pigpen overlap in
+// 1971-72, Vince and Bruce in 1990-92 (Bruce's earlier guest spell drawn quieter).
+const people: ExperienceResponse = fixture(
+  "How many keyboard players did the Dead have?",
+  "Keyboard players across the years",
+  "Six. Pigpen played organ from the start until June 1972, with Tom Constanten beside him from 1968 to 1970; Brent Mydland had the longest run.",
+  [{
+    type: "people_timeline", title: "Keyboard players", first_year: 1965, last_year: 1995,
+    people: [
+      { person_id: "p-pigpen", name: "Pigpen", show_count: 682, spans: [{ role: "keyboards, harmonica, vocals", start_date: "1965-05-05", end_date: "1972-06-17", member: true }] },
+      { person_id: "p-tom", name: "Tom Constanten", show_count: 146, spans: [{ role: "keyboards", start_date: "1968-11-25", end_date: "1970-01-30", member: true }] },
+      { person_id: "p-keith", name: "Keith Godchaux", show_count: 433, spans: [{ role: "keyboards", start_date: "1971-10-19", end_date: "1979-02-17", member: true }] },
+      { person_id: "p-brent", name: "Brent Mydland", show_count: 812, spans: [{ role: "keyboards, vocals", start_date: "1979-04-22", end_date: "1990-07-23", member: true }] },
+      { person_id: "p-vince", name: "Vince Welnick", show_count: 377, spans: [{ role: "keyboards, vocals", start_date: "1990-09-07", end_date: "1995-07-09", member: true }] },
+      { person_id: "p-bruce", name: "Bruce Hornsby", show_count: 102, note: "Sat in before and after his time in the band.", spans: [{ role: "keyboards", start_date: "1988-06-25", end_date: "1990-07-23", member: false }, { role: "keyboards", start_date: "1990-09-15", end_date: "1992-03-24", member: true }] }
+    ]
+  }] as unknown as ExperienceBlock[],
+  "collection",
+  { title: null, lead: "Six chairs, two overlaps:\n\n- 1971-72: Pigpen and Keith\n- 1990-92: Vince and Bruce" }
+);
+
 const releases1972 = releases1972Json as unknown as ExperienceResponse;
 const shows1977 = shows1977Json as unknown as ExperienceResponse;
 const harrisburg = harrisburgJson as unknown as ExperienceResponse;
@@ -1013,11 +1071,10 @@ const msgStory: ExperienceBlock[] = [
 ] as ExperienceBlock[];
 
 const msgWorkspace: ExperienceResponse = {
-  schema_version: "2",
+  schema_version: "3",
   thread_id: "visual-msg-workspace",
-  title: "The Garden years, 1979–1994",
-  answer: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all, usually in multi-night runs that became a fixture of the New York calendar.",
-  body_lead: null,
+  headline: "The Garden years, 1979–1994",
+  lead: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all, usually in multi-night runs that became a fixture of the New York calendar.",
   mode: "answer",
   conversation: [
     { role: "user", text: "What's their history at Madison Square Garden?" },
@@ -1032,11 +1089,11 @@ const msgWorkspace: ExperienceResponse = {
   sources: [{ source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }]
 };
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
+export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "versions", "people", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, versions, people, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;
@@ -1054,10 +1111,10 @@ export function streamEventsFor(name: VisualFixtureName): StreamEvent[] {
     { type: "status", text: "Looking through the library" },
     { type: "status", text: "Reading the show" }
   ];
-  const words = response.answer.split(" ");
-  words.forEach((_, index) => events.push({ type: "answer", text: words.slice(0, index + 1).join(" ") }));
+  const words = response.lead.split(" ");
+  words.forEach((_, index) => events.push({ type: "lead", text: words.slice(0, index + 1).join(" ") }));
   events.push({ type: "status", text: "Composing the page" });
-  events.push({ type: "page_head", title: response.title, lead: response.body_lead ?? null });
+  events.push({ type: "page_head", headline: response.headline ?? null, lead: response.lead });
   response.groups.forEach((group, index) => {
     const meta = { index, title: group.title ?? null, lead: group.lead ?? null, presentation: group.presentation, criteria: group.criteria ?? [] };
     events.push({ type: "group_open", ...meta });

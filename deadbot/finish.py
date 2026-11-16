@@ -23,7 +23,7 @@ from typing import Annotated, Any, Literal, get_args
 from langchain_core.tools import BaseTool, StructuredTool
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError, field_validator, model_validator
 
-from deadbot import composition, grids, record_refs, row_details, sequences
+from deadbot import composition, grids, page_plan, record_refs, row_details, sequences
 from deadbot.data import CanonicalStore
 from deadbot.experience import (
     PAGE_BLOCK_CEILING,
@@ -40,6 +40,9 @@ from deadbot.experience import (
     ExperienceResponse,
     GapStateBlock,
     PullQuoteBlock,
+    PeopleTimelineBlock,
+    PeopleTimelinePerson,
+    PeopleTimelineSpan,
     PersonRosterBlock,
     PersonRosterItem,
     ResourceListBlock,
@@ -204,6 +207,14 @@ class PersonRosterRef(_Ref):
     )
 
 
+class PeopleTimelineRef(_Ref):
+    """People as bars across the years they played with the band."""
+
+    type: Literal["people_timeline"]
+    person_ids: list[str]
+    note: str | None = None
+
+
 class ShowSelectionRef(_Ref):
     type: Literal["show_selection"]
     selection_id: str
@@ -278,6 +289,51 @@ class VersionStripRef(_Ref):
     )
 
 
+class SongVersionsRef(_Ref):
+    """Chosen versions of one song on one clock, each row playable: the way to
+    hear how a song changed over the years or to compare nights. The server
+    fills each version's night, length and tape.
+    """
+
+    type: Literal["song_versions"]
+    title: str | None = Field(
+        default=None, description="What the visitor should hear across these versions, in a few words."
+    )
+    performance_ids: list[str] = Field(
+        description="The performances of one song, at least 2 and at most 8, in the order to hear them.",
+    )
+    notes: dict[str, str] | None = Field(
+        default=None,
+        description="A line under a version, keyed by performance_id: what to hear in it.",
+    )
+    criteria: list[str] = Field(
+        default_factory=list,
+        description="To compare the versions: the points to compare them on, such as 'Length' or 'What follows'.",
+    )
+    judgments: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="With criteria, keyed by performance_id: your answer for each criterion, in the criteria's order.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _read_leniently(cls, value: Any) -> Any:
+        if not isinstance(value, dict):
+            return value
+        value = dict(value)
+        notes = value.get("notes")
+        value["notes"] = {k: v for k, v in notes.items() if isinstance(k, str) and isinstance(v, str)} if isinstance(notes, dict) else None
+        criteria = value.get("criteria")
+        value["criteria"] = [item for item in criteria if isinstance(item, str)] if isinstance(criteria, list) else []
+        judgments = value.get("judgments")
+        value["judgments"] = {
+            key: [item if isinstance(item, str) else "" for item in items]
+            for key, items in (judgments.items() if isinstance(judgments, dict) else [])
+            if isinstance(key, str) and isinstance(items, list)
+        }
+        return value
+
+
 class EditorialItemPlan(_PlanModel, EditorialItemText):
     """One editorial item as the model writes it: its words, and the record it is about when it names one."""
 
@@ -290,10 +346,10 @@ class EditorialPlan(_PlanModel):
     """Your own words: narrative, fact_grid or timeline.
 
     Records belong in the reference-based items, where the server supplies
-    their facts. What the library counted, timed or paired is drawn: an
+    their facts. Counts, timings and pairings from the tools are drawn: an
     aggregate_data result as its ranked_list or data_chart (what you would say
     about a ranked row goes in its row notes), a get_segue_pairing result as a
-    version_strip, a get_grid result as a grid.
+    version_strip, a get_grid result as a grid, chosen versions of one song as song_versions.
     """
 
     model_config = ConfigDict(extra="ignore")
@@ -306,7 +362,7 @@ class EditorialPlan(_PlanModel):
     type: Literal["editorial"]
     presentation: Literal["narrative", "fact_grid", "timeline"] = Field(
         default="narrative",
-        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: a story's sequence, one item per step; steps that are nights or performances, a song's years or a pairing's versions are drawn by their units, a song_overview's by_year or a version_strip.",
+        description="narrative: prose, written as paragraphs. fact_grid: your own assessments side by side on shared terms, such as attributed viewpoints, one item per row. timeline: events in order, one item per step.",
     )
     eyebrow: str | None = Field(default=None, description="A small label above the title, for a block that has a title of its own.")
     title: str | None = Field(default=None, description="The block's one heading. An item's title names the item; the block's heading is written once.")
@@ -512,16 +568,6 @@ class AlbumUnitRef(_Ref):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list)
 
 
-class SongStop(_PlanModel):
-    """One stop through a song's life: a performance, a few words, and why."""
-
-    model_config = ConfigDict(extra="ignore")
-
-    performance_id: str
-    label: str | None = Field(default=None, description="A few words a fan would recognize: 'The debut', 'At the pyramids'.")
-    why: str | None = Field(default=None, description="One line on why this performance is worth hearing.")
-
-
 class YearQuestion(_PlanModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -543,11 +589,12 @@ def _plan_year(value: Any) -> int | None:
     return None
 
 
-_SONG_FACETS = frozenset(get_args(SongFacet))
+SongCardFacet = Literal["by_year", "credits", "albums"]
+_SONG_CARD_FACETS = frozenset(get_args(SongCardFacet))
 
 
 class SongOverviewRef(_Ref):
-    """One song as a primary object, with model-chosen representative performances."""
+    """One song as a primary object: its life year by year, credits and records."""
 
     type: Literal["song_overview"]
     song_id: str | None = None
@@ -556,21 +603,11 @@ class SongOverviewRef(_Ref):
     emphasis: Emphasis | None = None
     judgments: list[str] = Field(default_factory=list)
     note: str | None = None
-    visible_facets: list[SongFacet] = Field(
-        default_factory=lambda: ["representatives"],
+    visible_facets: list[SongCardFacet] = Field(
+        default_factory=lambda: ["by_year"],
         description=(
-            "The song facets worth showing: representatives (your chosen renditions), credits, albums, by_year (the "
-            "song's life on stage as a timeline: plays and lengths per year, your representatives as its stops and "
-            "listening path, and a panel for each year with every performance)."
-        ),
-    )
-    representatives: list[SongStop] = Field(
-        default_factory=list,
-        description=(
-            "Your stops through the song's life, in listening order: three or four nights that mark its turns. With "
-            "by_year they mark the timeline and form the listening path, how the visitor hears the song's life, for a "
-            "counting question too; otherwise they list as chosen renditions. Retrieve concrete rendition IDs first "
-            "(get_song_life lists the standouts)."
+            "The song facets worth showing: by_year (a chart of how often and how long the song was played each "
+            "year, with a panel for each year listing every performance), credits, albums."
         ),
     )
     open_year: int | None = Field(default=None, description="With by_year: the year whose panel opens first, such as the year the visitor asked about.")
@@ -587,26 +624,11 @@ class SongOverviewRef(_Ref):
         value = dict(value)
         # The timeline is the song's history now; an older plan's "history" facet asks for it.
         # A facet this card cannot show is left out here, so the rest of the list stays.
+        # Chosen versions belong in a song_versions; an older plan's "representatives" facet is left out.
         facets = value.get("visible_facets")
         if isinstance(facets, list):
             mapped = ("by_year" if facet == "history" else facet for facet in facets)
-            value["visible_facets"] = list(dict.fromkeys(facet for facet in mapped if facet in _SONG_FACETS))
-        stops = value.get("representatives")
-        if stops is None and isinstance(value.get("representative_performance_ids"), list):
-            stops = value["representative_performance_ids"]
-        # Keep every usable stop; a bare ID string is a stop without words, and a
-        # label or why that is not text is left out without losing the stop.
-        value["representatives"] = [
-            {"performance_id": item}
-            if isinstance(item, str)
-            else {
-                "performance_id": item["performance_id"],
-                "label": item.get("label") if isinstance(item.get("label"), str) else None,
-                "why": item.get("why") if isinstance(item.get("why"), str) else None,
-            }
-            for item in (stops if isinstance(stops, list) else [])
-            if isinstance(item, str) or (isinstance(item, dict) and isinstance(item.get("performance_id"), str))
-        ]
+            value["visible_facets"] = list(dict.fromkeys(facet for facet in mapped if facet in _SONG_CARD_FACETS))
         if value.get("chart_view") not in (None, "count", "length"):
             value["chart_view"] = None
         value["open_year"] = _plan_year(value.get("open_year"))
@@ -621,7 +643,7 @@ class SongOverviewRef(_Ref):
 
 
 class ListeningHeroRef(_PlanModel):
-    """The page's lead when the visitor wants to hear a show or recording.
+    """A large player for one show or release at the top of the page.
 
     A cover, the show's venue and date (or the record's title), your line, and
     one Play that starts the show's tape in-page where you say. The server
@@ -697,6 +719,7 @@ BodyItem = Annotated[
     | EquipmentListRef
     | GuestAppearancesRef
     | PersonRosterRef
+    | PeopleTimelineRef
     | ShowSelectionRef
     | ArrangementRef
     | ArrangementSearchRef
@@ -704,6 +727,7 @@ BodyItem = Annotated[
     | ResourceListRef
     | DataChartRef
     | VersionStripRef
+    | SongVersionsRef
     | GridRef
     | RankedListRef,
     Field(discriminator="type"),
@@ -868,7 +892,7 @@ class GroupPlan(_PlanModel):
     title: str | None = Field(
         default=None,
         description=(
-            "A concise heading that names this group's subject. Omit it when the page title already does that job, and when the "
+            "A concise heading that names this group's subject. Omit it when the headline or lead already does that job, and when the "
             "group holds one item that carries its own title: that title is the heading."
         ),
     )
@@ -924,7 +948,7 @@ def loose_items_as_group(data: Any) -> Any:
 
 
 class FinishPlan(BaseModel):
-    """The model's finished response: chat answer plus the main-body plan."""
+    """The model's finished response: the opening (headline and lead) plus the main-body plan."""
 
     model_config = ConfigDict(extra="ignore")
 
@@ -941,6 +965,8 @@ class FinishPlan(BaseModel):
         visitor has already watched the first one compose.
         """
 
+        if page_plan.is_page_plan(data):
+            data = page_plan.finish_args(data)
         data = loose_items_as_group(data)
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
             return data
@@ -975,16 +1001,20 @@ class FinishPlan(BaseModel):
     def _read_initial_tab(cls, value: Any) -> Any:
         return workspace_tab(value)
 
-    chat_answer: str = Field(
-        description="The direct standalone answer shown in the conversation. Lead with the conclusion and keep it proportionate to the question. Markdown links allowed."
+    headline: str | None = Field(
+        default=None,
+        description="Optional. A short line above the lead.",
     )
-    title: str = Field(description="Concise main-body title that states the central finding, not merely the topic.")
-    lead: str | None = Field(default=None, description="A short expansion of the central finding. Omit it if the title and first item already establish the answer. Markdown links allowed.")
+    lead: str = Field(
+        description=(
+            "The answer to the visitor's question, at the top of the page. Markdown links allowed."
+        )
+    )
     listening_hero: dict[str, Any] = Field(
         default_factory=dict,
         description=(
-            "The page's lead when the visitor asks to hear something, above the groups: a listening_hero item's "
-            "fields (show_id or release_id, line, play_label, start_set or start_performance_id)."
+            "A large player for one show or release at the top of the page: a listening_hero item's fields "
+            "(show_id or release_id, line, play_label, start_set or start_performance_id)."
         ),
     )
     groups: list[GroupPlan] = Field(
@@ -1276,6 +1306,49 @@ def _resolve_person_roster(
     )
 
 
+def _resolve_people_timeline(item: Any, grounded: GroundedContext, store: CanonicalStore) -> PeopleTimelineBlock | None:
+    """Each person's spans with the band and show count, from the stored memberships and lineups."""
+
+    wanted = list(dict.fromkeys(pid for pid in item.person_ids if pid in grounded.ids))
+    if not wanted:
+        return None
+    facts = _person_facts_from_store(wanted, store)
+    assignments = store.rows_in("show_performers", "person_id", wanted)
+    dates = {row["show_id"]: row.get("show_date", "") for row in store.rows_in("shows", "show_id", {row.get("show_id", "") for row in assignments})}
+    by_person: dict[str, list[str]] = {}
+    for row in assignments:
+        if dates.get(row.get("show_id", "")):
+            by_person.setdefault(row["person_id"], []).append(dates[row["show_id"]])
+    people: list[PeopleTimelinePerson] = []
+    for person_id in wanted:
+        person = facts.get(person_id)
+        if not person:
+            continue
+        shown = sorted(set(by_person.get(person_id, [])))
+        memberships = [row for row in store.person_band_memberships(person_id) if row.get("start_date") and row.get("end_date")]
+        if memberships:
+            spans = [PeopleTimelineSpan(role=row.get("role") or None, start_date=row["start_date"], end_date=row["end_date"]) for row in memberships]
+            # A member's count is the shows inside their membership, not their guest sit-ins before or after.
+            count = sum(1 for date in shown if any(span.start_date <= date <= span.end_date for span in spans))
+        elif shown:
+            spans = [PeopleTimelineSpan(role=", ".join(person["roles"]) or None, start_date=shown[0], end_date=shown[-1], member=False)]
+            count = len(shown)
+        else:
+            continue
+        people.append(PeopleTimelinePerson(person_id=person_id, name=person["name"], show_count=count, spans=spans))
+    if not people:
+        return None
+    years = [int(span.start_date[:4]) for person in people for span in person.spans] + [int(span.end_date[:4]) for person in people for span in person.spans]
+    return PeopleTimelineBlock(
+        type="people_timeline",
+        title=(item.title or "").strip() or None,
+        note=(item.note or "").strip() or None,
+        first_year=min(years),
+        last_year=max(years),
+        people=fit(people, "timeline people"),
+    )
+
+
 def _resolve_reference(
     item: Any,
     grounded: GroundedContext,
@@ -1404,8 +1477,6 @@ def _resolve_reference(
                 judgments=item.judgments,
                 note=item.note,
                 visible_facets=item.visible_facets,
-                # Every stop in the model's order; only a grounded one may resolve.
-                representatives=[{**stop.model_dump(), "grounded": stop.performance_id in grounded.ids} for stop in item.representatives],
                 open_year=item.open_year,
                 chart_view=item.chart_view,
                 year_questions=[question.model_dump() for question in item.year_questions],
@@ -1422,6 +1493,9 @@ def _resolve_reference(
 
     if kind == "person_roster":
         return _resolve_person_roster(item, grounded, payloads, store), []
+
+    if kind == "people_timeline":
+        return _resolve_people_timeline(item, grounded, store), []
 
     if kind == "show_selection":
         selection = _find_in_payloads(payloads, "show_selections", "selection_id", item.selection_id)
@@ -1524,6 +1598,18 @@ def _resolve_reference(
             title=item.title,
             note=item.note,
             show_year_counts=item.show_year_counts,
+        )
+        return (block, []) if block else (None, [])
+
+    if kind == "song_versions":
+        block = sequences.song_versions_block(
+            store,
+            grounded.ids,
+            performance_ids=item.performance_ids,
+            title=item.title,
+            notes=item.notes,
+            criteria=item.criteria,
+            judgments=item.judgments,
         )
         return (block, []) if block else (None, [])
 
@@ -1713,7 +1799,7 @@ def _deliver(**_: Any) -> str:
 
 def _first_group_title(groups: list[Any]) -> str | None:
     first = groups[0] if groups else None
-    title = first.get("title") if isinstance(first, dict) else None
+    title = (first.get("title") or first.get("heading")) if isinstance(first, dict) else None
     return title.strip() if isinstance(title, str) and title.strip() else None
 
 
@@ -1742,7 +1828,7 @@ def read_joining_repeats(raw: str) -> Any:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result and isinstance(result[key], list) and isinstance(value, list):
-                if key == "groups" and is_groups_revision(result[key], value):
+                if key in ("groups", "sections") and is_groups_revision(result[key], value):
                     result[key] = value
                 else:
                     result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
@@ -1763,14 +1849,10 @@ def build_finish_tool() -> BaseTool:
         func=_deliver,
         name=FINISH_TOOL_NAME,
         description=(
-            "Deliver the finished response to the visitor. Call this once, when your research is done. chat_answer gives the "
-            "conclusion immediately; the main body adds the evidence, story or context that makes the answer worth opening, "
-            "with listening and source actions attached to the objects they belong to. The fields the units share (emphasis, "
-            "disclosure, note, judgments, from_result, supporting_sources, follow_ups) are described once, on show_unit, and "
-            "mean the same on every unit. IDs and URLs come from this turn's tool results or the research notebook; the server fills each ID's facts "
-            "from the stored facts."
+            "Deliver the finished page: the answer, then sections in reading order. Call it once, when your research is done. "
+            "IDs and URLs come from this turn's tool results or the research notebook; the server fills in their facts and players."
         ),
-        args_schema=FinishPlan,
+        args_schema=page_plan.PagePlan,
     )
 
 
@@ -1792,8 +1874,8 @@ def finish_plan_from_messages(messages: list[Any]) -> FinishPlan | None:
     return None
 
 
-def _conversation(all_messages: list[Any], chat_answer: str) -> list[ConversationTurn]:
-    """Visible turns: user text, earlier assistant answers, and this turn's chat answer.
+def _conversation(all_messages: list[Any], lead: str) -> list[ConversationTurn]:
+    """Visible turns: user text, earlier assistant leads, and this turn's lead.
 
     A single turn can carry more than one ``finish_response`` call: when the
     first one's arguments fail ``FinishPlan`` validation the model sees the tool
@@ -1816,7 +1898,8 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
         elif message_type == "ai":
             for call in getattr(message, "tool_calls", None) or []:
                 if call.get("name") == FINISH_TOOL_NAME and isinstance(call.get("args"), dict):
-                    answer = str(call["args"].get("chat_answer") or "").strip()
+                    # Threads in flight may carry the older shape, whose answer was chat_answer.
+                    answer = str(call["args"].get("answer") or call["args"].get("lead") or call["args"].get("chat_answer") or "").strip()
                     if not answer:
                         continue
                     turn = ConversationTurn(role="assistant", text=answer[:8_000])
@@ -1827,7 +1910,7 @@ def _conversation(all_messages: list[Any], chat_answer: str) -> list[Conversatio
                         turns[answer_index] = turn
             if text and not getattr(message, "tool_calls", None):
                 turns.append(ConversationTurn(role="assistant", text=text[:8_000]))
-    final = ConversationTurn(role="assistant", text=chat_answer[:8_000])
+    final = ConversationTurn(role="assistant", text=lead[:8_000])
     if turns and turns[-1].role == "assistant":
         turns[-1] = final
     else:
@@ -1859,8 +1942,8 @@ def build_experience_response(
         answer = last_text or "Deadbot could not finish shaping this answer. Please try again."
         return ExperienceResponse(
             thread_id=thread_id,
-            title="Deadbot",
-            answer=answer,
+            headline=None,
+            lead=answer,
             mode="gap",
             conversation=_conversation(all_messages, answer),
             blocks=[GapStateBlock(type="gap_state", message="The main body was not delivered for this answer.")],
@@ -1871,19 +1954,18 @@ def build_experience_response(
     if extra_grounding is not None:
         grounded = merge_grounding(grounded, extra_grounding)
     blocks, groups, sources = resolve_groups(plan, grounded, payloads, store)
-    chat_answer = keep_grounded_links(plan.chat_answer.strip(), grounded.urls)
-    lead = keep_grounded_links(plan.lead.strip(), grounded.urls) if plan.lead and plan.lead.strip() else None
-    if not chat_answer.strip():
-        logger.warning("finish_response delivered a blank chat_answer (question=%r); substituting the lead or a placeholder", question)
-        chat_answer = lead if lead else "Deadbot could not write a chat answer for this response."
+    lead = keep_grounded_links(plan.lead.strip(), grounded.urls)
+    if not lead.strip():
+        logger.warning("finish_response delivered a blank lead (question=%r); substituting a placeholder", question)
+        lead = "Deadbot could not write an answer for this response."
+    headline = plan.headline.strip() if plan.headline and plan.headline.strip() else None
     return ExperienceResponse(
         thread_id=thread_id,
-        title=plan.title.strip() or "Deadbot",
-        answer=chat_answer,
-        body_lead=lead,
+        headline=headline,
+        lead=lead,
         initial_tab=plan.initial_tab,
         mode="answer",
-        conversation=_conversation(all_messages, chat_answer),
+        conversation=_conversation(all_messages, lead),
         blocks=blocks,
         groups=groups,
         sources=sources,

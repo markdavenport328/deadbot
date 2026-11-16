@@ -10,6 +10,7 @@ import { ASK_ERROR, askPlain, askStreaming, createThreadId, replayStreamEvents }
 import { applyPageEvent, groupsOfResponse, type Draft } from "../../core/page-draft";
 import { currentPath, takeQuestionFromUrl, useAskFromPage } from "../../core/site-nav";
 import { renderInline } from "../../cards/inline";
+import { renderText } from "../../cards/text";
 import { ComposedPage } from "../../cards/PageGroups";
 import { NowPlayingBar } from "../../player/NowPlayingBar";
 import { PHONE_QUERY, useMediaQuery } from "../../core/media-query";
@@ -245,7 +246,7 @@ export function ClassicApp() {
         statusCount += 1;
         setProgress((lines) => [...lines, status]);
       },
-      onAnswer: (text) => {
+      onLead: (text) => {
         if (!answerStartedRef.current) {
           answerStartedRef.current = true;
           setAnswerProgressStart(statusCount);
@@ -255,7 +256,7 @@ export function ClassicApp() {
       onPage: (pageEvent) => setDraft((current) => applyPageEvent(current, pageEvent)),
       onResponse: (nextResponse) => {
         setResponse(nextResponse);
-        setAnswerReadyMessage(`Answer ready: ${nextResponse.title}`);
+        setAnswerReadyMessage(`Answer ready: ${nextResponse.headline ?? nextResponse.lead}`);
         askJustCompletedRef.current = true;
         setLoading(false);
         setPendingQuestion(null);
@@ -320,7 +321,7 @@ export function ClassicApp() {
           statusCount += 1;
           setProgress((lines) => [...lines, status]);
         },
-        onAnswer: (text) => {
+        onLead: (text) => {
           if (!answerStartedRef.current) {
             answerStartedRef.current = true;
             setAnswerProgressStart(statusCount);
@@ -335,7 +336,7 @@ export function ClassicApp() {
       setNotebook(finalResponse.notebook ?? null);
       storeNotebook(finalResponse.notebook);
       setResponse(finalResponse);
-      setAnswerReadyMessage(`Answer ready: ${finalResponse.title}`);
+      setAnswerReadyMessage(`Answer ready: ${finalResponse.headline ?? finalResponse.lead}`);
       askJustCompletedRef.current = true;
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : ASK_ERROR);
@@ -468,14 +469,14 @@ export function ClassicApp() {
             <div className="thread-messages" aria-live="polite">
               {visibleConversation.map((turn, index) => (
                 <article className={`message ${turn.role}`} key={`${turn.role}-${index}`}>
-                  <div>{renderInline(turn.text)}</div>
+                  <div>{turn.role === "assistant" ? renderText(turn.text) : renderInline(turn.text)}</div>
                 </article>
               ))}
               {loading && (
                 <article className="message assistant pending">
                   {streamingAnswer ? (
                     <div className="streaming-answer">
-                      {renderInline(streamingAnswer)}
+                      {renderText(streamingAnswer)}
                       {postAnswerStatus ? (
                         <p className="post-answer-status">{postAnswerStatus}…</p>
                       ) : (
@@ -520,8 +521,7 @@ export function ClassicApp() {
             </div>
           ) : loading && draft ? (
             <ComposedPage
-              title={draft.title || pendingQuestion || ""}
-              lead={draft.lead}
+              title={draft.headline}
               groups={draft.groups}
               sources={[]}
               composing
@@ -541,8 +541,7 @@ export function ClassicApp() {
             </div>
           ) : response ? (
             <ComposedPage
-              title={response.title}
-              lead={response.body_lead ?? null}
+              title={response.headline ?? null}
               groups={groupsOfResponse(response)}
               sources={response.sources}
               composing={false}

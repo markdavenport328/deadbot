@@ -61,6 +61,11 @@ class OpenAIProvider:
             # make function calls. It is also the API OpenAI recommends for
             # reasoning and multi-turn workflows.
             "use_responses_api": True,
+            # A stalled request otherwise waits the client's default ten
+            # minutes. A normal call answers well inside this ceiling; a stall
+            # is cut off and retried.
+            "timeout": 90,
+            "max_retries": 2,
         }
         if self.reasoning_effort:
             options["reasoning"] = {"effort": self.reasoning_effort}

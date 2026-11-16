@@ -29,7 +29,7 @@ class FakeAgent:
 
     def invoke(self, payload, config):
         self.calls.append((payload, config))
-        plan = {"chat_answer": "Here is the night.", "title": "Dark Star", "lead": None, "groups": []}
+        plan = {"lead": "Here is the night.", "groups": []}
         reply = [
             AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
             ToolMessage(content="Response delivered to the visitor.", tool_call_id="f1", name="finish_response"),
@@ -109,7 +109,7 @@ def test_a_clicked_night_can_be_placed_without_the_model_looking_it_up_again(sto
     performance_ids = [i for i in ids if i.startswith("gd-1972-05-11-")]
     assert performance_ids, "the clicked performance resolves in the store"
     plan_item = {"type": "show_unit", "show_id": "gd-1972-05-11", "visible_facets": ["setlist"]}
-    plan = {"chat_answer": "Rotterdam.", "title": "T", "lead": None, "groups": [{"presentation": "collection", "items": [plan_item]}]}
+    plan = {"lead": "Rotterdam.", "groups": [{"presentation": "collection", "items": [plan_item]}]}
     messages = [
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f1", "type": "tool_call"}]),
         ToolMessage(content="ok", tool_call_id="f1", name="finish_response"),
@@ -122,7 +122,7 @@ def test_a_clicked_night_can_be_placed_without_the_model_looking_it_up_again(sto
 
 def test_a_clicked_night_grounds_the_page_through_the_app(store, tmp_path):
     item = {"type": "show_unit", "show_id": "gd-1972-05-11", "visible_facets": ["setlist"]}
-    plan = {"chat_answer": "Rotterdam.", "title": "T", "lead": None, "groups": [{"presentation": "collection", "items": [item]}]}
+    plan = {"lead": "Rotterdam.", "groups": [{"presentation": "collection", "items": [item]}]}
     messages = [
         AIMessage(content="", tool_calls=[{"name": "finish_response", "args": plan, "id": "f9", "type": "tool_call"}]),
         ToolMessage(content="ok", tool_call_id="f9", name="finish_response"),
@@ -210,7 +210,7 @@ class StreamingAgent:
     def stream(self, payload, config, stream_mode=None):
         self.calls.append(payload)
         item = {"type": "show_unit", "show_id": "gd-1972-05-11", "visible_facets": ["setlist"]}
-        plan = {"chat_answer": "Rotterdam.", "title": "T", "lead": None, "groups": [{"presentation": "collection", "items": [item]}]}
+        plan = {"lead": "Rotterdam.", "groups": [{"presentation": "collection", "items": [item]}]}
         yield ("values", {"messages": list(payload["messages"])})
         text = json.dumps(plan)
         yield ("messages", (AIMessageChunk(content="", tool_call_chunks=[

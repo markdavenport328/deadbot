@@ -147,3 +147,19 @@ def test_archive_reviews_and_ratings():
     assert len(result["reviews"]) == 2
     assert searcher.archive_ratings(["gd77-05-08.sbd.hicks.4982.sbeok.shnf"])["gd77-05-08.sbd.hicks.4982.sbeok.shnf"]["avg_rating"] == 4.79
     assert searcher.archive_reviews("../etc/passwd")["state"] == "invalid"
+
+
+def test_listener_remarks_take_one_sentence_per_review_that_names_the_song():
+    from deadbot.site_search import remarks_from_reviews
+
+    reviews = [
+        {"reviewer": "a", "stars": 5, "text": "Great show. After a nearly perfect <i>Estimated Prophet</i>, the Other One soars. More words."},
+        {"reviewer": "b", "stars": 4, "text": "Estimated - excellent and patient, with Jerry all over it. Estimated again later."},
+        {"reviewer": "c", "stars": 3, "text": "Nothing about the song here at all, just the sound quality."},
+        {"reviewer": "d", "stars": 5, "text": "Prophet."},
+    ]
+    remarks = remarks_from_reviews(reviews, "Estimated Prophet")
+    assert [remark["reviewer"] for remark in remarks] == ["a", "b"]
+    assert remarks[0]["text"] == "After a nearly perfect Estimated Prophet, the Other One soars."
+    assert remarks_from_reviews(reviews, "Estimated Prophet", limit=1)[0]["reviewer"] == "a"
+    assert remarks_from_reviews(reviews, "") == []

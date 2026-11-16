@@ -26,7 +26,7 @@ export function readTab(value: unknown): WorkspaceTab | null {
   return Object.hasOwn(NAMES, name) ? NAMES[name] : null;
 }
 
-const LISTEN = new Set(["show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "media_link"]);
+const LISTEN = new Set(["show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "song_versions", "media_link"]);
 const CHARTS = new Set(["data_chart", "grid"]);
 
 export function fallbackTab(block: ExperienceBlock | undefined): WorkspaceTab {
@@ -50,10 +50,9 @@ export function openingTab(initial: WorkspaceTab | null, routed: RoutedPage): Wo
   return routed.listen.length > 0 ? "listen" : "read";
 }
 
-export function tabsWithContent(routed: RoutedPage, answer: string | null): Set<WorkspaceTab> {
+export function tabsWithContent(routed: RoutedPage): Set<WorkspaceTab> {
   const tabs = new Set<WorkspaceTab>();
   // A group opened mid-stream has no cards yet; a tab counts once one arrives.
   for (const { id } of WORKSPACE_TABS) if (routed[id].some((group) => group.blocks.length > 0)) tabs.add(id);
-  if (answer && answer.trim()) tabs.add("read");
   return tabs;
 }

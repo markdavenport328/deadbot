@@ -3,7 +3,7 @@ import { explorationReducer as reduce, initialExploration, requestContext, visib
 import type { ExperienceResponse } from "../types";
 
 const reply = (title: string, notebook: string | null, extra: Record<string, unknown> = {}) => ({
-  schema_version: "2", thread_id: "t", title, answer: `${title} answer`, body_lead: null, mode: "answer",
+  schema_version: "3", thread_id: "t", headline: title, lead: `${title} answer`, mode: "answer",
   conversation: [{ role: "user", text: title }, { role: "assistant", text: `${title} answer` }],
   blocks: [{ type: "show_unit" }], groups: [{ title: null, lead: null, presentation: "collection", criteria: [], block_indexes: [0] }],
   sources: [], notebook, ...extra
@@ -68,7 +68,7 @@ test("events from a stale request are ignored", () => {
     { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
   s = reduce(s, { type: "navigate", index: 0 });
   const before = s;
-  expect(reduce(s, { type: "answer", requestId: "r2", text: "late" })).toBe(before);
+  expect(reduce(s, { type: "lead", requestId: "r2", text: "late" })).toBe(before);
   expect(reduce(s, { type: "complete", requestId: "r2", response: reply("late", null) })).toBe(before);
 });
 
@@ -87,12 +87,12 @@ describe("opening tab and the visitor's focus", () => {
     expect(visible(s).kind).toBe("held");
     s = reduce(s, { type: "status", requestId: "r2", text: "Looking" });
     expect(visible(s).kind).toBe("held");
-    s = reduce(s, { type: "answer", requestId: "r2", text: "Yes" });
+    s = reduce(s, { type: "lead", requestId: "r2", text: "Yes" });
     expect(visible(s).kind).toBe("draft");
   });
 
   test("the model's tab opens unless the visitor has acted", () => {
-    let s = run(started(), { type: "initialTab", requestId: "r2", tab: "listen" }, { type: "answer", requestId: "r2", text: "Yes" });
+    let s = run(started(), { type: "initialTab", requestId: "r2", tab: "listen" }, { type: "lead", requestId: "r2", text: "Yes" });
     expect(s.pending?.view.tab).toBe("listen");
     s = reduce(s, { type: "view", patch: { tab: "charts" }, interacted: true });
     s = reduce(s, { type: "initialTab", requestId: "r2", tab: "read" });
@@ -102,7 +102,7 @@ describe("opening tab and the visitor's focus", () => {
   });
 
   test("without a model choice the first content picks once and then stays", () => {
-    let s = run(started(), { type: "answer", requestId: "r2", text: "Yes" });
+    let s = run(started(), { type: "lead", requestId: "r2", text: "Yes" });
     expect(s.pending?.view.tab).toBe("read");
     s = reduce(s, { type: "page", requestId: "r2", event: { type: "block", group_index: 0, block: { type: "show_unit" } as never } });
     expect(s.pending?.view.tab).toBe("read");
@@ -131,7 +131,7 @@ test("view patches go to the held page, then to the draft once content shows", (
   s = reduce(s, { type: "view", patch: { tab: "charts" } });
   expect(s.entries[0].view.tab).toBe("charts");
   expect(s.pending?.view.tab).toBeNull();
-  s = reduce(s, { type: "answer", requestId: "r2", text: "Yes" });
+  s = reduce(s, { type: "lead", requestId: "r2", text: "Yes" });
   s = reduce(s, { type: "view", patch: { tab: "read" }, interacted: true });
   expect(s.pending?.view.tab).toBe("read");
   expect(s.entries[0].view.tab).toBe("charts");

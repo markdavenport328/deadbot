@@ -691,21 +691,21 @@ export interface components {
         };
         /** ExperienceResponse */
         ExperienceResponse: {
-            /** Answer */
-            answer: string;
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
-            /** Body Lead */
-            body_lead?: string | null;
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["PeopleTimelineBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["SongVersionsBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Groups */
             groups?: components["schemas"]["ExperienceGroup"][];
+            /** Headline */
+            headline?: string | null;
             /**
              * Initial Tab
              * @description The workspace tab the page opens on.
              */
             initial_tab?: ("listen" | "charts" | "read") | null;
+            /** Lead */
+            lead: string;
             /**
              * Mode
              * @default answer
@@ -719,16 +719,14 @@ export interface components {
             notebook?: string | null;
             /**
              * Schema Version
-             * @default 2
+             * @default 3
              * @constant
              */
-            schema_version: "2";
+            schema_version: "3";
             /** Sources */
             sources?: components["schemas"]["SourceReference"][];
             /** Thread Id */
             thread_id: string;
-            /** Title */
-            title: string;
         };
         /**
          * FollowUpTopic
@@ -1081,6 +1079,57 @@ export interface components {
             type: "media_link";
             /** Url */
             url: string;
+        };
+        /**
+         * PeopleTimelineBlock
+         * @description People as bars across the years they played: the model chose who; the server drew each span and count.
+         */
+        PeopleTimelineBlock: {
+            /** First Year */
+            first_year: number;
+            /** Last Year */
+            last_year: number;
+            /** Note */
+            note?: string | null;
+            /** People */
+            people: components["schemas"]["PeopleTimelinePerson"][];
+            /** Title */
+            title?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "people_timeline";
+        };
+        /** PeopleTimelinePerson */
+        PeopleTimelinePerson: {
+            /** Name */
+            name: string;
+            /** Note */
+            note?: string | null;
+            /** Person Id */
+            person_id: string;
+            /** Show Count */
+            show_count: number;
+            /** Spans */
+            spans: components["schemas"]["PeopleTimelineSpan"][];
+        };
+        /**
+         * PeopleTimelineSpan
+         * @description One stretch of a person's time with the band, from the stored memberships or lineups.
+         */
+        PeopleTimelineSpan: {
+            /** End Date */
+            end_date: string;
+            /**
+             * Member
+             * @default true
+             */
+            member: boolean;
+            /** Role */
+            role?: string | null;
+            /** Start Date */
+            start_date: string;
         };
         /** PerformanceSpineNeighbor */
         PerformanceSpineNeighbor: {
@@ -1688,6 +1737,73 @@ export interface components {
             scope: "performance" | "show";
             /** Voice */
             voice: string;
+        };
+        /**
+         * SongVersionsBlock
+         * @description Chosen versions of one song on one clock, each row playable.
+         *
+         *     The model chose the performances, their order and any note; the server
+         *     filled each night, length, tape track and release from the store.
+         */
+        SongVersionsBlock: {
+            /** Criteria */
+            criteria?: string[];
+            /** Rows */
+            rows: components["schemas"]["SongVersionsRow"][];
+            song: components["schemas"]["SongVersionsSong"];
+            /** Title */
+            title?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "song_versions";
+        };
+        /** SongVersionsRelease */
+        SongVersionsRelease: {
+            /** Release Id */
+            release_id: string;
+            /** Title */
+            title: string;
+            /** Url */
+            url?: string | null;
+        };
+        /**
+         * SongVersionsRow
+         * @description One version of the song: a night, its length, and the tape it plays.
+         */
+        SongVersionsRow: {
+            /** City */
+            city?: string | null;
+            /** Judgments */
+            judgments?: string[];
+            /** Length Seconds */
+            length_seconds?: number | null;
+            /** Note */
+            note?: string | null;
+            /** Performance Id */
+            performance_id: string;
+            release?: components["schemas"]["SongVersionsRelease"] | null;
+            /** Show Date */
+            show_date: string;
+            /** Show Id */
+            show_id: string;
+            /** Song Id */
+            song_id?: string | null;
+            /** Song Title */
+            song_title?: string | null;
+            /** Tape Seconds */
+            tape_seconds?: number | null;
+            track?: components["schemas"]["PlayableTrack"] | null;
+            /** Venue Name */
+            venue_name: string;
+        };
+        /** SongVersionsSong */
+        SongVersionsSong: {
+            /** Song Id */
+            song_id: string;
+            /** Title */
+            title: string;
         };
         /**
          * SongYearCount

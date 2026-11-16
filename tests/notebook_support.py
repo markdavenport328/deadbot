@@ -37,7 +37,7 @@ def call_messages(calls: list[tuple[str, dict]], *, prefix: str = "c") -> list[A
 
 def plan_for(answer: str, items: list[dict] | None = None) -> dict[str, Any]:
     groups = [{"presentation": "collection", "items": items}] if items else []
-    return {"chat_answer": answer, "title": answer[:40], "lead": None, "groups": groups}
+    return {"lead": answer, "groups": groups}
 
 
 def finish_messages(answer: str, *, items: list[dict] | None = None, call_id: str = "f1") -> list[Any]:

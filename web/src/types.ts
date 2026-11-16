@@ -56,6 +56,7 @@ export type ExperienceBlock =
   | components["schemas"]["ShowSelectionBlock"]
   | components["schemas"]["GuestAppearanceListBlock"]
   | components["schemas"]["PersonRosterBlock"]
+  | components["schemas"]["PeopleTimelineBlock"]
   | components["schemas"]["EquipmentListBlock"]
   | components["schemas"]["ResourceListBlock"]
   | components["schemas"]["CreditListBlock"]
@@ -71,6 +72,7 @@ export type ExperienceBlock =
   | components["schemas"]["PullQuoteBlock"]
   | FixedDataChartBlock
   | Require<components["schemas"]["VersionStripBlock"], "year_counts">
+  | components["schemas"]["SongVersionsBlock"]
   | Require<components["schemas"]["GridBlock"], "suggestions" | "follow_ups">
   | components["schemas"]["RankedListBlock"];
 

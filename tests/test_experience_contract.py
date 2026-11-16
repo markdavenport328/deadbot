@@ -9,8 +9,8 @@ reason unrelated to what they check.
 from deadbot import experience
 
 
-def test_contract_version_two_uses_emphasis_and_server_set_mode():
-    assert experience.ExperienceResponse.model_fields["schema_version"].default == "2"
+def test_contract_version_three_uses_emphasis_and_server_set_mode():
+    assert experience.ExperienceResponse.model_fields["schema_version"].default == "3"
     assert experience.ExperienceResponse.model_fields["mode"].default == "answer"
     assert "layout" not in experience.ExperienceResponse.model_fields
     for name in ("ShowUnitBlock", "PerformanceUnitBlock", "AlbumUnitBlock", "SongOverviewBlock"):
@@ -44,7 +44,7 @@ def test_show_unit_accepts_lineup_and_recordings_facets_and_song_overview_accept
 
 
 def test_a_response_without_tabs_still_validates():
-    response = experience.ExperienceResponse.model_validate({"thread_id": "t", "title": "T", "answer": "A"})
+    response = experience.ExperienceResponse.model_validate({"thread_id": "t", "lead": "A"})
     assert response.initial_tab is None
     group = experience.ExperienceGroup.model_validate({"presentation": "collection", "block_indexes": [0]})
     assert group.tab is None

@@ -561,7 +561,7 @@ def page_digest(response: ExperienceResponse, turn: int) -> PageDigest:
                 chips.append(label)
     if len(chips) > CHIP_CEILING:
         logger.info("The page digest kept %d of %d follow-up chips", CHIP_CEILING, len(chips))
-    return PageDigest(turn=turn, answer_key=answer_key(response.answer), title=response.title, blocks=blocks, chips=chips[:CHIP_CEILING])
+    return PageDigest(turn=turn, answer_key=answer_key(response.lead), title=response.headline or response.lead[:60], blocks=blocks, chips=chips[:CHIP_CEILING])
 
 
 def record_turn(book: Notebook, turn_messages: list[Any], response: ExperienceResponse) -> Notebook:

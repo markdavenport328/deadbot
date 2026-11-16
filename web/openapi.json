@@ -1537,10 +1537,6 @@
       "ExperienceResponse": {
         "additionalProperties": false,
         "properties": {
-          "answer": {
-            "title": "Answer",
-            "type": "string"
-          },
           "blocks": {
             "items": {
               "discriminator": {
@@ -1560,6 +1556,7 @@
                   "guest_appearance_list": "#/components/schemas/GuestAppearanceListBlock",
                   "listening_hero": "#/components/schemas/ListeningHeroBlock",
                   "media_link": "#/components/schemas/MediaLinkBlock",
+                  "people_timeline": "#/components/schemas/PeopleTimelineBlock",
                   "performance_unit": "#/components/schemas/PerformanceUnitBlock",
                   "person_roster": "#/components/schemas/PersonRosterBlock",
                   "provenance_note": "#/components/schemas/ProvenanceNoteBlock",
@@ -1569,6 +1566,7 @@
                   "show_selection": "#/components/schemas/ShowSelectionBlock",
                   "show_unit": "#/components/schemas/ShowUnitBlock",
                   "song_overview": "#/components/schemas/SongOverviewBlock",
+                  "song_versions": "#/components/schemas/SongVersionsBlock",
                   "version_strip": "#/components/schemas/VersionStripBlock"
                 },
                 "propertyName": "type"
@@ -1597,6 +1595,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/PersonRosterBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/PeopleTimelineBlock"
                 },
                 {
                   "$ref": "#/components/schemas/EquipmentListBlock"
@@ -1629,6 +1630,9 @@
                   "$ref": "#/components/schemas/VersionStripBlock"
                 },
                 {
+                  "$ref": "#/components/schemas/SongVersionsBlock"
+                },
+                {
                   "$ref": "#/components/schemas/GridBlock"
                 },
                 {
@@ -1655,17 +1659,6 @@
             "title": "Blocks",
             "type": "array"
           },
-          "body_lead": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Body Lead"
-          },
           "conversation": {
             "items": {
               "$ref": "#/components/schemas/ConversationTurn"
@@ -1681,6 +1674,17 @@
             "maxItems": 1000,
             "title": "Groups",
             "type": "array"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
           },
           "initial_tab": {
             "anyOf": [
@@ -1698,6 +1702,10 @@
             ],
             "description": "The workspace tab the page opens on.",
             "title": "Initial Tab"
+          },
+          "lead": {
+            "title": "Lead",
+            "type": "string"
           },
           "mode": {
             "default": "answer",
@@ -1721,8 +1729,8 @@
             "title": "Notebook"
           },
           "schema_version": {
-            "const": "2",
-            "default": "2",
+            "const": "3",
+            "default": "3",
             "title": "Schema Version",
             "type": "string"
           },
@@ -1737,16 +1745,11 @@
           "thread_id": {
             "title": "Thread Id",
             "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
           }
         },
         "required": [
           "thread_id",
-          "title",
-          "answer"
+          "lead"
         ],
         "title": "ExperienceResponse",
         "type": "object"
@@ -2800,6 +2803,146 @@
           "is_official"
         ],
         "title": "MediaLinkBlock",
+        "type": "object"
+      },
+      "PeopleTimelineBlock": {
+        "additionalProperties": false,
+        "description": "People as bars across the years they played: the model chose who; the server drew each span and count.",
+        "properties": {
+          "first_year": {
+            "title": "First Year",
+            "type": "integer"
+          },
+          "last_year": {
+            "title": "Last Year",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "people": {
+            "items": {
+              "$ref": "#/components/schemas/PeopleTimelinePerson"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "People",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "people_timeline",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "first_year",
+          "last_year",
+          "people"
+        ],
+        "title": "PeopleTimelineBlock",
+        "type": "object"
+      },
+      "PeopleTimelinePerson": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "show_count": {
+            "minimum": 0.0,
+            "title": "Show Count",
+            "type": "integer"
+          },
+          "spans": {
+            "items": {
+              "$ref": "#/components/schemas/PeopleTimelineSpan"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Spans",
+            "type": "array"
+          }
+        },
+        "required": [
+          "person_id",
+          "name",
+          "show_count",
+          "spans"
+        ],
+        "title": "PeopleTimelinePerson",
+        "type": "object"
+      },
+      "PeopleTimelineSpan": {
+        "additionalProperties": false,
+        "description": "One stretch of a person's time with the band, from the stored memberships or lineups.",
+        "properties": {
+          "end_date": {
+            "title": "End Date",
+            "type": "string"
+          },
+          "member": {
+            "default": true,
+            "title": "Member",
+            "type": "boolean"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "start_date": {
+            "title": "Start Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_date",
+          "end_date"
+        ],
+        "title": "PeopleTimelineSpan",
         "type": "object"
       },
       "PerformanceSpineNeighbor": {
@@ -4594,6 +4737,230 @@
           "scope"
         ],
         "title": "SongSignal",
+        "type": "object"
+      },
+      "SongVersionsBlock": {
+        "additionalProperties": false,
+        "description": "Chosen versions of one song on one clock, each row playable.\n\nThe model chose the performances, their order and any note; the server\nfilled each night, length, tape track and release from the store.",
+        "properties": {
+          "criteria": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Criteria",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SongVersionsRow"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Rows",
+            "type": "array"
+          },
+          "song": {
+            "$ref": "#/components/schemas/SongVersionsSong"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "type": {
+            "const": "song_versions",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "song",
+          "rows"
+        ],
+        "title": "SongVersionsBlock",
+        "type": "object"
+      },
+      "SongVersionsRelease": {
+        "additionalProperties": false,
+        "properties": {
+          "release_id": {
+            "title": "Release Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "required": [
+          "release_id",
+          "title"
+        ],
+        "title": "SongVersionsRelease",
+        "type": "object"
+      },
+      "SongVersionsRow": {
+        "additionalProperties": false,
+        "description": "One version of the song: a night, its length, and the tape it plays.",
+        "properties": {
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "judgments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Judgments",
+            "type": "array"
+          },
+          "length_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length Seconds"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "performance_id": {
+            "title": "Performance Id",
+            "type": "string"
+          },
+          "release": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SongVersionsRelease"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "show_date": {
+            "title": "Show Date",
+            "type": "string"
+          },
+          "show_id": {
+            "title": "Show Id",
+            "type": "string"
+          },
+          "song_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Id"
+          },
+          "song_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Song Title"
+          },
+          "tape_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tape Seconds"
+          },
+          "track": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlayableTrack"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "venue_name": {
+            "title": "Venue Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "performance_id",
+          "show_id",
+          "show_date",
+          "venue_name"
+        ],
+        "title": "SongVersionsRow",
+        "type": "object"
+      },
+      "SongVersionsSong": {
+        "additionalProperties": false,
+        "properties": {
+          "song_id": {
+            "title": "Song Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "song_id",
+          "title"
+        ],
+        "title": "SongVersionsSong",
         "type": "object"
       },
       "SongYearCount": {

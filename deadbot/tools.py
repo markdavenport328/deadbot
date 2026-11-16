@@ -5,7 +5,9 @@ from __future__ import annotations
 import difflib
 import hashlib
 import json
+import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import date, datetime, time, timezone
 from functools import lru_cache
@@ -297,12 +299,75 @@ def _largest_list(value: Any, path: str = "") -> tuple[str, list | None, int]:
     return best
 
 
+def _clock(seconds: int) -> str:
+    """A length the way a fan reads it: 9:05, or 1:02:40 past an hour."""
+
+    hours, rest = divmod(int(seconds), 3600)
+    minutes, secs = divmod(rest, 60)
+    return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes}:{secs:02d}"
+
+
+def _length_key(key: str) -> str | None:
+    """The fan's name for a field counted in seconds ("length_seconds" -> "length"), else None."""
+
+    if key == "seconds":
+        return "length"
+    if not key.endswith("_seconds"):
+        return None
+    base = key.removesuffix("_seconds")
+    if base in ("length", "duration", "audio", "archive_track_duration", "audio_duration"):
+        return "length"
+    if base == "start":
+        return "starts_at"
+    return base.replace("duration", "length") if "duration" in base else f"{base}_length"
+
+
+def _as_length(value: Any) -> Any:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value >= 0:
+        return _clock(round(value))
+    if isinstance(value, str) and value.strip().isdigit():
+        return _clock(int(value.strip()))
+    return value
+
+
 def _json(value: Any) -> str:
-    """Serialize a lean tool payload, bounded by the tool result ceiling."""
+    """Serialize a lean tool payload, bounded by the tool result ceiling.
+
+    Lengths stored in seconds reach the model as clock time (9:05), the way
+    a fan says them, so the page says them that way too.
+    """
 
     def compact(item: Any) -> Any:
         if isinstance(item, dict):
-            return {key: compact(nested) for key, nested in item.items() if nested not in (None, "")}
+            out: dict[str, Any] = {}
+            columns = item.get("columns")
+            timed = (
+                [index for index, name in enumerate(columns) if isinstance(name, str) and _length_key(name)]
+                if isinstance(columns, list) and isinstance(item.get("rows"), list)
+                else []
+            )
+            for key, nested in item.items():
+                if nested in (None, ""):
+                    continue
+                if timed and key == "columns":
+                    out[key] = [_length_key(name) if index in timed else name for index, name in enumerate(columns)]
+                    continue
+                if timed and key == "rows":
+                    out[key] = [
+                        [_as_length(cell) if index in timed else compact(cell) for index, cell in enumerate(row)]
+                        if isinstance(row, list)
+                        else compact(row)
+                        for row in nested
+                    ]
+                    continue
+                name = _length_key(key) if isinstance(key, str) else None
+                if name:
+                    out.setdefault(name, _as_length(nested))
+                else:
+                    out[key] = compact(nested)
+            return out
         if isinstance(item, list):
             return [compact(nested) for nested in item]
         return item
@@ -578,6 +643,18 @@ def _links_for_fans(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [{**row, "notes": _fan_notes(row.get("notes"))} if isinstance(row, dict) and "notes" in row else row for row in rows]
 
 
+def _story(resource: dict[str, Any]) -> dict[str, Any]:
+    """A story as the model reads it: what it is, who made it, its link, and a line on what it covers."""
+
+    story = {key: resource.get(key) for key in ("resource_id", "title", "creator", "source_name", "url")}
+    notes = _fan_notes(resource.get("notes"))
+    notes = re.sub(r"^\s*Visitor context:\s*", "", notes)
+    notes = " ".join(sentence for sentence in re.split(r"(?<=\.)\s+", notes) if not sentence.startswith("Treat ")).strip()
+    if notes:
+        story["covers"] = notes if len(notes) <= 280 else notes[:277].rsplit(" ", 1)[0] + "…"
+    return story
+
+
 def _held_phrase(state: str) -> str:
     """Why a signal was held back, in plain words ("multiple performances")."""
 
@@ -613,10 +690,62 @@ def _lean_signal(signal: dict[str, Any], *, song_id: str | None = None) -> dict[
     return lean
 
 
-_SIGNALS_NOTE = (
-    "Source-attributed signals, not one combined score or an objective best-of ranking. "
-    "held marks a signal its source could not pin to one show or performance."
-)
+_PICKERS = {
+    "charlie-miller-reddit": "Charlie Miller, taper",
+    "charlie-miller-user-provided-threads": "Charlie Miller, taper",
+    "deadnet-official-release-pass": "the Grateful Dead's official releases",
+    "headyversion": "Headyversion fan votes",
+    "rolling-stone-australia": "David Fricke, Rolling Stone",
+}
+_PICK_KINDS = {
+    "fan_ranked_version": "fan vote",
+    "critic_editorial_show_selection": "critic's pick",
+    "individual_curator_song_selection": "curator's pick",
+    "individual_curator_show_recommendation": "curator's pick",
+    "official_release_candidate": "official release",
+}
+
+
+def _plain_pick(signal: dict[str, Any]) -> dict[str, Any]:
+    """One pick in a fan's words: who picked what, with its IDs and link."""
+
+    source = str(signal.get("source") or "")
+    pick: dict[str, Any] = {
+        "picked_by": _PICKERS.get(source) or signal.get("source_handle") or source,
+        "kind": _PICK_KINDS.get(str(signal.get("signal_type") or ""), "pick"),
+    }
+    what = signal.get("title") or signal.get("source_context") or signal.get("selection_label") or signal.get("source_label")
+    if what:
+        pick["what"] = what
+    for key, plain in (("fan_vote_count", "fan_votes"), ("recommendation_rank", "rank"), ("matches", "matches"), ("held", "unsure_because")):
+        if signal.get(key) not in (None, ""):
+            pick[plain] = signal[key]
+    if signal.get("candidate_shows"):
+        pick["shows"] = signal["candidate_shows"]
+    if signal.get("candidate_performances"):
+        pick["performances"] = signal["candidate_performances"]
+    if signal.get("source_url"):
+        pick["link"] = signal["source_url"]
+    return pick
+
+
+def _plain_picks(raw: str) -> str:
+    """get_picks as a fan reads it: who picked which shows and versions, without the store's bookkeeping."""
+
+    payload = json.loads(raw)
+    if not isinstance(payload, dict):
+        return raw
+    out = {key: value for key, value in payload.items() if key not in {"selection_signals", "signal_count", "show_selections"}}
+    if isinstance(payload.get("selection_signals"), list):
+        out["picks"] = [_plain_pick(signal) for signal in payload["selection_signals"] if isinstance(signal, dict)]
+    if isinstance(payload.get("show_selections"), list):
+        # Critics' lists keep their shape (a page can still cite one by selection_id); only the hedge goes.
+        out["show_selections"] = [
+            {key: value for key, value in selection.items() if key not in {"coverage_note", "selection_type"}}
+            for selection in payload["show_selections"]
+            if isinstance(selection, dict)
+        ]
+    return _json(out)
 
 
 def _selection_entries(store: CanonicalStore) -> list[dict[str, Any]] | None:
@@ -650,14 +779,16 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
     for column, unit in _ROW_UNITS:
         if column in columns:
             result["on_the_page"] = (
-                f'One {unit} with from_result="{result["result_id"]}" puts all {count} rows on the page as {unit} cards, '
-                'in this order. disclosure="expanded" shows each as its full card; "collapsed" makes each one compact row '
-                "that opens in place, for a long list to scan. The group's title and lead introduce the whole list."
+                f'Any of these shows can go on the page by show_id; a shows item with from_result="{result["result_id"]}" '
+                f"lists all {count} as rows that open to their setlists. get_picks with the same years or venue names "
+                "the nights critics, tapers and fans picked."
+                if unit == "show_unit"
+                else f"Each of these {count} rows can go on the page by its id."
             )
             if column == "show_id" and count >= 12:
                 result["on_the_page"] += (
                     ' When they fell is a picture too: aggregate_data with dataset "shows", group_by "year" and the same '
-                    "venue, guest or song filter draws a bar per year."
+                    "venue, guest or song filter gives a chart with a bar per year."
                 )
             break
     return result
@@ -679,6 +810,27 @@ def build_tools(
     deadcast_adapter = _reviewed_deadcast_adapter()
     reader = page_reader or default_reader()
     searcher = site_searcher or SiteSearcher()
+    # Listener remarks ride along with versions; a slow archive.org answer is skipped, not waited on.
+    remarks_searcher = SiteSearcher(searcher.transport, sites=[], timeout=4)
+
+    def _with_listener_remarks(items: list[dict[str, Any]], song_title: str) -> None:
+        """Add what archive.org listeners wrote about this song on each item's tape, as ``listeners``."""
+
+        wanted = [item for item in items if isinstance(item.get("listen"), dict) and item["listen"].get("archive_identifier")]
+        if not wanted or not song_title:
+            return
+
+        def fetch(item: dict[str, Any]) -> list[dict[str, Any]]:
+            try:
+                return remarks_searcher.listener_remarks(item["listen"]["archive_identifier"], song_title)
+            except Exception as error:  # a remark is extra; the version stands without it
+                logging.getLogger(__name__).info("listener remarks skipped for %s: %s", item["listen"]["archive_identifier"], error)
+                return []
+
+        with ThreadPoolExecutor(max_workers=min(8, len(wanted))) as pool:
+            for item, remarks in zip(wanted, pool.map(fetch, wanted)):
+                if remarks:
+                    item["listeners"] = remarks
 
     @tool
     def search_entities(query: str) -> str:
@@ -785,7 +937,9 @@ def build_tools(
         each show (resources, source trail, selections) or the research
         sites to search when nothing is gathered. When the question is
         about a specific guest, ask for include=["appearances"] in the same
-        call rather than looking the guest up twice.
+        call rather than looking the guest up twice. The guests a name
+        matches carry stories: the interviews and articles we have
+        about them, each with a line on what it covers, ready for a links item.
         """
         include = include or []
         valid_includes = {"appearances"}
@@ -931,6 +1085,12 @@ def build_tools(
         # Recurring guests first: the shape of the directory shows who became a
         # thread in the band's story before it shows who dropped by once.
         guests.sort(key=lambda guest: (-guest["guest_show_count"], guest["name"].casefold()))
+        # The stories told about a guest travel with them, so the page links
+        # what the library holds rather than what memory suggests.
+        stories = {guest["person_id"]: stories_about(guest["name"]) for guest in guests[:3]} if needle else {}
+        for guest in guests:
+            if stories.get(guest["person_id"]):
+                guest["stories"] = stories[guest["person_id"]]
         if want_appearances:
             show_ids = []
             for guest in guests:
@@ -959,6 +1119,7 @@ def build_tools(
                     "first_show_date": appearances[0]["show_date"] if appearances else None,
                     "last_show_date": appearances[-1]["show_date"] if appearances else None,
                     "instruments": instruments,
+                    "stories": guest.get("stories"),
                 }
             )
         payload = {
@@ -976,6 +1137,12 @@ def build_tools(
             },
         }
         return _json(payload)
+
+    def stories_about(topic: str, limit: int = 4) -> list[dict[str, Any]]:
+        """The stored interviews and articles that name a person or topic, each with a line on what it covers."""
+
+        found = json.loads(search_stored_resources.func(topic)).get("resources") or []
+        return [_story(resource) for resource in found[:limit]]
 
     @tool
     def search_stored_resources(query: str) -> str:
@@ -1066,14 +1233,12 @@ def build_tools(
 
         `plays_by_year` counts the song's performances in every year from its
         first to its last, with the years it was not played as zero; a
-        song_overview with the by_year facet draws them as the song's
-        timeline. `performance_summary` gives the count, the first and last
+        song_years item draws them. `performance_summary` gives the count, the first and last
         performances with their venues, and the songs it most often followed
         and led into. `standouts` gives a few performances of each kind that
         stand out (firsts and lasts, longest, picks of the performance, picks
         of its show, releases, guests, played inside another song, unusual
-        placements, rare neighbors), with IDs, to
-        choose a song_overview's stops from;
+        placements, rare neighbors), with IDs;
         get_song_life lists more of each kind and each year's longest, and
         `list_song_performances` lists concrete rendition IDs and listening
         paths. `releases` names the official records carrying the song,
@@ -1136,9 +1301,8 @@ def build_tools(
                 {"year": year, "count": years.count(year)} for year in range(years[0], years[-1] + 1)
             ]
             payload["plays_by_year_chart"] = (
-                "A song_overview for this song with visible_facets including by_year draws these counts as the song's "
-                "timeline, with your representatives as its stops. get_song_life lists the performances that stand out "
-                "in each era to choose those stops from."
+                "A song_years item for this song draws these counts. get_song_life lists the performances that stand "
+                "out in each era; the ones you choose go on the page as a performances item."
             )
         payload["release_count"] = len(releases)
         # A widely released song (Sugar Magnolia: 135 records) turned this
@@ -1170,22 +1334,16 @@ def build_tools(
     def get_song_life(song_id_or_title: str) -> str:
         """Get one song's life on stage: each year in brief and the performances that stand out.
 
-        Use it to build a song_overview timeline (visible_facets with by_year)
-        or to answer how a song changed over the years. The timeline already
-        draws the yearly counts and lengths (chart_view "length" opens on how
-        long it ran each year, the picture of a song that stretched out or
-        tightened up), so your words go to what they mean; its stops
-        are how the visitor hears the song's life, so choose three or four
-        nights that mark its turns, for a counting question too. `years` gives each
-        year's count, typical minutes and longest performance. `standouts`
-        groups the performances that stand out by kind (firsts and lasts,
-        longest, picks of the performance and of its show with who made them,
-        releases, guests, played inside another song, unusual placements, rare
-        neighbors), each with its ID and plain facts, in date order and
-        unranked. `patterns` names placements too common to list one by
-        one. Choose your stops from
-        these and from what you know; give each a short label and a one-line
-        why in the song_overview's representatives.
+        Use it to answer how a song changed over the years, and to choose the
+        versions worth hearing. `years` gives each year's count, typical
+        minutes and longest performance. `standouts` groups notable
+        performances by kind (firsts and lasts, longest, picks of the
+        performance and of its show with who made them, releases, guests,
+        played inside another song, unusual placements, rare neighbors), each
+        with its ID and plain facts, in date order. `patterns` names
+        placements too common to list one by one. The versions you choose go
+        on the page as a performances item; a song_years item charts the years
+        (view "length" for how long it ran each year).
         """
         from deadbot import song_life
 
@@ -1201,9 +1359,10 @@ def build_tools(
         Use after `get_song` when a question needs concrete renditions, dates,
         or per-performance listening paths. Start with the first page unless a
         prior result tells you to continue. Each performance carries its stable
-        ID, show date, set position, its length_seconds (the release's length,
-        else the tape's) and any verified listening URLs. For rich
+        ID, show date, set position, its length and any verified listening
+        URLs. For rich
         context on a particular result, call `get_performance` with its ID.
+        Its performances can go on the page as a performances item.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
@@ -1300,7 +1459,7 @@ def build_tools(
                 night["tracks"] = night["tracks"][:_NIGHT_PREVIEW]
         payload["nights"] = nights
         shown = "the first %d tracks of each night" % _NIGHT_PREVIEW if summarized else "every track"
-        elsewhere = "; tracks from no known show are listed after the nights" if unplaced else ""
+        elsewhere = "; studio cuts and other tracks that are not from one night come after the nights" if unplaced else ""
         payload["tracks_note"] = (
             f"Tracks are grouped by night ({shown}{elsewhere}; Spotify links left out). "
             + ("This box is too long to list in full: " if summarized else "")
@@ -1324,8 +1483,8 @@ def build_tools(
           narrows it to one show's tracks on a multi-show release.
         - include=["live_legacy"]: each song's life on stage (count, span, count
           by era, the performances most often issued on official live records).
-        `contents.tracks_without_a_show` counts tracks that come from no known show
-        (studio cuts, unplaced material); the rest are counted under their show.
+        `contents.tracks_without_a_show` counts studio cuts and other tracks that
+        are not from one night; the rest are counted under their show.
         pathways lists the gathered lore for the release or the research sites
         to search when nothing is gathered.
         """
@@ -1374,7 +1533,7 @@ def build_tools(
             tours = [leading] if leading and tour_counts[leading] * 5 >= len(ordered) * 4 else []
             payload["result_id"] = f"album:{release['release_id']}"
             nights_row = (
-                f'one show_unit with from_result="album:{release["release_id"]}" (disclosure="collapsed") '
+                f'a shows item with from_result="album:{release["release_id"]}" '
                 "makes a row for each night, in date order"
             )
             if len(ordered) > 1 and not tours:
@@ -1655,11 +1814,13 @@ def build_tools(
         Use this first for "best", "notable", "essential" or "where do I start"
         questions about a song. Each version carries the official releases that
         include it (Dick's Picks, Dave's Picks, box sets), the reviewed critic,
-        curator and fan signals that name it or its show, its length_seconds
-        (the release's length, else the tape's) and its direct listening
-        links. source_count counts distinct sources, never quality:
+        curator and fan signals that name it or its show, its length and its
+        direct listening links. source_count counts distinct sources, never quality:
         present them as separate voices. Versions no source singled out are
         absent here and remain reachable through list_song_performances.
+        Each version with a tape carries listeners: what archive.org listeners
+        wrote about this song on that tape, one sentence per review.
+        Its performances can go on the page as a performances item.
         """
         song = store.resolve_song(song_id_or_title)
         if not song:
@@ -1668,11 +1829,9 @@ def build_tools(
         cap = min(max(1, limit), 30)
         total = len(payload["versions"])
         payload["versions"] = payload["versions"][:cap]
+        _with_listener_remarks(payload["versions"], song.get("title") or "")
         if total > cap:
             payload["note"] = f"Showing {cap} of {total} versions with a source; raise limit for more."
-        payload["coverage_note"] = (
-            "Sources are official releases and the selections of critics, curators and fans, not a ranking."
-        )
         return _json(payload)
 
     @tool
@@ -1728,9 +1887,6 @@ def build_tools(
                 "subject": subject,
                 "signal_count": len(matched),
                 "selection_signals": matched,
-                "coverage_note": (
-                    "Source-attributed signals only; no signal here means no source we read named it, not that it is unremarkable."
-                ),
             }
         )
 
@@ -1783,9 +1939,6 @@ def build_tools(
                 "signal_count": len(matched),
                 "selection_signals": matched,
                 "show_selections": picks,
-                "coverage_note": (
-                    "Source-attributed signals only; no signal here means no source we read named it, not that it is unremarkable."
-                ),
             }
         )
 
@@ -1934,8 +2087,8 @@ def build_tools(
     def get_show(show_id_or_date: str) -> str:
         """Get a show's details: lineup, named guitar/equipment claims, venue, setlist, recordings summary, and links.
 
-        Each setlist entry says whether it has a playable track (audio_seconds
-        gives its length); the page fills in the listening links itself.
+        Each setlist entry gives its length and says whether it has a playable
+        track; the page fills in the listening links itself.
 
         Use a show ID returned by another tool, or an unambiguous
         date explicitly supplied by the visitor. Never use a date or show ID
@@ -1944,7 +2097,10 @@ def build_tools(
         recent retrieved show ID/date and call this tool before answering.
         pathways lists the gathered lore for each result (resources, source
         trail, selections) or the research sites to search when nothing is
-        gathered.
+        gathered. stories lists the interviews and articles about this night,
+        each with a line on what it covers, ready for a links item. listeners
+        holds what archive.org listeners wrote about this night, one sentence
+        per review.
         """
         show = store.resolve_show(show_id_or_date)
         if not show:
@@ -1952,13 +2108,10 @@ def build_tools(
         payload = store.show_context(show)
         from deadbot import song_life
 
+        tape = next((row["archive_identifier"] for row in payload.get("recordings") or [] if row.get("archive_identifier")), None)
         lengths = song_life.performance_lengths(store, [row.get("performance_id", "") for row in payload.get("performances", [])])
         payload["performances"] = [_compact_setlist_row(row, lengths) for row in payload.get("performances", [])]
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
-        payload["recordings_note"] = (
-            "get_recording_reviews ranks this show's tapes by listener reviews, with their recording_ids; "
-            "the show_unit recordings facet puts the full list on the page"
-        )
         payload["performers"] = _compact_performers(payload.get("performers", []))
         members = {row.get("person_id") for row in payload.get("band_memberships") or []}
         if members <= {row["person_id"] for row in payload["performers"]}:
@@ -1967,10 +2120,7 @@ def build_tools(
         venue = payload.get("venue")
         if isinstance(venue, dict):
             payload["venue"] = {key: value for key, value in venue.items() if key not in {"notes", "latitude", "longitude"}}
-        payload["resources"] = [
-            {key: value for key, value in resource.items() if key not in {"notes", "relationships"}}
-            for resource in payload.get("resources") or []
-        ]
+        payload["stories"] = [_story({**resource, "url": resource.get("url") or resource.get("source_url")}) for resource in payload.pop("resources", None) or []]
         payload["show_links"] = [
             {
                 **{key: link[key] for key in ("platform", "link_type", "url", "title") if link.get(key)},
@@ -1979,6 +2129,16 @@ def build_tools(
             for link in payload.get("show_links") or []
         ]
         payload["pathways"] = pathways_for(store, [("show", show["show_id"])]).get(show["show_id"], {})
+        if tape:
+            song_ids = {row.get("song_id", "") for row in payload["performances"]} - {"song-drums", "song-space"}
+            titles = [row.get("title") or "" for row in store.rows_in("songs", "song_id", song_ids)]
+            try:
+                remarks = remarks_searcher.listener_remarks(tape, [title for title in titles if title], limit=4)
+            except Exception as error:  # a remark is extra; the show stands without it
+                logging.getLogger(__name__).info("listener remarks skipped for %s: %s", tape, error)
+                remarks = []
+            if remarks:
+                payload["listeners"] = remarks
         return _json(payload)
 
     @tool
@@ -2010,7 +2170,6 @@ def build_tools(
         try:
             payload = load_selection_signals(store)
             payload["selection_signals"] = [_lean_signal(signal) for signal in payload["selection_signals"]]
-            payload["coverage_note"] = _SIGNALS_NOTE
             payload["show_selections"] = load_show_selections(store)
             return _json(payload)
         except SelectionSignalError as error:
@@ -2078,7 +2237,7 @@ def build_tools(
                 payload["show"] = {"show_id": show["show_id"], "show_date": show.get("show_date"), "venue_id": show.get("venue_id")}
                 show_rows = [row for row in store.filtered_rows("recordings", show_id=show["show_id"]) if row.get("archive_identifier")]
                 if not show_rows:
-                    payload["message"] = "The library has no archive.org recording for this show."
+                    payload["message"] = "There is no archive.org recording of this show."
                     return _json(payload)
                 ratings = searcher.archive_ratings([row["archive_identifier"] for row in show_rows])
                 show_rows.sort(key=lambda row: -(ratings.get(row["archive_identifier"], {}).get("num_reviews") or 0))
@@ -2099,7 +2258,7 @@ def build_tools(
             payload["recording"] = {"recording_id": chosen.get("recording_id"), "show_id": chosen.get("show_id"), "source_url": chosen.get("source_url") or None}
             payload["state"] = "empty"
             payload["reviews"] = []
-            payload["message"] = "This recording has no archive.org identifier in the library, so it has no listener reviews to fetch. Pass its show date to see the show's reviewed recordings instead."
+            payload["message"] = "This recording has no archive.org identifier, so it has no listener reviews to fetch. Pass its show date to see the show's reviewed recordings instead."
             return _json(payload)
         identifier = (chosen or {}).get("archive_identifier") or wanted
         if chosen:
@@ -2189,18 +2348,30 @@ def build_tools(
     def get_performance(performance_id: str) -> str:
         """Get one rendition's song/show context, performance-specific sources, recordings, and media links.
 
-        Performance-specific commentary concerns this rendition only and must
-        not be generalized to every performance of the song.
+        listeners holds what archive.org listeners wrote about this song on
+        the tape that plays, one sentence per review. Performance-specific
+        commentary concerns this rendition only.
         """
         context = store.performance_context(performance_id)
         if not context:
             return _json({"error": "Performance not found", "performance_id": performance_id})
         context = dict(context)
+        song_title = context["song"].get("title") if isinstance(context.get("song"), dict) else ""
+        _with_listener_remarks([context], song_title or "")
         if isinstance(context.get("song"), dict):
             context["song"] = _without_notes(context["song"])
         for key in ("links", "show_links", "recordings"):
             if isinstance(context.get(key), list):
-                context[key] = _links_for_fans(context[key])
+                # A track's own length is the player's business; the
+                # performance has one length, given once below.
+                context[key] = [
+                    {k: v for k, v in row.items() if k not in ("duration_seconds", "start_seconds")} if isinstance(row, dict) else row
+                    for row in _links_for_fans(context[key])
+                ]
+        from deadbot import song_life
+
+        if seconds := song_life.performance_lengths(store, [performance_id]).get(performance_id):
+            context["length_seconds"] = seconds
         return _json(context)
 
     @tool
@@ -2399,12 +2570,11 @@ def build_tools(
         candidate_nights is a spread to choose from: the first and last
         nights, the longest and shortest together, and the longest of each
         era, each with why it is there. Each night names its show_id, date,
-        venue, place and set, its pair_id, both lengths in seconds, and
+        venue, place and set, its pair_id, both lengths, and
         whether both tape tracks exist to play. A short pairing lists every
         version; a long one lists them on request with include=["versions"]
         as one compact table, narrowed by year_from and year_to. A
-        version_strip in finish_response draws the nights you choose, by
-        pair_id, to one clock, each row playing both songs.
+        pairing item plays the nights you choose, by pair_id, each row both songs.
         """
         if transition not in sequences.TRANSITIONS:
             return _json({"error": "Unknown transition", "valid": list(sequences.TRANSITIONS)})
@@ -2517,7 +2687,7 @@ def build_tools(
         year_from: int | None = None,
         year_to: int | None = None,
     ) -> str:
-        """Two lists of library things and the fact where each pair meets, as one table.
+        """Two lists (songs, shows, records, years) and the fact where each pair meets, as one table.
 
         Songs across years (row_kind "song", column_kind "year"): each cell is
         how many shows that year had the song. Nights across songs (row_kind
@@ -2589,8 +2759,8 @@ def build_tools(
         aggregate: never estimate, extrapolate, or restate these numbers from
         memory. total is the measure across the whole filtered set (for
         example distinct songs across every year, not just the years shown),
-        including rows beyond limit. aggregation_id grounds a data_chart
-        reference in finish_response — call this tool once per distinct
+        including rows beyond limit. aggregation_id puts the result on the
+        page as a chart item — call this tool once per distinct
         question and reuse its aggregation_id rather than calling again with
         the same parameters.
 
@@ -2646,43 +2816,79 @@ def build_tools(
                 'exclude_song_ids=["song-drums", "song-space"]; whichever you show, its title says which it counts.'
             )
         result_payload["on_the_page"] = (
-            "Reference this aggregation_id in finish_response: a data_chart draws these rows as bars "
-            "(one per year for a year result, the picture of when); "
-            "a ranked_list lists them in order with their counts, with your note on each row that deserves one "
-            "(what the song did in a show, why two tie). Both show exactly these numbers, so the words around "
-            "them can quote them as they stand."
+            "A chart item with this aggregation_id draws these rows: view bars (one per year for a year result) "
+            "or ranked (in order with their counts, with your line on any row)."
         )
         return _json(result_payload)
+
+    @tool
+    def get_picks(song_or_show: str = "", year_from: int | None = None, year_to: int | None = None, venue: str = "") -> str:
+        """Get the versions and shows that critics, curators, fan voters and official releases picked.
+
+        Name a song or show for its picks; give years or a venue for the picks
+        among those shows; give nothing for the lists of essential shows. Each
+        pick says who made it.
+        """
+        wanted = song_or_show.strip()
+        if wanted:
+            if store.resolve_song(wanted):
+                return _plain_picks(get_selections_for.func("song", wanted))
+            if store.resolve_show(wanted):
+                return _plain_picks(get_selections_for.func("show", wanted))
+            return _json({"error": "No song or show matches that name.", "query": wanted})
+        if year_from is not None or year_to is not None or venue.strip():
+            return _plain_picks(get_selections_in.func(year_from, year_to, venue))
+        return _plain_picks(get_show_selections.func())
+
+    @tool
+    def search_stories(query: str = "", song_or_show: str = "") -> str:
+        """Find interviews, oral histories, podcasts and articles about a topic, song or show.
+
+        Each result has its title, who made it, its link and a note on what it
+        covers. read_page reads one when its words belong in the answer.
+        """
+        payload: dict[str, Any] = {}
+        wanted = song_or_show.strip()
+        topic = query.strip()
+        if wanted:
+            song = store.resolve_song(wanted)
+            show = None if song else store.resolve_show(wanted)
+            if song or show:
+                kind, entity_id = ("song", song["song_id"]) if song else ("show", show["show_id"])
+                trails = source_trails_for_entity(kind, entity_id)
+                payload["about"] = {"entity_type": kind, "entity_id": entity_id}
+                payload["trails"] = trails.get("records", []) if isinstance(trails, dict) else trails
+                if not topic:
+                    topic = (song or {}).get("title") or ""
+                    if show:
+                        venue_row = store.one("venues", show.get("venue_id", "")) or {}
+                        topic = venue_row.get("city") or venue_row.get("name") or show.get("show_date", "")
+        if topic:
+            found = json.loads(search_stored_resources.func(topic))
+            payload["resources"] = found.get("resources", [])
+            payload["match_count"] = found.get("match_count", 0)
+        if not payload:
+            payload = {"resources": [], "message": "Give a topic, or a song or show."}
+        return _json(payload)
 
     tools = [
         search_entities,
         search_guest_musicians,
-        search_stored_resources,
+        search_stories,
         get_song,
         get_song_life,
         list_song_performances,
         get_album,
-        get_song_performance_profile,
         get_song_notable_versions,
-        get_selections_for,
-        get_selections_in,
-        get_deadnet_song_context,
-        get_deadcast_episode,
-        get_lore_source_trails,
+        get_picks,
         find_arrangements,
         get_equipment_history,
         get_show,
-        get_show_selections,
-        get_selection_signals,
-        get_research_source_directory,
         search_site,
         read_page,
         get_recording_reviews,
         get_performance,
-        get_media_links,
         get_historical_weather,
-        get_astronomy,
-        get_astrology,
         aggregate_data,
         get_segue_pairing,
         get_grid,
@@ -2792,14 +2998,14 @@ def build_tools(
     def read_notebook(keys_or_ids: list[str], config: RunnableConfig, only: list[str] | None = None) -> str:
         """Bring earlier research back: the results of calls listed in the research notebook.
 
-        Pass the bracketed keys from the notebook's lines, or library IDs and
+        Pass the bracketed keys from the notebook's lines, or IDs and
         arguments (a show_id, song_id, performance_id, aggregation_id,
         result_id or date). A key, or an argument a call was made with, brings
-        that result back whole. A library ID that results hold brings back the
+        that result back whole. An ID that results hold brings back the
         part of each of those results that mentions it: one night's tracks
         from a box set, one song's rows in a long listing. Several keys and IDs
         in one call come back together. Each result is what the original call
-        returned, run again against the library, so its IDs, aggregation_id
+        returned, run again, so its IDs, aggregation_id
         and result_id can go on the page.
 
         only takes IDs, dates or names and narrows every result read to the

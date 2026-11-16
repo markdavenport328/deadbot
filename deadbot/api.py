@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
 from deadbot import composition, finish, grids, notebook, row_details
-from deadbot.answer_stream import AnswerAccumulator
+from deadbot.lead_stream import LeadAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, RowDetail, SongYearDetail, fit
@@ -352,8 +352,8 @@ def create_app(
         message list after each step, from which each new tool call the
         model makes becomes one visitor-facing status; a ``messages``
         payload is one ``(AIMessageChunk, metadata)`` pair from the model's
-        own token stream, from which an ``AnswerAccumulator`` pulls the
-        growing ``chat_answer`` text out of the ``finish_response`` call's
+        own token stream, from which an ``LeadAccumulator`` pulls the
+        growing ``lead`` text out of the ``finish_response`` call's
         arguments as it is generated, so the visible answer can reach the
         browser before the rest of the plan finishes. An agent whose
         ``stream`` ignores the mode list and yields plain state dicts (the
@@ -364,14 +364,14 @@ def create_app(
 
         def line(event: dict[str, Any]) -> str:
             # A lone surrogate that slipped through the model's JSON (see
-            # extract_chat_answer) cannot be UTF-8 encoded; Starlette encodes
+            # extract_lead) cannot be UTF-8 encoded; Starlette encodes
             # this text outside any try/except of ours, so it is made safe
             # here rather than letting that raise and kill the stream.
             serialized = json.dumps(event, ensure_ascii=False)
             return serialized.encode("utf-8", "replace").decode("utf-8") + "\n"
 
         started = time.monotonic()
-        first_answer_at: float | None = None
+        first_lead_at: float | None = None
         error: str | None = None
         served_from_cache = False
         messages: list[Any] = []
@@ -392,7 +392,7 @@ def create_app(
                 return
             if callable(stream):
                 seen = 0
-                answer_accumulator = AnswerAccumulator()
+                lead_accumulator = LeadAccumulator()
                 composing_page_announced = False
                 plan_streamer: PlanStreamer | None = None
                 plan_streaming_off = False
@@ -408,11 +408,11 @@ def create_app(
                         mode, chunk_payload = "values", item
                     if mode == "messages":
                         message_chunk = chunk_payload[0] if isinstance(chunk_payload, tuple) else chunk_payload
-                        answer_text = answer_accumulator.feed(message_chunk)
-                        if answer_text:
-                            first_answer_at = first_answer_at or time.monotonic()
-                            yield line({"type": "answer", "text": answer_text})
-                        if answer_accumulator.complete and not composing_page_announced:
+                        lead_text = lead_accumulator.feed(message_chunk)
+                        if lead_text:
+                            first_lead_at = first_lead_at or time.monotonic()
+                            yield line({"type": "lead", "text": lead_text})
+                        if lead_accumulator.complete and not composing_page_announced:
                             composing_page_announced = True
                             yield line({"type": "status", "text": "Composing the page"})
                         if plan_streamer is None and not plan_streaming_off and _names_finish_call(message_chunk):
@@ -434,18 +434,18 @@ def create_app(
                                 # The fresh accumulator's partial answer (below) is yielded
                                 # before the page_reset event; this ordering is harmless only
                                 # because the browser's page_reset handling clears the draft
-                                # page, not the chat answer already on screen.
+                                # page, not the lead already on screen.
                                 if event.type == "page_reset":
                                     # The model is retrying finish_response; the previous
                                     # draft's answer text is void, so the fresh accumulator
                                     # must still see the current chunk's own answer text.
                                     # The visitor sees the draft vanish, so say why.
                                     yield line({"type": "status", "text": "Starting the page over"})
-                                    answer_accumulator = AnswerAccumulator()
-                                    reset_answer = answer_accumulator.feed(message_chunk)
-                                    if reset_answer:
-                                        first_answer_at = first_answer_at or time.monotonic()
-                                        yield line({"type": "answer", "text": reset_answer})
+                                    lead_accumulator = LeadAccumulator()
+                                    reset_lead = lead_accumulator.feed(message_chunk)
+                                    if reset_lead:
+                                        first_lead_at = first_lead_at or time.monotonic()
+                                        yield line({"type": "lead", "text": reset_lead})
                                 yield line({"type": event.type, **event.payload})
                         continue
                     state = chunk_payload
@@ -477,7 +477,7 @@ def create_app(
                 try:
                     metrics_logger.info(json.dumps(turn_metrics(
                         request.question, messages, started=started,
-                        first_answer_at=first_answer_at, finished_at=time.monotonic(), error=error,
+                        first_answer_at=first_lead_at, finished_at=time.monotonic(), error=error,
                     )))
                 except Exception:
                     logger.exception("Turn metrics failed")

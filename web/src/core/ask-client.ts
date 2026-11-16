@@ -13,7 +13,7 @@ export const ASK_ERROR = "Deadbot could not answer just now. Try again, or rephr
 
 export type StreamHandlers = {
   onStatus: (status: string) => void;
-  onAnswer: (text: string) => void;
+  onLead: (text: string) => void;
   onPage: (event: PageEvent) => void;
   onResponse: (response: ExperienceResponse) => void;
 };
@@ -26,7 +26,7 @@ const PAGE_EVENT_TYPES = new Set(["page_head", "page_tab", "group_open", "group_
 
 export function dispatchStreamEvent(event: StreamEvent, handlers: StreamHandlers): void {
   if (event.type === "status") handlers.onStatus(event.text);
-  else if (event.type === "answer") handlers.onAnswer(event.text);
+  else if (event.type === "lead") handlers.onLead(event.text);
   else if (event.type === "response") handlers.onResponse(event.response);
   else if (event.type === "error") throw new Error(event.detail ?? ASK_ERROR);
   else if (PAGE_EVENT_TYPES.has(event.type)) handlers.onPage(event);
@@ -71,7 +71,7 @@ export async function askStreaming(
     const event = JSON.parse(line) as StreamEvent;
     dispatchStreamEvent(event, {
       onStatus: handlers.onStatus,
-      onAnswer: handlers.onAnswer,
+      onLead: handlers.onLead,
       onPage: handlers.onPage,
       onResponse: (response) => { answer = response; }
     });
@@ -118,7 +118,7 @@ function delay(ms: number): Promise<void> {
 export async function replayStreamEvents(events: StreamEvent[], handlers: StreamHandlers, signal?: AbortSignal): Promise<void> {
   for (const event of events) {
     if (signal?.aborted) return;
-    await delay(event.type === "block" ? 600 : event.type === "answer" ? 40 : 300);
+    await delay(event.type === "block" ? 600 : event.type === "lead" ? 40 : 300);
     if (signal?.aborted) return;
     dispatchStreamEvent(event, handlers);
   }

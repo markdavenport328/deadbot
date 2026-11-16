@@ -22,6 +22,7 @@ the response cache off, so every run is a fresh model turn.
 from __future__ import annotations
 
 import argparse
+import faulthandler
 import json
 import logging
 import os
@@ -148,10 +149,8 @@ def print_report(dump: dict[str, Any], response: dict[str, Any] | None) -> None:
             print("  ERROR: " + str(plan["result"]))
     if response:
         print("-- page")
-        print(f"  title: {response.get('title')}")
-        print(f"  answer: {response.get('answer', '')[:700]}")
-        if response.get("body_lead"):
-            print(f"  lead: {response['body_lead'][:300]}")
+        print(f"  headline: {response.get('headline')}")
+        print(f"  lead: {response.get('lead', '')[:700]}")
         for group in response.get("groups") or []:
             print(f"  group {group.get('presentation')} {group.get('title')!r} blocks={group.get('block_indexes')}")
         for index, block in enumerate(response.get("blocks") or []):
@@ -293,7 +292,15 @@ def main() -> None:
         return
     args.out.mkdir(parents=True, exist_ok=True)
     if args.command == "ask":
+        # A turn still running after nine minutes is stuck somewhere: write
+        # every thread's stack to a file so the stall can be found.
+        slug = re.sub(r"[^a-z0-9]+", "-", args.question.lower()).strip("-")[:48]
+        stall = (args.out / f"stall-{time.strftime('%H%M%S')}-{os.getpid()}-{slug}.txt").open("w")
+        faulthandler.dump_traceback_later(540, file=stall)
         ask(args.question, args.out)
+        faulthandler.cancel_dump_traceback_later()
+        stall.close()
+        Path(stall.name).unlink(missing_ok=True)
     else:
         serve(args.out, args.port)
 

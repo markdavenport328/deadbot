@@ -32,14 +32,10 @@ def _tool_by_name(store: CanonicalStore, name: str):
     return next(tool for tool in build_tools(store) if tool.name == name)
 
 
-def test_research_tools_are_registered_and_directory_lists_sites():
+def test_research_tools_are_registered():
     _, tools = _tools(FakeTransport({}))
-    assert {"search_site", "read_page", "get_recording_reviews", "get_research_source_directory"} <= set(tools)
-    directory = json.loads(tools["get_research_source_directory"].invoke({}))
-    sites = {site["site_id"]: site for site in directory["research_sites"]}
-    assert sites["lost-live-dead"]["search_method"] == "blogger_feed"
-    assert sites["dead-net"]["search_method"] == "none" and sites["dead-net"]["read_hints"]
-    assert "read_page" in directory["research_tools"]
+    assert {"search_site", "read_page", "get_recording_reviews"} <= set(tools)
+    assert "get_research_source_directory" not in tools
 
 
 def test_read_page_tool_returns_readable_text_and_grounds_the_url():
@@ -248,16 +244,12 @@ def test_enum_parameters_reach_the_tool_schema_and_bad_values_still_get_the_tool
     assert parameters["group_by"]["enum"] == ["year", "song", "venue", "city", "guest"]
     assert parameters["measure"]["enum"] == ["count", "distinct_shows", "distinct_songs"]
     assert "value_desc" in parameters["sort"]["enum"]
-    for name, field, values in (
-        ("get_selections_for", "entity_type", ["song", "show"]),
-        ("get_media_links", "entity_type", ["show", "performance"]),
-        ("get_segue_pairing", "transition", ["segue", "any"]),
-    ):
+    for name, field, values in (("get_segue_pairing", "transition", ["segue", "any"]),):
         schema = convert_to_openai_tool(_tool_by_name(store, name))["function"]["parameters"]["properties"]
         assert schema[field]["enum"] == values
     # A value outside the enum still reaches the tool, whose error names the valid values.
-    payload = json.loads(_tool_by_name(store, "get_media_links").invoke({"entity_type": "venue", "entity_id": "x"}))
-    assert payload["error"] == "entity_type must be 'show' or 'performance'"
+    payload = json.loads(_tool_by_name(store, "get_segue_pairing").invoke({"first_song": "Dark Star", "second_song": "St. Stephen", "transition": "sideways"}))
+    assert payload["error"] == "Unknown transition" and payload["valid"] == ["segue", "any"]
 
 
 def test_get_grid_is_registered_and_resolves_titles():

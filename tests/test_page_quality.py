@@ -3,9 +3,8 @@ from deadbot.page_quality import model_layers, score_page
 
 def _page(**overrides):
     page = {
-        "answer": "The Dead played Harrisburg twice, both at City Island: June 22, 1983, and June 23, 1984.",
-        "title": "Two summers at City Island",
-        "body_lead": None,
+        "lead": "The Dead played Harrisburg twice, both at City Island: June 22, 1983, and June 23, 1984.",
+        "headline": "Two summers at City Island",
         "groups": [],
         "blocks": [
             {"type": "show_unit", "disclosure": "expanded", "visible_facets": ["listen"], "note": "A rare Bobby-sung Lovelight closes the first night."},
@@ -23,15 +22,15 @@ def test_a_lean_page_is_clean_and_meets_its_shape():
     assert scored["expected"] == {"met": True, "wanted": "show_unit expanded ×2+"}
 
 
-def test_a_lead_that_restates_the_chat_answer_is_a_repeat():
-    scored = score_page(_page(body_lead="Harrisburg was a two-night stop: the Dead played City Island in June 1983 and June 1984."))
-    assert scored["repeats"] and scored["repeats"][0].startswith("lead")
+def test_a_group_lead_that_restates_the_lead_is_a_repeat():
+    scored = score_page(_page(groups=[{"title": None, "lead": "Harrisburg was a two-night stop: the Dead played City Island in June 1983 and June 1984."}]))
+    assert scored["repeats"] and scored["repeats"][0].startswith("group[0].lead")
     assert not scored["clean"]
 
 
 def test_catalog_talk_narration_and_hedges_are_counted():
     page = _page(
-        body_lead="The catalog lists every show below, ordered by date.",
+        headline="The catalog lists every show below, ordered by date.",
         groups=[{"title": None, "lead": "These are performance counts, not popularity ratings."}],
     )
     scored = score_page(page)
@@ -44,7 +43,7 @@ def test_catalog_talk_narration_and_hedges_are_counted():
 def test_server_filled_fields_are_not_scored():
     # Venue names and setlists come from the store; only the model's words count.
     page = _page(blocks=[{"type": "show_unit", "venue_name": "Library Hall", "note": None, "sets": [{"songs": [{"title": "Below the Line"}]}]}])
-    assert model_layers(page) == [("title", "Two summers at City Island")]
+    assert model_layers(page) == [("headline", "Two summers at City Island")]
     assert score_page(page)["clean"]
 
 
@@ -118,3 +117,35 @@ def test_a_one_word_venue_needs_the_whole_row_to_match():
     shows = [{"type": "show_unit", "venue_name": "Winterland", "tracks": [{"audio_url": "x"}]}]
     grid = {"type": "editorial", "title": "Bay Area nights", "items": [{"title": "Winterland opens"}, {"title": "Winterland closes"}]}
     assert score_page(_page(blocks=[*shows, grid]))["restated"] == []
+
+
+def _show_section(lead, row_note):
+    sets = [{"songs": [{"title": title} for title in ("Eyes of the World", "Estimated Prophet", "Dark Star", "The Wheel", "Throwing Stones")]}]
+    row = {"show_date": "1990-03-29", "venue_name": "Nassau Veterans Memorial Coliseum", "length_seconds": 789, "note": row_note}
+    return _page(
+        groups=[{"title": "The debut", "lead": lead, "block_indexes": [0, 1]}],
+        blocks=[
+            {"type": "show_unit", "sets": sets},
+            {"type": "song_versions", "rows": [row]},
+        ],
+    )
+
+
+def test_words_that_tell_what_the_cards_show_are_retold():
+    scored = score_page(_show_section(
+        "The second set ran Eyes of the World > Estimated Prophet > Dark Star > The Wheel.",
+        "March 29 at Nassau Veterans Memorial Coliseum, 13:09 long.",
+    ))
+    assert scored["retold"] == [
+        "group[0].lead: walks the setlist (4 songs on its show card)",
+        "song_versions[1].row[0].note: gives its row's march 29, Nassau Veterans Memorial Coliseum, 13:09",
+    ]
+    assert not scored["clean"]
+
+
+def test_words_about_what_happens_in_the_music_are_not_retold():
+    scored = score_page(_show_section(
+        "Phil invited him backstage; the band tried him on Bird Song, then kept him for Dark Star.",
+        "Listen for the sax answering Jerry in the second verse.",
+    ))
+    assert scored["retold"] == []

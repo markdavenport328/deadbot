@@ -444,6 +444,34 @@ class PersonRosterBlock(ExperienceModel):
     items: list[PersonRosterItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
+class PeopleTimelineSpan(ExperienceModel):
+    """One stretch of a person's time with the band, from the stored memberships or lineups."""
+
+    role: str | None = None
+    start_date: str
+    end_date: str
+    member: bool = True
+
+
+class PeopleTimelinePerson(ExperienceModel):
+    person_id: str
+    name: str
+    show_count: int = Field(ge=0)
+    spans: list[PeopleTimelineSpan] = Field(min_length=1, max_length=LIST_CEILING)
+    note: str | None = None
+
+
+class PeopleTimelineBlock(ExperienceModel):
+    """People as bars across the years they played: the model chose who; the server drew each span and count."""
+
+    type: Literal["people_timeline"]
+    title: str | None = None
+    note: str | None = None
+    first_year: int
+    last_year: int
+    people: list[PeopleTimelinePerson] = Field(min_length=1, max_length=LIST_CEILING)
+
+
 class EquipmentItem(ExperienceModel):
     equipment_id: str
     name: str
@@ -787,6 +815,53 @@ class VersionStripBlock(ExperienceModel):
     total_count: int = Field(ge=0)
     rows: list[VersionStripRow] = Field(min_length=1, max_length=LIST_CEILING)
     year_counts: list[VersionStripYear] = Field(default_factory=list, max_length=LIST_CEILING)
+
+
+class SongVersionsSong(ExperienceModel):
+    song_id: str
+    title: str
+
+
+class SongVersionsRelease(ExperienceModel):
+    release_id: str
+    title: str
+    url: str | None = None
+
+
+class SongVersionsRow(ExperienceModel):
+    """One version of the song: a night, its length, and the tape it plays."""
+
+    performance_id: str
+    show_id: str
+    show_date: str
+    venue_name: str
+    city: str | None = None
+    # The release's length when there is one, else the tape's; the tape is what plays.
+    length_seconds: int | None = Field(default=None, ge=0)
+    tape_seconds: int | None = Field(default=None, ge=0)
+    release: SongVersionsRelease | None = None
+    track: PlayableTrack | None = None
+    note: str | None = None
+    # The row's own song; a block can hold several songs from one night.
+    song_id: str | None = None
+    song_title: str | None = None
+    # The model's answer for each of the block's criteria, in their order; "" where it gave none.
+    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+
+
+class SongVersionsBlock(ExperienceModel):
+    """Chosen versions of one song on one clock, each row playable.
+
+    The model chose the performances, their order and any note; the server
+    filled each night, length, tape track and release from the store.
+    """
+
+    type: Literal["song_versions"]
+    title: str | None = None
+    # Points the model compares the versions on; each row's judgments answer them.
+    criteria: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
+    song: SongVersionsSong
+    rows: list[SongVersionsRow] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class GridColumn(ExperienceModel):
@@ -1150,6 +1225,7 @@ ExperienceBlock = Annotated[
     | ShowSelectionBlock
     | GuestAppearanceListBlock
     | PersonRosterBlock
+    | PeopleTimelineBlock
     | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock
@@ -1160,6 +1236,7 @@ ExperienceBlock = Annotated[
     | ArrangementSearchBlock
     | DataChartBlock
     | VersionStripBlock
+    | SongVersionsBlock
     | GridBlock
     | ProvenanceNoteBlock
     | GapStateBlock
@@ -1292,11 +1369,10 @@ class ExperienceGroup(ExperienceModel):
 
 
 class ExperienceResponse(ExperienceModel):
-    schema_version: Literal["2"] = "2"
+    schema_version: Literal["3"] = "3"
     thread_id: str
-    title: str
-    answer: str
-    body_lead: str | None = None
+    headline: str | None = None
+    lead: str
     initial_tab: WorkspaceTab | None = Field(default=None, description="The workspace tab the page opens on.")
     mode: ExperienceMode = "answer"
     conversation: list[ConversationTurn] = Field(default_factory=list, max_length=50)

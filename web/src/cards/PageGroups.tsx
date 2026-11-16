@@ -5,7 +5,8 @@ import { ListeningHero } from "./listening";
 import { type RenderGroup } from "../core/page-draft";
 import { archiveTrack } from "./listen-control";
 import { formatShowDateLong } from "../core/format";
-import { ExternalLink, renderInline } from "./inline";
+import { ExternalLink } from "./inline";
+import { RichText } from "./text";
 import { isUnit, unitKey } from "./units/shared";
 import { MentionRow, chunkMentions, CollapsedRow } from "./units/rows";
 import { blockHeading, sameHeading } from "./headings";
@@ -77,14 +78,13 @@ function tapeLabels(tapes: Tape[]): Map<string, string> {
 
 export function ComposedPage({
   title,
-  lead,
   groups,
   sources,
   composing,
   onFollowUp
 }: {
-  title: string;
-  lead: string | null;
+  // The model's headline, when it wrote one. The lead lives in the conversation column.
+  title: string | null;
   groups: RenderGroup[];
   sources: SourceReference[];
   composing: boolean;
@@ -97,10 +97,13 @@ export function ComposedPage({
   return (
     <>
       {hero && <ListeningHero block={hero} />}
-      <div className="content-heading">
-        <h1 id="answer-title" tabIndex={-1}>{title}</h1>
-      </div>
-      {lead && <p className="answer-lead">{renderInline(lead)}</p>}
+      {title ? (
+        <div className="content-heading">
+          <h1 id="answer-title" tabIndex={-1}>{title}</h1>
+        </div>
+      ) : (
+        <span id="answer-title" tabIndex={-1} />
+      )}
       <PageGroups groups={bodyGroups} sources={sources} composing={composing} onFollowUp={onFollowUp} afterHero={Boolean(hero)} />
       {composing && <p className="composing-note">Composing the page…</p>}
       {!composing && <SourcesFooter groups={groups} sources={sources} />}
@@ -138,12 +141,12 @@ export function PageGroups({
             group.presentation === "argument" ? (
               <header className="group-heading claim">
                 {groupTitle && <h2>{groupTitle}</h2>}
-                {group.lead && <p className="claim-text">{renderInline(group.lead)}</p>}
+                {group.lead && <RichText className="claim-text" text={group.lead} />}
               </header>
             ) : (
               <header className="group-heading">
                 {groupTitle && <h2>{groupTitle}</h2>}
-                {group.lead && <p>{renderInline(group.lead)}</p>}
+                {group.lead && <RichText text={group.lead} />}
               </header>
             )
           )}

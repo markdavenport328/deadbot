@@ -12,10 +12,10 @@ type Reply =
   | { kind: "stream"; chunks: (object | Promise<void>)[] }
   | "reject";
 
-function page(title: string, notebook: string | null, conversation: Turn[], blocks: ExperienceBlock[] = [], groups: ExperienceResponse["groups"] = []): ExperienceResponse {
+function page(headline: string | null, notebook: string | null, conversation: Turn[], blocks: ExperienceBlock[] = [], groups: ExperienceResponse["groups"] = []): ExperienceResponse {
   return {
-    schema_version: "2", thread_id: "web-test", title, answer: conversation[conversation.length - 1].text,
-    body_lead: null, mode: "answer", conversation, blocks, groups, sources: [],
+    schema_version: "3", thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
+    mode: "answer", conversation, blocks, groups, sources: [],
     ...(notebook ? { notebook } : {})
   } as ExperienceResponse;
 }
@@ -154,9 +154,43 @@ test("an answer-only page grays Listen and Charts and keeps the rail to the requ
   expect(tab("Listen")).toHaveAttribute("aria-disabled", "true");
   expect(tab("Charts")).toHaveAttribute("aria-disabled", "true");
   expect(tab("Read")).toHaveAttribute("aria-selected", "true");
-  expect(screen.getByRole("tabpanel")).toHaveTextContent("August 1, 1942, in San Francisco.");
+  // The lead sits above the tabs, so it shows whichever tab is open.
+  expect(screen.getByText("August 1, 1942, in San Francisco.")).toBeInTheDocument();
+  expect(screen.getByRole("tabpanel")).not.toHaveTextContent("August 1, 1942");
   expect(within(rail()).queryByText(/August 1, 1942/)).toBeNull();
   expect(rows()).toHaveLength(1);
+});
+
+test("the headline sits above the lead, and the lead above the tabs", async () => {
+  const birthday = page("Jerry Garcia's birthday", null, [{ role: "user", text: "When was Jerry born?" }, { role: "assistant", text: "August 1, 1942, in San Francisco." }]);
+  replies = [{ kind: "plain", body: birthday }];
+  await openWorkspace();
+  ask("When was Jerry born?");
+  const heading = await screen.findByRole("heading", { level: 1, name: "Jerry Garcia's birthday" });
+  const lead = screen.getByText("August 1, 1942, in San Francisco.");
+  const tabs = tab("Read");
+  expect(heading.compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(lead.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("a page without a headline opens with just the lead", async () => {
+  const bare = page(null, null, [{ role: "user", text: "When was Jerry born?" }, { role: "assistant", text: "August 1, 1942, in San Francisco." }]);
+  replies = [{ kind: "plain", body: bare }];
+  await openWorkspace();
+  ask("When was Jerry born?");
+  const lead = await screen.findByText("August 1, 1942, in San Francisco.");
+  expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+  expect(lead.compareDocumentPosition(tab("Read")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("the lead stays visible on every tab while the page is streaming", async () => {
+  const hold = new Promise<void>(() => {});
+  replies = [{ kind: "stream", chunks: [{ type: "lead", text: "Twice, both at City Island." }, hold] }];
+  await openWorkspace();
+  ask("Harrisburg?");
+  await screen.findByText("Twice, both at City Island.");
+  fireEvent.click(tab("Charts"));
+  expect(screen.getByText("Twice, both at City Island.")).toBeVisible();
 });
 
 test("a tab the visitor picks mid-stream survives later groups and the final response", async () => {
@@ -171,7 +205,7 @@ test("a tab the visitor picks mid-stream survives later groups and the final res
   const meta = (index: number, presentation: string) => ({ index, title: null, lead: null, presentation, criteria: [] });
   replies = [{ kind: "stream", chunks: [
     { type: "status", text: "Looking." },
-    { type: "answer", text: "Twice." },
+    { type: "lead", text: "Twice." },
     { type: "page_head", title: "Harrisburg", lead: null },
     { type: "group_open", ...meta(0, "collection") },
     { type: "block", group_index: 0, block: show },
@@ -203,7 +237,7 @@ test("the player keeps playing through requests and history moves", async () => 
   replies = [{ kind: "plain", body: first }, { kind: "plain", body: late80s() }];
   await openWorkspace();
   ask("MSG");
-  await screen.findByRole("heading", { level: 1, name: withTape.title });
+  await screen.findByRole("heading", { level: 1, name: withTape.headline ?? "" });
   const play = document.querySelector(".exploration-pane:not([hidden]) .card-head .card-play") as HTMLElement;
   await act(async () => { fireEvent.click(play); });
   const nowPlaying = () => screen.getByRole("region", { name: "Now playing" }).querySelector(".now-playing-title")?.textContent;
@@ -238,7 +272,7 @@ test("clicking the held previous page does not count as taking over the new one"
   replies = [{ kind: "plain", body: msg() }, { kind: "stream", chunks: [
     { type: "status", text: "Narrowing to 1987–1989" },
     hold,
-    { type: "answer", text: "The runs grew to nine nights." },
+    { type: "lead", text: "The runs grew to nine nights." },
     { type: "response", response: late80s() }
   ] }];
   await openWorkspace();
@@ -327,7 +361,7 @@ test("a tab already looked at during a request does not get its new mark again",
   ]);
   const meta = { index: 0, title: null, lead: null, presentation: "collection", criteria: [] };
   replies = [{ kind: "stream", chunks: [
-    { type: "answer", text: "Twice." },
+    { type: "lead", text: "Twice." },
     { type: "group_open", ...meta },
     { type: "block", group_index: 0, block: show },
     hold,
@@ -355,7 +389,7 @@ test("on a phone, the player folds while the dock's ask box has focus", async ()
   replies = [{ kind: "plain", body: { ...withTape, conversation: msgTurns } }];
   await openWorkspace();
   ask("MSG");
-  await screen.findByRole("heading", { level: 1, name: withTape.title });
+  await screen.findByRole("heading", { level: 1, name: withTape.headline ?? "" });
   const play = document.querySelector(".exploration-pane:not([hidden]) .card-head .card-play") as HTMLElement;
   await act(async () => { fireEvent.click(play); });
   const bar = () => document.querySelector(".mobile-dock .now-playing-bar") as HTMLElement;

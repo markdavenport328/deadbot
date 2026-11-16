@@ -12,6 +12,8 @@ Every check counts something a reader would notice:
 - catalog: talk about the catalog, library or documentation instead of the band
 - narration: describing the page itself ("below", "open any card")
 - hedges: stock caveats such as "not popularity ratings"
+- retold: words that tell what a card in the same section already shows (its
+  setlist, or a row's date, venue or length)
 
 Three more checks look at what the visitor can do with the page rather than
 its words:
@@ -57,7 +59,7 @@ def _content(text: str) -> set[str]:
 
 
 def model_layers(response: dict[str, Any]) -> list[tuple[str, str]]:
-    """(where, text) for every piece of the page the model wrote, chat answer excluded."""
+    """(where, text) for every piece of the page the model wrote, lead excluded (it is the answer the layers are measured against)."""
 
     layers: list[tuple[str, str]] = []
 
@@ -65,8 +67,7 @@ def model_layers(response: dict[str, Any]) -> list[tuple[str, str]]:
         if isinstance(value, str) and value.strip():
             layers.append((where, value.strip()))
 
-    add("title", response.get("title"))
-    add("lead", response.get("body_lead"))
+    add("headline", response.get("headline"))
     for index, group in enumerate(response.get("groups") or []):
         add(f"group[{index}].title", group.get("title"))
         add(f"group[{index}].lead", group.get("lead"))
@@ -105,7 +106,7 @@ def repeats(chat: str, layers: list[tuple[str, str]], threshold: float = 0.5) ->
     flagged: list[str] = []
     for where, text in layers:
         # A title naturally names what the answer names; repeats are sentences.
-        if where == "title" or where.endswith(".title"):
+        if where in {"headline", "title"} or where.endswith(".title"):
             continue
         words = _content(text)
         if len(words) < 5:
@@ -260,10 +261,92 @@ def restated_cards(blocks: list[dict[str, Any]]) -> list[str]:
     return found
 
 
+_MONTHS = "January February March April May June July August September October November December".split()
+
+
+def _plain(text: str) -> str:
+    text = text.lower().replace("’", "'").replace("“", '"').replace("”", '"')
+    return " " + re.sub(r"[^a-z0-9':/-]+", " ", text) + " "
+
+
+def _mentions(text: str, phrase: str) -> bool:
+    phrase = _plain(phrase).strip()
+    if phrase.startswith("the "):
+        phrase = phrase[4:]
+    return bool(phrase) and f" {phrase} " in text
+
+
+def _date_forms(iso: Any) -> list[str]:
+    match = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})", str(iso or ""))
+    if not match:
+        return []
+    year, month, day = match.group(1), int(match.group(2)), int(match.group(3))
+    name = _MONTHS[month - 1].lower()
+    return [f"{name} {day}", f"{month}/{day}/{year[2:]}", f"{month}/{day}/{year}", match.group(0)]
+
+
+def _clock_time(seconds: Any) -> str | None:
+    if not isinstance(seconds, (int, float)) or seconds <= 0:
+        return None
+    hours, rest = divmod(int(seconds), 3600)
+    minutes, secs = divmod(rest, 60)
+    return f"{hours}:{minutes:02d}:{secs:02d}" if hours else f"{minutes}:{secs:02d}"
+
+
+def _setlist_titles(block: dict[str, Any]) -> set[str]:
+    if block.get("type") == "show_unit":
+        songs = [song for set_ in block.get("sets") or [] for song in set_.get("songs") or []]
+    elif block.get("type") == "listening_hero":
+        songs = block.get("queue") or []
+    else:
+        return set()
+    return {song["title"] for song in songs if isinstance(song, dict) and isinstance(song.get("title"), str)}
+
+
+def retold(response: dict[str, Any], setlist_min: int = 4) -> list[str]:
+    """Words that tell the visitor what a card in the same section already shows.
+
+    A section's text, or a show's line, that walks through the setlist its show
+    card draws; a performance note that gives its row's date, venue or length.
+    """
+
+    blocks = response.get("blocks") or []
+    groups = response.get("groups") or [{"title": None, "lead": None, "block_indexes": list(range(len(blocks)))}]
+    found: list[str] = []
+    for g_index, group in enumerate(groups):
+        members = [(i, blocks[i]) for i in group.get("block_indexes") or [] if isinstance(i, int) and 0 <= i < len(blocks)]
+        titles = set().union(*(_setlist_titles(block) for _, block in members)) if members else set()
+        texts = [(f"group[{g_index}].lead", group.get("lead"))]
+        texts += [(f"{block['type']}[{i}].{key}", block.get(key)) for i, block in members for key in ("note", "line")]
+        for where, text in texts:
+            if not isinstance(text, str) or not text.strip():
+                continue
+            plain = _plain(text)
+            named = sorted(title for title in titles if _mentions(plain, title))
+            if len(named) >= setlist_min:
+                found.append(f"{where}: walks the setlist ({len(named)} songs on its show card)")
+        for i, block in members:
+            if block.get("type") != "song_versions":
+                continue
+            for r_index, row in enumerate(block.get("rows") or []):
+                if not isinstance(row, dict) or not isinstance(row.get("note"), str):
+                    continue
+                plain = _plain(row["note"])
+                facts = [form for form in _date_forms(row.get("show_date")) if f" {form}" in plain]
+                if isinstance(row.get("venue_name"), str) and _mentions(plain, row["venue_name"]):
+                    facts.append(row["venue_name"])
+                length = _clock_time(row.get("length_seconds"))
+                if length and f" {length} " in plain:
+                    facts.append(length)
+                if facts:
+                    found.append(f"song_versions[{i}].row[{r_index}].note: gives its row's {', '.join(facts)}")
+    return found
+
+
 def score_page(response: dict[str, Any], expect: dict[str, Any] | None = None) -> dict[str, Any]:
     """Counts and examples for one delivered page."""
 
-    chat = response.get("answer") or ""
+    chat = response.get("lead") or ""
     layers = model_layers(response)
     blocks = response.get("blocks") or []
     result: dict[str, Any] = {
@@ -277,10 +360,11 @@ def score_page(response: dict[str, Any], expect: dict[str, Any] | None = None) -
         "silent": silent_cards(blocks),
         "empty_rows": empty_rows(blocks),
         "restated": restated_cards(blocks),
+        "retold": retold(response),
     }
     if expect:
         met, described = _expectation_met(expect, blocks)
         result["expected"] = {"met": met, "wanted": described}
-    result["clean"] = not (result["repeats"] or result["catalog"] or result["narration"] or result["hedges"])
+    result["clean"] = not (result["repeats"] or result["retold"] or result["catalog"] or result["narration"] or result["hedges"])
     result["usable"] = not (result["silent"] or result["empty_rows"] or result["restated"])
     return result

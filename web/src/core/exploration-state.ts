@@ -29,7 +29,7 @@ export type Pending = {
   focus: AskFocus | null;
   threadId: string;
   statuses: string[];
-  answer: string | null;
+  lead: string | null;
   draft: Draft | null;
   initialTab: WorkspaceTab | null;
   view: EntryView;
@@ -40,7 +40,7 @@ export type ExplorationState = { entries: Entry[]; cursor: number; pending: Pend
 export type ExplorationAction =
   | { type: "submit"; requestId: string; question: string; source: RequestSource; focus: AskFocus | null; fresh: boolean; threadId: string }
   | { type: "status"; requestId: string; text: string }
-  | { type: "answer"; requestId: string; text: string }
+  | { type: "lead"; requestId: string; text: string }
   | { type: "page"; requestId: string; event: PageEvent }
   | { type: "initialTab"; requestId: string; tab: WorkspaceTab }
   | { type: "complete"; requestId: string; response: ExperienceResponse }
@@ -64,7 +64,7 @@ export function isAsking(state: ExplorationState): boolean {
 }
 
 export function pendingHasContent(pending: Pending): boolean {
-  return Boolean(pending.answer && pending.answer.trim()) || (pending.draft?.groups ?? []).some((group) => group.blocks.length > 0);
+  return Boolean(pending.lead && pending.lead.trim()) || (pending.draft?.groups ?? []).some((group) => group.blocks.length > 0);
 }
 
 export function requestContext(state: ExplorationState, fresh: boolean): { conversation: ExperienceResponse["conversation"]; notebook: string | null; threadId: string | null } {
@@ -111,7 +111,7 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
         startView: false,
         pending: {
           requestId: action.requestId, baseEntryId, question: action.question, source: action.source, focus: action.focus,
-          threadId: action.threadId, statuses: [], answer: null, draft: null, initialTab: null, view: emptyView(),
+          threadId: action.threadId, statuses: [], lead: null, draft: null, initialTab: null, view: emptyView(),
           interacted: false, error: null
         }
       };
@@ -119,9 +119,9 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
     case "status":
       if (!pending || pending.requestId !== action.requestId) return state;
       return { ...state, pending: { ...pending, statuses: [...pending.statuses, action.text] } };
-    case "answer":
+    case "lead":
       if (!pending || pending.requestId !== action.requestId) return state;
-      return { ...state, pending: settleTab({ ...pending, answer: action.text }) };
+      return { ...state, pending: settleTab({ ...pending, lead: action.text }) };
     case "page":
       if (!pending || pending.requestId !== action.requestId) return state;
       return { ...state, pending: settleTab({ ...pending, draft: applyPageEvent(pending.draft, action.event) }) };
