@@ -554,7 +554,7 @@ def test_show_payload_keeps_source_setlist_gap_note_without_raw_provenance():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_show").invoke({"show_id_or_date": "gd-1965-05-05"}))
     assert result["performances"] == []
-    assert "no setlist entries" in result["show"]["setlist_note"]
+    assert result["show"]["setlist_note"] == "No setlist survives from this show."
     assert "notes" not in result["show"]
     assert "source_key" not in result["show"]
 

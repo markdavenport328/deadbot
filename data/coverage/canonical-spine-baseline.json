@@ -10,7 +10,7 @@
   "entity_counts": {
     "shows": 2358,
     "songs": 436,
-    "performances": 39774,
+    "performances": 39773,
     "people": 341,
     "people_with_show_assignments": 148,
     "show_performer_assignments": 26265
@@ -504,7 +504,7 @@
     {
       "year": 1974,
       "show_count": 40,
-      "performance_count": 1059,
+      "performance_count": 1058,
       "shows_with_performances": 40,
       "shows_without_performances": 0,
       "performer_assignment_count": 447,

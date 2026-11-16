@@ -93,7 +93,7 @@ def test_stream_endpoint_logs_one_metrics_line(caplog):
 
 
 def test_metrics_count_notebook_reads_and_the_notebook_index_size():
-    index = HumanMessage(content="Research notebook, turn 1: one line", name="research_notebook")
+    index = HumanMessage(content="Notebook, turn 1: one line", name="research_notebook")
     messages = [
         HumanMessage(content="earlier"), AIMessage(content="answer"), index,
         HumanMessage(content="Compare the Lyceum nights."),

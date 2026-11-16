@@ -110,7 +110,7 @@ def test_each_turns_research_follows_its_answer_and_the_question_comes_last():
     sent = agent.calls[0][0]["messages"]
     assert [message.type for message in sent] == ["human", "ai", "human", "human"]
     assert sent[2].name == composition.NOTEBOOK_MESSAGE_NAME
-    assert sent[2].content.startswith("Research notebook, turn 1:")
+    assert sent[2].content.startswith("Notebook, turn 1:")
     assert f"[{book.entries[0].key}] get_show gd-1972-05-26" in sent[2].content
     assert sent[3].content == "Compare the Lyceum nights."
 
@@ -127,7 +127,7 @@ def test_a_new_turn_leaves_every_earlier_message_byte_identical():
     one = [message.content for message in agent_one.calls[0][0]["messages"]][:-1]
     two = [message.content for message in agent_two.calls[0][0]["messages"]]
     assert two[: len(one)] == one
-    assert two[len(one) + 2].startswith("Research notebook, turn 2:")
+    assert two[len(one) + 2].startswith("Notebook, turn 2:")
 
 
 def test_a_click_on_something_already_researched_is_flagged_before_the_question_beside_the_grid_note():
@@ -144,11 +144,11 @@ def test_a_click_on_something_already_researched_is_flagged_before_the_question_
     sent = agent.calls[0][0]["messages"]
     # [... flags, question, the grid's own focus note]: separate messages.
     assert sent[-3].name == composition.NOTEBOOK_MESSAGE_NAME
-    assert sent[-3].content.startswith("Already in the research notebook for what the visitor clicked:")
+    assert sent[-3].content.startswith("Already in the notebook for what the visitor clicked:")
     assert book.entries[0].key in sent[-3].content
     assert sent[-2].content == question
     assert sent[-1].name == FOCUS_MESSAGE_NAME
-    assert "Already in the research notebook" not in sent[-1].content
+    assert "Already in the notebook" not in sent[-1].content
 
 
 def test_a_focus_with_nothing_researched_adds_no_flags_message():
@@ -183,7 +183,7 @@ def test_the_streamed_run_gets_the_same_config():
 def test_notebook_messages_stay_out_of_the_visible_conversation():
     messages = [
         HumanMessage(content="q1"), AIMessage(content="a1"),
-        notebook.notebook_message("Research notebook, turn 1: what the tools returned"),
+        notebook.notebook_message("Notebook, turn 1: what the tools returned"),
         *turn("q2", "a2", []),
     ]
     response = build_experience_response("q2", "t", messages, store())
@@ -215,7 +215,7 @@ def test_the_streamed_page_grounds_notebook_ids_the_same_way():
 
 
 def test_the_finish_tool_names_the_notebook_as_a_source_of_ids():
-    assert "research notebook" in build_finish_tool().description
+    assert "the notebook" in build_finish_tool().description
 
 
 def test_a_url_the_notebook_holds_keeps_its_link_in_chat():

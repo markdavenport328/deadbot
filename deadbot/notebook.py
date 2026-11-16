@@ -56,14 +56,14 @@ CHIP_CEILING = 8
 BLOCK_ID_CEILING = 6
 
 TURN_HEADING = (
-    "Research notebook, turn {number}: what the tools returned for the answer above, one line per call. "
+    "Notebook, turn {number}: what the tools returned for the answer above, one line per call. "
     "Each line names, by ID, the shows, performances, releases, songs and people its result holds. read_notebook brings an entry back in full, or only the part that mentions given IDs."
 )
 EARLIER_HEADING = (
-    "Research notebook from earlier in this conversation, one line per call. "
+    "Notebook from earlier in this conversation, one line per call. "
     "Each line names, by ID, the shows, performances, releases, songs and people its result holds. read_notebook brings an entry back in full, or only the part that mentions given IDs."
 )
-FLAGS_HEADING = "Already in the research notebook for what the visitor clicked:"
+FLAGS_HEADING = "Already in the notebook for what the visitor clicked:"
 
 
 @dataclass

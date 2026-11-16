@@ -6,6 +6,8 @@ Stable IDs are important: use lowercase kebab-case identifiers and do not replac
 
 Canonical edits should ideally be produced by a documented normalization process. A carefully documented manual correction is acceptable when necessary. In either case, preserve the reason and source evidence as the project grows.
 
+Hand corrections are logged in `CORRECTIONS.md`.
+
 For collection and normalization work, follow `docs/collection-methodology.md`.
 In particular, do not promote a failed request, unresolved title match, or
 source-specific display value without recording the decision and evidence.
