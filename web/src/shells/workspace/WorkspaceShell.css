@@ -91,6 +91,12 @@
    height (0 until something plays), set by the shell. */
 .workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: calc(100vh - var(--dock-h, 0px)); column-gap: var(--space-unit); }
 .workspace-shell.phone .workspace-grid { grid-template-columns: minmax(0, 1fr); }
+/* The queue's rail joins on the right once something is queued, scrolling on
+   its own and stopping at the player like the history rail. */
+.workspace-shell .workspace-grid:has(> .queue-rail) { grid-template-columns: 250px minmax(0, 1fr) 330px; column-gap: var(--space-content); }
+.workspace-shell .queue-rail { position: sticky; top: 0; height: calc(100vh - var(--dock-h, 0px)); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-content) var(--space-part); background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-left: 1px solid var(--hair); }
+/* The site menu's button sits over the rail's top right corner. */
+.workspace-shell .queue-rail .queue-panel-head { padding-right: 3.25rem; }
 .workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: calc(100vh - var(--dock-h, 0px)); min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
 .workspace-shell:not(.phone) { padding-bottom: var(--dock-h, 0px); }
 .workspace-shell:not(.phone) .workspace-main { min-height: calc(100vh - var(--dock-h, 0px)); padding-bottom: 0; }
