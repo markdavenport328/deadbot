@@ -1,10 +1,8 @@
-import { memo, useMemo, useState } from "react";
+import { memo } from "react";
 import type { FollowUp } from "../../core/ask-request";
 import { groupsOfResponse, type RenderGroup } from "../../core/page-draft";
 import type { ExperienceResponse, SourceReference } from "../../types";
-import { WORKSPACE_TABS, openingTab, readTab, routeGroups, tabsWithContent, type WorkspaceTab } from "../../core/tab-routing";
-import { visible, type Entry, type EntryView, type ExplorationState, type Pending } from "../../core/exploration-state";
-import { WorkspaceTabs, type TabState } from "./WorkspaceTabs";
+import { visible, type EntryView, type ExplorationState, type Pending } from "../../core/exploration-state";
 import { RichText } from "../../cards/text";
 import { PageGroups, SourcesFooter } from "../../cards/PageGroups";
 
@@ -14,8 +12,8 @@ import { PageGroups, SourcesFooter } from "../../cards/PageGroups";
 export type PaneContent = {
   // The visitor's question, shown while Deadbot is still working.
   question: string;
-  // The model's optional line above the lead, then the lead itself: both sit
-  // above the tabs, so the answer is there whichever tab is open.
+  // The model's optional line above the lead, then the lead itself, at the
+  // top of the page.
   headline: string | null;
   lead: string | null;
   groups: RenderGroup[];
@@ -47,84 +45,50 @@ export function draftContent(pending: Pending): PaneContent {
   };
 }
 
-export function activeTabOf(view: EntryView, initial: WorkspaceTab | null, groups: RenderGroup[]): WorkspaceTab {
-  return view.tab ?? openingTab(initial, routeGroups(groups));
-}
-
-export function entryTab(entry: Entry): WorkspaceTab {
-  return activeTabOf(entry.view, readTab((entry.response as { initial_tab?: unknown }).initial_tab), contentOf(entry.response).groups);
-}
-
 // The pane on screen and the view state that belongs to it, or null for the
-// start view. Tab clicks and scroll positions are saved into that view.
-export function shownPane(state: ExplorationState): { id: string; tab: WorkspaceTab | null; view: EntryView; draft: boolean } | null {
+// start view. The scroll position is saved into that view.
+export function shownPane(state: ExplorationState): { id: string; view: EntryView; draft: boolean } | null {
   const shown = visible(state);
   switch (shown.kind) {
     case "start":
       return null;
     case "working":
-      return { id: shown.pending.requestId, tab: null, view: shown.pending.view, draft: false };
+      return { id: shown.pending.requestId, view: shown.pending.view, draft: false };
     case "draft":
-      return { id: shown.pending.requestId, tab: activeTabOf(shown.pending.view, shown.pending.initialTab, shown.pending.draft?.groups ?? []), view: shown.pending.view, draft: true };
+      return { id: shown.pending.requestId, view: shown.pending.view, draft: true };
     case "failed":
-      return shown.entry ? { id: shown.entry.id, tab: entryTab(shown.entry), view: shown.entry.view, draft: false } : null;
+      return shown.entry ? { id: shown.entry.id, view: shown.entry.view, draft: false } : null;
     case "held":
     case "entry":
-      return { id: shown.entry.id, tab: entryTab(shown.entry), view: shown.entry.view, draft: false };
+      return { id: shown.entry.id, view: shown.entry.view, draft: false };
   }
 }
 
-const WAITING: Record<WorkspaceTab, string> = {
-  listen: "Finding recordings",
-  charts: "Drawing the picture",
-  read: "Writing the answer"
-};
-
-// A tab is marked new when content arrives there while the visitor is
-// elsewhere and has not looked at it yet during this request.
-export function tabStates(content: Set<WorkspaceTab>, active: WorkspaceTab, streaming: boolean, seen: ReadonlySet<WorkspaceTab> = new Set()): Record<WorkspaceTab, TabState> {
-  const states = {} as Record<WorkspaceTab, TabState>;
-  for (const { id } of WORKSPACE_TABS) {
-    if (content.has(id)) states[id] = streaming && id !== active && !seen.has(id) ? "new" : "ready";
-    else states[id] = streaming ? "preparing" : "unused";
-  }
-  return states;
-}
-
-// One exploration: its heading, the tab bar and all three panels, mounted
-// together so switching tabs never rebuilds a card. Before anything has
+// One exploration: its headline and lead, then every section in one column
+// in the order the model wrote them, then the sources. Before anything has
 // arrived it shows what Deadbot is doing instead.
 export const ExplorationPane = memo(function ExplorationPane({
   paneId,
   content,
-  activeTab,
   statuses,
   streaming,
   hidden,
   previous,
-  onSelectTab,
   onInteract,
   onFollowUp
 }: {
   paneId: string;
   content: PaneContent;
-  activeTab: WorkspaceTab;
   statuses: string[] | null;
   streaming: boolean;
   hidden: boolean;
   previous: boolean;
-  onSelectTab(tab: WorkspaceTab): void;
   // Present only on the page being written right now: the first touch there
   // means the visitor has taken over, and later arrivals leave their view alone.
   onInteract?: () => void;
   onFollowUp: FollowUp;
 }) {
-  const routed = useMemo(() => routeGroups(content.groups), [content.groups]);
-  const filled = useMemo(() => tabsWithContent(routed), [routed]);
   const titleId = `${paneId}-title`;
-  // Tabs the visitor has looked at in this pane; their "new" mark stays off.
-  const [seen, setSeen] = useState<ReadonlySet<WorkspaceTab>>(() => new Set([activeTab]));
-  if (!statuses && !seen.has(activeTab)) setSeen(new Set(seen).add(activeTab));
   const className = ["exploration-pane", previous ? "previous" : null].filter(Boolean).join(" ");
 
   if (statuses) {
@@ -144,18 +108,7 @@ export const ExplorationPane = memo(function ExplorationPane({
     );
   }
 
-  const states = tabStates(filled, activeTab, streaming, seen);
-  const panel = (tab: WorkspaceTab) => {
-    if (!filled.has(tab)) return streaming ? <p className="workspace-waiting">{WAITING[tab]}…</p> : null;
-    const groups = <PageGroups groups={routed[tab]} sources={content.sources} composing={streaming} onFollowUp={onFollowUp} />;
-    if (tab !== "read") return groups;
-    return (
-      <>
-        {groups}
-        {!streaming && <SourcesFooter groups={content.groups} sources={content.sources} />}
-      </>
-    );
-  };
+  const filled = content.groups.some((group) => group.blocks.length > 0);
 
   return (
     <article
@@ -176,19 +129,12 @@ export const ExplorationPane = memo(function ExplorationPane({
       {content.lead && content.lead.trim() && (
         <RichText className="answer-lead" text={content.lead} id={content.headline ? undefined : titleId} tabIndex={content.headline ? undefined : -1} />
       )}
-      <WorkspaceTabs active={activeTab} states={states} onSelect={onSelectTab} idPrefix={paneId} />
-      {WORKSPACE_TABS.map(({ id }) => (
-        <div
-          key={id}
-          role="tabpanel"
-          id={`${paneId}-panel-${id}`}
-          aria-labelledby={`${paneId}-tab-${id}`}
-          className="workspace-panel"
-          hidden={id !== activeTab}
-        >
-          {panel(id)}
-        </div>
-      ))}
+      <div className="workspace-panel">
+        {filled
+          ? <PageGroups groups={content.groups} sources={content.sources} composing={streaming} onFollowUp={onFollowUp} />
+          : streaming && <p className="workspace-waiting">Writing the answer…</p>}
+        {!streaming && <SourcesFooter groups={content.groups} sources={content.sources} />}
+      </div>
     </article>
   );
 });

@@ -38,7 +38,11 @@ export function loadHistory(): ExplorationState | null {
     const raw = window.localStorage.getItem(HISTORY_KEY);
     if (!raw) return null;
     const saved = JSON.parse(raw) as Partial<Saved>;
-    const entries = Array.isArray(saved.entries) ? saved.entries.filter(isEntry) : [];
+    // Views saved before the page was one column kept a scroll per tab; start those at the top.
+    const entries = (Array.isArray(saved.entries) ? saved.entries.filter(isEntry) : []).map((entry) => ({
+      ...entry,
+      view: { scroll: typeof (entry.view as { scroll?: unknown } | undefined)?.scroll === "number" ? entry.view.scroll : null }
+    }));
     if (entries.length === 0) return null;
     // A first entry that lost its thread's start still begins a thread.
     entries[0] = { ...entries[0], root: true, parentId: null };

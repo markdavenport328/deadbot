@@ -2,7 +2,6 @@
 // finished response, so streamed and delivered pages go through one path.
 import type { ExperienceBlock, ExperienceGroup, ExperienceResponse } from "../types";
 import type { PageEvent } from "./stream-events";
-import { readTab, type WorkspaceTab } from "./tab-routing";
 
 export type RenderGroup = {
   title: string | null;
@@ -10,18 +9,17 @@ export type RenderGroup = {
   presentation: ExperienceGroup["presentation"];
   criteria: string[];
   blocks: ExperienceBlock[];
-  tab: WorkspaceTab | null;
 };
 export type Draft = { headline: string | null; lead: string | null; groups: RenderGroup[] };
 
 export function emptyGroup(): RenderGroup {
-  return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [], tab: null };
+  return { title: null, lead: null, presentation: "collection", criteria: [], blocks: [] };
 }
 
 // The draft page grows in reading order. A block for a group we have not
 // heard of yet gets a provisional group; group_close fills the heading in.
 export function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | null {
-  // A page_tab event carries no draft content; leave the draft as it is.
+  // A page_tab event (the page is one column now) changes nothing.
   if (event.type === "page_tab") return draft;
   if (event.type === "page_reset") return null;
   if (event.type === "groups_reset") return draft ? { ...draft, groups: [] } : draft;
@@ -39,8 +37,7 @@ export function applyPageEvent(draft: Draft | null, event: PageEvent): Draft | n
       title: event.title,
       lead: event.lead,
       presentation: event.presentation,
-      criteria: event.criteria,
-      tab: readTab(event.tab) ?? groups[index].tab
+      criteria: event.criteria
     };
   }
   return { ...current, groups };
@@ -52,7 +49,6 @@ export function groupsOfResponse(response: ExperienceResponse): RenderGroup[] {
     lead: group.lead ?? null,
     presentation: group.presentation,
     criteria: group.criteria ?? [],
-    blocks: group.block_indexes.map((index) => response.blocks[index]).filter((block): block is ExperienceBlock => Boolean(block)),
-    tab: readTab(group.tab)
+    blocks: group.block_indexes.map((index) => response.blocks[index]).filter((block): block is ExperienceBlock => Boolean(block))
   }));
 }
