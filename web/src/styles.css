@@ -916,12 +916,16 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .more-toggle { margin: var(--space-line) 0 0; border: 0; background: none; padding: var(--space-line) 0; color: var(--cream); font-size: 0.85rem; font-weight: 600; text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; }
 
 /* The listening hero leads the page when the answer is best heard. */
-.listening-hero { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--space-unit); align-items: end; margin: 0 0 var(--space-unit); }
-.hero-cover { width: 300px; aspect-ratio: 300 / 268; object-fit: cover; display: block; border-radius: var(--r); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); background: var(--panel-featured); }
+/* The cover gives way before the words do: it shrinks toward 200px as the
+   column narrows, and below 620px of column the hero stacks. Sizes follow
+   the answer's column (a container), not the window, so open side rails on
+   a smaller screen stack it too. */
+.listening-hero { display: grid; grid-template-columns: minmax(200px, 300px) minmax(0, 1fr); gap: var(--space-unit); align-items: end; margin: 0 0 var(--space-unit); }
+.hero-cover { width: 100%; max-width: 300px; aspect-ratio: 300 / 268; object-fit: cover; display: block; border-radius: var(--r); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); background: var(--panel-featured); }
 .hero-cover.placeholder { background: var(--panel-featured); }
 .hero-body { display: flex; flex-direction: column; gap: var(--space-part); min-width: 0; }
 .hero-kicker { margin: 0; color: var(--muted); font-size: 0.9rem; }
-.hero-name { display: flex; flex-direction: column; gap: var(--space-tight); margin: 0; color: var(--cream); font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 144; font-size: clamp(2.5rem, 4.4vw, 4rem); font-weight: 600; letter-spacing: -0.015em; line-height: 1; text-wrap: balance; }
+.hero-name { display: flex; flex-direction: column; gap: var(--space-tight); margin: 0; color: var(--cream); font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 144; font-size: clamp(2.2rem, 6.5cqi, 4rem); font-weight: 600; letter-spacing: -0.015em; line-height: 1; text-wrap: balance; }
 .hero-name-date { color: #cfd6c9; font-weight: 400; }
 .hero-line { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-part) var(--space-content); margin-top: var(--space-tight); }
@@ -941,9 +945,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .rosette-warm { width: 920px; height: 920px; top: -460px; right: -460px; }
 .rosette-cool { width: 800px; height: 800px; bottom: -400px; left: -400px; }
 
+@container (max-width: 620px) {
+  .listening-hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-content); align-items: start; }
+  .hero-cover { max-width: 360px; }
+}
 @media (max-width: 860px) {
-  .listening-hero { grid-template-columns: 1fr; gap: var(--space-part); align-items: start; }
-  .hero-cover { width: 100%; max-width: 420px; }
   .hero-play { justify-content: center; }
 }
 @media (max-width: 520px) {
