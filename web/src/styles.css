@@ -879,12 +879,16 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .queue-add:hover { color: var(--cream); }
 .queue-add.queued { color: var(--muted); }
 .queue-add[aria-disabled="true"] { cursor: default; }
-/* The card's own +, beside its play: a round outline in the listen gold,
-   always shown, a check once the tracks are in. Same size as a row's play
-   ring so the pair reads as one control. */
-.queue-add.round { width: 36px; height: 36px; margin: 0; padding: var(--space-tight); opacity: 1; border: 1.5px solid var(--listen-soft); border-radius: 50%; color: var(--listen); flex-shrink: 0; }
-.queue-add.round:hover { border-color: var(--listen); background: rgba(231, 185, 78, 0.1); color: var(--listen); }
-.queue-add.round.queued { border-color: var(--hair); color: var(--muted); }
+/* The +, beside a play: the same button as that play, always shown, a check
+   once the tracks are in. Beside a card's solid gold play it is solid gold;
+   beside a setlist row's gold ring it is the same ring. Once queued it keeps
+   its shape in a softer gold, so it still reads as a button. */
+.queue-add.round { width: 36px; height: 36px; margin: 0; padding: 10px; opacity: 1; border: 0; border-radius: 50%; background: var(--listen); color: var(--listen-ink); flex-shrink: 0; }
+.queue-add.round:hover { background: color-mix(in srgb, var(--listen) 85%, var(--cream)); color: var(--listen-ink); }
+.queue-add.round.queued { background: var(--listen-soft); color: var(--listen-ink); }
+.row-play-cell .queue-add.round { border: 1.5px solid var(--listen); background: transparent; color: var(--listen); }
+.row-play-cell .queue-add.round:hover { background: rgba(231, 185, 78, 0.12); color: var(--listen); }
+.row-play-cell .queue-add.round.queued { border-color: var(--listen-soft); background: transparent; color: var(--listen-soft); }
 .queue-add-space { display: inline-block; width: 36px; height: 36px; flex-shrink: 0; }
 .card-controls { display: inline-flex; align-items: center; gap: var(--space-tight); flex-shrink: 0; }
 /* A playing card shows an equalizer in its play, and pause on hover or focus. */
@@ -901,7 +905,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 @media (pointer: coarse) {
   .queue-add { width: 44px; height: 44px; margin: calc(-1 * var(--space-tight)) calc(-1 * var(--space-tight)) calc(-1 * var(--space-tight)) 0; padding: var(--space-part); }
   .queue-add.round, .queue-add-space, .card-play, .row-play, .sv-play, .sv-play-placeholder { width: 44px; height: 44px; margin: 0; }
-  .queue-add.round { padding: var(--space-tight); }
+  .queue-add.round { padding: 12px; }
   .setlist-rows li.segue .row-play-cell::after { left: 22px; }
 }
 .media-card .listen-links { margin-top: var(--space-part); }
