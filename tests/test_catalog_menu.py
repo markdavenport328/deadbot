@@ -149,6 +149,11 @@ def test_shows_by_venue(run):
     assert set(_column(run(name="shows", venue="Winterland"), "show_id")) == expected
 
 
+def test_a_list_of_songs_says_how_to_play_them(run):
+    result = run(sql="SELECT song_id, song_title, COUNT(*) AS plays FROM performance_facts GROUP BY song_id HAVING plays = 1")
+    assert "performance_id" in result["on_the_page"] and "performances item" in result["on_the_page"]
+
+
 def test_a_city_finds_the_venues_fans_count_as_that_city(run):
     venues = set(_column(run(name="shows", venue="Chicago"), "venue_name"))
     assert {"Rosemont Horizon", "Alpine Valley Music Theatre", "Soldier Field"} <= venues
