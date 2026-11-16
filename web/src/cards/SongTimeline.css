@@ -1,11 +1,11 @@
 /* The song timeline. Gold hears, rose reads, blue asks; 2px corners; the
    app's tokens from styles.css. */
-.song-timeline { display: flex; flex-direction: column; gap: var(--space-part, 1rem); }
+.song-timeline { display: flex; flex-direction: column; gap: var(--space-part, var(--space-part)); }
 .st-empty-note { margin: 0; color: var(--muted); }
 
-.st-view-bar { display: flex; justify-content: space-between; align-items: end; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--hair); }
-.st-views { display: flex; gap: 1.5rem; }
-.st-view { background: none; border: 0; padding: 0.4rem 0 0.65rem; margin-bottom: -1px; color: var(--muted); font-size: 0.92rem; border-bottom: 2px solid transparent; }
+.st-view-bar { display: flex; justify-content: space-between; align-items: end; gap: var(--space-part); flex-wrap: wrap; border-bottom: 1px solid var(--hair); }
+.st-views { display: flex; gap: var(--space-content); }
+.st-view { background: none; border: 0; padding: var(--space-tight) 0 var(--space-tight); margin-bottom: -1px; color: var(--muted); font-size: 0.92rem; border-bottom: 2px solid transparent; }
 .st-view:hover { color: var(--cream); }
 .st-view[aria-pressed="true"] { color: var(--cream); border-bottom-color: var(--cream); }
 .st-caption { margin: 0; color: var(--muted); font-size: 0.85rem; }
@@ -39,43 +39,45 @@
 .st-pin:hover .st-pin-number, .st-pin-active .st-pin-number { fill: var(--listen-ink); }
 .st-pin:focus-visible .st-pin-dot { stroke: var(--focus); stroke-width: 2; }
 
-.st-tip { position: absolute; z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: 0.1rem; min-width: 10rem; max-width: 16rem; padding: 0.5rem 0.7rem; background: var(--bar-scrim); border: 1px solid var(--hair); border-radius: var(--r); color: var(--text); font-size: 0.8rem; line-height: 1.4; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.st-tip { position: absolute; z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: var(--space-line); min-width: 10rem; max-width: 16rem; padding: var(--space-tight) var(--space-tight); background: var(--bar-scrim); border: 1px solid var(--hair); border-radius: var(--r); color: var(--text); font-size: 0.8rem; line-height: 1.4; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
 .st-tip strong { color: var(--cream); font-size: 0.92rem; }
 .st-tip-gold { color: var(--listen); }
-.st-tip-hint { color: var(--quiet); font-size: 0.72rem; margin-top: 0.2rem; }
+.st-tip-hint { color: var(--quiet); font-size: 0.72rem; margin-top: var(--space-line); }
 
-.st-year { position: relative; display: flex; flex-direction: column; gap: 1rem; padding: 1.25rem 1.25rem 1rem; border: 1px solid var(--hair); border-radius: var(--r); background: var(--panel); }
+/* Open, not boxed: the song card is already the frame, so the year reads as a
+   section under its bar, marked by a rule and the caret. */
+.st-year { position: relative; display: flex; flex-direction: column; gap: var(--space-part); padding: var(--space-content) 0 var(--space-part); border-top: 1px solid var(--hair); }
 .st-year::before { content: ""; position: absolute; top: -7px; left: var(--st-caret, 50%); width: 12px; height: 12px; background: var(--ground); border-left: 1px solid var(--hair); border-top: 1px solid var(--hair); transform: translateX(-50%) rotate(45deg); }
-.st-year-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.5rem 1rem; }
+.st-year-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-tight) var(--space-part); }
 .st-year-number { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.9rem; font-weight: 600; line-height: 1; color: var(--cream); font-variant-numeric: tabular-nums; }
 .st-year-facts { flex: 1 1 18rem; margin: 0; color: var(--muted); font-size: 0.88rem; }
-.st-year-step { display: flex; gap: 0.25rem; }
-.st-year-step button { background: none; border: 1px solid var(--hair); border-radius: var(--r); color: var(--muted); padding: 0.2rem 0.55rem; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.st-year-step { display: flex; gap: var(--space-line); }
+.st-year-step button { background: none; border: 1px solid var(--hair); border-radius: var(--r); color: var(--muted); padding: var(--space-line) var(--space-tight); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
 .st-year-step button:hover:not(:disabled) { color: var(--cream); }
 .st-year-step button:disabled { opacity: 0.35; cursor: default; }
 
-.st-pick { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.9rem; align-items: start; }
+.st-pick { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-part); align-items: start; }
 .st-play-big { display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--listen); color: var(--listen-ink); transition: transform 160ms var(--ease-out); }
 .st-play-big:hover:not(:disabled) { transform: scale(1.05); }
 .st-play-big:active:not(:disabled) { transform: scale(0.96); }
 .st-play-big:disabled { background: var(--hair); color: var(--quiet); cursor: default; }
-.st-pick-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.st-pick-body { display: flex; flex-direction: column; gap: var(--space-line); min-width: 0; }
 .st-eyebrow-gold { color: var(--listen); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
 .st-pick-title { color: var(--cream); font-weight: 600; font-size: 1.05rem; }
 .st-pick-meta { color: var(--muted); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
-.st-pick-why { margin: 0.35rem 0 0; max-width: 60ch; color: var(--text); font-size: 0.92rem; }
+.st-pick-why { margin: var(--space-line) 0 0; max-width: var(--measure); color: var(--text); font-size: 0.92rem; }
 
-.st-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; }
+.st-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-part) var(--space-content); }
 .st-see-all { background: none; border: 0; padding: 0; color: var(--read); font-size: 0.9rem; text-decoration: underline; text-underline-offset: 0.2em; text-decoration-color: rgba(232, 119, 154, 0.45); }
 .st-see-all:hover { text-decoration-color: var(--read); }
-.st-ask { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.75rem; background: none; border: 1px solid rgba(63, 149, 220, 0.55); border-radius: var(--r); color: #8fc3ee; font-size: 0.86rem; text-align: left; }
+.st-ask { display: inline-flex; align-items: center; gap: var(--space-tight); padding: var(--space-line) var(--space-part); background: none; border: 1px solid rgba(63, 149, 220, 0.55); border-radius: var(--r); color: #8fc3ee; font-size: 0.86rem; text-align: left; }
 .st-ask:hover { border-color: var(--ask); color: #b9dbf6; background: rgba(63, 149, 220, 0.08); }
 .st-ask-mark { color: var(--ask); font-weight: 700; }
 
 .st-list-note { margin: 0; color: var(--muted); font-size: 0.88rem; }
-.st-list { list-style: none; margin: 0; padding: 0 0.5rem 0 0; max-height: 26rem; overflow-x: hidden; overflow-y: auto; border-top: 1px solid var(--hair); }
-.st-row { display: grid; grid-template-columns: 28px 3.8rem minmax(0, 1.2fr) minmax(0, 1.6fr) 3.2rem; gap: 0.75rem; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid var(--hair); font-size: 0.86rem; }
-.st-row-chosen { margin-inline: -0.5rem; padding-inline: 0.5rem; background: rgba(231, 185, 78, 0.1); }
+.st-list { list-style: none; margin: 0; padding: 0 var(--space-tight) 0 0; max-height: 26rem; overflow-x: hidden; overflow-y: auto; border-top: 1px solid var(--hair); }
+.st-row { display: grid; grid-template-columns: 28px 3.8rem minmax(0, 1.2fr) minmax(0, 1.6fr) 3.2rem; gap: var(--space-part); align-items: center; padding: var(--space-tight) 0; border-bottom: 1px solid var(--hair); font-size: 0.86rem; }
+.st-row-chosen { margin-inline: calc(-1 * var(--space-tight)); padding-inline: var(--space-tight); background: rgba(231, 185, 78, 0.1); }
 .st-row-date { color: var(--cream); font-variant-numeric: tabular-nums; }
 .st-row-venue { min-width: 0; color: var(--text); }
 .st-row-venue small { display: block; color: var(--quiet); font-size: 0.76rem; }
@@ -85,28 +87,28 @@
 .st-play-small:hover:not(:disabled) { background: var(--listen); color: var(--listen-ink); }
 .st-play-small:disabled { border-color: var(--hair); color: var(--quiet); cursor: default; }
 
-.st-path { display: flex; flex-direction: column; gap: 0.5rem; }
-.st-path-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+.st-path { display: flex; flex-direction: column; gap: var(--space-tight); }
+.st-path-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-part); }
 .st-path-head h4 { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.3rem; font-weight: 600; color: var(--cream); }
-.st-path-head p { margin: 0.1rem 0 0; color: var(--muted); font-size: 0.85rem; }
-.st-play-path { display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.5rem 1.1rem 0.5rem 0.8rem; border: 0; border-radius: 999px; background: var(--listen); color: var(--listen-ink); font-weight: 600; font-size: 0.88rem; }
+.st-path-head p { margin: var(--space-line) 0 0; color: var(--muted); font-size: 0.85rem; }
+.st-play-path { display: inline-flex; align-items: center; gap: var(--space-tight); padding: var(--space-tight) var(--space-part) var(--space-tight) var(--space-part); border: 0; border-radius: 999px; background: var(--listen); color: var(--listen-ink); font-weight: 600; font-size: 0.88rem; }
 .st-play-path:hover { filter: brightness(1.06); }
-.st-stops { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 2rem; }
-.st-stop { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 0.75rem; align-items: start; width: 100%; padding: 0.75rem 0; background: none; border: 0; border-top: 1px solid var(--hair); color: inherit; text-align: left; font: inherit; }
+.st-stops { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-content); }
+.st-stop { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--space-part); align-items: start; width: 100%; padding: var(--space-part) 0; background: none; border: 0; border-top: 1px solid var(--hair); color: inherit; text-align: left; font: inherit; }
 button.st-stop:hover .st-stop-label, .st-stop-playing .st-stop-label { color: var(--listen); }
-.st-stop-number { display: grid; place-items: center; width: 22px; height: 22px; margin-top: 0.1rem; border: 1.5px solid var(--listen); border-radius: 50%; color: var(--listen); font-size: 0.72rem; font-weight: 700; }
+.st-stop-number { display: grid; place-items: center; width: 22px; height: 22px; margin-top: var(--space-line); border: 1.5px solid var(--listen); border-radius: 50%; color: var(--listen); font-size: 0.72rem; font-weight: 700; }
 .st-stop-playing .st-stop-number { background: var(--listen); color: var(--listen-ink); }
 .st-stop-text-only .st-stop-number { border-color: var(--hair); color: var(--quiet); }
 .st-stop-text { display: flex; flex-direction: column; min-width: 0; }
 .st-stop-label { color: var(--cream); font-weight: 600; font-size: 0.95rem; transition: color 120ms; }
 .st-stop-meta { color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
-.st-stop-why { margin-top: 0.2rem; color: var(--text); font-size: 0.85rem; }
+.st-stop-why { margin-top: var(--space-line); color: var(--text); font-size: 0.85rem; }
 
 /* Narrow: each row stacks beside its Play, date and length on top, then the
    venue, then what it came out of and went into. */
 @media (max-width: 760px) {
   .st-stops { grid-template-columns: minmax(0, 1fr); }
-  .st-row { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "play date length" "play venue venue" "play flow flow"; row-gap: 0.15rem; align-items: start; }
+  .st-row { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "play date length" "play venue venue" "play flow flow"; row-gap: var(--space-line); align-items: start; }
   .st-play-small { grid-area: play; align-self: center; }
   .st-row-date { grid-area: date; color: var(--muted); font-size: 0.8rem; }
   .st-row-venue { grid-area: venue; }
@@ -117,7 +119,7 @@ button.st-stop:hover .st-stop-label, .st-stop-playing .st-stop-label { color: va
 @media (hover: none) and (pointer: coarse) {
   .st-caption-pointer { display: none; }
   .st-caption-touch { display: inline; }
-  .st-view { padding-block: 0.75rem; }
+  .st-view { padding-block: var(--space-part); }
   .st-year-step button { min-width: 2.75rem; min-height: 2.75rem; }
   .st-play-small { width: 2.75rem; height: 2.75rem; }
   .st-see-all { min-height: 2.75rem; }
