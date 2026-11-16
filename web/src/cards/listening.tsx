@@ -41,7 +41,7 @@ export function CardPlayButton({ play, label }: { play: InPagePlay; label: strin
         className={`card-play${control.mine ? " current" : ""}${control.playing ? " playing" : ""}`}
         data-playable="in-page"
         aria-label={control.errored ? `Retry: ${label}` : control.playing ? `Pause: ${label}` : label}
-        title={control.playing ? "Pause" : label}
+        data-tip={control.errored ? "Try again" : control.playing ? "Pause" : "Play now"}
         aria-pressed={control.mine}
         aria-busy={control.loading}
         onClick={control.onClick}

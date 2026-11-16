@@ -48,7 +48,7 @@ function Row({ block, row, longest, queue, mixed }: { block: SongVersionsBlock; 
     <li className={`sv-row${control.mine ? " current" : ""}${track ? " playable" : ""}`}>
       <span className="sv-controls">
         {track ? (
-          <button type="button" className="sv-play" aria-label={label} aria-pressed={control.mine} aria-busy={control.loading} onClick={control.onClick}>
+          <button type="button" className="sv-play" aria-label={label} aria-pressed={control.mine} aria-busy={control.loading} onClick={control.onClick} data-tip={control.errored ? "Try again" : control.playing ? "Pause" : "Play now"}>
             <PlayGlyph playing={control.playing} />
           </button>
         ) : (

@@ -169,7 +169,8 @@ export function AddToQueue({ tracks, name, variant = "quiet" }: { tracks: Player
       type="button"
       className={`queue-add${variant === "round" ? " round" : ""}${queued ? " queued" : ""}`}
       aria-label={label}
-      title={queued ? (playingHere ? "In your queue" : "In your queue · remove") : "Add to queue"}
+      title={variant === "round" ? undefined : queued ? (playingHere ? "In your queue" : "In your queue · remove") : "Add to queue"}
+      data-tip={variant === "round" ? (queued ? (playingHere ? "In your queue" : "Remove from queue") : "Add to queue") : undefined}
       aria-disabled={queued && playingHere}
       onClick={onClick}
     >

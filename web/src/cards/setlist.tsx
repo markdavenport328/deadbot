@@ -53,6 +53,7 @@ function SetlistRow({
           disabled={!track}
           aria-busy={isLoading}
           aria-label={playLabel}
+          data-tip={!track ? undefined : isError ? "Try again" : isCurrent && isPlaying ? "Pause" : "Play now"}
         >
           <PlayPauseIcon playing={isCurrent && isPlaying} />
         </button>

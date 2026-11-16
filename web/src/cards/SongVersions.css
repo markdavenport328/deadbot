@@ -18,9 +18,9 @@
 .sv-rows { margin: 0; padding: 0; list-style: none; }
 .sv-row { display: grid; grid-template-columns: auto minmax(10rem, 16rem) minmax(0, 1fr) 4.5rem; gap: var(--space-tight) var(--space-part); align-items: center; padding: var(--space-part) 0; border-bottom: 1px solid var(--sv-rule); }
 .sv-row.current { background: linear-gradient(90deg, var(--sv-wash), transparent 70%); }
-.sv-play, .sv-play-placeholder { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; }
+.sv-play, .sv-play-placeholder { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; }
 .sv-play { border: 0; background: var(--listen); color: var(--listen-ink); cursor: pointer; }
-.sv-play svg { width: 16px; height: 16px; }
+.sv-play svg { width: 14px; height: 14px; }
 .sv-play:hover { background: color-mix(in srgb, var(--listen) 85%, var(--cream)); }
 .sv-play[aria-busy="true"] { opacity: 0.6; }
 .sv-row.current .sv-play { box-shadow: 0 0 0 3px var(--listen-soft); }
