@@ -1906,6 +1906,14 @@ def test_the_model_chooses_which_cards_start_open():
     assert [item.disclosure for item in plan.groups[0].items] == ["expanded", "collapsed", "collapsed", "collapsed"]
 
 
+def test_an_open_release_carries_its_player_tracklist_and_personnel():
+    plan = finish.FinishPlan.model_validate({
+        "answer": "Start with this one.",
+        "sections": [{"items": [{"type": "release", "release_id": "release-a"}]}],
+    })
+    assert set(plan.groups[0].items[0].visible_facets) == {"listen", "tracklist", "personnel"}
+
+
 def test_many_releases_go_on_the_page_as_rows_with_their_notes():
     plan = finish.FinishPlan.model_validate({
         "answer": "Two from 1972.",
