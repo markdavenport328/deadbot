@@ -5,8 +5,8 @@
 //   python scripts/home_stats.py
 export const libraryStats = [
   { count: "2,358", noun: "shows" },
-  { count: "434", noun: "songs" },
-  { count: "39,734", noun: "performances" },
+  { count: "419", noun: "songs" },
+  { count: "39,649", noun: "performances" },
   { count: "18,002", noun: "recordings" },
   { count: "139", noun: "guests" }
 ];

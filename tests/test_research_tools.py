@@ -129,7 +129,7 @@ def test_get_song_keeps_a_long_lived_song_compact():
     store = CanonicalStore()
     payload = _tool_by_name(store, "get_song").invoke({"song_id_or_title": "Eyes of the World"})
     parsed = json.loads(payload)
-    assert parsed["performance_summary"]["performance_count"] == 382
+    assert parsed["performance_summary"]["performance_count"] == 381
     assert len(payload) < 35_000
 
 
@@ -140,7 +140,7 @@ def test_list_song_performances_pages_chronologically_with_listening_paths():
             {"song_id_or_title": "Eyes of the World", "offset": 1, "limit": 2}
         )
     )
-    assert payload["performance_count"] == 382
+    assert payload["performance_count"] == 381
     assert payload["offset"] == 1
     assert len(payload["performances"]) == 2
     assert [row["show_date"] for row in payload["performances"]] == sorted(

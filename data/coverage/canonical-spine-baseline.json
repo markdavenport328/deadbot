@@ -9,8 +9,8 @@
   },
   "entity_counts": {
     "shows": 2358,
-    "songs": 434,
-    "performances": 39734,
+    "songs": 419,
+    "performances": 39649,
     "people": 341,
     "people_with_show_assignments": 148,
     "show_performer_assignments": 26265
@@ -24,7 +24,7 @@
   "coverage": {
     "shows_with_performances": 2076,
     "shows_without_performances": 282,
-    "songs_with_performances": 434,
+    "songs_with_performances": 419,
     "songs_without_performances": 0,
     "shows_with_performer_assignments": 2268,
     "shows_without_performer_assignments": 90,
@@ -474,7 +474,7 @@
     {
       "year": 1971,
       "show_count": 81,
-      "performance_count": 1793,
+      "performance_count": 1792,
       "shows_with_performances": 80,
       "shows_without_performances": 1,
       "performer_assignment_count": 830,
@@ -484,7 +484,7 @@
     {
       "year": 1972,
       "show_count": 86,
-      "performance_count": 2229,
+      "performance_count": 2218,
       "shows_with_performances": 86,
       "shows_without_performances": 0,
       "performer_assignment_count": 938,
@@ -494,7 +494,7 @@
     {
       "year": 1973,
       "show_count": 72,
-      "performance_count": 1881,
+      "performance_count": 1873,
       "shows_with_performances": 72,
       "shows_without_performances": 0,
       "performer_assignment_count": 730,
@@ -504,7 +504,7 @@
     {
       "year": 1974,
       "show_count": 40,
-      "performance_count": 1049,
+      "performance_count": 1047,
       "shows_with_performances": 40,
       "shows_without_performances": 0,
       "performer_assignment_count": 447,
@@ -524,7 +524,7 @@
     {
       "year": 1976,
       "show_count": 41,
-      "performance_count": 941,
+      "performance_count": 931,
       "shows_with_performances": 41,
       "shows_without_performances": 0,
       "performer_assignment_count": 452,
@@ -544,7 +544,7 @@
     {
       "year": 1978,
       "show_count": 81,
-      "performance_count": 1584,
+      "performance_count": 1583,
       "shows_with_performances": 81,
       "shows_without_performances": 0,
       "performer_assignment_count": 910,
@@ -554,7 +554,7 @@
     {
       "year": 1979,
       "show_count": 75,
-      "performance_count": 1597,
+      "performance_count": 1595,
       "shows_with_performances": 75,
       "shows_without_performances": 0,
       "performer_assignment_count": 828,
@@ -564,7 +564,7 @@
     {
       "year": 1980,
       "show_count": 87,
-      "performance_count": 2099,
+      "performance_count": 2097,
       "shows_with_performances": 87,
       "shows_without_performances": 0,
       "performer_assignment_count": 979,
@@ -574,7 +574,7 @@
     {
       "year": 1981,
       "show_count": 83,
-      "performance_count": 1841,
+      "performance_count": 1837,
       "shows_with_performances": 83,
       "shows_without_performances": 0,
       "performer_assignment_count": 925,
@@ -594,7 +594,7 @@
     {
       "year": 1983,
       "show_count": 66,
-      "performance_count": 1357,
+      "performance_count": 1353,
       "shows_with_performances": 66,
       "shows_without_performances": 0,
       "performer_assignment_count": 743,
@@ -624,7 +624,7 @@
     {
       "year": 1986,
       "show_count": 46,
-      "performance_count": 879,
+      "performance_count": 878,
       "shows_with_performances": 46,
       "shows_without_performances": 0,
       "performer_assignment_count": 591,
@@ -634,7 +634,7 @@
     {
       "year": 1987,
       "show_count": 85,
-      "performance_count": 1693,
+      "performance_count": 1691,
       "shows_with_performances": 85,
       "shows_without_performances": 0,
       "performer_assignment_count": 1053,
@@ -654,7 +654,7 @@
     {
       "year": 1989,
       "show_count": 73,
-      "performance_count": 1449,
+      "performance_count": 1448,
       "shows_with_performances": 73,
       "shows_without_performances": 0,
       "performer_assignment_count": 905,
@@ -664,7 +664,7 @@
     {
       "year": 1990,
       "show_count": 74,
-      "performance_count": 1489,
+      "performance_count": 1488,
       "shows_with_performances": 74,
       "shows_without_performances": 0,
       "performer_assignment_count": 948,
@@ -694,7 +694,7 @@
     {
       "year": 1993,
       "show_count": 81,
-      "performance_count": 1538,
+      "performance_count": 1527,
       "shows_with_performances": 81,
       "shows_without_performances": 0,
       "performer_assignment_count": 911,
@@ -704,7 +704,7 @@
     {
       "year": 1994,
       "show_count": 84,
-      "performance_count": 1577,
+      "performance_count": 1565,
       "shows_with_performances": 84,
       "shows_without_performances": 0,
       "performer_assignment_count": 933,
@@ -714,7 +714,7 @@
     {
       "year": 1995,
       "show_count": 47,
-      "performance_count": 860,
+      "performance_count": 848,
       "shows_with_performances": 47,
       "shows_without_performances": 0,
       "performer_assignment_count": 524,

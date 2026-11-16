@@ -17,7 +17,7 @@ VENETA_SHOW_ID = "gd-1972-08-27"
 # docs/data-audit-2026-08-27.md). A change here should be deliberate, not a
 # side effect of an unrelated edit.
 EXPECTED_SHOWS = 2358
-EXPECTED_PERFORMANCES = 39734
+EXPECTED_PERFORMANCES = 39649
 EXPECTED_SHOW_PERFORMERS = 26265
 
 
