@@ -11,7 +11,7 @@ CREATE TABLE deadbot_schema_metadata (
     CHECK (schema_version > 0)
 );
 
-INSERT INTO deadbot_schema_metadata (schema_version) VALUES (10);
+INSERT INTO deadbot_schema_metadata (schema_version) VALUES (11);
 
 -- Reviewed acquisition contracts. These describe adapter boundaries and
 -- policy; they do not themselves perform network access.
@@ -125,6 +125,7 @@ CREATE TABLE venues (
     -- deliberate -- see docs/collection-status-venue-geography.md.
     setting TEXT,
     capacity INTEGER,
+    metro_area TEXT,
     CHECK (latitude IS NULL OR latitude BETWEEN -90 AND 90),
     CHECK (longitude IS NULL OR longitude BETWEEN -180 AND 180),
     CHECK (setting IS NULL OR setting IN ('indoor', 'outdoor')),

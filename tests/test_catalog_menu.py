@@ -149,6 +149,13 @@ def test_shows_by_venue(run):
     assert set(_column(run(name="shows", venue="Winterland"), "show_id")) == expected
 
 
+def test_a_city_finds_the_venues_fans_count_as_that_city(run):
+    venues = set(_column(run(name="shows", venue="Chicago"), "venue_name"))
+    assert {"Rosemont Horizon", "Alpine Valley Music Theatre", "Soldier Field"} <= venues
+    assert "Red Rocks Amphitheatre" in set(_column(run(name="shows", venue="Denver"), "venue_name"))
+    assert "Giants Stadium" in set(_column(run(name="shows", venue="New York"), "venue_name"))
+
+
 def test_a_fan_spelling_of_a_tour_finds_its_nights_and_points_to_the_grid(run):
     for spelling in ("Europe '72", "Europe 72", "europe 1972 tour"):
         found = run(name="shows", tour=spelling, year_from=1972)

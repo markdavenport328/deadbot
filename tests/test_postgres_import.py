@@ -374,8 +374,8 @@ def test_performance_performers_spec_loads_after_performances_and_people():
     assert names.index("performance_performers") > names.index("people")
 
 
-def test_schema_version_is_ten_and_each_version_has_exactly_one_migration():
-    assert SCHEMA_VERSION == 10
+def test_schema_version_is_eleven_and_each_version_has_exactly_one_migration():
+    assert SCHEMA_VERSION == 11
     migrations_dir = Path(__file__).resolve().parents[1] / "schema" / "migrations"
     for version in range(2, SCHEMA_VERSION + 1):
         assert len(sorted(migrations_dir.glob(f"{version:03d}_*.sql"))) == 1
@@ -401,7 +401,11 @@ def test_schema_version_is_ten_and_each_version_has_exactly_one_migration():
     assert "CREATE TABLE deadbot_response_cache" in bootstrap
     assert "CREATE TABLE band_memberships" in bootstrap
     assert "CREATE TABLE performance_performers" in bootstrap
-    assert "VALUES (10)" in bootstrap
+    metro_area = sorted(migrations_dir.glob("011_*.sql"))[0].read_text(encoding="utf-8")
+    assert "ALTER TABLE venues ADD COLUMN metro_area TEXT" in metro_area
+    assert "UPDATE deadbot_schema_metadata SET schema_version = 11" in metro_area
+    assert "metro_area TEXT" in bootstrap
+    assert "VALUES (11)" in bootstrap
 
 
 def test_every_spec_matches_its_canonical_csv_header():
@@ -460,7 +464,7 @@ def test_check_import_is_read_only_and_names_tables_a_rebuild_would_shrink(tmp_p
     report = check_import(connection, canonical_dir=tmp_path)
     assert connection.writes == []
     assert report["installed_schema_version"] == SCHEMA_VERSION - 1
-    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_performance_performers.sql"]
+    assert report["pending_migrations"] == [f"{SCHEMA_VERSION:03d}_venue_metro_area.sql"]
     assert report["recent_imports"][0]["mode"] == "rebuild"
     assert report["tables"]["shows"]["database_rows"] == 5
     assert "shows" in report["rebuild_would_delete_rows_in"]
