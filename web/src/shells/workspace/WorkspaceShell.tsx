@@ -64,8 +64,9 @@ function MenuHistory({ state, actions, headingId }: { state: ExplorationState; a
 // Read tabs; earlier explorations stay mounted (hidden) so going back costs
 // no request and keeps what the visitor opened; the player plays on through
 // all of it because nothing here owns it.
-export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, registerAskFromPage }: {
+export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone, linkedQuestion, registerAskFromPage }: {
   player: ReactNode;
+  queueRail?: ReactNode; // the queue's right rail on a wide desktop; it renders nothing until tracks are queued
   phonePlayer(composerFocused: boolean): ReactNode; // the player folds while the dock's ask box has focus
   isPhone: boolean;
   linkedQuestion: string | null;
@@ -487,6 +488,7 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
           </div>
           {!isPhone && composer(false)}
         </section>
+        {queueRail}
       </div>
       {!isPhone && (
         <div className="player-dock" ref={dockRef}>

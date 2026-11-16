@@ -261,6 +261,15 @@ Built from WAMU's `QueuePanel`, fitted to DeadBot's tracks:
   undo). The saved queue (#83) already persists across reloads.
 - **Phones.** The same panel in a bottom sheet opened from the player.
 
+**Status, 2026-11-15:** built on `claude/queue-rail`. The player gains
+`move` and `replaceQueue`. `player/QueuePanel.tsx` replaces `UpNext`. On a
+desktop 1100px or wider, the workspace shows it as a right rail from the
+moment anything plays, and the bar's queue button focuses the rail. Phones,
+narrower desktops and the classic layout open the same panel above the
+player. Below the panel, "Played" lists what has already played. "Go to
+this show" asks about the show as a fresh question; opening it from history
+waits for the history rail in step 5.
+
 ### 5. Card actions and the history rail
 
 **Card actions.** Every playable card (show, performance, album, song,
@@ -297,6 +306,21 @@ Done for steps 3–5 when:
 - your real questions, run live, survive a reload and reopen correctly
 - desktop and phone screenshots are reviewed with you
 
+### 5b. One column: remove the tabs
+
+Decided by the owner on 2026-11-14, after this plan's decisions below were
+written. The page becomes one column, in the order the model writes it. The
+new page format (#88) already has the model write sections in reading order
+without choosing tabs; the workspace still sorts them into Listen, Charts and
+Read on its own. This step:
+
+- removes the tab bar and the tab routing, and shows each section in the
+  model's order
+- drops each tab's saved scroll position; each page keeps one
+- keeps the page's opening (headline and lead) at the top
+
+It comes after the card actions, in the plan's order (owner, 2026-11-15).
+
 ### 6. Make the workspace the default
 
 First close the gaps listed in `docs/UX-NEXT-STEPS.md`:
@@ -313,8 +337,8 @@ the workspace before deleting the classic folder.
 
 - **History survives a reload,** as on CFP.
 - **The history rail replaces the back and forward arrows.**
-- **The Listen, Charts and Read tabs stay.** The rails and dock work around
-  them.
+- ~~**The Listen, Charts and Read tabs stay.**~~ Superseded the same day: the
+  page is one column and the tabs go (step 5b).
 - **The queue is a first-class rail** on the right, with Play and Add to
   queue on every playable card, drag to reorder and a ⋯ menu per row.
 - **The player runs full width across the bottom.** The ask box is anchored

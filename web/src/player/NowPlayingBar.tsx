@@ -1,77 +1,8 @@
 import { type RefObject, useEffect, useId, useRef, useState } from "react";
 import { PLAYBACK_RATES, usePlayer, formatClockTime, formatSeekValueText } from "./player";
 import { formatShowDate } from "../core/format";
-import { PlayPauseIcon, StepIcon, ChevronIcon, QueueIcon, PlayNextIcon, RemoveIcon, MoreIcon, LoopIcon } from "./icons";
-
-// The queue, opened from the bar: every queued track in order, the one
-// playing marked gold, the ones already heard dimmed. A title plays that
-// track; the quiet steps on the right move a track up to play next or take
-// it out. A run of tracks from one show names the show once, at its first
-// track, so a whole tape reads as one night.
-function UpNext({ id, onClose }: { id: string; onClose: () => void }) {
-  const player = usePlayer();
-  const currentRef = useRef<HTMLLIElement | null>(null);
-  const current = player.queue.findIndex((track) => track.id === player.currentTrack?.id);
-  const upcoming = Math.max(player.queue.length - current - 1, 0);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    // Scroll the panel alone (not the page) to bring the playing track near its top.
-    const panel = panelRef.current;
-    const item = currentRef.current;
-    if (panel && item) panel.scrollTop = Math.max(item.offsetTop - panel.offsetTop - 48, 0);
-    // Only on opening: later moves leave the visitor's scroll alone.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  return (
-    <div
-      ref={panelRef}
-      id={id}
-      className="now-playing-queue"
-      role="region"
-      aria-label="Queue"
-      onKeyDown={(event) => {
-        if (event.key === "Escape") onClose();
-      }}
-    >
-      <p className="queue-heading">
-        Up next <span className="queue-count">{upcoming === 1 ? "1 track" : `${upcoming} tracks`}</span>
-      </p>
-      <ol className="queue-list">
-        {player.queue.map((track, index) => {
-          const isCurrent = index === current;
-          const show = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
-          const previous = player.queue[index - 1];
-          const sameShow = previous && previous.showDate === track.showDate && previous.venueName === track.venueName;
-          const state = isCurrent ? "current" : index < current ? "heard" : "";
-          return (
-            <li key={track.id} ref={isCurrent ? currentRef : undefined} className={`queue-item${state ? ` ${state}` : ""}`} aria-current={isCurrent ? "true" : undefined}>
-              <span className="queue-n" aria-hidden="true">
-                {isCurrent ? <PlayPauseIcon playing={player.status === "playing"} /> : index + 1}
-              </span>
-              <button type="button" className="queue-title" onClick={() => player.jumpTo(index)} disabled={isCurrent} aria-label={isCurrent ? `${track.title}, playing now` : `Play ${track.title}`}>
-                <span className="queue-title-text">{track.title}</span>
-                {show && !sameShow && <span className="queue-show">{show}</span>}
-              </button>
-              <span className="queue-time">{track.durationSeconds ? formatClockTime(track.durationSeconds) : ""}</span>
-              <span className="queue-actions">
-                {!isCurrent && index !== current + 1 && (
-                  <button type="button" className="queue-step" onClick={() => player.playNext(index)} aria-label={`Play ${track.title} next`} title="Play next">
-                    <PlayNextIcon />
-                  </button>
-                )}
-                {!isCurrent && (
-                  <button type="button" className="queue-step" onClick={() => player.remove(index)} aria-label={`Remove ${track.title} from queue`} title="Remove">
-                    <RemoveIcon />
-                  </button>
-                )}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
-  );
-}
+import { PlayPauseIcon, StepIcon, ChevronIcon, QueueIcon, MoreIcon, LoopIcon } from "./icons";
+import { QueuePanel, focusQueueRail } from "./QueuePanel";
 
 // The one shared now-playing bar for the whole app: hidden until something
 // has played, then held at the bottom of the screen within the answer pane
@@ -181,7 +112,10 @@ function LoopBand({ duration }: { duration: number }) {
   return <span className={`now-playing-loop${end == null ? " open-ended" : ""}`} style={{ left: `${left}%`, width: end != null ? `${width}%` : undefined }} aria-hidden="true" />;
 }
 
-export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: { collapsible?: boolean; forceCollapsed?: boolean } = {}) {
+// queueInRail means the queue has a place of its own on the page (the
+// workspace's right rail): the queue button takes focus there instead of
+// opening the panel above the bar.
+export function NowPlayingBar({ collapsible = false, forceCollapsed = false, queueInRail = false }: { collapsible?: boolean; forceCollapsed?: boolean; queueInRail?: boolean } = {}) {
   const player = usePlayer();
   const [folded, setFolded] = useState(readCollapsedPlayer);
   const [queueOpen, setQueueOpen] = useState(false);
@@ -214,7 +148,8 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
   const metaLine = [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
   const queued = player.queue.length > 1;
   const upcoming = Math.max(player.queue.length - player.queue.findIndex((item) => item.id === track.id) - 1, 0);
-  const showQueue = queued && queueOpen && !collapsed;
+  // An open queue stays open after Clear, so its Undo stays in reach.
+  const showQueue = queueOpen && !collapsed && !queueInRail;
   const showPractice = practiceOpen && !collapsed && !showQueue;
   const closeQueue = () => {
     setQueueOpen(false);
@@ -228,7 +163,7 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
   const barClassName = ["now-playing-bar", collapsible ? "collapsible" : null, collapsed ? "collapsed" : null, showQueue || showPractice ? "queue-open" : null].filter(Boolean).join(" ");
   return (
     <div className={barClassName} role="region" aria-label="Now playing">
-      {showQueue && <UpNext id={queueId} onClose={closeQueue} />}
+      {showQueue && <QueuePanel id={queueId} variant="popover" onClose={closeQueue} />}
       {showPractice && <PracticePanel id={practiceId} onClose={closePractice} />}
       {track.thumbnailUrl ? (
         <img className="now-playing-thumb" src={track.thumbnailUrl} alt="" loading="lazy" />
@@ -268,19 +203,20 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
             <StepIcon direction="next" />
           </button>
         )}
-        {queued && !collapsed && (
+        {(queued || showQueue) && !collapsed && (
           <button
             ref={queueToggleRef}
             type="button"
-            className={`now-playing-queue-toggle${queueOpen ? " open" : ""}`}
+            className={`now-playing-queue-toggle${showQueue ? " open" : ""}`}
             onClick={() => {
+              if (queueInRail) return focusQueueRail();
               setQueueOpen((open) => !open);
               setPracticeOpen(false);
             }}
-            aria-expanded={queueOpen}
-            aria-controls={queueOpen ? queueId : undefined}
+            aria-expanded={queueInRail ? undefined : showQueue}
+            aria-controls={showQueue ? queueId : undefined}
             aria-label={`Queue, ${upcoming === 1 ? "1 track" : `${upcoming} tracks`} up next`}
-            title={queueOpen ? "Hide queue" : "Show queue"}
+            title={queueInRail ? "Go to the queue" : showQueue ? "Hide queue" : "Show queue"}
           >
             <QueueIcon />
             <span className="now-playing-queue-count" aria-hidden="true">{upcoming}</span>

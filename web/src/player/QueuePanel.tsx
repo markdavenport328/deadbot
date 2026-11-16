@@ -1,0 +1,379 @@
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
+import { formatClockTime, usePlayer, type PlayerTrack } from "./player";
+import { formatShowDate } from "../core/format";
+import { askQuestion } from "../core/site-nav";
+import { MoreIcon } from "./icons";
+
+// The queue: what is playing, then what plays next, then what has already
+// played. A row's title plays it; its grip drags it to a new place (or moves
+// it with the arrow keys); its ⋯ menu holds every other action. A run of
+// tracks from one show names the show once, at its first track, so a tape
+// reads as one night. Clear keeps the playing track and offers Undo for ten
+// seconds. Each change is announced.
+//
+// The same panel serves as the workspace's right rail ("rail"), and as the
+// panel the bar opens above itself on phones, on narrow desktops and in the
+// classic layout ("popover").
+
+const UNDO_SECONDS = 10;
+
+export function formatListeningTime(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
+}
+
+function showLabel(track: PlayerTrack): string {
+  return [formatShowDate(track.showDate), track.venueName].filter(Boolean).join(" · ");
+}
+
+function sameShow(a: PlayerTrack | undefined, b: PlayerTrack): boolean {
+  return Boolean(a) && a!.showDate === b.showDate && a!.venueName === b.venueName;
+}
+
+function moved<T>(items: T[], from: number, to: number): T[] {
+  const copy = items.slice();
+  const [item] = copy.splice(from, 1);
+  copy.splice(to, 0, item);
+  return copy;
+}
+
+function GripIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      {[7, 12, 17].map((y) => (
+        <g key={y}>
+          <circle cx="9" cy={y} r="1.5" fill="currentColor" />
+          <circle cx="15" cy={y} r="1.5" fill="currentColor" />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+// Three bars that move while the track plays and rest when it pauses.
+function Equalizer({ playing }: { playing: boolean }) {
+  return (
+    <span className={`queue-eq${playing ? " playing" : ""}`} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
+type MenuItem = { label: string; run: () => void; disabled?: boolean };
+
+// A row's ⋯ menu. Arrow keys move through it, Home and End jump to its ends,
+// Escape closes it and returns focus to ⋯, and Tab or a click outside closes it.
+function RowMenu({ title, items }: { title: string; items: MenuItem[] }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuId = useId();
+  const enabled = items.filter((item) => !item.disabled);
+
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector<HTMLButtonElement>("[role=menuitem]:not(:disabled)")?.focus();
+    const outside = (event: globalThis.PointerEvent) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !triggerRef.current?.contains(target)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    return () => document.removeEventListener("pointerdown", outside);
+  }, [open]);
+
+  function close(returnFocus: boolean) {
+    setOpen(false);
+    if (returnFocus) triggerRef.current?.focus();
+  }
+
+  function onMenuKey(event: KeyboardEvent<HTMLDivElement>) {
+    const buttons = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>("[role=menuitem]:not(:disabled)") ?? []);
+    const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const focus = (index: number) => buttons[(index + buttons.length) % buttons.length]?.focus();
+    if (event.key === "ArrowDown") focus(at + 1);
+    else if (event.key === "ArrowUp") focus(at - 1);
+    else if (event.key === "Home") focus(0);
+    else if (event.key === "End") focus(buttons.length - 1);
+    else if (event.key === "Escape") close(true);
+    else if (event.key === "Tab") close(false);
+    else return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  if (enabled.length === 0) return null;
+  return (
+    <span className="queue-menu-wrap">
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`queue-more${open ? " open" : ""}`}
+        aria-label={`More for ${title}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
+        onClick={() => setOpen((value) => !value)}
+      >
+        <MoreIcon />
+      </button>
+      {open && (
+        <div ref={menuRef} id={menuId} className="queue-menu" role="menu" aria-label={`Actions for ${title}`} onKeyDown={onMenuKey}>
+          {items.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              disabled={item.disabled}
+              onClick={() => {
+                close(true);
+                item.run();
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </span>
+  );
+}
+
+type Drag = { from: number; to: number; mids: number[]; first: number };
+
+export function QueuePanel({ id, variant, onClose, panelRef }: {
+  id?: string;
+  variant: "rail" | "popover";
+  onClose?: () => void;
+  panelRef?: RefObject<HTMLElement | null>;
+}) {
+  const player = usePlayer();
+  const headingId = useId();
+  const [announcement, setAnnouncement] = useState("");
+  const [cleared, setCleared] = useState<PlayerTrack[] | null>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const listRef = useRef<HTMLOListElement | null>(null);
+  const currentRef = useRef<HTMLDivElement | null>(null);
+
+  // Undo is offered for ten seconds after Clear.
+  useEffect(() => {
+    if (!cleared) return;
+    const timer = window.setTimeout(() => setCleared(null), UNDO_SECONDS * 1000);
+    return () => window.clearTimeout(timer);
+  }, [cleared]);
+
+  const queue = player.queue;
+  const current = queue.findIndex((track) => track.id === player.currentTrack?.id);
+  const first = current + 1;
+  // While a row is dragged, the list shows where it would land.
+  const shown = drag ? moved(queue, drag.from, drag.to) : queue;
+  const upNext = shown.slice(first);
+  const played = current > 0 ? shown.slice(0, current) : [];
+  const nowPlaying = current >= 0 ? queue[current] : null;
+  const upNextSeconds = queue.slice(first).reduce((sum, track) => sum + (track.durationSeconds ?? 0), 0);
+  const progress = player.duration > 0 ? Math.min(100, (player.position / player.duration) * 100) : 0;
+
+  function moveTo(from: number, to: number) {
+    if (to < first || to >= queue.length || from === to) return;
+    const track = queue[from];
+    player.move(from, to);
+    setAnnouncement(`Moved ${track.title} to ${to - current} in Up next`);
+  }
+
+  function remove(index: number) {
+    const track = queue[index];
+    player.remove(index);
+    setAnnouncement(`Removed ${track.title} from the queue`);
+  }
+
+  function clear() {
+    if (!nowPlaying) return;
+    setCleared(queue.slice());
+    player.replaceQueue([nowPlaying]);
+    setAnnouncement("Cleared the queue. Undo is available for ten seconds.");
+  }
+
+  function undo() {
+    if (!cleared) return;
+    player.replaceQueue(cleared);
+    setCleared(null);
+    setAnnouncement("Restored the queue");
+  }
+
+  // Dragging by the grip: the other rows' midpoints are measured once, and
+  // the row lands after however many of them the pointer has passed.
+  function startDrag(event: PointerEvent<HTMLButtonElement>, from: number) {
+    if (event.button > 0) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const rows = Array.from(listRef.current?.querySelectorAll<HTMLElement>("[data-queue-index]") ?? []);
+    const mids = rows
+      .filter((row) => Number(row.dataset.queueIndex) !== from)
+      .map((row) => {
+        const box = row.getBoundingClientRect();
+        return box.top + box.height / 2;
+      });
+    setDrag({ from, to: from, mids, first });
+  }
+
+  function dragMove(event: PointerEvent<HTMLButtonElement>) {
+    if (!drag) return;
+    const passed = drag.mids.filter((mid) => mid < event.clientY).length;
+    const to = drag.first + passed;
+    if (to !== drag.to) setDrag({ ...drag, to });
+  }
+
+  function endDrag() {
+    if (!drag) return;
+    setDrag(null);
+    moveTo(drag.from, drag.to);
+  }
+
+  function gripKey(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const to = index + (event.key === "ArrowUp" ? -1 : 1);
+    moveTo(index, to);
+    // Keep the grip in hand as its row moves.
+    requestAnimationFrame(() => listRef.current?.querySelector<HTMLButtonElement>(`[data-queue-index="${to}"] .queue-grip`)?.focus());
+  }
+
+  function goToShow(track: PlayerTrack) {
+    const date = formatShowDate(track.showDate);
+    askQuestion(track.venueName ? `Tell me about the ${date} show at ${track.venueName}` : `Tell me about the ${date} show`);
+  }
+
+  function rowMenu(track: PlayerTrack, index: number, upcoming: boolean): MenuItem[] {
+    return [
+      { label: "Play now", run: () => player.jumpTo(index) },
+      { label: "Play next", run: () => { player.playNext(index); setAnnouncement(`${track.title} plays next`); }, disabled: index === first },
+      { label: "Move up", run: () => moveTo(index, index - 1), disabled: !upcoming || index <= first },
+      { label: "Move down", run: () => moveTo(index, index + 1), disabled: !upcoming || index >= queue.length - 1 },
+      { label: "Go to this show", run: () => goToShow(track), disabled: !track.showDate },
+      { label: "Remove from queue", run: () => remove(index) }
+    ];
+  }
+
+  function row(track: PlayerTrack, index: number, previous: PlayerTrack | undefined, upcoming: boolean) {
+    const show = showLabel(track);
+    const dragging = drag && drag.to === index;
+    return (
+      <li key={track.id} data-queue-index={index} className={`queue-item${upcoming ? "" : " heard"}${dragging ? " dragging" : ""}`}>
+        <span className="queue-n" aria-hidden="true">{upcoming ? index - current : ""}</span>
+        <button type="button" className="queue-title" onClick={() => player.jumpTo(index)} aria-label={`Play ${track.title}`}>
+          <span className="queue-title-text">{track.title}</span>
+          {show && !sameShow(previous, track) && <span className="queue-show">{show}</span>}
+        </button>
+        <span className="queue-time">{track.durationSeconds ? formatClockTime(track.durationSeconds) : ""}</span>
+        {upcoming ? (
+          <button
+            type="button"
+            className="queue-grip"
+            aria-label={`Reorder ${track.title}: drag, or use the arrow keys`}
+            title="Drag to reorder"
+            onPointerDown={(event) => startDrag(event, index)}
+            onPointerMove={dragMove}
+            onPointerUp={endDrag}
+            onPointerCancel={() => setDrag(null)}
+            onKeyDown={(event) => gripKey(event, index)}
+          >
+            <GripIcon />
+          </button>
+        ) : (
+          <span className="queue-grip-space" aria-hidden="true" />
+        )}
+        <RowMenu title={track.title} items={rowMenu(track, index, upcoming)} />
+      </li>
+    );
+  }
+
+  return (
+    <section
+      ref={panelRef as RefObject<HTMLElement>}
+      id={id}
+      className={variant === "popover" ? "queue-panel popover now-playing-queue" : "queue-panel rail"}
+      aria-labelledby={headingId}
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key === "Escape" && onClose) onClose();
+      }}
+    >
+      <p className="sr-only" role="status">{announcement}</p>
+      <header className="queue-panel-head">
+        <h2 id={headingId}>Queue</h2>
+        {cleared ? (
+          <button type="button" className="queue-clear" onClick={undo}>Cleared. Undo</button>
+        ) : (
+          queue.length > 1 && <button type="button" className="queue-clear" onClick={clear}>Clear queue</button>
+        )}
+      </header>
+
+      {nowPlaying && (
+        <div className="queue-now" ref={currentRef}>
+          <p className="queue-section">Now playing</p>
+          <div className="queue-now-row">
+            <Equalizer playing={player.status === "playing"} />
+            <span className="queue-now-text">
+              <span className="queue-title-text">{nowPlaying.title}</span>
+              {showLabel(nowPlaying) && <span className="queue-show">{showLabel(nowPlaying)}</span>}
+            </span>
+            <span className="queue-time">{nowPlaying.durationSeconds ? formatClockTime(nowPlaying.durationSeconds) : ""}</span>
+          </div>
+          <span className="queue-progress" aria-hidden="true"><span style={{ width: `${progress}%` }} /></span>
+        </div>
+      )}
+
+      <p className="queue-section">
+        Up next
+        <span className="queue-count">
+          {upNext.length === 1 ? "1 track" : `${upNext.length} tracks`}
+          {upNextSeconds > 0 ? ` · ${formatListeningTime(upNextSeconds)}` : ""}
+        </span>
+      </p>
+      {upNext.length > 0 ? (
+        <ol className="queue-list" ref={listRef}>
+          {upNext.map((track, offset) => row(track, first + offset, offset === 0 ? nowPlaying ?? undefined : upNext[offset - 1], true))}
+        </ol>
+      ) : (
+        <p className="queue-empty">Nothing queued after this. Use + on any track to add it.</p>
+      )}
+
+      {played.length > 0 && (
+        <>
+          <p className="queue-section">Played</p>
+          <ol className="queue-list played">
+            {played.map((track, index) => row(track, index, played[index - 1], false))}
+          </ol>
+        </>
+      )}
+    </section>
+  );
+}
+
+export const QUEUE_RAIL_ID = "queue-rail";
+
+// The bar's queue button, when the queue has its own rail: focus the rail and
+// bring the playing track into its view.
+export function focusQueueRail() {
+  const rail = document.getElementById(QUEUE_RAIL_ID);
+  if (!rail) return;
+  rail.focus({ preventScroll: true });
+  rail.closest(".queue-rail")?.scrollTo?.({ top: 0 });
+}
+
+// The workspace's right rail: the queue, from the moment anything plays. It
+// takes no room before then.
+export function QueueRail() {
+  const player = usePlayer();
+  if (!player.currentTrack) return null;
+  return (
+    <aside className="queue-rail" aria-label="Queue">
+      <QueuePanel id={QUEUE_RAIL_ID} variant="rail" />
+    </aside>
+  );
+}

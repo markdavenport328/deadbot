@@ -85,6 +85,12 @@ export type PlayerContextValue = {
   remove: (index: number) => void;
   // Play the track at a queue position.
   jumpTo: (index: number) => void;
+  // Move the track at one queue position to another; the current track keeps
+  // playing wherever it lands.
+  move: (from: number, to: number) => void;
+  // Put a whole queue in place (Clear and its Undo). It must hold the current
+  // track, which keeps playing; a queue without it is ignored.
+  replaceQueue: (tracks: PlayerTrack[]) => void;
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -541,6 +547,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const move = useCallback((from: number, to: number) => {
+    setState((previous) => {
+      const last = previous.queue.length - 1;
+      if (from === to || from < 0 || to < 0 || from > last || to > last) return previous;
+      const currentId = previous.queue[previous.index]?.id;
+      const queue = previous.queue.slice();
+      const [track] = queue.splice(from, 1);
+      queue.splice(to, 0, track);
+      return { ...previous, queue, index: queue.findIndex((item) => item.id === currentId) };
+    });
+  }, []);
+
+  const replaceQueue = useCallback((tracks: PlayerTrack[]) => {
+    setState((previous) => {
+      const currentId = previous.queue[previous.index]?.id;
+      const index = tracks.findIndex((track) => track.id === currentId);
+      return index < 0 ? previous : { ...previous, queue: tracks.slice(), index };
+    });
+  }, []);
+
   const jumpTo = useCallback(
     (index: number) => {
       const current = stateRef.current;
@@ -658,9 +684,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       enqueue,
       playNext,
       remove,
-      jumpTo
+      jumpTo,
+      move,
+      replaceQueue
     }),
-    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, rate, setRate, loop, setLoopStart, setLoopEnd, clearLoop, enqueue, playNext, remove, jumpTo]
+    [state, currentTrack, play, pause, toggle, seek, next, previous, retry, rate, setRate, loop, setLoopStart, setLoopEnd, clearLoop, enqueue, playNext, remove, jumpTo, move, replaceQueue]
   );
 
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;

@@ -58,6 +58,13 @@ export function askFromPage(event: React.MouseEvent<HTMLAnchorElement>, question
   window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: question }));
 }
 
+// A question asked from anywhere in the app (the queue's "Go to this show"):
+// the shell takes it as a fresh question, as it does one from another page.
+export function askQuestion(question: string) {
+  if (currentPath() !== "/") navigate("/");
+  window.dispatchEvent(new CustomEvent(ASK_EVENT, { detail: question }));
+}
+
 export function useAskFromPage(onAsk: (question: string) => void) {
   const latest = useRef(onAsk);
   latest.current = onAsk;
