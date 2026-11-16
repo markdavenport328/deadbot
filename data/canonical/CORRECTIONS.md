@@ -19,6 +19,26 @@ why, and the evidence. See `README.md` and `docs/provenance-policy.md`.
   lists track 7 as `not_a_setlist_song`). The show's official release,
   *Dave's Picks, Bonus Disc 2022*, opens with U.S. Blues, matching gdshowsdb
   Set 2.
-- **Left as is:** the other five soundcheck rows (`-1-1` through `-1-5`) stay
-  in Set 1, because recordings and links point at them. Labelling them as a
-  soundcheck rather than a set is open work.
+- **Follow-up (2026-11-16):** the other five soundcheck rows were removed with
+  the soundcheck sets below.
+
+## 2026-11-16 — Soundchecks imported as "Set 1" (16 shows)
+
+- **Removed:** Set 1 of 16 shows, 39 `performances.csv` rows, and the 10
+  `performance_recordings.csv` / `performance_links.csv` rows pointing at them.
+  The remaining sets of those shows are numbered from 1; performance IDs are
+  unchanged. Every removed row is saved in
+  `data/raw/corrections/soundcheck-sets-removed.jsonl`.
+- **Why:** gdshowsdb has no set labels, so a soundcheck taped before a show
+  arrived as an unnamed first set. That put soundcheck takes into play counts,
+  debuts and bust-out gaps (Unbroken Chain's "debut" became the 3/17/95
+  soundcheck; It's a Man's World's 6/30/95 soundcheck read as a 24-year
+  comeback).
+- **Evidence:** for each show, archive.org tape notes name the first set as a
+  soundcheck, or (1973-10-23) Wang Dang Doodle as the last file after the
+  encore and absent from the taper's setlist. The per-show note is in
+  `scripts/remove_soundcheck_sets.py`, which made the change.
+- **Not changed:** 28 other shows have a small first set but no tape note
+  either way (for example 1983-10-09 Saint Stephen, 1994-12-11 Saint Stephen,
+  1995-03-22 Watchin' the Wheels, 1995-06-24 Into the Mystic). They need a
+  second source before anything moves.

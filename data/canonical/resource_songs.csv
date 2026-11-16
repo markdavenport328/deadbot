@@ -846,10 +846,8 @@ resource-hooterollin-2011-12-february-24-1974-its-all-over-now-baby,song-it-s-al
 resource-hooterollin-2012-01-december-9-11-1966-fillmore-auditorium,song-morning-dew,about,Title names the song.
 resource-hooterollin-2012-04-june-30-1972-memorial-auditorium-kansas,song-friend-of-the-devil,about,Title names the song.
 resource-hooterollin-2017-07-me-and-my-uncle-1966-95-folk-tradition,song-me-and-my-uncle,about,Title names the song.
-resource-musicbrainz-work-search-a-day-in-the-life,song-a-day-in-the-life,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-musicbrainz-work-search-a-mind-to-give-up-livin,song-a-mind-to-give-up-livin,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-musicbrainz-work-search-a-voice-from-on-high,song-a-voice-from-on-high,composition-credit-source,Accepted credit evidence; see canonical role rows.
-resource-musicbrainz-work-search-ain-t-that-peculiar,song-ain-t-that-peculiar,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-musicbrainz-work-search-alabama-bound,song-alabama-bound,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
 resource-musicbrainz-work-search-alabama-getaway,song-alabama-getaway,composition-credit-source,Accepted credit evidence; see canonical role rows.
 resource-musicbrainz-work-search-alhambra,song-alhambra,composition-credit-source,Candidate work search retained for review; no canonical credit promoted.
@@ -1285,7 +1283,6 @@ resource-musicbrainz-work-search-young-blood,song-young-blood,composition-credit
 resource-relix-robert-hunter-interview,song-china-cat-sunflower,interview-context,Archival interview account.
 resource-rukind-sugaree-tab,song-sugaree,tab-for,
 resource-whitegum-aintitcr,song-the-rub,annotates,The song's title matched exactly one page on the site's own index.
-resource-whitegum-aintthat,song-ain-t-that-peculiar,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-alabama,song-alabama-getaway,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-alabamab,song-alabama-bound,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-alicedmi,song-alice-d-millionaire,annotates,The song's title matched exactly one page on the site's own index.
@@ -1349,7 +1346,6 @@ resource-whitegum-crypticl,song-cryptical-envelopment,annotates,The song's title
 resource-whitegum-cumberln,song-cumberland-blues,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-darkstar,song-dark-star,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-darlingc,song-darlin-corey,annotates,The song's title matched exactly one page on the site's own index.
-resource-whitegum-dayinthe,song-a-day-in-the-life,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-daysbetw,song-the-days-between,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-daytripp,song-day-tripper,annotates,The song's title matched exactly one page on the site's own index.
 resource-whitegum-deal,song-deal,annotates,The song's title matched exactly one page on the site's own index.
