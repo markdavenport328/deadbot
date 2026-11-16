@@ -63,7 +63,9 @@
   z-index: 100;
   display: flex;
   flex-direction: column;
-  background: var(--grid-sticky);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   color: var(--cream);
   transform: translateX(100%);
   visibility: hidden;

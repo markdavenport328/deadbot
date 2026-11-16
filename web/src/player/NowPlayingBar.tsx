@@ -312,6 +312,7 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false }: {
           value={position}
           aria-label={`Seek within ${track.title}`}
           aria-valuetext={formatSeekValueText(position, duration)}
+          style={{ ["--progress" as string]: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
           onChange={(event) => player.seek(Number(event.target.value))}
         />
         </span>

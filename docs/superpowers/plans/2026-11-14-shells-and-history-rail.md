@@ -226,6 +226,16 @@ In the workspace shell:
   speed, the practice loop and the fold on phones. Its queue button opens or
   focuses the queue rail, or the sheet on phones.
 
+**Status, 2026-11-15:** built on `claude/app-frame`, workspace shell only.
+On a desktop, the player is fixed across the full window and the ask box is
+sticky at the foot of the answer pane, just above the player and as wide as
+the answer. The rail now holds only the masthead and history, and stops at the
+player's top edge. The window still scrolls the answer, so the tab
+scroll memory is untouched. The rail and ask box stay put by sticky
+positioning instead of separate scroll panes. The right-hand queue column
+and the queue button opening it come with step 4. Until then the queue
+pop-up opens across the full width above the player.
+
 ### 4. The queue as a first-class rail
 
 Built from WAMU's `QueuePanel`, fitted to DeadBot's tracks:
@@ -262,6 +272,9 @@ version strip, setlist row) uses the same two round controls at its edge:
 `CardPlayButton`, `AddToQueue` and `ListenControl` collapse into one
 component in `cards/`. Spotify stays a quieter text action. One primary
 action per card.
+
+**The Deadbot name stays put** at the top of the rail (owner, 2026-11-15); only
+the history under it scrolls.
 
 **History rail**, modeled on CFP:
 

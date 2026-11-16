@@ -39,15 +39,17 @@
 .st-pin:hover .st-pin-number, .st-pin-active .st-pin-number { fill: var(--listen-ink); }
 .st-pin:focus-visible .st-pin-dot { stroke: var(--focus); stroke-width: 2; }
 
-.st-tip { position: absolute; z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: var(--space-line); min-width: 10rem; max-width: 16rem; padding: var(--space-tight) var(--space-tight); background: var(--bar-scrim); border: 1px solid var(--hair); border-radius: var(--r); color: var(--text); font-size: 0.8rem; line-height: 1.4; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
+.st-tip { position: absolute; z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: var(--space-line); min-width: 10rem; max-width: 16rem; padding: var(--space-tight) var(--space-tight); background: var(--bar-scrim); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--hair); border-radius: var(--r); color: var(--text); font-size: 0.8rem; line-height: 1.4; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
 .st-tip strong { color: var(--cream); font-size: 0.92rem; }
 .st-tip-gold { color: var(--listen); }
 .st-tip-hint { color: var(--quiet); font-size: 0.72rem; margin-top: var(--space-line); }
 
 /* Open, not boxed: the song card is already the frame, so the year reads as a
-   section under its bar, marked by a rule and the caret. */
-.st-year { position: relative; display: flex; flex-direction: column; gap: var(--space-part); padding: var(--space-content) 0 var(--space-part); border-top: 1px solid var(--hair); }
-.st-year::before { content: ""; position: absolute; top: -7px; left: var(--st-caret, 50%); width: 12px; height: 12px; background: var(--ground); border-left: 1px solid var(--hair); border-top: 1px solid var(--hair); transform: translateX(-50%) rotate(45deg); }
+   section under its bar, marked by a rule and the caret. The rule breaks under
+   the caret, so neither needs a fill to hide the other and the card's glass
+   shows through both. */
+.st-year { position: relative; display: flex; flex-direction: column; gap: var(--space-part); padding: var(--space-content) 0 var(--space-part); background: linear-gradient(to right, var(--hair) calc(var(--st-caret, 50%) - 9px), transparent 0 calc(var(--st-caret, 50%) + 9px), var(--hair) 0) top / 100% 1px no-repeat; }
+.st-year::before { content: ""; position: absolute; top: -7px; left: var(--st-caret, 50%); width: 12px; height: 12px; background: none; border-left: 1px solid var(--hair); border-top: 1px solid var(--hair); transform: translateX(-50%) rotate(45deg); }
 .st-year-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-tight) var(--space-part); }
 .st-year-number { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.9rem; font-weight: 600; line-height: 1; color: var(--cream); font-variant-numeric: tabular-nums; }
 .st-year-facts { flex: 1 1 18rem; margin: 0; color: var(--muted); font-size: 0.88rem; }

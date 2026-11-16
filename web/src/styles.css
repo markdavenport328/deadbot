@@ -49,9 +49,15 @@
   /* --card-bg composited over --ground, opaque: for sticky cells inside a card. */
   --grid-sticky: var(--forest-950);
   --panel-featured: rgba(14, 22, 17, 0.62);
-  /* Panels keep a hint of the dye behind them. */
-  --scrim: rgba(20, 34, 27, 0.82);
-  --bar-scrim: rgba(10, 18, 13, 0.94);
+  /* Panels are frosted glass: a dark tint over a strong blur, so the
+     starbursts glow through every panel while the blur keeps text on it
+     readable. --glass-strong is for panels over moving page text (the
+     player, the menu, tooltips). */
+  --glass: rgba(12, 21, 16, 0.5);
+  --glass-strong: rgba(10, 18, 13, 0.7);
+  --glass-blur: blur(20px) saturate(1.15);
+  --scrim: var(--glass);
+  --bar-scrim: var(--glass-strong);
   --hair: rgba(233, 230, 217, 0.1);
   --cream: var(--cream-50);
   --text: var(--sage-100);
@@ -168,7 +174,7 @@ h2, .card h3 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem
 .thread { display: flex; flex: 0 1 auto; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0 var(--space-tight); }
 .thread-messages { display: flex; flex-direction: column; gap: var(--space-tight); padding: var(--space-part) 0; }
 .message { max-width: 95%; border-radius: var(--r); padding: var(--space-part) var(--space-part); font-size: 0.92rem; line-height: 1.5; white-space: pre-line; }
-.message.user { align-self: flex-end; background: rgba(51, 79, 59, 0.85); color: #f2f3eb; }
+.message.user { align-self: flex-end; background: rgba(51, 79, 59, 0.55); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); color: #f2f3eb; }
 .message.assistant { align-self: flex-start; max-width: 100%; border-radius: 0; background: transparent; color: #d3dccf; padding: 0; }
 .message.assistant div { overflow-wrap: anywhere; }
 .message.pending { color: #adbbac; font-style: italic; }
@@ -196,8 +202,8 @@ h2, .card h3 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem
 
 /* The ask box's ground fades in over the conversation scrolling beneath it;
    like the panels, it keeps a hint of the dye, and blurs what passes under. */
-.composer { position: sticky; bottom: 0; isolation: isolate; flex-shrink: 0; background: linear-gradient(to bottom, rgba(20, 34, 27, 0), var(--scrim)) top / 100% 1.25rem no-repeat; padding: var(--space-content) 0 var(--space-part); }
-.composer::before { content: ""; position: absolute; inset: 1.25rem 0 0; z-index: -1; background: var(--scrim); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.composer { position: sticky; bottom: 0; isolation: isolate; flex-shrink: 0; background: linear-gradient(to bottom, rgba(12, 21, 16, 0), var(--scrim)) top / 100% 1.25rem no-repeat; padding: var(--space-content) 0 var(--space-part); }
+.composer::before { content: ""; position: absolute; inset: 1.25rem 0 0; z-index: -1; background: var(--scrim); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .question-field { position: relative; }
 textarea { display: block; width: 100%; min-width: 0; resize: none; border: 1px solid rgba(89, 112, 94, 0.55); border-radius: var(--r); background: rgba(51, 79, 59, 0.35); color: #f2f3eb; font-size: 1rem; line-height: 1.4; padding: var(--space-part) var(--space-part) var(--space-unit); }
 textarea::placeholder { color: #9fb29f; }
@@ -206,7 +212,7 @@ textarea:focus { outline: 2px solid var(--focus); outline-offset: 2px; border-co
 .question-field button[type="submit"] { position: absolute; right: 0.6rem; bottom: 0.6rem; border: 0; border-radius: var(--r); background: var(--ask-deep); color: var(--cream); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; padding: var(--space-part) var(--space-part); transition: background 120ms ease; }
 .question-field button[type="submit"]:focus-visible { background: var(--ask-deep-hover); }
 button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68; }
-.error { margin: 0 0 var(--space-part); border-radius: var(--r); border-left: 4px solid #e17e64; background: rgba(61, 41, 35, 0.88); color: #f0d6ca; padding: var(--space-part); font-size: 0.86rem; }
+.error { margin: 0 0 var(--space-part); border-radius: var(--r); border-left: 4px solid #e17e64; background: rgba(61, 41, 35, 0.62); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); color: #f0d6ca; padding: var(--space-part); font-size: 0.86rem; }
 
 /* The pane is at least a screen tall with the now-playing bar at its foot,
    so a short page still has the bar at the bottom of the screen. */
@@ -227,8 +233,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   column-gap: var(--space-part);
   margin: var(--space-content) calc(-1 * var(--space-gutter)) calc(-1 * var(--space-section));
   padding: var(--space-tight) var(--space-gutter);
-  background: rgba(10, 18, 13, 0.8);
-  backdrop-filter: blur(10px);
+  background: var(--bar-scrim);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border-top: 1px solid var(--hair);
 }
 .now-playing-thumb { width: 40px; height: 40px; border-radius: var(--r); object-fit: cover; background: var(--panel); flex-shrink: 0; }
@@ -444,7 +451,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .data-chart-title { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
 .data-chart-plot { margin-top: var(--space-part); }
 .data-chart-empty-reason, .data-chart-unavailable-reason { max-width: var(--measure); margin: var(--space-tight) 0 0; color: var(--muted); font-size: 1rem; line-height: 1.6; }
-.data-chart-tooltip { background: var(--panel-featured); border: 1px solid var(--hair); border-radius: var(--r); padding: var(--space-tight) var(--space-part); }
+.data-chart-tooltip { background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border: 1px solid var(--hair); border-radius: var(--r); padding: var(--space-tight) var(--space-part); }
 .data-chart-tooltip-value { margin: 0; color: var(--cream); font-size: 0.95rem; }
 .data-chart-tooltip-value strong { font-variant-numeric: tabular-nums; }
 .data-chart-tooltip-label { margin: var(--space-line) 0 0; color: var(--muted); font-size: 0.85rem; }
@@ -912,13 +919,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* A scrim's feathered edge may reach past the viewport on a phone; it never
    makes the page scroll sideways. */
 .app-shell { overflow-x: clip; }
-/* The one control on the ground at the rail's top edge gets the ground under
-   it, so a rosette never shows through its label. */
-.new-chat-button { background-color: var(--ground); }
-/* A card's tint sits on a ground scrim that lets a hint of a rosette
-   through without lowering the contrast of the card's quiet labels. On bare
-   ground the scrim is the ground itself and the card looks as it did. */
-.card { background-color: var(--scrim); background-image: linear-gradient(rgba(4, 10, 6, 0.38), rgba(4, 10, 6, 0.38)); }
+/* The one control on the ground at the rail's top edge is glass, so a
+   rosette glows through it without crossing its label. */
+.new-chat-button { background-color: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+/* A card is glass: its tint over a blur of whatever rosette is behind it,
+   so the dye glows through without crossing the card's quiet labels. */
+.card { -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); background-color: var(--scrim); background-image: linear-gradient(rgba(4, 10, 6, 0.38), rgba(4, 10, 6, 0.38)); }
 .card.emphasis-primary { background-color: var(--scrim); background-image: linear-gradient(rgba(4, 10, 6, 0.46), rgba(4, 10, 6, 0.46)); }
 .card.emphasis-supporting { background-color: var(--scrim); }
 
@@ -984,8 +990,8 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
     transform: translateY(calc(-1 * var(--kb, 0px)));
     padding: 0 var(--space-tight) env(safe-area-inset-bottom, 0px);
     background: var(--bar-scrim);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
     border-top: 1px solid var(--hair);
   }
   /* The bar gives up its own ground and sticky position inside the dock. */

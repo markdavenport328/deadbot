@@ -10,7 +10,9 @@
   gap: 2px;
   margin: var(--space-tight) 0 var(--space-content);
   border-bottom: 1px solid var(--hair);
-  background: var(--ground);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 .workspace-shell .workspace-tabs [role="tab"] {
   padding: var(--space-tight) var(--space-part);
@@ -82,11 +84,47 @@
 }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
 
-/* Layout: a narrow rail of history and the ask box beside the workspace. */
-.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: 100vh; column-gap: var(--space-unit); }
+/* The app frame. On a desktop: the history rail beside the answer pane, the
+   player fixed across the full width below both, and the ask box held at the
+   foot of the answer pane just above the player. The window scrolls the
+   answer; the rail scrolls on its own. --dock-h is the player's measured
+   height (0 until something plays), set by the shell. */
+.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: calc(100vh - var(--dock-h, 0px)); column-gap: var(--space-unit); }
 .workspace-shell.phone .workspace-grid { grid-template-columns: minmax(0, 1fr); }
-.workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: 100vh; min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
-.workspace-shell .workspace-rail .masthead { padding-bottom: 0; }
+.workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: calc(100vh - var(--dock-h, 0px)); min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
+.workspace-shell:not(.phone) { padding-bottom: var(--dock-h, 0px); }
+.workspace-shell:not(.phone) .workspace-main { min-height: calc(100vh - var(--dock-h, 0px)); padding-bottom: 0; }
+
+/* The pane's ask box: two lines tall, growing to eight before it scrolls,
+   with the blue Explore inside its lower right as it always had. It keeps the
+   answer's width and sits on the player, with the base composer's fade above
+   it. */
+.workspace-shell .pane-composer { bottom: var(--dock-h, 0px); z-index: 3; max-width: 58rem; padding: var(--space-content) 0 var(--space-part); }
+.workspace-shell .pane-composer textarea { max-height: calc(1.4em * 8 + 2rem); overflow-y: auto; padding: var(--space-part) 7.5rem var(--space-part) var(--space-part); }
+.workspace-shell .pane-composer .question-field button[type="submit"] { right: var(--space-tight); bottom: var(--space-tight); }
+/* The phone's one-line box keeps its hint on one line, trimmed rather than cut in half. */
+.workspace-shell .dock-composer textarea::placeholder { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* The player across the full window. Its contents line up with the shell's
+   edges; the bar gives up its own sticky position and ground to the dock. */
+.workspace-shell .player-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bar-scrim);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+.workspace-shell .player-dock:empty, .workspace-shell .player-dock-inner:empty { display: none; }
+.workspace-shell .player-dock-inner { width: min(1440px, calc(100% - 2rem)); margin: 0 auto; }
+.workspace-shell .player-dock .now-playing-bar { position: static; margin: 0; padding: var(--space-tight) 0; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-top: 0; }
+.workspace-shell .player-dock:has(.now-playing-bar) { border-top: 1px solid var(--hair); }
+/* The Deadbot name stays put at the top of the rail; only the history under
+   it scrolls, however long it grows. */
+.workspace-shell .workspace-rail .masthead { flex-shrink: 0; padding-bottom: 0; }
 .workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; }
 .workspace-menu-history { padding: 0 var(--space-content) var(--space-content); border-bottom: 1px solid var(--hair); }
 
@@ -139,3 +177,32 @@
 @media (prefers-reduced-motion: reduce) {
   .workspace-shell .exploration-pane.previous { transition: none; }
 }
+
+/* Across the full window the bar has room, so the small controls grow: the
+   steps, queue and menu buttons, the times, and the scrubber, which gets a
+   thicker gold track and a knob big enough to grab. The play button stays
+   modest; the phone dock keeps its own compact sizes. */
+.workspace-shell .player-dock .now-playing-bar { column-gap: var(--space-content); padding: var(--space-tight) 0; }
+.workspace-shell .player-dock .now-playing-thumb { width: 48px; height: 48px; }
+.workspace-shell .player-dock .now-playing-title { font-size: 1rem; }
+.workspace-shell .player-dock .now-playing-meta { font-size: 0.86rem; }
+.workspace-shell .player-dock .now-playing-controls { gap: var(--space-tight); }
+.workspace-shell .player-dock .now-playing-toggle { width: 48px; height: 48px; }
+.workspace-shell .player-dock .now-playing-toggle svg { width: 18px; height: 18px; }
+.workspace-shell .player-dock .now-playing-step { width: 48px; height: 48px; color: var(--muted); }
+.workspace-shell .player-dock .now-playing-step svg { width: 24px; height: 24px; }
+.workspace-shell .player-dock .now-playing-queue-toggle { height: 48px; padding: 0 var(--space-tight); color: var(--muted); font-size: 0.95rem; }
+.workspace-shell .player-dock .now-playing-queue-toggle svg { width: 24px; height: 24px; }
+.workspace-shell .player-dock .now-playing-more { height: 48px; padding: 0 var(--space-tight); color: var(--muted); }
+.workspace-shell .player-dock .now-playing-more svg { width: 24px; height: 24px; }
+.workspace-shell .player-dock .now-playing-scrubber { gap: var(--space-part); }
+.workspace-shell .player-dock .now-playing-time { color: var(--muted); font-size: 0.9rem; }
+.workspace-shell .player-dock .now-playing-range { -webkit-appearance: none; appearance: none; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+.workspace-shell .player-dock .now-playing-range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--listen) var(--progress, 0%), rgba(var(--cream-rgb), 0.18) var(--progress, 0%)); }
+.workspace-shell .player-dock .now-playing-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border: 0; border-radius: 50%; background: var(--listen); box-shadow: 0 0 0 3px rgba(10, 18, 13, 0.6); }
+.workspace-shell .player-dock .now-playing-range::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(var(--cream-rgb), 0.18); }
+.workspace-shell .player-dock .now-playing-range::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--listen); }
+.workspace-shell .player-dock .now-playing-range::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: var(--listen); box-shadow: 0 0 0 3px rgba(10, 18, 13, 0.6); }
+.workspace-shell .player-dock .now-playing-range:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* The practice loop's band sits just under the thicker track. */
+.workspace-shell .player-dock .now-playing-loop { bottom: 2px; height: 4px; }
