@@ -10,7 +10,9 @@
   gap: 2px;
   margin: var(--space-tight) 0 var(--space-content);
   border-bottom: 1px solid var(--hair);
-  background: var(--ground);
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 .workspace-shell .workspace-tabs [role="tab"] {
   padding: var(--space-tight) var(--space-part);
@@ -113,8 +115,8 @@
   z-index: 30;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--bar-scrim);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
 }
 .workspace-shell .player-dock:empty, .workspace-shell .player-dock-inner:empty { display: none; }
 .workspace-shell .player-dock-inner { width: min(1440px, calc(100% - 2rem)); margin: 0 auto; }
@@ -176,20 +178,22 @@
   .workspace-shell .exploration-pane.previous { transition: none; }
 }
 
-/* Across the full window the bar has room, so its controls grow to match:
-   a larger play, steps and queue button, and a cover a little bigger. The
+/* Across the full window the bar has room, so it is built for it: a 64px
+   play, 52px steps and queue button, a 56px cover, and type a step up. The
    phone dock keeps its own compact sizes. */
-.workspace-shell .player-dock .now-playing-bar { column-gap: var(--space-content); }
-.workspace-shell .player-dock .now-playing-thumb { width: 48px; height: 48px; }
-.workspace-shell .player-dock .now-playing-title { font-size: 1rem; }
-.workspace-shell .player-dock .now-playing-meta { font-size: 0.85rem; }
+.workspace-shell .player-dock .now-playing-bar { column-gap: var(--space-content); padding: var(--space-part) 0; }
+.workspace-shell .player-dock .now-playing-thumb { width: 56px; height: 56px; }
+.workspace-shell .player-dock .now-playing-title { font-size: 1.1rem; }
+.workspace-shell .player-dock .now-playing-meta { font-size: 0.9rem; }
 .workspace-shell .player-dock .now-playing-controls { gap: var(--space-tight); }
-.workspace-shell .player-dock .now-playing-toggle { width: 52px; height: 52px; }
-.workspace-shell .player-dock .now-playing-toggle svg { width: 20px; height: 20px; }
-.workspace-shell .player-dock .now-playing-step { width: 44px; height: 44px; }
-.workspace-shell .player-dock .now-playing-step svg { width: 20px; height: 20px; }
-.workspace-shell .player-dock .now-playing-queue-toggle { height: 44px; font-size: 0.9rem; }
-.workspace-shell .player-dock .now-playing-queue-toggle svg { width: 22px; height: 22px; }
-.workspace-shell .player-dock .now-playing-time { font-size: 0.85rem; }
-.workspace-shell .player-dock .now-playing-more { height: 40px; }
-.workspace-shell .player-dock .now-playing-more svg { width: 20px; height: 20px; }
+.workspace-shell .player-dock .now-playing-toggle { width: 64px; height: 64px; }
+.workspace-shell .player-dock .now-playing-toggle svg { width: 26px; height: 26px; }
+.workspace-shell .player-dock .now-playing-step { width: 52px; height: 52px; }
+.workspace-shell .player-dock .now-playing-step svg { width: 26px; height: 26px; }
+.workspace-shell .player-dock .now-playing-queue-toggle { height: 52px; padding: 0 var(--space-part); font-size: 1rem; }
+.workspace-shell .player-dock .now-playing-queue-toggle svg { width: 26px; height: 26px; }
+.workspace-shell .player-dock .now-playing-scrubber { gap: var(--space-part); }
+.workspace-shell .player-dock .now-playing-time { font-size: 0.95rem; }
+.workspace-shell .player-dock .now-playing-range { height: 24px; }
+.workspace-shell .player-dock .now-playing-more { height: 52px; padding: 0 var(--space-part); }
+.workspace-shell .player-dock .now-playing-more svg { width: 26px; height: 26px; }
