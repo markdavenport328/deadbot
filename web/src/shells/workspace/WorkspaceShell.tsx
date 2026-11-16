@@ -301,8 +301,10 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
     }
   }, [shownId, shownTab]);
 
-  // The page keeps room under the dock: its measured height becomes a CSS
-  // variable the shell pads by. Nothing to measure means no padding.
+  // The page keeps room under the dock (the phone's player and ask box, or the
+  // desktop's full-width player): its measured height becomes a CSS variable
+  // the shell pads by and the pane's ask box sits on. Nothing to measure means
+  // no padding.
   useLayoutEffect(() => {
     const root = document.documentElement;
     const dock = dockRef.current;
@@ -370,15 +372,17 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
     send();
   }
 
+  // One ask box: in the phone's dock, or held at the foot of the answer pane
+  // on a desktop. Either way it is one line that grows with the question.
   function composer(dock: boolean) {
     return (
-      <form className={dock ? "composer dock-composer" : "composer"} onSubmit={(event) => { event.preventDefault(); send(); }}>
+      <form className={dock ? "composer dock-composer" : "composer pane-composer"} onSubmit={(event) => { event.preventDefault(); send(); }}>
         <div className="question-field">
           <textarea
-            id={dock ? "question-dock" : "question-rail"}
-            ref={dock ? dockTextareaRef : undefined}
+            id={dock ? "question-dock" : "question-pane"}
+            ref={dockTextareaRef}
             aria-label="Question"
-            rows={dock ? 1 : 3}
+            rows={1}
             placeholder={dock ? "Ask about a song, show, or recording" : "Ask about a song, show, source, or recording"}
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
@@ -386,13 +390,9 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
             onFocus={dock ? () => setDockFocused(true) : undefined}
             onBlur={dock ? () => setDockFocused(false) : undefined}
           />
-          {dock ? (
-            <button type="submit" className="dock-send" disabled={asking || !question.trim()} aria-label="Explore" aria-busy={asking}>
-              <SendIcon />
-            </button>
-          ) : (
-            <button type="submit" disabled={asking || !question.trim()} aria-busy={asking}>Explore</button>
-          )}
+          <button type="submit" className="dock-send" disabled={asking || !question.trim()} aria-label="Explore" aria-busy={asking}>
+            <SendIcon />
+          </button>
         </div>
       </form>
     );
@@ -456,7 +456,6 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
               onRetry={actions.retry}
               onNewChat={actions.newChat}
             />
-            {composer(false)}
           </aside>
         )}
         <section className="content-pane workspace-main" aria-label="Deadbot guide">
@@ -481,9 +480,14 @@ export function WorkspaceShell({ player, phonePlayer, isPhone, linkedQuestion, r
             {showStart && <div className="start-screen"><StartLibrary onAsk={startAsk} disabled={false} /></div>}
             {panes}
           </div>
-          {!isPhone && player}
+          {!isPhone && composer(false)}
         </section>
       </div>
+      {!isPhone && (
+        <div className="player-dock" ref={dockRef}>
+          <div className="player-dock-inner">{player}</div>
+        </div>
+      )}
       {isPhone && (
         <div className="mobile-dock" ref={dockRef}>
           {phonePlayer(dockFocused)}

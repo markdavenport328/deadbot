@@ -250,6 +250,25 @@ test("the player keeps playing through requests and history moves", async () => 
   expect(nowPlaying()).toBe(title);
 });
 
+test("on a desktop, the ask box sits at the foot of the answer pane and the player runs below both columns", async () => {
+  const withTape = clone(visualFixtures.harrisburg);
+  const show = withTape.blocks[0] as Extract<ExperienceBlock, { type: "show_unit" }>;
+  show.sets[0].songs.forEach((song, index) => {
+    song.audio_url = `https://archive.org/download/gd1983-06-22/d1t0${index + 1}.mp3`;
+  });
+  replies = [{ kind: "plain", body: { ...withTape, conversation: msgTurns } }];
+  await openWorkspace();
+  expect(rail().querySelector("textarea")).toBeNull();
+  expect(document.querySelector(".workspace-main > .pane-composer textarea")).toBe(screen.getByLabelText("Question"));
+  ask("MSG");
+  await screen.findByRole("heading", { level: 1, name: withTape.headline ?? "" });
+  const play = document.querySelector(".exploration-pane:not([hidden]) .card-head .card-play") as HTMLElement;
+  await act(async () => { fireEvent.click(play); });
+  const dock = document.querySelector(".workspace-shell > .player-dock") as HTMLElement;
+  expect(dock.querySelector(".now-playing-bar")).not.toBeNull();
+  expect(document.querySelector(".workspace-main .now-playing-bar")).toBeNull();
+});
+
 test("a failed request keeps the previous page and Retry sends the same request again", async () => {
   replies = [{ kind: "plain", body: msg() }, "reject", { kind: "plain", body: late80s() }];
   await openWorkspace();

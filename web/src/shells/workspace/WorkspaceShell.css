@@ -82,10 +82,45 @@
 }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
 
-/* Layout: a narrow rail of history and the ask box beside the workspace. */
-.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: 100vh; column-gap: var(--space-unit); }
+/* The app frame. On a desktop: the history rail beside the answer pane, the
+   player fixed across the full width below both, and the ask box held at the
+   foot of the answer pane just above the player. The window scrolls the
+   answer; the rail scrolls on its own. --dock-h is the player's measured
+   height (0 until something plays), set by the shell. */
+.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: calc(100vh - var(--dock-h, 0px)); column-gap: var(--space-unit); }
 .workspace-shell.phone .workspace-grid { grid-template-columns: minmax(0, 1fr); }
-.workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: 100vh; min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
+.workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: calc(100vh - var(--dock-h, 0px)); min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
+.workspace-shell:not(.phone) { padding-bottom: var(--dock-h, 0px); }
+.workspace-shell:not(.phone) .workspace-main { min-height: calc(100vh - var(--dock-h, 0px)); padding-bottom: 0; }
+
+/* The pane's ask box: one line with a round send beside it, growing to eight
+   lines before it scrolls. It keeps the answer's width and sits on the player,
+   with the base composer's fade above it. */
+.workspace-shell .pane-composer { bottom: var(--dock-h, 0px); z-index: 3; max-width: 58rem; padding: var(--space-content) 0 var(--space-part); }
+.workspace-shell .pane-composer .question-field { display: flex; align-items: flex-end; gap: var(--space-tight); }
+.workspace-shell .pane-composer textarea { flex: 1; min-height: 0; max-height: calc(1.4em * 8 + 1.2rem); overflow-y: auto; padding: var(--space-tight) var(--space-part); line-height: 1.4; }
+.workspace-shell .pane-composer .question-field button[type="submit"] { position: static; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 42px; padding: 0; border-radius: 50%; }
+.workspace-shell .pane-composer .question-field button[type="submit"] svg { width: 18px; height: 18px; }
+/* A one-line box keeps its hint on one line, trimmed rather than cut in half. */
+.workspace-shell :is(.pane-composer, .dock-composer) textarea::placeholder { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* The player across the full window. Its contents line up with the shell's
+   edges; the bar gives up its own sticky position and ground to the dock. */
+.workspace-shell .player-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--bar-scrim);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.workspace-shell .player-dock:empty, .workspace-shell .player-dock-inner:empty { display: none; }
+.workspace-shell .player-dock-inner { width: min(1440px, calc(100% - 2rem)); margin: 0 auto; }
+.workspace-shell .player-dock .now-playing-bar { position: static; margin: 0; padding: var(--space-tight) 0; background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-top: 0; }
+.workspace-shell .player-dock:has(.now-playing-bar) { border-top: 1px solid var(--hair); }
 .workspace-shell .workspace-rail .masthead { padding-bottom: 0; }
 .workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; }
 .workspace-menu-history { padding: 0 var(--space-content) var(--space-content); border-bottom: 1px solid var(--hair); }
