@@ -351,6 +351,14 @@ and delete `shells/classic/` after that. The workspace borrows
 `shells/classic/StartLibrary.tsx` for its start view, so move that file into
 the workspace before deleting the classic folder.
 
+**Status (2026-11-16):** built. `core/server-version.ts` holds the deploy
+check both shells use; the workspace holds the reload while an answer is
+being written. `?fixture=` opens the fixture as the one page in the rail and
+does not save it. `defaultShell` is `workspace`; the remembered-choice key
+became `deadbot-shell.v2` so a "classic" stored when that meant the default
+lets go. `StartLibrary.tsx` now lives in `shells/workspace/`. Left for the
+next release: delete `shells/classic/` and its registry line.
+
 ## Decisions (2026-11-14)
 
 - **History survives a reload,** as on CFP.

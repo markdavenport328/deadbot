@@ -586,9 +586,12 @@ What it does:
 
 Limits to know:
 
-- History lives in memory for the session only; a reload clears it.
-- The workspace has no reload-on-deploy check and no static `?fixture=`
-  support yet. Add the reload check before the workspace becomes the default.
+- ~~History lives in memory for the session only~~ History is saved in this
+  browser (step 5 of the shells plan).
+- ~~No reload-on-deploy check and no static `?fixture=` support~~ Both added
+  in step 6 (2026-11-16), when the workspace became the default. The reload
+  waits while an answer is being written; a `?fixture=` page shows alone and
+  never touches the saved history.
 - Small open items: New chat sits under the history list rather than in a
   masthead; focus moves to a finished page's heading even while the visitor is
   typing (the old shell does the same); an empty tab picked mid-stream stays
