@@ -3,6 +3,7 @@
 // ?shell=<name> (see ../../shells.ts).
 import { type FormEvent, type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type AskFocus, type ExperienceResponse } from "../../types";
+import { useReloadOnDeploy } from "../../core/server-version";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "../../visual-fixture-loader";
 import { askRequestBody } from "../../core/ask-request";
 import { clearStoredNotebook, readStoredNotebook, storeNotebook } from "../../core/research-notebook";
@@ -14,7 +15,7 @@ import { renderText } from "../../cards/text";
 import { ComposedPage } from "../../cards/PageGroups";
 import { NowPlayingBar } from "../../player/NowPlayingBar";
 import { PHONE_QUERY, useMediaQuery } from "../../core/media-query";
-import { StartLibrary } from "./StartLibrary";
+import { StartLibrary } from "../workspace/StartLibrary";
 
 // The dock's send: an arrow up, the direction the question travels.
 function SendIcon() {
@@ -23,28 +24,6 @@ function SendIcon() {
       <path fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" d="M12 19V5m0 0l-6 6m6-6l6 6" />
     </svg>
   );
-}
-
-// Reload after a deploy, checked only when a tab comes back into view and at
-// most every few minutes. A timer would keep every forgotten background tab
-// calling the server around the clock.
-const VERSION_CHECK_INTERVAL_MS = 5 * 60_000;
-
-let lastVersionCheck = 0;
-
-async function refreshIfServerChanged(): Promise<void> {
-  const now = Date.now();
-  if (now - lastVersionCheck < VERSION_CHECK_INTERVAL_MS) return;
-  lastVersionCheck = now;
-  const result = await fetch("/api/version", { cache: "no-store" });
-  if (!result.ok) return;
-  const health = await result.json() as { git_commit?: string };
-  const current = health.git_commit;
-  if (!current || current === "unknown") return;
-  const storageKey = "deadbot-server-version";
-  const previous = sessionStorage.getItem(storageKey);
-  sessionStorage.setItem(storageKey, current);
-  if (previous && previous !== current) window.location.reload();
 }
 
 function delay(ms: number): Promise<void> {
@@ -173,15 +152,7 @@ export function ClassicApp() {
     }
   }, [question, isPhone, atStart]);
 
-  useEffect(() => {
-    if (visualFixture || requestedStreamFixture) return;
-    void refreshIfServerChanged();
-    const onVisible = () => {
-      if (document.visibilityState === "visible") void refreshIfServerChanged();
-    };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [visualFixture]);
+  useReloadOnDeploy(!visualFixture && !requestedStreamFixture);
 
   useEffect(() => {
     if (!visualFixture) return;

@@ -4,13 +4,14 @@ import type { PageEvent } from "../../core/stream-events";
 import { ASK_ERROR, askPlain, askStreaming, createThreadId, isAbort, replayStreamEvents, type StreamHandlers } from "../../core/ask-client";
 import { askRequestBody, type FollowUp } from "../../core/ask-request";
 import { storeNotebook } from "../../core/research-notebook";
-import { loadRequestedStreamEvents, requestedStreamFixture } from "../../visual-fixture-loader";
+import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "../../visual-fixture-loader";
+import { useReloadOnDeploy } from "../../core/server-version";
 import {
   explorationReducer, initialExploration, isAsking, requestContext, visible,
   type ExplorationState, type Pending, type RequestSource
 } from "../../core/exploration-state";
 import { ExplorationHistory } from "./ExplorationHistory";
-import { StartLibrary } from "../classic/StartLibrary";
+import { StartLibrary } from "./StartLibrary";
 import { ExplorationPane, contentOf, draftContent, shownPane } from "./ExplorationPane";
 import { loadHistory, saveHistory } from "../../core/history-store";
 import { PanelToggle, PenIcon, useRememberedOpen } from "../../core/side-panel";
@@ -112,8 +113,10 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   linkedQuestion: string | null;
   registerAskFromPage(handler: (question: string) => void): void;
 }) {
-  // Explorations saved in this browser come back on arrival.
-  const [state, dispatch] = useReducer(explorationReducer, undefined, () => loadHistory() ?? initialExploration);
+  // A development `?fixture=` page shows on its own and leaves the saved
+  // history alone; otherwise explorations saved in this browser come back.
+  const fixtureMode = Boolean(requestedVisualFixture);
+  const [state, dispatch] = useReducer(explorationReducer, undefined, () => (fixtureMode ? initialExploration : loadHistory() ?? initialExploration));
   const stateRef = useRef(state);
   stateRef.current = state;
   const controller = useRef<AbortController | null>(null);
@@ -292,8 +295,25 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
 
   // Every change to the history is saved in this browser.
   useEffect(() => {
-    saveHistory(state);
+    if (!fixtureMode) saveHistory(state);
   }, [state.entries, state.cursor, state.startView]);
+
+  // A development `?fixture=` page opens as the one page in the rail.
+  useEffect(() => {
+    if (!fixtureMode) return;
+    void loadRequestedVisualFixture().then((response) => {
+      if (!response) return;
+      const entry: Entry = {
+        id: `fixture-${requestedVisualFixture}`, parentId: null, root: true, request: response.headline ?? requestedVisualFixture ?? "Fixture",
+        source: "typed", focus: null, threadId: createThreadId(), response, view: { scroll: null }
+      };
+      dispatch({ type: "restore", entries: [entry], cursor: 0 });
+    });
+  }, []);
+
+  // A new deploy reloads the page when the tab comes back into view, unless
+  // an answer is being written.
+  useReloadOnDeploy(!fixtureMode && !requestedStreamFixture, () => isAsking(stateRef.current));
 
   // Undo is offered for ten seconds after Clear.
   useEffect(() => {
