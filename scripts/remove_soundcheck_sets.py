@@ -45,6 +45,47 @@ EVIDENCE = {
     "gd-1995-03-17": "archive.org: 'Several takes of Unbroken Chain were done for soundcheck/rehearsal'",
     "gd-1995-06-21": "archive.org: 'Soundcheck: Vince on piano solo, It's All Too Much (three takes)'",
     "gd-1995-06-30": "archive.org: 'Soundcheck: It's A Man's World, Truckin''",
+    # Second pass (2026-11-16): JerryBase (jerrybase.com/events/<date>) labels each
+    # of these first sets a soundcheck; none of the songs is on any archive.org
+    # tape of the show itself unless noted.
+    "gd-1971-10-21": "JerryBase: 'Soundcheck: Get Back'; shared on The Tapers Section 2007-05-28",
+    "gd-1972-04-07": "JerryBase: 'Soundcheck: Hey Bo Diddley, Mr. Charlie, Tennessee Jed, Looks Like Rain' (recollection on dead.net, per Jesse Jarnow)",
+    "gd-1972-04-17": "JerryBase: 'Partial Soundcheck: Uncle John's Band'",
+    "gd-1972-05-16": "JerryBase: 'Soundcheck: Big River, Sugar Magnolia'; archive.org gd1972-05-16.141754 lists the same soundcheck",
+    "gd-1972-09-26": "JerryBase: 'Soundcheck: Box Of Rain, Cumberland Blues, Around And Around, Jack Straw' (setlist from taper Jay Kerley)",
+    "gd-1973-02-19": "JerryBase: 'Soundcheck: Uncle John's Band'",
+    "gd-1974-06-18": "JerryBase: 'Soundcheck: They Love Each Other, U.S. Blues'",
+    "gd-1976-06-14": "JerryBase: 'Partial Soundcheck: U.S. Blues, Not Fade Away, Cold Rain And Snow' (soundcheck video exists)",
+    "gd-1976-12-31": "JerryBase: 'Soundcheck: River Deep Mountain High', per Alex Allan",
+    "gd-1978-04-10": "JerryBase: 'Soundcheck: Salt Lake City'",
+    "gd-1979-12-26": "JerryBase: 'Soundcheck: Brokedown Palace, Black Throated Wind'; archive.org: soundcheck recorded by David Gans",
+    "gd-1980-05-02": "JerryBase: 'Soundcheck: Morning Dew'",
+    "gd-1980-12-31": "JerryBase: 'Acoustic Soundcheck: Young Blood'",
+    "gd-1981-03-20": "JerryBase: 'Soundcheck: Man Smart (Woman Smarter), Althea, Lost Sailor > Saint Of Circumstance'; archive.org gd1981-03-20.sndchk.aud.seaweed.113433",
+    "gd-1983-03-29": "JerryBase: 'Soundcheck: Comes A Time, China Doll' (from Mike Dolgushkin)",
+    "gd-1983-10-09": "JerryBase: 'Soundcheck: Saint Stephen' (DLeopold at Lost Live Dead, confirmed by an eyewitness)",
+    "gd-1983-10-22": "JerryBase: 'Soundcheck: Here Comes Sunshine' (eyewitness, no tape)",
+    "gd-1986-03-23": "JerryBase: 'Soundcheck: I Heard It Through The Grapevine'",
+    "gd-1987-03-26": "JerryBase: 'Partial Soundcheck: Cumberland Blues' (seen in Grateful Dead Home Movies 1980s-90s)",
+    "gd-1987-06-30": "JerryBase: 'Partial Soundcheck: Bertha' (Tyler Roy-Hart heard it)",
+    "gd-1989-04-17": "JerryBase: 'Partial Soundcheck: Lost Sailor' (Willie Culkin heard it three times)",
+    "gd-1990-03-24": "JerryBase: 'Soundcheck: The Weight' (Minches saw the soundcheck)",
+    "gd-1993-02-22": "JerryBase: 'Soundcheck: The Days Between'; the first public performance is in the second set",
+    "gd-1993-03-24": "JerryBase: 'Soundcheck: Whiskey In The Jar' (smarcus, WELL)",
+    "gd-1993-03-28": "JerryBase: 'Soundcheck: Whiskey In The Jar, Alabama Bound'",
+    "gd-1994-12-11": "JerryBase lists no Saint Stephen for this show, and none of its three archive.org tapes has it",
+    "gd-1995-03-22": "JerryBase: 'Soundcheck: Watchin' The Wheels'",
+    "gd-1995-06-24": "JerryBase: 'Soundcheck: Into The Mystic, Black Muddy River, Wang Dang Doodle' (eyewitnesses Dan Sokulski, Josh Davis)",
+    # Third pass: shows with an extra set ahead of the show, found by set count;
+    # archive.org tape notes name it a soundcheck or rehearsal.
+    "gd-1973-12-12": "archive.org gd1973-12-12.sbd.miller.124585: 'Sound check: Sleigh Ride. Rip It Up. Blue Suede Shoes. Peggy-O, Jack Straw, Cumberland Blues, 30 Days'",
+    "gd-1976-07-12": "archive.org gd1976-07-12.sbd.unknown.10362: 'Soundcheck: Dancin in the Streets, They Love Each Other, The Music Never Stopped (x2), Stella Blue (x7), Let It Grow jam, Eyes of the World'",
+    "gd-1993-03-17": "archive.org gd1993-03-17.snchk.miller.34421 and gd1993-03-17.aud-schk.unknown.86711: soundcheck of The Days Between, Wave To The Wind, Lucy In The Sky, I Fought The Law",
+    "gd-1993-03-31": "archive.org gd93-03-31.soundcheck.kenk-tmnsp.31000: 'Cumberland Blues, Lazy River Road, I Fought The Law ... Soundcheck'",
+    "gd-1994-02-25": "archive.org gd1994-02-25.141174.mk4.ebel: 'Soundcheck: Lucy In The Sky With Diamonds, Like a Rolling Stone, Phil, Bob & Vince Jam, Lazy River Road, Liberty, Rain'; gd1994-02-25.rehearsal.fm-sbd.gmb.91250",
+    "gd-1994-09-16": "archive.org gd1994-09-16.141688: 'Soundcheck: It Takes A Lot To Laugh It Takes A Train To Cry, I Want To Tell You, Childhood's End, Attics Of My Life'",
+    "gd-1995-05-24": "archive.org gd1995-05-24.141527: 'Soundcheck: Tough Mama, Childhood's End, Rain'; gd1995-05-24.sndchk.fm.gmb.91237",
+    "gd-1995-07-02": "archive.org gd1995-07-02.139737: 'Soundcheck: Hoochie Coochie Man, Death Don't Have No Mercy, Visions Of Johanna, Here Comes Sunshine'; gd1995-07-02.soundcheck.fm.gmb.91256",
 }
 
 
@@ -98,7 +139,9 @@ def main() -> None:
             records += [{"file": name, "row": row} for row in dropped]
 
     # A song heard only in these soundchecks leaves the catalog with them, along
-    # with the rows that point at it.
+    # with the rows that point at it. A release track keeps its row and title
+    # with no song link, as tracks of songs the Dead never played already do
+    # (Young Blood on a Kingfish album, Whiskey in the Jar on Shady Grove).
     soundcheck_songs = {r["row"]["song_id"] for r in saved if r["file"] == "performances.csv"} | {r["song_id"] for r in removed}
     played = {row["song_id"] for row in kept}
     song_fields, songs = _read("songs.csv")
@@ -111,6 +154,12 @@ def main() -> None:
                 continue
             other_fields, other_rows = _read(name)
             if "song_id" not in other_fields:
+                continue
+            if name == "official_release_tracks.csv":
+                unlinked = [row for row in other_rows if row["song_id"] in orphans]
+                if unlinked:
+                    _write(name, other_fields, [{**row, "song_id": ""} if row["song_id"] in orphans else row for row in other_rows])
+                    records += [{"file": name, "row": row, "change": "song_id cleared"} for row in unlinked]
                 continue
             dropped = [row for row in other_rows if row.get("song_id") in orphans]
             if dropped:

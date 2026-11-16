@@ -10545,7 +10545,7 @@ release-kingfish-1985,6,,,Feels So Good,181,,"disc 1 track 6; MusicBrainz record
 release-kingfish-1985,7,,,Hidden Charms,185,,"disc 1 track 7; MusicBrainz recording edefeb19-bb7b-4b2d-a1e7-c36ee8eb7a04; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
 release-kingfish-1985,8,,,School Days,142,,"disc 1 track 8; MusicBrainz recording 076d29db-4449-45fe-8588-56b141bc53ec; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
 release-kingfish-1985,9,,,Road Runner,261,,"disc 1 track 9; MusicBrainz recording a14a38c1-7fad-45b2-9e91-a0bb4d5b29a5; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
-release-kingfish-1985,10,,song-young-blood,Young Blood,153,,disc 1 track 10; MusicBrainz recording 8cdd813d-2bf9-48ad-9dc4-3b60dcf2bd5f; track title resolved to canonical song song-young-blood.
+release-kingfish-1985,10,,,Young Blood,153,,disc 1 track 10; MusicBrainz recording 8cdd813d-2bf9-48ad-9dc4-3b60dcf2bd5f; track title resolved to canonical song song-young-blood.
 release-kingfish-1985,11,,song-promised-land,Promised Land,224,,disc 1 track 11; MusicBrainz recording 7aae26f8-194d-4dcb-8f74-8b0bed146bae; track title resolved to canonical song song-promised-land.
 release-kingfish-1985,12,,,Key To The Highway,291,,"disc 1 track 12; MusicBrainz recording 17799f1f-bc5f-473c-98fa-de9ca791af22; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
 release-marin-county-line,1,,,Till I Met You,206,,"disc 1 track 1; MusicBrainz recording 0a61184a-7be7-4deb-9119-f8e0a8e11445; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
@@ -10654,7 +10654,7 @@ release-shady-grove,8,,song-casey-jones,Casey Jones,247,,disc 1 track 8; MusicBr
 release-shady-grove,9,,,Dreadful Wind and Rain,290,,"disc 1 track 9; MusicBrainz recording 552edb98-06d7-490e-b56c-c718deac0b4b; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
 release-shady-grove,10,,,I Truly Understand,223,,"disc 1 track 10; MusicBrainz recording b1b297c4-3929-4229-948c-feacb31db7dc; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
 release-shady-grove,11,,,The Handsome Cabin Boy,375,,"disc 1 track 11; MusicBrainz recording e89b4aba-6f23-4ee6-97af-c9b5321d462f; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
-release-shady-grove,12,,song-whiskey-in-the-jar,Whiskey in the Jar,257,,disc 1 track 12; MusicBrainz recording 0eedee1a-710d-44a2-9016-8ccb0faa7868; track title resolved to canonical song song-whiskey-in-the-jar.
+release-shady-grove,12,,,Whiskey in the Jar,257,,disc 1 track 12; MusicBrainz recording 0eedee1a-710d-44a2-9016-8ccb0faa7868; track title resolved to canonical song song-whiskey-in-the-jar.
 release-shady-grove,13,,,Down in the Valley,486,,"disc 1 track 13; MusicBrainz recording 7231aa36-28ca-4420-a97c-ac873e309f68; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
 release-shakedown-street,1,,song-good-lovin,Good Lovin’,290,,disc 1 track 1; MusicBrainz recording e37f12d1-d9d5-45f5-8116-2a34cc1e07f1; track title resolved to canonical song song-good-lovin.
 release-shakedown-street,2,,,France,245,,"disc 1 track 2; MusicBrainz recording 39eb010b-30b6-4af9-8530-1db1bb2bcba9; no canonical song matched: title is not a songs.csv title, slug, or reviewed alias."
