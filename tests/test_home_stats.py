@@ -15,7 +15,7 @@ from home_stats import home_stats
 from warm_answers import OPENING_QUESTIONS
 
 WEB = Path(__file__).resolve().parents[1] / "web" / "src"
-APP = WEB / "shells" / "classic" / "StartLibrary.tsx"
+APP = WEB / "shells" / "workspace" / "StartLibrary.tsx"
 STATS = WEB / "core" / "library-stats.ts"
 ENTRY = re.compile(r'\{\s*count:\s*"([\d,]+)",\s*noun:\s*"(\w+)"\s*\}')
 
