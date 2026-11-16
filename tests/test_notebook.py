@@ -107,7 +107,7 @@ def test_each_turns_lines_follow_its_answer_in_the_transcript():
     messages = notebook.transcript_with_notebook(book, conversation)
     assert [message.type for message in messages] == ["human", "ai", "human"]
     assert messages[2].name == composition.NOTEBOOK_MESSAGE_NAME
-    assert messages[2].content.startswith("Research notebook, turn 1:")
+    assert messages[2].content.startswith("Notebook, turn 1:")
     assert f"[{book.entries[0].key}] get_show gd-1972-05-26" in messages[2].content
 
 
@@ -116,7 +116,7 @@ def test_a_turn_whose_answer_is_not_in_the_transcript_goes_in_one_leading_messag
     conversation = [ConversationTurn(role="user", text="Hi"), ConversationTurn(role="assistant", text="Something else.")]
     messages = notebook.transcript_with_notebook(book, conversation)
     assert [message.type for message in messages] == ["human", "human", "ai"]
-    assert messages[0].content.startswith("Research notebook from earlier in this conversation")
+    assert messages[0].content.startswith("Notebook from earlier in this conversation")
     assert "Turn 1:" in messages[0].content
 
 
@@ -155,7 +155,7 @@ def test_grounding_and_focus_flags_cover_entries_and_pages():
     assert isinstance(urls, frozenset)
     flagged = notebook.entries_mentioning(book, ["gd-1972-05-26", "gd-1999-01-01"])
     assert [entry.tool for entry in flagged] == ["get_show"]
-    assert notebook.render_flags(flagged).startswith("Already in the research notebook for what the visitor clicked:")
+    assert notebook.render_flags(flagged).startswith("Already in the notebook for what the visitor clicked:")
     assert notebook.render_flags([]) == ""
 
 
@@ -336,8 +336,8 @@ def test_identical_answers_on_two_turns_each_get_their_own_lines():
     ]
     messages = notebook.transcript_with_notebook(second, conversation)
     assert [message.type for message in messages] == ["human", "ai", "human", "human", "ai", "human"]
-    assert messages[2].content.startswith("Research notebook, turn 1:") and "get_show" in messages[2].content
-    assert messages[5].content.startswith("Research notebook, turn 2:") and "get_song" in messages[5].content
+    assert messages[2].content.startswith("Notebook, turn 1:") and "get_show" in messages[2].content
+    assert messages[5].content.startswith("Notebook, turn 2:") and "get_song" in messages[5].content
 
 
 def test_from_json_drops_entries_and_pages_with_malformed_fields():

@@ -731,7 +731,7 @@ class CanonicalStore:
         # itself had no setlist, say so, so a gap answer can attribute the limit
         # to source coverage rather than to this library's collection state.
         if "no setlist entries" in show.get("notes", ""):
-            show_summary["setlist_note"] = "The source record for this show contains no setlist entries."
+            show_summary["setlist_note"] = "No setlist survives from this show."
         return {
             "show": show_summary,
             "venue": venue,

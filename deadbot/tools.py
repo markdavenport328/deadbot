@@ -2177,7 +2177,7 @@ def build_tools(
 
     @tool
     def search_site(site: str, query: str) -> str:
-        """Search one research site through its own search and get pages worth reading.
+        """Search one fan or history site through its own search and get pages worth reading.
 
         site is a name from get_research_source_directory (for example
         "Lost Live Dead", "Dead Essays", "Dead Sources", "gdao", "archive.org")
@@ -2996,7 +2996,7 @@ def build_tools(
 
     @tool
     def read_notebook(keys_or_ids: list[str], config: RunnableConfig, only: list[str] | None = None) -> str:
-        """Bring earlier research back: the results of calls listed in the research notebook.
+        """Bring back the results of earlier calls listed in the notebook.
 
         Pass the bracketed keys from the notebook's lines, or IDs and
         arguments (a show_id, song_id, performance_id, aggregation_id,
@@ -3018,7 +3018,7 @@ def build_tools(
             return _json({
                 "notebook_entries": [],
                 "missing": [str(value).strip().strip("[]") for value in keys_or_ids],
-                "note": "The research notebook is empty for this conversation.",
+                "note": "The notebook is empty for this conversation.",
             })
         found, missing, by_id = notebook.find_by(book, keys_or_ids)
         asked = [str(value).strip() for value in only or [] if str(value).strip()]

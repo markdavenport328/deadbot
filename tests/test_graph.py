@@ -60,7 +60,7 @@ def _prompt() -> str:
 
 
 def test_prompt_gives_the_visitors_the_goal_the_writer_and_the_tools():
-    for heading in ("## THE VISITORS", "## THE GOAL", "## THE WRITER", "## RESEARCH TOOLS", "## THE PAGE"):
+    for heading in ("## THE VISITORS", "## THE GOAL", "## THE WRITER", "## TOOLS", "## THE PAGE"):
         assert heading in graph.SYSTEM_PROMPT
 
 
@@ -95,7 +95,7 @@ def test_prompt_components_are_the_page_items():
 
 def test_prompt_grounds_ids_in_this_turn_or_the_notebook():
     prompt = _prompt()
-    assert "IDs from a tool result in this turn or from the research notebook" in prompt
+    assert "IDs from a tool result in this turn or from the notebook" in prompt
     assert "Quote counts exactly as the tools return them" in prompt
 
 

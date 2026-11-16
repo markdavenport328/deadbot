@@ -1850,7 +1850,7 @@ def build_finish_tool() -> BaseTool:
         name=FINISH_TOOL_NAME,
         description=(
             "Deliver the finished page: the answer, then sections in reading order. Call it once, when your research is done. "
-            "IDs and URLs come from this turn's tool results or the research notebook; the server fills in their facts and players."
+            "IDs and URLs come from this turn's tool results or the notebook; the server fills in their facts and players."
         ),
         args_schema=page_plan.PagePlan,
     )
