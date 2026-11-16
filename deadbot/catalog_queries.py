@@ -94,12 +94,12 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
         ),
         NamedQuery(
             "shows",
-            "shows filtered by venue, tour and/or year_from–year_to: date, venue, city, tour, setlist length, official releases",
+            "shows filtered by venue (a venue, city or metro area name), tour and/or year_from–year_to: date, venue, city, tour, setlist length, official releases",
             (),
-            "SELECT show_id, show_date, venue_name, city, tour_name, performance_count, "
+            "SELECT show_id, show_date, venue_name, city, metro_area, tour_name, performance_count, "
             "(SELECT group_concat(release_title, ' | ') FROM (SELECT DISTINCT r.release_title FROM release_track_facts r "
             "WHERE r.show_id = show_facts.show_id)) AS official_releases FROM show_facts "
-            "WHERE (:venue = '' OR venue_name LIKE '%' || :venue || '%') "
+            "WHERE (:venue = '' OR venue_name LIKE '%' || :venue || '%' OR city LIKE '%' || :venue || '%' OR metro_area LIKE '%' || :venue || '%') "
             "AND (:tour = '' OR tour_name LIKE '%' || :tour || '%') "
             f"AND {_YEARS} ORDER BY show_date",
         ),
@@ -108,11 +108,11 @@ NAMED_QUERIES: dict[str, NamedQuery] = {
 
 
 _GUIDE = """Views for SQL (prefer these):
-- show_facts: show_id, show_date, year, venue_id, venue_name, city, state_region, country, tour_name, event_name, performance_count
-- performance_facts (one row per setlist entry): performance_id, song_id, song_title, show_id, show_date, year, venue_id, venue_name, city, tour_name, set_number, set_label, position_in_set, encore, segue_into_next
-- release_track_facts (one row per official release track): release_id, release_title, release_type, release_date, track_number, track_title, song_id, song_title, performance_id, show_id, show_date, year, venue_id, venue_name, city (show columns NULL for studio tracks)
-- guest_appearances: show_id, show_date, year, person_id, person_name, instrument, venue_name, city
-Base tables are readable too. Dates are ISO text; use year for years. release_date may be partial ("1972"). Booleans are 'true'/'false'. Count shows with COUNT(DISTINCT show_id); setlists include Drums and Space. Results stop at 200 rows; aggregate or LIMIT."""
+- show_facts: show_id, show_date, year, venue_id, venue_name, city, metro_area, state_region, country, tour_name, event_name, performance_count
+- performance_facts (one row per setlist entry): performance_id, song_id, song_title, show_id, show_date, year, venue_id, venue_name, city, metro_area, tour_name, set_number, set_label, position_in_set, encore, segue_into_next
+- release_track_facts (one row per official release track): release_id, release_title, release_type, release_date, track_number, track_title, song_id, song_title, performance_id, show_id, show_date, year, venue_id, venue_name, city, metro_area (show columns NULL for studio tracks)
+- guest_appearances: show_id, show_date, year, person_id, person_name, instrument, venue_name, city, metro_area
+metro_area is the area a fan names a venue by (Red Rocks is Denver; Rosemont and Alpine Valley are Chicago; Nassau and Giants Stadium are New York); match places on it. Base tables are readable too. Dates are ISO text; use year for years. release_date may be partial ("1972"). Booleans are 'true'/'false'. Count shows with COUNT(DISTINCT show_id); setlists include Drums and Space. Results stop at 200 rows; aggregate or LIMIT."""
 
 
 def catalog_tool_description() -> str:

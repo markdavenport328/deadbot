@@ -51,6 +51,9 @@ CREATE TABLE venues (
     -- deliberate -- see docs/collection-status-venue-geography.md.
     setting TEXT,
     capacity INTEGER,
+    -- The metro area a fan names the venue by: Red Rocks is Denver, Rosemont is
+    -- Chicago. See scripts/assign_metro_areas.py.
+    metro_area TEXT,
     CHECK (latitude IS NULL OR latitude BETWEEN -90 AND 90),
     CHECK (longitude IS NULL OR longitude BETWEEN -180 AND 180),
     CHECK (setting IS NULL OR setting IN ('indoor', 'outdoor')),
@@ -491,7 +494,7 @@ CREATE INDEX selection_evidence_list_idx
 
 CREATE VIEW show_facts AS
 SELECT s.show_id, s.show_date, CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
-       s.venue_id, v.name AS venue_name, v.city, v.state_region, v.country,
+       s.venue_id, v.name AS venue_name, v.city, v.metro_area, v.state_region, v.country,
        s.tour_name, s.event_name,
        (SELECT COUNT(*) FROM performances p WHERE p.show_id = s.show_id) AS performance_count
 FROM shows s
@@ -500,7 +503,7 @@ LEFT JOIN venues v ON v.venue_id = s.venue_id;
 CREATE VIEW performance_facts AS
 SELECT p.performance_id, p.song_id, so.title AS song_title, p.show_id, s.show_date,
        CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
-       s.venue_id, v.name AS venue_name, v.city, s.tour_name,
+       s.venue_id, v.name AS venue_name, v.city, v.metro_area, s.tour_name,
        p.set_number, p.set_label, p.position_in_set, p.encore, p.segue_into_next
 FROM performances p
 JOIN shows s ON s.show_id = p.show_id
@@ -513,7 +516,7 @@ SELECT t.release_id, r.title AS release_title, r.release_type, r.release_date,
        COALESCE(t.song_id, p.song_id) AS song_id, so.title AS song_title,
        t.performance_id, p.show_id, s.show_date,
        CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
-       s.venue_id, v.name AS venue_name, v.city
+       s.venue_id, v.name AS venue_name, v.city, v.metro_area
 FROM official_release_tracks t
 JOIN official_releases r ON r.release_id = t.release_id
 LEFT JOIN performances p ON p.performance_id = t.performance_id
@@ -523,7 +526,7 @@ LEFT JOIN venues v ON v.venue_id = s.venue_id;
 
 CREATE VIEW guest_appearances AS
 SELECT sp.show_id, s.show_date, CAST(substr(s.show_date, 1, 4) AS INTEGER) AS year,
-       sp.person_id, pe.name AS person_name, sp.instrument, v.name AS venue_name, v.city
+       sp.person_id, pe.name AS person_name, sp.instrument, v.name AS venue_name, v.city, v.metro_area
 FROM show_performers sp
 JOIN shows s ON s.show_id = sp.show_id
 LEFT JOIN people pe ON pe.person_id = sp.person_id

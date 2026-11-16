@@ -89,7 +89,7 @@ TABLE_SPECS: tuple[TableSpec, ...] = (
     _spec("people", "person_id name birth_date death_date notes", nullable=("birth_date", "death_date", "notes"), dates=("birth_date", "death_date")),
     _spec("band_memberships", "membership_id person_id act role start_date end_date start_precision end_precision source_key source_record_id notes", nullable=("end_date", "end_precision", "source_key", "source_record_id", "notes"), dates=("start_date", "end_date")),
     _spec("songs", "song_id title slug original_artist first_known_dead_performance last_known_dead_performance notes", nullable=("original_artist", "first_known_dead_performance", "last_known_dead_performance", "notes"), dates=("first_known_dead_performance", "last_known_dead_performance")),
-    _spec("venues", "venue_id name city state_region country latitude longitude notes setting capacity", nullable=("city", "state_region", "country", "latitude", "longitude", "notes", "setting", "capacity"), floats=("latitude", "longitude"), integers=("capacity",)),
+    _spec("venues", "venue_id name city state_region country latitude longitude notes setting capacity metro_area", nullable=("city", "state_region", "country", "latitude", "longitude", "notes", "setting", "capacity", "metro_area"), floats=("latitude", "longitude"), integers=("capacity",)),
     _spec("equipment", "equipment_id name category manufacturer model notes", nullable=("manufacturer", "model", "notes")),
     _spec("shows", "show_id show_date venue_id tour_name event_name notes source_key source_record_id", nullable=("tour_name", "event_name", "notes", "source_key", "source_record_id"), dates=("show_date",)),
     _spec("song_writers", "song_id person_id writer_role notes", nullable=("notes",)),

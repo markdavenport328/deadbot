@@ -17,10 +17,10 @@ def _csv(name):
 def test_views_exist_with_their_columns(built_sqlite):
     db = _db(built_sqlite)
     expected = {
-        "show_facts": ["show_id", "show_date", "year", "venue_id", "venue_name", "city", "state_region", "country", "tour_name", "event_name", "performance_count"],
-        "performance_facts": ["performance_id", "song_id", "song_title", "show_id", "show_date", "year", "venue_id", "venue_name", "city", "tour_name", "set_number", "set_label", "position_in_set", "encore", "segue_into_next"],
-        "release_track_facts": ["release_id", "release_title", "release_type", "release_date", "track_number", "track_title", "song_id", "song_title", "performance_id", "show_id", "show_date", "year", "venue_id", "venue_name", "city"],
-        "guest_appearances": ["show_id", "show_date", "year", "person_id", "person_name", "instrument", "venue_name", "city"],
+        "show_facts": ["show_id", "show_date", "year", "venue_id", "venue_name", "city", "metro_area", "state_region", "country", "tour_name", "event_name", "performance_count"],
+        "performance_facts": ["performance_id", "song_id", "song_title", "show_id", "show_date", "year", "venue_id", "venue_name", "city", "metro_area", "tour_name", "set_number", "set_label", "position_in_set", "encore", "segue_into_next"],
+        "release_track_facts": ["release_id", "release_title", "release_type", "release_date", "track_number", "track_title", "song_id", "song_title", "performance_id", "show_id", "show_date", "year", "venue_id", "venue_name", "city", "metro_area"],
+        "guest_appearances": ["show_id", "show_date", "year", "person_id", "person_name", "instrument", "venue_name", "city", "metro_area"],
     }
     for view, columns in expected.items():
         assert [row[1] for row in db.execute(f'PRAGMA table_info("{view}")')] == columns, view
