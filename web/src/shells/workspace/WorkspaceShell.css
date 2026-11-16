@@ -4,13 +4,16 @@
 
 
 /* History: New chat at the top, Recent threads newest first (the question
-   that began each, its follow-ups indented beneath), Clear at the foot. */
+   that began each, its follow-ups indented beneath), then Clear. */
 .workspace-shell .exploration-history { display: flex; flex-direction: column; gap: var(--space-part); }
-.workspace-shell .exploration-history h2 { margin: var(--space-tight) 0 0; color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-.workspace-shell .history-new { padding: var(--space-tight) var(--space-part); border: 1px solid var(--hair); border-radius: var(--r); background: var(--glass); color: var(--cream); font-weight: 500; }
-.workspace-shell .history-new:hover:not(:disabled) { border-color: var(--cream-rule); }
+.workspace-shell .exploration-history h2 { margin: var(--space-tight) 0 0; padding: 0 var(--space-tight); color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+/* New chat: a pen and the words, no box, lined up with the rail's text. */
+.workspace-shell .history-new { display: flex; align-items: center; gap: var(--space-tight); align-self: flex-start; padding: var(--space-tight); border: 0; border-radius: var(--r); background: none; color: var(--cream); font-weight: 500; }
+.workspace-shell .history-new svg { width: 18px; height: 18px; flex-shrink: 0; }
+.workspace-shell .history-new:hover:not(:disabled) { background: rgba(var(--cream-rgb), 0.06); }
+.workspace-shell .history-new.icon-only { align-self: center; justify-content: center; width: 36px; height: 36px; padding: 0; }
 .workspace-shell .history-new:disabled { opacity: 0.4; cursor: default; }
-.workspace-shell .history-empty { margin: 0; color: var(--quiet); font-size: 0.85rem; }
+.workspace-shell .history-empty { margin: 0; padding: 0 var(--space-tight); color: var(--quiet); font-size: 0.85rem; }
 .workspace-shell .history-threads { display: grid; gap: var(--space-tight); margin: 0; padding: 0; list-style: none; }
 .workspace-shell .history-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .workspace-shell .history-row {
@@ -28,7 +31,8 @@
 .workspace-shell .history-row:hover { background: rgba(var(--cream-rgb), 0.05); }
 .workspace-shell .history-row.follow-up { position: relative; padding-left: var(--space-content); color: var(--muted); font-size: 0.82rem; font-weight: 400; }
 .workspace-shell .history-row.follow-up::before { content: ""; position: absolute; left: var(--space-part); top: 0; bottom: 0; border-left: 1px solid var(--hair); }
-.workspace-shell .history-row[aria-current="true"] { border-color: var(--hair); background: var(--panel); color: var(--cream); box-shadow: inset 3px 0 0 var(--ask); }
+/* The page on screen: the blue stripe alone marks it. */
+.workspace-shell .history-row[aria-current="true"] { color: var(--cream); box-shadow: inset 3px 0 0 var(--ask); }
 .workspace-shell .history-row.ahead { opacity: 0.6; }
 .workspace-shell .history-pending {
   display: flex;
@@ -43,8 +47,9 @@
 .workspace-shell .history-pending button,
 .workspace-shell .history-clear { padding: var(--space-line) var(--space-tight); border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
-.workspace-shell .history-foot { margin-top: auto; padding-top: var(--space-part); border-top: 1px solid var(--hair); }
-.workspace-shell .history-clear { font-size: 0.8rem; background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); color: var(--text); }
+/* Clear sits just below the threads, lined up with their text. */
+.workspace-shell .history-foot { padding: 0 var(--space-tight); }
+.workspace-shell .history-clear { padding: var(--space-line) 0; border: 0; background: none; color: var(--muted); font-size: 0.8rem; }
 .workspace-shell .history-clear:hover:not(:disabled) { color: var(--cream); }
 .workspace-shell .history-clear:disabled { opacity: 0.4; cursor: default; }
 
@@ -66,14 +71,19 @@
    foot of the answer pane just above the player. The window scrolls the
    answer; the rail scrolls on its own. --dock-h is the player's measured
    height (0 until something plays), set by the shell. */
-.workspace-shell .workspace-grid { display: grid; grid-template-columns: 270px minmax(0, 1fr); align-items: start; min-height: calc(100vh - var(--dock-h, 0px)); column-gap: var(--space-unit); }
+.workspace-shell .workspace-grid { display: grid; grid-template-columns: var(--left-col, 270px) minmax(0, 1fr); align-items: start; min-height: calc(100vh - var(--dock-h, 0px)); column-gap: var(--space-unit); }
 .workspace-shell.phone .workspace-grid { grid-template-columns: minmax(0, 1fr); }
 /* The queue's rail joins on the right once something is queued, scrolling on
    its own and stopping at the player like the history rail. */
-.workspace-shell .workspace-grid:has(> .queue-rail) { grid-template-columns: 250px minmax(0, 1fr) 330px; column-gap: var(--space-content); }
-.workspace-shell .queue-rail { position: sticky; top: 0; height: calc(100vh - var(--dock-h, 0px)); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-content) var(--space-part); background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-left: 1px solid var(--hair); }
-/* The site menu's button sits over the rail's top right corner. */
-.workspace-shell .queue-rail .queue-panel-head { padding-right: 3.25rem; }
+.workspace-shell .workspace-grid:has(> .queue-rail) { grid-template-columns: var(--left-col, 250px) minmax(0, 1fr) var(--right-col, 330px); column-gap: var(--space-content); }
+/* Collapsed side columns are a slim strip of controls. */
+.workspace-shell.history-collapsed { --left-col: 56px; }
+.workspace-shell .workspace-grid:has(> .queue-rail.collapsed) { --right-col: 56px; }
+.workspace-shell .queue-rail { position: sticky; top: 0; height: calc(100vh - var(--dock-h, 0px)); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-content); background: rgba(12, 21, 16, 0.26); -webkit-backdrop-filter: blur(10px) saturate(1.1); backdrop-filter: blur(10px) saturate(1.1); border-left: 1px solid var(--hair); }
+.workspace-shell .queue-rail.collapsed { display: flex; flex-direction: column; align-items: center; gap: var(--space-part); padding: var(--space-content) 0; }
+.workspace-shell .queue-rail-mark { position: relative; display: grid; place-items: center; width: 36px; height: 36px; color: var(--muted); }
+.workspace-shell .queue-rail-mark svg { width: 20px; height: 20px; }
+.workspace-shell .queue-rail-mark > span { position: absolute; top: -2px; right: -4px; min-width: 16px; padding: 0 3px; border-radius: 8px; background: var(--glass-strong); color: var(--cream); font-size: 0.66rem; font-weight: 600; line-height: 16px; text-align: center; }
 .workspace-shell .workspace-rail { position: sticky; top: 0; display: flex; flex-direction: column; gap: var(--space-part); height: calc(100vh - var(--dock-h, 0px)); min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
 .workspace-shell:not(.phone) { padding-bottom: var(--dock-h, 0px); }
 .workspace-shell:not(.phone) .workspace-main { min-height: calc(100vh - var(--dock-h, 0px)); padding-bottom: 0; }
@@ -82,7 +92,14 @@
    with the blue Explore inside its lower right as it always had. It keeps the
    answer's width and sits on the player, with the base composer's fade above
    it. */
-.workspace-shell .pane-composer { bottom: var(--dock-h, 0px); z-index: 3; max-width: 58rem; padding: var(--space-content) 0 var(--space-part); }
+/* As on CFP's guide: the page fades away under the box as it scrolls, and
+   the box floats on it as a translucent silhouette with a soft shadow. */
+.workspace-shell .pane-composer { bottom: var(--dock-h, 0px); z-index: 3; max-width: 58rem; padding: var(--space-unit) 0 var(--space-part); background: linear-gradient(to bottom, rgba(16, 27, 21, 0), rgba(16, 27, 21, 0.78) var(--space-unit)); }
+.workspace-shell .pane-composer::before { display: none; }
+.workspace-shell .pane-composer textarea { border-color: rgba(var(--cream-rgb), 0.16); background: rgba(34, 52, 41, 0.42); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35); }
+/* Explore takes the brighter blue of the history's stripe, with dark ink for contrast. */
+.workspace-shell .pane-composer .question-field button[type="submit"] { background: var(--ask); color: #061423; }
+.workspace-shell .pane-composer .question-field button[type="submit"]:is(:hover, :focus-visible):not(:disabled) { background: color-mix(in srgb, var(--ask) 82%, var(--cream)); }
 .workspace-shell .pane-composer textarea { max-height: calc(1.4em * 8 + 2rem); overflow-y: auto; padding: var(--space-part) 7.5rem var(--space-part) var(--space-part); }
 .workspace-shell .pane-composer .question-field button[type="submit"] { right: var(--space-tight); bottom: var(--space-tight); }
 /* The phone's one-line box keeps its hint on one line, trimmed rather than cut in half. */
@@ -110,7 +127,7 @@
 .workspace-shell .workspace-rail .masthead { flex-shrink: 0; padding-bottom: 0; }
 /* In the rail New chat and Clear stay put; only the threads between them scroll. */
 .workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; }
-.workspace-shell .workspace-rail .history-threads { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; overscroll-behavior: contain; }
+.workspace-shell .workspace-rail .history-threads { flex: 0 1 auto; min-height: 0; align-content: start; overflow-y: auto; overscroll-behavior: contain; }
 
 /* One exploration. A held previous page stays usable, only quieter. */
 .workspace-shell .exploration-pane { max-width: 58rem; }
@@ -125,8 +142,10 @@
 /* Cards are one per row here: comparison groups stack instead of pairing. */
 .workspace-shell .group-comparison .group-blocks { grid-template-columns: minmax(0, 1fr); }
 .workspace-shell .group-comparison .group-blocks > * { grid-column: 1 / -1; }
-/* Every unit card takes the full row, whatever its emphasis or group. */
-.workspace-shell .group-blocks > .card { grid-column: 1 / -1; }
+/* Every block takes the full row, whatever its type, emphasis or group: the
+   page is one column. (A block with no span of its own, such as the
+   listening hero, would otherwise get one twelfth of it.) */
+.workspace-shell .group-blocks > * { grid-column: 1 / -1; }
 
 /* The follow-up banner over the held page, and the failure line. */
 .workspace-shell .workspace-banner,
@@ -191,3 +210,26 @@
 .workspace-shell .player-dock .now-playing-range:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 /* The practice loop's band sits just under the thicker track. */
 .workspace-shell .player-dock .now-playing-loop { bottom: 2px; height: 4px; }
+
+/* The rail's head: the Deadbot name with the sidebar control just right of
+   it. Collapsed, the rail is its controls alone, stacked. */
+.workspace-shell .masthead-bar { display: flex; align-items: center; gap: var(--space-tight); width: 100%; }
+.workspace-shell .panel-toggle { display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--r); background: none; color: var(--muted); }
+.workspace-shell .panel-toggle:hover { background: rgba(var(--cream-rgb), 0.06); color: var(--cream); }
+.workspace-shell .panel-toggle svg { width: 20px; height: 20px; }
+/* The site's links, under the name and above New chat, lined up with the rail's text. */
+.workspace-shell .rail-links { display: grid; gap: 2px; flex-shrink: 0; font-size: 0.88rem; }
+.workspace-shell .rail-links a { padding: var(--space-line) var(--space-tight); border-radius: var(--r); color: var(--text); text-decoration: none; }
+.workspace-shell .rail-links a:hover, .workspace-shell .rail-links a[aria-current="page"] { color: var(--cream); text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; }
+.workspace-shell.history-collapsed .workspace-rail { align-items: center; }
+.workspace-shell.history-collapsed .masthead { align-items: center; padding-inline: 0; }
+.workspace-shell.history-collapsed .masthead-bar { flex-direction: column; gap: var(--space-part); }
+.workspace-shell .queue-head-actions { display: flex; align-items: center; gap: var(--space-tight); margin-left: auto; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-shell .workspace-grid { transition: grid-template-columns var(--t-shift) var(--ease-out); }
+}
+
+/* An empty box keeps Explore in its blue, only a touch quieter, rather than
+   the general disabled fade. */
+.workspace-shell .pane-composer .question-field button[type="submit"]:disabled { opacity: 0.85; }

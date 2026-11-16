@@ -286,15 +286,15 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
    with an equalizer and progress, then Up next and Played as rows of number,
    title, length, grip and ⋯. The same rules serve the workspace's rail and
    the panel the bar opens above itself. */
-.queue-panel { display: flex; flex-direction: column; gap: var(--space-tight); outline: none; }
+.queue-panel { display: flex; flex-direction: column; gap: var(--space-part); outline: none; }
 .queue-panel:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .queue-panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-part); }
 .queue-panel-head h2 { margin: 0; color: var(--cream); font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
-.queue-clear { min-height: 32px; padding: 0 var(--space-tight); border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); font-size: 0.8rem; }
+.queue-clear { min-height: 32px; padding: 0 var(--space-line); border: 0; border-radius: var(--r); background: transparent; color: var(--muted); font-size: 0.8rem; }
 .queue-clear:hover { color: var(--cream); }
-.queue-section { display: flex; align-items: baseline; gap: var(--space-tight); margin: var(--space-tight) 0 0; color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.queue-section { display: flex; align-items: baseline; gap: var(--space-tight); margin: var(--space-part) 0 calc(-1 * var(--space-line)); color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
 .queue-count { color: var(--quiet); font-weight: 400; letter-spacing: 0; text-transform: none; font-size: 0.78rem; font-variant-numeric: tabular-nums; }
-.queue-now { display: grid; gap: var(--space-tight); }
+.queue-now { display: grid; gap: var(--space-tight); padding-bottom: var(--space-line); }
 .queue-now-row { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto; align-items: center; column-gap: var(--space-tight); }
 .queue-now-text { display: flex; flex-direction: column; min-width: 0; color: var(--cream); font-size: 0.92rem; font-weight: 600; }
 .queue-progress { display: block; height: 3px; border-radius: 2px; background: rgba(var(--cream-rgb), 0.14); overflow: hidden; }
@@ -311,13 +311,13 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 @keyframes eq { from { height: 25%; } to { height: 100%; } }
 .queue-empty { margin: 0; color: var(--quiet); font-size: 0.85rem; }
-.queue-list { margin: 0; padding: 0; list-style: none; }
-.queue-item { position: relative; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto 32px 32px; align-items: center; column-gap: var(--space-tight); min-height: 2.75rem; border-radius: var(--r); }
+.queue-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+.queue-item { position: relative; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto 32px 32px; align-items: center; column-gap: var(--space-tight); min-height: 3rem; padding: var(--space-line) 0; border-radius: var(--r); }
 .queue-item.dragging { background: rgba(var(--cream-rgb), 0.08); box-shadow: inset 2px 0 0 var(--listen); }
 .queue-n { display: flex; justify-content: flex-end; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
 .queue-title { display: flex; flex-direction: column; min-width: 0; padding: var(--space-line) 0; border: 0; background: none; color: var(--text); font: inherit; font-size: 0.88rem; text-align: left; cursor: pointer; }
 .queue-title-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.queue-show { color: var(--quiet); font-size: 0.76rem; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-show { margin-top: 2px; color: var(--quiet); font-size: 0.76rem; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .queue-item.heard .queue-title-text { color: var(--quiet); }
 .queue-time { color: var(--quiet); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
 .queue-grip, .queue-more { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: var(--space-line); border: none; border-radius: var(--r); background: transparent; color: var(--quiet); }
@@ -1129,4 +1129,9 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 @media (hover: hover) {
   [data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); transition: opacity 120ms var(--ease-out) 300ms, transform 120ms var(--ease-out) 300ms; }
 }
+
+/* The workspace on a desktop has its own menu button beside the Deadbot name. */
+html.workspace-desktop .site-menu-toggle { display: none; }
+/* A hover label for a control at the top of the screen opens below it. */
+[data-tip][data-tip-place="below"]::after { top: calc(100% + var(--space-tight)); bottom: auto; transform: translate(-50%, -2px); }
 

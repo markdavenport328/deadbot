@@ -1,8 +1,9 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { formatClockTime, usePlayer, type PlayerTrack } from "./player";
 import { formatShowDate } from "../core/format";
 import { askQuestion } from "../core/site-nav";
-import { Equalizer, MoreIcon } from "./icons";
+import { Equalizer, MoreIcon, QueueIcon } from "./icons";
+import { PanelToggle, useRememberedOpen } from "../core/side-panel";
 
 // The queue: what is playing, then what plays next, then what has already
 // played. A row's title plays it; its grip drags it to a new place (or moves
@@ -135,11 +136,12 @@ function RowMenu({ title, items }: { title: string; items: MenuItem[] }) {
 
 type Drag = { from: number; to: number; mids: number[]; first: number };
 
-export function QueuePanel({ id, variant, onClose, panelRef }: {
+export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
   id?: string;
   variant: "rail" | "popover";
   onClose?: () => void;
   panelRef?: RefObject<HTMLElement | null>;
+  headExtra?: ReactNode; // the rail's collapse control, after Clear
 }) {
   const player = usePlayer();
   const headingId = useId();
@@ -295,11 +297,14 @@ export function QueuePanel({ id, variant, onClose, panelRef }: {
       <p className="sr-only" role="status">{announcement}</p>
       <header className="queue-panel-head">
         <h2 id={headingId}>Queue</h2>
-        {cleared ? (
-          <button type="button" className="queue-clear" onClick={undo}>Cleared. Undo</button>
-        ) : (
-          queue.length > 1 && <button type="button" className="queue-clear" onClick={clear}>Clear queue</button>
-        )}
+        <span className="queue-head-actions">
+          {cleared ? (
+            <button type="button" className="queue-clear" onClick={undo}>Cleared. Undo</button>
+          ) : (
+            queue.length > 1 && <button type="button" className="queue-clear" onClick={clear}>Clear queue</button>
+          )}
+          {headExtra}
+        </span>
       </header>
 
       {nowPlaying && (
@@ -346,23 +351,50 @@ export function QueuePanel({ id, variant, onClose, panelRef }: {
 
 export const QUEUE_RAIL_ID = "queue-rail";
 
-// The bar's queue button, when the queue has its own rail: focus the rail and
-// bring the playing track into its view.
+const EXPAND_EVENT = "deadbot:expand-queue-rail";
+
+// The bar's queue button, when the queue has its own rail: open the rail if
+// it is collapsed, then focus it and bring the playing track into view.
 export function focusQueueRail() {
-  const rail = document.getElementById(QUEUE_RAIL_ID);
-  if (!rail) return;
-  rail.focus({ preventScroll: true });
-  rail.closest(".queue-rail")?.scrollTo?.({ top: 0 });
+  window.dispatchEvent(new Event(EXPAND_EVENT));
+  requestAnimationFrame(() => {
+    const rail = document.getElementById(QUEUE_RAIL_ID);
+    if (!rail) return;
+    rail.focus({ preventScroll: true });
+    rail.closest(".queue-rail")?.scrollTo?.({ top: 0 });
+  });
 }
 
 // The workspace's right rail: the queue, from the moment anything plays. It
 // takes no room before then.
+// It collapses to a slim strip (the expand control and the queue mark with
+// its count) and remembers that.
 export function QueueRail() {
   const player = usePlayer();
+  const [open, setOpen] = useRememberedOpen("deadbot.rail.queue");
+  useEffect(() => {
+    const expand = () => setOpen(true);
+    window.addEventListener(EXPAND_EVENT, expand);
+    return () => window.removeEventListener(EXPAND_EVENT, expand);
+  });
   if (!player.currentTrack) return null;
+  const toggle = <PanelToggle side="right" open={open} label="queue" onToggle={() => setOpen(!open)} />;
+  if (!open) {
+    const current = player.queue.findIndex((track) => track.id === player.currentTrack?.id);
+    const upcoming = Math.max(player.queue.length - current - 1, 0);
+    return (
+      <aside className="queue-rail collapsed" aria-label="Queue">
+        {toggle}
+        <span className="queue-rail-mark" aria-label={`${upcoming === 1 ? "1 track" : `${upcoming} tracks`} up next`}>
+          <QueueIcon />
+          <span aria-hidden="true">{upcoming}</span>
+        </span>
+      </aside>
+    );
+  }
   return (
     <aside className="queue-rail" aria-label="Queue">
-      <QueuePanel id={QUEUE_RAIL_ID} variant="rail" />
+      <QueuePanel id={QUEUE_RAIL_ID} variant="rail" headExtra={toggle} />
     </aside>
   );
 }

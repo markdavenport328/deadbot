@@ -274,8 +274,30 @@ test("on a wide desktop the queue has its own rail, and the bar's queue button g
   const button = screen.getByRole("button", { name: /^Queue,/ });
   expect(button).not.toHaveAttribute("aria-expanded");
   await act(async () => { fireEvent.click(button); });
-  expect(document.getElementById("queue-rail")).toHaveFocus();
+  await vi.waitFor(() => expect(document.getElementById("queue-rail")).toHaveFocus());
   expect(document.querySelector(".player-dock .now-playing-queue")).toBeNull();
+
+  // Collapsed, the rail is a slim strip; the bar's queue button opens it again.
+  fireEvent.click(within(rail).getByRole("button", { name: "Collapse queue" }));
+  expect(document.querySelector(".queue-rail.collapsed")).not.toBeNull();
+  expect(window.localStorage.getItem("deadbot.rail.queue")).toBe("closed");
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /^Queue,/ })); });
+  await vi.waitFor(() => expect(document.getElementById("queue-rail")).toHaveFocus());
+});
+
+test("the rail carries the site's links instead of a menu, and collapses to its controls", async () => {
+  await openWorkspace();
+  expect(within(rail()).getByRole("link", { name: "About Deadbot" })).toHaveAttribute("href", "/about");
+  expect(within(rail()).getByRole("link", { name: /About Mark Davenport/ })).toHaveAttribute("target", "_blank");
+  expect(within(rail()).queryByRole("button", { name: "Menu" })).toBeNull();
+  expect(document.documentElement).toHaveClass("workspace-desktop");
+  fireEvent.click(within(rail()).getByRole("button", { name: "Collapse sidebar" }));
+  expect(document.querySelector(".workspace-shell")).toHaveClass("history-collapsed");
+  expect(within(rail()).queryByText("Recent")).toBeNull();
+  expect(within(rail()).getByRole("button", { name: "New chat" })).toBeInTheDocument();
+  expect(window.localStorage.getItem("deadbot.rail.history")).toBe("closed");
+  fireEvent.click(within(rail()).getByRole("button", { name: "Expand sidebar" }));
+  expect(within(rail()).getByText("Recent")).toBeInTheDocument();
 });
 
 test("a failed request keeps the previous page and Retry sends the same request again", async () => {
@@ -388,7 +410,7 @@ test("Clear empties the history, and Undo puts it back", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
   expect(rows()).toHaveLength(0);
   expect(window.localStorage.getItem("deadbot.history.v1")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Cleared. Undo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Undo clearing history" }));
   expect(rows()).toHaveLength(1);
   expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
 });

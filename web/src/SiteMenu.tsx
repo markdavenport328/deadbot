@@ -4,7 +4,7 @@ import { CloseSiteMenuProvider, MenuSlotOutlet } from "./core/menu-slot";
 import { followInSite, usePath } from "./core/site-nav";
 import "./SiteMenu.css";
 
-const RESUME_URL = "https://mark-davenport.vercel.app";
+export const RESUME_URL = "https://mark-davenport.vercel.app";
 
 // The site menu: one quiet button in the top-right corner that opens a
 // full-screen panel of a few very large links separated by hairlines. While it

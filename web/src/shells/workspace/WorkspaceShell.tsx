@@ -13,6 +13,9 @@ import { ExplorationHistory } from "./ExplorationHistory";
 import { StartLibrary } from "../classic/StartLibrary";
 import { ExplorationPane, contentOf, draftContent, shownPane } from "./ExplorationPane";
 import { loadHistory, saveHistory } from "../../core/history-store";
+import { PanelToggle, PenIcon, useRememberedOpen } from "../../core/side-panel";
+import { RESUME_URL } from "../../SiteMenu";
+import { followInSite, usePath } from "../../core/site-nav";
 import type { Entry } from "../../core/exploration-state";
 import "./WorkspaceShell.css";
 
@@ -42,6 +45,19 @@ function SendIcon() {
 }
 
 const UNDO_CLEAR_SECONDS = 10;
+
+// The site menu's two links, at the top of the rail on a desktop, above New chat.
+function RailLinks() {
+  const path = usePath();
+  return (
+    <nav className="rail-links" aria-label="Site">
+      <a href="/about" aria-current={path === "/about" ? "page" : undefined} onClick={(event) => followInSite(event, "/about")}>About Deadbot</a>
+      <a href={RESUME_URL} target="_blank" rel="noopener">
+        About Mark Davenport<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
+      </a>
+    </nav>
+  );
+}
 
 // The history mark for the phone's drawer button: a clock face turning back.
 function HistoryIcon() {
@@ -113,6 +129,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   const railHeadingId = useId();
   const drawerHeadingId = useId();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [railOpen, setRailOpen] = useRememberedOpen("deadbot.rail.history");
   const [cleared, setCleared] = useState<{ entries: Entry[]; cursor: number } | null>(null);
   const dockRef = useRef<HTMLDivElement>(null);
   const dockTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -260,6 +277,13 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     // Read once, on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // On a desktop the rail carries the site's links, so the corner menu steps aside.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("workspace-desktop", !isPhone);
+    return () => root.classList.remove("workspace-desktop");
+  }, [isPhone]);
 
   // The page shown on arrival from saved history gets its research notebook back.
   useEffect(() => {
@@ -465,7 +489,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   const showStart = shown.kind === "start" || (shown.kind === "failed" && !shown.entry);
 
   return (
-    <main className={isPhone ? "app-shell workspace-shell phone" : "app-shell workspace-shell"}>
+    <main className={["app-shell", "workspace-shell", isPhone ? "phone" : null, !isPhone && !railOpen ? "history-collapsed" : null].filter(Boolean).join(" ")}>
       <p role="status" className="sr-only">{announcement}</p>
       {isPhone && (
         <HistoryDrawer open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}>
@@ -486,10 +510,14 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
         {!isPhone && (
           <aside className="workspace-rail" aria-label="Explorations">
             <header className="masthead">
-              <a className="wordmark" href="/" onClick={goHome}>Deadbot</a>
-              <p>Grateful Dead knowledge, listening, and context</p>
+              <div className="masthead-bar">
+                {railOpen && <a className="wordmark" href="/" onClick={goHome}>Deadbot</a>}
+                <PanelToggle side="left" open={railOpen} label="sidebar" onToggle={() => setRailOpen(!railOpen)} />
+              </div>
+              {railOpen && <p>Grateful Dead knowledge, listening, and context</p>}
             </header>
-            <ExplorationHistory
+            {railOpen && <RailLinks />}
+            {railOpen ? <ExplorationHistory
               state={state}
               headingId={railHeadingId}
               onNavigate={actions.navigate}
@@ -499,7 +527,11 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
               onClear={clearHistory}
               onUndo={undoClear}
               cleared={cleared !== null}
-            />
+            /> : (
+              <button type="button" className="history-new icon-only" disabled={asking} onClick={actions.newChat} aria-label="New chat" data-tip="New chat">
+                <PenIcon />
+              </button>
+            )}
           </aside>
         )}
         <section className="content-pane workspace-main" aria-label="Deadbot guide">
