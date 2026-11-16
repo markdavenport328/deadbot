@@ -5,7 +5,8 @@
 import { type ReactNode, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ExperienceBlock } from "../types";
 import type { PlayerTrack } from "../player/player";
-import { ListenControl, PlayGlyph, archiveThumbnail, inPagePlay, toTrack, usePlayControl, type InPagePlay, type TrackMeta } from "./listen-control";
+import { AddToQueue, ListenControl, PlayGlyph, archiveThumbnail, inPagePlay, toTrack, usePlayControl, type InPagePlay, type TrackMeta } from "./listen-control";
+import { Equalizer } from "../player/icons";
 import warmRosette from "../assets/rosette-warm.svg";
 import coolRosette from "../assets/rosette-cool.svg";
 
@@ -25,23 +26,37 @@ function longDate(iso?: string | null): string | null {
   return month ? `${month} ${Number(match[3])}, ${match[1]}` : iso;
 }
 
-// The one primary listen control on a card: a round gold button in the card's
-// header, beside the title. The action's own label is its accessible name.
+// A card's two round controls, as on WAMU: the gold play, then + beside it.
+// Play starts what the card plays; while it plays it shows an equalizer, and
+// pause on hover or focus. + adds the same tracks to the end of the queue
+// without interrupting, and turns to a check once they are in. The action's
+// own label is the play's accessible name.
 export function CardPlayButton({ play, label }: { play: InPagePlay; label: string }) {
   const control = usePlayControl(play, "start");
+  const what = label.replace(/^Play\s+/i, "");
   return (
-    <button
-      type="button"
-      className={`card-play${control.mine ? " current" : ""}`}
-      data-playable="in-page"
-      aria-label={control.errored ? `Retry: ${label}` : control.playing ? `Pause: ${label}` : label}
-      title={label}
-      aria-pressed={control.mine}
-      aria-busy={control.loading}
-      onClick={control.onClick}
-    >
-      <PlayGlyph playing={control.playing} />
-    </button>
+    <span className="card-controls">
+      <button
+        type="button"
+        className={`card-play${control.mine ? " current" : ""}${control.playing ? " playing" : ""}`}
+        data-playable="in-page"
+        aria-label={control.errored ? `Retry: ${label}` : control.playing ? `Pause: ${label}` : label}
+        title={control.playing ? "Pause" : label}
+        aria-pressed={control.mine}
+        aria-busy={control.loading}
+        onClick={control.onClick}
+      >
+        {control.playing ? (
+          <>
+            <Equalizer playing />
+            <span className="card-play-pause"><PlayGlyph playing /></span>
+          </>
+        ) : (
+          <PlayGlyph playing={false} />
+        )}
+      </button>
+      <AddToQueue tracks={play.queue.length > 0 ? play.queue : [play.start]} name={what} variant="round" />
+    </span>
   );
 }
 
