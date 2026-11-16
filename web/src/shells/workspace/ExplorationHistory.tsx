@@ -8,8 +8,8 @@ import "./WorkspaceShell.css";
 // opening with that question and its follow-ups indented beneath it in the
 // order they were asked. A row reopens its page without asking again. A
 // request in flight shows where it will land; so does one that did not
-// finish. Clear, just below the threads, empties the list, with Undo for a
-// few seconds.
+// finish. Clear, on the Recent line, empties the list, with Undo for a few
+// seconds.
 export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewChat, onClear, onUndo, cleared = false, headingId }: {
   state: ExplorationState;
   onNavigate(index: number): void;
@@ -57,7 +57,16 @@ export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewCh
   return (
     <div className="exploration-history">
       <button type="button" className="history-new" disabled={asking} onClick={onNewChat}><PenIcon />New chat</button>
-      <h2 id={headingId}>Recent</h2>
+      <div className="history-head">
+        <h2 id={headingId}>Recent</h2>
+        {(entries.length > 0 || cleared) && onClear && (
+          cleared ? (
+            <button type="button" className="history-clear" onClick={onUndo} aria-label="Undo clearing history">Undo</button>
+          ) : (
+            <button type="button" className="history-clear" disabled={asking} onClick={onClear} aria-label="Clear history">Clear</button>
+          )
+        )}
+      </div>
       {entries.length === 0 && !pending ? (
         <p className="history-empty">{cleared ? "History cleared." : "Your questions will gather here."}</p>
       ) : (
@@ -75,15 +84,6 @@ export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewCh
             );
           })}
         </ul>
-      )}
-      {(entries.length > 0 || cleared) && onClear && (
-        <div className="history-foot">
-          {cleared ? (
-            <button type="button" className="history-clear" onClick={onUndo} aria-label="Undo clearing history">Undo</button>
-          ) : (
-            <button type="button" className="history-clear" disabled={asking} onClick={onClear} aria-label="Clear history">Clear</button>
-          )}
-        </div>
       )}
     </div>
   );

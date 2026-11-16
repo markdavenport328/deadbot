@@ -4,7 +4,7 @@
 
 
 /* History: New chat at the top, Recent threads newest first (the question
-   that began each, its follow-ups indented beneath), then Clear. */
+   that began each, its follow-ups indented beneath); Clear on the Recent line. */
 .workspace-shell .exploration-history { display: flex; flex-direction: column; gap: var(--space-part); }
 .workspace-shell .exploration-history h2 { margin: var(--space-tight) 0 0; padding: 0 var(--space-tight); color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
 /* New chat: a pen and the words, no box, lined up with the rail's text. */
@@ -47,9 +47,10 @@
 .workspace-shell .history-pending button,
 .workspace-shell .history-clear { padding: var(--space-line) var(--space-tight); border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
-/* Clear sits just below the threads, lined up with their text. */
-.workspace-shell .history-foot { padding: 0 var(--space-tight); }
-.workspace-shell .history-clear { padding: var(--space-line) 0; border: 0; background: none; color: var(--muted); font-size: 0.8rem; }
+/* Recent and Clear share a line: the heading at left, Clear underlined at right. */
+.workspace-shell .history-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-part); margin-top: var(--space-tight); padding: 0 var(--space-tight); }
+.workspace-shell .history-head h2 { margin: 0; padding: 0; }
+.workspace-shell .history-clear { padding: 0; border: 0; background: none; color: var(--muted); font-size: 0.8rem; text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; }
 .workspace-shell .history-clear:hover:not(:disabled) { color: var(--cream); }
 .workspace-shell .history-clear:disabled { opacity: 0.4; cursor: default; }
 
