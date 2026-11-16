@@ -112,7 +112,7 @@ _GUIDE = """Views for SQL (prefer these):
 - performance_facts (one row per setlist entry): performance_id, song_id, song_title, show_id, show_date, year, venue_id, venue_name, city, metro_area, tour_name, set_number, set_label, position_in_set, encore, segue_into_next
 - release_track_facts (one row per official release track): release_id, release_title, release_type, release_date, track_number, track_title, song_id, song_title, performance_id, show_id, show_date, year, venue_id, venue_name, city, metro_area (show columns NULL for studio tracks)
 - guest_appearances: show_id, show_date, year, person_id, person_name, instrument, venue_name, city, metro_area
-metro_area is the area a fan names a venue by (Red Rocks is Denver; Rosemont and Alpine Valley are Chicago; Nassau and Giants Stadium are New York); match places on it. Base tables are readable too. Dates are ISO text; use year for years. release_date may be partial ("1972"). Booleans are 'true'/'false'. Count shows with COUNT(DISTINCT show_id); setlists include Drums and Space. Results stop at 200 rows; aggregate or LIMIT."""
+metro_area is the city fans name a venue by: Red Rocks is Denver; Rosemont and Alpine Valley are Chicago; Nassau and Giants Stadium are New York. Base tables are readable too. Dates are ISO text; use year for years. release_date may be partial ("1972"). Booleans are 'true'/'false'. Count with COUNT(DISTINCT show_id) or COUNT(DISTINCT performance_id): a join can repeat rows (song_writers has a row per credit: lyrics, music and writer can each name the same person); setlists include Drums and Space. Results stop at 200 rows; aggregate or LIMIT."""
 
 
 def catalog_tool_description() -> str:

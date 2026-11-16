@@ -783,6 +783,11 @@ def _with_row_units(result: dict[str, Any]) -> dict[str, Any]:
                 f"lists all {count} as rows that open to their setlists. get_picks with the same years or venue names "
                 "the nights critics, tapers and fans picked."
                 if unit == "show_unit"
+                else (
+                    f"To play these {count} songs, select a performance_id for each from performance_facts and put them in "
+                    "a performances item: one playable row per song. A song_years item shows one song's whole life."
+                )
+                if unit == "song_overview"
                 else f"Each of these {count} rows can go on the page by its id."
             )
             if column == "show_id" and count >= 12:
