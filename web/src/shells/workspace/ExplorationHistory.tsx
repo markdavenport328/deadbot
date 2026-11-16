@@ -1,54 +1,88 @@
-import { isAsking, type ExplorationState } from "../../core/exploration-state";
+import { isAsking, type Entry, type ExplorationState, type Pending } from "../../core/exploration-state";
+import { threadStarts } from "../../core/history-store";
 import "./WorkspaceShell.css";
 
-// The visitor's explorations in order, with back and forward through them. A
-// request in flight shows as its own row; so does one that did not finish.
-export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewChat, headingId }: {
+// The visitor's explorations, saved in this browser: New chat at the top,
+// then Recent, one thread per question asked fresh (newest first), each
+// opening with that question and its follow-ups indented beneath it in the
+// order they were asked. A row reopens its page without asking again. A
+// request in flight shows where it will land; so does one that did not
+// finish. Clear at the foot empties the list, with Undo for a few seconds.
+export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewChat, onClear, onUndo, cleared = false, headingId }: {
   state: ExplorationState;
   onNavigate(index: number): void;
   onStop(): void;
   onRetry(): void;
   onNewChat(): void;
+  onClear?(): void;
+  onUndo?(): void;
+  cleared?: boolean;
   headingId: string;
 }) {
   const { entries, cursor, pending, startView } = state;
   const asking = isAsking(state);
-  const sourceLabel = (source: string) => (source === "chip" ? "Chip" : "Typed");
+  const starts = threadStarts(entries);
+  const threads = starts.map((start, index) => ({ start, end: starts[index + 1] ?? entries.length }));
 
+  function pendingRow(item: Pending) {
+    return (
+      <li key="pending" className={item.error === null ? "history-pending" : "history-pending failed"}>
+        <span>{item.error === null ? "Asking" : "Didn't finish"} · {item.question}</span>
+        {item.error === null
+          ? <button type="button" onClick={onStop}>Stop</button>
+          : <button type="button" onClick={onRetry}>Retry</button>}
+      </li>
+    );
+  }
+
+  function row(entry: Entry, index: number, followUp: boolean) {
+    return (
+      <li key={entry.id}>
+        <button
+          type="button"
+          className={["history-row", followUp ? "follow-up" : null, index > cursor ? "ahead" : null].filter(Boolean).join(" ")}
+          aria-current={index === cursor && !startView ? "true" : undefined}
+          onClick={() => onNavigate(index)}
+        >
+          {followUp && <span className="visually-hidden">Follow-up: </span>}
+          {entry.request}
+        </button>
+      </li>
+    );
+  }
+
+  const freshPending = pending && pending.baseEntryId === null ? pending : null;
   return (
     <div className="exploration-history">
-      <div className="history-head">
-        <h2 id={headingId}>Your explorations</h2>
-        <div className="history-arrows">
-          <button type="button" aria-label="Previous exploration" disabled={startView || cursor <= 0} onClick={() => onNavigate(cursor - 1)}>←</button>
-          <button type="button" aria-label="Next exploration" disabled={cursor >= entries.length - 1} onClick={() => onNavigate(cursor + 1)}>→</button>
-        </div>
-      </div>
-      <ol className="history-list" aria-labelledby={headingId}>
-        {entries.map((entry, index) => [
-          entry.root && index > 0 ? <li key={`${entry.id}-divider`} className="thread-divider">New thread</li> : null,
-          <li key={entry.id}>
-            <button
-              type="button"
-              className={index > cursor ? "history-row ahead" : "history-row"}
-              aria-current={index === cursor && !startView ? "true" : undefined}
-              onClick={() => onNavigate(index)}
-            >
-              <small>{index + 1} · {sourceLabel(entry.source)}<span className="visually-hidden">: </span></small>
-              {entry.request}
-            </button>
-          </li>
-        ])}
-        {pending && (
-          <li className={pending.error === null ? "history-pending" : "history-pending failed"}>
-            <span>{pending.error === null ? "Asking" : "Didn't finish"} · {pending.question}</span>
-            {pending.error === null
-              ? <button type="button" onClick={onStop}>Stop</button>
-              : <button type="button" onClick={onRetry}>Retry</button>}
-          </li>
-        )}
-      </ol>
       <button type="button" className="history-new" disabled={asking} onClick={onNewChat}>New chat</button>
+      <h2 id={headingId}>Recent</h2>
+      {entries.length === 0 && !pending ? (
+        <p className="history-empty">{cleared ? "History cleared." : "Your questions will gather here."}</p>
+      ) : (
+        <ul className="history-threads" aria-labelledby={headingId}>
+          {freshPending && <li className="history-thread">{<ol className="history-list">{pendingRow(freshPending)}</ol>}</li>}
+          {threads.slice().reverse().map(({ start, end }) => {
+            const inThread = (id: string | null) => id !== null && entries.slice(start, end).some((entry) => entry.id === id);
+            return (
+              <li key={entries[start].id} className="history-thread">
+                <ol className="history-list">
+                  {entries.slice(start, end).map((entry, offset) => row(entry, start + offset, offset > 0))}
+                  {pending && pending.baseEntryId !== null && inThread(pending.baseEntryId) && pendingRow(pending)}
+                </ol>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {(entries.length > 0 || cleared) && onClear && (
+        <div className="history-foot">
+          {cleared ? (
+            <button type="button" className="history-clear" onClick={onUndo}>Cleared. Undo</button>
+          ) : (
+            <button type="button" className="history-clear" disabled={asking} onClick={onClear}>Clear history</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

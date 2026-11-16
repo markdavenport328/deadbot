@@ -33,22 +33,16 @@
 .workspace-shell .tab-mark.new { color: var(--ask); }
 .workspace-shell .tab-dot { display: inline-block; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--ask); }
 
-.workspace-shell .exploration-history { display: grid; gap: var(--space-part); }
-.workspace-shell .history-head { display: flex; align-items: center; justify-content: space-between; }
-.workspace-shell .history-head h2 { margin: 0; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.workspace-shell .history-arrows { display: flex; gap: var(--space-line); }
-.workspace-shell .history-arrows button,
-.workspace-shell .history-new,
-.workspace-shell .history-pending button {
-  padding: var(--space-line) var(--space-tight);
-  border: 1px solid var(--hair);
-  border-radius: var(--r);
-  background: transparent;
-  color: var(--text);
-}
-.workspace-shell .history-arrows button:disabled,
+/* History: New chat at the top, Recent threads newest first (the question
+   that began each, its follow-ups indented beneath), Clear at the foot. */
+.workspace-shell .exploration-history { display: flex; flex-direction: column; gap: var(--space-part); }
+.workspace-shell .exploration-history h2 { margin: var(--space-tight) 0 0; color: var(--muted); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.workspace-shell .history-new { padding: var(--space-tight) var(--space-part); border: 1px solid var(--hair); border-radius: var(--r); background: var(--glass); color: var(--cream); font-weight: 500; }
+.workspace-shell .history-new:hover:not(:disabled) { border-color: var(--cream-rule); }
 .workspace-shell .history-new:disabled { opacity: 0.4; cursor: default; }
-.workspace-shell .history-list { display: grid; gap: var(--space-line); margin: 0; padding: 0; list-style: none; }
+.workspace-shell .history-empty { margin: 0; color: var(--quiet); font-size: 0.85rem; }
+.workspace-shell .history-threads { display: grid; gap: var(--space-tight); margin: 0; padding: 0; list-style: none; }
+.workspace-shell .history-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .workspace-shell .history-row {
   width: 100%;
   padding: var(--space-tight);
@@ -56,22 +50,16 @@
   border-radius: var(--r);
   background: transparent;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.88rem;
+  font-weight: 500;
   line-height: 1.35;
   text-align: left;
 }
-.workspace-shell .history-row small { display: block; color: var(--quiet); font-size: 0.68rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.workspace-shell .history-row[aria-current="true"] { border-color: var(--hair); background: var(--panel); box-shadow: inset 3px 0 0 var(--ask); }
+.workspace-shell .history-row:hover { background: rgba(var(--cream-rgb), 0.05); }
+.workspace-shell .history-row.follow-up { position: relative; padding-left: var(--space-content); color: var(--muted); font-size: 0.82rem; font-weight: 400; }
+.workspace-shell .history-row.follow-up::before { content: ""; position: absolute; left: var(--space-part); top: 0; bottom: 0; border-left: 1px solid var(--hair); }
+.workspace-shell .history-row[aria-current="true"] { border-color: var(--hair); background: var(--panel); color: var(--cream); box-shadow: inset 3px 0 0 var(--ask); }
 .workspace-shell .history-row.ahead { opacity: 0.6; }
-.workspace-shell .thread-divider {
-  margin-top: var(--space-line);
-  padding: var(--space-tight) var(--space-tight) var(--space-line);
-  border-top: 1px dashed var(--hair);
-  color: var(--quiet);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
 .workspace-shell .history-pending {
   display: flex;
   align-items: center;
@@ -82,7 +70,26 @@
   border-radius: var(--r);
   font-size: 0.85rem;
 }
+.workspace-shell .history-pending button,
+.workspace-shell .history-clear { padding: var(--space-line) var(--space-tight); border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
+.workspace-shell .history-foot { margin-top: auto; padding-top: var(--space-part); border-top: 1px solid var(--hair); }
+.workspace-shell .history-clear { font-size: 0.8rem; background: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); color: var(--text); }
+.workspace-shell .history-clear:hover:not(:disabled) { color: var(--cream); }
+.workspace-shell .history-clear:disabled { opacity: 0.4; cursor: default; }
+
+/* On a phone: the history button top left (the site menu is top right) and
+   the drawer that slides in from the left. */
+.workspace-shell .history-drawer-toggle { position: fixed; top: 0.75rem; left: 0.6rem; z-index: 55; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: var(--r); background: radial-gradient(closest-side, rgba(20, 34, 27, 0.7), rgba(20, 34, 27, 0)); color: var(--cream); }
+.workspace-shell .history-drawer-toggle svg { width: 1.4rem; height: 1.4rem; }
+.workspace-shell .history-drawer-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.45); }
+.workspace-shell .history-drawer { position: fixed; top: 0; bottom: 0; left: 0; z-index: 71; display: flex; flex-direction: column; width: min(320px, 86vw); padding: calc(var(--space-content) + env(safe-area-inset-top, 0px)) var(--space-part) calc(var(--space-content) + env(safe-area-inset-bottom, 0px)); overflow-y: auto; border-right: 1px solid var(--hair); background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.workspace-shell .history-drawer .exploration-history { flex: 1 1 auto; }
+.workspace-shell.phone .content-pane { padding-top: calc(var(--space-unit) + var(--space-tight)); }
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-shell .history-drawer.open { animation: drawer-in var(--t-rail) var(--ease-drawer); }
+}
+@keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
 
 /* The app frame. On a desktop: the history rail beside the answer pane, the
    player fixed across the full width below both, and the ask box held at the
@@ -131,8 +138,9 @@
 /* The Deadbot name stays put at the top of the rail; only the history under
    it scrolls, however long it grows. */
 .workspace-shell .workspace-rail .masthead { flex-shrink: 0; padding-bottom: 0; }
-.workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; }
-.workspace-menu-history { padding: 0 var(--space-content) var(--space-content); border-bottom: 1px solid var(--hair); }
+/* In the rail New chat and Clear stay put; only the threads between them scroll. */
+.workspace-shell .workspace-rail .exploration-history { flex: 1 1 auto; min-height: 0; }
+.workspace-shell .workspace-rail .history-threads { flex: 1 1 auto; min-height: 0; align-content: start; overflow-y: auto; overscroll-behavior: contain; }
 
 /* One exploration. A held previous page stays usable, only quieter. */
 .workspace-shell .exploration-pane { max-width: 58rem; }

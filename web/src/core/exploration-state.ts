@@ -49,6 +49,9 @@ export type ExplorationAction =
   | { type: "dismiss" }
   | { type: "navigate"; index: number }
   | { type: "newChat" }
+  // Clear empties the history to the start view; restore puts a cleared one back (Undo).
+  | { type: "clear" }
+  | { type: "restore"; entries: Entry[]; cursor: number }
   | { type: "view"; patch: Partial<EntryView>; interacted?: boolean };
 
 export const initialExploration: ExplorationState = { entries: [], cursor: -1, pending: null, startView: false };
@@ -159,6 +162,12 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
     case "newChat":
       if (isAsking(state)) return state;
       return { ...state, startView: true, pending: null };
+    case "clear":
+      if (isAsking(state)) return state;
+      return { entries: [], cursor: -1, pending: null, startView: true };
+    case "restore":
+      if (isAsking(state) || action.entries.length === 0) return state;
+      return { entries: action.entries, cursor: Math.min(Math.max(action.cursor, 0), action.entries.length - 1), pending: null, startView: false };
     case "view": {
       const mark = action.interacted && pending ? { ...pending, interacted: true } : pending;
       if (visible(state).kind === "draft" && mark) {

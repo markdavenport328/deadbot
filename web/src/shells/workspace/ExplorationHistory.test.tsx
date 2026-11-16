@@ -14,28 +14,37 @@ const threeAsks = () => {
   return ask(s, "r3", "Garcia birthday", true);
 };
 
-test("rows, dividers, current and navigation", () => {
+test("threads newest first, each question with its follow-ups beneath, and navigation", () => {
   const h = handlers();
   render(<ExplorationHistory state={threeAsks()} {...h} />);
-  const rows = screen.getAllByRole("button", { name: /MSG history|Late 80s|Garcia birthday/ });
-  expect(rows.map((r) => r.textContent)).toEqual(["1 · Typed: MSG history", "2 · Chip: Late 80s", "3 · Typed: Garcia birthday"]);
-  expect(screen.getAllByText("New thread")).toHaveLength(1);
-  expect(screen.getByText("New thread").nextElementSibling).toContainElement(rows[2]);
-  expect(rows[2]).toHaveAttribute("aria-current", "true");
+  const threads = document.querySelectorAll(".history-thread");
+  expect(threads).toHaveLength(2);
+  expect(threads[0]).toHaveTextContent("Garcia birthday");
+  const rows = Array.from(threads[1].querySelectorAll<HTMLButtonElement>(".history-row"));
+  expect(rows.map((r) => r.textContent)).toEqual(["MSG history", "Follow-up: Late 80s"]);
+  expect(rows[1]).toHaveClass("follow-up");
+  expect(screen.getByRole("button", { name: "Garcia birthday" })).toHaveAttribute("aria-current", "true");
   expect(rows[0]).not.toHaveAttribute("aria-current");
   fireEvent.click(rows[0]);
   expect(h.onNavigate).toHaveBeenCalledWith(0);
 });
 
-test("the back arrow is disabled at the first entry and ahead rows are marked", () => {
+test("rows after the page on screen are marked ahead", () => {
   const h = handlers();
   const s = reduce(threeAsks(), { type: "navigate", index: 0 });
   render(<ExplorationHistory state={s} {...h} />);
-  expect(screen.getByRole("button", { name: "Previous exploration" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Next exploration" })).toBeEnabled();
   expect(screen.getByRole("button", { name: /Late 80s/ })).toHaveClass("ahead");
-  fireEvent.click(screen.getByRole("button", { name: "Next exploration" }));
-  expect(h.onNavigate).toHaveBeenCalledWith(1);
+});
+
+test("Clear sits at the foot and turns into Undo once used", () => {
+  const h = { ...handlers(), onClear: vi.fn(), onUndo: vi.fn() };
+  const { rerender } = render(<ExplorationHistory state={threeAsks()} {...h} />);
+  fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
+  expect(h.onClear).toHaveBeenCalled();
+  rerender(<ExplorationHistory state={reduce(threeAsks(), { type: "clear" })} {...h} cleared />);
+  expect(screen.getByText("History cleared.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Cleared. Undo" }));
+  expect(h.onUndo).toHaveBeenCalled();
 });
 
 test("a failed request shows Retry", () => {
@@ -66,7 +75,6 @@ test("the start view has no current row and New chat calls through", () => {
   const h = handlers();
   const s = reduce(threeAsks(), { type: "newChat" });
   render(<ExplorationHistory state={s} {...h} />);
-  expect(screen.getByRole("button", { name: "Previous exploration" })).toBeDisabled();
   expect(document.querySelector("[aria-current]")).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "New chat" }));
   expect(h.onNewChat).toHaveBeenCalled();

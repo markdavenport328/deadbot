@@ -306,6 +306,16 @@ Done for steps 3–5 when:
 - your real questions, run live, survive a reload and reopen correctly
 - desktop and phone screenshots are reviewed with you
 
+**Status, 2026-11-15:** card actions shipped in #96 (the + is the same
+button as the play beside it, with hover labels). The history rail is built
+on `claude/history-rail`. Explorations are saved in this browser
+(`core/history-store.ts`, at most 20 threads, the oldest half dropped when
+storage is full). A saved fixture page measured about 8 KB; live pages are
+larger, around 20–60 KB. Threads show newest first, with follow-ups indented.
+New chat is at the top and Clear (with Undo) at the foot, and the arrows are
+gone. On phones the history is a drawer from the left, replacing the history
+in the site menu. Not yet built: collapsing the desktop rail to an icon.
+
 ### 5b. One column: remove the tabs
 
 Decided by the owner on 2026-11-14, after this plan's decisions below were

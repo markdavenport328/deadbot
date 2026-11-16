@@ -350,7 +350,7 @@ test("while a request runs, the composer and Ask chips start nothing new", async
   await screen.findByRole("heading", { level: 1, name: "The late-’80s runs" });
 });
 
-test("on a phone, history lives in the site menu and choosing a row closes it", async () => {
+test("on a phone, history is a drawer from the left: choosing a row closes it, Escape returns focus", async () => {
   phone = true;
   replies = [{ kind: "plain", body: msg() }, { kind: "plain", body: late80s() }];
   await openWorkspace();
@@ -359,16 +359,54 @@ test("on a phone, history lives in the site menu and choosing a row closes it", 
   await screen.findByRole("heading", { level: 1, name: "The Garden years" });
   ask("Focus on the late ’80s");
   await screen.findByRole("heading", { level: 1, name: "The late-’80s runs" });
-  fireEvent.click(screen.getByRole("button", { name: "Menu" }));
-  const menu = document.getElementById("site-menu") as HTMLElement;
-  expect(menu).toHaveClass("open");
-  const menuRows = menu.querySelectorAll<HTMLButtonElement>(".history-row");
-  expect(menuRows).toHaveLength(2);
-  fireEvent.click(menuRows[0]);
-  expect(menu).not.toHaveClass("open");
+  const toggle = screen.getByRole("button", { name: "Your explorations" });
+  fireEvent.click(toggle);
+  const drawer = document.getElementById("history-drawer") as HTMLElement;
+  expect(drawer).not.toHaveAttribute("hidden");
+  expect(within(drawer).getByRole("button", { name: "New chat" })).toHaveFocus();
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(drawer).toHaveAttribute("hidden");
+  expect(toggle).toHaveFocus();
+  fireEvent.click(toggle);
+  const drawerRows = drawer.querySelectorAll<HTMLButtonElement>(".history-row");
+  expect(drawerRows).toHaveLength(2);
+  fireEvent.click(drawerRows[0]);
+  expect(drawer).toHaveAttribute("hidden");
   expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
   expect(sent).toHaveLength(2);
 });
+
+test("history survives a reload and reopens a page without asking again", async () => {
+  replies = [{ kind: "plain", body: msg() }, { kind: "plain", body: late80s() }];
+  await openWorkspace();
+  ask("MSG");
+  await screen.findByRole("heading", { level: 1, name: "The Garden years" });
+  ask("Focus on the late ’80s");
+  await screen.findByRole("heading", { level: 1, name: "The late-’80s runs" });
+  cleanup();
+  window.sessionStorage.clear();
+  await openWorkspace();
+  expect(screen.getByRole("heading", { level: 1, name: "The late-’80s runs" })).toBeInTheDocument();
+  expect(rows()).toHaveLength(2);
+  fireEvent.click(rows()[0]);
+  expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
+  expect(sent).toHaveLength(2);
+  expect(window.sessionStorage.getItem("deadbot-research-notebook")).toBe("v1.msg.sig");
+});
+
+test("Clear empties the history, and Undo puts it back", async () => {
+  replies = [{ kind: "plain", body: msg() }];
+  await openWorkspace();
+  ask("MSG");
+  await screen.findByRole("heading", { level: 1, name: "The Garden years" });
+  fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
+  expect(rows()).toHaveLength(0);
+  expect(window.localStorage.getItem("deadbot.history.v1")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Cleared. Undo" }));
+  expect(rows()).toHaveLength(1);
+  expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
+});
+
 
 test("the msg-workspace stream lands a Listen card before the Read story", async () => {
   const { streamEventsFor } = await import("../../visual-fixtures");

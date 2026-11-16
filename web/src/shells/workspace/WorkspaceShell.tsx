@@ -13,7 +13,8 @@ import {
 import { ExplorationHistory } from "./ExplorationHistory";
 import { StartLibrary } from "../classic/StartLibrary";
 import { ExplorationPane, activeTabOf, contentOf, draftContent, entryTab, shownPane } from "./ExplorationPane";
-import { useCloseSiteMenu, useMenuSlot } from "../../core/menu-slot";
+import { loadHistory, saveHistory } from "../../core/history-store";
+import type { Entry } from "../../core/exploration-state";
 import "./WorkspaceShell.css";
 
 type AskOptions = { source: RequestSource; focus?: AskFocus | null; fresh: boolean };
@@ -42,21 +43,46 @@ function SendIcon() {
   );
 }
 
-// History in the phone's site menu: choosing a row or New chat also closes
-// the menu, so the visitor lands on what they picked.
-function MenuHistory({ state, actions, headingId }: { state: ExplorationState; actions: Actions; headingId: string }) {
-  const close = useCloseSiteMenu();
+const UNDO_CLEAR_SECONDS = 10;
+
+// The history mark for the phone's drawer button: a clock face turning back.
+function HistoryIcon() {
   return (
-    <div className="workspace-shell workspace-menu-history">
-      <ExplorationHistory
-        state={state}
-        headingId={headingId}
-        onNavigate={(index) => { actions.navigate(index); close(); }}
-        onStop={actions.stop}
-        onRetry={() => { actions.retry(); close(); }}
-        onNewChat={() => { actions.newChat(); close(); }}
-      />
-    </div>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 7.5V12l3 2" />
+    </svg>
+  );
+}
+
+// History on a phone: a drawer from the left, opened by the button in the
+// top-left corner. Escape or a tap outside closes it and focus returns to
+// the button; choosing a row or New chat also closes it, so the visitor
+// lands on what they picked.
+function HistoryDrawer({ open, onOpen, onClose, children }: { open: boolean; onOpen(): void; onClose(): void; children: ReactNode }) {
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (open) {
+      drawerRef.current?.querySelector<HTMLElement>("button:not(:disabled)")?.focus();
+      const onKey = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+      document.addEventListener("keydown", onKey);
+      wasOpen.current = true;
+      return () => document.removeEventListener("keydown", onKey);
+    }
+    if (wasOpen.current) toggleRef.current?.focus();
+    wasOpen.current = false;
+  }, [open, onClose]);
+  return (
+    <>
+      <button ref={toggleRef} type="button" className="history-drawer-toggle" aria-label="Your explorations" aria-expanded={open} aria-controls="history-drawer" onClick={onOpen}>
+        <HistoryIcon />
+      </button>
+      {open && <div className="history-drawer-scrim" onClick={onClose} aria-hidden="true" />}
+      <aside ref={drawerRef} id="history-drawer" className={open ? "history-drawer open" : "history-drawer"} aria-label="Your explorations" hidden={!open}>
+        {children}
+      </aside>
+    </>
   );
 }
 
@@ -72,7 +98,8 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   linkedQuestion: string | null;
   registerAskFromPage(handler: (question: string) => void): void;
 }) {
-  const [state, dispatch] = useReducer(explorationReducer, initialExploration);
+  // Explorations saved in this browser come back on arrival.
+  const [state, dispatch] = useReducer(explorationReducer, undefined, () => loadHistory() ?? initialExploration);
   const stateRef = useRef(state);
   stateRef.current = state;
   const controller = useRef<AbortController | null>(null);
@@ -87,7 +114,9 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   const [dockFocused, setDockFocused] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const railHeadingId = useId();
-  const menuHeadingId = useId();
+  const drawerHeadingId = useId();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [cleared, setCleared] = useState<{ entries: Entry[]; cursor: number } | null>(null);
   const dockRef = useRef<HTMLDivElement>(null);
   const dockTextareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -252,12 +281,40 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // History sits in the site menu on a phone, where there is no rail.
-  const menuHistory = useMemo(
-    () => (isPhone ? <MenuHistory state={state} actions={actions} headingId={menuHeadingId} /> : null),
-    [isPhone, state, actions, menuHeadingId]
-  );
-  useMenuSlot(menuHistory);
+  // The page shown on arrival from saved history gets its research notebook back.
+  useEffect(() => {
+    storeNotebook(requestContext(stateRef.current, false).notebook);
+  }, []);
+
+  // Every change to the history is saved in this browser.
+  useEffect(() => {
+    saveHistory(state);
+  }, [state.entries, state.cursor, state.startView]);
+
+  // Undo is offered for ten seconds after Clear.
+  useEffect(() => {
+    if (!cleared) return;
+    const timer = window.setTimeout(() => setCleared(null), UNDO_CLEAR_SECONDS * 1000);
+    return () => window.clearTimeout(timer);
+  }, [cleared]);
+
+  function clearHistory() {
+    if (isAsking(stateRef.current)) return;
+    saveScroll();
+    setCleared({ entries: stateRef.current.entries, cursor: stateRef.current.cursor });
+    dispatch({ type: "clear" });
+    storeNotebook(null);
+    setAnnouncement("History cleared. Undo is available for ten seconds.");
+  }
+
+  function undoClear() {
+    if (!cleared) return;
+    const next = explorationReducer(stateRef.current, { type: "restore", ...cleared });
+    dispatch({ type: "restore", ...cleared });
+    setCleared(null);
+    storeNotebook(requestContext(next, false).notebook);
+    setAnnouncement("History restored");
+  }
 
   // Announce each tab the first time it gets something during a request.
   useEffect(() => {
@@ -447,6 +504,21 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   return (
     <main className={isPhone ? "app-shell workspace-shell phone" : "app-shell workspace-shell"}>
       <p role="status" className="sr-only">{announcement}</p>
+      {isPhone && (
+        <HistoryDrawer open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}>
+          <ExplorationHistory
+            state={state}
+            headingId={drawerHeadingId}
+            onNavigate={(index) => { actions.navigate(index); setDrawerOpen(false); }}
+            onStop={actions.stop}
+            onRetry={() => { actions.retry(); setDrawerOpen(false); }}
+            onNewChat={() => { actions.newChat(); setDrawerOpen(false); }}
+            onClear={clearHistory}
+            onUndo={undoClear}
+            cleared={cleared !== null}
+          />
+        </HistoryDrawer>
+      )}
       <div className="workspace-grid">
         {!isPhone && (
           <aside className="workspace-rail" aria-label="Explorations">
@@ -461,6 +533,9 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
               onStop={actions.stop}
               onRetry={actions.retry}
               onNewChat={actions.newChat}
+              onClear={clearHistory}
+              onUndo={undoClear}
+              cleared={cleared !== null}
             />
           </aside>
         )}
