@@ -178,22 +178,31 @@
   .workspace-shell .exploration-pane.previous { transition: none; }
 }
 
-/* Across the full window the bar has room, so it is built for it: a 64px
-   play, 52px steps and queue button, a 56px cover, and type a step up. The
-   phone dock keeps its own compact sizes. */
-.workspace-shell .player-dock .now-playing-bar { column-gap: var(--space-content); padding: var(--space-part) 0; }
-.workspace-shell .player-dock .now-playing-thumb { width: 56px; height: 56px; }
-.workspace-shell .player-dock .now-playing-title { font-size: 1.1rem; }
-.workspace-shell .player-dock .now-playing-meta { font-size: 0.9rem; }
+/* Across the full window the bar has room, so the small controls grow: the
+   steps, queue and menu buttons, the times, and the scrubber, which gets a
+   thicker gold track and a knob big enough to grab. The play button stays
+   modest; the phone dock keeps its own compact sizes. */
+.workspace-shell .player-dock .now-playing-bar { column-gap: var(--space-content); padding: var(--space-tight) 0; }
+.workspace-shell .player-dock .now-playing-thumb { width: 48px; height: 48px; }
+.workspace-shell .player-dock .now-playing-title { font-size: 1rem; }
+.workspace-shell .player-dock .now-playing-meta { font-size: 0.86rem; }
 .workspace-shell .player-dock .now-playing-controls { gap: var(--space-tight); }
-.workspace-shell .player-dock .now-playing-toggle { width: 64px; height: 64px; }
-.workspace-shell .player-dock .now-playing-toggle svg { width: 26px; height: 26px; }
-.workspace-shell .player-dock .now-playing-step { width: 52px; height: 52px; }
-.workspace-shell .player-dock .now-playing-step svg { width: 26px; height: 26px; }
-.workspace-shell .player-dock .now-playing-queue-toggle { height: 52px; padding: 0 var(--space-part); font-size: 1rem; }
-.workspace-shell .player-dock .now-playing-queue-toggle svg { width: 26px; height: 26px; }
+.workspace-shell .player-dock .now-playing-toggle { width: 48px; height: 48px; }
+.workspace-shell .player-dock .now-playing-toggle svg { width: 18px; height: 18px; }
+.workspace-shell .player-dock .now-playing-step { width: 48px; height: 48px; color: var(--muted); }
+.workspace-shell .player-dock .now-playing-step svg { width: 24px; height: 24px; }
+.workspace-shell .player-dock .now-playing-queue-toggle { height: 48px; padding: 0 var(--space-tight); color: var(--muted); font-size: 0.95rem; }
+.workspace-shell .player-dock .now-playing-queue-toggle svg { width: 24px; height: 24px; }
+.workspace-shell .player-dock .now-playing-more { height: 48px; padding: 0 var(--space-tight); color: var(--muted); }
+.workspace-shell .player-dock .now-playing-more svg { width: 24px; height: 24px; }
 .workspace-shell .player-dock .now-playing-scrubber { gap: var(--space-part); }
-.workspace-shell .player-dock .now-playing-time { font-size: 0.95rem; }
-.workspace-shell .player-dock .now-playing-range { height: 24px; }
-.workspace-shell .player-dock .now-playing-more { height: 52px; padding: 0 var(--space-part); }
-.workspace-shell .player-dock .now-playing-more svg { width: 26px; height: 26px; }
+.workspace-shell .player-dock .now-playing-time { color: var(--muted); font-size: 0.9rem; }
+.workspace-shell .player-dock .now-playing-range { -webkit-appearance: none; appearance: none; height: 24px; margin: 0; background: transparent; cursor: pointer; }
+.workspace-shell .player-dock .now-playing-range::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--listen) var(--progress, 0%), rgba(var(--cream-rgb), 0.18) var(--progress, 0%)); }
+.workspace-shell .player-dock .now-playing-range::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border: 0; border-radius: 50%; background: var(--listen); box-shadow: 0 0 0 3px rgba(10, 18, 13, 0.6); }
+.workspace-shell .player-dock .now-playing-range::-moz-range-track { height: 6px; border-radius: 3px; background: rgba(var(--cream-rgb), 0.18); }
+.workspace-shell .player-dock .now-playing-range::-moz-range-progress { height: 6px; border-radius: 3px; background: var(--listen); }
+.workspace-shell .player-dock .now-playing-range::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: var(--listen); box-shadow: 0 0 0 3px rgba(10, 18, 13, 0.6); }
+.workspace-shell .player-dock .now-playing-range:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+/* The practice loop's band sits just under the thicker track. */
+.workspace-shell .player-dock .now-playing-loop { bottom: 2px; height: 4px; }
