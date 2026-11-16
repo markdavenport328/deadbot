@@ -15,11 +15,11 @@
   font-variant-numeric: tabular-nums;
 }
 .vs-title { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
-.vs-note { max-width: 62ch; margin: 0.5rem 0 0; color: var(--muted); font-size: 1rem; line-height: 1.6; }
+.vs-note { max-width: var(--measure); margin: var(--space-tight) 0 0; color: var(--muted); font-size: 1rem; line-height: 1.6; }
 
-.vs-head { display: grid; grid-template-columns: var(--vs-cols); gap: 1rem; align-items: end; margin-top: var(--space-content); padding-bottom: 0.75rem; border-bottom: 1px solid var(--vs-rule); }
-.vs-legend { display: flex; flex-wrap: wrap; gap: 0.35rem 1.1rem; color: var(--muted); font-size: 0.82rem; }
-.vs-legend > span { display: inline-flex; align-items: center; gap: 0.5rem; }
+.vs-head { display: grid; grid-template-columns: var(--vs-cols); gap: var(--space-part); align-items: end; margin-top: var(--space-content); padding-bottom: var(--space-part); border-bottom: 1px solid var(--vs-rule); }
+.vs-legend { display: flex; flex-wrap: wrap; gap: var(--space-line) var(--space-part); color: var(--muted); font-size: 0.82rem; }
+.vs-legend > span { display: inline-flex; align-items: center; gap: var(--space-tight); }
 .vs-swatch { display: inline-block; width: 14px; height: 10px; }
 .vs-swatch.first { background: var(--vs-first); }
 .vs-swatch.second { background: var(--vs-second); }
@@ -29,7 +29,7 @@
 @media (max-width: 40rem) { .vs-ticks > span.end { transform: translateX(-100%); } }
 
 .vs-rows { margin: 0; padding: 0; list-style: none; }
-.vs-row { display: grid; grid-template-columns: var(--vs-cols); gap: 1rem; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--vs-row-rule); }
+.vs-row { display: grid; grid-template-columns: var(--vs-cols); gap: var(--space-part); align-items: center; padding: var(--space-part) 0; border-bottom: 1px solid var(--vs-row-rule); }
 .vs-row.playable { cursor: pointer; }
 .vs-row.current { background: linear-gradient(90deg, var(--vs-wash), transparent 70%); }
 .vs-play, .vs-play-placeholder { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; }
@@ -53,27 +53,27 @@
 .vs-times { position: absolute; top: 50%; left: calc(var(--vs-end) + 1rem); transform: translateY(-50%); color: var(--muted); font-size: 0.875rem; white-space: nowrap; }
 .vs-row.current .vs-times { color: var(--cream); }
 
-.vs-caption { max-width: 62ch; margin: 1rem 0 0 calc(44px + 1rem); color: var(--quiet); font-size: 0.82rem; line-height: 1.55; }
+.vs-caption { max-width: var(--measure); margin: var(--space-part) 0 0 calc(44px + var(--space-part)); color: var(--quiet); font-size: 0.82rem; line-height: 1.55; }
 
 .vs-years { max-width: 36rem; margin: var(--space-content) 0 0; }
 .vs-years-caption { color: var(--muted); font-size: 0.95rem; }
-.vs-years-total { margin-right: 0.3rem; font-family: var(--serif); font-weight: 600; font-size: 1.6rem; color: var(--cream); }
-.vs-years-bars { display: flex; align-items: flex-end; gap: 3px; height: 5rem; margin-top: 0.6rem; border-bottom: 1px solid var(--vs-rule); }
+.vs-years-total { margin-right: var(--space-line); font-family: var(--serif); font-weight: 600; font-size: 1.6rem; color: var(--cream); }
+.vs-years-bars { display: flex; align-items: flex-end; gap: var(--space-line); height: 5rem; margin-top: var(--space-tight); border-bottom: 1px solid var(--vs-rule); }
 .vs-year { flex: 1 1 0; background: var(--vs-year); }
 .vs-year.current { background: var(--listen); }
-.vs-years-axis { display: flex; justify-content: space-between; margin-top: 0.35rem; color: var(--quiet); font-size: 0.75rem; }
+.vs-years-axis { display: flex; justify-content: space-between; margin-top: var(--space-line); color: var(--quiet); font-size: 0.75rem; }
 
 /* A phone: the night sits beside the button, and the bar takes the full
    width beneath it with its times under the bar. */
 @media (max-width: 40rem) {
   .version-strip { --vs-label-room: 0px; --vs-cols: 44px minmax(0, 1fr); }
-  .vs-head { grid-template-rows: auto auto; row-gap: 0.6rem; }
+  .vs-head { grid-template-rows: auto auto; row-gap: var(--space-tight); }
   .vs-head > :first-child { grid-row: 1 / 3; }
   .vs-legend, .vs-ticks { grid-column: 2; }
-  .vs-row { grid-template-rows: auto auto; row-gap: 0.5rem; column-gap: 0.75rem; }
+  .vs-row { grid-template-rows: auto auto; row-gap: var(--space-tight); column-gap: var(--space-part); }
   .vs-play, .vs-play-placeholder { grid-row: 1 / 3; align-self: start; }
   .vs-night, .vs-track { grid-column: 2; }
-  .vs-track { display: flex; flex-direction: column; gap: 0.3rem; height: auto; }
+  .vs-track { display: flex; flex-direction: column; gap: var(--space-line); height: auto; }
   .vs-bars { position: relative; inset: auto; height: 20px; }
   .vs-times { position: static; transform: none; }
   .vs-caption { margin-left: 0; }

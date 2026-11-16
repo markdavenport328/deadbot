@@ -202,6 +202,15 @@ Done when every fixture is screenshotted before and after, side by side for
 your review, and no stylesheet types a spacing value outside the token block
 except for icon sizes.
 
+**Status, 2026-11-15:** built on `claude/spacing-pass`. All spacing in the
+stylesheets uses the ladder. The exceptions are zero, pixel hairlines (3px or
+less), em-based type spacing, and icon widths inside `calc()`. A
+`--space-gutter` token holds the page's responsive side margin, and
+`--measure` (65ch) holds the reading line length. Colors are split into
+palette and roles. Inline colors in individual rules are still typed and
+remain for a later pass. Before/after screenshots:
+https://claude.ai/artifact/4kFdGz5Ts3hNXybXebKW51
+
 ### 3. The app frame: full-width player, docked ask
 
 In the workspace shell:
