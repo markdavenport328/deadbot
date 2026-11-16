@@ -97,7 +97,7 @@ function ask(text: string) {
 
 const rows = () => Array.from(document.querySelectorAll<HTMLButtonElement>(".history-row"));
 const rail = () => document.querySelector(".workspace-rail") as HTMLElement;
-const tab = (name: string) => screen.getByRole("tab", { name: new RegExp(`^${name}`) });
+const column = () => document.querySelector(".exploration-pane:not([hidden]) .workspace-panel") as HTMLElement;
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -145,32 +145,29 @@ test("going back is free, keeps the later row, and a follow-up from there sends 
   expect(sent[2].notebook).toBe("v1.msg.sig");
 });
 
-test("an answer-only page grays Listen and Charts and keeps the rail to the request", async () => {
+test("a page is one column: no tab bar, the lead once above the sections, the rail keeps the request", async () => {
   const birthday = page("Jerry Garcia's birthday", null, [{ role: "user", text: "When was Jerry born?" }, { role: "assistant", text: "August 1, 1942, in San Francisco." }]);
   replies = [{ kind: "plain", body: birthday }];
   await openWorkspace();
   ask("When was Jerry born?");
   await screen.findByRole("heading", { level: 1, name: "Jerry Garcia's birthday" });
-  expect(tab("Listen")).toHaveAttribute("aria-disabled", "true");
-  expect(tab("Charts")).toHaveAttribute("aria-disabled", "true");
-  expect(tab("Read")).toHaveAttribute("aria-selected", "true");
-  // The lead sits above the tabs, so it shows whichever tab is open.
-  expect(screen.getByText("August 1, 1942, in San Francisco.")).toBeInTheDocument();
-  expect(screen.getByRole("tabpanel")).not.toHaveTextContent("August 1, 1942");
+  expect(screen.queryByRole("tablist")).toBeNull();
+  expect(screen.queryByRole("tab")).toBeNull();
+  expect(screen.getAllByText("August 1, 1942, in San Francisco.")).toHaveLength(1);
+  expect(column()).not.toHaveTextContent("August 1, 1942");
   expect(within(rail()).queryByText(/August 1, 1942/)).toBeNull();
   expect(rows()).toHaveLength(1);
 });
 
-test("the headline sits above the lead, and the lead above the tabs", async () => {
+test("the headline sits above the lead, and the lead above the sections", async () => {
   const birthday = page("Jerry Garcia's birthday", null, [{ role: "user", text: "When was Jerry born?" }, { role: "assistant", text: "August 1, 1942, in San Francisco." }]);
   replies = [{ kind: "plain", body: birthday }];
   await openWorkspace();
   ask("When was Jerry born?");
   const heading = await screen.findByRole("heading", { level: 1, name: "Jerry Garcia's birthday" });
   const lead = screen.getByText("August 1, 1942, in San Francisco.");
-  const tabs = tab("Read");
   expect(heading.compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(lead.compareDocumentPosition(tabs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(lead.compareDocumentPosition(column()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test("a page without a headline opens with just the lead", async () => {
@@ -180,20 +177,10 @@ test("a page without a headline opens with just the lead", async () => {
   ask("When was Jerry born?");
   const lead = await screen.findByText("August 1, 1942, in San Francisco.");
   expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
-  expect(lead.compareDocumentPosition(tab("Read")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(lead.compareDocumentPosition(column()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-test("the lead stays visible on every tab while the page is streaming", async () => {
-  const hold = new Promise<void>(() => {});
-  replies = [{ kind: "stream", chunks: [{ type: "lead", text: "Twice, both at City Island." }, hold] }];
-  await openWorkspace();
-  ask("Harrisburg?");
-  await screen.findByText("Twice, both at City Island.");
-  fireEvent.click(tab("Charts"));
-  expect(screen.getByText("Twice, both at City Island.")).toBeVisible();
-});
-
-test("a tab the visitor picks mid-stream survives later groups and the final response", async () => {
+test("sections stream in and stay in the model's order, show before story, from draft to final", async () => {
   const show = clone(visualFixtures.harrisburg.blocks[0]);
   const editorial: ExperienceBlock = { type: "editorial", presentation: "narrative", eyebrow: null, title: "Why it mattered", paragraphs: ["The room changed the band."], items: [] } as ExperienceBlock;
   const final = page("Harrisburg", null, [{ role: "user", text: "Harrisburg?" }, { role: "assistant", text: "Twice." }], [show, editorial], [
@@ -207,6 +194,7 @@ test("a tab the visitor picks mid-stream survives later groups and the final res
     { type: "status", text: "Looking." },
     { type: "lead", text: "Twice." },
     { type: "page_head", title: "Harrisburg", lead: null },
+    { type: "page_tab", tab: "charts" },
     { type: "group_open", ...meta(0, "collection") },
     { type: "block", group_index: 0, block: show },
     hold,
@@ -218,13 +206,13 @@ test("a tab the visitor picks mid-stream survives later groups and the final res
   ] }];
   await openWorkspace();
   ask("Harrisburg?");
-  await vi.waitFor(() => expect(document.querySelector("article.show-unit")).not.toBeNull());
-  fireEvent.click(tab("Charts"));
-  expect(tab("Charts")).toHaveAttribute("aria-selected", "true");
+  await vi.waitFor(() => expect(column().querySelector("article.show-unit")).not.toBeNull());
+  expect(screen.getByText("Twice.")).toBeVisible();
   await act(async () => { release(); });
   await vi.waitFor(() => expect(rows()).toHaveLength(1));
-  expect(tab("Charts")).toHaveAttribute("aria-selected", "true");
-  expect(tab("Charts")).toHaveAttribute("aria-disabled", "true");
+  const showCard = column().querySelector("article.show-unit") as HTMLElement;
+  const story = within(column()).getByText("Why it mattered");
+  expect(showCard.compareDocumentPosition(story) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test("the player keeps playing through requests and history moves", async () => {
@@ -246,7 +234,6 @@ test("the player keeps playing through requests and history moves", async () => 
   ask("Focus on the late ’80s");
   await screen.findByRole("heading", { level: 1, name: "The late-’80s runs" });
   fireEvent.click(rows()[0]);
-  fireEvent.click(tab("Read"));
   expect(nowPlaying()).toBe(title);
 });
 
@@ -287,8 +274,30 @@ test("on a wide desktop the queue has its own rail, and the bar's queue button g
   const button = screen.getByRole("button", { name: /^Queue,/ });
   expect(button).not.toHaveAttribute("aria-expanded");
   await act(async () => { fireEvent.click(button); });
-  expect(document.getElementById("queue-rail")).toHaveFocus();
+  await vi.waitFor(() => expect(document.getElementById("queue-rail")).toHaveFocus());
   expect(document.querySelector(".player-dock .now-playing-queue")).toBeNull();
+
+  // Collapsed, the rail is a slim strip; the bar's queue button opens it again.
+  fireEvent.click(within(rail).getByRole("button", { name: "Collapse queue" }));
+  expect(document.querySelector(".queue-rail.collapsed")).not.toBeNull();
+  expect(window.localStorage.getItem("deadbot.rail.queue")).toBe("closed");
+  await act(async () => { fireEvent.click(screen.getByRole("button", { name: /^Queue,/ })); });
+  await vi.waitFor(() => expect(document.getElementById("queue-rail")).toHaveFocus());
+});
+
+test("the rail carries the site's links instead of a menu, and collapses to its controls", async () => {
+  await openWorkspace();
+  expect(within(rail()).getByRole("link", { name: "About Deadbot" })).toHaveAttribute("href", "/about");
+  expect(within(rail()).getByRole("link", { name: /About Mark Davenport/ })).toHaveAttribute("target", "_blank");
+  expect(within(rail()).queryByRole("button", { name: "Menu" })).toBeNull();
+  expect(document.documentElement).toHaveClass("workspace-desktop");
+  fireEvent.click(within(rail()).getByRole("button", { name: "Collapse sidebar" }));
+  expect(document.querySelector(".workspace-shell")).toHaveClass("history-collapsed");
+  expect(within(rail()).queryByText("Recent")).toBeNull();
+  expect(within(rail()).getByRole("button", { name: "New chat" })).toBeInTheDocument();
+  expect(window.localStorage.getItem("deadbot.rail.history")).toBe("closed");
+  fireEvent.click(within(rail()).getByRole("button", { name: "Expand sidebar" }));
+  expect(within(rail()).getByText("Recent")).toBeInTheDocument();
 });
 
 test("a failed request keeps the previous page and Retry sends the same request again", async () => {
@@ -326,7 +335,6 @@ test("clicking the held previous page does not count as taking over the new one"
   expect(held).not.toBeNull();
   expect(within(held).getByText("Previous result")).toBeInTheDocument();
   fireEvent.pointerDown(held);
-  fireEvent.click(tab("Read"));
   await act(async () => { release(); });
   const heading = await screen.findByRole("heading", { level: 1, name: "The late-’80s runs" });
   expect(document.activeElement).toBe(heading);
@@ -402,22 +410,11 @@ test("Clear empties the history, and Undo puts it back", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
   expect(rows()).toHaveLength(0);
   expect(window.localStorage.getItem("deadbot.history.v1")).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Cleared. Undo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Undo clearing history" }));
   expect(rows()).toHaveLength(1);
   expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
 });
 
-
-test("the msg-workspace stream lands a Listen card before the Read story", async () => {
-  const { streamEventsFor } = await import("../../visual-fixtures");
-  const { fallbackTab } = await import("../../core/tab-routing");
-  const blocks = streamEventsFor("msg-workspace").flatMap((event) => (event.type === "block" ? [event.block] : []));
-  const firstListen = blocks.findIndex((block) => fallbackTab(block) === "listen");
-  const firstStory = blocks.findIndex((block) => block.type === "editorial");
-  expect(firstListen).toBeGreaterThanOrEqual(0);
-  expect(firstListen).toBeLessThan(firstStory);
-  expect(blocks.some((block) => fallbackTab(block) === "charts")).toBe(true);
-});
 
 test("the wordmark goes to the start view without reloading, and history stays", async () => {
   replies = [{ kind: "plain", body: msg() }];
@@ -428,34 +425,6 @@ test("the wordmark goes to the start view without reloading, and history stays",
   expect(fireEvent.click(wordmark)).toBe(false);
   expect(screen.getByRole("heading", { level: 1, name: /Exploration and listening/ })).toBeInTheDocument();
   expect(rows()).toHaveLength(1);
-});
-
-test("a tab already looked at during a request does not get its new mark again", async () => {
-  const show = clone(visualFixtures.harrisburg.blocks[0]);
-  const second = clone(visualFixtures.harrisburg.blocks[1]);
-  let release!: () => void;
-  const hold = new Promise<void>((resolve) => { release = resolve; });
-  const final = page("Harrisburg", null, [{ role: "user", text: "Harrisburg?" }, { role: "assistant", text: "Twice." }], [show, second], [
-    { presentation: "collection", criteria: [], block_indexes: [0, 1] }
-  ]);
-  const meta = { index: 0, title: null, lead: null, presentation: "collection", criteria: [] };
-  replies = [{ kind: "stream", chunks: [
-    { type: "lead", text: "Twice." },
-    { type: "group_open", ...meta },
-    { type: "block", group_index: 0, block: show },
-    hold,
-    { type: "block", group_index: 0, block: second },
-    { type: "group_close", ...meta },
-    { type: "response", response: final }
-  ] }];
-  await openWorkspace();
-  ask("Harrisburg?");
-  await vi.waitFor(() => expect(tab("Listen")).toHaveTextContent("has new content"));
-  fireEvent.click(tab("Listen"));
-  fireEvent.click(tab("Read"));
-  expect(tab("Listen")).not.toHaveTextContent("has new content");
-  await act(async () => { release(); });
-  await vi.waitFor(() => expect(rows()).toHaveLength(1));
 });
 
 test("on a phone, the player folds while the dock's ask box has focus", async () => {

@@ -36,14 +36,14 @@ test("rows after the page on screen are marked ahead", () => {
   expect(screen.getByRole("button", { name: /Late 80s/ })).toHaveClass("ahead");
 });
 
-test("Clear sits at the foot and turns into Undo once used", () => {
+test("Clear sits below the threads and turns into Undo once used", () => {
   const h = { ...handlers(), onClear: vi.fn(), onUndo: vi.fn() };
   const { rerender } = render(<ExplorationHistory state={threeAsks()} {...h} />);
   fireEvent.click(screen.getByRole("button", { name: "Clear history" }));
   expect(h.onClear).toHaveBeenCalled();
   rerender(<ExplorationHistory state={reduce(threeAsks(), { type: "clear" })} {...h} cleared />);
   expect(screen.getByText("History cleared.")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Cleared. Undo" }));
+  fireEvent.click(screen.getByRole("button", { name: "Undo clearing history" }));
   expect(h.onUndo).toHaveBeenCalled();
 });
 

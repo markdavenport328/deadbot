@@ -1,15 +1,15 @@
 // What the workspace remembers about one visit: the model turns the visitor
 // has had (each one a full page), where they are in that history, and the
-// request in flight. Local moves (switching a tab, scrolling) change only the
+// request in flight. Local moves (scrolling) change only the
 // current entry's view and never add a history step. Player state does not
 // live here; the player keeps playing across every change below.
 import type { AskFocus, ExperienceResponse } from "../types";
 import type { PageEvent } from "./stream-events";
-import { applyPageEvent, groupsOfResponse, type Draft } from "./page-draft";
-import { openingTab, readTab, routeGroups, type WorkspaceTab } from "./tab-routing";
+import { applyPageEvent, type Draft } from "./page-draft";
 
 export type RequestSource = "typed" | "chip";
-export type EntryView = { tab: WorkspaceTab | null; scroll: Partial<Record<WorkspaceTab, number>> };
+// Where the visitor had scrolled the page, kept so going back returns there.
+export type EntryView = { scroll: number | null };
 export type Entry = {
   id: string; // the request id that produced it
   parentId: string | null;
@@ -31,7 +31,6 @@ export type Pending = {
   statuses: string[];
   lead: string | null;
   draft: Draft | null;
-  initialTab: WorkspaceTab | null;
   view: EntryView;
   interacted: boolean;
   error: string | null;
@@ -42,7 +41,6 @@ export type ExplorationAction =
   | { type: "status"; requestId: string; text: string }
   | { type: "lead"; requestId: string; text: string }
   | { type: "page"; requestId: string; event: PageEvent }
-  | { type: "initialTab"; requestId: string; tab: WorkspaceTab }
   | { type: "complete"; requestId: string; response: ExperienceResponse }
   | { type: "fail"; requestId: string; message: string }
   | { type: "cancel" }
@@ -56,7 +54,7 @@ export type ExplorationAction =
 
 export const initialExploration: ExplorationState = { entries: [], cursor: -1, pending: null, startView: false };
 
-const emptyView = (): EntryView => ({ tab: null, scroll: {} });
+const emptyView = (): EntryView => ({ scroll: null });
 
 export function currentEntry(state: ExplorationState): Entry | null {
   return state.entries[state.cursor] ?? null;
@@ -94,14 +92,6 @@ export function visible(state: ExplorationState): Visible {
   return base ? { kind: "held", entry: base, pending } : { kind: "working", pending };
 }
 
-// The first content picks the opening tab once (the model's choice, else by
-// what arrived); after that, later events never move the visitor.
-function settleTab(pending: Pending): Pending {
-  if (pending.view.tab !== null || pending.interacted || !pendingHasContent(pending)) return pending;
-  const tab = openingTab(pending.initialTab, routeGroups(pending.draft?.groups ?? []));
-  return { ...pending, view: { ...pending.view, tab } };
-}
-
 export function explorationReducer(state: ExplorationState, action: ExplorationAction): ExplorationState {
   const { pending } = state;
   switch (action.type) {
@@ -114,7 +104,7 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
         startView: false,
         pending: {
           requestId: action.requestId, baseEntryId, question: action.question, source: action.source, focus: action.focus,
-          threadId: action.threadId, statuses: [], lead: null, draft: null, initialTab: null, view: emptyView(),
+          threadId: action.threadId, statuses: [], lead: null, draft: null, view: emptyView(),
           interacted: false, error: null
         }
       };
@@ -124,23 +114,17 @@ export function explorationReducer(state: ExplorationState, action: ExplorationA
       return { ...state, pending: { ...pending, statuses: [...pending.statuses, action.text] } };
     case "lead":
       if (!pending || pending.requestId !== action.requestId) return state;
-      return { ...state, pending: settleTab({ ...pending, lead: action.text }) };
+      return { ...state, pending: { ...pending, lead: action.text } };
     case "page":
       if (!pending || pending.requestId !== action.requestId) return state;
-      return { ...state, pending: settleTab({ ...pending, draft: applyPageEvent(pending.draft, action.event) }) };
-    case "initialTab": {
-      if (!pending || pending.requestId !== action.requestId) return state;
-      const view = pending.interacted ? pending.view : { ...pending.view, tab: action.tab };
-      return { ...state, pending: { ...pending, initialTab: action.tab, view } };
-    }
+      return { ...state, pending: { ...pending, draft: applyPageEvent(pending.draft, action.event) } };
     case "complete": {
       if (!pending || pending.requestId !== action.requestId) return state;
       const { response } = action;
-      const tab = pending.view.tab ?? openingTab(readTab(response.initial_tab), routeGroups(groupsOfResponse(response)));
       const entry: Entry = {
         id: pending.requestId, parentId: pending.baseEntryId, root: pending.baseEntryId === null,
         request: pending.question, source: pending.source, focus: pending.focus, threadId: pending.threadId,
-        response, view: { ...pending.view, tab }
+        response, view: pending.view
       };
       const baseIndex = pending.baseEntryId === null ? -1 : state.entries.findIndex((candidate) => candidate.id === pending.baseEntryId);
       // A follow-up replaces whatever came after the page it grew from; a

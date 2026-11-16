@@ -5,15 +5,17 @@ import { ASK_ERROR, askPlain, askStreaming, createThreadId, isAbort, replayStrea
 import { askRequestBody, type FollowUp } from "../../core/ask-request";
 import { storeNotebook } from "../../core/research-notebook";
 import { loadRequestedStreamEvents, requestedStreamFixture } from "../../visual-fixture-loader";
-import { WORKSPACE_TABS, readTab, routeGroups, tabsWithContent, type WorkspaceTab } from "../../core/tab-routing";
 import {
   explorationReducer, initialExploration, isAsking, requestContext, visible,
   type ExplorationState, type Pending, type RequestSource
 } from "../../core/exploration-state";
 import { ExplorationHistory } from "./ExplorationHistory";
 import { StartLibrary } from "../classic/StartLibrary";
-import { ExplorationPane, activeTabOf, contentOf, draftContent, entryTab, shownPane } from "./ExplorationPane";
+import { ExplorationPane, contentOf, draftContent, shownPane } from "./ExplorationPane";
 import { loadHistory, saveHistory } from "../../core/history-store";
+import { PanelToggle, PenIcon, useRememberedOpen } from "../../core/side-panel";
+import { RESUME_URL } from "../../SiteMenu";
+import { followInSite, usePath } from "../../core/site-nav";
 import type { Entry } from "../../core/exploration-state";
 import "./WorkspaceShell.css";
 
@@ -25,7 +27,6 @@ type Actions = {
   stop(): void;
   retry(): void;
   newChat(): void;
-  selectTab(tab: WorkspaceTab): void;
   interact(): void;
   followUp: FollowUp;
 };
@@ -44,6 +45,19 @@ function SendIcon() {
 }
 
 const UNDO_CLEAR_SECONDS = 10;
+
+// The site menu's two links, at the top of the rail on a desktop, above New chat.
+function RailLinks() {
+  const path = usePath();
+  return (
+    <nav className="rail-links" aria-label="Site">
+      <a href="/about" aria-current={path === "/about" ? "page" : undefined} onClick={(event) => followInSite(event, "/about")}>About Deadbot</a>
+      <a href={RESUME_URL} target="_blank" rel="noopener">
+        About Mark Davenport<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
+      </a>
+    </nav>
+  );
+}
 
 // The history mark for the phone's drawer button: a clock face turning back.
 function HistoryIcon() {
@@ -108,14 +122,14 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   // it keeps its view when it completes instead of taking focus.
   const interactedRef = useRef<string | null>(null);
   const focusPaneRef = useRef<string | null>(null);
-  const announcedRef = useRef<{ requestId: string; tabs: Set<WorkspaceTab> } | null>(null);
-  const lastShownRef = useRef<{ id: string; tab: WorkspaceTab | null } | null>(null);
+  const lastShownRef = useRef<string | null>(null);
   const [question, setQuestion] = useState("");
   const [dockFocused, setDockFocused] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const railHeadingId = useId();
   const drawerHeadingId = useId();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [railOpen, setRailOpen] = useRememberedOpen("deadbot.rail.history");
   const [cleared, setCleared] = useState<{ entries: Entry[]; cursor: number } | null>(null);
   const dockRef = useRef<HTMLDivElement>(null);
   const dockTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -130,12 +144,11 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     requestRef.current = null;
   }
 
-  // The scroll position of the tab on screen goes into its view before the
+  // The scroll position of the page on screen goes into its view before the
   // visitor moves away from it.
   function saveScroll() {
-    const current = shownPane(stateRef.current);
-    if (!current?.tab) return;
-    dispatch({ type: "view", patch: { scroll: { ...current.view.scroll, [current.tab]: window.scrollY } } });
+    if (!shownPane(stateRef.current)) return;
+    dispatch({ type: "view", patch: { scroll: window.scrollY } });
   }
 
   function complete(requestId: string, response: ExperienceResponse) {
@@ -149,12 +162,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     const handlers: Omit<StreamHandlers, "onResponse"> = {
       onStatus: (text) => dispatch({ type: "status", requestId, text }),
       onLead: (text) => dispatch({ type: "lead", requestId, text }),
-      onPage: (event: PageEvent) => {
-        // The model's opening tab arrives on its own event, ahead of the answer.
-        const opening = event.type === "page_tab" ? readTab(event.tab) : null;
-        if (opening) dispatch({ type: "initialTab", requestId, tab: opening });
-        dispatch({ type: "page", requestId, event });
-      }
+      onPage: (event: PageEvent) => dispatch({ type: "page", requestId, event })
     };
     try {
       const result: { response: ExperienceResponse | null } = { response: null };
@@ -237,16 +245,6 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     storeNotebook(null);
   }
 
-  function selectTab(tab: WorkspaceTab) {
-    const current = shownPane(stateRef.current);
-    if (!current) return;
-    const scroll = current.tab ? { ...current.view.scroll, [current.tab]: window.scrollY } : current.view.scroll;
-    // Only a tab chosen on the page being written takes it over; a tab on the
-    // held previous page is just reading.
-    if (current.draft) interactedRef.current = stateRef.current.pending?.requestId ?? null;
-    dispatch({ type: "view", patch: { tab, scroll }, interacted: current.draft });
-  }
-
   function interact() {
     const current = stateRef.current;
     const pending = current.pending;
@@ -258,15 +256,14 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   // Panes and the menu get one stable set of callbacks that always reach the
   // latest render's functions, so a streaming token does not re-render every
   // earlier exploration.
-  const latest = useRef({ ask, navigate, stop, retry, newChat, selectTab, interact });
-  latest.current = { ask, navigate, stop, retry, newChat, selectTab, interact };
+  const latest = useRef({ ask, navigate, stop, retry, newChat, interact });
+  latest.current = { ask, navigate, stop, retry, newChat, interact };
   const actions = useMemo<Actions>(() => ({
     ask: (text, options) => latest.current.ask(text, options),
     navigate: (index) => latest.current.navigate(index),
     stop: () => latest.current.stop(),
     retry: () => latest.current.retry(),
     newChat: () => latest.current.newChat(),
-    selectTab: (tab) => latest.current.selectTab(tab),
     interact: () => latest.current.interact(),
     followUp: (text, focus) => { latest.current.ask(text, { source: "chip", focus: focus ?? null, fresh: false }); }
   }), []);
@@ -280,6 +277,13 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     // Read once, on arrival.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // On a desktop the rail carries the site's links, so the corner menu steps aside.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.toggle("workspace-desktop", !isPhone);
+    return () => root.classList.remove("workspace-desktop");
+  }, [isPhone]);
 
   // The page shown on arrival from saved history gets its research notebook back.
   useEffect(() => {
@@ -316,17 +320,14 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     setAnnouncement("History restored");
   }
 
-  // Announce each tab the first time it gets something during a request.
+  // Announce once when the page being written first has something to read.
+  const announcedRef = useRef<string | null>(null);
   useEffect(() => {
     const pending = state.pending;
-    if (!pending || pending.error !== null) return;
-    if (announcedRef.current?.requestId !== pending.requestId) announcedRef.current = { requestId: pending.requestId, tabs: new Set() };
-    const announced = announcedRef.current.tabs;
-    const filled = tabsWithContent(routeGroups(pending.draft?.groups ?? []));
-    const arrived = WORKSPACE_TABS.filter(({ id }) => filled.has(id) && !announced.has(id));
-    if (arrived.length === 0) return;
-    arrived.forEach(({ id }) => announced.add(id));
-    setAnnouncement(arrived.map(({ label }) => `${label} ready`).join(". "));
+    if (!pending || pending.error !== null || announcedRef.current === pending.requestId) return;
+    if (!(pending.draft?.groups ?? []).some((group) => group.blocks.length > 0)) return;
+    announcedRef.current = pending.requestId;
+    setAnnouncement("The page is filling in");
   }, [state.pending]);
 
   // A finished page takes focus (without scrolling) unless the visitor had
@@ -338,26 +339,16 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     document.getElementById(`${id}-title`)?.focus({ preventScroll: true });
   }, [state.entries]);
 
-  // Each tab keeps its own scroll position. A pane seen for the first time
-  // starts at the top; a tab seen for the first time keeps the tab bar in view.
+  // Each page keeps its scroll position: a page seen before returns to where
+  // the visitor left it, and a new one starts at the top.
   const shownId = pane?.id ?? null;
-  const shownTab = pane?.tab ?? null;
   useLayoutEffect(() => {
     const last = lastShownRef.current;
-    lastShownRef.current = shownId ? { id: shownId, tab: shownTab } : null;
+    lastShownRef.current = shownId;
     const current = shownPane(stateRef.current);
-    if (!current || !shownId || (last && last.id === shownId && last.tab === shownTab)) return;
-    const saved = shownTab ? current.view.scroll[shownTab] : undefined;
-    if (saved !== undefined) window.scrollTo(0, saved);
-    else if (!last || last.id !== shownId) window.scrollTo(0, 0);
-    else {
-      const panel = document.getElementById(`${shownId}-panel-${shownTab}`);
-      const bar = panel?.parentElement?.querySelector<HTMLElement>("[role=tablist]");
-      if (!panel || !bar) return;
-      const target = Math.max(0, window.scrollY + panel.getBoundingClientRect().top - bar.getBoundingClientRect().height);
-      if (target < window.scrollY) window.scrollTo(0, target);
-    }
-  }, [shownId, shownTab]);
+    if (!current || !shownId || last === shownId) return;
+    window.scrollTo(0, current.view.scroll ?? 0);
+  }, [shownId]);
 
   // The page keeps room under the dock (the phone's player and ask box, or the
   // desktop's full-width player): its measured height becomes a CSS variable
@@ -468,12 +459,10 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
       key={entry.id}
       paneId={entry.id}
       content={contentOf(entry.response)}
-      activeTab={entryTab(entry)}
       statuses={null}
       streaming={false}
       hidden={entry.id !== shownId}
       previous={entry.id === heldId}
-      onSelectTab={actions.selectTab}
       onFollowUp={actions.followUp}
     />
   ));
@@ -487,13 +476,11 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
         key={pending.requestId}
         paneId={pending.requestId}
         content={content}
-        activeTab={activeTabOf(pending.view, pending.initialTab, content.groups)}
         statuses={shown.kind === "draft" ? null : pending.statuses}
         streaming
         hidden={pending.requestId !== shownId}
         previous={false}
-        onSelectTab={actions.selectTab}
-        onInteract={shown.kind === "draft" && !pending.interacted ? actions.interact : undefined}
+          onInteract={shown.kind === "draft" && !pending.interacted ? actions.interact : undefined}
         onFollowUp={actions.followUp}
       />
     );
@@ -502,7 +489,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   const showStart = shown.kind === "start" || (shown.kind === "failed" && !shown.entry);
 
   return (
-    <main className={isPhone ? "app-shell workspace-shell phone" : "app-shell workspace-shell"}>
+    <main className={["app-shell", "workspace-shell", isPhone ? "phone" : null, !isPhone && !railOpen ? "history-collapsed" : null].filter(Boolean).join(" ")}>
       <p role="status" className="sr-only">{announcement}</p>
       {isPhone && (
         <HistoryDrawer open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}>
@@ -523,10 +510,14 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
         {!isPhone && (
           <aside className="workspace-rail" aria-label="Explorations">
             <header className="masthead">
-              <a className="wordmark" href="/" onClick={goHome}>Deadbot</a>
-              <p>Grateful Dead knowledge, listening, and context</p>
+              <div className="masthead-bar">
+                {railOpen && <a className="wordmark" href="/" onClick={goHome}>Deadbot</a>}
+                <PanelToggle side="left" open={railOpen} label="sidebar" onToggle={() => setRailOpen(!railOpen)} />
+              </div>
+              {railOpen && <p>Grateful Dead knowledge, listening, and context</p>}
             </header>
-            <ExplorationHistory
+            {railOpen && <RailLinks />}
+            {railOpen ? <ExplorationHistory
               state={state}
               headingId={railHeadingId}
               onNavigate={actions.navigate}
@@ -536,7 +527,11 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
               onClear={clearHistory}
               onUndo={undoClear}
               cleared={cleared !== null}
-            />
+            /> : (
+              <button type="button" className="history-new icon-only" disabled={asking} onClick={actions.newChat} aria-label="New chat" data-tip="New chat">
+                <PenIcon />
+              </button>
+            )}
           </aside>
         )}
         <section className="content-pane workspace-main" aria-label="Deadbot guide">

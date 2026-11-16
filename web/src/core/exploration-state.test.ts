@@ -21,7 +21,7 @@ function ask(state: ExplorationState, id: string, title: string, { fresh = false
 test("two asks make two entries; local view changes make none", () => {
   let s = ask(initialExploration, "r1", "MSG", { fresh: true });
   s = ask(s, "r2", "Late 80s");
-  for (let i = 0; i < 10; i += 1) s = reduce(s, { type: "view", patch: { tab: i % 2 ? "charts" : "read", scroll: { read: i } }, interacted: true });
+  for (let i = 0; i < 10; i += 1) s = reduce(s, { type: "view", patch: { scroll: i * 10 }, interacted: true });
   expect(s.entries.map((e) => e.request)).toEqual(["MSG", "Late 80s"]);
   expect(s.cursor).toBe(1);
 });
@@ -78,7 +78,7 @@ test("only one request at a time", () => {
   expect(reduce(s, { type: "submit", requestId: "r2", question: "b", source: "typed", focus: null, fresh: true, threadId: "t" })).toBe(s);
 });
 
-describe("opening tab and the visitor's focus", () => {
+describe("the page being written and the visitor's place", () => {
   const started = () => run(ask(initialExploration, "r1", "MSG", { fresh: true }),
     { type: "submit", requestId: "r2", question: "x", source: "chip", focus: null, fresh: false, threadId: "t" });
 
@@ -91,21 +91,11 @@ describe("opening tab and the visitor's focus", () => {
     expect(visible(s).kind).toBe("draft");
   });
 
-  test("the model's tab opens unless the visitor has acted", () => {
-    let s = run(started(), { type: "initialTab", requestId: "r2", tab: "listen" }, { type: "lead", requestId: "r2", text: "Yes" });
-    expect(s.pending?.view.tab).toBe("listen");
-    s = reduce(s, { type: "view", patch: { tab: "charts" }, interacted: true });
-    s = reduce(s, { type: "initialTab", requestId: "r2", tab: "read" });
-    expect(s.pending?.view.tab).toBe("charts");
-    s = reduce(s, { type: "complete", requestId: "r2", response: reply("x", null) });
-    expect(s.entries[s.cursor].view.tab).toBe("charts");
-  });
-
-  test("without a model choice the first content picks once and then stays", () => {
+  test("the scroll the visitor reached on the draft carries into the finished page", () => {
     let s = run(started(), { type: "lead", requestId: "r2", text: "Yes" });
-    expect(s.pending?.view.tab).toBe("read");
-    s = reduce(s, { type: "page", requestId: "r2", event: { type: "block", group_index: 0, block: { type: "show_unit" } as never } });
-    expect(s.pending?.view.tab).toBe("read");
+    s = reduce(s, { type: "view", patch: { scroll: 420 }, interacted: true });
+    s = reduce(s, { type: "complete", requestId: "r2", response: reply("x", null) });
+    expect(s.entries[s.cursor].view.scroll).toBe(420);
   });
 });
 
@@ -128,11 +118,11 @@ test("stale fail, page and status events leave the same state object", () => {
 test("view patches go to the held page, then to the draft once content shows", () => {
   let s = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
     { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
-  s = reduce(s, { type: "view", patch: { tab: "charts" } });
-  expect(s.entries[0].view.tab).toBe("charts");
-  expect(s.pending?.view.tab).toBeNull();
+  s = reduce(s, { type: "view", patch: { scroll: 300 } });
+  expect(s.entries[0].view.scroll).toBe(300);
+  expect(s.pending?.view.scroll).toBeNull();
   s = reduce(s, { type: "lead", requestId: "r2", text: "Yes" });
-  s = reduce(s, { type: "view", patch: { tab: "read" }, interacted: true });
-  expect(s.pending?.view.tab).toBe("read");
-  expect(s.entries[0].view.tab).toBe("charts");
+  s = reduce(s, { type: "view", patch: { scroll: 80 }, interacted: true });
+  expect(s.pending?.view.scroll).toBe(80);
+  expect(s.entries[0].view.scroll).toBe(300);
 });

@@ -331,6 +331,14 @@ Read on its own. This step:
 
 It comes after the card actions, in the plan's order (owner, 2026-11-15).
 
+**Status, 2026-11-16:** built on `claude/one-column`. The tab bar,
+`core/tab-routing.ts` and `WorkspaceTabs` are gone. Each page renders its
+groups in the model's order under the headline and lead, with the sources
+after them. Each page keeps one scroll position, and views saved with the
+old per-tab scroll start at the top. The server still sends `initial_tab`,
+`page_tab` and each group's `tab`; the page ignores them. Removing them from
+the response contract and the model's schema is a separate server change.
+
 ### 6. Make the workspace the default
 
 First close the gaps listed in `docs/UX-NEXT-STEPS.md`:
