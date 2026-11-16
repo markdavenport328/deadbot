@@ -30,18 +30,22 @@ function longDate(iso?: string | null): string | null {
 // Play starts what the card plays; while it plays it shows an equalizer, and
 // pause on hover or focus. + adds the same tracks to the end of the queue
 // without interrupting, and turns to a check once they are in. The action's
-// own label is the play's accessible name.
-export function CardPlayButton({ play, label }: { play: InPagePlay; label: string }) {
-  const control = usePlayControl(play, "start");
+// own label is the play's accessible name. Hovering or focusing either
+// names what it does: play starts now in place of the queue, + adds to it.
+// "tracks" is what + adds when it differs from the play's queue (a hero that
+// starts partway through a tape adds from that track on); "large" is the
+// hero's size.
+export function CardPlayButton({ play, label, tracks, large = false, scope = "start" }: { play: InPagePlay; label: string; tracks?: PlayerTrack[]; large?: boolean; scope?: "start" | "queue" }) {
+  const control = usePlayControl(play, scope);
   const what = label.replace(/^Play\s+/i, "");
   return (
-    <span className="card-controls">
+    <span className={`card-controls${large ? " large" : ""}`}>
       <button
         type="button"
         className={`card-play${control.mine ? " current" : ""}${control.playing ? " playing" : ""}`}
         data-playable="in-page"
         aria-label={control.errored ? `Retry: ${label}` : control.playing ? `Pause: ${label}` : label}
-        data-tip={control.errored ? "Try again" : control.playing ? "Pause" : "Play now"}
+        data-tip={control.errored ? "Try again" : control.playing ? "Pause" : control.mine ? "Resume" : "Play now, replacing the queue"}
         aria-pressed={control.mine}
         aria-busy={control.loading}
         onClick={control.onClick}
@@ -55,7 +59,7 @@ export function CardPlayButton({ play, label }: { play: InPagePlay; label: strin
           <PlayGlyph playing={false} />
         )}
       </button>
-      <AddToQueue tracks={play.queue.length > 0 ? play.queue : [play.start]} name={what} variant="round" />
+      <AddToQueue tracks={tracks ?? (play.queue.length > 0 ? play.queue : [play.start])} name={what} variant="round" />
     </span>
   );
 }
@@ -146,8 +150,7 @@ export function ListeningHero({ block }: { block: ListeningHeroBlock }) {
   const queue = (block.queue ?? []).map((track) => toTrack(track, meta));
   const start = queue[Math.min(block.start_index ?? 0, Math.max(queue.length - 1, 0))];
   const play = start ? { start, queue } : null;
-  const control = usePlayControl(play, "queue");
-  const label = block.play_label?.trim() || "Play";
+  const label = block.play_label?.trim() || `Play ${name}`;
   const heard = [name, date].filter(Boolean).join(", ");
 
   return (
@@ -166,18 +169,10 @@ export function ListeningHero({ block }: { block: ListeningHeroBlock }) {
         {block.line && <p className="hero-line">{block.line}</p>}
         <div className="hero-actions">
           {play ? (
-            <button
-              type="button"
-              className="hero-play"
-              data-playable="in-page"
-              aria-label={control.playing ? `Pause: ${label}` : undefined}
-              aria-pressed={control.mine}
-              aria-busy={control.loading}
-              onClick={control.onClick}
-            >
-              <PlayGlyph playing={control.playing} />
-              <span>{label}</span>
-            </button>
+            <>
+              <CardPlayButton play={play} label={label} tracks={queue.slice(queue.indexOf(play.start))} large scope="queue" />
+              <span className="hero-play-label" aria-hidden="true">{label}</span>
+            </>
           ) : block.play_url ? (
             <ListenControl url={block.play_url} label={label} className="hero-link" />
           ) : null}

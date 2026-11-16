@@ -207,6 +207,30 @@ describe("the queue panel", () => {
     expect(status(panel)).toBe("Restored the queue");
   });
 
+  it("keeps what has played when the queue is cleared, and clears Played on its own", async () => {
+    const panel = await openQueue();
+    await click(within(panel).getByRole("button", { name: "Play Loser" }));
+    await click(within(panel).getByRole("button", { name: "Clear queue" }));
+    expect(queueText()).toBe("Bertha | Playing In The Band | Loser");
+    await click(within(panel).getByRole("button", { name: "Cleared. Undo" }));
+    await click(within(panel).getByRole("button", { name: "Clear played" }));
+    expect(queueText()).toBe("Loser | Scarlet Begonias");
+    await click(within(panel).getByRole("button", { name: "Cleared. Undo" }));
+    expect(queueText()).toBe("Bertha | Playing In The Band | Loser | Scarlet Begonias");
+    expect(status(panel)).toBe("Restored what has played");
+  });
+
+  it("opens a row's details in place from its menu, without asking a question", async () => {
+    const panel = await openQueue();
+    await click(within(await menuFor(panel, "Loser")).getByRole("menuitem", { name: "Details" }));
+    const details = within(panel).getByRole("group", { name: "Details for Loser" });
+    expect(details).toHaveTextContent("May 4, 1972");
+    expect(details).toHaveTextContent("Olympia Theatre");
+    expect(within(await menuFor(panel, "Loser")).queryByRole("menuitem", { name: /Go to this show/ })).toBeNull();
+    await click(within(details).getByRole("button", { name: "Hide details" }));
+    expect(within(panel).queryByRole("group", { name: "Details for Loser" })).toBeNull();
+  });
+
   it("closes on Escape", async () => {
     const panel = await openQueue();
     await act(async () => {
