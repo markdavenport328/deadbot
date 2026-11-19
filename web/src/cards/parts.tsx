@@ -80,11 +80,13 @@ export function ListenActionList({ actions }: { actions: ListenActions }) {
 
 // A card's header: its one in-page play, round and gold, beside the title and
 // identity line. Without an in-page play the header is the title alone.
-export function CardHead({ primary, spotify, children }: { primary: { play: InPagePlay; label: string } | null; spotify?: { panel: SpotifyPanel; label: string } | null; children: ReactNode }) {
+// "tracks" is what the + adds when it differs from what play continues
+// through (a performance adds its own song, not the rest of its show).
+export function CardHead({ primary, spotify, children }: { primary: { play: InPagePlay; label: string; tracks?: PlayerTrack[] } | null; spotify?: { panel: SpotifyPanel; label: string } | null; children: ReactNode }) {
   if (!primary && !spotify) return <>{children}</>;
   return (
     <div className="card-head">
-      {primary ? <CardPlayButton play={primary.play} label={primary.label} /> : spotify ? <CardSpotifyButton panel={spotify.panel} label={spotify.label} /> : null}
+      {primary ? <CardPlayButton play={primary.play} label={primary.label} tracks={primary.tracks} /> : spotify ? <CardSpotifyButton panel={spotify.panel} label={spotify.label} /> : null}
       <div className="card-head-text">{children}</div>
     </div>
   );

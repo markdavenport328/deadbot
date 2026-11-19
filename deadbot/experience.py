@@ -239,8 +239,9 @@ class ShowUnitBlock(ExperienceModel):
     location: str | None = None
     emphasis: Emphasis = "supporting"
     disclosure: CardDisclosure = "expanded"
-    # The show's playable tape, in show order, for the collapsed row's one
-    # play control. Filled only when the card starts collapsed.
+    # The show's playable tape, in show order, for the card's play and queue
+    # controls when no setlist carries it: filled when the card starts
+    # collapsed or shows no setlist.
     tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
     note: str | None = None
     visible_facets: list[ShowFacet] = Field(default_factory=list, max_length=LIST_CEILING)

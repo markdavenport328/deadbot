@@ -34,7 +34,15 @@ export function PerformanceUnit({
   const standalone = (url: string): PlayerTrack =>
     toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: url }, { showDate: block.show_date, venueName: block.venue_name });
   const listen = splitListen(block.listen, showQueue, standalone);
-  const primary = listen.primary ? { play: listen.primary.play, label: listen.primary.action.label } : null;
+  // Play carries on through the show; + adds this performance alone, unless
+  // the card's play is the whole show.
+  const primary = listen.primary
+    ? {
+        play: listen.primary.play,
+        label: listen.primary.action.label,
+        tracks: listen.primary.play.start.id === block.performance_id ? [listen.primary.play.start] : undefined
+      }
+    : null;
   return (
     <UnitFrame inRow={inRow} className={`performance-unit emphasis-${block.emphasis}`}>
       {!inRow && (

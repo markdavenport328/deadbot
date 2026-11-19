@@ -575,6 +575,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
    titles; a lone set, or a narrow card, takes the full width. */
 .setlist-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: var(--space-part) var(--space-unit); }
 .setlist-panel .k { display: block; margin-bottom: var(--space-tight); }
+/* A set's play and + sit in the rows' play column, the set's name beside them. */
+.setlist-panel .set-head { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: var(--space-part); padding: 0 var(--space-tight); margin-bottom: var(--space-tight); }
+.setlist-panel .set-head .k { margin-bottom: 0; }
+.set-head .row-play-cell { display: flex; align-items: center; gap: var(--space-tight); }
 .song-list { margin: 0; padding-left: var(--space-content); color: var(--quiet); font-size: 0.93rem; font-variant-numeric: tabular-nums; }
 .song-list li { padding: var(--space-line) 0 var(--space-line) var(--space-line); }
 .song-list li::marker { font-size: 0.85em; }

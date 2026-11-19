@@ -909,6 +909,15 @@ def test_an_expanded_show_card_opens_with_exactly_the_facets_the_model_chose():
     assert unit.visible_facets == [] and not unit.sets and not unit.listen
 
 
+def test_a_show_card_without_a_setlist_still_carries_its_tape():
+    unit = _resolve_one_show(disclosure="expanded", visible_facets=["listen", "guests"])
+    assert not unit.sets
+    assert unit.tracks and unit.recording_identifier
+    assert all(track.audio_url.startswith("https://archive.org/download/") for track in unit.tracks)
+    with_setlist = _resolve_one_show(disclosure="expanded", visible_facets=["setlist"])
+    assert with_setlist.sets and not with_setlist.tracks
+
+
 def test_show_unit_with_no_selected_facets_stays_compact():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1972-08-27"))
