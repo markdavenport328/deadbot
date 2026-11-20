@@ -384,8 +384,13 @@ Truckin' (9:51 → 17:52), 1978-04-15 Drums (4:21 → 11:42), 1978-04-24 Scarlet
 Begonias (5:55 → 12:07), 1979-12-03 Truckin' (4:09 → 9:19), 1979-12-07 Eyes
 Of The World (6:11 → 12:26), 1983-10-12 Franklin's Tower (7:22 → 14:23),
 1990-03-22 Drums (4:27 → 10:18), 1991-09-26 Dark Star (2:54 → 15:28) and
-Drums (6:36 → 12:23). 1995-03-26 Drums gained its 22-second outro file. 25
-fragments have no tape with the whole song and stay as they are.
+Drums (6:36 → 12:23). 1995-03-26 Drums gained its 22-second outro file.
+
+24 fragments have no tape with the whole song and are short of every release
+too (for example 1972-05-24 Sugar Magnolia, 0:42 of 7:11), so their links are
+removed (review kind `unlinked_fragment`): 37,385 → 37,361 performances with a
+tape link. 1972-05-26 Truckin' stays linked: its 9:01 tape track is short only
+of the releases that carry the jam after it.
 
 Not linked, because the song starts partway into a file and nothing preserved
 says where: about 90 songs named later in a medley file and 85 later passes

@@ -18,7 +18,9 @@ short or unlinked by that, and this pass settles the ones the tapes allow:
    the song as one file within 10% (or two minutes) of the release's length
    (5/11/72's second Dark Star: 1:50 on one tape, 29:24 on another, 30:33 on
    the release).  The release is the reference only for choosing; the stated
-   length stays the played file's.
+   length stays the played file's.  When no tape has the song whole and the
+   file is that short of every release too, the fragment link is removed: pressing play must not play a piece of the song
+   under its name.
 3. **The Other One under the suite's title.**  A track titled "That's It For
    The Other One" is the whole suite when it opens with Cryptical Envelopment;
    when Cryptical Envelopment and Drums have their own tracks directly before
@@ -174,10 +176,14 @@ def main() -> int:
     for rows in performances.values():
         rows.sort(key=lambda row: (int(row["set_number"] or 0), int(row["position_in_set"] or 0)))
     release_seconds: dict[str, int] = {}
+    # A release track can carry the jam that follows the song (Europe '72's
+    # Truckin'); a song is only called cut when it is short of every release.
+    shortest_release: dict[str, int] = {}
     for row in read_csv("official_release_tracks.csv"):
         seconds = row.get("duration_seconds", "")
         if row.get("performance_id") and seconds.isdigit():
             release_seconds[row["performance_id"]] = max(release_seconds.get(row["performance_id"], 0), int(seconds))
+            shortest_release[row["performance_id"]] = min(shortest_release.get(row["performance_id"], int(seconds)), int(seconds))
 
     # Rebuild from the rows the other passes wrote: this pass's own rows go,
     # and a row it replaced comes back from the last review.
@@ -380,7 +386,25 @@ def main() -> int:
                 if best is None or candidate[:3] < best[:3]:
                     best = candidate
             if best is None:
-                counts["fragment_without_a_whole_file"] += 1
+                shortest = shortest_release[performance_id]
+                if not (int(seconds) < FRAGMENT_SHARE * shortest and shortest - int(seconds) > FRAGMENT_SHORTFALL):
+                    counts["short_of_its_longest_release_only"] += 1
+                    continue
+                # No tape has the song whole: pressing play would play a
+                # fragment under the song's name, so the song stays unlinked.
+                replaced[performance_id] = dict(row)
+                counts["unlinked_fragment"] += 1
+                review.append(
+                    {
+                        "kind": "unlinked_fragment",
+                        "show_id": show_id,
+                        "performance_id": performance_id,
+                        "canonical_song_title": titles[index],
+                        "fragment_seconds": int(seconds),
+                        "release_seconds": reference,
+                        "replaced_row": replaced[performance_id],
+                    }
+                )
                 continue
             _gap_seconds, recording_id, number, source_file, record = best
             replaced[performance_id] = dict(row)

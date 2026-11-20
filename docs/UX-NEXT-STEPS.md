@@ -652,7 +652,8 @@ Data: `scripts/normalize_internet_archive_split_tracks.py` linked 5 more songs
 (1970-02-13 Dark Star and Lovelight, each two files; 1986-12-17 Not Fade Away;
 The Other One on 1969-02-27 and 1969-02-28), replaced 12 fragment links with the
 whole song on another tape (5/11/72 second Dark Star 1:50 → 29:24), and gave
-one Drums its outro file. Open: the ~90 songs named later in a medley file and
+one Drums its outro file, and removed 24 links that played only a fragment of
+the song with no whole copy on any tape. Open: the ~90 songs named later in a medley file and
 ~85 reprises inside a first-pass file need to know where they start inside the
 file; nothing preserved says so, so they stay unlinked until a source does.
 

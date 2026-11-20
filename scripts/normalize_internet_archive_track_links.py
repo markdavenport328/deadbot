@@ -68,6 +68,9 @@ LINKS_PATH = CANONICAL / "performance_links.csv"
 MAPPING_PATH = CANONICAL / "performance_recordings.csv"
 MAPPING_FIELDS = ["performance_id", "recording_id", "track_number", "start_seconds", "duration_seconds", "track_title", "notes"]
 REVIEW_PATH = RAW_DIR / "internet-archive-track-link-review.jsonl"
+# The split pass names songs whose only file is a fragment: no tape has the
+# song whole, so their track link is removed (play must play the whole song).
+SPLIT_REVIEW_PATH = RAW_DIR / "internet-archive-split-track-review.jsonl"
 
 PLATFORM = "archive"
 LINK_TYPE = "recording-track"
@@ -518,6 +521,13 @@ def verify_samples(samples: list[dict]) -> list[dict]:
     return results
 
 
+def unlinked_fragments() -> set[str]:
+    if not SPLIT_REVIEW_PATH.exists():
+        return set()
+    entries = (json.loads(line) for line in SPLIT_REVIEW_PATH.read_text(encoding="utf-8").splitlines() if line.strip())
+    return {entry["performance_id"] for entry in entries if entry.get("kind") == "unlinked_fragment"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--verify-samples", type=int, default=0, metavar="N", help="GET up to N sample URLs (max 10) before writing")
@@ -534,6 +544,15 @@ def main() -> int:
     candidates, review, counts, withdrawn = build_links(
         songs, performance_song, recordings, performance_recordings, representatives
     )
+    fragments = unlinked_fragments()
+    if fragments:
+        kept = [
+            row
+            for row in existing_links
+            if not (row["platform"] == PLATFORM and row["link_type"] == LINK_TYPE and row["performance_id"] in fragments)
+        ]
+        counts["withdrawn_fragment"] += len(existing_links) - len(kept)
+        existing_links = kept
     merged = merge_links(existing_links, candidates, review, counts, withdrawn)
 
     print(f"performance_recordings rows: {len(performance_recordings)}")
