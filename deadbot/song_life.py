@@ -446,12 +446,13 @@ def standouts(
         longest = max(timed, key=lambda p: (p.seconds, p.show_date))
         add("longest", longest, f"longest ever ({clock(longest.seconds)})")
 
-    first_set = [p for p in performances if p.set_number == 1]
-    later_sets = [p for p in performances if p.set_number != 1]
+    # An encore is its own placement; it is not also "a later set", an opener or a closer.
+    encores = [p for p in performances if p.encore]
+    first_set = [p for p in performances if p.set_number == 1 and not p.encore]
+    later_sets = [p for p in performances if p.set_number != 1 and not p.encore]
     opened_show = [p for p in first_set if p.previous is None]
     opened_set = [p for p in later_sets if p.previous is None]
-    closed_set = [p for p in performances if p.next is None]
-    encores = [p for p in performances if p.encore]
+    closed_set = [p for p in performances if p.next is None and not p.encore]
     meetings = Counter(n.song_id for p in performances for n in (p.previous, p.next) if n)
 
     for p in performances:

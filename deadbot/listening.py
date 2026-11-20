@@ -135,7 +135,12 @@ def _show_release(show_id: str, store: CanonicalStore, performance_ids: list[str
     return min(releases, key=lambda row: (-counts[row["release_id"]], sizes[row["release_id"]], row["release_id"]))
 
 
-def _start_index(tracks: list[PlayableTrack], start_set: str | None, start_performance_id: str | None) -> int:
+def _start_index(
+    tracks: list[PlayableTrack],
+    start_set: str | None,
+    start_performance_id: str | None,
+    set_numbers: dict[str, str] | None = None,
+) -> int:
     if start_performance_id:
         for index, track in enumerate(tracks):
             if track.performance_id == start_performance_id:
@@ -145,6 +150,12 @@ def _start_index(tracks: list[PlayableTrack], start_set: str | None, start_perfo
         for index, track in enumerate(tracks):
             if (track.set_label or "").strip().casefold() == wanted:
                 return index
+        # "Set 3" for the set the setlist now labels "Encore": the number still finds it.
+        number = re.fullmatch(r"(?:set\s*)?(\d+)", wanted)
+        if number and set_numbers:
+            for index, track in enumerate(tracks):
+                if set_numbers.get(track.performance_id) == number.group(1):
+                    return index
     return 0
 
 
@@ -182,7 +193,9 @@ def listening_hero(
         venue_name = (venue or {}).get("name") or None
         location = ", ".join(part for part in ((venue or {}).get("city"), (venue or {}).get("state_region")) if part) or None
         tracks, identifier = playable_show_tracks(show["show_id"], store)
-        performance_ids = [row["performance_id"] for row in store.filtered_rows("performances", show_id=show["show_id"]) if row.get("performance_id")]
+        show_performances = [row for row in store.filtered_rows("performances", show_id=show["show_id"]) if row.get("performance_id")]
+        performance_ids = [row["performance_id"] for row in show_performances]
+        set_numbers = {row["performance_id"]: str(row.get("set_number") or "") for row in show_performances}
         cover_release = release if cover_art_url(release) else _show_release(show["show_id"], store, performance_ids)
         image_url = cover_art_url(cover_release) or archive_thumbnail(identifier)
         date = show.get("show_date") or ""
@@ -209,7 +222,7 @@ def listening_hero(
             location=location,
             show_date=date or None,
             queue=tracks,
-            start_index=_start_index(tracks, start_set, start_performance_id),
+            start_index=_start_index(tracks, start_set, start_performance_id, set_numbers),
             play_url=play_url,
             recording_identifier=identifier,
             recording_details_url=archive_details(identifier),

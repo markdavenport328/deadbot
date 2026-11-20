@@ -125,7 +125,9 @@ def test_standouts_are_grouped_by_kind_in_date_order_without_ranking(sqlite_stor
     # A long kind keeps a sample spanning the song's life and says how many it left out.
     releases = [item["date"] for item in kinds["releases"]]
     assert releases[0][:4] == "1977" and releases[-1][:4] == "1991" and left_out["releases"] > 0
-    assert "opened a set 17 times, 1977–1991" in patterns
+    # Encores are their own pattern, not also "a later set" or "opened a set".
+    assert "encore 6 times, 1977–1991" in patterns
+    assert "opened a set 12 times, 1977–1985" in patterns
 
 
 def test_a_long_kind_is_sampled_evenly():
