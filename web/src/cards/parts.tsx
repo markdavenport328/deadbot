@@ -19,17 +19,13 @@ type UnitSources = ShowUnitBlock["sources"];
 // The show-level facts a setlist row or a recording's listen action needs to
 // build a PlayerTrack: date/venue for the now-playing bar's meta line, and
 // the one Internet Archive item behind this show's tracks (once per show,
-// not repeated per song) for the tape link and thumbnail.
+// not repeated per song) for the tape link.
 export type ShowMeta = {
   showDate?: string | null;
   venueName?: string | null;
   recordingDetailsUrl?: string | null;
   thumbnailUrl?: string | null;
 };
-
-export function thumbnailForIdentifier(identifier?: string | null): string | null {
-  return identifier ? `https://archive.org/services/img/${identifier}` : null;
-}
 
 export function toPlayerTrack(song: SetlistSongType, meta: ShowMeta): PlayerTrack | null {
   if (!song.audio_url) return null;

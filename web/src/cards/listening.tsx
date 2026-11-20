@@ -5,12 +5,13 @@
 import { type ReactNode, useId, useLayoutEffect, useRef, useState } from "react";
 import type { ExperienceBlock } from "../types";
 import type { PlayerTrack } from "../player/player";
-import { AddToQueue, ListenControl, PlayGlyph, archiveThumbnail, inPagePlay, toTrack, usePlayControl, type InPagePlay, type TrackMeta } from "./listen-control";
+import { AddToQueue, ListenControl, PlayGlyph, inPagePlay, toTrack, usePlayControl, type InPagePlay, type TrackMeta } from "./listen-control";
+import { showTile } from "./show-tile";
 import { Equalizer } from "../player/icons";
 import warmRosette from "../assets/rosette-warm.svg";
 import coolRosette from "../assets/rosette-cool.svg";
 
-export { archiveTrack, archiveThumbnail, inPagePlay, toTrack, type InPagePlay, type TrackMeta } from "./listen-control";
+export { archiveTrack, inPagePlay, toTrack, type InPagePlay, type TrackMeta } from "./listen-control";
 
 type ListenAction = { label: string; url: string; provider: string; is_official?: boolean };
 type ListeningHeroBlock = Extract<ExperienceBlock, { type: "listening_hero" }>;
@@ -131,21 +132,24 @@ function splitVenue(venue?: string | null): { name: string | null; rest: string 
 // The page's lead when the answer is best heard. A show is named by its venue
 // and date together: the venue set heavy, the date light beneath it, the
 // place on the small line above. One gold Play starts the queue; at most one
-// quiet link sits beside it.
+// quiet link sits beside it. Its picture is the real cover when the response
+// has one, and otherwise the show's tile; a cover that fails to load gives
+// way to the tile.
 export function ListeningHero({ block }: { block: ListeningHeroBlock }) {
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failed, setFailed] = useState<string[]>([]);
   const isShow = Boolean(block.show_id);
   const venue = splitVenue(block.venue_name);
   const date = longDate(isShow ? block.show_date : block.release_date);
   const name = isShow ? venue.name ?? date ?? "This show" : block.release_title ?? "This record";
   const kicker = isShow ? [venue.rest, block.location].filter(Boolean).join(" · ") : "Official release";
-  const fallbackImage = archiveThumbnail(block.recording_identifier);
-  const image = imageFailed ? (fallbackImage !== block.image_url ? fallbackImage : null) : block.image_url;
+  const tile = showTile(isShow ? block.show_date : block.release_date, block.recording_identifier ?? block.release_title ?? block.venue_name);
+  const cover = block.image_url && !failed.includes(block.image_url) ? block.image_url : null;
+  const image = cover ?? (failed.includes(tile) ? null : tile);
   const meta: TrackMeta = {
     showDate: block.show_date,
     venueName: venue.name ?? block.venue_name,
     recordingDetailsUrl: block.recording_details_url,
-    thumbnailUrl: image ?? fallbackImage
+    thumbnailUrl: cover
   };
   const queue = (block.queue ?? []).map((track) => toTrack(track, meta));
   const start = queue[Math.min(block.start_index ?? 0, Math.max(queue.length - 1, 0))];
@@ -156,7 +160,7 @@ export function ListeningHero({ block }: { block: ListeningHeroBlock }) {
   return (
     <section className="listening-hero" aria-label={`Listen: ${heard}`}>
       {image ? (
-        <img className="hero-cover" src={image} alt={block.image_alt ?? ""} onError={() => setImageFailed(true)} />
+        <img className={cover ? "hero-cover" : "hero-cover tile"} src={image} alt={cover ? block.image_alt ?? "" : ""} onError={() => setFailed((gone) => [...gone, image])} />
       ) : (
         <div className="hero-cover placeholder" aria-hidden="true" />
       )}

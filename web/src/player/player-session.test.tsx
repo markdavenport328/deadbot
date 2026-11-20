@@ -286,7 +286,8 @@ describe("lock screen controls", () => {
       title: "Scarlet Begonias",
       artist: "Grateful Dead",
       album: "May 8, 1977 · Barton Hall",
-      artwork: [{ src: "https://archive.org/services/img/gd1977-05-08" }, ...FALLBACK_ARTWORK]
+      // The tape's waveform picture is never artwork: the show's tile is, then Deadbot's square.
+      artwork: [{ src: "/icons/tiles/e4v0.jpg", sizes: "512x512", type: "image/jpeg" }, ...FALLBACK_ARTWORK]
     });
     // Previous and next track, not ±10 s, on the lock screen and in the car.
     expect(handlers.nexttrack).toBeDefined();

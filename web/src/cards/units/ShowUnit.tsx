@@ -6,7 +6,7 @@ import { type PlayerTrack } from "../../player/player";
 import { ClampText, ListenLinks, splitListen, toTrack } from "../listening";
 import { formatShowDateLong } from "../../core/format";
 import { renderInline } from "../inline";
-import { type ShowMeta, thumbnailForIdentifier, toPlayerTrack, CardHead, ListenFor, IdRow, Meta, PlainList, PeopleList, GoDeeper } from "../parts";
+import { type ShowMeta, toPlayerTrack, CardHead, ListenFor, IdRow, Meta, PlainList, PeopleList, GoDeeper } from "../parts";
 import { SetlistPanel } from "../setlist";
 import { UnitFrame, CriteriaTable } from "./shared";
 
@@ -31,8 +31,7 @@ export function ShowUnit({
   const showMeta: ShowMeta = {
     showDate: unit.show_date,
     venueName: unit.venue_name,
-    recordingDetailsUrl: unit.recording_details_url,
-    thumbnailUrl: thumbnailForIdentifier(unit.recording_identifier)
+    recordingDetailsUrl: unit.recording_details_url
   };
   // The show's tape: the setlist's tracks when the card shows a setlist,
   // otherwise the tape the card carries on its own, so a card plays and

@@ -7,7 +7,7 @@ import { CardPlayButton, toTrack, type InPagePlay } from "../listening";
 import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "../listen-control";
 import { formatShowDate, formatShowDateLong, formatReleaseType, countLabel } from "../../core/format";
 import { renderInline } from "../inline";
-import { type ShowMeta, thumbnailForIdentifier, toPlayerTrack, venueFirstShowLabel } from "../parts";
+import { type ShowMeta, toPlayerTrack, venueFirstShowLabel } from "../parts";
 import { type UnitBlock, albumSpotify, RowSpotifyContext, albumQueue, isUnit, splitShowLabel, songName, unitKey } from "./shared";
 
 // A mention's name, and what hearing it means: the unit's own tracks when the
@@ -15,7 +15,7 @@ import { type UnitBlock, albumSpotify, RowSpotifyContext, albumQueue, isUnit, sp
 function unitIdentity(block: UnitBlock): { title: string; url?: string | null; track?: PlayerTrack | null; queue?: PlayerTrack[] } {
   switch (block.type) {
     case "show_unit": {
-      const meta: ShowMeta = { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) };
+      const meta: ShowMeta = { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url };
       const queue = block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, meta)).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name ? `${block.venue_name} (${formatShowDate(block.show_date)})` : formatShowDate(block.show_date), url: block.listen[0]?.url, queue };
     }
@@ -105,7 +105,7 @@ function collapsedFacts(block: UnitBlock): {
       // A row whose data came with a setlist plays that tape when it has none of its own.
       const queue = own.length > 0
         ? own
-        : block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) })).filter((track): track is PlayerTrack => track !== null));
+        : block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url })).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name || formatShowDateLong(block.show_date), meta: [block.venue_name ? formatShowDateLong(block.show_date) : null, block.location], play: playOf(queue) };
     }
     case "album_unit": {
