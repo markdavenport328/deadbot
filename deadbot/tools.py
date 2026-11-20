@@ -548,13 +548,14 @@ def _flag(value: Any) -> bool:
     return str(value).strip().lower() == "true"
 
 
-def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, int] | None = None) -> dict[str, Any]:
+def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """One setlist entry for the model: its IDs, place, real booleans, its length and whether it can be heard.
 
     The page's show_unit fills in every listening link from the library, so
     the model needs only that a track exists and how long the performance
-    runs (release length, else the tape's), not the archive.org track URL and
-    tape identifier for each song.
+    runs, not the archive.org track URL and tape identifier for each song.
+    ``lengths`` is `song_life.length_fields`: the tape track's length when
+    the song can be heard, else a release's with length_from_release naming it.
     """
 
     compact: dict[str, Any] = {
@@ -573,9 +574,7 @@ def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, int] | None = N
     listen = row.get("listen") or {}
     if listen.get("archive_track_url"):
         compact["audio"] = True
-    seconds = (lengths or {}).get(row.get("performance_id") or "")
-    if seconds is not None:
-        compact["length_seconds"] = seconds
+    compact.update((lengths or {}).get(row.get("performance_id") or "", {}))
     for key in ("release_track_url", "video_url"):
         if listen.get(key):
             compact[key] = listen[key]
@@ -1446,7 +1445,7 @@ def build_tools(
         from deadbot import song_life
 
         performances = sorted(context["performances"], key=order_key)
-        lengths = song_life.performance_lengths(store, [row["performance_id"] for row in performances[start : start + page_size]])
+        lengths = song_life.length_fields(store, [row["performance_id"] for row in performances[start : start + page_size]])
         page = []
         for performance in performances[start : start + page_size]:
             show = shows_by_id.get(performance.get("show_id", ""), {})
@@ -1460,8 +1459,7 @@ def build_tools(
                 "encore": performance.get("encore", ""),
                 "segue_into_next": performance.get("segue_into_next", ""),
             }
-            if performance["performance_id"] in lengths:
-                item["length_seconds"] = lengths[performance["performance_id"]]
+            item.update(lengths.get(performance["performance_id"], {}))
             if performance.get("listen"):
                 item["listen"] = song_life.model_listen(performance["listen"])
             page.append(item)
@@ -2237,7 +2235,7 @@ def build_tools(
         from deadbot import song_life
 
         tape = next((row["archive_identifier"] for row in payload.get("recordings") or [] if row.get("archive_identifier")), None)
-        lengths = song_life.performance_lengths(store, [row.get("performance_id", "") for row in payload.get("performances", [])])
+        lengths = song_life.length_fields(store, [row.get("performance_id", "") for row in payload.get("performances", [])])
         payload["performances"] = [_compact_setlist_row(row, lengths) for row in payload.get("performances", [])]
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
         payload["performers"] = _compact_performers(payload.get("performers", []))
@@ -2478,7 +2476,10 @@ def build_tools(
 
         listeners holds what archive.org listeners wrote about this song on
         the tape that plays, one sentence per review. Performance-specific
-        commentary concerns this rendition only.
+        commentary concerns this rendition only. length is the tape track
+        that plays; when no tape plays it, length_from_release names the
+        release the length is from. Each official release carries its own
+        length for this performance, which an album edit makes shorter.
         """
         context = store.performance_context(performance_id)
         if not context:
@@ -2490,16 +2491,22 @@ def build_tools(
             context["song"] = _without_notes(context["song"])
         for key in ("links", "show_links", "recordings"):
             if isinstance(context.get(key), list):
-                # A track's own length is the player's business; the
-                # performance has one length, given once below.
+                # The performance has one length, given once below: the
+                # tape track's when there is one.
                 context[key] = [
                     {k: v for k, v in row.items() if k not in ("duration_seconds", "start_seconds")} if isinstance(row, dict) else row
                     for row in _links_for_fans(context[key])
                 ]
         from deadbot import song_life
 
-        if seconds := song_life.performance_lengths(store, [performance_id]).get(performance_id):
-            context["length_seconds"] = seconds
+        context.update(song_life.length_fields(store, [performance_id]).get(performance_id, {}))
+        # Each release's own length for this performance sits on that release,
+        # so an album edit is never read as the tape or as another release.
+        on_releases = {length.release_id: length.seconds for length in song_life.release_lengths(store, [performance_id]).get(performance_id, [])}
+        context["official_releases"] = [
+            {**release, "length_seconds": on_releases[release["release_id"]]} if release.get("release_id") in on_releases else release
+            for release in context.get("official_releases") or []
+        ]
         return _json(context)
 
     @tool

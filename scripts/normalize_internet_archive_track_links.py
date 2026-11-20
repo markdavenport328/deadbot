@@ -49,12 +49,14 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from normalize_internet_archive_tracks import (  # noqa: E402
-    ALTERNATES_PATH,
-    RECOVERY_NOTE,
+    SPANS_MORE_MARK,
+    STREAM_FORMAT,
     audio_track_files,
+    item_metadata_paths,
     normalized_title,
-    parse_duration,
+    played_length,
     read_item_records,
+    stream_is_cut_short,
     title_keys,
 )
 
@@ -62,11 +64,12 @@ ROOT = SCRIPTS_DIR.parent
 CANONICAL = ROOT / "data" / "canonical"
 RAW_DIR = ROOT / "data" / "raw" / "recordings"
 LINKS_PATH = CANONICAL / "performance_links.csv"
+MAPPING_PATH = CANONICAL / "performance_recordings.csv"
+MAPPING_FIELDS = ["performance_id", "recording_id", "track_number", "start_seconds", "duration_seconds", "track_title", "notes"]
 REVIEW_PATH = RAW_DIR / "internet-archive-track-link-review.jsonl"
 
 PLATFORM = "archive"
 LINK_TYPE = "recording-track"
-STREAM_FORMAT = "VBR MP3"
 USER_AGENT = "Deadbot/0.1 (historical-show-context)"
 REQUEST_INTERVAL_SECONDS = 1.0
 
@@ -104,6 +107,12 @@ def effective_title_and_track(file_record: dict, files_by_name: dict[str, dict])
         if track is None and original.get("track"):
             track = parse_track_number(original.get("track"))
     return title, track
+
+
+def spans_more_than_the_song(row: dict) -> bool:
+    """True when the mapping says the file holds more than the song (a medley or suite in one file)."""
+
+    return SPANS_MORE_MARK in (row.get("notes") or "")
 
 
 def track_url(identifier: str, file_name: str) -> str:
@@ -202,8 +211,7 @@ def load_inputs() -> tuple[dict[str, str], dict[str, str], dict[str, dict], list
 
 def load_representatives(identifiers: set[str]) -> dict[str, dict]:
     representatives: dict[str, dict] = {}
-    paths = sorted(RAW_DIR.glob("internet-archive-*-representatives.jsonl")) + [ALTERNATES_PATH]
-    for raw_path in paths:
+    for raw_path in item_metadata_paths():
         for record in read_item_records(raw_path):
             identifier = record.get("source_record_id")
             if identifier in identifiers and identifier not in representatives:
@@ -217,12 +225,16 @@ def build_links(
     recordings: dict[str, dict],
     performance_recordings: list[dict],
     representatives: dict[str, dict],
-) -> tuple[list[dict], list[dict], dict[str, int]]:
-    """Derive candidate link rows and review records for every mapped track."""
+) -> tuple[list[dict], list[dict], dict[str, int], set[str]]:
+    """Derive candidate link rows and review records for every mapped track.
+
+    Also returns the URLs to withdraw: files found to stop before the song does.
+    """
 
     candidates: list[dict] = []
     review: list[dict] = []
     counts: dict[str, int] = defaultdict(int)
+    withdrawn: set[str] = set()
 
     ordered = sorted(
         performance_recordings,
@@ -264,18 +276,27 @@ def build_links(
             hold("no_representative_record")
             continue
 
+        # The mapping names a track by number and title; the file that carries
+        # exactly that title on that track number is the one it decided on,
+        # whatever the title's spelling ("Moring Dew", "E1: Casey Jones").
         chosen, kind, reason, titles_seen = select_track_file(
             record.get("raw_payload", {}),
             track_number,
             canonical_title,
             songs.get(song_id, ""),
-            row.get("track_title", "") if row.get("notes") == RECOVERY_NOTE else "",
+            row.get("track_title", ""),
         )
         if chosen is None:
             hold(reason, titles_seen)
             continue
 
         file_name = chosen["name"]
+        if stream_is_cut_short(record.get("raw_payload", {}), chosen):
+            # Pressing play would stop partway through the song, so the link
+            # is withdrawn, not merely left as it was.
+            hold("stream_file_ends_before_its_flac_original", titles_seen)
+            withdrawn.add(track_url(identifier, file_name))
+            continue
         counts[f"matched:{kind}"] += 1
         candidates.append(
             {
@@ -286,22 +307,39 @@ def build_links(
                 "url": track_url(identifier, file_name),
                 "title": row.get("track_title") or chosen.get("title") or "",
                 "start_seconds": "",
-                # The streamed file's own length; the mapped source track's
-                # length when the file carries none.
-                "duration_seconds": parse_duration(chosen.get("length")) or row.get("duration_seconds", ""),
+                # Always the length of the file this URL plays, never the
+                # mapped source track's: a Shorten original's stated length is
+                # not the track's.  A file that holds more than the song it
+                # is linked to states no length for the song.
+                "duration_seconds": "" if spans_more_than_the_song(row) else played_length(chosen),
                 "is_official": "false",
                 "notes": (
                     f"Track {track_number} of Internet Archive item {identifier} "
                     f"({row['recording_id']}); file {file_name}. Derived from preserved "
                     "representative item metadata; no audio retrieved."
+                    + (f" {SPANS_MORE_MARK}." if spans_more_than_the_song(row) else "")
                 ),
             }
         )
-    return candidates, review, counts
+        # The mapped track's own length is the played file's too.
+        if row.get("duration_seconds", "") != played_length(chosen):
+            row["duration_seconds"] = played_length(chosen)
+            counts["mapped_track_length_corrected"] += 1
+    return candidates, review, counts, withdrawn
 
 
-def merge_links(existing: list[dict], candidates: list[dict], review: list[dict], counts: dict[str, int]) -> list[dict]:
+def merge_links(
+    existing: list[dict],
+    candidates: list[dict],
+    review: list[dict],
+    counts: dict[str, int],
+    withdrawn: set[str] | frozenset[str] = frozenset(),
+) -> list[dict]:
     """Replace rows this script manages when regenerated; hold real conflicts.
+
+    ``withdrawn`` names URLs whose file was found not to play the whole song
+    (``stream_is_cut_short``); a managed row with such a URL is removed, the
+    one case where this script takes a link away without replacing it.
 
     A managed row (``platform == archive``, ``link_type == recording-track``)
     whose ``performance_link_id`` is produced again this run is dropped
@@ -311,7 +349,9 @@ def merge_links(existing: list[dict], candidates: list[dict], review: list[dict]
     this run did not regenerate, are always kept untouched.
 
     A candidate is counted as ``existing_url_unchanged`` only when it is
-    identical to its own previous row (same id, same url); a url that
+    identical to its own previous row (same id, same url); the kept row takes
+    this run's ``duration_seconds``, the one field derived from the file
+    itself, and is otherwise left as it was.  A url that
     already belongs to a *different* performance (for example a segued pair
     sharing one source file) holds the candidate instead of silently
     dropping it.
@@ -324,6 +364,14 @@ def merge_links(existing: list[dict], candidates: list[dict], review: list[dict]
     visibly missing, never be silently destroyed.
     """
 
+    if withdrawn:
+        playable = [
+            row
+            for row in existing
+            if not (row["platform"] == PLATFORM and row["link_type"] == LINK_TYPE and row["url"] in withdrawn)
+        ]
+        counts["withdrawn_cut_short"] += len(existing) - len(playable)
+        existing = playable
     managed_ids = {candidate["performance_link_id"] for candidate in candidates}
     previous_by_id = {row["performance_link_id"]: row for row in existing}
     kept = [
@@ -343,6 +391,15 @@ def merge_links(existing: list[dict], candidates: list[dict], review: list[dict]
             and previous["link_type"] == LINK_TYPE
         ):
             counts["existing_url_unchanged"] += 1
+            if previous["duration_seconds"] != candidate["duration_seconds"]:
+                # The length is derived from the file the URL plays, so a
+                # kept row still takes this run's value; a stale length
+                # (copied from a Shorten original) must not outlive its fix.
+                previous = {**previous, "duration_seconds": candidate["duration_seconds"]}
+                counts["length_corrected"] += 1
+            if (SPANS_MORE_MARK in previous["notes"]) != (SPANS_MORE_MARK in candidate["notes"]):
+                # Whether the file holds more than the song is why the length is blank or not.
+                previous = {**previous, "notes": candidate["notes"]}
             merged.append(previous)
             by_url[previous["url"]] = previous
             by_id[previous["performance_link_id"]] = previous
@@ -457,8 +514,10 @@ def main() -> int:
         if row["recording_id"] in recordings
     }
     representatives = load_representatives(identifiers)
-    candidates, review, counts = build_links(songs, performance_song, recordings, performance_recordings, representatives)
-    merged = merge_links(existing_links, candidates, review, counts)
+    candidates, review, counts, withdrawn = build_links(
+        songs, performance_song, recordings, performance_recordings, representatives
+    )
+    merged = merge_links(existing_links, candidates, review, counts, withdrawn)
 
     print(f"performance_recordings rows: {len(performance_recordings)}")
     for key in sorted(counts):
@@ -481,6 +540,13 @@ def main() -> int:
         writer = csv.DictWriter(handle, fieldnames=LINK_FIELDS, lineterminator="\n")
         writer.writeheader()
         writer.writerows(merged)
+    if counts.get("mapped_track_length_corrected"):
+        # build_links set each mapped track's length to its played file's;
+        # row order and every other field are as they were read.
+        with MAPPING_PATH.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=MAPPING_FIELDS, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(performance_recordings)
     with REVIEW_PATH.open("w", encoding="utf-8") as handle:
         for entry in review:
             handle.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")

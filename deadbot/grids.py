@@ -19,7 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from deadbot import aggregation
+from deadbot import aggregation, song_life
 from deadbot.data import CanonicalStore
 from deadbot.experience import fit
 from deadbot.sequences import Track, _archive_tracks
@@ -219,17 +219,6 @@ def _long_date(show_date: str) -> str:
     return str(show_date or "")
 
 
-def _release_seconds(store: CanonicalStore, performance_ids: list[str]) -> dict[str, int]:
-    """Each performance's longest official release track, the curated whole-song length."""
-
-    seconds: dict[str, int] = {}
-    for row in store.rows_in("official_release_tracks", "performance_id", performance_ids):
-        text = str(row.get("duration_seconds") or "").strip()
-        if text.isdigit() and int(text) > 0:
-            seconds[row["performance_id"]] = max(seconds.get(row["performance_id"], 0), int(text))
-    return seconds
-
-
 def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
     shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", spec.row_ids)}
     row_ids = [show_id for show_id in spec.row_ids if show_id in shows]
@@ -253,7 +242,9 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
     title = lambda song_id: songs.get(song_id, {}).get("title") or song_id  # noqa: E731
 
     wanted = [p["performance_id"] for p in performances if p["song_id"] in column_set]
-    release = _release_seconds(store, wanted)
+    # One length per performance, by the library's one rule: the tape track
+    # that plays, else a release's.
+    lengths = song_life.performance_length_facts(store, wanted)
     tape = _archive_tracks(store, wanted)
 
     cells: dict[tuple[str, str], Cell] = {}
@@ -277,10 +268,9 @@ def _show_by_song(store: CanonicalStore, spec: GridSpec) -> GridData:
                 cell.segue_into = title(following["song_id"])
             performance_id = performance["performance_id"]
             track = tape.get(performance_id)
-            seconds = release.get(performance_id)
-            source: Literal["release", "tape"] | None = "release" if seconds else None
-            if not seconds and track is not None and track.duration_seconds:
-                seconds, source = track.duration_seconds, "tape"
+            length = lengths.get(performance_id)
+            seconds = length.seconds if length else None
+            source: Literal["release", "tape"] | None = length.source if length else None  # type: ignore[assignment]
             cell.passes += 1
             cell.performance_ids = (*cell.performance_ids, performance_id)
             if track is not None:

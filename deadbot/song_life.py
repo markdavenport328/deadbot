@@ -4,6 +4,10 @@ The song card's timeline and the get_song_life tool read from here. Every fact
 comes from the store; nothing here judges which performances matter, it only
 says what stands out. Reads use only rows_in, one and filtered_rows, which the
 CSV and SQLite stores implement alike.
+
+This module also holds the one rule for a performance's length
+(`stated_length`): the tape track that plays, else a release's, named by its
+release. Every tool and card that states a length reads it from here.
 """
 
 from __future__ import annotations
@@ -12,16 +16,16 @@ import logging
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from statistics import median
-from typing import Any
+from typing import Any, Iterable
 
 from deadbot.canonical_import import _selector_name
 from deadbot.data import CanonicalStore
 from deadbot.selection_signals import SelectionSignalError, load_selection_signals
-from deadbot.sequences import _archive_tracks
+from deadbot.sequences import Track, _archive_tracks
 
 logger = logging.getLogger(__name__)
 
-# A shorter "length" is a partial tape track or a segment, not the performance.
+# A shorter "length" is a fragment of a track, not the performance.
 MIN_LENGTH_SECONDS = 60
 # How many standouts of each kind a tool lists; a longer kind keeps a sample
 # spread evenly across the song's years and says how many more there are.
@@ -139,66 +143,131 @@ class LifePerformance:
         }
 
 
-def _release_length(candidates: list[int]) -> int | None:
+@dataclass(frozen=True)
+class ReleaseLength:
+    """How long one official release runs a performance, with the release it belongs to."""
+
+    release_id: str
+    title: str
+    seconds: int
+
+    def to_json(self) -> dict[str, Any]:
+        return {"release_id": self.release_id, "title": self.title, "length_seconds": self.seconds}
+
+
+@dataclass(frozen=True)
+class Length:
+    """The one length stated for a performance, and where it comes from.
+
+    ``source`` is "tape" (the tape track the play button plays) or "release";
+    a release length names its release, so it is never read as the tape's or
+    as another release's.
+    """
+
+    seconds: int
+    source: str
+    release_title: str | None = None
+
+    def fields(self) -> dict[str, Any]:
+        """The keys a tool row carries for this length."""
+
+        if self.source == "release":
+            return {"length_seconds": self.seconds, "length_from_release": self.release_title}
+        return {"length_seconds": self.seconds}
+
+
+def fullest_release(candidates: list[ReleaseLength]) -> ReleaseLength | None:
     """One release length when several releases carry the performance: the longest.
 
     Releases disagree only by cutting: an LP edit (Europe '72's 13-minute
     Truckin' against the complete recordings' 19) or an excerpt (a 30 Days of
     Dead clip against the full Dave's Picks). The full performance is the
-    longest. A tape track is no guide, since it can be a fragment.
+    longest.
     """
 
-    usable = [seconds for seconds in candidates if seconds >= MIN_LENGTH_SECONDS]
+    usable = [candidate for candidate in candidates if candidate.seconds >= MIN_LENGTH_SECONDS]
     if not usable:
-        return min(candidates) if candidates else None
-    return max(usable)
+        return min(candidates, key=lambda candidate: candidate.seconds) if candidates else None
+    return max(usable, key=lambda candidate: candidate.seconds)
 
 
-def _length(release_seconds: int | None, tape_seconds: int | None, performance_id: str) -> tuple[int | None, str | None]:
-    """Official release seconds first, then the tape track's; a too-short value is unknown."""
+def stated_length(track: Track | None, releases: list[ReleaseLength], performance_id: str) -> Length | None:
+    """The one rule for a performance's length, used wherever a length is stated.
 
-    for seconds, source in ((release_seconds, "release"), (tape_seconds, "tape")):
-        if seconds is None:
-            continue
-        if seconds < MIN_LENGTH_SECONDS:
-            logger.info("Ignored a %d-second %s length for %s", seconds, source, performance_id)
-            continue
-        return seconds, source
-    return None, None
-
-
-def performance_lengths(store: CanonicalStore, performance_ids: list[str]) -> dict[str, int]:
-    """Each performance's length by the timeline's rule: the longest release, else the tape.
-
-    Every tool that states a length uses this, so the model reads one length
-    per performance wherever it looks. A performance with no usable length is
-    left out.
+    A performance with a playable tape track is as long as that track: what the
+    visitor hears when they press play. A track that states no length, or one
+    under a minute (a fragment), leaves the length unknown; it never borrows a
+    release's, which would put one recording's length beside another's play
+    button. Only a performance with no tape track takes a release's length,
+    the longest (the full performance), named by its release.
     """
 
-    ids = list(dict.fromkeys(performance_ids))
-    release_seconds, _titles = _releases(store, ids)
+    if track is not None:
+        seconds = track.duration_seconds
+        if seconds is None:
+            return None
+        if seconds < MIN_LENGTH_SECONDS:
+            logger.info("Ignored a %d-second tape length for %s", seconds, performance_id)
+            return None
+        return Length(seconds, "tape")
+    release = fullest_release(releases)
+    if release is None:
+        return None
+    if release.seconds < MIN_LENGTH_SECONDS:
+        logger.info("Ignored a %d-second release length for %s", release.seconds, performance_id)
+        return None
+    return Length(release.seconds, "release", release.title)
+
+
+def performance_length_facts(store: CanonicalStore, performance_ids: Iterable[str]) -> dict[str, Length]:
+    """Each performance's stated length with its source, by `stated_length`; one with no usable length is left out."""
+
+    ids = list(dict.fromkeys(performance_id for performance_id in performance_ids if performance_id))
+    on_releases, _titles = _releases(store, ids)
     tracks = _archive_tracks(store, ids)
-    lengths: dict[str, int] = {}
+    facts: dict[str, Length] = {}
     for performance_id in ids:
-        tape = tracks[performance_id].duration_seconds if performance_id in tracks else None
-        seconds, _source = _length(_release_length(release_seconds.get(performance_id, [])), tape, performance_id)
-        if seconds is not None:
-            lengths[performance_id] = seconds
+        length = stated_length(tracks.get(performance_id), on_releases.get(performance_id, []), performance_id)
+        if length is not None:
+            facts[performance_id] = length
+    return facts
+
+
+def performance_lengths(store: CanonicalStore, performance_ids: Iterable[str]) -> dict[str, int]:
+    """Each performance's stated length in seconds: the tape track that plays, else a release's.
+
+    Every tool and card that states a length uses `stated_length`, so the
+    model and the visitor read one length per performance wherever they look.
+    """
+
+    return {performance_id: length.seconds for performance_id, length in performance_length_facts(store, performance_ids).items()}
+
+
+def length_fields(store: CanonicalStore, performance_ids: Iterable[str]) -> dict[str, dict[str, Any]]:
+    """What a tool row says about each performance's length: length_seconds, and length_from_release when no tape plays it."""
+
+    return {performance_id: length.fields() for performance_id, length in performance_length_facts(store, performance_ids).items()}
+
+
+def release_lengths(store: CanonicalStore, performance_ids: Iterable[str]) -> dict[str, list[ReleaseLength]]:
+    """How long each official release runs each performance, earliest release first, each named by its release."""
+
+    lengths, _titles = _releases(store, list(dict.fromkeys(performance_ids)))
     return lengths
 
 
 def model_listen(listen: dict[str, Any]) -> dict[str, Any]:
-    """A performance's listening links as the model reads them, without the tape file's own length.
+    """A performance's listening links as the model reads them, without a second copy of the tape track's length.
 
-    A tape track can be a fragment or split mid-jam, so its file length is the
-    player's business; the model reads the performance's length_seconds.
+    The row already carries the performance's length_seconds, which is that
+    tape track's length whenever there is a tape track.
     """
 
     return {key: value for key, value in listen.items() if key != "archive_track_duration_seconds"}
 
 
-def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, list[int]], dict[str, tuple[str, ...]]]:
-    """Each performance's release lengths (its tracks on one release summed, one per release) and release titles."""
+def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[str, list[ReleaseLength]], dict[str, tuple[str, ...]]]:
+    """Each performance's timed releases (its tracks on one release summed), and all its release titles, earliest first."""
 
     tracks = store.rows_in("official_release_tracks", "performance_id", performance_ids)
     releases = {row["release_id"]: row for row in store.rows_in("official_releases", "release_id", {t["release_id"] for t in tracks})}
@@ -206,15 +275,19 @@ def _releases(store: CanonicalStore, performance_ids: list[str]) -> tuple[dict[s
     for track in tracks:
         if track["release_id"] in releases:
             per_release[track["performance_id"]][track["release_id"]] += _int(track.get("duration_seconds"))
-    seconds: dict[str, list[int]] = {}
+    lengths: dict[str, list[ReleaseLength]] = {}
     titles: dict[str, tuple[str, ...]] = {}
     for performance_id, by_release in per_release.items():
-        timed = [total for _release_id, total in sorted(by_release.items()) if total > 0]
+        ordered = sorted(by_release, key=lambda release_id: (releases[release_id].get("release_date") or "9999", releases[release_id].get("title") or "", release_id))
+        timed = [
+            ReleaseLength(release_id, releases[release_id].get("title") or release_id, by_release[release_id])
+            for release_id in ordered
+            if by_release[release_id] > 0
+        ]
         if timed:
-            seconds[performance_id] = timed
-        ordered = sorted(by_release, key=lambda release_id: (releases[release_id].get("release_date") or "9999", releases[release_id].get("title") or ""))
+            lengths[performance_id] = timed
         titles[performance_id] = tuple(dict.fromkeys(releases[release_id].get("title") or release_id for release_id in ordered))
-    return seconds, titles
+    return lengths, titles
 
 
 def _guests(store: CanonicalStore, performance_ids: list[str]) -> dict[str, tuple[Guest, ...]]:
@@ -279,7 +352,7 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
         around[row["performance_id"]] = (before, after)
         neighbor_song_ids |= {mate["song_id"] for mate in (before, after) if mate}
     titles = {row["song_id"]: row.get("title") or row["song_id"] for row in store.rows_in("songs", "song_id", neighbor_song_ids)}
-    release_seconds, release_titles = _releases(store, performance_ids)
+    release_lengths_by_id, release_titles = _releases(store, performance_ids)
     tracks = _archive_tracks(store, performance_ids)
     guests = _guests(store, performance_ids)
     performance_voices, show_voices = _signals(store, set(performance_ids), show_ids)
@@ -296,8 +369,7 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
         venue = venues.get(show.get("venue_id", "")) or {}
         before, after = around[performance_id]
         track = tracks.get(performance_id)
-        tape_seconds = track.duration_seconds if track else None
-        seconds, source = _length(_release_length(release_seconds.get(performance_id, [])), tape_seconds, performance_id)
+        length = stated_length(track, release_lengths_by_id.get(performance_id, []), performance_id)
         voices = performance_voices.get(performance_id, [])
         signals = [Signal(voice, "performance") for voice in voices]
         signals += [Signal(voice, "show") for voice in show_voices.get(row["show_id"], []) if voice not in voices]
@@ -314,8 +386,8 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
                 encore=row.get("encore") == "true",
                 previous=Neighbor(before["song_id"], titles.get(before["song_id"], before["song_id"]), before.get("segue_into_next") == "true") if before else None,
                 next=Neighbor(after["song_id"], titles.get(after["song_id"], after["song_id"]), row.get("segue_into_next") == "true") if after else None,
-                seconds=seconds,
-                length_source=source,
+                seconds=length.seconds if length else None,
+                length_source=length.source if length else None,
                 audio_url=track.url if track else None,
                 tape_seconds=track.duration_seconds if track else None,
                 releases=release_titles.get(performance_id, ()),
