@@ -92,9 +92,9 @@ def test_show_by_song_cells(csv_store):
     assert rotterdam.state == "value"
     assert rotterdam.passes == 2
     # Both passes have a tape track, so the cell states what those tracks
-    # play (13:19 and 1:50: this tape cuts the jam into seven tracks), not the
-    # 44 minutes the official release runs the two passes.
-    assert rotterdam.value == 15
+    # play (13:30 and 29:24, the second from the tape that has it as one
+    # file), close to the 44 minutes the official release runs the two passes.
+    assert rotterdam.value == 43
     assert rotterdam.length_source == "tape"
     bickershaw = data.row("gd-1972-05-07")
     assert data.cell("gd-1972-05-07", DARK_STAR).state == "value"

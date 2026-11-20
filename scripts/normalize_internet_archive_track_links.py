@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -67,6 +68,9 @@ LINKS_PATH = CANONICAL / "performance_links.csv"
 MAPPING_PATH = CANONICAL / "performance_recordings.csv"
 MAPPING_FIELDS = ["performance_id", "recording_id", "track_number", "start_seconds", "duration_seconds", "track_title", "notes"]
 REVIEW_PATH = RAW_DIR / "internet-archive-track-link-review.jsonl"
+# The split pass names songs whose only file is a fragment: no tape has the
+# song whole, so their track link is removed (play must play the whole song).
+SPLIT_REVIEW_PATH = RAW_DIR / "internet-archive-split-track-review.jsonl"
 
 PLATFORM = "archive"
 LINK_TYPE = "recording-track"
@@ -113,6 +117,21 @@ def spans_more_than_the_song(row: dict) -> bool:
     """True when the mapping says the file holds more than the song (a medley or suite in one file)."""
 
     return SPANS_MORE_MARK in (row.get("notes") or "")
+
+
+PART_NOTE = re.compile(r"part (\d+) of (\d+) of the song on this tape", re.IGNORECASE)
+
+
+def link_id(performance_id: str, row: dict) -> str:
+    """A song's link ID; the second and later files of a song the tape cuts into several add ``-part-NN``.
+
+    Ordering a performance's links by ID then orders its parts (``deadbot.tape``).
+    """
+
+    part = PART_NOTE.search(row.get("notes") or "")
+    number = int(part.group(1)) if part else 1
+    suffix = f"-part-{number:02d}" if number > 1 else ""
+    return f"performance-link-{performance_id}-archive-track{suffix}"
 
 
 def track_url(identifier: str, file_name: str) -> str:
@@ -300,7 +319,7 @@ def build_links(
         counts[f"matched:{kind}"] += 1
         candidates.append(
             {
-                "performance_link_id": f"performance-link-{performance_id}-archive-track",
+                "performance_link_id": link_id(performance_id, row),
                 "performance_id": performance_id,
                 "platform": PLATFORM,
                 "link_type": LINK_TYPE,
@@ -318,6 +337,7 @@ def build_links(
                     f"({row['recording_id']}); file {file_name}. Derived from preserved "
                     "representative item metadata; no audio retrieved."
                     + (f" {SPANS_MORE_MARK}." if spans_more_than_the_song(row) else "")
+                    + (f" {part.group(0).capitalize()}." if (part := PART_NOTE.search(row.get("notes") or "")) else "")
                 ),
             }
         )
@@ -501,6 +521,13 @@ def verify_samples(samples: list[dict]) -> list[dict]:
     return results
 
 
+def unlinked_fragments() -> set[str]:
+    if not SPLIT_REVIEW_PATH.exists():
+        return set()
+    entries = (json.loads(line) for line in SPLIT_REVIEW_PATH.read_text(encoding="utf-8").splitlines() if line.strip())
+    return {entry["performance_id"] for entry in entries if entry.get("kind") == "unlinked_fragment"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--verify-samples", type=int, default=0, metavar="N", help="GET up to N sample URLs (max 10) before writing")
@@ -517,6 +544,15 @@ def main() -> int:
     candidates, review, counts, withdrawn = build_links(
         songs, performance_song, recordings, performance_recordings, representatives
     )
+    fragments = unlinked_fragments()
+    if fragments:
+        kept = [
+            row
+            for row in existing_links
+            if not (row["platform"] == PLATFORM and row["link_type"] == LINK_TYPE and row["performance_id"] in fragments)
+        ]
+        counts["withdrawn_fragment"] += len(existing_links) - len(kept)
+        existing_links = kept
     merged = merge_links(existing_links, candidates, review, counts, withdrawn)
 
     print(f"performance_recordings rows: {len(performance_recordings)}")

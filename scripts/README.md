@@ -64,6 +64,15 @@ order: `normalize_internet_archive_tracks.py`, the collector,
 `normalize_internet_archive_tracks.py` again, then
 `normalize_internet_archive_track_links.py`.
 
+After the gap pass (`normalize_internet_archive_gap_tracks.py`) and before
+`normalize_internet_archive_track_links.py`, run
+`normalize_internet_archive_split_tracks.py`. It links a song the tape cuts
+into consecutive files as parts (links `…-archive-track`, `…-archive-track-part-02`,
+played back to back as one track), moves a song linked to a fragment to a tape
+that has it as one file near its release length, and links The Other One under
+the suite's title where Cryptical and Drums have their own tracks. Rerunning it
+is idempotent; its review is `internet-archive-split-track-review.jsonl`.
+
 For shows that have a setlist but no track audio (typically a date shared by an
 early and a late show, which the index pass skips), run
 `collect/fetch_internet_archive_gap_shows.py`, then

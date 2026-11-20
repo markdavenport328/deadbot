@@ -54,7 +54,7 @@ function timelineData(block: SongOverviewBlockT): SongTimelineData {
       venue_name: stop.venue_name ?? null,
       seconds: stop.seconds ?? null,
       track: stop.audio_url
-        ? { performance_id: stop.performance_id, title: songName(block), audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null }
+        ? { performance_id: stop.performance_id, title: songName(block), audio_url: stop.audio_url, duration_seconds: stop.duration_seconds ?? null, set_label: stop.set_label ?? null, audio_parts: stop.audio_parts ?? null }
         : null
     })),
     open_year: block.open_year ?? null,

@@ -61,7 +61,7 @@ def test_the_one_length_rule():
 
     lp = song_life.ReleaseLength("release-lp", "Europe '72", 786)
     box = song_life.ReleaseLength("release-box", "Europe '72: The Complete Recordings", 1137)
-    tape = Track(url="https://archive.org/download/tape/t01.mp3", duration_seconds=541)
+    tape = Track.whole_file("https://archive.org/download/tape/t01.mp3", duration_seconds=541)
     # A playable tape track is the length, whatever any release runs.
     assert song_life.stated_length(tape, [lp, box], "p") == song_life.Length(541, "tape")
     # No tape track: the fullest release, named, so it is never read as another record's.
@@ -71,8 +71,8 @@ def test_the_one_length_rule():
     assert song_life.Length(541, "tape").fields() == {"length_seconds": 541}
     # A tape track with no length, or a fragment, leaves the length unknown
     # instead of putting a release's length beside the tape's play button.
-    untimed = Track(url=tape.url, duration_seconds=None)
-    fragment = Track(url=tape.url, duration_seconds=13)
+    untimed = Track.whole_file(tape.url, duration_seconds=None)
+    fragment = Track.whole_file(tape.url, duration_seconds=13)
     assert song_life.stated_length(untimed, [box], "p") is None
     assert song_life.stated_length(fragment, [box], "p") is None
     assert song_life.stated_length(None, [], "p") is None

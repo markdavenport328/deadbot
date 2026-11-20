@@ -16,6 +16,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from deadbot import aggregation
+from deadbot.tape import is_tape_link, tape_tracks
 
 
 def repository_root() -> Path:
@@ -393,7 +394,7 @@ class CanonicalStore:
         details page without a second lookup.
         """
 
-        archive_candidates: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+        tape_rows: list[dict[str, Any]] = []
         video_candidates: dict[str, list[tuple[str, str]]] = defaultdict(list)
         for row in self.rows("performance_links"):
             performance_id = row.get("performance_id", "")
@@ -402,10 +403,8 @@ class CanonicalStore:
             url = row.get("url", "")
             if not url:
                 continue
-            if row.get("platform") == "archive" and row.get("link_type") == "recording-track":
-                archive_candidates[performance_id].append(
-                    (row.get("performance_link_id", ""), url, row.get("duration_seconds", ""))
-                )
+            if is_tape_link(row):
+                tape_rows.append(row)
             elif row.get("platform") == "youtube" and row.get("link_type") == "performance-video":
                 video_candidates[performance_id].append((row.get("performance_link_id", ""), url))
 
@@ -420,19 +419,20 @@ class CanonicalStore:
                     (row.get("release_id", ""), row.get("track_number", ""), url)
                 )
 
+        tapes = tape_tracks(tape_rows)
         listen: dict[str, dict[str, str]] = {}
         for performance_id in performance_ids:
             paths: dict[str, Any] = {}
-            archive_options = archive_candidates.get(performance_id)
-            if archive_options:
-                _link_id, archive_url, duration = min(archive_options)
-                paths["archive_track_url"] = archive_url
-                identifier = _archive_identifier(archive_url)
-                if identifier:
-                    paths["archive_identifier"] = identifier
-                duration_text = str(duration).strip()
-                if duration_text.isdigit():
-                    paths["archive_track_duration_seconds"] = int(duration_text)
+            tape = tapes.get(performance_id)
+            if tape:
+                paths["archive_track_url"] = tape.url
+                if tape.identifier:
+                    paths["archive_identifier"] = tape.identifier
+                if tape.duration_seconds is not None:
+                    paths["archive_track_duration_seconds"] = tape.duration_seconds
+                parts = tape.audio_parts()
+                if parts:
+                    paths["archive_track_parts"] = parts
             release_options = release_candidates.get(performance_id)
             if release_options:
                 paths["release_track_url"] = min(release_options)[2]

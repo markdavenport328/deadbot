@@ -18,7 +18,9 @@ import pytest
 
 ROOT = Path(__file__).parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT))
 import normalize_internet_archive_tracks as ia_tracks  # noqa: E402
+from normalize_internet_archive_track_links import PART_NOTE  # noqa: E402
 
 CANONICAL = ROOT / "data" / "canonical"
 
@@ -91,19 +93,60 @@ def test_no_tape_link_plays_a_file_that_stops_before_the_song_does(tape_links, i
 
 
 def test_no_two_performances_share_a_tape_file(tape_links):
-    # No link carries a start offset, so a file shared by two songs would play
-    # the first song when the second one's button is pressed.
+    # No link carries a start offset yet (nothing in the preserved metadata
+    # says where a song starts inside a shared file), so a file shared by two
+    # songs would play the first song when the second one's button is pressed.
     assert all(not row["start_seconds"] for row in tape_links)
     urls = [row["url"] for row in tape_links]
     assert len(urls) == len(set(urls))
 
 
+def test_a_song_in_several_files_plays_consecutive_tracks_of_one_tape(tape_links):
+    from deadbot.tape import tape_tracks
+
+    by_performance: dict[str, list[dict[str, str]]] = {}
+    for row in tape_links:
+        by_performance.setdefault(row["performance_id"], []).append(row)
+    split = {performance_id: rows for performance_id, rows in by_performance.items() if len(rows) > 1}
+    assert split, "the split pass links songs the tape cuts into several files"
+    tracks = tape_tracks(tape_links)
+    for performance_id, rows in split.items():
+        rows.sort(key=lambda row: row["performance_link_id"])
+        assert rows[0]["performance_link_id"].endswith("-archive-track")
+        assert [_part(row["notes"]) for row in rows] == list(range(1, len(rows) + 1))
+        assert len({_split(row["url"])[0] for row in rows}) == 1
+        assert tracks[performance_id].duration_seconds == sum(int(row["duration_seconds"]) for row in rows)
+
+
+@pytest.mark.parametrize(
+    ("performance_id", "parts", "seconds"),
+    [
+        ("gd-1970-02-13-1-dark-star-1-12", 2, 1670 + 123),
+        ("gd-1970-02-13-1-turn-on-your-lovelight-1-17", 2, 837 + 398),
+        ("gd-1972-05-11-dark-star-2-9", 1, 1764),
+        ("gd-1969-02-27-the-other-one-1-5", 1, 512),
+    ],
+)
+def test_named_songs_play_in_full(tape_links, performance_id, parts, seconds):
+    from deadbot.tape import tape_tracks
+
+    track = tape_tracks(tape_links)[performance_id]
+    assert len(track.parts) == parts
+    assert track.duration_seconds == seconds
+
+
+def _part(notes: str) -> int:
+    match = PART_NOTE.search(notes or "")
+    return int(match.group(1)) if match else 1
+
+
 def test_a_mapped_tracks_length_matches_its_link(tape_links, item_payloads):
     recordings = {row["recording_id"]: row["archive_identifier"] for row in _rows("recordings")}
-    by_performance = {row["performance_id"]: row for row in tape_links}
+    # A song the tape cuts into several files has one link per part.
+    by_part = {(row["performance_id"], _part(row["notes"])): row for row in tape_links}
     wrong = []
     for row in _rows("performance_recordings"):
-        link = by_performance.get(row["performance_id"])
+        link = by_part.get((row["performance_id"], _part(row["notes"])))
         if link is None or _split(link["url"])[0] != recordings.get(row["recording_id"]):
             continue
         played = _played_file(item_payloads, link["url"])

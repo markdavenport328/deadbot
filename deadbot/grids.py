@@ -667,6 +667,7 @@ def grid_block(
                     title=column_titles.get(column.id, column.id),
                     audio_url=track.url,
                     duration_seconds=track.duration_seconds,
+                    audio_parts=track.audio_parts(),
                     set_label=set_label or None,
                 )
                 for performance_id, set_label, track in cell.tracks

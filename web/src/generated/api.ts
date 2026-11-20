@@ -164,6 +164,8 @@ export interface components {
         AlbumTrackItem: {
             /** Audio Duration Seconds */
             audio_duration_seconds?: number | null;
+            /** Audio Parts */
+            audio_parts?: components["schemas"]["AudioPart"][] | null;
             /** Audio Url */
             audio_url?: string | null;
             /** City */
@@ -281,6 +283,24 @@ export interface components {
             ids?: string[];
             /** Label */
             label: string;
+        };
+        /**
+         * AudioPart
+         * @description One stretch of one tape file: a song that is not exactly one whole file.
+         *
+         *     The player plays each part in order as one track: from ``start_seconds``
+         *     to ``end_seconds`` (the file's end when null), then the next part.
+         */
+        AudioPart: {
+            /** Audio Url */
+            audio_url: string;
+            /** End Seconds */
+            end_seconds?: number | null;
+            /**
+             * Start Seconds
+             * @default 0
+             */
+            start_seconds: number;
         };
         /**
          * ConversationTurn
@@ -950,6 +970,8 @@ export interface components {
          * @description One Internet Archive track the in-page player can play, in show order.
          */
         PlayableTrack: {
+            /** Audio Parts */
+            audio_parts?: components["schemas"]["AudioPart"][] | null;
             /** Audio Url */
             audio_url: string;
             /** Duration Seconds */
@@ -1133,6 +1155,8 @@ export interface components {
         };
         /** SetlistSong */
         SetlistSong: {
+            /** Audio Parts */
+            audio_parts?: components["schemas"]["AudioPart"][] | null;
             /** Audio Url */
             audio_url?: string | null;
             /** Duration Seconds */
@@ -1345,6 +1369,8 @@ export interface components {
          *     A stop the server could not resolve keeps only the model's words.
          */
         SongRepresentativePerformance: {
+            /** Audio Parts */
+            audio_parts?: components["schemas"]["AudioPart"][] | null;
             /** Audio Url */
             audio_url?: string | null;
             /** Duration Seconds */

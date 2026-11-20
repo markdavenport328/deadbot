@@ -133,6 +133,7 @@ def record_link(kind: str, record_id: str, store: CanonicalStore) -> tuple[Edito
                     title=song.get("title") or "Performance",
                     audio_url=audio["audio_url"],
                     duration_seconds=audio["duration_seconds"],
+                    audio_parts=audio["audio_parts"],
                     set_label=performance.get("set_label") or None,
                 )
             ]

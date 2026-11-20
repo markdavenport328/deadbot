@@ -136,6 +136,7 @@ STREAM_FORMAT = "VBR MP3"
 SPANS_MORE_MARK = "The file opens with this song and goes on into what follows it"
 # How normalize_internet_archive_gap_tracks.py marks the rows it wrote.
 GAP_NOTE_PREFIX = "Gap pass: "
+SPLIT_NOTE_PREFIX = "Split pass: "
 
 
 def stream_files(raw_payload: dict, original_name: str) -> list[dict]:

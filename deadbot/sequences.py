@@ -19,6 +19,7 @@ from typing import Any, Callable, Iterable
 
 from deadbot.data import CanonicalStore
 from deadbot.experience import fit
+from deadbot.tape import TapeTrack, tape_tracks
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +52,8 @@ def pair_id(show_id: str, set_number: str, position_in_set: str) -> str:
     return f"{show_id}:{set_number}:{position_in_set}"
 
 
-@dataclass(frozen=True)
-class Track:
-    url: str
-    duration_seconds: int | None
+# A performance's tape track: its file or files, and the song's length on them.
+Track = TapeTrack
 
 
 @dataclass(frozen=True)
@@ -193,21 +192,9 @@ def sort_pair_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
 
 
 def _archive_tracks(store: CanonicalStore, performance_ids: Iterable[str]) -> dict[str, Track]:
-    """Each performance's archive tape track, chosen by link id as the listen paths choose it."""
+    """Each performance's archive tape track, chosen as the listen paths choose it (``tape.tape_tracks``)."""
 
-    candidates: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
-    for row in store.rows_in("performance_links", "performance_id", performance_ids):
-        if row.get("platform") != "archive" or row.get("link_type") != "recording-track" or not row.get("url"):
-            continue
-        candidates[row["performance_id"]].append((row.get("performance_link_id", ""), row["url"], row.get("duration_seconds", "")))
-    tracks: dict[str, Track] = {}
-    for performance_id, options in candidates.items():
-        _link_id, url, duration = min(options)
-        text = str(duration).strip()
-        # A zero-length track is a cataloging gap, not a length.
-        seconds = int(text) if text.isdigit() and int(text) > 0 else None
-        tracks[performance_id] = Track(url=url, duration_seconds=seconds)
-    return tracks
+    return tape_tracks(store.rows_in("performance_links", "performance_id", performance_ids))
 
 
 def versions(store: CanonicalStore, first_song_id: str, second_song_id: str) -> list[Version]:
@@ -431,6 +418,7 @@ def version_strip_block(
             title=song_title,
             audio_url=track.url,
             duration_seconds=track.duration_seconds,
+            audio_parts=track.audio_parts(),
             set_label=set_label or None,
         )
 
@@ -563,6 +551,7 @@ def song_versions_block(
                     title=titles.get(performance["song_id"]) or song_title,
                     audio_url=track.url,
                     duration_seconds=track.duration_seconds,
+                    audio_parts=track.audio_parts(),
                     set_label=performance.get("set_label") or None,
                 )
                 if track

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
-import { formatClockTime, usePlayer, type PlayerTrack } from "./player";
+import { formatClockTime, trackFiles, usePlayer, type PlayerTrack } from "./player";
 import { formatShowDate, formatShowDateLong } from "../core/format";
 import { Equalizer, MoreIcon, QueueIcon } from "./icons";
 import { PanelToggle, useRememberedOpen } from "../core/side-panel";
@@ -174,10 +174,11 @@ type Drag = { from: number; to: number; mids: number[]; first: number };
 // The queue's songs kept on this device for listening without a signal: one
 // quiet line at the foot of the queue, with the size before anything saves.
 function OfflineLine({ queue }: { queue: PlayerTrack[] }) {
-  const urls = queue.map((track) => track.audioUrl);
+  // A song cut across files saves every one of them.
+  const urls = [...new Set(queue.flatMap(trackFiles))];
   const { ready, savedCount, unsaved, progress } = useOffline(urls);
   if (!offlineSupported() || !ready || queue.length === 0) return null;
-  const toSave = queue.filter((track) => unsaved.includes(track.audioUrl));
+  const toSave = queue.filter((track) => trackFiles(track).some((url) => unsaved.includes(url)));
   const size = formatBytes(estimateBytes(toSave));
   const failed = lastSaveFailures();
   const songs = (count: number) => (count === 1 ? "1 song" : `${count} songs`);
