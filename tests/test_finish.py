@@ -645,15 +645,18 @@ def test_a_group_keeps_every_item_the_model_planned():
     assert plan.groups[0].items[-1].show_id == "gd-1990-03-23"
 
 
-def test_a_group_left_with_no_usable_items_is_dropped_not_fatal():
+def test_a_group_left_with_no_usable_items_keeps_its_words_and_is_not_fatal():
     plan = finish.FinishPlan.model_validate({
         "lead": "x",
         "groups": [
-            {"title": "Broken", "presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"title": "Broken", "lead": "Still worth saying.", "presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"title": "  ", "lead": "", "items": []},
             {"title": "Fine", "presentation": "collection", "items": [_show_item("gd-1972-08-27")]},
         ],
     })
-    assert [group.title for group in plan.groups] == ["Fine"]
+    # The heading and text are the model's work and stay; a group with no words and no items has nothing to keep.
+    assert [(group.title, group.lead, len(group.items)) for group in plan.groups] == [("Broken", "Still worth saying.", 0), ("Fine", None, 1)]
 
 
 def test_a_plan_missing_its_lead_still_fails_validation():

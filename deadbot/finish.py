@@ -865,6 +865,35 @@ def validate_body_item(raw: Any, *, where: str) -> Any | None:
     return fallback
 
 
+def group_words(title: Any, lead: Any, urls: frozenset[str] = frozenset()) -> tuple[str | None, str | None]:
+    """A group's heading and text as the page shows them, in both paths.
+
+    Each is trimmed and a blank one is left out; a link in the text is kept
+    when a tool returned its URL.
+    """
+
+    heading = title.strip() if isinstance(title, str) and title.strip() else None
+    text = keep_grounded_links(lead.strip(), urls) if isinstance(lead, str) and lead.strip() else None
+    return heading, text
+
+
+def words_alone(title: str | None, lead: str | None) -> tuple[str | None, EditorialBlock] | None:
+    """A group that resolved to no cards, as the heading and block of prose that keep its words.
+
+    The streamer and the final page both call this when a section has a
+    heading or text and nothing else to show: the text becomes a narrative
+    block under the heading, and a heading with no text becomes the block's
+    own. Returns the group's heading and the block, or ``None`` when the
+    model wrote neither.
+    """
+
+    if lead:
+        return title, EditorialBlock(type="editorial", presentation="narrative", paragraphs=[lead])
+    if title:
+        return None, EditorialBlock(type="editorial", presentation="narrative", title=title)
+    return None
+
+
 def clean_criteria(raw: Any) -> list[str]:
     """A group's comparison criteria: its non-blank strings, trimmed."""
 
@@ -906,7 +935,7 @@ class GroupPlan(_PlanModel):
         description="For a comparison only: the shared terms the items are judged on, in order, as short labels such as 'Tempo' or 'Second-set jam'.",
     )
     items: list[BodyItem] = Field(
-        min_length=1,
+        default_factory=list,
         description=(
             "Only the items that earn a place in the answer, in exact reading order. "
             "Retrieved or related does not mean included."
@@ -957,15 +986,18 @@ class FinishPlan(BaseModel):
     def _read_groups_leniently(cls, data: Any) -> Any:
         """Read every group and item the way the streamer reads them.
 
-        Each item goes through ``validate_body_item``; a group keeps whatever
-        of its items carry something to show, and a group with none is left
-        out. An unknown presentation reads as a collection. Nothing here caps
-        how many groups or items the model plans, and nothing fails the plan
-        around a bad item: a failed plan makes the model start over after the
-        visitor has already watched the first one compose.
+        ``page_plan.finish_args`` reads the page's keys and the older plan's
+        the way the streamer does. Each item then goes through
+        ``validate_body_item``; a group keeps whatever of its items carry
+        something to show, and its heading and text whether or not any do.
+        Only a group with no words and no items is left out. An unknown
+        presentation reads as a collection. Nothing here caps how many groups
+        or items the model plans, and nothing fails the plan around a bad
+        item: a failed plan makes the model start over after the visitor has
+        already watched the first one compose.
         """
 
-        if page_plan.is_page_plan(data):
+        if isinstance(data, dict):
             data = page_plan.finish_args(data)
         data = loose_items_as_group(data)
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
@@ -975,16 +1007,13 @@ class FinishPlan(BaseModel):
             if isinstance(group, GroupPlan):
                 groups.append(group)
                 continue
-            if isinstance(group, dict) and "items" not in group and isinstance(group.get("type"), str):
-                # A body item written straight into groups: the model meant it
-                # to stand as its own group, so it keeps its place on the page.
-                group = {"presentation": "collection", "items": [group]}
-            if not isinstance(group, dict) or not isinstance(group.get("items"), list):
-                logger.info("finish_response planned a group without an items list; leaving it out")
+            if not isinstance(group, dict):
+                logger.info("finish_response planned a group that was not an object; leaving it out")
                 continue
-            items = [item for item in (validate_body_item(raw, where="planned") for raw in group["items"]) if item is not None]
-            if not items:
-                logger.info("finish_response planned a group with nothing to show (title=%r)", group.get("title"))
+            raw_items = group["items"] if isinstance(group.get("items"), list) else []
+            items = [item for item in (validate_body_item(raw, where="planned") for raw in raw_items) if item is not None]
+            if not items and group_words(group.get("title"), group.get("lead")) == (None, None):
+                logger.info("finish_response planned a group with nothing to show")
                 continue
             groups.append(
                 {**group, "presentation": group_presentation(group.get("presentation")), "criteria": clean_criteria(group.get("criteria")), "items": items}
@@ -1775,14 +1804,19 @@ def resolve_groups(
         if len(group_blocks) > room:
             logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
             group_blocks = group_blocks[: max(room, 0)]
+        title, lead = group_words(group.title, group.lead, grounded.urls)
         if not group_blocks:
-            continue
+            # No cards: the section's own words are what it shows.
+            alone = words_alone(title, lead) if room > 0 else None
+            if alone is None:
+                continue
+            title, lead, group_blocks = alone[0], None, [alone[1]]
         start = len(blocks)
         blocks.extend(group_blocks)
         groups.append(
             ExperienceGroup(
-                title=(group.title or "").strip() or None,
-                lead=keep_grounded_links(group.lead.strip(), grounded.urls) if group.lead and group.lead.strip() else None,
+                title=title,
+                lead=lead,
                 presentation=group.presentation,
                 criteria=clean_criteria(group.criteria),
                 tab=group.tab,
@@ -1797,17 +1831,7 @@ def _deliver(**_: Any) -> str:
     return "Response delivered to the visitor."
 
 
-def _first_group_title(groups: list[Any]) -> str | None:
-    first = groups[0] if groups else None
-    title = (first.get("title") or first.get("heading")) if isinstance(first, dict) else None
-    return title.strip() if isinstance(title, str) and title.strip() else None
-
-
-def is_groups_revision(earlier: list[Any], later: list[Any]) -> bool:
-    """A later groups list that opens with the earlier list's first group restates the page."""
-
-    title = _first_group_title(earlier)
-    return title is not None and title == _first_group_title(later)
+is_groups_revision = page_plan.is_groups_revision
 
 
 def read_joining_repeats(raw: str) -> Any:
@@ -1828,8 +1852,8 @@ def read_joining_repeats(raw: str) -> Any:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result and isinstance(result[key], list) and isinstance(value, list):
-                if key in ("groups", "sections") and is_groups_revision(result[key], value):
-                    result[key] = value
+                if key in ("groups", "sections"):
+                    result[key] = page_plan.join_sections(result[key], value)
                 else:
                     result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
             else:

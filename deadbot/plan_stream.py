@@ -20,7 +20,17 @@ from typing import Any, Callable
 
 from deadbot.experience import PAGE_BLOCK_CEILING, workspace_tab
 from deadbot.page_plan import SECTION_KEYS, TOP_KEYS, body_items
-from deadbot.finish import FINISH_TOOL_NAME, clean_criteria, group_presentation, keep_grounded_links, page_lead, read_joining_repeats, validate_body_item
+from deadbot.finish import (
+    FINISH_TOOL_NAME,
+    clean_criteria,
+    group_presentation,
+    group_words,
+    keep_grounded_links,
+    page_lead,
+    read_joining_repeats,
+    validate_body_item,
+    words_alone,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +105,11 @@ class PlanStreamer:
         self._loose_first = False
         self._loose_cache: list[PlanEvent] | None = None
         self._revision_shift = 0
+        # Per group: whether its opening was sent, and how many blocks it has
+        # sent. A group that closes with none shows its own words as prose
+        # (finish.words_alone), as the delivered page does.
+        self._opened: set[int] = set()
+        self._block_counts: dict[int, int] = {}
         self._disabled = False
         self._done = False
 
@@ -156,11 +171,13 @@ class PlanStreamer:
 
     def _group_payload(self, index: int) -> dict[str, Any]:
         group = self._group(index)
+        # The heading and text as finish.resolve_groups delivers them.
+        title, lead = group_words(group.get("title"), group.get("lead"), self._grounded_urls)
         return {
             "index": index,
             "tab": workspace_tab(group.get("tab")),
-            "title": group.get("title"),
-            "lead": self._grounded(group.get("lead")),
+            "title": title,
+            "lead": lead,
             # The same reading finish.FinishPlan gives a group.
             "presentation": group_presentation(group.get("presentation")),
             "criteria": clean_criteria(group.get("criteria")),
@@ -308,6 +325,7 @@ class PlanStreamer:
             self._groups_lists += 1
             return self._emit_head()
         if len(path) == 3 and path[0] == "groups" and path[2] == "items" and ch == "[":
+            self._opened.add(path[1])
             return self._in_group(path[1], [PlanEvent("group_open", self._group_payload(path[1]))])
         return []
 
@@ -332,6 +350,7 @@ class PlanStreamer:
             # A body item written straight into groups stands as its own
             # collection, as finish.FinishPlan reads it; its title is the item's.
             self._groups[index] = {"presentation": "collection"}
+            self._opened.add(index)
             open_event = PlanEvent("group_open", self._group_payload(index))
             item_events = self._item_closed(index, 0, raw)
             if self._list_mode == "revision":
@@ -341,6 +360,7 @@ class PlanStreamer:
                 self._held[index] = [open_event, *self._held.get(index, [])]
             else:
                 opened = [open_event, *item_events]
+        opened = [*opened, *self._in_group(index, self._words_alone(index))]
         close = PlanEvent("group_close", self._group_payload(index))
         if self._list_mode == "revision":
             close.payload["index"] = self._revision_index(index)
@@ -361,6 +381,26 @@ class PlanStreamer:
             key = "group_index" if event.type == "block" else "index"
             event.payload[key] = emitted
         return held
+
+    def _words_alone(self, index: int) -> list[PlanEvent]:
+        """A group closing with no blocks sends its heading and text as prose, as the delivered page keeps them."""
+
+        if self._block_counts.get(index) or self._blocks_sent >= PAGE_BLOCK_CEILING:
+            return []
+        payload = self._group_payload(index)
+        alone = words_alone(payload["title"], payload["lead"])
+        if alone is None:
+            return []
+        title, block = alone
+        # From here the group reads as the delivered one: its text is the block.
+        self._groups[index] = {**self._group(index), "title": title, "lead": None}
+        self._blocks_sent += 1
+        self._block_counts[index] = 1
+        events = [PlanEvent("block", {"group_index": index, "block": block.model_dump(mode="json")})]
+        if index not in self._opened:
+            self._opened.add(index)
+            events.insert(0, PlanEvent("group_open", self._group_payload(index)))
+        return events
 
     def _container_closed(self, pos: int, ch: str) -> list[PlanEvent]:
         if not self._stack:
@@ -459,6 +499,7 @@ class PlanStreamer:
             logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
             resolved = resolved[: max(room, 0)]
         self._blocks_sent += len(resolved)
+        self._block_counts[group_index] = self._block_counts.get(group_index, 0) + len(resolved)
         events: list[PlanEvent] = []
         for block in resolved:
             payload = block.model_dump(mode="json") if hasattr(block, "model_dump") else block
