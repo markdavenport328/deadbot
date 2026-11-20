@@ -16,6 +16,10 @@ from langchain_ollama import ChatOllama
 from deadbot.config import Settings
 
 
+# The silence allowed when a call is not streamed, or when no timeout is set.
+UNSTREAMED_TIMEOUT_SECONDS = 90
+
+
 class ModelProvider(Protocol):
     """The stable provider contract used by the Deadbot agent graph."""
 
@@ -48,6 +52,13 @@ class OpenAIProvider:
     api_key: str | None = None
     base_url: str | None = None
     reasoning_effort: str | None = None
+    # Seconds a call may go without sending anything, and how many times a
+    # failed call is tried again. The hosting function is stopped at 60
+    # seconds, so (retries + 1) x timeout has to fit inside that: two silent
+    # waits of 25 seconds do, where the earlier 90 seconds with two retries
+    # could wait four and a half minutes for a function that was long gone.
+    timeout: float = 25
+    max_retries: int = 1
 
     def create_chat_model(self) -> BaseChatModel:
         # Keep the hosted-provider dependency out of the local Ollama import
@@ -61,10 +72,10 @@ class OpenAIProvider:
             # reasoning and multi-turn workflows.
             "use_responses_api": True,
             # A stalled request otherwise waits the client's default ten
-            # minutes. A normal call answers well inside this ceiling; a stall
-            # is cut off and retried.
-            "timeout": 90,
-            "max_retries": 2,
+            # minutes. A streamed call that has sent nothing for this long is
+            # treated as stalled; it is cut off and retried.
+            "timeout": self.timeout,
+            "max_retries": self.max_retries,
         }
         # A reasoning model sets its own sampling, and GPT-6 models refuse a
         # temperature outright; a model without reasoning keeps temperature 0.
@@ -93,11 +104,18 @@ def create_model_provider(settings: Settings) -> ModelProvider:
             thinking=settings.ollama_thinking,
         )
     if settings.model_provider == "openai":
+        timeout = settings.model_timeout_seconds if settings.model_timeout_seconds > 0 else UNSTREAMED_TIMEOUT_SECONDS
+        if not settings.model_streaming:
+            # Unstreamed, nothing arrives until the whole answer is written, so
+            # the silence allowed has to cover a whole call.
+            timeout = max(timeout, UNSTREAMED_TIMEOUT_SECONDS)
         return OpenAIProvider(
             model=settings.openai_model,
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
             reasoning_effort=settings.openai_reasoning_effort,
+            timeout=timeout,
+            max_retries=max(settings.model_max_retries, 0),
         )
     raise ValueError(
         f"Unsupported DEADBOT_MODEL_PROVIDER={settings.model_provider!r}. "

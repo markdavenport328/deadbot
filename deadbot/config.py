@@ -93,6 +93,55 @@ class Settings:
     # in a log line.
     notebook_secret: str | None = field(default=None, repr=False)
 
+    # --- Provider prompt cache and usage limits (documented in .env.example) ---
+    # How many provider cache keys the conversations are spread over. One key
+    # lets every visitor share the cached system prompt and tool schemas.
+    prompt_cache_shards: int = 1
+    # Mark the end of the system prompt as an explicit cache breakpoint
+    # (OpenAI GPT-5.6 and later only; other models may refuse the request).
+    prompt_cache_breakpoint: bool = False
+    # Read the visitor's address from the platform's forwarded headers. Only
+    # safe behind a proxy that overwrites them, as Vercel does.
+    trust_forwarded_ip: bool = False
+    # Questions that reach the model, per visitor (a signed cookie carries the
+    # count between function instances). 0 turns a limit off.
+    visitor_limit_per_minute: int = 6
+    visitor_limit_per_day: int = 40
+    # Per client address, per function instance (rate_limit_per_minute above
+    # is the per-minute partner of the daily figure).
+    rate_limit_per_day: int = 150
+    # Requests from one address that arrive without a valid allowance cookie.
+    new_visitors_per_day: int = 20
+    # Everything one function instance will send to the model in a day.
+    instance_limit_per_day: int = 500
+    # Characters of browser-supplied conversation replayed to the model; the
+    # oldest turns are dropped first.
+    conversation_max_chars: int = 24_000
+    # Seconds one model call may stay silent, and how often a failed call is
+    # tried again. Together they fit inside the function's 60 seconds.
+    model_timeout_seconds: int = 25
+    model_max_retries: int = 1
+    # Seconds a whole turn may take before it ends with an honest error rather
+    # than being cut off by the platform. 0 means no budget.
+    turn_budget_seconds: int = 0
+
+    def without_limits(self) -> "Settings":
+        """For build steps and measurement scripts that ask many questions in one process."""
+
+        # Imported here so this block stays self-contained in a file others edit.
+        from dataclasses import replace
+
+        return replace(
+            self,
+            rate_limit_per_minute=0,
+            rate_limit_per_day=0,
+            visitor_limit_per_minute=0,
+            visitor_limit_per_day=0,
+            new_visitors_per_day=0,
+            instance_limit_per_day=0,
+            turn_budget_seconds=0,
+        )
+
     @classmethod
     def from_env(cls, env_path: Path = DEFAULT_ENV_PATH) -> "Settings":
         file_values = _read_env_file(env_path)
@@ -130,4 +179,19 @@ class Settings:
             response_cache=_as_bool(value("DEADBOT_RESPONSE_CACHE"), True),
             response_cache_ttl_seconds=_as_int(value("DEADBOT_RESPONSE_CACHE_TTL_SECONDS"), 7 * 24 * 60 * 60),
             notebook_secret=(value("DEADBOT_NOTEBOOK_SECRET") or "").strip() or None,
+            prompt_cache_shards=_as_int(value("DEADBOT_PROMPT_CACHE_SHARDS"), 1),
+            prompt_cache_breakpoint=_as_bool(value("DEADBOT_PROMPT_CACHE_BREAKPOINT"), False),
+            # Vercel sets VERCEL=1 and overwrites the forwarded headers itself.
+            trust_forwarded_ip=_as_bool(value("DEADBOT_TRUST_FORWARDED_IP"), bool(environ.get("VERCEL"))),
+            visitor_limit_per_minute=_as_int(value("DEADBOT_VISITOR_LIMIT_PER_MINUTE"), 6),
+            visitor_limit_per_day=_as_int(value("DEADBOT_VISITOR_LIMIT_PER_DAY"), 40),
+            rate_limit_per_day=_as_int(value("DEADBOT_RATE_LIMIT_PER_DAY"), 150),
+            new_visitors_per_day=_as_int(value("DEADBOT_NEW_VISITORS_PER_DAY"), 20),
+            instance_limit_per_day=_as_int(value("DEADBOT_INSTANCE_LIMIT_PER_DAY"), 500),
+            conversation_max_chars=_as_int(value("DEADBOT_CONVERSATION_MAX_CHARS"), 24_000),
+            model_timeout_seconds=_as_int(value("DEADBOT_MODEL_TIMEOUT_SECONDS"), 25),
+            model_max_retries=_as_int(value("DEADBOT_MODEL_MAX_RETRIES"), 1),
+            # A hosted model answers inside the function's 60 seconds; a local
+            # model on a laptop may need longer, so it gets no budget.
+            turn_budget_seconds=_as_int(value("DEADBOT_TURN_BUDGET_SECONDS"), 55 if model_provider == "openai" else 0),
         )
