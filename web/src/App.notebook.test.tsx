@@ -164,14 +164,14 @@ test("with sessionStorage unavailable the notebook still travels in memory", asy
   expect(sent[1].notebook).toBe("v1.first.sig");
 });
 
-test("a question in the link is asked on arrival and leaves the address bar", async () => {
+test("a question in the link is asked on arrival and stays in the address bar", async () => {
   replies = [europe()];
   window.history.replaceState({}, "", "/?q=What%27s%20on%20Europe%20%2772%3F");
   await openApp();
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
   expect(sent).toHaveLength(1);
   expect(sent[0].question).toBe("What's on Europe '72?");
-  expect(window.location.search).toBe("");
+  expect(new URLSearchParams(window.location.search).get("q")).toBe("What's on Europe '72?");
 });
 
 test("an empty question in the link leaves the home screen as it is", async () => {

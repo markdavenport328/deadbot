@@ -589,6 +589,19 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .sources-footer li { display: inline-flex; align-items: center; gap: var(--space-tight); color: #93a091; font-size: 0.8rem; }
 .sources-footer a { color: #93a091; }
 .sources-footer a:focus-visible { color: var(--cream); }
+/* A quiet text control (Copy link, Reload the page): small, muted, underlined, like the history's Clear. */
+.quiet-action { padding: 0; border: 0; background: none; color: var(--muted); font: inherit; font-size: inherit; text-decoration: underline; text-decoration-color: var(--cream-underline); text-underline-offset: 0.2em; }
+.quiet-action:hover, .quiet-action:focus-visible { color: var(--cream); }
+/* A card that could not be drawn keeps its own words. */
+.card-fallback p { max-width: var(--measure); margin: var(--space-tight) 0 0; color: var(--text); line-height: 1.6; }
+.card-fallback .card-fallback-title { margin: 0; color: var(--cream); font-family: var(--serif); font-variation-settings: "SOFT" 40; font-weight: 600; font-size: 1.3rem; line-height: 1.2; }
+/* The whole app could not be drawn: a plain message and two ways out. */
+.app-crash { max-width: 34rem; margin: 0 auto; padding: var(--space-section) var(--space-content); }
+.app-crash h1 { font-size: 1.8rem; line-height: 1.2; }
+.app-crash p { margin: var(--space-part) 0 0; color: var(--text); line-height: 1.6; }
+.app-crash-actions { display: flex; flex-wrap: wrap; gap: var(--space-tight); margin-top: var(--space-content); }
+.app-crash-actions button { padding: var(--space-tight) var(--space-part); border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--cream); }
+.app-crash-actions button:hover { border-color: var(--cream-rule); }
 .source-kind-chip { border: 1px solid #3e5544; border-radius: var(--r); color: #7f9582; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: var(--space-line) var(--space-tight); white-space: nowrap; }
 
 /* Open blocks: the card anatomy without the panel. Eyebrow row, headline,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { explorationReducer as reduce, initialExploration, requestContext, visible, isAsking, type ExplorationAction, type ExplorationState } from "./exploration-state";
+import { addressOf, explorationReducer as reduce, initialExploration, openingFor, requestContext, shownPane, visible, isAsking, type ExplorationAction, type ExplorationState } from "./exploration-state";
 import type { ExperienceResponse } from "../types";
 
 const reply = (title: string, notebook: string | null, extra: Record<string, unknown> = {}) => ({
@@ -63,13 +63,118 @@ describe("branching", () => {
   });
 });
 
-test("events from a stale request are ignored", () => {
+test("events from a stopped request are ignored", () => {
   let s = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
     { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
-  s = reduce(s, { type: "navigate", index: 0 });
+  s = reduce(s, { type: "cancel" });
   const before = s;
   expect(reduce(s, { type: "lead", requestId: "r2", text: "late" })).toBe(before);
   expect(reduce(s, { type: "complete", requestId: "r2", response: reply("late", null) })).toBe(before);
+});
+
+describe("looking at another page while an answer is written", () => {
+  const twoThreads = () => ask(ask(ask(initialExploration, "a", "A", { fresh: true }), "a1", "A1"), "b", "B", { fresh: true });
+  const submit = (id: string, fresh = false): ExplorationAction => ({ type: "submit", requestId: id, question: `Q ${id}`, source: "typed", focus: null, fresh, threadId: "t" });
+
+  test("the request keeps running, fills in, and lands in the history unread", () => {
+    let s = run(twoThreads(), submit("c", true), { type: "navigate", index: 0 });
+    expect(isAsking(s)).toBe(true);
+    expect(visible(s)).toMatchObject({ kind: "entry", entry: { id: "a" } });
+    s = run(s, { type: "status", requestId: "c", text: "Looking" }, { type: "lead", requestId: "c", text: "Yes" });
+    expect(s.pending?.lead).toBe("Yes");
+    expect(visible(s)).toMatchObject({ kind: "entry", entry: { id: "a" } });
+    s = reduce(s, { type: "complete", requestId: "c", response: reply("C", null) });
+    expect(s.entries.map((e) => e.id)).toEqual(["a", "a1", "b", "c"]);
+    expect(s.entries[3].unseen).toBe(true);
+    expect(s.entries[s.cursor].id).toBe("a");
+    s = reduce(s, { type: "navigate", index: 3 });
+    expect(s.entries[3].unseen).toBeUndefined();
+  });
+
+  test("its row goes back to it, and it then finishes on screen", () => {
+    let s = run(twoThreads(), submit("c", true), { type: "lead", requestId: "c", text: "Yes" }, { type: "navigate", index: 1 }, { type: "watch" });
+    expect(visible(s).kind).toBe("draft");
+    s = reduce(s, { type: "complete", requestId: "c", response: reply("C", null) });
+    expect(s.entries[s.cursor].id).toBe("c");
+    expect(s.entries[s.cursor].unseen).toBeUndefined();
+  });
+
+  test("a follow-up that finishes behind a later page of its own thread does not take that page away", () => {
+    // Asked from A, then the visitor opens A1, which a follow-up from A would otherwise replace.
+    let s = run(twoThreads(), { type: "navigate", index: 0 }, submit("a2"), { type: "navigate", index: 1 });
+    s = reduce(s, { type: "complete", requestId: "a2", response: reply("A2", null) });
+    expect(s.entries.map((e) => e.id)).toEqual(["a", "a1", "a2", "b"]);
+    expect(s.entries[s.cursor].id).toBe("a1");
+  });
+
+  test("a follow-up replaces what came after it in its own thread and leaves later threads alone", () => {
+    const s = ask(reduce(twoThreads(), { type: "navigate", index: 0 }), "a2", "A2");
+    expect(s.entries.map((e) => e.id)).toEqual(["a", "a2", "b"]);
+    expect(s.entries[s.cursor].id).toBe("a2");
+  });
+
+  test("the start view is a place to go while it runs, and stopping from the page returns to where it was asked", () => {
+    let s = run(twoThreads(), submit("c", true), { type: "newChat" });
+    expect(isAsking(s)).toBe(true);
+    expect(visible(s).kind).toBe("start");
+    s = run(reduce(twoThreads(), { type: "newChat" }), submit("d", true), { type: "cancel" });
+    expect(visible(s).kind).toBe("start");
+  });
+});
+
+test("a failed request keeps the draft it had written on screen", () => {
+  let s = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
+    { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" },
+    { type: "lead", requestId: "r2", text: "The runs grew" });
+  s = reduce(s, { type: "fail", requestId: "r2", message: "boom" });
+  expect(visible(s).kind).toBe("failed");
+  expect(shownPane(s)?.id).toBe("r2");
+  expect(s.pending?.lead).toBe("The runs grew");
+  // Looking elsewhere keeps it; its row brings it back.
+  s = run(s, { type: "navigate", index: 0 }, { type: "watch" });
+  expect(shownPane(s)?.id).toBe("r2");
+  // With nothing written, the page it was asked from stays instead.
+  let bare = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
+    { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
+  bare = reduce(bare, { type: "fail", requestId: "r2", message: "boom" });
+  expect(shownPane(bare)?.id).toBe("r1");
+});
+
+describe("addresses", () => {
+  const history = () => ask(ask(ask(initialExploration, "a", "Best Morning Dew?", { fresh: true }), "a1", "And in 1977?"), "b", "MSG", { fresh: true });
+
+  test("a page is named by its question; a follow-up by its thread's first question and then its own", () => {
+    const s = history();
+    expect(addressOf(s)).toEqual({ page: "b", question: "MSG", followUp: null, title: "MSG" });
+    expect(addressOf(reduce(s, { type: "navigate", index: 1 }))).toMatchObject({ page: "a1", question: "Best Morning Dew?", followUp: "And in 1977?" });
+    expect(addressOf(reduce(s, { type: "newChat" }))).toEqual({ page: null, question: null, followUp: null, title: null });
+    const asking = reduce(reduce(s, { type: "navigate", index: 0 }), { type: "submit", requestId: "a2", question: "And in 1989?", source: "typed", focus: null, fresh: false, threadId: "t" });
+    expect(addressOf(asking)).toMatchObject({ page: "a2", question: "Best Morning Dew?", followUp: "And in 1989?", title: "And in 1989?" });
+  });
+
+  test("an address opens the saved page by its id or by its question, without asking", () => {
+    const s = history();
+    expect(openingFor(s, { page: "a1", question: "anything", followUp: null })).toEqual({ kind: "entry", index: 1, offer: null });
+    expect(openingFor(s, { page: "gone", question: "  best morning   dew? ", followUp: null })).toEqual({ kind: "entry", index: 0, offer: null });
+    expect(openingFor(s, { question: "Best Morning Dew?", followUp: "And in 1977?" })).toEqual({ kind: "entry", index: 1, offer: null });
+    expect(openingFor(s, { question: null, followUp: null })).toEqual({ kind: "start" });
+  });
+
+  test("a question this browser has no page for is asked fresh", () => {
+    expect(openingFor(history(), { question: "Best Dark Star?", followUp: null })).toEqual({ kind: "ask", question: "Best Dark Star?", offer: null });
+    // A follow-up's own words are not a fresh question's page.
+    expect(openingFor(history(), { question: "And in 1977?", followUp: null })).toMatchObject({ kind: "ask" });
+  });
+
+  test("a follow-up this browser does not have opens its thread's first page and is offered, not asked", () => {
+    expect(openingFor(history(), { question: "Best Morning Dew?", followUp: "And in 1989?" })).toEqual({ kind: "entry", index: 0, offer: "And in 1989?" });
+    expect(openingFor(initialExploration, { question: "Best Morning Dew?", followUp: "And in 1989?" })).toEqual({ kind: "ask", question: "Best Morning Dew?", offer: "And in 1989?" });
+  });
+
+  test("the request in flight is found by its id", () => {
+    const s = reduce(history(), { type: "submit", requestId: "c", question: "Veneta", source: "typed", focus: null, fresh: true, threadId: "t" });
+    expect(openingFor(s, { page: "c", question: "Veneta", followUp: null })).toEqual({ kind: "pending" });
+  });
 });
 
 test("only one request at a time", () => {
@@ -109,7 +214,7 @@ test("new chat shows the start view and keeps history", () => {
 test("stale fail, page and status events leave the same state object", () => {
   let s = run(ask(initialExploration, "r1", "MSG", { fresh: true }),
     { type: "submit", requestId: "r2", question: "x", source: "typed", focus: null, fresh: false, threadId: "t" });
-  s = reduce(s, { type: "navigate", index: 0 });
+  s = reduce(s, { type: "cancel" });
   expect(reduce(s, { type: "fail", requestId: "r2", message: "late" })).toBe(s);
   expect(reduce(s, { type: "status", requestId: "r2", text: "late" })).toBe(s);
   expect(reduce(s, { type: "page", requestId: "r2", event: { type: "page_reset" } })).toBe(s);

@@ -10,6 +10,7 @@ import { isUnit, unitKey } from "./units/shared";
 import { MentionRow, chunkMentions, CollapsedRow } from "./units/rows";
 import { blockHeading, sameHeading } from "./headings";
 import { Block } from "./Block";
+import { CardFallback, ErrorBoundary } from "../core/error-boundary";
 
 function dedupeSources(sources: SourceReference[]): SourceReference[] {
   const seen = new Set<string>();
@@ -76,7 +77,9 @@ function tapeLabels(tapes: Tape[]): Map<string, string> {
 }
 
 // The page's groups in the model's order, each with its heading and its
-// blocks.
+// blocks. Each card is drawn inside its own boundary: one that cannot be
+// drawn (a page saved by an older build, say) leaves its own words in its
+// place and the rest of the page as it was.
 export function PageGroups({
   groups,
   sources,
@@ -115,32 +118,39 @@ export function PageGroups({
               {chunkMentions(group.blocks).map((entry) =>
                 entry.kind === "mentions" ? (
                   <ul className="mention-list" key={entry.key}>
-                    {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
+                    {entry.blocks.map((block) => (
+                      <ErrorBoundary key={`${block.type}-${unitKey(block)}`} name={`a ${block.type} mention`} resetKey={block} fallback={<li><CardFallback block={block} /></li>}>
+                        <MentionRow block={block} />
+                      </ErrorBoundary>
+                    ))}
                   </ul>
                 ) : entry.kind === "collapsed" ? (
                   <ul className="collapsed-list" key={entry.key}>
                     {entry.blocks.map((block, index) => (
-                      <CollapsedRow key={`${block.type}-${unitKey(block)}-${index}`} block={block} onFollowUp={onFollowUp}>
-                        <Block
-                          block={block}
-                          sources={sources}
-                          criteria={group.presentation === "comparison" ? group.criteria : []}
-                          soleUnit={false}
-                          onFollowUp={onFollowUp}
-                          inRow
-                        />
-                      </CollapsedRow>
+                      <ErrorBoundary key={`${block.type}-${unitKey(block)}-${index}`} name={`a ${block.type} row`} resetKey={block} fallback={<li><CardFallback block={block} /></li>}>
+                        <CollapsedRow block={block} onFollowUp={onFollowUp}>
+                          <Block
+                            block={block}
+                            sources={sources}
+                            criteria={group.presentation === "comparison" ? group.criteria : []}
+                            soleUnit={false}
+                            onFollowUp={onFollowUp}
+                            inRow
+                          />
+                        </CollapsedRow>
+                      </ErrorBoundary>
                     ))}
                   </ul>
                 ) : (
-                  <Block
-                    key={entry.key}
-                    block={entry.block}
-                    sources={sources}
-                    criteria={group.presentation === "comparison" ? group.criteria : []}
-                    soleUnit={composing ? false : unitCount === 1}
-                    onFollowUp={onFollowUp}
-                  />
+                  <ErrorBoundary key={entry.key} name={`a ${entry.block.type} card`} resetKey={entry.block} fallback={<CardFallback block={entry.block} />}>
+                    <Block
+                      block={entry.block}
+                      sources={sources}
+                      criteria={group.presentation === "comparison" ? group.criteria : []}
+                      soleUnit={composing ? false : unitCount === 1}
+                      onFollowUp={onFollowUp}
+                    />
+                  </ErrorBoundary>
                 )
               )}
             </div>

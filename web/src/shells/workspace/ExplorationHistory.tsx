@@ -7,12 +7,15 @@ import "./WorkspaceShell.css";
 // then Recent, one thread per question asked fresh (newest first), each
 // opening with that question and its follow-ups indented beneath it in the
 // order they were asked. A row reopens its page without asking again. A
-// request in flight shows where it will land; so does one that did not
-// finish. Clear, on the Recent line, empties the list, with Undo for a few
-// seconds.
-export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewChat, onClear, onUndo, cleared = false, headingId }: {
+// request in flight shows where it will land and carries on while the
+// visitor looks at other pages; its row goes back to it. So does the row of
+// one that did not finish. A page that finished while the visitor was
+// elsewhere is marked until they open it. Clear, on the Recent line, empties
+// the list, with Undo for a few seconds.
+export function ExplorationHistory({ state, onNavigate, onShowPending, onStop, onRetry, onNewChat, onClear, onUndo, cleared = false, headingId }: {
   state: ExplorationState;
   onNavigate(index: number): void;
+  onShowPending?(): void;
   onStop(): void;
   onRetry(): void;
   onNewChat(): void;
@@ -25,11 +28,15 @@ export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewCh
   const asking = isAsking(state);
   const starts = threadStarts(entries);
   const threads = starts.map((start, index) => ({ start, end: starts[index + 1] ?? entries.length }));
+  // While the visitor is on the page being written, no finished row is current.
+  const onPending = Boolean(pending?.watching);
 
   function pendingRow(item: Pending) {
     return (
       <li key="pending" className={item.error === null ? "history-pending" : "history-pending failed"}>
-        <span>{item.error === null ? "Asking" : "Didn't finish"} · {item.question}</span>
+        <button type="button" className="history-pending-open" aria-current={item.watching ? "true" : undefined} onClick={onShowPending}>
+          {item.error === null ? "Asking" : "Didn't finish"} · {item.question}
+        </button>
         {item.error === null
           ? <button type="button" onClick={onStop}>Stop</button>
           : <button type="button" onClick={onRetry}>Retry</button>}
@@ -42,11 +49,12 @@ export function ExplorationHistory({ state, onNavigate, onStop, onRetry, onNewCh
       <li key={entry.id}>
         <button
           type="button"
-          className={["history-row", followUp ? "follow-up" : null, index > cursor ? "ahead" : null].filter(Boolean).join(" ")}
-          aria-current={index === cursor && !startView ? "true" : undefined}
+          className={["history-row", followUp ? "follow-up" : null, index > cursor ? "ahead" : null, entry.unseen ? "unseen" : null].filter(Boolean).join(" ")}
+          aria-current={index === cursor && !startView && !onPending ? "true" : undefined}
           onClick={() => onNavigate(index)}
         >
           {followUp && <span className="visually-hidden">Follow-up: </span>}
+          {entry.unseen && <span className="visually-hidden">New: </span>}
           {entry.request}
         </button>
       </li>
