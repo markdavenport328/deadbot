@@ -69,6 +69,11 @@ entire band's history to reach the same depth.
 
 ## PostgreSQL transition
 
+*Superseded 2026-11-19: PostgreSQL was retired and its code removed. The
+operational store is a read-only SQLite file built from the canonical CSVs on
+every deploy (ADR-015 in `decisions.md`). This section and the other
+PostgreSQL references in this document are kept as history.*
+
 The switch should start now. The full-timeline show/performance spine and the
 next enrichment relationships are large and connected enough that SQL joins,
 indexes, integrity constraints, aggregation, and pagination are preferable to

@@ -71,14 +71,14 @@ from attributed interview or memoir claims about conditions at a show.
 
 ## Request-time caching
 
-Two caches keep the remote database from dominating a turn. A per-request
-query cache (`deadbot.postgres.query_cache_scope`) serves repeated canonical
+Two caches keep repeated reads from dominating a turn. A per-request
+query cache (`deadbot.sqlite_store.query_cache_scope`) serves repeated canonical
 reads from memory for the life of one request, so plan resolution reuses what
 research already fetched. A response cache (`deadbot.response_cache`) stores
-the composed answer to a fresh question in `deadbot_response_cache`, keyed by
+the composed answer to a fresh question in its own small SQLite file, keyed by
 the normalized question, the store's data version and the deployed commit; a
 repeat of an opening question is served in well under a second until an
-import or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
+new build or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
 On a serverless host that cache lives in each instance's temp folder, so asking
 a running site its questions warms only the instance that answers. Instead the
 build runs `python -m scripts.warm_answers --bundle build/warm-answers.json`

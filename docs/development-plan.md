@@ -141,10 +141,10 @@ The current resource set gives every one of the 20 Veneta songs at least one con
 
 These boundaries are intentional and should not be bypassed casually:
 
-- Canonical CSV remains the reviewed source of truth from which the
-  PostgreSQL database is rebuilt. The runtime store is PostgreSQL only
-  (`deadbot/storage.py` refuses anything else); the CSV store is used by
-  tests.
+- Canonical CSV remains the reviewed source of truth from which the SQLite
+  catalog is rebuilt on every deploy. The runtime store is SQLite only
+  (`deadbot/storage.py` opens nothing else); the in-memory CSV store shapes
+  its responses and is used by tests.
 - Agent tools are read only. The agent cannot edit canonical data, download media, or collect arbitrary web content.
 - A resource URL is a link-out reference. It does not turn an interview statement, memoir, or editorial interpretation into a canonical fact.
 - Do not copy full lyrics, tabs, transcriptions, audio, or video into the repository.
@@ -282,6 +282,10 @@ Add source-specific excerpts only after
 rights review. See `docs/serendipity-research-plan.md`.
 
 ### 6. Build the canonical CSV → PostgreSQL importer
+
+*Retired 2026-11-19: the importer, the PostgreSQL store, its schema and its
+migrations were removed. The catalog is a SQLite file built by
+`deadbot/sqlite_build.py` (ADR-015). The notes below are history.*
 
 Implemented a strict, transactional importer for all 21 canonical CSV tables,
 a safe explicit rebuild command, an optional PostgreSQL read store behind the

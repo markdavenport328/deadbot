@@ -22,14 +22,12 @@ Around these core entities sit several supporting layers:
 | **Official releases** | Albums with track-level mappings back to specific performances, personnel, Spotify links | *Dick's Picks Vol. 36* |
 | **Resources** | External links to articles, interviews, oral histories, reviews, tabs, videos | A Dead.net oral history of "Dark Star" |
 | **Selections** | Curated picks from critics, fans, and official sources, with source attribution | A "best Estimated Prophet" list from a published book |
-| **Claims** | Sourced factual statements tied to one or more entities | "Jerry used Tiger for the first time on 8/4/79" |
-| **Observations** | Derived stats computed from the data, versioned against the import that produced them | Song performance counts, first/last dates, set-neighbor frequency |
 
-The whole schema is about **30 tables** with strict foreign keys, check constraints, and referential-integrity triggers. It's at schema version 9, with migrations applied as plain SQL files in sequence. There are no embeddings or vector columns — all text matching is done with SQL `LIKE` queries.
+The whole schema is about **30 tables** with strict foreign keys, check constraints, and referential-integrity triggers, defined in one file (`schema/sqlite.sql`). There are no migrations: the database is rebuilt from scratch on every deploy, so a schema change is an edit to that file. There are no embeddings or vector columns — all text matching is done with SQL `LIKE` queries.
 
 ### How data gets in
 
-The database is populated from **23 reviewed CSV files** (~48 MB total) that live in the repo under `data/canonical/`. These CSVs are the version-controlled source of truth. The pipeline looks like this:
+The database is populated from **24 reviewed CSV files** (~48 MB total) that live in the repo under `data/canonical/`. These CSVs are the version-controlled source of truth. The pipeline looks like this:
 
 ```
 External sources → collection scripts → raw JSON in data/raw/
@@ -45,25 +43,21 @@ External sources → collection scripts → raw JSON in data/raw/
 
 **Normalization** scripts transform that raw data into the canonical CSV format — resolving entity identities, deduplicating, and fitting everything to the strict column-and-type contracts defined in the import code.
 
-**Import** is a CLI command (`deadbot db-import`) that runs in a single database transaction. Before writing anything, it validates every CSV against its table contract (column names, types, nullable rules). It then creates a SHA-256 content manifest of the exact files used, so we know precisely which data produced which database state. If validation fails, nothing is written.
+**The build** (`deadbot db-build`, or `python3 -m deadbot.sqlite_build`) turns the CSVs into the SQLite file. Before writing anything, it validates every CSV against its table contract (column names, types, nullable rules). It then loads them into a new file beside the old one, checks every foreign key, and only then swaps the new file into place. If anything fails, the previous file is left as it was. The build records a SHA-256 fingerprint of the exact inputs, so a local run knows when the checked-out CSVs have changed and rebuilds.
 
-There are two import modes:
-- **Merge** (the default) — `INSERT ... ON CONFLICT DO NOTHING`. New rows are added; existing rows are left alone.
-- **Rebuild** (`--rebuild`) — clears canonical tables in reverse dependency order, then reloads everything. Does not drop the schema itself.
+There is one mode: every build starts from an empty database and loads everything. A row removed from a CSV is gone from the next build.
 
-After the CSV data loads, a separate step atomically replaces selection evidence from a reviewed editorial JSON file, generating the `resources`, `selection_lists`, `selection_entries`, and `selection_evidence` rows that power the curated-picks tools.
-
-Every import records a ledger row in `canonical_imports` for auditability.
+After the CSV data loads, the build adds selection evidence from a reviewed editorial JSON file, generating the `resources`, `selection_lists`, `selection_entries`, and `selection_evidence` rows that power the curated-picks tools.
 
 ### At runtime
 
-The database is **read-only at runtime**. The only write the application ever makes is caching its own answers for repeat questions (in `deadbot_response_cache`). All catalog data enters through the import pipeline.
+The database is **read-only at runtime**. The only write the application ever makes is caching its own answers for repeat questions, in a separate small file. All catalog data enters through the build.
 
-The app runs on Vercel as a serverless function. The deploy's build step builds the SQLite file from the CSVs (`python3 -m deadbot.sqlite_build`), and the function opens it read-only. The response cache lives in its own small SQLite file in the function's temporary directory. (The older PostgreSQL store and `deadbot db-import` remain for the legacy importer and CI until they are retired.)
+The app runs on Vercel as a serverless function. The deploy's build step builds the SQLite file from the CSVs (`python3 -m deadbot.sqlite_build`), and the function opens it read-only. The response cache lives in its own small SQLite file in the function's temporary directory. SQLite is the only store; CI builds the same file and runs the tests and the evaluation against it.
 
 There's a **per-request query cache** at the data layer: since the data is read-only, the same SQL query within one request returns the same rows without hitting the database again. This matters because the composition step often re-fetches entities the model already looked up during research.
 
-The entire data layer is **hand-written parameterized SQL** through Python's standard DB-API interface. No ORM, no SQLAlchemy. Table and column identifiers are validated against a strict pattern and double-quoted. User input never enters identifiers.
+The entire data layer is **hand-written parameterized SQL** through Python's standard `sqlite3` module (`deadbot/sqlite_store.py`). No ORM, no SQLAlchemy. Table and column identifiers are validated against a strict pattern and double-quoted. User input never enters identifiers.
 
 ## How retrieval works
 
