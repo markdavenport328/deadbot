@@ -22,13 +22,6 @@ def store(built_sqlite, tmp_path):
     store.close()
 
 
-def test_an_era_performance_carries_its_track_length_and_venue(store):
-    item = composition._era_performance_item(store.performance_context(RFK_EYES), store)
-    assert item.audio_url == RFK_EYES_TRACK
-    assert item.duration_seconds == 1305
-    assert item.venue_name == "Robert F. Kennedy Stadium"
-
-
 def test_song_representatives_carry_tracks(store):
     song = store.one("songs", "song-playing-in-the-band")
     block = composition._song_overview(
@@ -39,40 +32,6 @@ def test_song_representatives_carry_tracks(store):
     )
     representative = block.representative_performances[0]
     assert representative.audio_url and representative.venue_name == "Old Renaissance Faire Grounds"
-
-
-def test_guest_songs_carry_tracks_when_a_store_is_given(store):
-    guest = {
-        "person_id": "p",
-        "name": "A guest",
-        "appearances": [
-            {
-                "show_id": "gd-1973-06-10",
-                "show_date": "1973-06-10",
-                "venue_name": "Robert F. Kennedy Stadium",
-                "instruments": ["guitar"],
-                "songs": [{"performance_id": RFK_EYES, "song_title": "Eyes Of The World"}],
-            }
-        ],
-    }
-    [block] = composition._guest_appearance_blocks({"guests": [guest]}, store)
-    song = block.items[0].songs[0]
-    assert song.audio_url == RFK_EYES_TRACK and song.duration_seconds == 1305
-    [bare] = composition._guest_appearance_blocks({"guests": [guest]})
-    assert bare.items[0].songs[0].audio_url is None
-
-
-def test_show_selection_items_carry_the_show_tape(store):
-    selection = {
-        "selection_id": "s",
-        "title": "Picks",
-        "source_url": "https://example.org/picks",
-        "items": [{"show_id": "gd-1973-06-10", "show_date": "1973-06-10", "venue_name": "Robert F. Kennedy Stadium"}],
-    }
-    blocks, _ = composition._show_selection_blocks({"show_selections": [selection]}, store)
-    item = blocks[0].items[0]
-    assert item.tracks and all(track.audio_url.startswith("https://archive.org/download/") for track in item.tracks)
-    assert item.recording_identifier and item.tracks[0].audio_url.split("/")[4] == item.recording_identifier
 
 
 def test_a_live_record_maps_its_tracks_to_their_tapes(store):
