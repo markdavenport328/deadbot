@@ -324,26 +324,6 @@ def test_resolve_body_rejects_research_resources_from_unapproved_hosts():
     assert {source.source_id for source in sources} == {f"resource:{item.resource_id}" for item in block.items}
 
 
-def _store_with_selection_evidence() -> CanonicalStore:
-    """The reviewed selection rows the PostgreSQL runtime serves, read from their source file."""
-
-    from pathlib import Path
-
-    document = json.loads(
-        (Path(__file__).parents[1] / "data" / "editorial" / "selection-evidence-review.json").read_text(encoding="utf-8")
-    )
-    entries = [
-        {**entry, "review_packet": {"source_constraints": document["source_constraints"]}}
-        for entry in document["entries"]
-    ]
-
-    class StoreWithSelectionEvidence(CanonicalStore):
-        def selection_signal_rows(self):
-            return entries
-
-    return StoreWithSelectionEvidence()
-
-
 def test_finish_plan_accepts_semantic_units():
     plan = finish.FinishPlan.model_validate(
         {
@@ -1584,3 +1564,36 @@ def test_a_people_timeline_draws_membership_spans_and_counts_shows_inside_them()
     # Hornsby's guest sit-ins before and after his membership are not counted as member shows.
     assert bruce.spans[0].start_date == "1990-09-15" and bruce.show_count < 120
     assert block.first_year == 1979 and block.last_year >= 1992
+
+
+def test_a_stored_answer_from_an_older_page_vocabulary_is_never_served():
+    """A cached or warm answer written before version 4 may hold a retired block; reading it back discards it."""
+
+    from deadbot.response_cache import ResponseCache
+
+    current = experience.ExperienceResponse(thread_id="old", lead="Plenty of people.").model_dump(mode="json")
+    assert current["schema_version"] == "4"
+    roster = {"type": "person_roster", "title": "The guests", "items": [{"person_id": "person-ned-lagin", "name": "Ned Lagin", "show_count": 33}]}
+    stored = {
+        "older version": {**current, "schema_version": "3"},
+        "retired block": {**current, "blocks": [roster], "groups": [{"presentation": "collection", "block_indexes": [0]}]},
+        "current": current,
+    }
+
+    class Store:
+        def data_version(self):
+            return "v1"
+
+        def ensure_response_cache(self):
+            pass
+
+        def cached_response(self, key, version, max_age):
+            return stored.get(key)
+
+        def store_response(self, key, version, question, payload):
+            stored[key] = payload
+
+    cache = ResponseCache(Store())
+    assert cache.lookup("Older version?", thread_id="t") is None
+    assert cache.lookup("Retired block?", thread_id="t") is None
+    assert cache.lookup("Current?", thread_id="t").thread_id == "t"
