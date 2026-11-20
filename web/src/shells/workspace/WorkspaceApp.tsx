@@ -15,7 +15,7 @@ export function WorkspaceApp() {
     <WorkspaceShell
       player={<NowPlayingBar queueInRail={roomForRail} />}
       queueRail={roomForRail ? <QueueRail /> : null}
-      phonePlayer={(composerFocused) => <NowPlayingBar collapsible forceCollapsed={composerFocused} />}
+      phonePlayer={(composerFocused) => <NowPlayingBar collapsible queueSheet forceCollapsed={composerFocused} />}
       isPhone={isPhone}
       registerAskFromPage={useAskFromPage}
     />

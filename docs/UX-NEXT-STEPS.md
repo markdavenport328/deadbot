@@ -598,7 +598,7 @@ What it does:
   opens on (`initial_tab`, `GroupPlan.tab`, the `page_tab` stream event). A
   group with no tab, or an unreadable one, falls back by block type. Unused
   tabs go gray once the page is done and say "preparing" while it streams.
-- A history rail on desktop, and in the site menu on phones, lists every
+- A history rail on desktop, and a drawer on phones, lists every
   exploration with back and forward. New chat starts a fresh root and keeps
   history; a successful follow-up drops the entries after the page it was
   asked from. While a new question works, the previous page stays visible,
@@ -631,3 +631,23 @@ question opened on Read two times in three, which is worth watching.
 - Plan: [docs/superpowers/plans/2026-11-05-persistent-exploration.md](superpowers/plans/2026-11-05-persistent-exploration.md)
 - Sketch: [docs/plans/persistent-exploration/workspace-sketch.html](plans/persistent-exploration/workspace-sketch.html)
 - Live runs: [docs/plans/persistent-exploration/live-runs-2026-11.md](plans/persistent-exploration/live-runs-2026-11.md)
+
+## Phone frame: top bar, drawer menu, queue sheet — November 20, 2026
+
+- The corner site menu (hamburger, full-screen panel) is gone everywhere. On a
+  desktop its two links already sat at the foot of the history rail; on a phone
+  they now sit at the foot of the history drawer.
+- A phone has a slim top bar on glass, fixed to the top of the screen: the
+  drawer's button (the same panel mark that collapses the desktop rail) and the
+  Deadbot name. The page scrolls under the bar instead of through a floating
+  button, and the button's mark lines up with the text's left edge.
+- The phone's queue opens from a labeled "Queue" pill with the count of tracks
+  left, on its own row under the scrubber (times at left). It opens a sheet
+  over most of the screen (player/QueueSheet.tsx) holding the full QueuePanel:
+  Clear with Undo, drag grips, each row's menu. The close button, a tap on the
+  dimmed page, Escape, Back, or pulling the handle down closes it. Pattern
+  taken from the WAMU player.
+- The About page no longer restores the tab title on its way out; the workspace
+  names every page, About included. (Going back from About used to leave the
+  tab titled "About Deadbot".)
+

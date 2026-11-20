@@ -14,9 +14,8 @@ import { StartLibrary } from "./StartLibrary";
 import { ExplorationPane, PaneFallback, contentOf, draftContent } from "./ExplorationPane";
 import { loadHistory, saveHistory } from "../../core/history-store";
 import { ErrorBoundary } from "../../core/error-boundary";
-import { PanelToggle, PenIcon, useRememberedOpen } from "../../core/side-panel";
-import { RESUME_URL } from "../../SiteMenu";
-import { atPage, currentPath, followInSite, navigate as goToPath, readPageAddress, useBackCloses, usePath, writePage } from "../../core/site-nav";
+import { PanelIcon, PanelToggle, PenIcon, useRememberedOpen } from "../../core/side-panel";
+import { RESUME_URL, atPage, currentPath, followInSite, navigate as goToPath, readPageAddress, useBackCloses, usePath, writePage } from "../../core/site-nav";
 import type { Entry } from "../../core/exploration-state";
 import "./WorkspaceShell.css";
 
@@ -51,12 +50,13 @@ function SendIcon() {
 
 const UNDO_CLEAR_SECONDS = 10;
 
-// The site menu's two links, at the foot of the rail on a desktop, under the history.
-function RailLinks() {
+// The site's two links, at the foot of the history: in the rail on a desktop,
+// in the drawer on a phone. `onFollow` closes the drawer behind About.
+function RailLinks({ onFollow }: { onFollow?: () => void }) {
   const path = usePath();
   return (
     <nav className="rail-links" aria-label="Site">
-      <a href="/about" aria-current={path === "/about" ? "page" : undefined} onClick={(event) => followInSite(event, "/about")}>About Deadbot</a>
+      <a href="/about" aria-current={path === "/about" ? "page" : undefined} onClick={(event) => { if (followInSite(event, "/about")) onFollow?.(); }}>About Deadbot</a>
       <a href={RESUME_URL} target="_blank" rel="noopener">
         About Mark Davenport<span aria-hidden="true"> ↗</span><span className="visually-hidden"> (opens in a new tab)</span>
       </a>
@@ -64,21 +64,15 @@ function RailLinks() {
   );
 }
 
-// The history mark for the phone's drawer button: a clock face turning back.
-function HistoryIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" d="M3.5 12a8.5 8.5 0 1 0 2.5-6M3.5 4v4h4M12 7.5V12l3 2" />
-    </svg>
-  );
-}
-
-// History on a phone: a drawer from the left, opened by the button in the
-// top-left corner. Escape, the Back button or a tap outside closes it and
-// focus returns to the button; choosing a row or New chat also closes it, so
-// the visitor lands on what they picked. `news` marks the button while an
-// answer is being written, or waits unread, behind the page on screen.
-function HistoryDrawer({ open, news, onOpen, onClose, children }: { open: boolean; news: boolean; onOpen(): void; onClose(): void; children: ReactNode }) {
+// A phone's top bar: the drawer's button (the same panel mark that collapses
+// the desktop's rail) and the Deadbot name, on glass fixed to the top of the
+// screen so the page scrolls under it instead of through it. The drawer
+// holds the history and the site's links. Escape, the Back button or a tap
+// outside closes it and focus returns to the button; choosing a row, New
+// chat or About also closes it, so the visitor lands on what they picked.
+// `news` marks the button while an answer is being written, or waits unread,
+// behind the page on screen.
+function HistoryDrawer({ open, news, onOpen, onClose, onHome, children }: { open: boolean; news: boolean; onOpen(): void; onClose(): void; onHome(event: MouseEvent<HTMLAnchorElement>): void; children: ReactNode }) {
   const toggleRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLElement>(null);
   const wasOpen = useRef(false);
@@ -96,13 +90,17 @@ function HistoryDrawer({ open, news, onOpen, onClose, children }: { open: boolea
   }, [open, onClose]);
   return (
     <>
-      <button ref={toggleRef} type="button" className={news ? "history-drawer-toggle has-news" : "history-drawer-toggle"} aria-label="Your explorations" aria-expanded={open} aria-controls="history-drawer" onClick={onOpen}>
-        <HistoryIcon />
-        {news && <span className="visually-hidden"> (one is new)</span>}
-      </button>
+      <header className="phone-topbar">
+        <button ref={toggleRef} type="button" className={news ? "history-drawer-toggle has-news" : "history-drawer-toggle"} aria-label="Menu and your explorations" aria-expanded={open} aria-controls="history-drawer" onClick={onOpen}>
+          <PanelIcon side="left" />
+          {news && <span className="visually-hidden"> (one is new)</span>}
+        </button>
+        <a className="wordmark" href="/" onClick={onHome}>Deadbot</a>
+      </header>
       {open && <div className="history-drawer-scrim" onClick={onClose} aria-hidden="true" />}
-      <aside ref={drawerRef} id="history-drawer" className={open ? "history-drawer open" : "history-drawer"} aria-label="Your explorations" hidden={!open}>
+      <aside ref={drawerRef} id="history-drawer" className={open ? "history-drawer open" : "history-drawer"} aria-label="Menu and your explorations" hidden={!open}>
         {children}
+        <RailLinks onFollow={onClose} />
       </aside>
     </>
   );
@@ -405,13 +403,6 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     document.title = path === "/about" ? "About Deadbot" : address.title ? `${address.title} · Deadbot` : "Deadbot";
   }, [path, address.title]);
 
-  // On a desktop the rail carries the site's links, so the corner menu steps aside.
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle("workspace-desktop", !isPhone);
-    return () => root.classList.remove("workspace-desktop");
-  }, [isPhone]);
-
   // Every change to the history is saved in this browser.
   useEffect(() => {
     if (!fixtureMode) saveHistory(state);
@@ -665,7 +656,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     <main className={["app-shell", "workspace-shell", isPhone ? "phone" : null, !isPhone && !railOpen ? "history-collapsed" : null].filter(Boolean).join(" ")}>
       <p role="status" className="sr-only">{announcement}</p>
       {isPhone && (
-        <HistoryDrawer open={drawerOpen} news={news} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}>
+        <HistoryDrawer open={drawerOpen} news={news} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)} onHome={(event) => { goHome(event); setDrawerOpen(false); }}>
           {history(drawerHeadingId, true)}
         </HistoryDrawer>
       )}
