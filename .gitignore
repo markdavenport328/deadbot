@@ -35,12 +35,10 @@ Thumbs.db
 *.swp
 *.swo
 
-# Local databases and PostgreSQL artifacts
+# Local databases
 *.sqlite
 *.sqlite3
 *.db
-pgdata/
-postgres-data/
 
 # Logs and temporary exports
 *.log
@@ -49,7 +47,6 @@ tmp/
 temp/
 exports/
 eval-results/
-.neon
 
 # Live-run responses saved for local review
 web/public/live/

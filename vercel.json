@@ -4,7 +4,7 @@
   "functions": {
     "deadbot/api.py": {
       "includeFiles": "{web/dist/index.html,web/dist/assets/**,web/dist/fonts/**,web/dist/icons/**,web/dist/sw.js,web/dist/manifest.webmanifest,build/deadbot.sqlite,build/warm-answers.json}",
-      "excludeFiles": "{data/raw/**,data/canonical/**,web/node_modules/**,web/src/**,web/public/**,build/live-runs/**,evals/**,tests/**,docs/**,scripts/**,schema/postgres*,.github/**,.claude/**,.agents/**}",
+      "excludeFiles": "{data/raw/**,data/canonical/**,web/node_modules/**,web/src/**,web/public/**,build/live-runs/**,evals/**,tests/**,docs/**,scripts/**,.github/**,.claude/**,.agents/**}",
       "maxDuration": 60
     }
   }
