@@ -9,6 +9,7 @@ import {
   type ReactNode
 } from "react";
 import { archiveFallbackUrls } from "./archive-fallback";
+import { loadSavedTracks, offlineSource } from "./offline";
 
 // The one shared player for the whole app, behind a context, so playback
 // survives a page re-render or a follow-up question instead of resetting with
@@ -108,7 +109,6 @@ const initialState: PlayerState = { queue: [], index: -1, status: "idle", positi
 const PRELOAD_LEAD_SECONDS = 30;
 // "Previous" restarts the current track once it has played this long.
 const RESTART_THRESHOLD_SECONDS = 3;
-const SKIP_SECONDS = 10;
 // Between two loop checks, playback advances well under this; a bigger move is a seek.
 const LOOP_SEEK_SECONDS = 1.5;
 
@@ -177,10 +177,25 @@ function restoredState(): PlayerState {
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 // "May 8, 1977" for the lock screen, which has room for the long form.
+// The tape's own image when it has one, then Deadbot's square: a lock
+// screen or a car's screen picks the size it wants, and never shows a blank.
+export const FALLBACK_ARTWORK = [
+  { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+  { src: "/icons/icon-1024.png", sizes: "1024x1024", type: "image/png" }
+];
+
+function lockScreenArtwork(thumbnailUrl: string | null | undefined): MediaImage[] {
+  return thumbnailUrl ? [{ src: thumbnailUrl }, ...FALLBACK_ARTWORK] : FALLBACK_ARTWORK;
+}
+
 function lockScreenDate(iso: string | null | undefined): string | null {
   const match = iso ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso) : null;
   const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
   return match && month ? `${month} ${Number(match[3])}, ${match[1]}` : iso ?? null;
+}
+
+function pageHidden(): boolean {
+  return typeof document !== "undefined" && document.visibilityState === "hidden";
 }
 
 function mediaSession(): MediaSession | null {
@@ -256,18 +271,32 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return spareRef.current;
   }
 
+  // The active element, holding the current track's file: a restored track
+  // waits for its source until the page knows what is saved on the device,
+  // and a play in that moment loads it here.
+  function withSource(): HTMLAudioElement {
+    const element = audio();
+    const current = stateRef.current;
+    const track = current.queue[current.index];
+    if (track && !element.getAttribute("src")) element.src = offlineSource(track.audioUrl);
+    return element;
+  }
+
   // The spare already holds this file and loaded it without an error.
   function spareHolds(url: string): boolean {
     const element = spareRef.current;
-    return Boolean(element && element.getAttribute("src") === url && !element.error);
+    return Boolean(element && element.getAttribute("src") === offlineSource(url) && !element.error);
   }
 
   // Start loading the queue's next track into the spare element.
   function preloadNext() {
     const current = stateRef.current;
     const next = current.queue[current.index + 1];
-    if (!next || spare().getAttribute("src") === next.audioUrl) return;
-    spare().src = next.audioUrl;
+    // A hidden page plays the next track from the same element; loading it
+    // into the spare would only spend the visitor's data.
+    const source = next ? offlineSource(next.audioUrl) : null;
+    if (!next || !source || pageHidden() || spare().getAttribute("src") === source) return;
+    spare().src = source;
     spare().load();
   }
 
@@ -275,7 +304,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     pendingSeekRef.current = null;
     setLoop(NO_LOOP);
     let element = audio();
-    if (spareHolds(track.audioUrl)) {
+    // With the page hidden (the phone locked, the car playing), the next
+    // track loads into the element already playing: a phone lets the playing
+    // element go on to a new file, but may refuse to start a different one
+    // without a tap, which would stop the show between songs.
+    if (!pageHidden() && spareHolds(track.audioUrl)) {
       // The spare loaded this track ahead of time: it becomes the player, and
       // the old player becomes the spare.
       const ready = spare();
@@ -288,7 +321,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audioRef.current = ready;
       element = ready;
     } else {
-      element.src = track.audioUrl;
+      element.src = offlineSource(track.audioUrl);
     }
     fallbackRef.current = { trackId: track.id };
     applyRate(element);
@@ -374,7 +407,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const restored = stateRef.current.queue[stateRef.current.index];
     if (restored && !audio().getAttribute("src")) {
       fallbackRef.current = { trackId: restored.id };
-      audio().src = restored.audioUrl;
+      // First learn which songs are on the device, so a saved track loads
+      // from there and a phone without a signal never asks the network for it.
+      void loadSavedTracks().then(() => {
+        if (stateRef.current.queue[stateRef.current.index]?.id === restored.id) withSource();
+      });
     }
 
     return () => {
@@ -406,7 +443,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           const index = queue.findIndex((item) => item.id === track.id);
           if (index >= 0) setState((previous) => ({ ...previous, queue, index }));
         }
-        audio().play().catch(onPlayRejected);
+        withSource().play().catch(onPlayRejected);
         return;
       }
       const list = queue && queue.length > 0 ? queue : [track];
@@ -476,7 +513,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (current.status === "playing" || current.status === "loading") {
       element.pause();
     } else if (current.queue[current.index]) {
-      element.play().catch(onPlayRejected);
+      withSource().play().catch(onPlayRejected);
     }
   }, []);
 
@@ -521,7 +558,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const element = audio();
       pendingSeekRef.current = null;
       fallbackRef.current = { trackId: added[0].id };
-      element.src = added[0].audioUrl;
+      element.src = offlineSource(added[0].audioUrl);
       setState({ queue: added, index: 0, status: "paused", position: 0, duration: added[0].durationSeconds ?? 0 });
       return;
     }
@@ -590,7 +627,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
       ["play", () => {
         const current = stateRef.current;
-        if (current.queue[current.index]) audio().play().catch(onPlayRejected);
+        if (current.queue[current.index]) withSource().play().catch(onPlayRejected);
       }],
       ["pause", () => audio().pause()],
       ["previoustrack", () => {
@@ -601,14 +638,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       ["nexttrack", () => next()],
       ["seekto", (details) => {
         if (details.seekTime != null) seek(details.seekTime);
-      }],
-      ["seekbackward", (details) => seek(Math.max(0, audio().currentTime - (details.seekOffset ?? SKIP_SECONDS)))],
-      ["seekforward", (details) => {
-        const element = audio();
-        const end = Number.isFinite(element.duration) ? element.duration : stateRef.current.duration;
-        seek(Math.min(end || Infinity, element.currentTime + (details.seekOffset ?? SKIP_SECONDS)));
       }]
     ];
+    // No seekbackward or seekforward: with those registered, a phone's lock
+    // screen and a car's screen show ±10 s buttons in place of previous and
+    // next track, and a steering wheel's next button skips 10 s instead of to
+    // the next song. The scrubber still seeks (seekto).
     for (const [action, handler] of handlers) {
       try {
         session.setActionHandler(action, handler);
@@ -639,7 +674,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       title: currentTrack.title,
       artist: "Grateful Dead",
       album: [lockScreenDate(currentTrack.showDate), currentTrack.venueName].filter(Boolean).join(" · "),
-      artwork: currentTrack.thumbnailUrl ? [{ src: currentTrack.thumbnailUrl }] : []
+      artwork: lockScreenArtwork(currentTrack.thumbnailUrl)
     });
   }, [currentTrack]);
 

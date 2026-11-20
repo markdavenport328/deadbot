@@ -3,7 +3,7 @@ import { type ShowUnitBlock } from "../../types";
 import { CardHeading, Drawer, MoreAbout, type DrawerTab } from "../components";
 import { type FollowUp } from "../../core/ask-request";
 import { type PlayerTrack } from "../../player/player";
-import { ClampText, ListenLinks, splitListen } from "../listening";
+import { ClampText, ListenLinks, splitListen, toTrack } from "../listening";
 import { formatShowDateLong } from "../../core/format";
 import { renderInline } from "../inline";
 import { type ShowMeta, thumbnailForIdentifier, toPlayerTrack, CardHead, ListenFor, IdRow, Meta, PlainList, PeopleList, GoDeeper } from "../parts";
@@ -34,10 +34,16 @@ export function ShowUnit({
     recordingDetailsUrl: unit.recording_details_url,
     thumbnailUrl: thumbnailForIdentifier(unit.recording_identifier)
   };
+  // The show's tape: the setlist's tracks when the card shows a setlist,
+  // otherwise the tape the card carries on its own, so a card plays and
+  // queues the whole show whichever facets it shows.
   const playableQueue = useMemo(
-    () => unit.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, showMeta)).filter((track): track is PlayerTrack => track !== null)),
+    () => {
+      const fromSetlist = unit.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, showMeta)).filter((track): track is PlayerTrack => track !== null));
+      return fromSetlist.length > 0 ? fromSetlist : (unit.tracks ?? []).map((track) => toTrack(track, showMeta));
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [unit.sets, unit.show_date, unit.venue_name, unit.recording_details_url, unit.recording_identifier]
+    [unit.sets, unit.tracks, unit.show_date, unit.venue_name, unit.recording_details_url, unit.recording_identifier]
   );
 
   // The guest joins the meta line: who was there, not a separate labeled row.

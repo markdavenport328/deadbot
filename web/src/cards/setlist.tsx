@@ -1,5 +1,5 @@
 import { usePlayer, formatClockTime, type PlayerTrack } from "../player/player";
-import { AddToQueue, ListenControl } from "./listen-control";
+import { AddToQueue, ListenControl, usePlayControl } from "./listen-control";
 import { type SetlistSections, type SetlistSongType, type ShowMeta, toPlayerTrack } from "./parts";
 import { PlayPauseIcon } from "../player/icons";
 
@@ -75,10 +75,32 @@ function SetlistRow({
   );
 }
 
+// A set's own play and +, in the rows' play column above them: play starts
+// the set from its first song, + adds the whole set to the queue.
+function SetControls({ label, tracks }: { label: string; tracks: PlayerTrack[] }) {
+  const control = usePlayControl({ start: tracks[0], queue: tracks }, "queue");
+  return (
+    <span className="row-play-cell">
+      <button
+        type="button"
+        className={`row-play${control.mine ? " current" : ""}${control.errored ? " errored" : ""}`}
+        onClick={control.onClick}
+        aria-busy={control.loading}
+        aria-label={`${control.errored ? "Retry" : control.playing ? "Pause" : "Play"} ${label}`}
+        data-tip={control.errored ? "Try again" : control.playing ? "Pause" : `Play ${label}`}
+      >
+        <PlayPauseIcon playing={control.playing} />
+      </button>
+      <AddToQueue tracks={tracks} name={label} variant="round" />
+    </span>
+  );
+}
+
 // The setlist panel: one column per set, numbering continuing across sets
 // (Set 2 starts at 9 when Set 1 has 8 songs). Clicking a row's play button
 // plays that track and queues the rest of that set (its own playable songs,
-// in order) after it.
+// in order) after it. A show of several sets offers each set's play and +
+// beside its label; the card's header plays and queues the whole show.
 export function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMeta: ShowMeta }) {
   const player = usePlayer();
   let runningCount = 0;
@@ -88,9 +110,17 @@ export function SetlistPanel({ sets, showMeta }: { sets: SetlistSections; showMe
         const start = runningCount + 1;
         runningCount += set.songs.length;
         const setTracks = set.songs.map((song) => toPlayerTrack(song, showMeta));
+        const playable = setTracks.filter((item): item is PlayerTrack => item !== null);
         return (
           <div key={set.label}>
-            <span className="k">{set.label}</span>
+            {sets.length > 1 && playable.length > 1 ? (
+              <div className="set-head">
+                <SetControls label={set.label} tracks={playable} />
+                <span className="k">{set.label}</span>
+              </div>
+            ) : (
+              <span className="k">{set.label}</span>
+            )}
             <ol className="setlist-rows" start={start} role="list">
               {set.songs.map((song, index) => {
                 const track = setTracks[index];

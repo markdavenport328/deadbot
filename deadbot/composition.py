@@ -47,6 +47,7 @@ from deadbot.experience import (
     PerformanceSpineNeighbor,
     PerformanceUnitBlock,
     PerformerItem,
+    PlayableTrack,
     RecordingItem,
     ResourceItem,
     SetlistSection,
@@ -698,7 +699,16 @@ def _show_unit(
     listen, listen_sources = _show_listen_actions(payload, store, preferred_recording_id)
     recordings = _show_recordings(payload, store) if "recordings" in facets else []
     venue = payload.get("venue")
-    recording_identifier = _show_recording_identifier(payload) if "setlist" in facets else None
+    # The show's tape is transport, not a facet: the card plays and queues the
+    # whole show whatever the model chose to display. With a setlist the rows
+    # carry the tracks; without one, the card carries the tape on its own.
+    if "setlist" in facets:
+        recording_identifier = _show_recording_identifier(payload)
+        tape: list[PlayableTrack] = []
+    else:
+        from deadbot.listening import playable_show_tracks
+
+        tape, recording_identifier = playable_show_tracks(show["show_id"], store)
     block = ShowUnitBlock(
         type="show_unit",
         show_id=show["show_id"],
@@ -711,6 +721,7 @@ def _show_unit(
         note=(note or "").strip() or None,
         visible_facets=sorted(facets, key=["guests", "listen", "setlist", "sources", "lineup", "recordings"].index),
         setlist_disclosure=setlist_disclosure,
+        tracks=tape,
         sets=_setlist_sections(payload, store, highlighted) if "setlist" in facets else [],
         setlist_note=(show.get("setlist_note") or None) if "setlist" in facets else None,
         recording_identifier=recording_identifier,

@@ -564,6 +564,24 @@ def create_app(
         fonts = client_dist / "fonts"
         if fonts.is_dir():
             app.mount("/fonts", StaticFiles(directory=fonts), name="fonts")
+        # The home-screen icons, the web app manifest and the service worker
+        # are copied from web/public too. The worker must be served from the
+        # root so it can serve the whole site, and always revalidated so a
+        # deploy's new worker is picked up.
+        icons = client_dist / "icons"
+        if icons.is_dir():
+            app.mount("/icons", StaticFiles(directory=icons), name="icons")
+        root_files = {
+            "sw.js": ("text/javascript", "no-cache"),
+            "manifest.webmanifest": ("application/manifest+json", "public, max-age=3600"),
+        }
+        for file_name, (media_type, cache_control) in root_files.items():
+            if (client_dist / file_name).is_file():
+
+                def serve(file_name: str = file_name, media_type: str = media_type, cache_control: str = cache_control) -> FileResponse:
+                    return FileResponse(client_dist / file_name, media_type=media_type, headers={"Cache-Control": cache_control})
+
+                app.add_api_route(f"/{file_name}", serve, methods=["GET"], include_in_schema=False)
 
         @app.get("/{full_path:path}", include_in_schema=False)
         def client(full_path: str) -> FileResponse:

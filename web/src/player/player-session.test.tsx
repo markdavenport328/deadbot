@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { NowPlayingBar } from "./NowPlayingBar";
 import { ListenControl } from "../cards/listen-control";
-import { PLAYER_RATE_KEY, PLAYER_STORAGE_KEY, PlayerProvider, readSavedPlayer, type PlayerTrack } from "./player";
+import { FALLBACK_ARTWORK, PLAYER_RATE_KEY, PLAYER_STORAGE_KEY, PlayerProvider, readSavedPlayer, type PlayerTrack } from "./player";
 
 // The player beyond the page: a queue that survives a reload, the next track
 // loaded before the current one ends, and the phone's lock screen controls.
@@ -117,6 +117,32 @@ describe("loading the next track early", () => {
       spare.dispatchEvent(new Event("playing"));
     });
     expect(within(bar()).getByRole("button", { name: "Pause" })).toBeInTheDocument();
+  });
+});
+
+describe("with the phone locked", () => {
+  afterEach(() => {
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
+  });
+
+  it("goes on to the next song in the element already playing, without loading a spare", async () => {
+    renderPage();
+    await click(screen.getByRole("button", { name: "Scarlet Begonias" }));
+    const first = played[played.length - 1];
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+
+    setTime(first, 580);
+    await act(async () => {
+      first.dispatchEvent(new Event("timeupdate"));
+    });
+    expect(loaded).toHaveLength(0);
+
+    await act(async () => {
+      first.dispatchEvent(new Event("ended"));
+    });
+    expect(played[played.length - 1]).toBe(first);
+    expect(first.getAttribute("src")).toBe(show[1].audioUrl);
+    expect(within(bar()).getByText("Fire On The Mountain")).toBeInTheDocument();
   });
 });
 
@@ -260,8 +286,12 @@ describe("lock screen controls", () => {
       title: "Scarlet Begonias",
       artist: "Grateful Dead",
       album: "May 8, 1977 · Barton Hall",
-      artwork: [{ src: "https://archive.org/services/img/gd1977-05-08" }]
+      artwork: [{ src: "https://archive.org/services/img/gd1977-05-08" }, ...FALLBACK_ARTWORK]
     });
+    // Previous and next track, not ±10 s, on the lock screen and in the car.
+    expect(handlers.nexttrack).toBeDefined();
+    expect(handlers.seekforward).toBeUndefined();
+    expect(handlers.seekbackward).toBeUndefined();
     const element = played[played.length - 1];
     await act(async () => {
       element.dispatchEvent(new Event("playing"));

@@ -656,6 +656,26 @@ def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):
     assert page.headers["cache-control"] == "no-cache, no-store, must-revalidate"
 
 
+def test_api_serves_the_app_icons_manifest_and_service_worker(tmp_path):
+    client_dist = tmp_path / "dist"
+    (client_dist / "icons").mkdir(parents=True)
+    (client_dist / "index.html").write_text("<main>Deadbot client</main>", encoding="utf-8")
+    (client_dist / "sw.js").write_text("self.addEventListener('fetch', () => {});", encoding="utf-8")
+    (client_dist / "manifest.webmanifest").write_text('{"name": "Deadbot"}', encoding="utf-8")
+    (client_dist / "icons" / "icon-192.png").write_bytes(b"\x89PNG")
+    client = TestClient(
+        create_app(settings=Settings(), store=CanonicalStore(), agent=FakeAgent([]), client_dist=client_dist)
+    )
+    worker = client.get("/sw.js")
+    assert worker.status_code == 200 and "addEventListener" in worker.text
+    assert worker.headers["content-type"].startswith("text/javascript")
+    assert worker.headers["cache-control"] == "no-cache"
+    manifest = client.get("/manifest.webmanifest")
+    assert manifest.json() == {"name": "Deadbot"}
+    assert manifest.headers["content-type"].startswith("application/manifest+json")
+    assert client.get("/icons/icon-192.png").content == b"\x89PNG"
+
+
 def test_album_unit_block_validates_a_full_record():
     block = experience.AlbumUnitBlock(
         type="album_unit",

@@ -320,6 +320,11 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 @keyframes eq { from { height: 25%; } to { height: 100%; } }
 .queue-empty { margin: 0; color: var(--quiet); font-size: 0.85rem; }
+/* Saving the queue to the device: one quiet line at the queue's foot. */
+.queue-offline { margin-top: var(--space-part); padding-top: var(--space-tight); border-top: 1px solid var(--hair); color: var(--quiet); font-size: 0.8rem; }
+.queue-offline p { margin: 0; }
+.queue-offline p:empty { display: none; }
+.queue-offline p + p { margin-top: var(--space-line); }
 .queue-list { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
 .queue-item { position: relative; display: grid; grid-template-columns: 1.6rem minmax(0, 1fr) auto 32px 32px; align-items: center; column-gap: var(--space-tight); min-height: 3rem; padding: var(--space-line) 0; border-radius: var(--r); }
 .queue-item.dragging { background: rgba(var(--cream-rgb), 0.08); box-shadow: inset 2px 0 0 var(--listen); }
@@ -575,6 +580,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
    titles; a lone set, or a narrow card, takes the full width. */
 .setlist-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); gap: var(--space-part) var(--space-unit); }
 .setlist-panel .k { display: block; margin-bottom: var(--space-tight); }
+/* A set's play and + sit in the rows' play column, the set's name beside them. */
+.setlist-panel .set-head { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: var(--space-part); padding: 0 var(--space-tight); margin-bottom: var(--space-tight); }
+.setlist-panel .set-head .k { margin-bottom: 0; }
+.set-head .row-play-cell { display: flex; align-items: center; gap: var(--space-tight); }
 .song-list { margin: 0; padding-left: var(--space-content); color: var(--quiet); font-size: 0.93rem; font-variant-numeric: tabular-nums; }
 .song-list li { padding: var(--space-line) 0 var(--space-line) var(--space-line); }
 .song-list li::marker { font-size: 0.85em; }
