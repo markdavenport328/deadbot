@@ -88,6 +88,39 @@ made for another data version or commit are ignored). The step skips where no
 model key is configured, such as a preview build, and never fails the build.
 `scripts/warm_answers.py <base-url>` still warms one running server by hand.
 
+## Provider prompt cache
+
+The system prompt and the tool schemas (about 13k tokens) are byte-identical
+for every visitor: no date, thread or request value is in them, and
+`tests/test_graph.py` builds the request for two visitors and compares the
+bytes. Every model call therefore carries the same OpenAI `prompt_cache_key`
+(`deadbot.graph.prompt_cache_key`), so a visitor's first call can read the
+prefix another visitor's call cached. OpenAI keeps cache reuse apart by key
+and routes by key and prefix, with about 15 requests a minute per key before
+overflow; `DEADBOT_PROMPT_CACHE_SHARDS` spreads conversations over more keys
+when traffic passes that. Keep anything that changes per request out of the
+system prompt and the tool descriptions. The turn metrics line records
+`first_call_cached_input_share`, `earlier_turns` and `prompt_cache_key`, so
+the effect is read from the logs: a fresh question (`earlier_turns` 0) asked
+while others are active should show a share near 1.0.
+
+## Usage limits and the turn budget
+
+`deadbot/limits.py` counts the questions that reach the model: per visitor
+(a signed cookie carries the count between function instances), per client
+address and per instance, each over a minute and a day as `.env.example`
+lists. Stored answers are not counted. A refused request is HTTP 429 with a
+plain `detail` sentence the web client shows as it is. There is no shared
+store, so the address and instance counts are per function instance.
+
+Every API request runs on a throwaway checkpoint thread; the browser's
+transcript is the conversation's memory, and its size is bounded
+(`DEADBOT_CONVERSATION_MAX_CHARS`). A hosted turn has a time budget
+(`DEADBOT_TURN_BUDGET_SECONDS`, 55 by default) inside the function's 60
+seconds: a turn that runs out ends with a plain message and its metrics line
+instead of a dropped connection. Build and measurement scripts that ask many
+questions in one process call `Settings.without_limits()`.
+
 ## Provider contract
 
 `deadbot/models.py` defines the `ModelProvider` contract. The graph consumes a tool-capable chat model through that contract and does not import a provider directly. The initial `OllamaProvider` is selected by `DEADBOT_MODEL_PROVIDER=ollama` and its model is selected by `DEADBOT_OLLAMA_MODEL`.

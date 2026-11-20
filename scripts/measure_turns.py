@@ -170,7 +170,7 @@ def main(argv: list[str] | None = None) -> None:
     from deadbot.api import create_app
     from deadbot.config import Settings
 
-    settings = dataclasses.replace(Settings.from_env(), response_cache=False, rate_limit_per_minute=0)
+    settings = dataclasses.replace(Settings.from_env().without_limits(), response_cache=False)
     app = create_app(settings=settings)
     if args.sequence:
         sections = []
