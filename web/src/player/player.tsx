@@ -525,7 +525,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setState((previous) => ({ ...previous, position: songPosition(element) }));
       const track = currentTrackNow();
       const segment = track ? trackSegments(track)[segmentRef.current] : undefined;
-      const fileEnd = segment?.end ?? (Number.isFinite(element.duration) ? element.duration : null);
+      const fileEnd =
+        segment?.end ??
+        (Number.isFinite(element.duration) ? element.duration : track && !segmented(track) ? track.durationSeconds ?? null : null);
       if (fileEnd != null && fileEnd - element.currentTime <= PRELOAD_LEAD_SECONDS) preloadNext();
     });
     const onLoadedMetadata = active((element) => {
