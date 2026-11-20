@@ -5,7 +5,7 @@ it is; this module hydrates what that needs from the library: the playable
 Internet Archive tracks of one tape in show order, a cover image, and the
 identity a hero names. It reads the store only through its query layer
 (``one``, ``filtered_rows``, ``rows_in``), never ``tables`` directly, so the
-CSV, PostgreSQL and SQLite stores behave the same. Store values are strings.
+CSV and SQLite stores behave the same. Store values are strings.
 """
 
 from __future__ import annotations

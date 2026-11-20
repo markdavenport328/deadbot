@@ -684,11 +684,11 @@ def test_search_entities_surfaces_band_memberships_for_a_core_member():
 
 
 def test_canonical_csv_values_pass_the_importer_converters():
-    """CI's db-import rejects a bare year or year-month in a DATE column; catch it here first."""
+    """The catalog build rejects a bare year or year-month in a date column; name the row here first."""
     import csv
     from pathlib import Path
 
-    from deadbot.postgres_import import TABLE_SPECS
+    from deadbot.canonical_import import TABLE_SPECS
 
     canonical = Path(__file__).parents[1] / "data" / "canonical"
     bad = []

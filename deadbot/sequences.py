@@ -3,8 +3,8 @@
 A pairing is song A at position p followed by song B at position p + 1 in the
 same set of the same show. When A's ``segue_into_next`` is true the two run
 together without a stop (China Cat Sunflower > I Know You Rider); otherwise B
-simply came next. The stores find the adjacent pairs (SQL for SQLite and
-PostgreSQL, an in-memory scan for the CSV store); everything here is shared
+simply came next. The stores find the adjacent pairs (SQL for SQLite, an
+in-memory scan for the CSV store); everything here is shared
 shaping over those rows, so every store returns the same versions, lengths and
 listening paths.
 """

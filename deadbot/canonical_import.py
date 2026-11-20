@@ -1,9 +1,9 @@
-"""The reviewed canonical CSVs as a database-neutral contract.
+"""The reviewed canonical CSVs as an explicit, validated contract.
 
-Every database writer (the SQLite builder, and the PostgreSQL importer while
-it remains) reads and validates input through this module, so a CSV that one
-accepts the other accepts too. Standard library only: Vercel's build step
-imports this before any dependency is installed.
+The SQLite builder reads and validates its input through this module: every
+table's columns, which may be empty, and which hold dates, numbers or
+booleans. Standard library only: Vercel's build step imports this before any
+dependency is installed.
 """
 
 from __future__ import annotations
@@ -114,14 +114,6 @@ TABLE_SPECS: tuple[TableSpec, ...] = (
     _spec("performance_recordings", "performance_id recording_id track_number start_seconds duration_seconds track_title notes", nullable=("start_seconds", "duration_seconds", "track_title", "notes"), integers=("track_number", "start_seconds", "duration_seconds")),
     _spec("show_equipment", "show_id equipment_id usage_context claim_type claim_id source_id source_url source_note", nullable=("source_note",)),
 )
-
-
-@dataclass(frozen=True)
-class CanonicalSnapshot:
-    """An immutable content manifest for one reviewed canonical input set."""
-
-    snapshot_id: str
-    manifest: Mapping[str, Any]
 
 
 class CanonicalImportError(ValueError):
@@ -333,38 +325,3 @@ def read_canonical_tables(
     """Validate all input before opening a database transaction."""
 
     return {spec.name: read_canonical_table(canonical_dir, spec) for spec in specs}
-
-
-def canonical_snapshot(
-    canonical_dir: Path | str,
-    rows_by_table: Mapping[str, Sequence[tuple[Any, ...]]],
-    specs: Sequence[TableSpec] = TABLE_SPECS,
-) -> CanonicalSnapshot:
-    """Create a content-addressed manifest for already validated CSV input.
-
-    Per-file digests preserve the exact reviewed files used by an import. The
-    combined digest is deliberately independent of filesystem paths and gives
-    observations a stable, portable input revision identifier.
-    """
-
-    root = Path(canonical_dir)
-    combined = hashlib.sha256()
-    files: list[dict[str, Any]] = []
-    for spec in specs:
-        payload = (root / spec.csv_name).read_bytes()
-        digest = hashlib.sha256(payload).hexdigest()
-        combined.update(spec.csv_name.encode("utf-8"))
-        combined.update(b"\0")
-        combined.update(bytes.fromhex(digest))
-        combined.update(b"\0")
-        files.append(
-            {
-                "name": spec.csv_name,
-                "sha256": digest,
-                "row_count": len(rows_by_table[spec.name]),
-            }
-        )
-    return CanonicalSnapshot(
-        snapshot_id=f"sha256:{combined.hexdigest()}",
-        manifest={"format": "deadbot-canonical-snapshot/v1", "files": files},
-    )

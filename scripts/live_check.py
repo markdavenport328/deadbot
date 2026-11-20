@@ -50,7 +50,6 @@ def load_env() -> None:
             value = value[1:-1]
         os.environ.setdefault(key.strip(), value)
     os.environ["DEADBOT_MODEL_PROVIDER"] = "openai"
-    os.environ["DEADBOT_DATA_STORE"] = "sqlite"
     os.environ["DEADBOT_RESPONSE_CACHE"] = "false"
     os.environ["DEADBOT_RATE_LIMIT_PER_MINUTE"] = "1000"
 

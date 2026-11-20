@@ -483,8 +483,8 @@ def _listen_url(performance: dict[str, Any]) -> str | None:
 def _truthy(value: Any) -> bool:
     """Parse the canonical store's string-boolean convention (``"true"``/``"false"``).
 
-    Both the CSV and PostgreSQL stores normalize booleans to these two
-    strings (see ``deadbot.postgres._string_value``), so this is the one
+    Both the CSV and SQLite stores hold booleans as these two
+    strings (see ``deadbot.sqlite_build._sqlite_value``), so this is the one
     place that convention needs decoding.
     """
 

@@ -3,7 +3,7 @@
 The song card's timeline and the get_song_life tool read from here. Every fact
 comes from the store; nothing here judges which performances matter, it only
 says what stands out. Reads use only rows_in, one and filtered_rows, which the
-CSV, SQLite and PostgreSQL stores implement alike.
+CSV and SQLite stores implement alike.
 """
 
 from __future__ import annotations
@@ -233,7 +233,7 @@ def _signals(store: CanonicalStore, performance_ids: set[str], show_ids: set[str
     try:
         inventory = load_selection_signals(store)["selection_signals"]
     except SelectionSignalError:
-        # The CSV store holds no selection inventory; the SQLite and PostgreSQL stores do.
+        # The CSV store holds no selection inventory; the SQLite store does.
         logger.info("Selection signals are not available from this store; song life carries no picks")
         return {}, {}
     by_performance: dict[str, list[str]] = defaultdict(list)

@@ -61,8 +61,7 @@ def _as_int(value: str | None, default: int) -> int:
 class Settings:
     """Configuration shared by the graph and model-provider layer."""
 
-    data_store: str = "sqlite"
-    database_url: str | None = None
+    # Where the built catalog lives; unset means build/deadbot.sqlite.
     sqlite_path: Path | None = None
     model_provider: str = "ollama"
     ollama_model: str = "qwen3:8b"
@@ -100,20 +99,10 @@ class Settings:
         def value(key: str, default: str | None = None) -> str | None:
             return environ[key] if key in environ else file_values.get(key, default)
 
-        database_url = (
-            environ.get("DEADBOT_DATABASE_URL")
-            or environ.get("DATABASE_URL")
-            or file_values.get("DEADBOT_DATABASE_URL")
-            or file_values.get("DATABASE_URL")
-            or None
-        )
-
         model_provider = value("DEADBOT_MODEL_PROVIDER", "ollama") or "ollama"
 
         return cls(
-            data_store=(value("DEADBOT_DATA_STORE", "sqlite") or "sqlite").strip().lower(),
             sqlite_path=Path(sqlite_path) if (sqlite_path := value("DEADBOT_SQLITE_PATH")) else None,
-            database_url=database_url,
             model_provider=model_provider,
             ollama_model=value("DEADBOT_OLLAMA_MODEL", "qwen3:8b") or "qwen3:8b",
             ollama_base_url=value("DEADBOT_OLLAMA_BASE_URL", "http://127.0.0.1:11434") or "http://127.0.0.1:11434",

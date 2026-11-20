@@ -2,10 +2,9 @@ import json
 
 from deadbot.data import CanonicalStore
 from deadbot.pathways import pathways_for
-from deadbot.postgres import PostgresCanonicalStore
 from deadbot.tools import build_tools
 from test_data import store_with_selection_evidence, tool_by_name
-from test_postgres_store import Connection
+from sqlite_toy import toy_store
 
 
 def test_sugaree_is_cataloged_with_a_source_trail_and_a_non_catalog_resource():
@@ -88,14 +87,14 @@ def test_dark_star_selections_include_headyversion():
     assert "headyversion" in pathways["selections"]["sources"]
 
 
-def test_get_show_issues_a_bounded_number_of_statements_on_the_postgres_toy_fixture():
-    connection = Connection()
-    store = PostgresCanonicalStore(connection, schema="canonical")
+def test_get_show_issues_a_bounded_number_of_statements_on_the_toy_fixture(tmp_path):
+    store = toy_store(tmp_path)
     tools = {tool.name: tool for tool in build_tools(store)}
 
-    before = len(connection.statements)
+    before = len(store.statements)
     payload = json.loads(tools["get_show"].invoke({"show_id_or_date": "show-1972-08-27"}))
-    issued = connection.statements[before:]
+    issued = store.statements[before:]
+    store.close()
 
     assert len(issued) < 25
     assert "pathways" in payload

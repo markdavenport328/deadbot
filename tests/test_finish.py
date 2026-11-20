@@ -501,7 +501,7 @@ def test_resolve_body_resolves_performer_and_equipment_lists_for_a_show():
 
 
 def _store_with_selection_evidence() -> CanonicalStore:
-    """The reviewed selection rows the PostgreSQL runtime serves, read from their source file."""
+    """The reviewed selection rows the SQLite store serves, read from their source file."""
 
     from pathlib import Path
 

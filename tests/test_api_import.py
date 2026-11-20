@@ -3,9 +3,9 @@ import sys
 
 
 def test_importing_the_api_module_does_not_build_the_app(monkeypatch):
-    monkeypatch.setenv("DEADBOT_DATA_STORE", "postgres")
-    monkeypatch.delenv("DEADBOT_DATABASE_URL", raising=False)
-    monkeypatch.delenv("DATABASE_URL", raising=False)
+    # Nothing opens a store at import, so a missing or unbuilt catalog cannot
+    # fail the import itself.
+    monkeypatch.setenv("DEADBOT_SQLITE_PATH", "/nonexistent/deadbot.sqlite")
     sys.modules.pop("deadbot.api", None)
 
     module = importlib.import_module("deadbot.api")
@@ -35,8 +35,8 @@ def test_app_attribute_is_built_lazily_and_cached(monkeypatch):
 def test_openapi_publishes_the_album_unit_block():
     # Build via create_app with an injected store/agent rather than the
     # module-level ``deadbot.api.app`` singleton: that lazy attribute builds
-    # the production app through ``create_canonical_store``, which requires
-    # DEADBOT_DATABASE_URL. This test only needs the schema, so it follows
+    # the production app through ``create_canonical_store``, which builds
+    # the SQLite catalog. This test only needs the schema, so it follows
     # scripts/export_openapi.py's pattern (a CSV-backed store, a plain
     # sentinel agent) to read the OpenAPI schema without a database.
     from deadbot.api import create_app

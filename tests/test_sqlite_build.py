@@ -8,8 +8,6 @@ import pytest
 from deadbot.canonical_import import DEFAULT_CANONICAL_DIR, TABLE_SPECS, CanonicalImportError
 from deadbot.sqlite_build import SQLITE_SCHEMA_VERSION, build_database, input_fingerprint, ensure_current
 
-SELECTION_TABLES = ("selection_lists", "selection_entries", "selection_evidence")
-
 
 def _connect(path):
     return sqlite3.connect(f"file:{path}?mode=ro", uri=True)
@@ -46,19 +44,6 @@ def test_foreign_keys_hold_and_metadata_is_recorded(built_sqlite):
     ).fetchone()
     assert version == SQLITE_SCHEMA_VERSION
     assert fingerprint == input_fingerprint()
-
-
-def test_every_postgres_index_on_a_served_table_exists(built_sqlite):
-    served = {spec.name for spec in TABLE_SPECS} | set(SELECTION_TABLES)
-    postgres = open("schema/postgres.sql", encoding="utf-8").read()
-    expected = {
-        match.group(2)
-        for match in re.finditer(r"CREATE\s+(UNIQUE\s+)?INDEX\s+(\w+)\s+ON\s+(\w+)", postgres)
-        if match.group(3) in served
-    }
-    db = _connect(built_sqlite)
-    actual = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type = 'index'")}
-    assert expected - actual == set()
 
 
 def test_booleans_and_dates_are_stored_as_csv_text(built_sqlite):

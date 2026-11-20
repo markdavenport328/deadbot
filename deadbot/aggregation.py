@@ -3,7 +3,7 @@
 This module defines what dataset/group_by/measure/filter combinations are
 legal, their display labels, and how already-grouped rows from a store become
 a verified, shaped result (zero-fill, sort, limit, totals). It contains no
-SQL and touches no store; ``deadbot/data.py`` and ``deadbot/postgres.py``
+SQL and touches no store; ``deadbot/data.py`` and ``deadbot/sqlite_store.py``
 both import and call into it so their outputs are provably identical.
 """
 

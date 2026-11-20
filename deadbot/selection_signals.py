@@ -24,13 +24,13 @@ def _https_url(value: Any) -> str | None:
 def _stored_entries(store: CanonicalStore) -> list[dict[str, Any]]:
     reader = getattr(store, "selection_signal_rows", None)
     if not callable(reader):
-        raise SelectionSignalError("Selection signals require the PostgreSQL runtime store.")
+        raise SelectionSignalError("Selection signals require the SQLite runtime store.")
     try:
         entries = reader()
     except Exception as error:
-        raise SelectionSignalError("The PostgreSQL selection-signal store is unavailable.") from error
+        raise SelectionSignalError("The selection-signal store is unavailable.") from error
     if not isinstance(entries, list) or not all(isinstance(entry, dict) for entry in entries):
-        raise SelectionSignalError("The PostgreSQL selection-signal store is invalid.")
+        raise SelectionSignalError("The selection-signal store is invalid.")
     return entries
 
 
@@ -41,7 +41,7 @@ def stored_selection_entries(store: CanonicalStore) -> list[dict[str, Any]]:
 
 
 def selection_signal_summary(store: CanonicalStore) -> dict[str, Any]:
-    """Return a compact factual summary from PostgreSQL, never a local file."""
+    """Return a compact factual summary from the built store, never a local file."""
 
     entries = _stored_entries(store)
     by_source: dict[str, int] = {}

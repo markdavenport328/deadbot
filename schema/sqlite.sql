@@ -1,10 +1,10 @@
 -- Deadbot canonical schema for the SQLite read store.
 --
--- A port of the serving tables in schema/postgres.sql. The file is rebuilt
--- from data/canonical on every deploy (deadbot/sqlite_build.py) and opened
--- read-only at runtime, so triggers only guard inserts. Audit and enrichment
--- tables that nothing reads at runtime (source registry, snapshots, import
--- ledger, claims, observations, release/show coverage) are not ported.
+-- The one definition of the catalog's tables, indexes and views. The file is
+-- rebuilt from data/canonical on every deploy (deadbot/sqlite_build.py) and
+-- opened read-only at runtime, so triggers only guard inserts. It holds what
+-- the application reads: there are no audit or ledger tables, because the
+-- reviewed CSVs in Git are the record of what changed and when.
 
 CREATE TABLE deadbot_schema_metadata (
     schema_version INTEGER PRIMARY KEY,

@@ -27,7 +27,7 @@ from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, 
 from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
 from deadbot.graph import build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
-from deadbot.postgres import query_cache_scope
+from deadbot.sqlite_store import query_cache_scope
 from deadbot.song_life import year_detail
 from deadbot.progress import describe_tool_call, status_lines
 from deadbot.response_cache import ResponseCache
