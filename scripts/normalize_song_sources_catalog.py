@@ -46,6 +46,7 @@ CANONICAL = ROOT / "data" / "canonical"
 RAW = ROOT / "data" / "raw" / "songs"
 DEADNET_RAW = RAW / "deadnet-song-credits-catalog.jsonl"
 MUSICBRAINZ_RAW = RAW / "musicbrainz-song-works-catalog.jsonl"
+RECORDING_WORKS_RAW = RAW / "musicbrainz-recording-works-catalog.jsonl"
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -177,6 +178,56 @@ def deadnet_fallback_credits(dead_payload: dict) -> list[tuple[str, str]]:
     for name in dead_payload.get("music_by", []):
         pairs.append((name, "music"))
     return pairs
+
+
+# Linked works whose credit looks incomplete or unlikely; held until a second source states it.
+HELD_RECORDING_WORKS = {
+    "song-c-c-rider": "Grateful Dead recordings link both Chuck Willis's 'C. C. Rider' and the traditional 'See See Rider Blues'; which one the band played is not settled",
+    "song-if-the-shoe-fits": "MusicBrainz credits only Phil Lesh; no second source names the writers",
+}
+
+
+def recording_work_credits(record: dict) -> tuple[list[dict], dict | None, list[str], str]:
+    """(credits, work, recording ids, state) from a song's Grateful Dead recording-to-work links.
+
+    A title search cannot tell which of several same-titled works the band
+    played; a work that a Grateful Dead recording of the song is linked to is
+    the one. The work counts only when its title is the song's title (a
+    trailing parenthetical alternate title is allowed) and every credit on it
+    names a person: a work that also credits "Traditional" or "Grateful Dead"
+    would give half a credit, so it is held. States: "ok", "ambiguous" (the
+    linked works disagree, or one is complete and another is not),
+    "traditional_or_band" (every linked work is traditional, band-credited or
+    empty), "none" (no recording was linked to a work of this title).
+    """
+
+    payload = record["raw_payload"]
+    wanted = key(payload["canonical_title"])
+    works: dict[str, dict] = {}
+    recordings: dict[str, list[str]] = {}
+    for recording in payload.get("recordings", []):
+        for work in recording.get("works", []):
+            full = work.get("title", "")
+            title = re.sub(r"\s*\([^)]*\)\s*$", "", full)
+            alternate = re.search(r"\(([^)]*)\)\s*$", full)
+            if wanted not in {key(title), key(alternate.group(1)) if alternate else ""}:
+                continue
+            works[work["work_id"]] = work
+            recordings.setdefault(work["work_id"], []).append(recording["recording_id"])
+    if not works:
+        return [], None, [], "none"
+    complete: dict[str, dict] = {}
+    for work_id, work in works.items():
+        credits = [c for c in work.get("credits", []) if c.get("role") in {"composer", "lyricist", "writer"}]
+        named = [c for c in credits if normalize_credit_name(c["name"])]
+        if named and len(named) == len(credits):
+            complete[work_id] = work
+    if not complete:
+        return [], None, [], "traditional_or_band"
+    if len(complete) < len(works) or len({credit_set(work) for work in complete.values()}) > 1:
+        return [], None, [], "ambiguous"
+    work_id = sorted(complete)[0]
+    return complete[work_id]["credits"], complete[work_id], sorted(recordings[work_id]), "ok"
 
 
 def main() -> None:
@@ -390,6 +441,68 @@ def main() -> None:
             song["notes"] = append_note(song["notes"], "Song credits normalized from MusicBrainz and/or Dead.net source metadata")
         elif mb_state == "ambiguous":
             song["notes"] = append_note(song["notes"], "Credit evidence retained in raw source records but not canonicalized pending title/source review")
+
+    # Songs still without a credit: the work a Grateful Dead recording of the song is linked to.
+    credited_songs = {song_id for song_id, _person, _role in writer_rows}
+    recording_promoted = 0
+    recording_held: dict[str, int] = {}
+    for record in read_jsonl(RECORDING_WORKS_RAW):
+        song_id = record["raw_payload"]["song_id"]
+        song = next((row for row in songs if row["song_id"] == song_id), None)
+        if song is None or song_id in credited_songs or song_id in HELD_RECORDING_WORKS or record["raw_payload"].get("search_status") != 200:
+            continue
+        credits, work, recording_ids, state = recording_work_credits(record)
+        if state != "ok" or work is None:
+            recording_held[state] = recording_held.get(state, 0) + 1
+            continue
+        recording_promoted += 1
+        work_url = work["work_url"]
+        recording_url = f"https://musicbrainz.org/recording/{recording_ids[0]}"
+        for credit in credits:
+            role = {"composer": "music", "lyricist": "lyrics", "writer": "writer"}[credit["role"]]
+            name = normalize_credit_name(credit["name"])
+            person_key = key(name)
+            person_id = people_by_name.get(person_key)
+            if person_id is None:
+                person_id = f"person-{slug(name)}"
+                while person_id in used_person_ids:
+                    person_id += "-2"
+                people.append({"person_id": person_id, "name": name, "birth_date": "", "death_date": "",
+                               "notes": "Added from song-credit source; biographical fields not collected in this pass."})
+                people_by_name[person_key] = person_id
+                used_person_ids.add(person_id)
+            writer_rows[(song_id, person_id, role)] = {
+                "song_id": song_id,
+                "person_id": person_id,
+                "writer_role": role,
+                "notes": f"MusicBrainz work {work['work_id']} ({work_url}), the work that Grateful Dead recording {recording_ids[0]} ({recording_url}) is linked to.",
+            }
+        resource_id = resource_by_url.get(work_url)
+        if resource_id is None:
+            resource_id = f"resource-musicbrainz-work-{work['work_id']}"
+            resources.append({
+                "resource_id": resource_id,
+                "resource_type": "catalog-work",
+                "title": f"{song['title']} — MusicBrainz work",
+                "creator": "",
+                "source_name": "MusicBrainz",
+                "source_url": work_url,
+                "published_date": "",
+                "notes": "MusicBrainz work page naming the composition credits; reached through a Grateful Dead recording linked to the work.",
+            })
+            resource_by_url[work_url] = resource_id
+            used_resource_ids.add(resource_id)
+        relation_keys.setdefault(
+            (resource_id, song_id, "composition-credit-source"),
+            {"resource_id": resource_id, "song_id": song_id, "relationship_type": "composition-credit-source",
+             "notes": "Accepted credit evidence; see canonical role rows."},
+        )
+        song["notes"] = remove_note(
+            song["notes"], "Credit evidence retained in raw source records but not canonicalized pending title/source review"
+        )
+        song["notes"] = append_note(song["notes"], "Song credits from the MusicBrainz work linked to a Grateful Dead recording")
+        promoted_titles.add(song["title"])
+    print(f"Recording-linked works: promoted credits for {recording_promoted} more songs; held {recording_held}.")
 
     people.sort(key=lambda row: row["person_id"])
     write_csv(CANONICAL / "people.csv", people, ["person_id", "name", "birth_date", "death_date", "notes"])

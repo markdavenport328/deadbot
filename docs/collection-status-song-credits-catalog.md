@@ -178,3 +178,28 @@ files now reproduces `people.csv`, `song_writers.csv`, `resources.csv`,
 `resource_songs.csv` and `songs.csv` byte for byte; before, it reordered two
 files, dropped a period from 234 song notes, and minted
 `person-donna-godchaux`.
+
+## 2026-11-19: credits through Grateful Dead recordings; encores
+
+A title search cannot tell which same-titled MusicBrainz work the band played
+(Eyes of the World matches thirteen). `scripts/collect/fetch_musicbrainz_recording_works.py`
+searches MusicBrainz recordings credited to the Grateful Dead with the song's
+exact title, looks up up to three that are linked to a work, and records that
+work's composer, lyricist and writer credits (raw:
+`data/raw/songs/musicbrainz-recording-works-catalog.jsonl`). The catalog
+normalizer promotes the work only when its title (or the alternate title in
+its parentheses, as in "Weather Report Suite, Part 2 (Let It Grow)") is the
+song's title and every credit names a person; "Traditional" or "Grateful Dead"
+mixed in with people holds the song, and two songs are held by hand
+(`HELD_RECORDING_WORKS`). The credit row's note and the resource row carry the
+MusicBrainz work URL and the recording that links to it. 44 songs gained
+credits (337 of 419 songs credited; the 82 still blank cover 5,098
+performances, down from 8,922 in 126 songs). `original_artist` stays blank: no
+source here states an original recording artist apart from the writer.
+
+Encores: `scripts/derive_encores.py` labels the final short set of 1,520 shows
+"Encore" with `encore = true`, by a structure rule (three or more sets, a final
+set of one or two songs after a set of five or more: 1,513 shows) or by
+archive.org tape evidence (7 shows). `performance_id` and `set_number` do not
+change. Decisions are logged in `data/raw/corrections/encores-derived.jsonl`;
+shows left alone are listed in `data/raw/corrections/encores-left-alone.txt`.
