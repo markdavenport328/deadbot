@@ -560,6 +560,28 @@ The shared player (`web/src/player.tsx`) gained three things:
 Open: true gapless playback (Web Audio) for segues; `start_seconds` reaching the
 browser so a card can start partway into a tape file; keyboard shortcuts.
 
+## Player: phones, cars and offline — November 19, 2026
+
+- **Track buttons in the car.** The Media Session no longer registers
+  seekbackward/seekforward, so a lock screen, CarPlay and a steering wheel
+  show and use previous/next track. The scrubber still seeks; the bar's own
+  ±10 s buttons are unchanged.
+- **Locked phone.** While the page is hidden, the next song loads into the
+  element already playing instead of swapping to the preloaded spare, which a
+  phone may refuse to start without a tap. Visible pages keep the swap.
+- **Artwork and home screen.** `web/icon-source/app-icon.svg` (dark green, the
+  warm rosette, a Fraunces D) renders to `web/public/icons` with
+  `scripts/build_app_icons.sh`. The lock screen lists the tape's image, then
+  the 512 and 1024 px icons; `manifest.webmanifest` and the Apple meta tags
+  make "Add to Home Screen" open full screen. The API serves `/icons`,
+  `/manifest.webmanifest` and `/sw.js`; `vercel.json` ships them.
+- **Offline.** The queue's foot offers "Save the queue to listen offline"
+  with its size. Files go whole into the `deadbot-offline-audio-v1` cache
+  (archive.org allows it); `public/sw.js` serves them, byte ranges included,
+  from `/offline-audio?src=…`, and keeps the app's page, scripts and fonts so
+  Deadbot opens without a signal. Registered in production builds only.
+  Checked in Chromium (save, play, seek); not yet on an iPhone or in a car.
+
 ## Batch: persistent exploration workspace (November 2026)
 
 Shipped behind `?shell=workspace` (the choice is remembered in the browser; the

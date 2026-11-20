@@ -3,6 +3,7 @@ import { formatClockTime, usePlayer, type PlayerTrack } from "./player";
 import { formatShowDate, formatShowDateLong } from "../core/format";
 import { Equalizer, MoreIcon, QueueIcon } from "./icons";
 import { PanelToggle, useRememberedOpen } from "../core/side-panel";
+import { estimateBytes, formatBytes, lastSaveFailures, offlineSupported, removeTracks, saveTracks, useOffline } from "./offline";
 
 // The queue: what is playing, then what plays next, then what has already
 // played. A row's title plays it; its grip drags it to a new place (or moves
@@ -170,6 +171,58 @@ function TrackDetails({ track, onClose }: { track: PlayerTrack; onClose: () => v
 }
 
 type Drag = { from: number; to: number; mids: number[]; first: number };
+
+// The queue's songs kept on this device for listening without a signal: one
+// quiet line at the foot of the queue, with the size before anything saves.
+function OfflineLine({ queue }: { queue: PlayerTrack[] }) {
+  const urls = queue.map((track) => track.audioUrl);
+  const { ready, savedCount, unsaved, progress } = useOffline(urls);
+  if (!offlineSupported() || !ready || queue.length === 0) return null;
+  const toSave = queue.filter((track) => unsaved.includes(track.audioUrl));
+  const size = formatBytes(estimateBytes(toSave));
+  const failed = lastSaveFailures();
+  const songs = (count: number) => (count === 1 ? "1 song" : `${count} songs`);
+  let text: string;
+  let action: ReactNode = null;
+  if (progress) {
+    text = `Saving ${Math.min(progress.done + 1, progress.total)} of ${progress.total} for listening offline…`;
+  } else if (savedCount === 0) {
+    text = "";
+    action = (
+      <button type="button" className="queue-clear queue-link" onClick={() => void saveTracks(urls)}>
+        Save the queue to listen offline
+      </button>
+    );
+  } else if (toSave.length === 0) {
+    text = savedCount === 1 ? "On this device to listen offline." : `All ${savedCount} songs on this device to listen offline.`;
+    action = (
+      <button type="button" className="queue-clear queue-link" onClick={() => void removeTracks(urls)}>
+        Remove
+      </button>
+    );
+  } else {
+    text = `${savedCount} of ${songs(queue.length)} on this device.`;
+    action = (
+      <button type="button" className="queue-clear queue-link" onClick={() => void saveTracks(urls)}>
+        Save the rest
+      </button>
+    );
+  }
+  return (
+    <div className="queue-offline">
+      <p role="status">
+        {text}
+        {!progress && failed > 0 ? ` ${songs(failed)} couldn’t be saved.` : ""}
+      </p>
+      {action && (
+        <p>
+          {action}
+          {toSave.length > 0 && !progress && <span className="queue-count"> · about {size}, best on Wi-Fi</span>}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
   id?: string;
@@ -402,6 +455,8 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
           </ol>
         </>
       )}
+
+      <OfflineLine queue={queue} />
     </section>
   );
 }

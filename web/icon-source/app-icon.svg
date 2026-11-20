@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Deadbot's app icon and lock-screen artwork: the site's dark green
+       ground, its warm rosette over the top-right corner as on every page,
+       and the wordmark's D in Fraunces. Render with
+       scripts/build_app_icons.sh; the PNGs land in web/public/icons. -->
+  <style>
+    @font-face { font-family: "Fraunces"; src: url("../public/fonts/fraunces-latin.woff2") format("woff2"); font-weight: 100 900; }
+    text { font-family: "Fraunces", Georgia, serif; font-weight: 600; font-variation-settings: "SOFT" 40; }
+  </style>
+  <rect width="1024" height="1024" fill="#16231c"/>
+  <image xlink:href="../src/assets/rosette-warm.svg" href="../src/assets/rosette-warm.svg" x="420" y="-500" width="1100" height="1100" opacity="0.9"/>
+  <text x="512" y="700" text-anchor="middle" font-size="620" fill="#f5efdd">D</text>
+</svg>
