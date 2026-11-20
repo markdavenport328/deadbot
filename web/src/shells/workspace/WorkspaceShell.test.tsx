@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
+import { SCHEMA_VERSION } from "../../core/schema-version";
 import type { ExperienceBlock, ExperienceResponse } from "../../types";
 import { visualFixtures } from "../../visual-fixtures";
 
@@ -14,7 +15,7 @@ type Reply =
 
 function page(headline: string | null, notebook: string | null, conversation: Turn[], blocks: ExperienceBlock[] = [], groups: ExperienceResponse["groups"] = []): ExperienceResponse {
   return {
-    schema_version: "3", thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
+    schema_version: SCHEMA_VERSION, thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
     mode: "answer", conversation, blocks, groups, sources: [],
     ...(notebook ? { notebook } : {})
   } as ExperienceResponse;

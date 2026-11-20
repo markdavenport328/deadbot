@@ -1,11 +1,12 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
+import { SCHEMA_VERSION } from "./core/schema-version";
 
 type Turn = { role: "user" | "assistant"; text: string };
 
 function reply(headline: string, notebook: string | null, conversation: Turn[]) {
   return {
-    schema_version: "3", thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
+    schema_version: SCHEMA_VERSION, thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
     mode: "answer", conversation, blocks: [], groups: [], sources: [],
     ...(notebook ? { notebook } : {})
   };
