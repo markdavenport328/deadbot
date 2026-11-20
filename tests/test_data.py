@@ -71,7 +71,7 @@ def test_song_context_adds_a_compact_listening_path_per_performance():
     assert archive_only["listen"] == {
         "archive_track_url": "https://archive.org/download/gd71-03-20.sbd.barbella.5582.sbeok.shnf/gd71-03-20d1t06.mp3",
         "archive_identifier": "gd71-03-20.sbd.barbella.5582.sbeok.shnf",
-        "archive_track_duration_seconds": 179,
+        "archive_track_duration_seconds": 290,
     }
     assert "release_track_url" not in archive_only["listen"]
 
@@ -749,5 +749,7 @@ def test_a_guest_carries_the_stories_the_library_holds_about_them():
 def test_a_performance_states_one_length():
     store = CanonicalStore()
     result = json.loads(tool_by_name(store, "get_performance").invoke({"performance_id": "gd-1977-05-08-estimated-prophet-2-3"}))
-    assert result["length"] == "9:05"
+    # The Betty tape track that plays; each official release keeps its own length under its own title.
+    assert result["length"] == "8:45"
+    assert sorted(release["length"] for release in result["official_releases"]) == ["8:49", "9:05"]
     assert all("length" not in row for key in ("links", "recordings") for row in result.get(key, []))

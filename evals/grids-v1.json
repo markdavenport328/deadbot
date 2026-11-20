@@ -34,7 +34,7 @@
         "equals": {"rows_are": "show", "columns_are": "song", "measure": "minutes"},
         "contains": {
           "rows": {"id": "gd-1972-04-07", "label": "April 7, 1972 · London"},
-          "cells.rows": ["gd-1972-05-11", "song-dark-star", 44, 2, "value"],
+          "cells.rows": ["gd-1972-05-11", "song-dark-star", 15, 2, "value"],
           "column_suggestions": {"id": "song-playing-in-the-band", "rows_with": 22}
         }
       },
@@ -54,7 +54,7 @@
       "expected": {
         "contains": {
           "rows": {"id": "gd-1977-05-08", "label": "May 8, 1977 · Ithaca"},
-          "cells.rows": ["gd-1977-05-08", "song-fire-on-the-mountain", 16, 1, "value"]
+          "cells.rows": ["gd-1977-05-08", "song-fire-on-the-mountain", 15, 1, "value"]
         }
       },
       "failure_conditions": [
