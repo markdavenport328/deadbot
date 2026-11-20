@@ -6,26 +6,31 @@
   "source_constraints": {
     "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",
     "rolling_stone_australia": "copyright-restricted metadata-only critic list",
+    "guitar_world": "copyright-restricted metadata-only critic list: song, date, venue and the pick's role",
+    "pitchfork": "copyright-restricted metadata-only critic guide, read through a Pocket mirror: song, date, venue and the pick's role",
     "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion",
     "charlie_miller_threads": "user-provided screenshot; project owner identifies the account as Charlie Miller",
     "charlie_miller_reddit": "self-identified account replies; retain as individual-curator selections, not a consensus signal"
   },
   "summary": {
-    "entry_count": 78,
+    "entry_count": 253,
     "by_source": {
       "charlie-miller-reddit": 17,
       "charlie-miller-user-provided-threads": 20,
       "deadnet-official-release-pass": 5,
+      "guitar-world-50-best": 96,
       "headyversion": 16,
+      "pitchfork-essential-live-songs": 79,
       "rolling-stone-australia": 20
     },
     "by_resolution_state": {
-      "held_ambiguous_show_date": 3,
+      "held_ambiguous_show_date": 8,
       "held_era_scope": 1,
-      "held_multiple_canonical_performances": 5,
+      "held_missing_canonical_performance": 1,
+      "held_multiple_canonical_performances": 18,
       "held_source_detail_needed": 1,
       "resolved_show_pending_release_review": 4,
-      "resolved_unique_performance": 29,
+      "resolved_unique_performance": 185,
       "resolved_unique_show": 35
     }
   },
@@ -1170,6 +1175,3069 @@
       ],
       "resolution_state": "resolved_unique_show",
       "source_context": "AMA response: good work / recommended show"
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:001:song-victim-or-the-crime",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-victim-or-the-crime",
+      "show_date": "1990-03-21",
+      "candidate_show_ids": [
+        "gd-1990-03-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-03-21-victim-or-the-crime-1-6"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 50
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:002:song-foolish-heart",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-foolish-heart",
+      "show_date": "1989-07-19",
+      "candidate_show_ids": [
+        "gd-1989-07-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-07-19-foolish-heart-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 49
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:003:song-the-music-never-stopped",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-the-music-never-stopped",
+      "show_date": "1989-07-17",
+      "candidate_show_ids": [
+        "gd-1989-07-17"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-07-17-the-music-never-stopped-1-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 48
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:004:song-dear-mr-fantasy",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-dear-mr-fantasy",
+      "show_date": "1989-07-02",
+      "candidate_show_ids": [
+        "gd-1989-07-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-07-02-dear-mr-fantasy-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 47
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:005:song-shakedown-street",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-shakedown-street",
+      "show_date": "1985-06-30",
+      "candidate_show_ids": [
+        "gd-1985-06-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-06-30-shakedown-street-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 46
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:006:song-shakedown-street",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Seventies pick",
+      "song_id": "song-shakedown-street",
+      "show_date": "1978-09-16",
+      "candidate_show_ids": [
+        "gd-1978-09-16"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-09-16-shakedown-street-2-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 46
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:007:song-cassidy",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-cassidy",
+      "show_date": "1985-03-28",
+      "candidate_show_ids": [
+        "gd-1985-03-28"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-03-28-cassidy-1-6"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 45
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:008:song-uncle-john-s-band",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-uncle-john-s-band",
+      "show_date": "1984-10-12",
+      "candidate_show_ids": [
+        "gd-1984-10-12"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-10-12-uncle-john-s-band-2-5",
+        "gd-1984-10-12-uncle-john-s-band-2-10"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 44
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:009:song-uncle-john-s-band",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "acoustic pick",
+      "song_id": "song-uncle-john-s-band",
+      "show_date": "1970-05-02",
+      "candidate_show_ids": [
+        "gd-1970-05-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-05-02-uncle-john-s-band-1-11"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 44
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:010:song-lost-sailor",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-lost-sailor",
+      "show_date": "1982-10-10",
+      "candidate_show_ids": [
+        "gd-1982-10-10"
+      ],
+      "candidate_performance_ids": [
+        "gd-1982-10-10-lost-sailor-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 43
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:010:song-saint-of-circumstance",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-saint-of-circumstance",
+      "show_date": "1982-10-10",
+      "candidate_show_ids": [
+        "gd-1982-10-10"
+      ],
+      "candidate_performance_ids": [
+        "gd-1982-10-10-saint-of-circumstance-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 43
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:011:song-saint-of-circumstance",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-saint-of-circumstance",
+      "show_date": "1991-06-17",
+      "candidate_show_ids": [
+        "gd-1991-06-17"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-06-17-saint-of-circumstance-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 43
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:012:song-feel-like-a-stranger",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-feel-like-a-stranger",
+      "show_date": "1982-08-10",
+      "candidate_show_ids": [
+        "gd-1982-08-10"
+      ],
+      "candidate_performance_ids": [
+        "gd-1982-08-10-feel-like-a-stranger-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 42
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:013:song-the-wheel",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-the-wheel",
+      "show_date": "1980-12-14",
+      "candidate_show_ids": [
+        "gd-1980-12-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1980-12-14-the-wheel-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 41
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:014:song-jack-straw",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-jack-straw",
+      "show_date": "1979-01-11",
+      "candidate_show_ids": [
+        "gd-1979-01-11"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-01-11-jack-straw-1-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 40
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:015:song-jack-straw",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-jack-straw",
+      "show_date": "1987-07-24",
+      "candidate_show_ids": [
+        "gd-1987-07-24"
+      ],
+      "candidate_performance_ids": [
+        "gd-1987-07-24-jack-straw-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 40
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:016:song-stella-blue",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-stella-blue",
+      "show_date": "1978-10-21",
+      "candidate_show_ids": [
+        "gd-1978-10-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-10-21-stella-blue-2-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 39
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:017:song-estimated-prophet",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-estimated-prophet",
+      "show_date": "1978-07-08",
+      "candidate_show_ids": [
+        "gd-1978-07-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-07-08-estimated-prophet-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 38
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:018:song-estimated-prophet",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Brent-era pick",
+      "song_id": "song-estimated-prophet",
+      "show_date": "1979-12-26",
+      "candidate_show_ids": [
+        "gd-1979-12-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-12-26-estimated-prophet-3-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 38
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:019:song-estimated-prophet",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-estimated-prophet",
+      "show_date": "1990-03-29",
+      "candidate_show_ids": [
+        "gd-1990-03-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-03-29-estimated-prophet-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 38
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:020:song-wharf-rat",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-wharf-rat",
+      "show_date": "1978-04-22",
+      "candidate_show_ids": [
+        "gd-1978-04-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-04-22-wharf-rat-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 37
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:021:song-black-peter",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-black-peter",
+      "show_date": "1977-10-29",
+      "candidate_show_ids": [
+        "gd-1977-10-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-10-29-black-peter-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 36
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:022:song-terrapin-station",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-terrapin-station",
+      "show_date": "1977-09-03",
+      "candidate_show_ids": [
+        "gd-1977-09-03"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-09-03-terrapin-station-3-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 35
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:023:song-mississippi-half-step",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-mississippi-half-step",
+      "show_date": "1977-09-03",
+      "candidate_show_ids": [
+        "gd-1977-09-03"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-09-03-mississippi-half-step-1-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 34
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:024:song-help-on-the-way",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-help-on-the-way",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-06-09-help-on-the-way-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:024:song-slipknot",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-slipknot",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-06-09-slipknot-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:024:song-franklin-s-tower",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-franklin-s-tower",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-06-09-franklin-s-tower-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:025:song-help-on-the-way",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-help-on-the-way",
+      "show_date": "1991-06-14",
+      "candidate_show_ids": [
+        "gd-1991-06-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-06-14-help-on-the-way-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:025:song-slipknot",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-slipknot",
+      "show_date": "1991-06-14",
+      "candidate_show_ids": [
+        "gd-1991-06-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-06-14-slipknot-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:025:song-franklin-s-tower",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-franklin-s-tower",
+      "show_date": "1991-06-14",
+      "candidate_show_ids": [
+        "gd-1991-06-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-06-14-franklin-s-tower-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:026:song-franklin-s-tower",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Franklin's Tower alone",
+      "song_id": "song-franklin-s-tower",
+      "show_date": "1979-10-27",
+      "candidate_show_ids": [
+        "gd-1979-10-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-10-27-franklin-s-tower-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 33
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:027:song-sugaree",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-sugaree",
+      "show_date": "1977-05-22",
+      "candidate_show_ids": [
+        "gd-1977-05-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-22-sugaree-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 31
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:028:song-comes-a-time",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-comes-a-time",
+      "show_date": "1977-05-09",
+      "candidate_show_ids": [
+        "gd-1977-05-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-09-comes-a-time-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 30
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:029:song-comes-a-time",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-comes-a-time",
+      "show_date": "1985-11-01",
+      "candidate_show_ids": [
+        "gd-1985-11-01"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-11-01-comes-a-time-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 30
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:030:song-scarlet-begonias",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1977-05-08",
+      "candidate_show_ids": [
+        "gd-1977-05-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-08-scarlet-begonias-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:030:song-fire-on-the-mountain",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-fire-on-the-mountain",
+      "show_date": "1977-05-08",
+      "candidate_show_ids": [
+        "gd-1977-05-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-08-fire-on-the-mountain-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:031:song-scarlet-begonias",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1980-11-30",
+      "candidate_show_ids": [
+        "gd-1980-11-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1980-11-30-scarlet-begonias-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:031:song-fire-on-the-mountain",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-fire-on-the-mountain",
+      "show_date": "1980-11-30",
+      "candidate_show_ids": [
+        "gd-1980-11-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1980-11-30-fire-on-the-mountain-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:032:song-scarlet-begonias",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1990-04-22",
+      "candidate_show_ids": [],
+      "candidate_performance_ids": [],
+      "resolution_state": "held_ambiguous_show_date",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:032:song-fire-on-the-mountain",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-fire-on-the-mountain",
+      "show_date": "1990-04-22",
+      "candidate_show_ids": [],
+      "candidate_performance_ids": [],
+      "resolution_state": "held_ambiguous_show_date",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:033:song-scarlet-begonias",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Scarlet alone",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1974-07-19",
+      "candidate_show_ids": [
+        "gd-1974-07-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-07-19-scarlet-begonias-1-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:034:song-scarlet-begonias",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "best Scarlet named in the entry",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1978-09-02",
+      "candidate_show_ids": [
+        "gd-1978-09-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-09-02-scarlet-begonias-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 29
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:035:song-morning-dew",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-morning-dew",
+      "show_date": "1977-05-08",
+      "candidate_show_ids": [
+        "gd-1977-05-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-08-morning-dew-2-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 27
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:036:song-morning-dew",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "pre-hiatus pick",
+      "song_id": "song-morning-dew",
+      "show_date": "1974-10-18",
+      "candidate_show_ids": [
+        "gd-1974-10-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-10-18-morning-dew-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 27
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:037:song-morning-dew",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-morning-dew",
+      "show_date": "1984-10-12",
+      "candidate_show_ids": [
+        "gd-1984-10-12"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-10-12-morning-dew-2-11"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 27
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:038:song-crazy-fingers",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-crazy-fingers",
+      "show_date": "1976-06-09",
+      "candidate_show_ids": [
+        "gd-1976-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1976-06-09-crazy-fingers-1-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 26
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:039:song-crazy-fingers",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-crazy-fingers",
+      "show_date": "1982-10-10",
+      "candidate_show_ids": [
+        "gd-1982-10-10"
+      ],
+      "candidate_performance_ids": [
+        "gd-1982-10-10-crazy-fingers-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 26
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:040:song-eyes-of-the-world",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1974-08-06",
+      "candidate_show_ids": [
+        "gd-1974-08-06"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-08-06-eyes-of-the-world-1-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 25
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:041:song-eyes-of-the-world",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1983-05-13",
+      "candidate_show_ids": [
+        "gd-1983-05-13"
+      ],
+      "candidate_performance_ids": [
+        "gd-1983-05-13-eyes-of-the-world-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 25
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:042:song-eyes-of-the-world",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1990-03-27",
+      "candidate_show_ids": [],
+      "candidate_performance_ids": [],
+      "resolution_state": "held_ambiguous_show_date",
+      "recommendation_rank": 25
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:043:song-china-cat-sunflower",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-china-cat-sunflower",
+      "show_date": "1974-06-26",
+      "candidate_show_ids": [
+        "gd-1974-06-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-06-26-china-cat-sunflower-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 24
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:043:song-i-know-you-rider",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-i-know-you-rider",
+      "show_date": "1974-06-26",
+      "candidate_show_ids": [
+        "gd-1974-06-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-06-26-i-know-you-rider-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 24
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:044:song-china-cat-sunflower",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-china-cat-sunflower",
+      "show_date": "1981-03-09",
+      "candidate_show_ids": [
+        "gd-1981-03-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1981-03-09-china-cat-sunflower-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 24
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:044:song-i-know-you-rider",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-i-know-you-rider",
+      "show_date": "1981-03-09",
+      "candidate_show_ids": [
+        "gd-1981-03-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1981-03-09-i-know-you-rider-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 24
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:045:song-china-cat-sunflower",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-china-cat-sunflower",
+      "show_date": "1990-06-16",
+      "candidate_show_ids": [
+        "gd-1990-06-16"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-06-16-china-cat-sunflower-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 24
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:045:song-i-know-you-rider",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-i-know-you-rider",
+      "show_date": "1990-06-16",
+      "candidate_show_ids": [
+        "gd-1990-06-16"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-06-16-i-know-you-rider-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 24
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:046:song-truckin",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-truckin",
+      "show_date": "1974-05-19",
+      "candidate_show_ids": [
+        "gd-1974-05-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-05-19-truckin-2-11"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 22
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:047:song-here-comes-sunshine",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-here-comes-sunshine",
+      "show_date": "1973-11-30",
+      "candidate_show_ids": [
+        "gd-1973-11-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-11-30-here-comes-sunshine-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 21
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:048:song-weather-report-suite-prelude",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-weather-report-suite-prelude",
+      "show_date": "1974-08-04",
+      "candidate_show_ids": [
+        "gd-1974-08-04"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-08-04-weather-report-suite-prelude-2-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 20
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:048:song-weather-report-suite-part-1",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-weather-report-suite-part-1",
+      "show_date": "1974-08-04",
+      "candidate_show_ids": [
+        "gd-1974-08-04"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-08-04-weather-report-suite-part-1-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 20
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:048:song-let-it-grow",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-let-it-grow",
+      "show_date": "1974-08-04",
+      "candidate_show_ids": [
+        "gd-1974-08-04"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-08-04-let-it-grow-2-9"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 20
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:049:song-let-it-grow",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-let-it-grow",
+      "show_date": "1982-08-07",
+      "candidate_show_ids": [
+        "gd-1982-08-07"
+      ],
+      "candidate_performance_ids": [
+        "gd-1982-08-07-let-it-grow-1-12"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 20
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:050:song-let-it-grow",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-let-it-grow",
+      "show_date": "1990-03-14",
+      "candidate_show_ids": [
+        "gd-1990-03-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-03-14-let-it-grow-1-9"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 20
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:051:song-hes-gone",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-hes-gone",
+      "show_date": "1973-05-26",
+      "candidate_show_ids": [
+        "gd-1973-05-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-05-26-hes-gone-3-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 19
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:052:song-cumberland-blues",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-cumberland-blues",
+      "show_date": "1972-09-27",
+      "candidate_show_ids": [
+        "gd-1972-09-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-09-27-cumberland-blues-2-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 18
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:053:song-bird-song",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-bird-song",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-bird-song"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 17
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:054:song-bird-song",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-bird-song",
+      "show_date": "1984-07-15",
+      "candidate_show_ids": [
+        "gd-1984-07-15"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-07-15-bird-song-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 17
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:055:song-bird-song",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-bird-song",
+      "show_date": "1991-04-01",
+      "candidate_show_ids": [
+        "gd-1991-04-01"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-04-01-bird-song-1-7"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 17
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:056:song-playing-in-the-band",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-playing-in-the-band"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 16
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:057:song-playing-in-the-band",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Eighties pick",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1988-07-29",
+      "candidate_show_ids": [
+        "gd-1988-07-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1988-07-29-playing-in-the-band-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 16
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:058:song-playing-in-the-band",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1993-05-26",
+      "candidate_show_ids": [
+        "gd-1993-05-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1993-05-26-playing-in-the-band-2-4",
+        "gd-1993-05-26-playing-in-the-band-2-8"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 16
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:059:song-good-lovin",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-good-lovin",
+      "show_date": "1972-01-02",
+      "candidate_show_ids": [
+        "gd-1972-01-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-01-02-good-lovin-2-1",
+        "gd-1972-01-02-good-lovin-2-3"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 15
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:060:song-not-fade-away",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-not-fade-away",
+      "show_date": "1971-11-15",
+      "candidate_show_ids": [
+        "gd-1971-11-15"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-11-15-not-fade-away-2-9",
+        "gd-1971-11-15-not-fade-away-2-11"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 14
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:060:song-goin-down-the-road-feelin-bad",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-goin-down-the-road-feelin-bad",
+      "show_date": "1971-11-15",
+      "candidate_show_ids": [
+        "gd-1971-11-15"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-11-15-goin-down-the-road-feelin-bad-2-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 14
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:061:song-not-fade-away",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Not Fade Away alone",
+      "song_id": "song-not-fade-away",
+      "show_date": "1977-09-03",
+      "candidate_show_ids": [
+        "gd-1977-09-03"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-09-03-not-fade-away-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 14
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:062:song-goin-down-the-road-feelin-bad",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Goin' Down the Road alone",
+      "song_id": "song-goin-down-the-road-feelin-bad",
+      "show_date": "1971-04-29",
+      "candidate_show_ids": [
+        "gd-1971-04-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-04-29-goin-down-the-road-feelin-bad-2-10"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 14
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:063:song-hard-to-handle",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-hard-to-handle",
+      "show_date": "1971-08-06",
+      "candidate_show_ids": [
+        "gd-1971-08-06"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-08-06-hard-to-handle-1-9"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 12
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:064:song-new-speedway-boogie",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-new-speedway-boogie",
+      "show_date": "1970-05-14",
+      "candidate_show_ids": [
+        "gd-1970-05-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-05-14-new-speedway-boogie-2-16",
+        "gd-1970-05-14-new-speedway-boogie-2-18"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 11
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:065:song-new-speedway-boogie",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-new-speedway-boogie",
+      "show_date": "1991-06-17",
+      "candidate_show_ids": [
+        "gd-1991-06-17"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-06-17-new-speedway-boogie-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 11
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:066:song-dancin-in-the-streets",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-dancin-in-the-streets",
+      "show_date": "1970-05-02",
+      "candidate_show_ids": [
+        "gd-1970-05-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-05-02-dancin-in-the-streets-2-13"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 10
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:067:song-dancin-in-the-streets",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "funky pick",
+      "song_id": "song-dancin-in-the-streets",
+      "show_date": "1979-10-27",
+      "candidate_show_ids": [
+        "gd-1979-10-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-10-27-dancin-in-the-streets-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 10
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:068:song-the-other-one",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-the-other-one",
+      "show_date": "1970-05-02",
+      "candidate_show_ids": [
+        "gd-1970-05-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-05-02-the-other-one-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 9
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:069:song-saint-stephen",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-saint-stephen",
+      "show_date": "1969-02-27",
+      "candidate_show_ids": [
+        "gd-1969-02-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-02-27-saint-stephen-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 8
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:070:song-saint-stephen",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Seventies pick",
+      "song_id": "song-saint-stephen",
+      "show_date": "1976-06-09",
+      "candidate_show_ids": [
+        "gd-1976-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1976-06-09-saint-stephen-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 8
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:071:song-dark-star",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-dark-star",
+      "show_date": "1969-02-27",
+      "candidate_show_ids": [
+        "gd-1969-02-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-02-27-dark-star-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 7
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:072:song-dark-star",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Seventies pick",
+      "song_id": "song-dark-star",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-dark-star"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 7
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:073:song-dark-star",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Nineties pick",
+      "song_id": "song-dark-star",
+      "show_date": "1991-04-01",
+      "candidate_show_ids": [
+        "gd-1991-04-01"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-04-01-dark-star-2-4",
+        "gd-1991-04-01-dark-star-2-7"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 7
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:074:song-turn-on-your-lovelight",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-turn-on-your-lovelight",
+      "show_date": "1969-01-26",
+      "candidate_show_ids": [
+        "gd-1969-01-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-01-26-turn-on-your-lovelight-2-4",
+        "gd-1969-01-26-turn-on-your-lovelight-2-6"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 6
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:075:song-turn-on-your-lovelight",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "author's favorite",
+      "song_id": "song-turn-on-your-lovelight",
+      "show_date": "1972-04-26",
+      "candidate_show_ids": [
+        "gd-1972-04-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-04-26-turn-on-your-lovelight-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 6
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:076:song-the-eleven",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-the-eleven",
+      "show_date": "1968-08-24",
+      "candidate_show_ids": [
+        "gd-1968-08-24"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-08-24-the-eleven-1-4"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 5
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:077:song-alligator",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-alligator",
+      "show_date": "1968-08-23",
+      "candidate_show_ids": [
+        "gd-1968-08-23"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-08-23-alligator-1-9",
+        "gd-1968-08-23-alligator-1-11",
+        "gd-1968-08-23-alligator-1-13"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 4
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:077:song-caution",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-caution",
+      "show_date": "1968-08-23",
+      "candidate_show_ids": [
+        "gd-1968-08-23"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-08-23-caution-1-14"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 4
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:078:song-alligator",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "also named",
+      "song_id": "song-alligator",
+      "show_date": "1968-02-14",
+      "candidate_show_ids": [
+        "gd-1968-02-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-02-14-alligator-2-7",
+        "gd-1968-02-14-alligator-2-9"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 4
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:079:song-caution",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "Caution alone",
+      "song_id": "song-caution",
+      "show_date": "1969-11-08",
+      "candidate_show_ids": [
+        "gd-1969-11-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-11-08-caution-2-8",
+        "gd-1969-11-08-caution-2-10"
+      ],
+      "resolution_state": "held_multiple_canonical_performances",
+      "recommendation_rank": 4
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:080:song-good-morning-little-schoolgirl",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-good-morning-little-schoolgirl",
+      "show_date": "1968-02-14",
+      "candidate_show_ids": [
+        "gd-1968-02-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-02-14-good-morning-little-schoolgirl-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 2
+    },
+    {
+      "source": "guitar-world-50-best",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "guitar-world-50-best:081:song-viola-lee-blues",
+      "source_url": "https://www.guitarworld.com/artists/grateful-deads-50-best-live-performances-excerpt",
+      "selection_label": "Blair Jackson / Guitar World: The Grateful Dead's 50 best live performances",
+      "source_label": "main pick",
+      "song_id": "song-viola-lee-blues",
+      "show_date": "1967-11-10",
+      "candidate_show_ids": [
+        "gd-1967-11-10"
+      ],
+      "candidate_performance_ids": [
+        "gd-1967-11-10-viola-lee-blues-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance",
+      "recommendation_rank": 1
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:001:song-you-don-t-have-to-ask",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-you-don-t-have-to-ask",
+      "show_date": "1966-07-16",
+      "candidate_show_ids": [
+        "gd-1966-07-16"
+      ],
+      "candidate_performance_ids": [
+        "gd-1966-07-16-you-don-t-have-to-ask-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:002:song-cream-puff-war",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-cream-puff-war",
+      "show_date": "1966-12-01",
+      "candidate_show_ids": [
+        "gd-1966-12-01"
+      ],
+      "candidate_performance_ids": [
+        "gd-1966-12-01-cream-puff-war-1-10"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:003:song-viola-lee-blues",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-viola-lee-blues",
+      "show_date": "1968-02-02",
+      "candidate_show_ids": [
+        "gd-1968-02-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-02-02-viola-lee-blues-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:004:song-viola-lee-blues",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key earlier version",
+      "song_id": "song-viola-lee-blues",
+      "show_date": "1967-09-03",
+      "candidate_show_ids": [
+        "gd-1967-09-03"
+      ],
+      "candidate_performance_ids": [
+        "gd-1967-09-03-viola-lee-blues-1-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:005:song-alligator",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-alligator",
+      "show_date": "1968-02-14",
+      "candidate_show_ids": [
+        "gd-1968-02-14"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-02-14-alligator-2-7",
+        "gd-1968-02-14-alligator-2-9"
+      ],
+      "resolution_state": "held_multiple_canonical_performances"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:006:song-alligator",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-alligator",
+      "show_date": "1971-04-29",
+      "candidate_show_ids": [
+        "gd-1971-04-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1971-04-29-alligator-2-7",
+        "gd-1971-04-29-alligator-2-9"
+      ],
+      "resolution_state": "held_multiple_canonical_performances"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:007:song-saint-stephen",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-saint-stephen",
+      "show_date": "1968-08-21",
+      "candidate_show_ids": [
+        "gd-1968-08-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1968-08-21-saint-stephen-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:008:song-saint-stephen",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-saint-stephen",
+      "show_date": "1977-05-05",
+      "candidate_show_ids": [
+        "gd-1977-05-05"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-05-saint-stephen-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:009:song-new-potato-caboose",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-new-potato-caboose",
+      "show_date": "1968-02-13",
+      "candidate_show_ids": [],
+      "candidate_performance_ids": [],
+      "resolution_state": "held_ambiguous_show_date"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:010:song-the-eleven",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-the-eleven",
+      "show_date": "1969-02-28",
+      "candidate_show_ids": [
+        "gd-1969-02-28"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-02-28-the-eleven-2-7"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:011:song-mountains-of-the-moon",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-mountains-of-the-moon",
+      "show_date": "1969-03-01",
+      "candidate_show_ids": [
+        "gd-1969-03-01"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-03-01-mountains-of-the-moon-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:012:song-friend-of-the-devil",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-friend-of-the-devil",
+      "show_date": "1970-05-02",
+      "candidate_show_ids": [
+        "gd-1970-05-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-05-02-friend-of-the-devil-1-3"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:013:song-friend-of-the-devil",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-friend-of-the-devil",
+      "show_date": "1976-06-27",
+      "candidate_show_ids": [
+        "gd-1976-06-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1976-06-27-friend-of-the-devil-1-8"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:014:song-brokedown-palace",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-brokedown-palace",
+      "show_date": "1970-08-30",
+      "candidate_show_ids": [],
+      "candidate_performance_ids": [],
+      "resolution_state": "held_ambiguous_show_date"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:015:song-brokedown-palace",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-brokedown-palace",
+      "show_date": "1977-05-11",
+      "candidate_show_ids": [
+        "gd-1977-05-11"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-11-brokedown-palace-3-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:016:song-turn-on-your-lovelight",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-turn-on-your-lovelight",
+      "show_date": "1970-09-19",
+      "candidate_show_ids": [
+        "gd-1970-09-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1970-09-19-turn-on-your-lovelight-2-14"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:017:song-dark-star",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-dark-star",
+      "show_date": "1972-04-08",
+      "candidate_show_ids": [
+        "gd-1972-04-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-04-08-dark-star-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:018:song-dark-star",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-dark-star",
+      "show_date": "1991-10-31",
+      "candidate_show_ids": [
+        "gd-1991-10-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-10-31-dark-star-2-5",
+        "gd-1991-10-31-dark-star-2-8"
+      ],
+      "resolution_state": "held_multiple_canonical_performances"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:019:song-the-other-one",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-the-other-one",
+      "show_date": "1972-04-26",
+      "candidate_show_ids": [
+        "gd-1972-04-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-04-26-the-other-one-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:020:song-the-other-one",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key earlier version",
+      "song_id": "song-the-other-one",
+      "show_date": "1969-02-27",
+      "candidate_show_ids": [
+        "gd-1969-02-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-02-27-the-other-one-1-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:021:song-the-other-one",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-the-other-one",
+      "show_date": "1978-02-05",
+      "candidate_show_ids": [
+        "gd-1978-02-05"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-02-05-the-other-one-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:022:song-china-cat-sunflower",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-china-cat-sunflower",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-china-cat-sunflower"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:022:song-i-know-you-rider",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-i-know-you-rider",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-i-know-you-rider"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:023:song-china-cat-sunflower",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key slightly later version",
+      "song_id": "song-china-cat-sunflower",
+      "show_date": "1974-06-26",
+      "candidate_show_ids": [
+        "gd-1974-06-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-06-26-china-cat-sunflower-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:023:song-i-know-you-rider",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key slightly later version",
+      "song_id": "song-i-know-you-rider",
+      "show_date": "1974-06-26",
+      "candidate_show_ids": [
+        "gd-1974-06-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-06-26-i-know-you-rider-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:024:song-bird-song",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-bird-song",
+      "show_date": "1972-08-27",
+      "candidate_show_ids": [
+        "gd-1972-08-27"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-08-27-bird-song"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:025:song-playing-in-the-band",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1972-11-18",
+      "candidate_show_ids": [
+        "gd-1972-11-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1972-11-18-playing-in-the-band-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:026:song-playing-in-the-band",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1979-11-06",
+      "candidate_show_ids": [
+        "gd-1979-11-06"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-11-06-playing-in-the-band-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:027:song-playing-in-the-band",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-playing-in-the-band",
+      "show_date": "1989-10-26",
+      "candidate_show_ids": [
+        "gd-1989-10-26"
+      ],
+      "candidate_performance_ids": [],
+      "resolution_state": "held_missing_canonical_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:028:song-weather-report-suite-prelude",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-weather-report-suite-prelude",
+      "show_date": "1973-11-21",
+      "candidate_show_ids": [
+        "gd-1973-11-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-11-21-weather-report-suite-prelude-1-13"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:028:song-weather-report-suite-part-1",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-weather-report-suite-part-1",
+      "show_date": "1973-11-21",
+      "candidate_show_ids": [
+        "gd-1973-11-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-11-21-weather-report-suite-part-1-1-14"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:028:song-let-it-grow",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-let-it-grow",
+      "show_date": "1973-11-21",
+      "candidate_show_ids": [
+        "gd-1973-11-21"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-11-21-let-it-grow-1-15"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:029:song-let-it-grow",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-let-it-grow",
+      "show_date": "1985-06-24",
+      "candidate_show_ids": [
+        "gd-1985-06-24"
+      ],
+      "candidate_performance_ids": [
+        "gd-1985-06-24-let-it-grow-1-8"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:030:song-here-comes-sunshine",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-here-comes-sunshine",
+      "show_date": "1973-12-19",
+      "candidate_show_ids": [
+        "gd-1973-12-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-12-19-here-comes-sunshine-1-10"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:031:song-stella-blue",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-stella-blue",
+      "show_date": "1973-12-19",
+      "candidate_show_ids": [
+        "gd-1973-12-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1973-12-19-stella-blue-2-11"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:032:song-stella-blue",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-stella-blue",
+      "show_date": "1984-07-13",
+      "candidate_show_ids": [
+        "gd-1984-07-13"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-07-13-stella-blue-2-9"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:033:song-eyes-of-the-world",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1974-06-18",
+      "candidate_show_ids": [
+        "gd-1974-06-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-06-18-eyes-of-the-world-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:034:song-eyes-of-the-world",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1977-09-03",
+      "candidate_show_ids": [
+        "gd-1977-09-03"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-09-03-eyes-of-the-world-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:035:song-eyes-of-the-world",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key much later version",
+      "song_id": "song-eyes-of-the-world",
+      "show_date": "1990-03-29",
+      "candidate_show_ids": [
+        "gd-1990-03-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-03-29-eyes-of-the-world-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:036:song-truckin",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-truckin",
+      "show_date": "1974-09-18",
+      "candidate_show_ids": [
+        "gd-1974-09-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-09-18-truckin-3-9"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:037:song-truckin",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-truckin",
+      "show_date": "1978-10-18",
+      "candidate_show_ids": [
+        "gd-1978-10-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-10-18-truckin-2-12"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:038:song-morning-dew",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-morning-dew",
+      "show_date": "1974-10-18",
+      "candidate_show_ids": [
+        "gd-1974-10-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-10-18-morning-dew-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:039:song-morning-dew",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-morning-dew",
+      "show_date": "1984-10-12",
+      "candidate_show_ids": [
+        "gd-1984-10-12"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-10-12-morning-dew-2-11"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:040:song-uncle-john-s-band",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-uncle-john-s-band",
+      "show_date": "1974-10-19",
+      "candidate_show_ids": [
+        "gd-1974-10-19"
+      ],
+      "candidate_performance_ids": [
+        "gd-1974-10-19-uncle-john-s-band-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:041:song-uncle-john-s-band",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key proto version",
+      "song_id": "song-uncle-john-s-band",
+      "show_date": "1969-11-08",
+      "candidate_show_ids": [
+        "gd-1969-11-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1969-11-08-uncle-john-s-band-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:042:song-uncle-john-s-band",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-uncle-john-s-band",
+      "show_date": "1989-10-09",
+      "candidate_show_ids": [
+        "gd-1989-10-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-10-09-uncle-john-s-band-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:043:song-crazy-fingers",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-crazy-fingers",
+      "show_date": "1976-06-22",
+      "candidate_show_ids": [
+        "gd-1976-06-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1976-06-22-crazy-fingers-1-3"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:044:song-the-wheel",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-the-wheel",
+      "show_date": "1976-06-29",
+      "candidate_show_ids": [
+        "gd-1976-06-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1976-06-29-the-wheel-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:045:song-the-wheel",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-the-wheel",
+      "show_date": "1990-03-24",
+      "candidate_show_ids": [
+        "gd-1990-03-24"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-03-24-the-wheel-3-7"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:046:song-comes-a-time",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-comes-a-time",
+      "show_date": "1976-09-28",
+      "candidate_show_ids": [
+        "gd-1976-09-28"
+      ],
+      "candidate_performance_ids": [
+        "gd-1976-09-28-comes-a-time-2-5"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:047:song-comes-a-time",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key slightly later version",
+      "song_id": "song-comes-a-time",
+      "show_date": "1977-05-09",
+      "candidate_show_ids": [
+        "gd-1977-05-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-09-comes-a-time-2-8"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:048:song-terrapin-station",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-terrapin-station",
+      "show_date": "1977-05-07",
+      "candidate_show_ids": [
+        "gd-1977-05-07"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-07-terrapin-station-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:049:song-terrapin-station",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key proto version",
+      "song_id": "song-terrapin-station",
+      "show_date": "1977-03-18",
+      "candidate_show_ids": [
+        "gd-1977-03-18"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-03-18-terrapin-station-2-6"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:050:song-terrapin-station",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-terrapin-station",
+      "show_date": "1990-03-15",
+      "candidate_show_ids": [
+        "gd-1990-03-15"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-03-15-terrapin-station-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:051:song-mississippi-half-step",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-mississippi-half-step",
+      "show_date": "1977-05-07",
+      "candidate_show_ids": [
+        "gd-1977-05-07"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-07-mississippi-half-step-1-7"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:052:song-mississippi-half-step",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-mississippi-half-step",
+      "show_date": "1990-04-02",
+      "candidate_show_ids": [
+        "gd-1990-04-02"
+      ],
+      "candidate_performance_ids": [
+        "gd-1990-04-02-mississippi-half-step-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:053:song-scarlet-begonias",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1977-05-08",
+      "candidate_show_ids": [
+        "gd-1977-05-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-08-scarlet-begonias-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:053:song-fire-on-the-mountain",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-fire-on-the-mountain",
+      "show_date": "1977-05-08",
+      "candidate_show_ids": [
+        "gd-1977-05-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-08-fire-on-the-mountain-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:054:song-scarlet-begonias",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-scarlet-begonias",
+      "show_date": "1980-11-30",
+      "candidate_show_ids": [
+        "gd-1980-11-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1980-11-30-scarlet-begonias-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:054:song-fire-on-the-mountain",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-fire-on-the-mountain",
+      "show_date": "1980-11-30",
+      "candidate_show_ids": [
+        "gd-1980-11-30"
+      ],
+      "candidate_performance_ids": [
+        "gd-1980-11-30-fire-on-the-mountain-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:055:song-sugaree",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-sugaree",
+      "show_date": "1977-05-22",
+      "candidate_show_ids": [
+        "gd-1977-05-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-22-sugaree-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:056:song-sugaree",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-sugaree",
+      "show_date": "1993-06-05",
+      "candidate_show_ids": [
+        "gd-1993-06-05"
+      ],
+      "candidate_performance_ids": [
+        "gd-1993-06-05-sugaree-1-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:057:song-wharf-rat",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-wharf-rat",
+      "show_date": "1977-05-22",
+      "candidate_show_ids": [
+        "gd-1977-05-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-05-22-wharf-rat-2-10"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:058:song-help-on-the-way",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-help-on-the-way",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-06-09-help-on-the-way-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:058:song-slipknot",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-slipknot",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-06-09-slipknot-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:058:song-franklin-s-tower",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-franklin-s-tower",
+      "show_date": "1977-06-09",
+      "candidate_show_ids": [
+        "gd-1977-06-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-06-09-franklin-s-tower-2-4"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:059:song-help-on-the-way",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-help-on-the-way",
+      "show_date": "1989-10-08",
+      "candidate_show_ids": [
+        "gd-1989-10-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-10-08-help-on-the-way-2-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:059:song-slipknot",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-slipknot",
+      "show_date": "1989-10-08",
+      "candidate_show_ids": [
+        "gd-1989-10-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-10-08-slipknot-2-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:059:song-franklin-s-tower",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-franklin-s-tower",
+      "show_date": "1989-10-08",
+      "candidate_show_ids": [
+        "gd-1989-10-08"
+      ],
+      "candidate_performance_ids": [
+        "gd-1989-10-08-franklin-s-tower-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:060:song-jack-straw",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-jack-straw",
+      "show_date": "1977-12-29",
+      "candidate_show_ids": [
+        "gd-1977-12-29"
+      ],
+      "candidate_performance_ids": [
+        "gd-1977-12-29-jack-straw-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:061:song-jack-straw",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-jack-straw",
+      "show_date": "1979-01-11",
+      "candidate_show_ids": [
+        "gd-1979-01-11"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-01-11-jack-straw-1-10"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:062:song-the-music-never-stopped",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-the-music-never-stopped",
+      "show_date": "1978-02-03",
+      "candidate_show_ids": [
+        "gd-1978-02-03"
+      ],
+      "candidate_performance_ids": [
+        "gd-1978-02-03-the-music-never-stopped-1-11"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:063:song-estimated-prophet",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-estimated-prophet",
+      "show_date": "1979-12-26",
+      "candidate_show_ids": [
+        "gd-1979-12-26"
+      ],
+      "candidate_performance_ids": [
+        "gd-1979-12-26-estimated-prophet-3-2"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:064:song-estimated-prophet",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-estimated-prophet",
+      "show_date": "1993-09-22",
+      "candidate_show_ids": [
+        "gd-1993-09-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1993-09-22-estimated-prophet-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:065:song-shakedown-street",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-shakedown-street",
+      "show_date": "1984-12-31",
+      "candidate_show_ids": [
+        "gd-1984-12-31"
+      ],
+      "candidate_performance_ids": [
+        "gd-1984-12-31-shakedown-street-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:066:song-shakedown-street",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key later version",
+      "song_id": "song-shakedown-street",
+      "show_date": "1991-09-22",
+      "candidate_show_ids": [
+        "gd-1991-09-22"
+      ],
+      "candidate_performance_ids": [
+        "gd-1991-09-22-shakedown-street-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:067:song-touch-of-grey",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-touch-of-grey",
+      "show_date": "1986-12-15",
+      "candidate_show_ids": [
+        "gd-1986-12-15"
+      ],
+      "candidate_performance_ids": [
+        "gd-1986-12-15-touch-of-grey-1-1"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:068:song-so-many-roads",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "main pick",
+      "song_id": "song-so-many-roads",
+      "show_date": "1995-07-09",
+      "candidate_show_ids": [
+        "gd-1995-07-09"
+      ],
+      "candidate_performance_ids": [
+        "gd-1995-07-09-so-many-roads-2-3"
+      ],
+      "resolution_state": "resolved_unique_performance"
+    },
+    {
+      "source": "pitchfork-essential-live-songs",
+      "signal_type": "critic_editorial_performance_selection",
+      "source_record_id": "pitchfork-essential-live-songs:069:song-so-many-roads",
+      "source_url": "https://pitchfork.com/features/lists-and-guides/10078-the-grateful-dead-a-guide-to-their-essential-live-songs/",
+      "selection_label": "Pitchfork: The Grateful Dead: A Guide to Their Essential Live Songs",
+      "source_label": "key earlier version",
+      "song_id": "song-so-many-roads",
+      "show_date": "1994-10-01",
+      "candidate_show_ids": [
+        "gd-1994-10-01"
+      ],
+      "candidate_performance_ids": [
+        "gd-1994-10-01-so-many-roads-1-9"
+      ],
+      "resolution_state": "resolved_unique_performance"
     }
   ]
 }
