@@ -4,7 +4,6 @@ import { type ExperienceBlock } from "../types";
 // block repeats the group's own heading would stutter; the block keeps its
 // heading and the group's is dropped.
 export function blockHeading(block: ExperienceBlock): string | null {
-  if (block.type === "guest_appearance_list") return block.person_name;
   if ("title" in block && typeof block.title === "string") return block.title;
   return null;
 }

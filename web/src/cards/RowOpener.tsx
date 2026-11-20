@@ -1,5 +1,5 @@
-// One shared row behavior for ranked answers: a chart's bar, a ranked list's
-// row or a roster's name that names a song, person, venue, record or year
+// One shared row behavior for ranked answers: a chart's bar or a ranked list's
+// row that names a song, person, venue, record or year
 // opens in place to that record's facts, one gold play and one blue ask.
 // The server fills every fact and picks the recording (GET /api/rows/{id});
 // this file only fetches, draws and wires the two actions.
@@ -11,7 +11,7 @@ import type { AskFocus } from "../types";
 import type { components } from "../generated/api";
 
 export type RowDetail = components["schemas"]["RowDetail"];
-export type RowBlockType = "data_chart" | "ranked_list" | "person_roster";
+export type RowBlockType = "data_chart" | "ranked_list";
 // Where a row sits: the block it belongs to and, for a year chart that counts
 // one song, that song.
 export type RowSource = { blockType: RowBlockType; blockId: string; scope?: string | null };

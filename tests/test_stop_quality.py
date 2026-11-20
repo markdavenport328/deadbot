@@ -27,8 +27,8 @@ def page(stops, **card):
 
 
 def test_a_page_without_a_song_card_says_so():
-    score = score_stops({"blocks": [{"type": "era_unit"}]}, CASE, LIFE, tools=["get_song"], seconds=9.5)
-    assert score["song_card"] is False and score["other_blocks"] == ["era_unit"]
+    score = score_stops({"blocks": [{"type": "ranked_list"}]}, CASE, LIFE, tools=["get_song"], seconds=9.5)
+    assert score["song_card"] is False and score["other_blocks"] == ["ranked_list"]
     assert score["used_song_life"] is False and score["seconds"] == 9.5
     assert score_stops(None, CASE, LIFE)["song_card"] is False
 

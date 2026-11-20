@@ -22,7 +22,7 @@ def _hero_plan(**hero):
                     "presentation": "collection",
                     "items": [
                         {"type": "listening_hero", **hero},
-                        {"type": "pull_quote", "text": "The case is that the [second set](https://example.com/x) never lets go."},
+                        {"type": "pull_quote", "text": "The case is that the [second set](https://example.com/x) never lets go."},  # a retired type
                     ],
                 }
             ],
@@ -59,8 +59,8 @@ def test_listening_hero_hydrates_a_show_with_its_release_cover_and_the_queue_fro
     assert hero.play_label == "Play the second set" and hero.line == "Betty Board soundboard"
     assert hero.link and hero.link.url == CORNELL_SPOTIFY
     assert hero.play_url is None, "a playable queue plays in-page"
-    # A pulled line keeps its words and loses link markup.
-    assert quote.type == "pull_quote" and quote.text == "The case is that the second set never lets go."
+    # An item of a type the page no longer has keeps its words as prose, without the ungrounded link.
+    assert quote.type == "editorial" and quote.paragraphs == ["The case is that the second set never lets go."]
 
 
 def test_listening_hero_drops_an_ungrounded_link_and_an_ungrounded_show():
@@ -100,20 +100,7 @@ def test_a_show_without_a_release_cover_falls_back_to_the_tape_image(built_sqlit
     assert csv_tape == tape and [track.audio_url for track in csv_tracks] == [track.audio_url for track in tracks]
 
 
-def test_a_performance_with_an_archive_track_offers_its_tape_as_the_full_show_with_playable_tracks():
-    store = CanonicalStore()
-    context = store.performance_context(TERRAPIN)
-    block = composition._performance_unit(context, store)
-    track_action, show_action = block.listen[:2]
-    assert track_action.label == "Listen to Terrapin Station"
-    assert track_action.url.startswith("https://archive.org/download/gd1977-06-09.sbd.dauria.3372.shnf/")
-    assert show_action.label == "Hear the full show"
-    assert show_action.url == "https://archive.org/details/gd1977-06-09.sbd.dauria.3372.shnf"
-    assert block.show_tracks and all("gd1977-06-09.sbd.dauria.3372.shnf" in track.audio_url for track in block.show_tracks)
-    assert any(track.performance_id == TERRAPIN and track.audio_url == track_action.url for track in block.show_tracks)
-
-
-def test_the_streamer_and_the_plan_accept_the_same_hero_and_pulled_line():
+def test_the_streamer_and_the_plan_read_the_same_hero_and_keep_a_retired_items_words():
     store = CanonicalStore()
     payload = store.show_context(store.resolve_show("1977-05-08"))
     grounded = finish.grounded_context([payload])
@@ -140,5 +127,6 @@ def test_the_streamer_and_the_plan_accept_the_same_hero_and_pulled_line():
         )
     )
     streamed = [event.payload["block"] for event in events if event.type == "block"]
-    assert [block["type"] for block in streamed] == ["listening_hero", "pull_quote"]
+    assert [block["type"] for block in streamed] == ["listening_hero", "editorial"]
+    assert streamed[1]["paragraphs"] == ["The second set never lets go."]
     assert streamed == [block.model_dump(mode="json") for block in delivered]

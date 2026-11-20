@@ -13,7 +13,7 @@
 import type { components } from "./generated/api";
 
 // A handful of ExperienceResponse fields (`blocks`, `layout`, `sources`,
-// `conversation`) — and a few nested block fields (`details`, `progressions`,
+// `conversation`) — and a few nested block fields (`details`,
 // `credits`, `source_ids`, `representative_performances`, `sources`) — are declared in deadbot/experience.py with a
 // Pydantic default_factory (e.g. `Field(default_factory=list)`). FastAPI's
 // OpenAPI schema marks those as not required, because a *request* using this
@@ -29,7 +29,6 @@ export type AskFocus = components["schemas"]["AskFocus"];
 export type ExperienceGroup = Require<components["schemas"]["ExperienceGroup"], "criteria">;
 
 type FixedEntityCardBlock = Require<components["schemas"]["EntityCardBlock"], "details">;
-type FixedArrangementBlock = Require<components["schemas"]["ArrangementBlock"], "progressions">;
 type FixedEditorialBlock = Require<components["schemas"]["EditorialBlock"], "paragraphs" | "items">;
 type FixedSongOverviewBlock = Require<
   components["schemas"]["SongOverviewBlock"],
@@ -39,8 +38,6 @@ type FixedSongOverviewBlock = Require<
 // Semantic units. Their hydrated lists are always present in a server
 // response (see the note on Require above).
 export type ShowUnitBlock = Require<components["schemas"]["ShowUnitBlock"], "sets" | "guests" | "listen" | "sources" | "visible_facets" | "lineup" | "recordings" | "judgments">;
-type FixedPerformanceUnitBlock = Require<components["schemas"]["PerformanceUnitBlock"], "listen" | "sources" | "judgments">;
-type FixedEraUnitBlock = Require<components["schemas"]["EraUnitBlock"], "sources">;
 export type AlbumUnitBlock = Require<
   components["schemas"]["AlbumUnitBlock"],
   "tracks" | "personnel" | "listen" | "sources" | "judgments"
@@ -50,21 +47,13 @@ type FixedDataChartBlock = Require<components["schemas"]["DataChartBlock"], "row
 export type ExperienceBlock =
   | FixedEntityCardBlock
   | ShowUnitBlock
-  | FixedPerformanceUnitBlock
-  | FixedEraUnitBlock
   | AlbumUnitBlock
-  | components["schemas"]["ShowSelectionBlock"]
-  | components["schemas"]["GuestAppearanceListBlock"]
-  | components["schemas"]["PersonRosterBlock"]
   | components["schemas"]["PeopleTimelineBlock"]
-  | components["schemas"]["EquipmentListBlock"]
   | components["schemas"]["ResourceListBlock"]
   | components["schemas"]["CreditListBlock"]
   | FixedSongOverviewBlock
   | components["schemas"]["MediaLinkBlock"]
   | components["schemas"]["CoverageBlock"]
-  | FixedArrangementBlock
-  | components["schemas"]["ArrangementSearchBlock"]
   | components["schemas"]["ProvenanceNoteBlock"]
   | components["schemas"]["GapStateBlock"]
   | FixedEditorialBlock
@@ -78,12 +67,16 @@ export type ExperienceBlock =
 
 export type GridBlock = Extract<ExperienceBlock, { type: "grid" }>;
 
+// `schema_version` is the server's current version on a fresh response, but a
+// page the browser saved earlier carries the version it was made under, so the
+// client's type is any string; the saved-page reader compares it.
 export type ExperienceResponse = Omit<
   components["schemas"]["ExperienceResponse"],
-  "blocks" | "sources" | "conversation"
+  "blocks" | "sources" | "conversation" | "schema_version"
 > &
   Required<
     Pick<components["schemas"]["ExperienceResponse"], "groups" | "sources" | "conversation">
   > & {
+    schema_version?: string;
     blocks: ExperienceBlock[];
   };

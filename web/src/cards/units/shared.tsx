@@ -7,7 +7,7 @@ import { albumTrack } from "../AlbumNights";
 import { formatShowDateLong } from "../../core/format";
 import { renderInline } from "../inline";
 
-export type UnitBlock = Extract<ExperienceBlock, { type: "show_unit" | "performance_unit" | "album_unit" | "song_overview" }>;
+export type UnitBlock = Extract<ExperienceBlock, { type: "show_unit" | "album_unit" | "song_overview" }>;
 
 // A record's Spotify album, when the server derived an embed for it: the
 // listen action it came from and the embed's identifier.
@@ -35,7 +35,7 @@ export function albumQueue(block: AlbumUnitBlock): PlayerTrack[] {
 }
 
 export function isUnit(block: ExperienceBlock): block is UnitBlock {
-  return block.type === "show_unit" || block.type === "performance_unit" || block.type === "album_unit" || block.type === "song_overview";
+  return block.type === "show_unit" || block.type === "album_unit" || block.type === "song_overview";
 }
 
 // Judgments on a comparison's shared terms, as sentences: the criterion is a
@@ -61,7 +61,6 @@ export function CriteriaTable({ criteria, judgments }: { criteria: string[]; jud
 export function unitKey(block: UnitBlock): string {
   switch (block.type) {
     case "show_unit": return block.show_id;
-    case "performance_unit": return block.performance_id;
     case "album_unit": return block.release_id;
     case "song_overview": return block.song_id;
   }

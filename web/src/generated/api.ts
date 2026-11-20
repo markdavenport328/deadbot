@@ -260,69 +260,6 @@ export interface components {
              */
             type: "album_unit";
         };
-        /** ArrangementBlock */
-        ArrangementBlock: {
-            /** Arrangement Scope */
-            arrangement_scope: string;
-            /** Capo */
-            capo?: string | null;
-            /** Key Signature */
-            key_signature?: string | null;
-            /** Notes */
-            notes?: string | null;
-            /** Progressions */
-            progressions?: string[];
-            /** Resource Id */
-            resource_id: string;
-            /** Source Id */
-            source_id: string;
-            /** Title */
-            title: string;
-            /** Tuning */
-            tuning?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "arrangement";
-        };
-        /** ArrangementSearchBlock */
-        ArrangementSearchBlock: {
-            /** Coverage Note */
-            coverage_note: string;
-            /** Items */
-            items: components["schemas"]["ArrangementSearchItem"][];
-            /** Key Signature */
-            key_signature: string;
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "arrangement_search";
-        };
-        /** ArrangementSearchItem */
-        ArrangementSearchItem: {
-            /** Arrangement Id */
-            arrangement_id: string;
-            /** Arrangement Scope */
-            arrangement_scope: string;
-            /** Key Signature */
-            key_signature: string;
-            /** Resource Id */
-            resource_id: string;
-            /** Resource Title */
-            resource_title: string;
-            /** Song Id */
-            song_id: string;
-            /** Source Name */
-            source_name: string;
-            /** Title */
-            title: string;
-            /** Url */
-            url: string;
-        };
         /**
          * AskFocus
          * @description What the visitor was pointing at when they asked: a grid's cell, a year on a song's timeline, or an opened ranked row.
@@ -561,91 +498,6 @@ export interface components {
              */
             type: "entity_card";
         };
-        /** EquipmentItem */
-        EquipmentItem: {
-            /**
-             * Claim Type
-             * @enum {string}
-             */
-            claim_type: "show" | "date_range";
-            /** Equipment Id */
-            equipment_id: string;
-            /** Evidence */
-            evidence: string;
-            /** Manufacturer */
-            manufacturer: string;
-            /** Model */
-            model: string;
-            /** Name */
-            name: string;
-            /** Source Id */
-            source_id: string;
-            /** Source Url */
-            source_url: string;
-            /** Usage Context */
-            usage_context: string;
-        };
-        /** EquipmentListBlock */
-        EquipmentListBlock: {
-            /** Items */
-            items: components["schemas"]["EquipmentItem"][];
-            /** Show Id */
-            show_id: string;
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "equipment_list";
-        };
-        /** EraPerformanceItem */
-        EraPerformanceItem: {
-            /** Audio Url */
-            audio_url?: string | null;
-            /** Duration Seconds */
-            duration_seconds?: number | null;
-            listen?: components["schemas"]["ListenAction"] | null;
-            /** Performance Id */
-            performance_id: string;
-            /** Set Label */
-            set_label?: string | null;
-            /** Show Date */
-            show_date?: string | null;
-            /** Show Id */
-            show_id: string;
-            /** Show Label */
-            show_label: string;
-            /** Song Id */
-            song_id: string;
-            /** Song Title */
-            song_title: string;
-            /** Venue Name */
-            venue_name?: string | null;
-        };
-        /**
-         * EraUnitBlock
-         * @description A stage of a development the composer names, with representative listening.
-         */
-        EraUnitBlock: {
-            /** Follow Ups */
-            follow_ups?: components["schemas"]["FollowUpTopic"][];
-            /** Note */
-            note?: string | null;
-            /** Performances */
-            performances: components["schemas"]["EraPerformanceItem"][];
-            /** Sources */
-            sources?: components["schemas"]["UnitSource"][];
-            /** Span */
-            span?: string | null;
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "era_unit";
-        };
         /**
          * ExperienceGroup
          * @description A model-selected relationship between one or more body blocks.
@@ -692,7 +544,7 @@ export interface components {
         /** ExperienceResponse */
         ExperienceResponse: {
             /** Blocks */
-            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["PerformanceUnitBlock"] | components["schemas"]["EraUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["ShowSelectionBlock"] | components["schemas"]["GuestAppearanceListBlock"] | components["schemas"]["PersonRosterBlock"] | components["schemas"]["PeopleTimelineBlock"] | components["schemas"]["EquipmentListBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["ArrangementBlock"] | components["schemas"]["ArrangementSearchBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["SongVersionsBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
+            blocks?: (components["schemas"]["EntityCardBlock"] | components["schemas"]["ShowUnitBlock"] | components["schemas"]["AlbumUnitBlock"] | components["schemas"]["PeopleTimelineBlock"] | components["schemas"]["ResourceListBlock"] | components["schemas"]["CreditListBlock"] | components["schemas"]["SongOverviewBlock"] | components["schemas"]["MediaLinkBlock"] | components["schemas"]["CoverageBlock"] | components["schemas"]["DataChartBlock"] | components["schemas"]["VersionStripBlock"] | components["schemas"]["SongVersionsBlock"] | components["schemas"]["GridBlock"] | components["schemas"]["ProvenanceNoteBlock"] | components["schemas"]["GapStateBlock"] | components["schemas"]["EditorialBlock"] | components["schemas"]["ListeningHeroBlock"] | components["schemas"]["PullQuoteBlock"] | components["schemas"]["RankedListBlock"])[];
             /** Conversation */
             conversation?: components["schemas"]["ConversationTurn"][];
             /** Groups */
@@ -719,10 +571,10 @@ export interface components {
             notebook?: string | null;
             /**
              * Schema Version
-             * @default 3
+             * @default 4
              * @constant
              */
-            schema_version: "3";
+            schema_version: "4";
             /** Sources */
             sources?: components["schemas"]["SourceReference"][];
             /** Thread Id */
@@ -933,58 +785,6 @@ export interface components {
             /** Rows With */
             rows_with: number;
         };
-        /** GuestAppearanceItem */
-        GuestAppearanceItem: {
-            /** Instruments */
-            instruments: string[];
-            /** Location */
-            location?: string | null;
-            /** Participation Scope */
-            participation_scope?: string | null;
-            /** Show Date */
-            show_date: string;
-            /** Show Id */
-            show_id: string;
-            /** Songs */
-            songs?: components["schemas"]["GuestAppearanceSong"][];
-            /** Venue Name */
-            venue_name?: string | null;
-        };
-        /**
-         * GuestAppearanceListBlock
-         * @description Guest-show relationships for one resolved person.
-         */
-        GuestAppearanceListBlock: {
-            /** Items */
-            items: components["schemas"]["GuestAppearanceItem"][];
-            /** Known Show Count */
-            known_show_count: number;
-            /** Person Id */
-            person_id: string;
-            /** Person Name */
-            person_name: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "guest_appearance_list";
-        };
-        /**
-         * GuestAppearanceSong
-         * @description One song a guest is credited on, from performance_performers.
-         */
-        GuestAppearanceSong: {
-            /** Audio Url */
-            audio_url?: string | null;
-            /** Duration Seconds */
-            duration_seconds?: number | null;
-            /** Note */
-            note?: string | null;
-            /** Performance Id */
-            performance_id: string;
-            /** Song Title */
-            song_title: string;
-        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1131,76 +931,6 @@ export interface components {
             /** Start Date */
             start_date: string;
         };
-        /** PerformanceSpineNeighbor */
-        PerformanceSpineNeighbor: {
-            /** Performance Id */
-            performance_id: string;
-            /** Title */
-            title: string;
-        };
-        /**
-         * PerformanceUnitBlock
-         * @description One rendition as a primary object, with its set context and listening actions.
-         */
-        PerformanceUnitBlock: {
-            /** Audio Url */
-            audio_url?: string | null;
-            /**
-             * Disclosure
-             * @default expanded
-             * @enum {string}
-             */
-            disclosure: "collapsed" | "expanded";
-            /** Duration Seconds */
-            duration_seconds?: number | null;
-            /**
-             * Emphasis
-             * @default supporting
-             * @enum {string}
-             */
-            emphasis: "primary" | "supporting" | "mention";
-            /** Follow Ups */
-            follow_ups?: components["schemas"]["FollowUpTopic"][];
-            /** Judgments */
-            judgments?: string[];
-            /** Listen */
-            listen?: components["schemas"]["ListenAction"][];
-            /** Location */
-            location?: string | null;
-            next?: components["schemas"]["PerformanceSpineNeighbor"] | null;
-            /** Note */
-            note?: string | null;
-            /** Performance Id */
-            performance_id: string;
-            /** Position In Set */
-            position_in_set?: string | null;
-            previous?: components["schemas"]["PerformanceSpineNeighbor"] | null;
-            /** Set Label */
-            set_label?: string | null;
-            /** Show Date */
-            show_date?: string | null;
-            /** Show Id */
-            show_id: string;
-            /** Show Label */
-            show_label: string;
-            /** Show Tracks */
-            show_tracks?: components["schemas"]["PlayableTrack"][];
-            /** Song Id */
-            song_id: string;
-            /** Song Title */
-            song_title: string;
-            /** Sources */
-            sources?: components["schemas"]["UnitSource"][];
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "performance_unit";
-            /** Venue Name */
-            venue_name?: string | null;
-            /** Visible Facets */
-            visible_facets?: ("setlist" | "listen" | "sources")[];
-        };
         /** PerformerItem */
         PerformerItem: {
             /** Instruments */
@@ -1214,47 +944,6 @@ export interface components {
              * @enum {string}
              */
             role: "performer" | "guest";
-        };
-        /**
-         * PersonRosterBlock
-         * @description A complete set of people, organized under one model-chosen heading.
-         *
-         *     The inventory component for questions that ask for everyone: the model
-         *     names the section and chooses who belongs in it; the server supplies each
-         *     person's name, roles, show count and span.
-         */
-        PersonRosterBlock: {
-            /** Items */
-            items: components["schemas"]["PersonRosterItem"][];
-            /** Lead */
-            lead?: string | null;
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "person_roster";
-        };
-        /**
-         * PersonRosterItem
-         * @description One person in a roster: identity and appearance facts from the store, one note from the model.
-         */
-        PersonRosterItem: {
-            /** First Year */
-            first_year?: string | null;
-            /** Last Year */
-            last_year?: string | null;
-            /** Name */
-            name: string;
-            /** Note */
-            note?: string | null;
-            /** Person Id */
-            person_id: string;
-            /** Roles */
-            roles?: string[];
-            /** Show Count */
-            show_count: number;
         };
         /**
          * PlayableTrack
@@ -1468,44 +1157,6 @@ export interface components {
             song_id: string;
             /** Title */
             title: string;
-        };
-        /**
-         * ShowSelectionBlock
-         * @description A clearly attributed selection of shows from one reviewed source.
-         */
-        ShowSelectionBlock: {
-            /** Coverage Note */
-            coverage_note: string;
-            /** Items */
-            items: components["schemas"]["ShowSelectionItem"][];
-            /** Selection Type */
-            selection_type: string;
-            /** Selector Name */
-            selector_name: string;
-            /** Source Id */
-            source_id: string;
-            /** Title */
-            title: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "show_selection";
-        };
-        /** ShowSelectionItem */
-        ShowSelectionItem: {
-            /** Location */
-            location?: string | null;
-            /** Recording Identifier */
-            recording_identifier?: string | null;
-            /** Show Date */
-            show_date: string;
-            /** Show Id */
-            show_id: string;
-            /** Tracks */
-            tracks?: components["schemas"]["PlayableTrack"][];
-            /** Venue Name */
-            venue_name: string;
         };
         /**
          * ShowUnitBlock

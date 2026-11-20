@@ -39,17 +39,12 @@ from deadbot.experience import (
     ExperienceBlock,
     ExperienceResponse,
     GapStateBlock,
-    PullQuoteBlock,
     PeopleTimelineBlock,
     PeopleTimelinePerson,
     PeopleTimelineSpan,
-    PersonRosterBlock,
-    PersonRosterItem,
     ResourceListBlock,
-    PerformanceFacet,
     ShowFacet,
     ShowUnitBlock,
-    SongFacet,
     SourceReference,
     fit,
     read_editorial_shape,
@@ -168,66 +163,12 @@ class _Ref(_PlanModel):
     title: str | None = None
 
 
-class EquipmentListRef(_Ref):
-    type: Literal["equipment_list"]
-    show_id: str
-
-
-class GuestAppearancesRef(_Ref):
-    type: Literal["guest_appearance_list"]
-    person_id: str
-
-
-class PersonRosterEntry(_PlanModel):
-    """One person in a roster, by ID, with an optional phrase from the model."""
-
-    model_config = ConfigDict(extra="ignore")
-    person_id: str
-    note: str | None = Field(
-        default=None,
-        description="A short phrase on what makes this person worth knowing here, when you have one grounded in the research. The server supplies name, roles, show count and years.",
-    )
-
-
-class PersonRosterRef(_Ref):
-    """One section of people under a heading you choose.
-
-    The inventory component for questions that ask for everyone. A page that
-    lists everyone uses several rosters, one per section, so that together they
-    hold the complete set; a section is a scene, an instrument, an era or a
-    pattern such as the people who kept coming back. The server hydrates each
-    person's name, roles, show count and span from the stored facts.
-    """
-
-    type: Literal["person_roster"]
-    title: str = Field(description="The heading that names this section of people: a scene, role, era or pattern, in a few words.")
-    lead: str | None = Field(default=None, description="One sentence on what unites these people, when the heading alone does not say it.")
-    entries: list[PersonRosterEntry] = Field(
-        description="Everyone who belongs in this section, in the order you want them read. Across the page's rosters, every person appears once.",
-    )
-
-
 class PeopleTimelineRef(_Ref):
     """People as bars across the years they played with the band."""
 
     type: Literal["people_timeline"]
     person_ids: list[str]
     note: str | None = None
-
-
-class ShowSelectionRef(_Ref):
-    type: Literal["show_selection"]
-    selection_id: str
-
-
-class ArrangementRef(_Ref):
-    type: Literal["arrangement"]
-    arrangement_id: str
-
-
-class ArrangementSearchRef(_Ref):
-    type: Literal["arrangement_search"]
-    key_signature: str
 
 
 class MediaLinkRef(_Ref):
@@ -504,40 +445,6 @@ class ShowUnitRef(_Ref):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, description=_FOLLOW_UPS_DESCRIPTION)
 
 
-class PerformanceUnitRef(_Ref):
-    """One rendition as a primary object. The server supplies song, show, set context and listening."""
-
-    type: Literal["performance_unit"]
-    performance_id: str | None = None
-    from_result: str | None = None
-    disclosure: Literal["collapsed", "expanded"] = "expanded"
-    emphasis: Emphasis | None = None
-    judgments: list[str] = Field(default_factory=list)
-    note: str | None = None
-    visible_facets: list[PerformanceFacet] = Field(
-        default_factory=lambda: ["setlist", "listen", "sources"],
-        description=(
-            "The parts of this performance worth showing: setlist (where it sits in its set, with the songs either side), "
-            "listen (play links for this rendition and its show), sources (your supporting sources). Identity and your note "
-            "are always shown. Omit the field to show all three."
-        ),
-    )
-    supporting_sources: list[SupportingSource] = Field(default_factory=list)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
-
-
-class EraUnitRef(_Ref):
-    """A stage of a development you name, with representative performances as evidence and listening."""
-
-    type: Literal["era_unit"]
-    title: str = Field(description="The stage, in your words: '1973–74: spacious and exploratory'.")
-    span: str | None = Field(default=None, description="The years or dates this stage covers.")
-    note: str | None = Field(default=None, description="What changed in this stage and how you know.")
-    representative_performance_ids: list[str] = Field(description="Performances that show this stage; each becomes a listening path.")
-    supporting_sources: list[SupportingSource] = Field(default_factory=list)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list)
-
-
 class AlbumUnitRef(_Ref):
     """One official record as a primary object, with model-selected facets."""
 
@@ -709,20 +616,11 @@ class GridRef(_Ref):
 
 BodyItem = Annotated[
     EditorialPlan
-    | PullQuoteBlock
     | ListeningHeroRef
     | ShowUnitRef
-    | PerformanceUnitRef
-    | EraUnitRef
     | AlbumUnitRef
     | SongOverviewRef
-    | EquipmentListRef
-    | GuestAppearancesRef
-    | PersonRosterRef
     | PeopleTimelineRef
-    | ShowSelectionRef
-    | ArrangementRef
-    | ArrangementSearchRef
     | MediaLinkRef
     | ResourceListRef
     | DataChartRef
@@ -862,7 +760,39 @@ def validate_body_item(raw: Any, *, where: str) -> Any | None:
             candidate = repaired
     fallback = model_text_block(raw)
     logger.warning("A %s %s item did not fit its schema; %s", where, raw.get("type"), "kept its text" if fallback else "it had no text")
-    return fallback
+    if fallback is None:
+        return None
+    # As a plan item, so the plan it sits in still validates and the page is delivered.
+    return EditorialPlan(type="editorial", presentation="narrative", title=fallback.title, paragraphs=fallback.paragraphs)
+
+
+def group_words(title: Any, lead: Any, urls: frozenset[str] = frozenset()) -> tuple[str | None, str | None]:
+    """A group's heading and text as the page shows them, in both paths.
+
+    Each is trimmed and a blank one is left out; a link in the text is kept
+    when a tool returned its URL.
+    """
+
+    heading = title.strip() if isinstance(title, str) and title.strip() else None
+    text = keep_grounded_links(lead.strip(), urls) if isinstance(lead, str) and lead.strip() else None
+    return heading, text
+
+
+def words_alone(title: str | None, lead: str | None) -> tuple[str | None, EditorialBlock] | None:
+    """A group that resolved to no cards, as the heading and block of prose that keep its words.
+
+    The streamer and the final page both call this when a section has a
+    heading or text and nothing else to show: the text becomes a narrative
+    block under the heading, and a heading with no text becomes the block's
+    own. Returns the group's heading and the block, or ``None`` when the
+    model wrote neither.
+    """
+
+    if lead:
+        return title, EditorialBlock(type="editorial", presentation="narrative", paragraphs=[lead])
+    if title:
+        return None, EditorialBlock(type="editorial", presentation="narrative", title=title)
+    return None
 
 
 def clean_criteria(raw: Any) -> list[str]:
@@ -906,7 +836,7 @@ class GroupPlan(_PlanModel):
         description="For a comparison only: the shared terms the items are judged on, in order, as short labels such as 'Tempo' or 'Second-set jam'.",
     )
     items: list[BodyItem] = Field(
-        min_length=1,
+        default_factory=list,
         description=(
             "Only the items that earn a place in the answer, in exact reading order. "
             "Retrieved or related does not mean included."
@@ -957,15 +887,18 @@ class FinishPlan(BaseModel):
     def _read_groups_leniently(cls, data: Any) -> Any:
         """Read every group and item the way the streamer reads them.
 
-        Each item goes through ``validate_body_item``; a group keeps whatever
-        of its items carry something to show, and a group with none is left
-        out. An unknown presentation reads as a collection. Nothing here caps
-        how many groups or items the model plans, and nothing fails the plan
-        around a bad item: a failed plan makes the model start over after the
-        visitor has already watched the first one compose.
+        ``page_plan.finish_args`` reads the page's keys and the older plan's
+        the way the streamer does. Each item then goes through
+        ``validate_body_item``; a group keeps whatever of its items carry
+        something to show, and its heading and text whether or not any do.
+        Only a group with no words and no items is left out. An unknown
+        presentation reads as a collection. Nothing here caps how many groups
+        or items the model plans, and nothing fails the plan around a bad
+        item: a failed plan makes the model start over after the visitor has
+        already watched the first one compose.
         """
 
-        if page_plan.is_page_plan(data):
+        if isinstance(data, dict):
             data = page_plan.finish_args(data)
         data = loose_items_as_group(data)
         if not isinstance(data, dict) or not isinstance(data.get("groups"), list):
@@ -975,16 +908,13 @@ class FinishPlan(BaseModel):
             if isinstance(group, GroupPlan):
                 groups.append(group)
                 continue
-            if isinstance(group, dict) and "items" not in group and isinstance(group.get("type"), str):
-                # A body item written straight into groups: the model meant it
-                # to stand as its own group, so it keeps its place on the page.
-                group = {"presentation": "collection", "items": [group]}
-            if not isinstance(group, dict) or not isinstance(group.get("items"), list):
-                logger.info("finish_response planned a group without an items list; leaving it out")
+            if not isinstance(group, dict):
+                logger.info("finish_response planned a group that was not an object; leaving it out")
                 continue
-            items = [item for item in (validate_body_item(raw, where="planned") for raw in group["items"]) if item is not None]
-            if not items:
-                logger.info("finish_response planned a group with nothing to show (title=%r)", group.get("title"))
+            raw_items = group["items"] if isinstance(group.get("items"), list) else []
+            items = [item for item in (validate_body_item(raw, where="planned") for raw in raw_items) if item is not None]
+            if not items and group_words(group.get("title"), group.get("lead")) == (None, None):
+                logger.info("finish_response planned a group with nothing to show")
                 continue
             groups.append(
                 {**group, "presentation": group_presentation(group.get("presentation")), "criteria": clean_criteria(group.get("criteria")), "items": items}
@@ -1192,120 +1122,6 @@ def _person_facts_from_store(person_ids: list[str], store: CanonicalStore) -> di
     return facts
 
 
-def _find_guest_record(payloads: list[dict[str, Any]], person_id: str) -> dict[str, Any] | None:
-    """The same guest can appear in more than one payload this turn — a broad
-
-    directory summary from an earlier call and a narrower detail lookup
-    (include=["appearances"]) for this person. Prefer whichever record
-    carries appearances; a summary-only record is still usable (see
-    ``_person_facts_from_payloads``), but a detail record is strictly richer.
-    """
-
-    first_match: dict[str, Any] | None = None
-    for payload in payloads:
-        raw_guests = payload.get("guests")
-        if not isinstance(raw_guests, list):
-            continue
-        for record in raw_guests:
-            if isinstance(record, dict) and record.get("person_id") == person_id:
-                if isinstance(record.get("appearances"), list):
-                    return record
-                if first_match is None:
-                    first_match = record
-    return first_match
-
-
-def _person_facts_from_payloads(person_id: str, payloads: list[dict[str, Any]]) -> dict[str, Any] | None:
-    """A guest record from search_guest_musicians already carries canonical facts.
-
-    With include=["appearances"], the record carries every show; otherwise
-    it is the directory summary (name, guest_show_count, first/last show
-    date, instruments). Either way, this returns an explicit ``show_count``
-    rather than leaving the caller to derive one from ``show_ids`` — a
-    summary record has no per-show ids to count.
-    """
-
-    guest = _find_guest_record(payloads, person_id)
-    if not guest:
-        return None
-    name = guest.get("name")
-    name = name if isinstance(name, str) and name else person_id
-    appearances = guest.get("appearances")
-    if isinstance(appearances, list):
-        roles: list[str] = []
-        years: list[str] = []
-        show_ids: set[str] = set()
-        for appearance in appearances:
-            if not isinstance(appearance, dict):
-                continue
-            for instrument in appearance.get("instruments") or []:
-                if isinstance(instrument, str) and instrument and instrument not in roles:
-                    roles.append(instrument)
-            date = appearance.get("show_date") or ""
-            if isinstance(date, str) and len(date) >= 4:
-                years.append(date[:4])
-            if isinstance(appearance.get("show_id"), str):
-                show_ids.add(appearance["show_id"])
-        return {"name": name, "roles": roles, "years": years, "show_count": len(show_ids)}
-    # A directory summary: no appearances, but the same facts in aggregate.
-    roles = [item for item in guest.get("instruments") or [] if isinstance(item, str) and item]
-    years = []
-    for key in ("first_show_date", "last_show_date"):
-        date = guest.get(key)
-        if isinstance(date, str) and len(date) >= 4:
-            years.append(date[:4])
-    show_count = guest.get("guest_show_count")
-    show_count = show_count if isinstance(show_count, int) else 0
-    return {"name": name, "roles": roles, "years": years, "show_count": show_count}
-
-
-def _resolve_person_roster(
-    item: Any,
-    grounded: GroundedContext,
-    payloads: list[dict[str, Any]],
-    store: CanonicalStore,
-) -> PersonRosterBlock | None:
-    """Hydrate a roster: the model chose who and in what order; the server supplies each person's facts."""
-
-    wanted = [entry for entry in item.entries if entry.person_id in grounded.ids]
-    if not wanted:
-        return None
-    from_store = _person_facts_from_store([entry.person_id for entry in wanted], store)
-    items: list[PersonRosterItem] = []
-    seen: set[str] = set()
-    for entry in wanted:
-        if entry.person_id in seen:
-            continue
-        facts = _person_facts_from_payloads(entry.person_id, payloads) or from_store.get(entry.person_id)
-        if not facts:
-            continue
-        seen.add(entry.person_id)
-        years = sorted(facts["years"])
-        # A payload-derived record carries an explicit show_count (a summary
-        # has no per-show ids to count); a store-derived record still has
-        # show_ids instead.
-        show_count = facts["show_count"] if "show_count" in facts else len(facts["show_ids"])
-        items.append(
-            PersonRosterItem(
-                person_id=entry.person_id,
-                name=facts["name"],
-                roles=facts["roles"],
-                show_count=show_count,
-                first_year=years[0] if years else None,
-                last_year=years[-1] if years else None,
-                note=entry.note.strip() if entry.note and entry.note.strip() else None,
-            )
-        )
-    if not items:
-        return None
-    return PersonRosterBlock(
-        type="person_roster",
-        title=item.title.strip() or "People",
-        lead=keep_grounded_links(item.lead.strip(), grounded.urls) if item.lead and item.lead.strip() else None,
-        items=fit(items, "roster people"),
-    )
-
-
 def _resolve_people_timeline(item: Any, grounded: GroundedContext, store: CanonicalStore) -> PeopleTimelineBlock | None:
     """Each person's spans with the band and show count, from the stored memberships and lineups."""
 
@@ -1380,41 +1196,6 @@ def _resolve_reference(
         )
         return block, []
 
-    if kind == "performance_unit":
-        if item.performance_id not in grounded.ids:
-            return None, []
-        context = store.performance_context(item.performance_id)
-        if not context:
-            return None, []
-        unit_sources, sources = composition._unit_sources(
-            item.supporting_sources if "sources" in item.visible_facets else [], grounded.urls, payloads
-        )
-        block = composition._performance_unit(
-            context,
-            store,
-            emphasis=_emphasis_for(item),
-            judgments=item.judgments,
-            note=item.note,
-            visible_facets=item.visible_facets,
-            sources=unit_sources,
-            follow_ups=item.follow_ups,
-        )
-        return block, sources
-
-    if kind == "era_unit":
-        contexts = []
-        for performance_id in item.representative_performance_ids:
-            if performance_id not in grounded.ids:
-                continue
-            context = store.performance_context(performance_id)
-            if context:
-                contexts.append(context)
-        if not contexts:
-            return None, []
-        unit_sources, sources = composition._unit_sources(item.supporting_sources, grounded.urls, payloads)
-        block = composition._era_unit(contexts, store, title=item.title, span=item.span, note=item.note, sources=unit_sources, follow_ups=item.follow_ups)
-        return block, sources
-
     if kind == "album_unit":
         if item.release_id not in grounded.ids:
             return None, []
@@ -1446,21 +1227,6 @@ def _resolve_reference(
         )
         return block, [*listen_sources, *sources]
 
-    if kind == "equipment_list":
-        if item.show_id not in grounded.ids:
-            return None, []
-        show = store.resolve_show(item.show_id)
-        if not show:
-            return None, []
-        payload = store.show_context(show)
-        block = composition._show_equipment(payload)
-        if block:
-            sources = [
-                SourceReference(source_id=entry.source_id, kind="contextual_resource", label="Jerry Garcia Instrument History", url=entry.source_url)
-                for entry in block.items
-            ]
-        return _retitle(block, item.title), sources
-
     if kind == "song_overview":
         if item.song_id not in grounded.ids:
             return None, []
@@ -1486,39 +1252,8 @@ def _resolve_reference(
             item.title,
         ), sources
 
-    if kind == "guest_appearance_list":
-        guest = _find_guest_record(payloads, item.person_id)
-        blocks = composition._guest_appearance_blocks({"guests": [guest]}, store) if guest else []
-        return (blocks[0], []) if blocks else (None, [])
-
-    if kind == "person_roster":
-        return _resolve_person_roster(item, grounded, payloads, store), []
-
     if kind == "people_timeline":
         return _resolve_people_timeline(item, grounded, store), []
-
-    if kind == "show_selection":
-        selection = _find_in_payloads(payloads, "show_selections", "selection_id", item.selection_id)
-        blocks, selection_sources = composition._show_selection_blocks({"show_selections": [selection]}, store) if selection else ([], [])
-        return (_retitle(blocks[0], item.title), selection_sources) if blocks else (None, [])
-
-    if kind == "arrangement_search":
-        for payload in payloads:
-            search = payload.get("arrangement_search")
-            if isinstance(search, dict) and search.get("key_signature") == item.key_signature:
-                block, search_sources = composition._arrangement_search_block(payload, store)
-                return _retitle(block, item.title), search_sources
-        return None, []
-
-    if kind == "arrangement":
-        if item.arrangement_id not in grounded.ids:
-            return None, []
-        block = composition._arrangement_block(item.arrangement_id, store)
-        if block:
-            resource = store.one("resources", block.resource_id) or {}
-            source = composition._resource_source(resource)
-            sources = [source] if source else []
-        return _retitle(block, item.title), sources
 
     if kind == "media_link":
         if item.url not in grounded.urls:
@@ -1648,9 +1383,6 @@ def resolve_item(
 
     if isinstance(item, (EditorialPlan, EditorialBlock)):
         return _sanitize_editorial(item, grounded, payloads, store), []
-    if isinstance(item, PullQuoteBlock):
-        text = _MARKDOWN_LINK.sub(lambda match: match.group(1), item.text).strip()
-        return (item.model_copy(update={"text": text}) if text else None), []
     try:
         block, sources = _resolve_reference(item, grounded, payloads, store)
     except Exception:  # One item that fails to hydrate must not cost the page.
@@ -1683,7 +1415,7 @@ def _spans_nights(context: dict[str, Any], store: CanonicalStore) -> bool:
 
 
 # The ID field of each record unit, which a ``from_result`` fills row by row.
-_UNIT_ID_FIELDS = {"show_unit": "show_id", "performance_unit": "performance_id", "album_unit": "release_id", "song_overview": "song_id"}
+_UNIT_ID_FIELDS = {"show_unit": "show_id", "album_unit": "release_id", "song_overview": "song_id"}
 
 
 def expand_item(item: Any, payloads: list[dict[str, Any]]) -> list[Any]:
@@ -1775,14 +1507,19 @@ def resolve_groups(
         if len(group_blocks) > room:
             logger.warning("The page reached the transport ceiling of %d blocks; later blocks are left out", PAGE_BLOCK_CEILING)
             group_blocks = group_blocks[: max(room, 0)]
+        title, lead = group_words(group.title, group.lead, grounded.urls)
         if not group_blocks:
-            continue
+            # No cards: the section's own words are what it shows.
+            alone = words_alone(title, lead) if room > 0 else None
+            if alone is None:
+                continue
+            title, lead, group_blocks = alone[0], None, [alone[1]]
         start = len(blocks)
         blocks.extend(group_blocks)
         groups.append(
             ExperienceGroup(
-                title=(group.title or "").strip() or None,
-                lead=keep_grounded_links(group.lead.strip(), grounded.urls) if group.lead and group.lead.strip() else None,
+                title=title,
+                lead=lead,
                 presentation=group.presentation,
                 criteria=clean_criteria(group.criteria),
                 tab=group.tab,
@@ -1797,17 +1534,7 @@ def _deliver(**_: Any) -> str:
     return "Response delivered to the visitor."
 
 
-def _first_group_title(groups: list[Any]) -> str | None:
-    first = groups[0] if groups else None
-    title = (first.get("title") or first.get("heading")) if isinstance(first, dict) else None
-    return title.strip() if isinstance(title, str) and title.strip() else None
-
-
-def is_groups_revision(earlier: list[Any], later: list[Any]) -> bool:
-    """A later groups list that opens with the earlier list's first group restates the page."""
-
-    title = _first_group_title(earlier)
-    return title is not None and title == _first_group_title(later)
+is_groups_revision = page_plan.is_groups_revision
 
 
 def read_joining_repeats(raw: str) -> Any:
@@ -1828,8 +1555,8 @@ def read_joining_repeats(raw: str) -> Any:
         result: dict[str, Any] = {}
         for key, value in items:
             if key in result and isinstance(result[key], list) and isinstance(value, list):
-                if key in ("groups", "sections") and is_groups_revision(result[key], value):
-                    result[key] = value
+                if key in ("groups", "sections"):
+                    result[key] = page_plan.join_sections(result[key], value)
                 else:
                     result[key] = [*result[key], *(entry for entry in value if entry not in result[key])]
             else:

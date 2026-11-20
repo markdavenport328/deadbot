@@ -112,7 +112,7 @@ function fixture(
   group?: Pick<NonNullable<ExperienceResponse["groups"]>[number], "title" | "lead">
 ): ExperienceResponse {
   return {
-    schema_version: "3",
+    schema_version: "4",
     thread_id: `visual-${headline.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`,
     headline,
     lead,
@@ -203,24 +203,6 @@ const evolution: ExperienceResponse = fixture(
   "Eyes of the World kept changing shape across two decades",
   "The song moved from a floating, conversational groove in 1973 to a tighter, more propulsive vehicle by 1974, then opened back up in 1990 to make room for a guest voice.",
   [
-    {
-      type: "era_unit", title: "1973: the open road", span: "1973",
-      note: "The song is newly expansive here, with the vocal and instrumental sections still trading places freely.",
-      performances: [{"performance_id": "gd-1973-06-10-eyes-of-the-world-2-1", "song_id": "song-eyes-of-the-world", "song_title": "Eyes Of The World", "show_id": "gd-1973-06-10", "show_date": "1973-06-10", "show_label": "1973-06-10 — Robert F. Kennedy Stadium", "set_label": "Set 2", "venue_name": "Robert F. Kennedy Stadium", "listen": {"label": "Listen to Eyes Of The World", "url": "https://archive.org/download/gd1973-06-10.sbd.miller.89640.sbeok.flac16/gd73-06-10d2t02.mp3", "provider": "archive", "is_official": false}, "audio_url": "https://archive.org/download/gd1973-06-10.sbd.miller.89640.sbeok.flac16/gd73-06-10d2t02.mp3", "duration_seconds": 1305}, {"performance_id": "gd-1973-06-09-eyes-of-the-world-3-11", "song_id": "song-eyes-of-the-world", "song_title": "Eyes Of The World", "show_id": "gd-1973-06-09", "show_date": "1973-06-09", "show_label": "1973-06-09 — Robert F. Kennedy Stadium", "set_label": "Set 3", "venue_name": "Robert F. Kennedy Stadium", "listen": {"label": "Listen to Eyes Of The World", "url": "https://archive.org/download/gd1973-06-09.sbd.barry.patched-172.93677.shnf/gd73-06-09d4t06.mp3", "provider": "archive", "is_official": false}, "audio_url": "https://archive.org/download/gd1973-06-09.sbd.barry.patched-172.93677.shnf/gd73-06-09d4t06.mp3", "duration_seconds": 430}],
-      sources: [{ label: "Performance notes", url: "https://jerrybase.com", source_name: "Jerrybase", note: "Context for the early arrangement." }], follow_ups: [{ label: "Phil’s bass in 1973", question: "What does Phil’s bass do differently in the 1973 versions?" }]
-    },
-    {
-      type: "era_unit", title: "1974: leaner and more percussive", span: "1974",
-      note: "The groove becomes more insistent here; this is a good place to hear the band turn a floating form into propulsion.",
-      performances: [{"performance_id": "gd-1974-06-18-eyes-of-the-world-2-8", "song_id": "song-eyes-of-the-world", "song_title": "Eyes Of The World", "show_id": "gd-1974-06-18", "show_date": "1974-06-18", "show_label": "1974-06-18 — Freedom Hall", "set_label": "Set 2", "venue_name": "Freedom Hall", "listen": {"label": "Listen to Eyes Of The World", "url": "https://archive.org/download/gd1974-06-18.sbd.bertha-ashley.18150.sbeok.shnf/gd74-06-18Berthad1t08.mp3", "provider": "archive", "is_official": false}, "audio_url": "https://archive.org/download/gd1974-06-18.sbd.bertha-ashley.18150.sbeok.shnf/gd74-06-18Berthad1t08.mp3", "duration_seconds": 537}],
-      sources: [], follow_ups: []
-    },
-    {
-      type: "era_unit", title: "1990: a new kind of space", span: "1990",
-      note: "By 1990 the song can welcome a guest voice without surrendering its internal conversation.",
-      performances: [{"performance_id": "gd-1990-03-29-eyes-of-the-world-2-1", "song_id": "song-eyes-of-the-world", "song_title": "Eyes Of The World", "show_id": "gd-1990-03-29", "show_date": "1990-03-29", "show_label": "1990-03-29 — Nassau Veterans Memorial Coliseum", "set_label": "Set 2", "venue_name": "Nassau Veterans Memorial Coliseum", "listen": {"label": "Listen to Eyes Of The World", "url": "https://archive.org/download/gd1990-03-29.149396.sbd.ultramatrix.miller.flac24/10%20Eyes%20Of%20The%20World.mp3", "provider": "archive", "is_official": false}, "audio_url": "https://archive.org/download/gd1990-03-29.149396.sbd.ultramatrix.miller.flac24/10%20Eyes%20Of%20The%20World.mp3", "duration_seconds": 977}],
-      sources: [], follow_ups: [{ label: "Branford’s entrance", question: "What should I listen for when Branford enters this version?" }]
-    },
     // Built from the real library: the timeline with no stops chosen.
     songTimelineEyesJson as unknown as ExperienceBlock
   ] as ExperienceBlock[],
@@ -325,7 +307,7 @@ const shakedown: ExperienceResponse = fixture(
 );
 
 const fact: ExperienceResponse = {
-  schema_version: "3",
+  schema_version: "4",
   thread_id: "visual-fact",
   headline: "American Beauty came out in November 1970",
   lead: "American Beauty was released on November 1, 1970.",
@@ -361,7 +343,7 @@ const fact: ExperienceResponse = {
 };
 
 const legacy: ExperienceResponse = {
-  schema_version: "3",
+  schema_version: "4",
   thread_id: "visual-legacy",
   headline: "American Beauty split into durable staples and forgotten songs",
   lead: "Four American Beauty songs became durable parts of the touring vocabulary, while two nearly disappeared after the album's early tours.",
@@ -440,52 +422,8 @@ const legacy: ExperienceResponse = {
   ]
 };
 
-// A comparison group of three judged performance_unit blocks, next to a
-// fact_grid group, so a review can compare both presentations without
-// scrolling between unrelated fixtures.
+// A fact grid of the model's own assessments, one item per row.
 const viewsBlocks: ExperienceBlock[] = [
-  {
-    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1995-07-09-so-many-roads", song_id: "song-so-many-roads", song_title: "So Many Roads",
-    show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
-    set_label: "Second set", position_in_set: "3", emphasis: "supporting",
-    note: "Garcia's voice is worn, but the song's slow build still lands as a real emotional high point of the second set.",
-    judgments: [
-      "A vocal high point despite Garcia's declining range",
-      "One of the last times the song's climb fully pays off",
-      "Divides listeners who hear strain and listeners who hear feeling"
-    ],
-    listen: [{ label: "Listen to So Many Roads", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#somanyroads`, is_official: false }],
-    sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19950709-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
-    follow_ups: []
-  },
-  {
-    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1995-07-09-black-muddy-river", song_id: "song-black-muddy-river", song_title: "Black Muddy River",
-    show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
-    set_label: "Encore", position_in_set: "1", emphasis: "supporting",
-    note: "A warm, unhurried reading that many listeners point to as evidence the band still had something to give.",
-    judgments: [
-      "A gentle, well-sung encore choice",
-      "One of the night's clearest moments of connection",
-      "Reads as a quiet farewell in hindsight"
-    ],
-    listen: [{ label: "Listen to Black Muddy River", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#blackmuddyriver`, is_official: false }],
-    sources: [],
-    follow_ups: []
-  },
-  {
-    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1995-07-09-box-of-rain", song_id: "song-box-of-rain", song_title: "Box of Rain",
-    show_id: "fixture-1995-07-09", show_date: "1995-07-09", show_label: "1995-07-09 — Soldier Field", venue_name: "Soldier Field", location: "Chicago, IL",
-    set_label: "Encore", position_in_set: "2", emphasis: "supporting",
-    note: "The closing song of the band's final show, delivered without much fanfare at the time.",
-    judgments: [
-      "Gains its weight only in retrospect",
-      "A modest performance on its own musical terms",
-      "The detail most retrospective accounts lead with"
-    ],
-    listen: [{ label: "Listen to Box of Rain", provider: "Internet Archive", url: `${archive}gd1995-07-09.sbd.miller.97483.flac16#boxofrain`, is_official: false }],
-    sources: [],
-    follow_ups: []
-  },
   {
     type: "editorial", presentation: "fact_grid", eyebrow: null, title: null, paragraphs: [],
     items: [
@@ -498,19 +436,18 @@ const viewsBlocks: ExperienceBlock[] = [
 ];
 
 const views: ExperienceResponse = {
-  schema_version: "3",
+  schema_version: "4",
   thread_id: "visual-views",
-  headline: "Soldier Field 1995 through three performances, and the songs that stayed",
-  lead: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire.",
+  headline: "The Wake of the Flood songs that stayed",
+  lead: "Four Wake of the Flood songs kept very different footholds in the live repertoire.",
   mode: "answer",
   conversation: [
-    { role: "user", text: "How do Soldier Field 1995-07-09's key performances hold up, and which Wake of the Flood songs stuck around live?" },
-    { role: "assistant", text: "Three performances from Soldier Field 1995 show real, if modest, highlights, and four Wake of the Flood songs kept very different footholds in the live repertoire." }
+    { role: "user", text: "Which Wake of the Flood songs stuck around live?" },
+    { role: "assistant", text: "Four Wake of the Flood songs kept very different footholds in the live repertoire." }
   ],
   blocks: viewsBlocks,
   groups: [
-    { presentation: "comparison", title: "How three of the night's performances land", criteria: ["Musical quality", "Emotional weight", "Worth hearing"], block_indexes: [0, 1, 2] },
-    { presentation: "collection", title: "The album songs in the live repertoire", criteria: [], block_indexes: [3] }
+    { presentation: "collection", title: "The album songs in the live repertoire", criteria: [], block_indexes: [0] }
   ],
   sources: [
     { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" },
@@ -584,96 +521,6 @@ const album: ExperienceResponse = fixture(
   { title: "The record" }
 );
 
-const terrapinDownload = "https://archive.org/download/gd1977-06-09.sbd.dauria.3372.shnf";
-const terrapinTracks: [string, string, string, number, string][] = [
-  ["gd-1977-06-09-mississippi-half-step-1-1", "Mississippi Half Step", "gd77-06-09d1t01.mp3", 400, "Set 1"],
-  ["gd-1977-06-09-jack-straw-1-2", "Jack Straw", "gd77-06-09d1t02.mp3", 352, "Set 1"],
-  ["gd-1977-06-09-estimated-prophet-2-9", "Estimated Prophet", "gd77-06-09d3t02.mp3", 540, "Set 2"],
-  ["gd-1977-06-09-terrapin-station-2-10", "Terrapin Station", "gd77-06-09d3t03.mp3", 432, "Set 2"],
-  ["gd-1977-06-09-playing-in-the-band-2-11", "Playing in the Band", "gd77-06-09d3t04.mp3", 610, "Set 2"]
-];
-
-const terrapin: ExperienceResponse = {
-  ...fixture(
-    "Is the Winterland Terrapin from June 1977 worth hearing?",
-    "The Winterland Terrapin is the song arriving whole",
-    "Four months after its debut, the June 9 Terrapin already has the shape it would keep, played with the patience of a band that had just spent a spring on the road.",
-    [
-      {
-        type: "performance_unit", disclosure: "expanded", performance_id: "gd-1977-06-09-terrapin-station-2-10", song_id: "song-terrapin-station", song_title: "Terrapin Station",
-        show_id: "gd-1977-06-09", show_date: "1977-06-09", show_label: "1977-06-09 — Winterland", venue_name: "Winterland", location: "San Francisco, CA",
-        set_label: "Set 2", position_in_set: "10", emphasis: "primary", visible_facets: ["setlist", "listen", "sources"],
-        note: "The last night of the spring tour, at home, with the suite still new enough that every section is played as though the band is listening to it for the first time. The Lady with a Fan opening is unhurried, and the instrumental climb into the Terrapin theme builds without any of the later arrangement's orchestral weight, so the song's architecture is easy to hear.",
-        judgments: [
-          "It is one of the earliest performances where the whole suite holds together from the opening verse through the final instrumental climb, and the band sounds confident rather than careful, which is what the spring of 1977 is remembered for.",
-          "Warm and spacious soundboard, with Garcia's guitar forward and Keith's piano filling the long sustained chords underneath; the vocals are relaxed rather than pushed.",
-          "Start at the song itself, then keep the tape running into Playing in the Band to hear how the second set opens out."
-        ],
-        previous: { performance_id: "gd-1977-06-09-estimated-prophet-2-9", title: "Estimated Prophet" },
-        next: { performance_id: "gd-1977-06-09-playing-in-the-band-2-11", title: "Playing in the Band" },
-        listen: [
-          { label: "Listen to Terrapin Station", provider: "archive", url: `${terrapinDownload}/gd77-06-09d3t03.mp3`, is_official: false },
-          { label: "Hear the full show", provider: "archive", url: "https://archive.org/details/gd1977-06-09.sbd.dauria.3372.shnf", is_official: false },
-          { label: "Hear it on Spotify", provider: "spotify", url: "https://open.spotify.com/album/0", is_official: true }
-        ],
-        show_tracks: terrapinTracks.map(([performance_id, title, file, duration_seconds, set_label]) => ({
-          performance_id, title, audio_url: `${terrapinDownload}/${file}`, duration_seconds, set_label
-        })),
-        sources: [{ label: "Show overview", url: "https://jerrybase.com/events/19770609-01", source_name: "Jerrybase", note: "Setlist and venue context." }],
-        follow_ups: [{ label: "Terrapin in 1977", question: "How did Terrapin Station change over 1977?" }]
-      }
-    ] as ExperienceBlock[],
-    "comparison"
-  )
-};
-terrapin.groups = [{ presentation: "comparison", criteria: ["Why it stands out", "Listening character", "Where to start"], title: null, lead: null, block_indexes: [0] }];
-
-// One primary performance_unit judged on four criteria, with its set
-// neighbors, so the labeled groups and the before/after strip can be reviewed
-// at full width.
-const performanceBlocks: ExperienceBlock[] = [
-  {
-    type: "performance_unit", disclosure: "expanded", performance_id: "fixture-1968-02-14-dark-star", song_id: "song-dark-star", song_title: "Dark Star",
-    show_id: "fixture-1968-02-14", show_date: "1968-02-14", show_label: "1968-02-14 — Carousel Ballroom", venue_name: "Carousel Ballroom", location: "San Francisco, CA",
-    set_label: "Set 1", position_in_set: "3", emphasis: "primary",
-    note: "A useful early comparison: the 1968 approach is more compressed and eventful, with abrupt changes of color and intensity.",
-    judgments: [
-      "Dense, echoing, and sharply colored; early psychedelia still feels close to the studio experiment.",
-      "Garcia is foregrounded while Lesh and Weir increasingly respond in loose counterpoint.",
-      "The form feels like a route through episodes—verse, exploratory jam, return—rather than a long, spacious arc.",
-      "Unstable and electric: the music seems to be discovering what the song can become."
-    ],
-    previous: { performance_id: "fixture-1968-02-14-schoolgirl", title: "Good Morning Little Schoolgirl" },
-    next: { performance_id: "fixture-1968-02-14-china-cat", title: "China Cat Sunflower" },
-    listen: [
-      { label: "Hear Dark Star on the official release", provider: "Dead.net", url: "https://www.dead.net/", is_official: true },
-      { label: "Hear the full show", provider: "Internet Archive", url: `${archive}gd1968-02-14.sbd`, is_official: false }
-    ],
-    sources: [{ label: "Show notes", url: "https://jerrybase.com/events/19680214-01", source_name: "Jerrybase", note: "Set order and venue context." }],
-    follow_ups: [{ label: "1972 versions", question: "How does the 1968 Dark Star differ from the 1972 versions?" }]
-  }
-];
-
-const performance: ExperienceResponse = {
-  schema_version: "3",
-  thread_id: "visual-performance",
-  headline: "The 1968 Dark Star is a route through episodes",
-  lead: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into.",
-  mode: "answer",
-  conversation: [
-    { role: "user", text: "What is the 1968 Carousel Ballroom Dark Star like?" },
-    { role: "assistant", text: "The Carousel Ballroom reading compresses the song into sharp, eventful episodes rather than the long arc it grew into." }
-  ],
-  blocks: performanceBlocks,
-  groups: [
-    { presentation: "comparison", title: null, criteria: ["Texture", "Band interaction", "Form", "Emotional effect"], block_indexes: [0] }
-  ],
-  sources: [
-    { source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }
-  ]
-};
-
-
 // A song card hydrated from the library: its representatives, its History tab
 // (first, last and one a year) and its On record tab. Every archive track is
 // real, from data/canonical/performance_links.csv.
@@ -722,41 +569,6 @@ const blocks: ExperienceResponse = fixture(
       follow_up: "Why did Bird Song disappear for seven years?", source_id: "fixture-archive"
     },
     {
-      type: "show_selection", selection_type: "Fan ranking", selector_name: "Deadbase readers", source_id: "fixture-deadnet", title: "Where Veneta lands among 1972 shows",
-      items: [
-        { show_id: "s1", show_date: "1972-08-27", venue_name: "Old Renaissance Faire Grounds", location: "Veneta, OR" },
-        { show_id: "s2", show_date: "1972-05-26", venue_name: "Lyceum Theatre", location: "London, England" },
-        { show_id: "s3", show_date: "1972-05-11", venue_name: "Rotterdam Civic Hall", location: "Rotterdam, Netherlands" },
-        { show_id: "s4", show_date: "1972-09-21", venue_name: "The Spectrum", location: "Philadelphia, PA" }
-      ],
-      coverage_note: "Rankings come from reader polls collected between 1987 and 2001 and reflect the recordings in circulation at the time."
-    },
-    {
-      type: "guest_appearance_list", person_id: "p-kesey", person_name: "Ken Kesey", known_show_count: 3,
-      items: [
-        { show_id: "s1", show_date: "1972-08-27", venue_name: "Old Renaissance Faire Grounds", location: "Veneta, OR", instruments: ["announcements"], participation_scope: "between sets" },
-        { show_id: "s5", show_date: "1982-08-28", venue_name: "Oregon Country Fair", location: "Veneta, OR", instruments: ["spoken word"], participation_scope: "second set", songs: [{ performance_id: "s5-drums", song_title: "Drums", note: "Talked over the drummers." }, { performance_id: "s5-nfa", song_title: "Not Fade Away", note: null }] },
-        { show_id: "s6", show_date: "1994-06-19", venue_name: "Autzen Stadium", location: "Eugene, OR", instruments: ["spoken word"], participation_scope: null }
-      ]
-    },
-    {
-      type: "person_roster", title: "The Oregon circle", lead: "Kesey's people, who treated the stage as an extension of the farm.",
-      items: [
-        { person_id: "p-kesey", name: "Ken Kesey", roles: ["harmonica", "rap"], show_count: 5, first_year: "1978", last_year: "1991", note: "Announcements between sets, and the reason the show happened." },
-        { person_id: "p-babbs", name: "Ken Babbs", roles: ["rap"], show_count: 2, first_year: "1969", last_year: "1978", note: null },
-        { person_id: "p-cassady", name: "Neal Cassady", roles: ["rap"], show_count: 1, first_year: "1967", last_year: "1967", note: "One 1967 appearance, talking over the band." },
-        { person_id: "p-belushi", name: "John Belushi", roles: ["cartwheels", "vocals"], show_count: 1, first_year: "1980", last_year: "1980", note: null },
-        { person_id: "p-nordine", name: "Ken Nordine", roles: ["rap"], show_count: 1, first_year: "1993", last_year: "1993", note: null }
-      ]
-    },
-    {
-      type: "equipment_list", show_id: "s1", title: "What the band played through",
-      items: [
-        { equipment_id: "e1", name: "Alembic-modified Stratocaster", manufacturer: "Fender", model: "Stratocaster", usage_context: "Garcia's main guitar for the 1972 tour", claim_type: "date_range", evidence: "photographs", source_id: "fixture-deadnet", source_url: "https://gratefuldeadoftheday.com" },
-        { equipment_id: "e2", name: "Big Brown", manufacturer: "Alembic", model: "Custom bass", usage_context: "Lesh's bass at Veneta", claim_type: "show", evidence: "film", source_id: "fixture-deadnet", source_url: "https://gratefuldeadoftheday.com" }
-      ]
-    },
-    {
       type: "resource_list", title: "Reading and watching",
       items: [
         { resource_id: "r1", title: "Sunshine Daydream: the film and the day", url: "https://www.dead.net/features/sunshine-daydream", resource_type: "Feature", source_name: "Dead.net", source_id: "fixture-deadnet", context_note: "The official account of the restoration, with interviews." },
@@ -768,17 +580,6 @@ const blocks: ExperienceResponse = fixture(
       items: [
         { person_id: "jg", name: "Jerry Garcia", role: "music" },
         { person_id: "rh", name: "Robert Hunter", role: "lyrics" }
-      ]
-    },
-    {
-      type: "arrangement", resource_id: "a1", source_id: "fixture-deadnet", title: "Bird Song, as the band played it in 1972",
-      arrangement_scope: "live-version", key_signature: "E major", capo: null, tuning: "Standard", notes: "The 1972 arrangement stays in E throughout, with the jam moving between E and D.",
-      progressions: ["E · D · E · D", "A · B · E"]
-    },
-    {
-      type: "arrangement_search", title: "Charts for Bird Song", key_signature: "E major", coverage_note: "Two charts in the library cover this song; both are fan transcriptions.",
-      items: [
-        { arrangement_id: "as1", song_id: "song-bird-song", title: "Bird Song", arrangement_scope: "studio-version", key_signature: "E major", resource_id: "r3", resource_title: "Bird Song chords and lyrics", url: "https://gratefuldeadoftheday.com", source_name: "Grateful Dead of the Day" }
       ]
     },
     { type: "coverage", title: "What the library holds for this show", message: "The library has the complete soundboard, the film's setlist, and two contemporary reviews. Attendance figures come from newspaper accounts, not ticket records." },
@@ -1071,7 +872,7 @@ const msgStory: ExperienceBlock[] = [
 ] as ExperienceBlock[];
 
 const msgWorkspace: ExperienceResponse = {
-  schema_version: "3",
+  schema_version: "4",
   thread_id: "visual-msg-workspace",
   headline: "The Garden years, 1979–1994",
   lead: "The Dead first played Madison Square Garden in 1979 and came back most years through 1994, 52 nights in all, usually in multi-night runs that became a fixture of the New York calendar.",
@@ -1089,11 +890,11 @@ const msgWorkspace: ExperienceResponse = {
   sources: [{ source_id: "fixture-archive", label: "Internet Archive", url: "https://archive.org", kind: "canonical" }]
 };
 
-export const visualFixtureNames = ["branford", "cornell", "terrapin", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "performance", "blocks", "chinarider", "versions", "people", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
+export const visualFixtureNames = ["branford", "cornell", "shakedown", "fact", "legacy", "evolution", "playing", "views", "album", "blocks", "chinarider", "versions", "people", "releases1972", "shows1977", "harrisburg", "darkstar", "mostplayed", "grid", "records", "timeline", "msg-workspace"] as const;
 
 export type VisualFixtureName = (typeof visualFixtureNames)[number];
 
-export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, terrapin, shakedown, fact, legacy, evolution, playing, views, album, performance, blocks, chinarider, versions, people, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
+export const visualFixtures: Record<VisualFixtureName, ExperienceResponse> = { branford, cornell, shakedown, fact, legacy, evolution, playing, views, album, blocks, chinarider, versions, people, releases1972, shows1977, harrisburg, darkstar, mostplayed, grid, records, timeline, "msg-workspace": msgWorkspace };
 
 export function visualFixtureFromLocation(): ExperienceResponse | null {
   if (!import.meta.env.DEV) return null;

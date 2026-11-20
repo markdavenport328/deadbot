@@ -99,7 +99,6 @@ class SetlistSection(ExperienceModel):
 Emphasis = Literal["primary", "supporting", "mention"]
 ShowFacet = Literal["guests", "listen", "setlist", "sources", "lineup", "recordings"]
 SongFacet = Literal["credits", "albums", "representatives", "by_year"]
-PerformanceFacet = Literal["setlist", "listen", "sources"]
 SetlistDisclosure = Literal["expanded", "collapsed", "hidden"]
 # How a record card starts: expanded is the full card; collapsed is one
 # compact row the server fills in, which opens into the full card in place.
@@ -160,34 +159,6 @@ class PlayableTrack(ExperienceModel):
     audio_url: str
     duration_seconds: int | None = Field(default=None, ge=0)
     set_label: str | None = None
-
-
-class PerformanceSpineNeighbor(ExperienceModel):
-    performance_id: str
-    title: str
-
-
-class ShowSelectionItem(ExperienceModel):
-    show_id: str
-    show_date: str
-    venue_name: str
-    location: str | None = None
-    # One tape's playable tracks for the show, in show order, so the row can
-    # play the show in-page. Empty when the library has no archive track.
-    tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
-    recording_identifier: str | None = None
-
-
-class ShowSelectionBlock(ExperienceModel):
-    """A clearly attributed selection of shows from one reviewed source."""
-
-    type: Literal["show_selection"]
-    title: str
-    selection_type: str
-    selector_name: str
-    coverage_note: str
-    source_id: str
-    items: list[ShowSelectionItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class RecordingItem(ExperienceModel):
@@ -263,67 +234,6 @@ class ShowUnitBlock(ExperienceModel):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
-class PerformanceUnitBlock(ExperienceModel):
-    """One rendition as a primary object, with its set context and listening actions."""
-
-    type: Literal["performance_unit"]
-    performance_id: str
-    song_id: str
-    song_title: str
-    show_id: str
-    show_date: str | None = None
-    show_label: str
-    venue_name: str | None = None
-    location: str | None = None
-    set_label: str | None = None
-    position_in_set: str | None = None
-    emphasis: Emphasis = "supporting"
-    disclosure: CardDisclosure = "expanded"
-    # This rendition's own Internet Archive track and length, when the library has one.
-    audio_url: str | None = None
-    duration_seconds: int | None = Field(default=None, ge=0)
-    judgments: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
-    note: str | None = None
-    visible_facets: list[PerformanceFacet] = Field(default_factory=lambda: ["setlist", "listen", "sources"], max_length=LIST_CEILING)
-    previous: PerformanceSpineNeighbor | None = None
-    next: PerformanceSpineNeighbor | None = None
-    listen: list[ListenAction] = Field(default_factory=list, max_length=LIST_CEILING)
-    # The show's playable tracks from the same tape as this rendition, in show
-    # order, so a full-show action on the Internet Archive can play in-page.
-    # Empty when the library has no archive track for this performance.
-    show_tracks: list[PlayableTrack] = Field(default_factory=list, max_length=LIST_CEILING)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
-
-
-class EraPerformanceItem(ExperienceModel):
-    performance_id: str
-    song_id: str
-    song_title: str
-    show_id: str
-    show_date: str | None = None
-    show_label: str
-    set_label: str | None = None
-    venue_name: str | None = None
-    listen: ListenAction | None = None
-    # The Internet Archive track the in-page player plays for this rendition,
-    # when the library has one, and its length.
-    audio_url: str | None = None
-    duration_seconds: int | None = Field(default=None, ge=0)
-
-
-class EraUnitBlock(ExperienceModel):
-    """A stage of a development the composer names, with representative listening."""
-
-    type: Literal["era_unit"]
-    title: str
-    span: str | None = None
-    note: str | None = None
-    performances: list[EraPerformanceItem] = Field(min_length=1, max_length=LIST_CEILING)
-    sources: list[UnitSource] = Field(default_factory=list, max_length=LIST_CEILING)
-    follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
-
-
 class AlbumTrackItem(ExperienceModel):
     track_number: int = Field(ge=1)
     title: str
@@ -386,65 +296,6 @@ class AlbumUnitBlock(ExperienceModel):
     follow_ups: list[FollowUpTopic] = Field(default_factory=list, max_length=LIST_CEILING)
 
 
-class GuestAppearanceSong(ExperienceModel):
-    """One song a guest is credited on, from performance_performers."""
-
-    performance_id: str
-    song_title: str
-    note: str | None = None
-    # The Internet Archive track the in-page player plays for this rendition,
-    # when the library has one, and its length.
-    audio_url: str | None = None
-    duration_seconds: int | None = Field(default=None, ge=0)
-
-
-class GuestAppearanceItem(ExperienceModel):
-    show_id: str
-    show_date: str
-    venue_name: str | None = None
-    location: str | None = None
-    instruments: list[str] = Field(min_length=1, max_length=LIST_CEILING)
-    participation_scope: str | None = None
-    # Empty when the credit is known only at the show level.
-    songs: list[GuestAppearanceSong] = Field(default_factory=list, max_length=LIST_CEILING)
-
-
-class GuestAppearanceListBlock(ExperienceModel):
-    """Guest-show relationships for one resolved person."""
-
-    type: Literal["guest_appearance_list"]
-    person_id: str
-    person_name: str
-    known_show_count: int = Field(ge=1)
-    items: list[GuestAppearanceItem] = Field(min_length=1, max_length=LIST_CEILING)
-
-
-class PersonRosterItem(ExperienceModel):
-    """One person in a roster: identity and appearance facts from the store, one note from the model."""
-
-    person_id: str
-    name: str
-    roles: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
-    show_count: int = Field(ge=0)
-    first_year: str | None = None
-    last_year: str | None = None
-    note: str | None = None
-
-
-class PersonRosterBlock(ExperienceModel):
-    """A complete set of people, organized under one model-chosen heading.
-
-    The inventory component for questions that ask for everyone: the model
-    names the section and chooses who belongs in it; the server supplies each
-    person's name, roles, show count and span.
-    """
-
-    type: Literal["person_roster"]
-    title: str
-    lead: str | None = None
-    items: list[PersonRosterItem] = Field(min_length=1, max_length=LIST_CEILING)
-
-
 class PeopleTimelineSpan(ExperienceModel):
     """One stretch of a person's time with the band, from the stored memberships or lineups."""
 
@@ -471,25 +322,6 @@ class PeopleTimelineBlock(ExperienceModel):
     first_year: int
     last_year: int
     people: list[PeopleTimelinePerson] = Field(min_length=1, max_length=LIST_CEILING)
-
-
-class EquipmentItem(ExperienceModel):
-    equipment_id: str
-    name: str
-    manufacturer: str
-    model: str
-    usage_context: str
-    claim_type: Literal["show", "date_range"]
-    evidence: str
-    source_id: str
-    source_url: str
-
-
-class EquipmentListBlock(ExperienceModel):
-    type: Literal["equipment_list"]
-    show_id: str
-    title: str
-    items: list[EquipmentItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class ResourceItem(ExperienceModel):
@@ -696,39 +528,6 @@ class CoverageBlock(ExperienceModel):
     type: Literal["coverage"]
     title: str
     message: str
-
-
-class ArrangementBlock(ExperienceModel):
-    type: Literal["arrangement"]
-    title: str
-    resource_id: str
-    source_id: str
-    key_signature: str | None = None
-    arrangement_scope: str
-    capo: str | None = None
-    tuning: str | None = None
-    notes: str | None = None
-    progressions: list[str] = Field(default_factory=list, max_length=LIST_CEILING)
-
-
-class ArrangementSearchItem(ExperienceModel):
-    arrangement_id: str
-    song_id: str
-    title: str
-    resource_id: str
-    resource_title: str
-    source_name: str
-    url: str
-    key_signature: str
-    arrangement_scope: str
-
-
-class ArrangementSearchBlock(ExperienceModel):
-    type: Literal["arrangement_search"]
-    title: str
-    key_signature: str
-    coverage_note: str
-    items: list[ArrangementSearchItem] = Field(min_length=1, max_length=LIST_CEILING)
 
 
 class DataChartColumn(ExperienceModel):
@@ -1220,21 +1019,13 @@ class RowDetail(ExperienceModel):
 ExperienceBlock = Annotated[
     EntityCardBlock
     | ShowUnitBlock
-    | PerformanceUnitBlock
-    | EraUnitBlock
     | AlbumUnitBlock
-    | ShowSelectionBlock
-    | GuestAppearanceListBlock
-    | PersonRosterBlock
     | PeopleTimelineBlock
-    | EquipmentListBlock
     | ResourceListBlock
     | CreditListBlock
     | SongOverviewBlock
     | MediaLinkBlock
     | CoverageBlock
-    | ArrangementBlock
-    | ArrangementSearchBlock
     | DataChartBlock
     | VersionStripBlock
     | SongVersionsBlock
@@ -1302,6 +1093,8 @@ class AskFocus(ExperienceModel):
     """
 
     label: str = Field(max_length=FOCUS_LABEL_CEILING)
+    # person_roster: a browser tab still showing a page drawn before rosters
+    # were retired can ask from one; the question runs like any other.
     block_type: Literal["grid", "song_overview", "data_chart", "ranked_list", "person_roster"]
     block_id: str = Field(max_length=FOCUS_BLOCK_ID_CEILING)
     ids: list[str] = Field(default_factory=list, max_length=FOCUS_ID_CEILING)
@@ -1370,7 +1163,11 @@ class ExperienceGroup(ExperienceModel):
 
 
 class ExperienceResponse(ExperienceModel):
-    schema_version: Literal["3"] = "3"
+    # "4": the page vocabulary lost the components the model can no longer
+    # write (performance_unit, era_unit, equipment_list, guest_appearance_list,
+    # person_roster, show_selection, arrangement, arrangement_search). A page
+    # stored under an earlier version may hold one, so it is not served or kept.
+    schema_version: Literal["4"] = "4"
     thread_id: str
     headline: str | None = None
     lead: str

@@ -2,6 +2,8 @@
    The wrapper carries the lead's own type; blocks inherit it. */
 .rich-text { font-variant-numeric: tabular-nums; }
 .group-heading .rich-text { max-width: var(--measure); margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
+/* A section of words alone is a prose block; its lists and tables read as the paragraph beside them does. */
+.narrative-block > .rich-text { max-width: var(--measure); margin: var(--space-part) 0 0; color: var(--text); }
 .rich-text > p,
 .group-heading .rich-text > p { max-width: none; margin: 0 0 0.75em; color: inherit; font-size: inherit; line-height: inherit; }
 .rich-text > ul,

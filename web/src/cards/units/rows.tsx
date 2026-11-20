@@ -19,15 +19,6 @@ function unitIdentity(block: UnitBlock): { title: string; url?: string | null; t
       const queue = block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, meta)).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name ? `${block.venue_name} (${formatShowDate(block.show_date)})` : formatShowDate(block.show_date), url: block.listen[0]?.url, queue };
     }
-    case "performance_unit": {
-      const meta: TrackMeta = { showDate: block.show_date, venueName: block.venue_name };
-      const url = block.listen[0]?.url;
-      const queue = (block.show_tracks ?? []).map((track) => toTrack(track, meta));
-      const track = url && archiveTrack(url) && !block.listen[0]?.is_official
-        ? queue.find((item) => item.audioUrl === url) ?? toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: url }, meta)
-        : null;
-      return { title: `${block.song_title}, ${venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}`, url, track, queue };
-    }
     case "album_unit":
       return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
     case "song_overview": {
@@ -123,16 +114,6 @@ function collapsedFacts(block: UnitBlock): {
         play: playOf(queue),
         link: queue.length === 0 ? block.listen[0] ?? null : null,
         embedId: albumSpotify(block)?.embedId ?? null
-      };
-    }
-    case "performance_unit": {
-      const track = block.audio_url
-        ? toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: block.audio_url, duration_seconds: block.duration_seconds }, { showDate: block.show_date, venueName: block.venue_name })
-        : null;
-      return {
-        title: block.song_title,
-        meta: [block.venue_name, formatShowDateLong(block.show_date), block.duration_seconds ? formatClockTime(block.duration_seconds) : null],
-        play: track ? { start: track, queue: [track] } : null
       };
     }
     case "song_overview": {

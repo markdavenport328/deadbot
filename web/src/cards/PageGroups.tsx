@@ -92,7 +92,7 @@ export function PageGroups({
   onFollowUp: FollowUp;
 }) {
   // A primary unit's facets start open only when it is the page's sole unit;
-  // typography blocks (era_unit, editorial, and the rest) do not count.
+  // typography blocks (editorial and the rest) do not count.
   const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
   return (
     <>
