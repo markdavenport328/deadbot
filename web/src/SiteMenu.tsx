@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CloseSiteMenuProvider, MenuSlotOutlet } from "./core/menu-slot";
-import { followInSite, usePath } from "./core/site-nav";
+import { followInSite, useBackCloses, usePath } from "./core/site-nav";
 import "./SiteMenu.css";
 
 export const RESUME_URL = "https://mark-davenport.vercel.app";
@@ -35,9 +35,10 @@ export function SiteMenu() {
     return undefined;
   }, [open]);
 
-  // A page change from anywhere (the browser's back button included) closes
-  // the menu.
+  // A page change from anywhere closes the menu, and so does the browser's
+  // Back button while it is open.
   useEffect(() => setOpen(false), [path]);
+  useBackCloses("site-menu", open, () => setOpen(false));
 
   return (
     <>

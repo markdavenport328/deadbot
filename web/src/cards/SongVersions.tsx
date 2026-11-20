@@ -109,7 +109,10 @@ function mixedHeading(rows: SongVersionsRow[]): string {
 export function SongVersions({ block }: { block: SongVersionsBlock }) {
   const player = usePlayer();
   const tracks = block.rows.map(rowTrack).filter((track): track is PlayerTrack => track != null);
-  const seconds = block.rows.reduce((sum, row) => sum + (row.track ? (row.tape_seconds ?? 0) : 0), 0);
+  // The total is the sum of the lengths printed on the rows it queues, so the
+  // figure and the rows agree; when any of those is unknown there is no total.
+  const queuedRows = block.rows.filter((row) => row.track);
+  const seconds = queuedRows.every((row) => row.length_seconds != null) ? queuedRows.reduce((sum, row) => sum + (row.length_seconds ?? 0), 0) : null;
   const queued = tracks.length > 0 && tracks.every((track) => player.queue.some((item) => item.id === track.id || item.audioUrl === track.audioUrl));
   const longest = Math.max(0, ...block.rows.map((row) => row.length_seconds ?? 0));
   const mixed = new Set(block.rows.map((row) => row.song_id).filter(Boolean)).size > 1;
@@ -120,7 +123,7 @@ export function SongVersions({ block }: { block: SongVersionsBlock }) {
         <CardHeading className="sv-title">{heading}</CardHeading>
         {tracks.length > 0 && (
           <button type="button" className={`sv-queue-all${queued ? " queued" : ""}`} aria-label={queued ? "In the queue" : "Queue all"} onClick={() => !queued && player.enqueue(tracks)}>
-            {queued ? "✓ In the queue" : `+ Queue all ${tracks.length} · ${total(seconds)}`}
+            {queued ? "✓ In the queue" : `+ Queue all ${tracks.length}${seconds != null ? ` · ${total(seconds)}` : ""}`}
           </button>
         )}
       </div>

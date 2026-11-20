@@ -1,6 +1,4 @@
-/* Workspace shell (?shell=workspace): layout, history and the held previous
-   page. Everything is scoped under .workspace-shell so the old shell
-   is untouched. */
+/* The workspace: layout, history and the held previous page. */
 
 
 /* History: New chat at the top, Recent threads newest first (the question
@@ -49,6 +47,16 @@
 .workspace-shell .history-pending button,
 .workspace-shell .history-clear { padding: var(--space-line) var(--space-tight); border: 1px solid var(--hair); border-radius: var(--r); background: transparent; color: var(--muted); }
 .workspace-shell .history-pending.failed { border-color: var(--read); }
+/* The request's own words go back to its page: text, not a second boxed button. */
+.workspace-shell .history-pending .history-pending-open { flex: 1 1 auto; min-width: 0; padding: 0; border: 0; color: var(--text); font-size: inherit; line-height: 1.35; text-align: left; }
+.workspace-shell .history-pending .history-pending-open:hover,
+.workspace-shell .history-pending .history-pending-open[aria-current="true"] { color: var(--cream); }
+/* A page that finished while the visitor was reading another: a small cream dot until it is opened. */
+.workspace-shell .history-row.unseen { position: relative; padding-right: var(--space-content); color: var(--cream); }
+.workspace-shell .history-row.unseen::after,
+.workspace-shell .history-drawer-toggle.has-news::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--cream); }
+.workspace-shell .history-row.unseen::after { right: var(--space-tight); top: 50%; transform: translateY(-50%); }
+.workspace-shell .history-drawer-toggle.has-news::after { top: 0.45rem; right: 0.4rem; }
 /* Recent and Clear share a line: the heading at left, Clear underlined at right. */
 .workspace-shell .history-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-part); margin-top: var(--space-tight); padding: 0 var(--space-tight); }
 .workspace-shell .history-head h2 { margin: 0; padding: 0; }
@@ -242,3 +250,6 @@
 /* An empty box keeps Explore in its blue, only a touch quieter, rather than
    the general disabled fade. */
 .workspace-shell .pane-composer .question-field button[type="submit"]:disabled { opacity: 0.85; }
+
+/* The foot of a finished page: Copy link, quiet, with its confirmation beside it. */
+.workspace-shell .page-foot { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-line) var(--space-part); margin: var(--space-content) 0 0; color: var(--quiet); font-size: 0.8rem; }

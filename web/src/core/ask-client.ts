@@ -11,6 +11,30 @@ export function createThreadId(): string {
 
 export const ASK_ERROR = "Deadbot could not answer just now. Try again, or rephrase the question.";
 
+// The longest question the server takes; the ask box stops there too.
+export const MAX_QUESTION_LENGTH = 2000;
+
+const TOO_LONG = `That question is too long for Deadbot. Shorten it to ${MAX_QUESTION_LENGTH.toLocaleString("en-US")} characters or fewer and ask again.`;
+const NOT_UNDERSTOOD = "Deadbot could not read that question. Rephrase it and ask again.";
+const TOO_MANY = "Deadbot is answering a lot of questions right now. Give it a minute, then ask again.";
+
+// A sentence for a request the server turned away. The server's own sentence
+// is used when it sent one. A 422 lists what was wrong with the request as
+// objects, which are for a program; the visitor gets a sentence that says
+// what to do instead. A 429 without a sentence asks them to wait.
+export async function refusalMessage(result: Response): Promise<string> {
+  const body = await result.json().catch(() => null) as { detail?: unknown } | null;
+  const detail = body?.detail;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (result.status === 422) {
+    const problems = Array.isArray(detail) ? detail as { type?: unknown; loc?: unknown }[] : [];
+    const tooLong = problems.some((problem) => typeof problem?.type === "string" && problem.type.includes("too_long") && Array.isArray(problem.loc) && problem.loc.includes("question"));
+    return tooLong ? TOO_LONG : NOT_UNDERSTOOD;
+  }
+  if (result.status === 429) return TOO_MANY;
+  return ASK_ERROR;
+}
+
 export type StreamHandlers = {
   onStatus: (status: string) => void;
   onLead: (text: string) => void;
@@ -55,10 +79,7 @@ export async function askStreaming(
     signal
   });
   if (result.status === 404 || result.status === 405) return null;
-  if (!result.ok) {
-    const detail = await result.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(detail?.detail ?? ASK_ERROR);
-  }
+  if (!result.ok) throw new Error(await refusalMessage(result));
   if (!result.body) return null;
   const reader = result.body.getReader();
   const decoder = new TextDecoder();
@@ -101,10 +122,7 @@ export async function askPlain(body: string, signal?: AbortSignal): Promise<Expe
     body,
     signal
   });
-  if (!result.ok) {
-    const detail = await result.json().catch(() => null) as { detail?: string } | null;
-    throw new Error(detail?.detail ?? ASK_ERROR);
-  }
+  if (!result.ok) throw new Error(await refusalMessage(result));
   return await result.json() as ExperienceResponse;
 }
 

@@ -36,14 +36,12 @@ export function isArchivePage(url: string): boolean {
   return hostOf(url) === "archive.org" && !archiveTrack(url);
 }
 
-export function archiveThumbnail(identifier?: string | null): string | null {
-  return identifier ? `https://archive.org/services/img/${identifier}` : null;
-}
-
 export function destination(url: string): string {
   return hostOf(url) || "the recording site";
 }
 
+// `thumbnailUrl` is a real cover when the block has one (an official
+// release's); a show without one is pictured by its tile (see show-tile.ts).
 export type TrackMeta = { showDate?: string | null; venueName?: string | null; recordingDetailsUrl?: string | null; thumbnailUrl?: string | null };
 
 type PlayableTrackData = { performance_id: string; title: string; audio_url: string; duration_seconds?: number | null };
@@ -60,7 +58,7 @@ export function toTrack(track: PlayableTrackData, meta: TrackMeta): PlayerTrack 
     showDate: meta.showDate ?? null,
     venueName: meta.venueName ?? null,
     recordingDetailsUrl: meta.recordingDetailsUrl ?? (identifier ? `https://archive.org/details/${identifier}` : null),
-    thumbnailUrl: meta.thumbnailUrl ?? archiveThumbnail(identifier)
+    thumbnailUrl: meta.thumbnailUrl ?? null
   };
 }
 
@@ -109,7 +107,7 @@ function resolvePlay(url: string | null | undefined, label: string, track: Playe
   if (url && archiveTrack(url)) {
     const queued = list.find((item) => item.audioUrl === url);
     if (queued) return { start: queued, queue: list };
-    const standalone: PlayerTrack = { id: url, title: label, audioUrl: url, recordingDetailsUrl: `https://archive.org/details/${archiveTrack(url)?.identifier}`, thumbnailUrl: archiveThumbnail(archiveTrack(url)?.identifier) };
+    const standalone: PlayerTrack = { id: url, title: label, audioUrl: url, recordingDetailsUrl: `https://archive.org/details/${archiveTrack(url)?.identifier}` };
     return { start: standalone, queue: [standalone] };
   }
   if (url && isArchivePage(url) && list.length > 0) return { start: list[0], queue: list };

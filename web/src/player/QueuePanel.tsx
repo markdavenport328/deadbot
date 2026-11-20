@@ -15,8 +15,7 @@ import { estimateBytes, formatBytes, lastSaveFailures, offlineSupported, removeT
 // offers Undo for ten seconds. Each change is announced.
 //
 // The same panel serves as the workspace's right rail ("rail"), and as the
-// panel the bar opens above itself on phones, on narrow desktops and in the
-// classic layout ("popover").
+// panel the bar opens above itself on phones and narrow desktops ("popover").
 
 const UNDO_SECONDS = 10;
 

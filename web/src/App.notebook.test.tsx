@@ -11,7 +11,6 @@ function reply(headline: string, notebook: string | null, conversation: Turn[]) 
   };
 }
 
-const KEY = "deadbot-research-notebook";
 const sent: Record<string, unknown>[] = [];
 let replies: (ReturnType<typeof reply> | "fail")[] = [];
 let streaming = false;
@@ -82,17 +81,15 @@ const lyceum = (notebook: string | null = "v1.second.sig") =>
     { role: "user", text: "Tell me about the last Lyceum night." }, { role: "assistant", text: "May 26, 1972." }
   ]);
 
-test("a follow-up sends back the notebook the last answer carried, and the tab keeps the newest", async () => {
+test("a follow-up sends back the notebook the last answer carried", async () => {
   replies = [europe(), lyceum()];
   await openApp();
   ask("What's on Europe '72?");
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
   expect(sent[0].notebook).toBeUndefined();
-  expect(window.sessionStorage.getItem(KEY)).toBe("v1.first.sig");
   ask("Tell me about the last Lyceum night.");
   await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
   expect(sent[1].notebook).toBe("v1.first.sig");
-  expect(window.sessionStorage.getItem(KEY)).toBe("v1.second.sig");
 });
 
 test("the notebook rides the streamed response too", async () => {
@@ -101,21 +98,17 @@ test("the notebook rides the streamed response too", async () => {
   await openApp();
   ask("What's on Europe '72?");
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
-  expect(window.sessionStorage.getItem(KEY)).toBe("v1.first.sig");
   ask("Tell me about the last Lyceum night.");
   await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
   expect(sent[1].notebook).toBe("v1.first.sig");
-  expect(window.sessionStorage.getItem(KEY)).toBe("v1.second.sig");
 });
 
-test("after a reload with no answer on screen, the first question sends no notebook and keeps the new one", async () => {
-  window.sessionStorage.setItem(KEY, "v1.kept.sig");
+test("with no answer on screen, the first question sends no notebook and the next sends the new one", async () => {
   replies = [europe(), lyceum()];
   await openApp();
   ask("What's on Europe '72?");
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
   expect(sent[0].notebook).toBeUndefined();
-  expect(window.sessionStorage.getItem(KEY)).toBe("v1.first.sig");
   ask("Tell me about the Lyceum.");
   await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
   expect(sent[1].notebook).toBe("v1.first.sig");
@@ -129,7 +122,6 @@ test("an answer that carries no notebook clears the stale token", async () => {
   ask("Tell me about the last Lyceum night.");
   await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
   expect(sent[1].notebook).toBe("v1.first.sig");
-  expect(window.sessionStorage.getItem(KEY)).toBeNull();
   ask("And the next one?");
   await vi.waitFor(() => expect(sent).toHaveLength(3));
   expect(sent[2].notebook).toBeUndefined();
@@ -143,7 +135,6 @@ test("a failed turn keeps the last notebook", async () => {
   ask("Tell me about the last Lyceum night.");
   await vi.waitFor(() => expect(sent).toHaveLength(2));
   await vi.waitFor(() => expect(screen.getAllByLabelText("Question").some((e) => !(e as HTMLTextAreaElement).disabled)).toBe(true));
-  expect(window.sessionStorage.getItem(KEY)).toBe("v1.first.sig");
   ask("Tell me about the last Lyceum night.");
   await screen.findByRole("heading", { level: 1, name: "The Lyceum" });
   expect(sent[2].notebook).toBe("v1.first.sig");
@@ -155,7 +146,6 @@ test("New chat forgets the notebook, so the next question sends none", async () 
   ask("What's on Europe '72?");
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
   fireEvent.click(screen.getByRole("button", { name: /new chat/i }));
-  expect(window.sessionStorage.getItem(KEY)).toBeNull();
   ask("What's on Europe '72?");
   await vi.waitFor(() => expect(sent).toHaveLength(2));
   expect(sent[1].notebook).toBeUndefined();
@@ -174,14 +164,14 @@ test("with sessionStorage unavailable the notebook still travels in memory", asy
   expect(sent[1].notebook).toBe("v1.first.sig");
 });
 
-test("a question in the link is asked on arrival and leaves the address bar", async () => {
+test("a question in the link is asked on arrival and stays in the address bar", async () => {
   replies = [europe()];
   window.history.replaceState({}, "", "/?q=What%27s%20on%20Europe%20%2772%3F");
   await openApp();
   await screen.findByRole("heading", { level: 1, name: "Europe '72" });
   expect(sent).toHaveLength(1);
   expect(sent[0].question).toBe("What's on Europe '72?");
-  expect(window.location.search).toBe("");
+  expect(new URLSearchParams(window.location.search).get("q")).toBe("What's on Europe '72?");
 });
 
 test("an empty question in the link leaves the home screen as it is", async () => {
