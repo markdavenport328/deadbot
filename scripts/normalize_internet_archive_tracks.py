@@ -26,6 +26,15 @@ REVIEW_PATH = RAW_DIR / "internet-archive-track-mapping-review.jsonl"
 # Full item metadata for further recordings of shows whose representative item
 # could not be aligned (collect/fetch_internet_archive_alternates.py).
 ALTERNATES_PATH = RAW_DIR / "internet-archive-alternate-items.jsonl"
+# Compact audio-file lists for the tapes the gap pass linked
+# (collect/fetch_internet_archive_item_files.py, normalize_internet_archive_gap_tracks.py).
+ITEM_FILES_PATH = RAW_DIR / "internet-archive-item-files.jsonl"
+
+
+def item_metadata_paths() -> list[Path]:
+    """Every preserved file that holds item metadata with a file list, in reading order."""
+
+    return sorted(RAW_DIR.glob("internet-archive-*-representatives.jsonl")) + [ALTERNATES_PATH, ITEM_FILES_PATH]
 FALLBACK_NOTE = (
     "Source track titles aligned to the canonical setlist track by track after removing file-name "
     "prefixes, segue marks and annotations; out-of-order, ambiguous, untitled and combined tracks were "
@@ -103,6 +112,81 @@ def parse_duration(value: object) -> str:
     except (TypeError, ValueError):
         return ""
     return str(seconds) if seconds > 0 else ""
+
+
+# ---------------------------------------------------------------------------
+# Track length
+#
+# The length stored for a track is the length of the file its link plays.
+# Internet Archive item metadata gives every file its own ``length``, and the
+# lossless original's is not always the track's: for Shorten (``.shn``)
+# originals, and the WAVE files of ``shnf`` items, it runs at roughly half the
+# real length (Sugaree on gd1977-04-23.sbd.aj.gardner.4334.shnf: 370.7 on the
+# ``.shn``, 11:30 on the MP3 the link plays).  The MP3 derivative's length
+# agrees with its own size and bitrate everywhere it was checked, so it is the
+# one to store.  A FLAC original's length is trusted when the link plays the
+# FLAC itself; anything else is left unknown rather than copied.
+# ---------------------------------------------------------------------------
+
+STREAM_FORMAT = "VBR MP3"
+# A mapped track whose file holds more than the song it is linked to (a medley
+# or suite in one file, linked to the song it opens with) says so in its note.
+# Pressing play starts on the song, but the file's length is not the song's,
+# so the link states no length.
+SPANS_MORE_MARK = "The file opens with this song and goes on into what follows it"
+
+
+def stream_files(raw_payload: dict, original_name: str) -> list[dict]:
+    """The MP3 derivatives of one original file, the shortest name first."""
+
+    derived = [
+        record
+        for record in raw_payload.get("files", [])
+        if record.get("format") == STREAM_FORMAT and record.get("original") == original_name and record.get("name")
+    ]
+    return sorted(derived, key=lambda record: (len(record["name"]), record["name"]))
+
+
+def played_length(file_record: dict | None) -> str:
+    """The length of a file a link plays, in whole seconds, or "" when it cannot be trusted."""
+
+    if not file_record:
+        return ""
+    format_name = (file_record.get("format") or "").casefold()
+    if "mp3" in format_name or "flac" in format_name:
+        return parse_duration(file_record.get("length"))
+    return ""
+
+
+# An MP3 this much shorter than the FLAC it was derived from is a derivative
+# that stops early (gd1987-09-23.137412.fixed.sbd.miller.flac24: a 9:45
+# Franklin's Tower whose MP3 and OGG both end at 4:20), not a rounding gap.
+CUT_SHORT_SHARE = 0.9
+CUT_SHORT_SECONDS = 15
+
+
+def stream_is_cut_short(raw_payload: dict, stream_file: dict) -> bool:
+    """True when an MP3 derivative ends well before its FLAC original does."""
+
+    original = next(
+        (record for record in raw_payload.get("files", []) if record.get("name") == stream_file.get("original")),
+        None,
+    )
+    if not original or "flac" not in (original.get("format") or "").casefold():
+        return False
+    played, full = parse_duration(stream_file.get("length")), parse_duration(original.get("length"))
+    if not played or not full:
+        return False
+    return int(played) < CUT_SHORT_SHARE * int(full) and int(full) - int(played) > CUT_SHORT_SECONDS
+
+
+def track_length(raw_payload: dict, source_file: dict) -> str:
+    """The length of a source track: its MP3 derivative's, else a FLAC original's own."""
+
+    for derived in stream_files(raw_payload, source_file.get("name", "")):
+        if seconds := played_length(derived):
+            return seconds
+    return played_length(source_file)
 
 
 # ---------------------------------------------------------------------------
@@ -546,7 +630,7 @@ def recovery_pass(
                         "recording_id": recording_id,
                         "track_number": track_number,
                         "start_seconds": "",
-                        "duration_seconds": parse_duration(source_file.get("length")),
+                        "duration_seconds": track_length(record.get("raw_payload", {}), source_file),
                         "track_title": source_file.get("title", ""),
                         "notes": RECOVERY_NOTE,
                     }
@@ -847,7 +931,7 @@ def fallback_pass(
                     "recording_id": recording["recording_id"],
                     "track_number": track_number,
                     "start_seconds": "",
-                    "duration_seconds": parse_duration(source_file.get("length")),
+                    "duration_seconds": track_length(record.get("raw_payload", {}), source_file),
                     "track_title": source_file.get("title", ""),
                     "notes": FALLBACK_NOTE
                     if aligner == "tolerant"
@@ -934,7 +1018,7 @@ def main() -> None:
                         "recording_id": recording["recording_id"],
                         "track_number": track_number,
                         "start_seconds": "",
-                        "duration_seconds": parse_duration(source_file.get("length")),
+                        "duration_seconds": track_length(record["raw_payload"], source_file),
                         "track_title": source_file.get("title", ""),
                         "notes": (
                             "Source track title/order uniquely aligned to the canonical setlist; "

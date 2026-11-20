@@ -91,6 +91,53 @@ def test_merge_links_counts_unchanged_row_as_existing_url_unchanged():
     assert review == []
 
 
+def test_merge_links_gives_a_kept_row_the_length_of_the_file_it_plays():
+    # The stored length once came from a Shorten original (371 s for an
+    # 11:30 Sugaree). A row whose URL is unchanged still takes the length
+    # this run read from the played file; nothing else in it moves.
+    url = "https://archive.org/download/item/d1t02.mp3"
+    existing = [{**link_row("gd-1977-04-23-sugaree-1-2", url), "duration_seconds": "371", "notes": "kept note"}]
+    candidates = [{**link_row("gd-1977-04-23-sugaree-1-2", url), "duration_seconds": "690", "notes": "new note"}]
+    review: list[dict] = []
+    counts = counter()
+
+    merged = ia_links.merge_links(existing, candidates, review, counts)
+
+    assert merged == [{**existing[0], "duration_seconds": "690"}]
+    assert counts["length_corrected"] == 1
+    assert counts["existing_url_unchanged"] == 1
+
+
+def test_merge_links_withdraws_a_link_whose_file_stops_early():
+    url = "https://archive.org/download/item/03FranklinsTower.mp3"
+    other = "https://archive.org/download/item/04WalkinBlues.mp3"
+    existing = [link_row("gd-1987-09-23-franklin-s-tower-1-3", url), link_row("gd-1987-09-23-walkin-blues-1-4", other)]
+    counts = counter()
+
+    merged = ia_links.merge_links(existing, [], [], counts, withdrawn={url})
+
+    assert [row["url"] for row in merged] == [other]
+    assert counts["withdrawn_cut_short"] == 1
+
+
+def test_a_mapped_track_links_the_file_that_carries_its_title_whatever_the_spelling():
+    # The reviewed Veneta mapping names track 20 "E2: Saturday Night".
+    payload = {
+        "files": [
+            {"name": "d3t07.shn", "source": "original", "format": "Shorten", "track": "20", "title": "E2: Saturday Night", "length": "167.02"},
+            {"name": "d3t07.mp3", "source": "derivative", "format": "VBR MP3", "original": "d3t07.shn", "length": "04:58"},
+        ]
+    }
+    canonical = "One More Saturday Night"
+
+    chosen, kind, _reason, _ = ia_links.select_track_file(
+        payload, 20, ia_links.normalized_title(canonical), canonical, "E2: Saturday Night"
+    )
+
+    assert chosen is not None and chosen["name"] == "d3t07.mp3" and kind == "mp3"
+    assert ia_links.played_length(chosen) == "298"
+
+
 # ---------------------------------------------------------------------------
 # Important 3 — a candidate whose URL already belongs to a different
 # performance is held, not silently counted as unchanged.
