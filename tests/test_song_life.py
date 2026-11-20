@@ -93,8 +93,8 @@ def test_year_summaries_span_every_year_with_counts_and_lengths(terrapin):
     y1979 = next(row for row in rows if row["year"] == 1979)
     assert y1979["count"] == 23
     assert y1979["top_next"] == {"title": "Playing In The Band", "count": 20}
-    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 937}
-    assert y1979["median_seconds"] == 764
+    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 926}
+    assert y1979["median_seconds"] == 767
     # The library states each year's facts; choosing what to feature is the model's.
     assert "pick" not in y1979
 

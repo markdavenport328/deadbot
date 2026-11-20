@@ -397,6 +397,9 @@ def merge_links(
                 # (copied from a Shorten original) must not outlive its fix.
                 previous = {**previous, "duration_seconds": candidate["duration_seconds"]}
                 counts["length_corrected"] += 1
+            if (SPANS_MORE_MARK in previous["notes"]) != (SPANS_MORE_MARK in candidate["notes"]):
+                # Whether the file holds more than the song is why the length is blank or not.
+                previous = {**previous, "notes": candidate["notes"]}
             merged.append(previous)
             by_url[previous["url"]] = previous
             by_id[previous["performance_link_id"]] = previous

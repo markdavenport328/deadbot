@@ -101,8 +101,8 @@ def test_show_by_song_cells(csv_store):
     assert data.cell("gd-1972-05-07", OTHER_ONE).state == "value"
     assert bickershaw.setlist  # the whole night ships for the row's setlist drawer
     assert data.cell("gd-1972-04-08", OTHER_ONE).state == "none"
-    dry = data.cell("gd-1972-05-23", DARK_STAR)  # two passes, no release track and no timed tape track
-    assert (dry.state, dry.passes, dry.value, dry.length_source) == ("no_length", 2, None, None)
+    lyceum = data.cell("gd-1972-05-23", DARK_STAR)  # two passes around Drums, each with its own tape track (10:56 and 16:06)
+    assert (lyceum.state, lyceum.passes, lyceum.value, lyceum.length_source) == ("value", 2, 27, "tape")
 
 
 def test_a_cell_with_only_a_tape_length_says_tape(csv_store):

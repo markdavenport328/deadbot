@@ -134,6 +134,8 @@ STREAM_FORMAT = "VBR MP3"
 # Pressing play starts on the song, but the file's length is not the song's,
 # so the link states no length.
 SPANS_MORE_MARK = "The file opens with this song and goes on into what follows it"
+# How normalize_internet_archive_gap_tracks.py marks the rows it wrote.
+GAP_NOTE_PREFIX = "Gap pass: "
 
 
 def stream_files(raw_payload: dict, original_name: str) -> list[dict]:
@@ -947,6 +949,13 @@ def fallback_pass(
 
 def main() -> None:
     songs, recordings, performances, existing = load_rows()
+    # Rows the gap pass wrote (normalize_internet_archive_gap_tracks.py) are
+    # decided after these passes and against their result, so they are set
+    # aside here; run the gap pass again after this script.
+    gap_rows = sum(row["notes"].startswith(GAP_NOTE_PREFIX) for row in existing)
+    existing = [row for row in existing if not row["notes"].startswith(GAP_NOTE_PREFIX)]
+    if gap_rows:
+        print(f"Set aside {gap_rows} gap-pass rows; rerun normalize_internet_archive_gap_tracks.py after this.")
     fields = [
         "performance_id",
         "recording_id",
