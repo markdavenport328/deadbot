@@ -1,9 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { PlayerProvider } from "./player/player";
-import { MenuSlotProvider } from "./core/menu-slot";
 import { Rosettes } from "./cards/listening";
 import { AboutPage } from "./AboutPage";
-import { SiteMenu } from "./SiteMenu";
 import { usePath } from "./core/site-nav";
 import { WorkspaceApp } from "./shells/workspace/WorkspaceApp";
 import { NowPlayingBar } from "./player/NowPlayingBar";
@@ -28,19 +26,16 @@ export default function AppWithPlayer() {
 
   return (
     <PlayerProvider>
-      <MenuSlotProvider>
-        <Rosettes />
-        <SiteMenu />
-        <div className="app-view" hidden={onAbout}>
-          <WorkspaceApp />
-        </div>
-        {onAbout && (
-          <>
-            <AboutPage />
-            <div className="about-player"><NowPlayingBar /></div>
-          </>
-        )}
-      </MenuSlotProvider>
+      <Rosettes />
+      <div className="app-view" hidden={onAbout}>
+        <WorkspaceApp />
+      </div>
+      {onAbout && (
+        <>
+          <AboutPage />
+          <div className="about-player"><NowPlayingBar /></div>
+        </>
+      )}
     </PlayerProvider>
   );
 }

@@ -14,7 +14,8 @@ import { estimateBytes, formatBytes, lastSaveFailures, offlineSupported, removeT
 // on the Played line empties what has played; each keeps the playing track and
 // offers Undo for ten seconds. Each change is announced.
 //
-// The same panel serves as the workspace's right rail ("rail"), and as the
+// The same panel serves as the workspace's right rail ("rail"), as the
+// phone's queue sheet ("sheet", QueueSheet.tsx), and as the
 // panel the bar opens above itself on phones and narrow desktops ("popover").
 
 const UNDO_SECONDS = 10;
@@ -225,7 +226,7 @@ function OfflineLine({ queue }: { queue: PlayerTrack[] }) {
 
 export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
   id?: string;
-  variant: "rail" | "popover";
+  variant: "rail" | "popover" | "sheet";
   onClose?: () => void;
   panelRef?: RefObject<HTMLElement | null>;
   headExtra?: ReactNode; // the rail's collapse control, after Clear
@@ -389,7 +390,7 @@ export function QueuePanel({ id, variant, onClose, panelRef, headExtra }: {
     <section
       ref={panelRef as RefObject<HTMLElement>}
       id={id}
-      className={variant === "popover" ? "queue-panel popover now-playing-queue" : "queue-panel rail"}
+      className={variant === "popover" ? "queue-panel popover now-playing-queue" : `queue-panel ${variant}`}
       aria-labelledby={headingId}
       tabIndex={-1}
       onKeyDown={(event) => {

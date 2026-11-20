@@ -264,7 +264,7 @@ test("on a phone, Back closes the history drawer before it leaves the page", asy
   await openWorkspace();
   ask("Best Morning Dew?");
   await screen.findByRole("heading", { level: 1, name: "The Cornell Dew" });
-  fireEvent.click(screen.getByRole("button", { name: /Your explorations/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Menu and your explorations/ }));
   const drawer = document.getElementById("history-drawer") as HTMLElement;
   expect(drawer).not.toHaveAttribute("hidden");
   await goBack();

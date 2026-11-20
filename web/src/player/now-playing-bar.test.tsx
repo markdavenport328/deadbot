@@ -12,14 +12,14 @@ const tracks: PlayerTrack[] = ["Cold Rain And Snow", "Me And Bobby McGee", "Lose
   venueName: "Capitol Theatre"
 }));
 
-function Harness({ queue }: { queue: PlayerTrack[] }) {
+function Harness({ queue, sheet = false }: { queue: PlayerTrack[]; sheet?: boolean }) {
   const player = usePlayer();
   return (
     <>
       <button type="button" onClick={() => player.play(queue[0], queue)}>
         Start
       </button>
-      <NowPlayingBar />
+      {sheet ? <NowPlayingBar collapsible queueSheet /> : <NowPlayingBar />}
     </>
   );
 }
@@ -34,10 +34,10 @@ beforeAll(() => {
 
 afterEach(cleanup);
 
-async function start(queue: PlayerTrack[]) {
+async function start(queue: PlayerTrack[], sheet = false) {
   render(
     <PlayerProvider>
-      <Harness queue={queue} />
+      <Harness queue={queue} sheet={sheet} />
     </PlayerProvider>
   );
   await act(async () => {
@@ -76,5 +76,27 @@ describe("now-playing bar steps", () => {
       fireEvent.click(previous);
     });
     expect(within(bar).getByText("Me And Bobby McGee")).toBeInTheDocument();
+  });
+});
+
+describe("the phone's queue sheet", () => {
+  it("opens from a labeled Queue button with Clear and reorder, and closes back to the button", async () => {
+    const bar = await start(tracks, true);
+    const button = within(bar).getByRole("button", { name: "Queue, 2 tracks up next" });
+    expect(button).toHaveTextContent("Queue");
+    await act(async () => { fireEvent.click(button); });
+    const sheet = screen.getByRole("dialog", { name: "Queue" });
+    expect(within(sheet).getByRole("button", { name: "Clear queue" })).toBeInTheDocument();
+    expect(within(sheet).getAllByRole("button", { name: /^Reorder / })).toHaveLength(2);
+    // The sheet's Clear empties Up next and offers Undo in place.
+    fireEvent.click(within(sheet).getByRole("button", { name: "Clear queue" }));
+    expect(within(sheet).getByRole("button", { name: "Cleared. Undo" })).toBeInTheDocument();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Cleared. Undo" }));
+    await act(async () => { fireEvent.click(within(sheet).getByRole("button", { name: "Close queue" })); });
+    expect(screen.queryByRole("dialog", { name: "Queue" })).toBeNull();
+    expect(button).toHaveFocus();
+    await act(async () => { fireEvent.click(button); });
+    await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
+    expect(screen.queryByRole("dialog", { name: "Queue" })).toBeNull();
   });
 });

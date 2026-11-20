@@ -290,7 +290,6 @@ test("the rail carries the site's links instead of a menu, and collapses to its 
   expect(within(rail()).getByRole("link", { name: "About Deadbot" })).toHaveAttribute("href", "/about");
   expect(within(rail()).getByRole("link", { name: /About Mark Davenport/ })).toHaveAttribute("target", "_blank");
   expect(within(rail()).queryByRole("button", { name: "Menu" })).toBeNull();
-  expect(document.documentElement).toHaveClass("workspace-desktop");
   fireEvent.click(within(rail()).getByRole("button", { name: "Collapse sidebar" }));
   expect(document.querySelector(".workspace-shell")).toHaveClass("history-collapsed");
   expect(within(rail()).queryByText("Recent")).toBeNull();
@@ -367,10 +366,16 @@ test("on a phone, history is a drawer from the left: choosing a row closes it, E
   await screen.findByRole("heading", { level: 1, name: "The Garden years" });
   ask("Focus on the late ’80s");
   await screen.findByRole("heading", { level: 1, name: "The late-’80s runs" });
-  const toggle = screen.getByRole("button", { name: "Your explorations" });
+  // The top bar carries the drawer's button and the Deadbot name; there is no corner menu.
+  const toggle = screen.getByRole("button", { name: "Menu and your explorations" });
+  expect(screen.getByRole("banner")).toContainElement(toggle);
+  expect(screen.queryByRole("button", { name: "Menu" })).toBeNull();
   fireEvent.click(toggle);
   const drawer = document.getElementById("history-drawer") as HTMLElement;
   expect(drawer).not.toHaveAttribute("hidden");
+  // The site's links sit at the drawer's foot, as they do in the desktop rail.
+  expect(within(drawer).getByRole("link", { name: "About Deadbot" })).toHaveAttribute("href", "/about");
+  expect(within(drawer).getByRole("link", { name: /About Mark Davenport/ })).toHaveAttribute("target", "_blank");
   expect(within(drawer).getByRole("button", { name: "New chat" })).toHaveFocus();
   fireEvent.keyDown(document, { key: "Escape" });
   expect(drawer).toHaveAttribute("hidden");

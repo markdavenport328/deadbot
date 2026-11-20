@@ -1,4 +1,8 @@
+
 import { useEffect, useRef, useState } from "react";
+
+// Mark Davenport's résumé, linked from the rail, the phone drawer and About.
+export const RESUME_URL = "https://mark-davenport.vercel.app";
 
 // The site's few pages share one document so the conversation, the page it
 // composed and anything playing all survive a visit to About and back. A page

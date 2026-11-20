@@ -200,6 +200,29 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .now-playing-queue-toggle { display: flex; align-items: center; gap: var(--space-line); height: 40px; padding: 0 var(--space-tight); border: none; border-radius: var(--r); background: transparent; color: var(--quiet); font-size: 0.78rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .now-playing-queue-toggle svg { width: 18px; height: 18px; }
 .now-playing-queue-toggle:hover, .now-playing-queue-toggle.open { color: var(--cream); }
+/* The phone's Queue button: a pill with the list mark, its name and the
+   count of tracks left, opening the queue sheet. */
+.now-playing-queue-pill { display: inline-flex; align-items: center; gap: var(--space-tight); min-height: 40px; padding: 0 var(--space-part) 0 var(--space-part); border: 1px solid var(--hair); border-radius: 999px; background: rgba(var(--cream-rgb), 0.06); color: var(--cream); font-size: 0.85rem; font-weight: 600; flex-shrink: 0; }
+.now-playing-queue-pill svg { width: 18px; height: 18px; }
+.now-playing-queue-pill .now-playing-queue-count { min-width: 1.4rem; padding: 0 0.35rem; border-radius: 999px; background: rgba(var(--cream-rgb), 0.12); font-size: 0.75rem; font-variant-numeric: tabular-nums; line-height: 1.4rem; text-align: center; }
+.now-playing-queue-pill:active { transform: scale(0.97); }
+/* The queue sheet (player/QueueSheet.tsx): over a dimmed page, rising from
+   the foot of the screen to cover most of it, with a handle to pull it down
+   and the whole queue scrolling inside. */
+html.sheet-open { overflow: hidden; }
+.queue-sheet-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(0, 0, 0, 0.5); }
+.queue-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 81; display: flex; flex-direction: column; height: 82dvh; padding: 0 var(--space-part) env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--hair); border-radius: var(--r) var(--r) 0 0; background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
+.queue-sheet:not(.dragging) { transition: transform 200ms var(--ease-out); }
+.queue-sheet-handle { display: grid; place-items: center; height: 28px; flex-shrink: 0; margin: 0 calc(-1 * var(--space-part)); cursor: grab; touch-action: none; }
+.queue-sheet-handle span { width: 40px; height: 4px; border-radius: 2px; background: rgba(var(--cream-rgb), 0.3); }
+.queue-panel.sheet { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: var(--space-content); }
+.queue-sheet-close { display: grid; place-items: center; width: 44px; height: 44px; margin-right: calc(-1 * var(--space-tight)); padding: 0; border: 0; border-radius: var(--r); background: none; color: var(--muted); }
+.queue-sheet-close svg { width: 22px; height: 22px; }
+.queue-sheet-close:hover { color: var(--cream); }
+@media (prefers-reduced-motion: no-preference) {
+  .queue-sheet { animation: sheet-in 260ms var(--ease-drawer, var(--ease-out)); }
+}
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
 /* The opened queue: a full-width row above the bar's controls, scrolling
    inside itself so the bar never covers more than half the screen. */
 .now-playing-queue { grid-column: 1 / -1; max-height: min(50vh, 26rem); overflow-y: auto; margin: calc(-1 * var(--space-line)) 0 var(--space-tight); padding-bottom: var(--space-tight); border-bottom: 1px solid var(--hair); overscroll-behavior: contain; }
@@ -972,7 +995,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .mobile-dock .now-playing-bar {
     position: static;
     grid-template-columns: auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "thumb info controls fold" "scrub scrub scrub scrub";
+    grid-template-areas: "thumb info controls fold" "scrub scrub scrub scrub" "foot foot foot foot";
     column-gap: var(--space-tight);
     row-gap: var(--space-line);
     margin: 0;
@@ -989,7 +1012,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .mobile-dock .now-playing-fold { grid-area: fold; }
   .mobile-dock .now-playing-scrubber { grid-area: scrub; }
   /* The queue opens above the strip, inside the dock, and never past half the screen. */
-  .mobile-dock .now-playing-bar.queue-open { grid-template-areas: "queue queue queue queue" "thumb info controls fold" "scrub scrub scrub scrub"; }
+  .mobile-dock .now-playing-bar.queue-open { grid-template-areas: "queue queue queue queue" "thumb info controls fold" "scrub scrub scrub scrub" "foot foot foot foot"; }
+  /* Under the scrubber: the times at left, then speed-and-loop and the
+     labeled Queue button at right, the queue's way in on a phone. */
+  .mobile-dock .now-playing-footer { grid-area: foot; display: flex; align-items: center; gap: var(--space-tight); min-height: 40px; }
+  .mobile-dock .now-playing-footer .now-playing-time { margin-right: auto; }
+  .mobile-dock .now-playing-footer .now-playing-more { margin-right: 0; height: 40px; }
   .mobile-dock .now-playing-queue { grid-area: queue; max-height: min(45vh, 22rem); margin: var(--space-line) 0 var(--space-tight); }
   /* Five controls share one phone row with the title: the quiet ones close ranks. */
   .mobile-dock .now-playing-bar { column-gap: var(--space-tight); }
@@ -1053,8 +1081,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   [data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); transition: opacity 120ms var(--ease-out) 300ms, transform 120ms var(--ease-out) 300ms; }
 }
 
-/* The workspace on a desktop has its own menu button beside the Deadbot name. */
-html.workspace-desktop .site-menu-toggle { display: none; }
 /* A hover label for a control at the top of the screen opens below it. */
 [data-tip][data-tip-place="below"]::after { top: calc(100% + var(--space-tight)); bottom: auto; transform: translate(-50%, -2px); }
 

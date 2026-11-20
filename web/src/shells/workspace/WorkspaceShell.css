@@ -56,7 +56,7 @@
 .workspace-shell .history-row.unseen::after,
 .workspace-shell .history-drawer-toggle.has-news::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: var(--cream); }
 .workspace-shell .history-row.unseen::after { right: var(--space-tight); top: 50%; transform: translateY(-50%); }
-.workspace-shell .history-drawer-toggle.has-news::after { top: 0.45rem; right: 0.4rem; }
+.workspace-shell .history-drawer-toggle.has-news::after { top: 9px; right: 8px; }
 /* Recent and Clear share a line: the heading at left, Clear underlined at right. */
 .workspace-shell .history-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-part); margin-top: var(--space-tight); padding: 0 var(--space-tight); }
 .workspace-shell .history-head h2 { margin: 0; padding: 0; }
@@ -64,14 +64,22 @@
 .workspace-shell .history-clear:hover:not(:disabled) { color: var(--cream); }
 .workspace-shell .history-clear:disabled { opacity: 0.4; cursor: default; }
 
-/* On a phone: the history button top left (the site menu is top right) and
-   the drawer that slides in from the left. */
-.workspace-shell .history-drawer-toggle { position: fixed; top: 0.75rem; left: 0.6rem; z-index: 55; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; padding: 0; border: 0; border-radius: var(--r); background: radial-gradient(closest-side, rgba(20, 34, 27, 0.7), rgba(20, 34, 27, 0)); color: var(--cream); }
-.workspace-shell .history-drawer-toggle svg { width: 1.4rem; height: 1.4rem; }
+/* On a phone: a slim top bar on glass, fixed to the top of the screen, with
+   the drawer's button and the Deadbot name. The page scrolls under the bar,
+   and the button's mark lines up with the page's left text edge. The drawer
+   slides in from the left with the history and, at its foot, the site's links. */
+.workspace-shell .phone-topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 55; display: flex; align-items: center; gap: var(--space-line); height: calc(3rem + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 0.625rem 0; background: var(--bar-scrim); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); border-bottom: 1px solid var(--hair); }
+.workspace-shell .phone-topbar .wordmark { font-size: 1.2rem; line-height: 1; }
+.workspace-shell .history-drawer-toggle { position: relative; display: grid; place-items: center; width: 44px; height: 44px; margin-left: -10px; padding: 0; border: 0; border-radius: var(--r); background: none; color: var(--cream); }
+.workspace-shell .history-drawer-toggle svg { width: 24px; height: 24px; }
 .workspace-shell .history-drawer-scrim { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.45); }
 .workspace-shell .history-drawer { position: fixed; top: 0; bottom: 0; left: 0; z-index: 71; display: flex; flex-direction: column; width: min(320px, 86vw); padding: calc(var(--space-content) + env(safe-area-inset-top, 0px)) var(--space-part) calc(var(--space-content) + env(safe-area-inset-bottom, 0px)); overflow-y: auto; border-right: 1px solid var(--hair); background: var(--glass-strong); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .workspace-shell .history-drawer .exploration-history { flex: 1 1 auto; }
-.workspace-shell.phone .content-pane { padding-top: calc(var(--space-unit) + var(--space-tight)); }
+.workspace-shell .history-drawer .rail-links { margin-top: var(--space-content); font-size: 0.9rem; }
+.workspace-shell .history-drawer .rail-links a { padding: var(--space-tight); }
+.workspace-shell.phone .content-pane { padding-top: calc(3rem + env(safe-area-inset-top, 0px) + var(--space-content)); }
+/* The page's own anchors stop below the bar. */
+html:has(.workspace-shell.phone) { scroll-padding-top: calc(3rem + env(safe-area-inset-top, 0px)); }
 @media (prefers-reduced-motion: no-preference) {
   .workspace-shell .history-drawer.open { animation: drawer-in var(--t-rail) var(--ease-drawer); }
 }

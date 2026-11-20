@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { askFromPage, followInSite } from "./core/site-nav";
+import { RESUME_URL, askFromPage, followInSite } from "./core/site-nav";
 import "./AboutPage.css";
 import { libraryStats } from "./core/library-stats";
 import answerShot from "./assets/about/answer.jpg";
@@ -12,7 +12,6 @@ import chartShot from "./assets/about/chart.jpg";
 import gridShot from "./assets/about/grid.jpg";
 import writingShot from "./assets/about/writing.jpg";
 
-const RESUME_URL = "https://mark-davenport.vercel.app";
 
 const sections = [
   { id: "asking", title: "What you get when you ask" },
@@ -50,16 +49,12 @@ const specimens = [
 export function AboutPage() {
   const [active, setActive] = useState<string>(sections[0].id);
 
+  // The tab's title is the workspace's job, which names this page too.
   useEffect(() => {
-    const previous = document.title;
-    document.title = "About Deadbot";
     // Arriving from the app starts at the top; a link to one section lands on it.
     const target = window.location.hash ? document.getElementById(window.location.hash.slice(1)) : null;
     if (target) target.scrollIntoView();
     else window.scrollTo(0, 0);
-    return () => {
-      document.title = previous;
-    };
   }, []);
 
   // The contents list follows the reader: the section nearest the top of the

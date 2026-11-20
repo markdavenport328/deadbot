@@ -4,6 +4,8 @@ import { trackCover, trackTile } from "../cards/show-tile";
 import { formatShowDate } from "../core/format";
 import { PlayPauseIcon, StepIcon, ChevronIcon, QueueIcon, MoreIcon, LoopIcon } from "./icons";
 import { QueuePanel, focusQueueRail } from "./QueuePanel";
+import { QueueSheet } from "./QueueSheet";
+import { useBackCloses } from "../core/site-nav";
 
 // What is playing, pictured: the release's real cover when the track came
 // with one, otherwise the show's tile. A cover that fails to load gives way
@@ -125,8 +127,10 @@ function LoopBand({ duration }: { duration: number }) {
 
 // queueInRail means the queue has a place of its own on the page (the
 // workspace's right rail): the queue button takes focus there instead of
-// opening the panel above the bar.
-export function NowPlayingBar({ collapsible = false, forceCollapsed = false, queueInRail = false }: { collapsible?: boolean; forceCollapsed?: boolean; queueInRail?: boolean } = {}) {
+// opening the panel above the bar. queueSheet (a phone) gives the bar a row
+// of its own under the scrubber, with the times at left and a labeled Queue
+// button at right that opens the queue as a sheet over the page.
+export function NowPlayingBar({ collapsible = false, forceCollapsed = false, queueInRail = false, queueSheet = false }: { collapsible?: boolean; forceCollapsed?: boolean; queueInRail?: boolean; queueSheet?: boolean } = {}) {
   const player = usePlayer();
   const [folded, setFolded] = useState(readCollapsedPlayer);
   const [queueOpen, setQueueOpen] = useState(false);
@@ -135,6 +139,8 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false, que
   const [practiceOpen, setPracticeOpen] = useState(false);
   const practiceToggleRef = useRef<HTMLButtonElement | null>(null);
   const practiceId = useId();
+  // The phone's queue sheet closes with the browser's Back button.
+  useBackCloses("queue", queueOpen && queueSheet, () => setQueueOpen(false));
   const track = player.currentTrack;
   if (!track) return null;
   const collapsed = collapsible && (folded || forceCollapsed);
@@ -160,7 +166,8 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false, que
   const queued = player.queue.length > 1;
   const upcoming = Math.max(player.queue.length - player.queue.findIndex((item) => item.id === track.id) - 1, 0);
   // An open queue stays open after Clear, so its Undo stays in reach.
-  const showQueue = queueOpen && !collapsed && !queueInRail;
+  const showQueue = queueOpen && !collapsed && !queueInRail && !queueSheet;
+  const showSheet = queueOpen && queueSheet;
   const showPractice = practiceOpen && !collapsed && !showQueue;
   const closeQueue = () => {
     setQueueOpen(false);
@@ -175,6 +182,7 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false, que
   return (
     <div className={barClassName} role="region" aria-label="Now playing">
       {showQueue && <QueuePanel id={queueId} variant="popover" onClose={closeQueue} />}
+      {showSheet && <QueueSheet id={queueId} onClose={() => setQueueOpen(false)} returnFocus={queueToggleRef} />}
       {showPractice && <PracticePanel id={practiceId} onClose={closePractice} />}
       <TrackArtwork key={track.id} track={track} />
       <div className="now-playing-info" onClick={collapsible ? toggleFolded : undefined}>
@@ -210,7 +218,7 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false, que
             <StepIcon direction="next" />
           </button>
         )}
-        {(queued || showQueue) && !collapsed && (
+        {(queued || showQueue) && !collapsed && !queueSheet && (
           <button
             ref={queueToggleRef}
             type="button"
@@ -241,36 +249,73 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false, que
           <ChevronIcon up={collapsed} />
         </button>
       )}
-      {!collapsed && (
-      <div className="now-playing-scrubber">
-        <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
-        <span className="now-playing-range-wrap">
-        <LoopBand duration={duration} />
-        <input
-          type="range"
-          className="now-playing-range"
-          min={0}
-          max={duration || 0}
-          step={1}
-          value={position}
-          aria-label={`Seek within ${track.title}`}
-          aria-valuetext={formatSeekValueText(position, duration)}
-          style={{ ["--progress" as string]: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
-          onChange={(event) => player.seek(Number(event.target.value))}
-        />
-        </span>
-        <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
-        <PracticeToggle
-          open={showPractice}
-          panelId={practiceId}
-          toggleRef={practiceToggleRef}
-          onToggle={() => {
-            setPracticeOpen((open) => !open);
-            setQueueOpen(false);
-          }}
-        />
-      </div>
-      )}
+      {!collapsed && (() => {
+        const range = (
+          <span className="now-playing-range-wrap">
+            <LoopBand duration={duration} />
+            <input
+              type="range"
+              className="now-playing-range"
+              min={0}
+              max={duration || 0}
+              step={1}
+              value={position}
+              aria-label={`Seek within ${track.title}`}
+              aria-valuetext={formatSeekValueText(position, duration)}
+              style={{ ["--progress" as string]: `${duration > 0 ? Math.min(100, (position / duration) * 100) : 0}%` }}
+              onChange={(event) => player.seek(Number(event.target.value))}
+            />
+          </span>
+        );
+        const practice = (
+          <PracticeToggle
+            open={showPractice}
+            panelId={practiceId}
+            toggleRef={practiceToggleRef}
+            onToggle={() => {
+              setPracticeOpen((open) => !open);
+              setQueueOpen(false);
+            }}
+          />
+        );
+        if (!queueSheet) {
+          return (
+            <div className="now-playing-scrubber">
+              <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)}</span>
+              {range}
+              <span className="now-playing-time" aria-hidden="true">{formatClockTime(duration)}</span>
+              {practice}
+            </div>
+          );
+        }
+        return (
+          <>
+            <div className="now-playing-scrubber">{range}</div>
+            <div className="now-playing-footer">
+              <span className="now-playing-time" aria-hidden="true">{formatClockTime(position)} / {formatClockTime(duration)}</span>
+              {practice}
+              {(queued || showSheet) && (
+                <button
+                  ref={queueToggleRef}
+                  type="button"
+                  className="now-playing-queue-pill"
+                  onClick={() => {
+                    setQueueOpen(true);
+                    setPracticeOpen(false);
+                  }}
+                  aria-haspopup="dialog"
+                  aria-expanded={showSheet}
+                  aria-label={`Queue, ${upcoming === 1 ? "1 track" : `${upcoming} tracks`} up next`}
+                >
+                  <QueueIcon />
+                  Queue
+                  <span className="now-playing-queue-count" aria-hidden="true">{upcoming}</span>
+                </button>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
