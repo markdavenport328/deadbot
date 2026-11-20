@@ -187,3 +187,23 @@ def test_an_older_plan_group_of_words_alone_is_delivered(store):
     page = {"lead": "A.", "groups": [{"title": "Words alone", "lead": "No items key."}, {"title": "Empty", "lead": "No items.", "items": []}]}
     delivered = both(page, store)
     assert len(delivered) == 2 and "No items key." in words(delivered[0]) and "No items." in words(delivered[1])
+
+
+def test_an_item_of_a_type_the_page_does_not_have_is_delivered_as_its_words(store):
+    """Its words are the model's work: prose in the draft and in the delivered page, never a failed plan."""
+
+    page = {
+        "answer": "A.",
+        "sections": [{
+            "heading": "One night",
+            "items": [
+                {"type": "performance_unit", "performance_id": "gd-1972-08-27-dark-star", "note": "The retired card's note."},
+                {"type": "no_such_component", "title": "A title", "text": "Some text."},
+                {"type": "show", "show_id": SHOW},
+            ],
+        }],
+    }
+    (section,) = both(page, store)
+    assert [block["type"] for block in section["blocks"]] == ["editorial", "editorial", "show_unit"]
+    assert section["blocks"][0]["paragraphs"] == ["The retired card's note."]
+    assert section["blocks"][1]["title"] == "A title" and section["blocks"][1]["paragraphs"] == ["Some text."]

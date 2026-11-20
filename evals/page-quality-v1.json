@@ -18,7 +18,7 @@
     {"id": "shows-1977", "question": "What shows did the Dead play in 1977?",
      "expect": {"any_of": [{"type": "show_unit", "disclosure": "collapsed", "min": 20}]}},
     {"id": "best-scarlet-fire", "question": "What's the best Scarlet > Fire?",
-     "expect": {"any_of": [{"type": "performance_unit"}, {"type": "version_strip"}, {"type": "show_unit"}, {"type": "listening_hero"}]}},
+     "expect": {"any_of": [{"type": "song_versions"}, {"type": "version_strip"}, {"type": "show_unit"}, {"type": "listening_hero"}]}},
     {"id": "branford", "question": "What happened when Branford Marsalis sat in with the Dead?"},
     {"id": "europe-72", "question": "Tell me about the Europe '72 tour."}
   ]

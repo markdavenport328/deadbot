@@ -9,20 +9,22 @@ reason unrelated to what they check.
 from deadbot import experience
 
 
-def test_contract_version_three_uses_emphasis_and_server_set_mode():
-    assert experience.ExperienceResponse.model_fields["schema_version"].default == "3"
+def test_contract_version_four_uses_emphasis_and_server_set_mode():
+    assert experience.ExperienceResponse.model_fields["schema_version"].default == "4"
     assert experience.ExperienceResponse.model_fields["mode"].default == "answer"
     assert "layout" not in experience.ExperienceResponse.model_fields
-    for name in ("ShowUnitBlock", "PerformanceUnitBlock", "AlbumUnitBlock", "SongOverviewBlock"):
+    for name in ("ShowUnitBlock", "AlbumUnitBlock", "SongOverviewBlock"):
         fields = getattr(experience, name).model_fields
         assert fields["emphasis"].default == "supporting"
         assert "role" not in fields
         assert "judgments" in fields
-    assert "role" not in experience.EraUnitBlock.model_fields
     assert "criteria" in experience.ExperienceGroup.model_fields
     for removed in ("ShowExplorerBlock", "ShowSetlistBlock", "RecordingListBlock", "PerformerListBlock",
                     "PerformanceListBlock", "PerformanceExtremesBlock", "PerformanceSpineBlock",
-                    "ComparisonStripBlock", "LayoutSection", "UnitRole", "UnitOrganization"):
+                    "ComparisonStripBlock", "LayoutSection", "UnitRole", "UnitOrganization",
+                    # Version 4: the components the model's page schema cannot reach.
+                    "PerformanceUnitBlock", "EraUnitBlock", "EquipmentListBlock", "GuestAppearanceListBlock",
+                    "PersonRosterBlock", "ShowSelectionBlock", "ArrangementBlock", "ArrangementSearchBlock"):
         assert not hasattr(experience, removed), removed
 
 

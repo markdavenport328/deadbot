@@ -18,7 +18,7 @@ from typing import Any
 
 # Mirrors fallbackTab in web/src/tab-routing.ts: where a block goes when its
 # group names no tab. Keep the two in step.
-LISTEN_TYPES = {"show_unit", "performance_unit", "album_unit", "song_overview", "show_selection", "listening_hero", "version_strip", "song_versions", "media_link"}
+LISTEN_TYPES = {"show_unit", "album_unit", "song_overview", "listening_hero", "version_strip", "song_versions", "media_link"}
 CHARTS_TYPES = {"data_chart", "grid"}
 TABS = ("listen", "charts", "read")
 

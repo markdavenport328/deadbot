@@ -142,20 +142,7 @@ describe("listen links when every URL is an archive track", () => {
   });
 });
 
-describe("era and song cards play in-page", () => {
-  it("an era row plays its track in the shared player and names it in the now-playing bar", async () => {
-    await renderFixture("evolution", visualFixtures.evolution);
-    const era = screen.getByRole("heading", { name: "1973: the open road" }).closest("section") as HTMLElement;
-    const row = within(era).getByRole("button", { name: "Play Eyes Of The World, Robert F. Kennedy Stadium (6/10/73)" });
-    await act(async () => {
-      fireEvent.click(row);
-    });
-    const bar = screen.getByRole("region", { name: "Now playing" });
-    expect(within(bar).getByText("Eyes Of The World")).toBeInTheDocument();
-    expect(within(bar).getByText("6/10/73 · Robert F. Kennedy Stadium")).toBeInTheDocument();
-    expect(row).toHaveAttribute("aria-pressed", "true");
-  });
-
+describe("song cards play in-page", () => {
   it("the song card's representatives play in-page; On record links out quietly", async () => {
     await renderFixture("playing", visualFixtures.playing);
     const card = screen.getByRole("heading", { name: "Playing In The Band" }).closest("article") as HTMLElement;

@@ -10,13 +10,13 @@
     {"id": "china-rider", "question": "When did China-Rider become a combo?", "expect": {"any_of": [{"type": "version_strip"}]}},
     {"id": "american-beauty", "question": "Which American Beauty songs stayed in the rotation?", "expect": {"any_of": [{"type": "grid"}]}},
     {"id": "dark-star-years", "question": "How often did they play Dark Star each year?", "expect": {"any_of": [{"type": "song_overview", "facet": "by_year"}]}},
-    {"id": "best-dew", "question": "Best Morning Dew?", "expect": {"any_of": [{"type": "performance_unit"}, {"type": "version_strip"}]}},
+    {"id": "best-dew", "question": "Best Morning Dew?", "expect": {"any_of": [{"type": "song_versions"}, {"type": "version_strip"}]}},
     {"id": "pitb-longer", "question": "Did Playing in the Band keep getting longer?", "expect": {"any_of": [{"type": "song_overview", "facet": "by_year"}]}},
     {"id": "dicks-picks", "question": "Which Dick's Picks should I start with?", "expect": {"any_of": [{"type": "album_unit"}, {"type": "show_unit"}]}},
     {"id": "europe-72-nights", "question": "Which songs defined Europe '72, night by night?", "expect": {"any_of": [{"type": "grid"}]}},
     {"id": "reckoning", "question": "What shows did Reckoning draw from?", "expect": {"any_of": [{"type": "show_unit"}]}},
-    {"id": "santana", "question": "Best Santana contributions", "expect": {"any_of": [{"type": "performance_unit"}, {"type": "show_unit"}]}},
+    {"id": "santana", "question": "Best Santana contributions", "expect": {"any_of": [{"type": "song_versions"}, {"type": "show_unit"}]}},
     {"id": "guests-returning", "question": "Which guests kept coming back year after year?", "expect": {"any_of": [{"type": "grid"}, {"type": "data_chart"}]}},
-    {"id": "sat-in", "question": "Who sat in with the Dead?", "expect": {"any_of": [{"type": "person_roster"}, {"type": "grid"}]}}
+    {"id": "sat-in", "question": "Who sat in with the Dead?", "expect": {"any_of": [{"type": "people_timeline"}, {"type": "grid"}]}}
   ]
 }

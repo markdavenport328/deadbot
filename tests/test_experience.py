@@ -482,7 +482,7 @@ def test_api_returns_the_validated_experience_contract():
     assert client.get("/api/version").json() == {"git_commit": health.json()["git_commit"]}
     assert result.status_code == 200
     body = result.json()
-    assert body["schema_version"] == "3"
+    assert body["schema_version"] == "4"
     assert body["thread_id"] == "browser-1"
     assert body["blocks"][0]["type"] == "show_unit"
     assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
