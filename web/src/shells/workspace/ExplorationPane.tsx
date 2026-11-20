@@ -1,8 +1,9 @@
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import type { FollowUp } from "../../core/ask-request";
 import { groupsOfResponse, type RenderGroup } from "../../core/page-draft";
 import type { ExperienceResponse, SourceReference } from "../../types";
-import { visible, type EntryView, type ExplorationState, type Pending } from "../../core/exploration-state";
+import type { Pending } from "../../core/exploration-state";
+import { pageHref } from "../../core/site-nav";
 import { RichText } from "../../cards/text";
 import { PageGroups, SourcesFooter } from "../../cards/PageGroups";
 
@@ -45,23 +46,55 @@ export function draftContent(pending: Pending): PaneContent {
   };
 }
 
-// The pane on screen and the view state that belongs to it, or null for the
-// start view. The scroll position is saved into that view.
-export function shownPane(state: ExplorationState): { id: string; view: EntryView; draft: boolean } | null {
-  const shown = visible(state);
-  switch (shown.kind) {
-    case "start":
-      return null;
-    case "working":
-      return { id: shown.pending.requestId, view: shown.pending.view, draft: false };
-    case "draft":
-      return { id: shown.pending.requestId, view: shown.pending.view, draft: true };
-    case "failed":
-      return shown.entry ? { id: shown.entry.id, view: shown.entry.view, draft: false } : null;
-    case "held":
-    case "entry":
-      return { id: shown.entry.id, view: shown.entry.view, draft: false };
+// The page's address, copied for sharing: one quiet line at the page's foot.
+// A follow-up's link names the question its thread began with and then its
+// own (see core/site-nav.ts).
+function CopyLink({ question, followUp }: { question: string; followUp: string | null }) {
+  const [result, setResult] = useState<"copied" | "failed" | null>(null);
+  useEffect(() => {
+    if (!result) return;
+    const timer = window.setTimeout(() => setResult(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [result]);
+  async function copy() {
+    const link = new URL(pageHref({ question, followUp }), window.location.origin).toString();
+    try {
+      await navigator.clipboard.writeText(link);
+      setResult("copied");
+    } catch {
+      setResult("failed");
+    }
   }
+  return (
+    <p className="page-foot">
+      <button type="button" className="quiet-action" onClick={() => void copy()}>Copy link</button>
+      <span role="status">{result === "copied" ? "Link copied" : result === "failed" ? "Couldn’t copy. The address bar has this page’s link." : ""}</span>
+    </p>
+  );
+}
+
+// A page that could not be drawn: its title and the model's lead, plainly,
+// and a way to ask for it again.
+export function PaneFallback({ paneId, hidden, title, lead, question, onAskAgain }: {
+  paneId: string;
+  hidden: boolean;
+  title: string;
+  lead: string | null;
+  // The question to ask again; null while the page is still being written.
+  question: string | null;
+  onAskAgain(question: string): void;
+}) {
+  const titleId = `${paneId}-title`;
+  return (
+    <article className="exploration-pane" hidden={hidden} aria-labelledby={titleId}>
+      <div className="content-heading">
+        <h1 id={titleId} tabIndex={-1}>{title}</h1>
+      </div>
+      {lead && lead.trim() && <p className="answer-lead">{lead}</p>}
+      <p className="workspace-waiting">The rest of this page could not be shown.</p>
+      {question && <p><button type="button" className="ask-chip" onClick={() => onAskAgain(question)}>Ask it again</button></p>}
+    </article>
+  );
 }
 
 // One exploration: its headline and lead, then every section in one column
@@ -74,6 +107,8 @@ export const ExplorationPane = memo(function ExplorationPane({
   streaming,
   hidden,
   previous,
+  linkQuestion = null,
+  linkFollowUp = null,
   onInteract,
   onFollowUp
 }: {
@@ -83,6 +118,9 @@ export const ExplorationPane = memo(function ExplorationPane({
   streaming: boolean;
   hidden: boolean;
   previous: boolean;
+  // A finished page's address, for Copy link.
+  linkQuestion?: string | null;
+  linkFollowUp?: string | null;
   // Present only on the page being written right now: the first touch there
   // means the visitor has taken over, and later arrivals leave their view alone.
   onInteract?: () => void;
@@ -134,6 +172,7 @@ export const ExplorationPane = memo(function ExplorationPane({
           ? <PageGroups groups={content.groups} sources={content.sources} composing={streaming} onFollowUp={onFollowUp} />
           : streaming && <p className="workspace-waiting">Writing the answer…</p>}
         {!streaming && <SourcesFooter groups={content.groups} sources={content.sources} />}
+        {!streaming && linkQuestion && <CopyLink question={linkQuestion} followUp={linkFollowUp} />}
       </div>
     </article>
   );

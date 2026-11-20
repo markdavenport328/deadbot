@@ -9,8 +9,9 @@ Use this guide when joining the Deadbot project midstream.
 2. `README.md` for setup and repository layout.
 3. `docs/product-vision.md` for the intended app and its boundaries.
 4. `docs/development-plan.md` for current status and next work.
-5. `docs/data-and-retrieval-roadmap.md` for collection order, PostgreSQL
-   cutover gates, bounded context, and the 1972-to-full-timeline rollout.
+5. `docs/data-and-retrieval-roadmap.md` for collection order, bounded
+   context, and the 1972-to-full-timeline rollout (its PostgreSQL sections
+   are history; SQLite is the only store).
 6. `docs/decisions.md` for durable architectural choices.
 7. `docs/provenance-policy.md`, `docs/graph-scope.md`, and `docs/model-retrieval.md` before changing data or retrieval behavior.
 8. `docs/agent-harness.md` before changing the LangGraph runtime.
@@ -28,11 +29,11 @@ Use this guide when joining the Deadbot project midstream.
   must be described with coverage metadata.
 - CSV remains the reviewed source of truth. `deadbot/sqlite_build.py` builds
   `build/deadbot.sqlite` from the canonical CSVs on deploy and on local runs;
-  `deadbot/sqlite_store.py` serves it read-only. `DEADBOT_DATA_STORE=sqlite`
-  is the default, and tests use the CSV `CanonicalStore` directly.
-- Driver-independent importer, store-parity, CLI, API, and retrieval tests are
-  implemented. See `docs/handoff-2026-09-02.md` for current test status,
-  production behavior, and outstanding cutover work.
+  `deadbot/sqlite_store.py` serves it read-only. It is the only store, with
+  nothing to configure; many tests use the in-memory CSV `CanonicalStore`
+  directly.
+- Build, store-parity, CLI, API, and retrieval tests are implemented, and CI
+  builds the catalog and runs them against SQLite.
 - `deadbot/` contains the current read-only LangGraph harness.
 - `.venv/` is local and ignored. The project is installed there in editable mode.
 - The development machine has Ollama and `qwen3:8b` installed. The default model configuration is in `.env.example`; no secrets belong in Git.
@@ -103,8 +104,8 @@ while collection continues elsewhere.
 | Domain schema | `schema/sqlite.sql` |
 | Data/retrieval rollout | `docs/data-and-retrieval-roadmap.md` |
 | Question-driven enrichment | `docs/question-driven-enrichment.md` |
-| PostgreSQL importer/store | `deadbot/postgres_import.py`, `deadbot/postgres.py` |
-| SQLite builder/store | `deadbot/sqlite_build.py`, `deadbot/sqlite_store.py` |
+| CSV contract, SQLite builder and store | `deadbot/canonical_import.py`, `deadbot/sqlite_build.py`, `deadbot/sqlite_store.py` |
+| Updating production data | `docs/production-db-update.md` |
 | Canonical-data conventions | `data/canonical/README.md` |
 | Source policy | `docs/provenance-policy.md` |
 | Data sources | `docs/data-sources.md` |

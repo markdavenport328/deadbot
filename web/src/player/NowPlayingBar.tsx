@@ -1,8 +1,19 @@
 import { type RefObject, useEffect, useId, useRef, useState } from "react";
-import { PLAYBACK_RATES, usePlayer, formatClockTime, formatSeekValueText } from "./player";
+import { PLAYBACK_RATES, usePlayer, formatClockTime, formatSeekValueText, type PlayerTrack } from "./player";
+import { trackCover, trackTile } from "../cards/show-tile";
 import { formatShowDate } from "../core/format";
 import { PlayPauseIcon, StepIcon, ChevronIcon, QueueIcon, MoreIcon, LoopIcon } from "./icons";
 import { QueuePanel, focusQueueRail } from "./QueuePanel";
+
+// What is playing, pictured: the release's real cover when the track came
+// with one, otherwise the show's tile. A cover that fails to load gives way
+// to the tile, and a tile that fails to a plain square, never a broken image.
+function TrackArtwork({ track }: { track: PlayerTrack }) {
+  const [failed, setFailed] = useState<string[]>([]);
+  const source = [trackCover(track), trackTile(track)].find((url): url is string => Boolean(url) && !failed.includes(url as string));
+  if (!source) return <div className="now-playing-thumb" aria-hidden="true" />;
+  return <img className="now-playing-thumb" src={source} alt="" onError={() => setFailed((gone) => [...gone, source])} />;
+}
 
 // The one shared now-playing bar for the whole app: hidden until something
 // has played, then held at the bottom of the screen within the answer pane
@@ -165,11 +176,7 @@ export function NowPlayingBar({ collapsible = false, forceCollapsed = false, que
     <div className={barClassName} role="region" aria-label="Now playing">
       {showQueue && <QueuePanel id={queueId} variant="popover" onClose={closeQueue} />}
       {showPractice && <PracticePanel id={practiceId} onClose={closePractice} />}
-      {track.thumbnailUrl ? (
-        <img className="now-playing-thumb" src={track.thumbnailUrl} alt="" loading="lazy" />
-      ) : (
-        <div className="now-playing-thumb placeholder" aria-hidden="true" />
-      )}
+      <TrackArtwork key={track.id} track={track} />
       <div className="now-playing-info" onClick={collapsible ? toggleFolded : undefined}>
         <p className="now-playing-title">{track.title}</p>
         {isError ? <p className="now-playing-error">Couldn’t play this track</p> : metaLine ? <p className="now-playing-meta">{metaLine}</p> : null}

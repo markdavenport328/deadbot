@@ -183,148 +183,6 @@ def test_resolve_body_keeps_a_song_payload_listening_link_and_strips_an_unreturn
     assert blocks[0].paragraphs[0] == f"Listen on [Archive.org]({archive_url}) or elsewhere."
 
 
-def test_resolve_body_resolves_guest_appearances_from_the_turn_payload():
-    store = CanonicalStore()
-    from deadbot.tools import build_tools
-
-    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    payload = json.loads(guest_tool.invoke({"query": "Branford", "include": ["appearances"]}))
-    person_id = payload["guests"][0]["person_id"]
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[finish.GroupPlan(presentation="collection", items=[finish.GuestAppearancesRef(type="guest_appearance_list", person_id=person_id)])],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    assert blocks[0].type == "guest_appearance_list" and blocks[0].person_id == person_id
-
-
-def test_resolve_body_hydrates_a_person_roster_from_the_turn_payload():
-    """The default (summary) guest payload carries enough to hydrate a roster.
-
-    "u" is a broad enough query to return a roster larger than an editorial
-    grid, and it happens to include John Belushi (used below), while staying
-    well under the tool result ceiling even without ``include=["appearances"]``.
-    """
-    store = CanonicalStore()
-    from deadbot.tools import build_tools
-
-    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    payload = json.loads(guest_tool.invoke({"query": "u"}))
-    guests = payload["guests"]
-    assert len(guests) > 12, "the roster exists for sets larger than an editorial grid"
-    assert "_truncated" not in payload
-    assert all("appearances" not in guest for guest in guests), "this is the summary path"
-    grounded = finish.grounded_context([payload])
-    entries = [
-        finish.PersonRosterEntry(person_id=guest["person_id"], note="cartwheels" if guest["name"] == "John Belushi" else None)
-        for guest in guests
-    ]
-    entries.append(finish.PersonRosterEntry(person_id="person-nobody-mentioned-this-turn"))
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[finish.GroupPlan(presentation="collection", items=[
-            finish.PersonRosterRef(type="person_roster", title="Everyone who sat in", lead="One line.", entries=entries)
-        ])],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    block = blocks[0]
-    assert block.type == "person_roster" and block.title == "Everyone who sat in" and block.lead == "One line."
-    assert len(block.items) == len(guests), "every grounded person survives; the ungrounded one is dropped"
-    first = block.items[0]
-    assert first.name == guests[0]["name"] and first.show_count == guests[0]["guest_show_count"] and first.roles
-    assert all(item.first_year and item.last_year for item in block.items)
-    assert next(item for item in block.items if item.name == "John Belushi").note == "cartwheels"
-
-
-def test_resolve_body_hydrates_a_person_roster_from_a_summary_record_with_correct_counts():
-    """Fix round 1: a summary-only guest record must not fall back to the
-
-    store's role-agnostic, unfolded show count. Bruce Hornsby's directory
-    summary says 16 shows, 1988-1995; the store's raw show_performers rows
-    for that person_id (pre-qualifier-folding, every role) say something
-    else entirely.
-    """
-    store = CanonicalStore()
-    from deadbot.tools import build_tools
-
-    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    payload = json.loads(guest_tool.invoke({"query": "Bruce Hornsby"}))
-    hornsby = payload["guests"][0]
-    assert "appearances" not in hornsby
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[finish.GroupPlan(presentation="collection", items=[
-            finish.PersonRosterRef(
-                type="person_roster",
-                title="Sat in",
-                entries=[finish.PersonRosterEntry(person_id=hornsby["person_id"])],
-            )
-        ])],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    item = blocks[0].items[0]
-    assert item.show_count == hornsby["guest_show_count"] == 16
-    assert item.first_year == hornsby["first_show_date"][:4] == "1988"
-    assert item.last_year == hornsby["last_show_date"][:4] == "1995"
-    assert set(item.roles) <= set(hornsby["instruments"]) and item.roles
-
-
-def test_resolve_body_prefers_a_payload_with_appearances_over_an_earlier_summary():
-    """Fix round 1: summary-then-detail ordering.
-
-    A turn can carry a broad directory summary (from an earlier tool call)
-    and a later, narrower detail lookup with include=["appearances"]) for the
-    same person. Both the guest_appearance_list and person_roster resolvers
-    must find and use the detail record, not stop at the first (summary)
-    match.
-    """
-    store = CanonicalStore()
-    from deadbot.tools import build_tools
-
-    guest_tool = next(tool for tool in build_tools(store) if tool.name == "search_guest_musicians")
-    summary_payload = json.loads(guest_tool.invoke({"query": ""}))
-    detail_payload = json.loads(
-        guest_tool.invoke({"query": "Bruce Hornsby", "include": ["appearances"]})
-    )
-    person_id = "person-bruce-hornsby"
-    payloads = [summary_payload, detail_payload]
-    grounded = finish.grounded_context(payloads)
-
-    appearance_plan_items = [finish.GuestAppearancesRef(type="guest_appearance_list", person_id=person_id)]
-    blocks, _ = finish.resolve_items(appearance_plan_items, grounded, payloads, store)
-    assert blocks and blocks[0].type == "guest_appearance_list"
-    assert len(blocks[0].items) == 16, "the summary-only record has no appearances to fall back to"
-
-    roster_plan_items = [
-        finish.PersonRosterRef(
-            type="person_roster",
-            title="Sat in",
-            entries=[finish.PersonRosterEntry(person_id=person_id)],
-        )
-    ]
-    blocks, _ = finish.resolve_items(roster_plan_items, grounded, payloads, store)
-    item = blocks[0].items[0]
-    assert item.show_count == 16, "must use the detail record's appearances, not the summary or the store fallback"
-    assert item.first_year == "1988" and item.last_year == "1995"
-
-
-def test_resolve_body_hydrates_a_person_roster_from_the_store_when_the_payload_has_no_guest_record():
-    store = CanonicalStore()
-    payload = {"lineup": [{"person_id": "person-bill-kreutzmann", "name": "Bill Kreutzmann"}]}
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[finish.GroupPlan(presentation="collection", items=[
-            finish.PersonRosterRef(type="person_roster", title="Drummers", entries=[finish.PersonRosterEntry(person_id="person-bill-kreutzmann")])
-        ])],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    item = blocks[0].items[0]
-    assert item.name == "Bill Kreutzmann" and "drums" in item.roles and item.show_count > 1000 and item.first_year == "1965"
-
-
 def test_resolve_body_resolves_research_and_canonical_resources_together():
     store = CanonicalStore()
     song = store.resolve_song("Sugaree")
@@ -407,24 +265,6 @@ def test_song_overview_from_a_plan_is_the_song_and_its_years_without_chosen_stop
     assert block.representative_performances == [] and block.year_counts
 
 
-def test_resolve_body_resolves_arrangement_from_song_arrangements_table():
-    store = CanonicalStore()
-    arrangement = next(iter(store.rows("song_arrangements")), None)
-    assert arrangement is not None, "expected at least one row in song_arrangements for this test"
-    song = store.one("songs", arrangement["song_id"])
-    payload = store.song_context(song)
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[finish.GroupPlan(presentation="collection", items=[finish.ArrangementRef(type="arrangement", arrangement_id=arrangement["arrangement_id"])])],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    block = blocks[0]
-    assert block.type == "arrangement"
-    assert block.resource_id == arrangement["resource_id"]
-    assert isinstance(block.progressions, list)
-
-
 def test_resolve_body_rejects_research_resources_from_unapproved_hosts():
     """Only the reviewed research hosts, over https and without a fragment, reach the browser."""
 
@@ -484,88 +324,6 @@ def test_resolve_body_rejects_research_resources_from_unapproved_hosts():
     assert {source.source_id for source in sources} == {f"resource:{item.resource_id}" for item in block.items}
 
 
-def test_resolve_body_resolves_performer_and_equipment_lists_for_a_show():
-    store = CanonicalStore()
-    payload = store.show_context(store.resolve_show("1972-08-27"))
-    grounded = finish.grounded_context([payload])
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[finish.GroupPlan(presentation="collection", items=[finish.EquipmentListRef(type="equipment_list", show_id="gd-1972-08-27")])],
-    )
-    blocks, sources = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    (equipment,) = blocks
-    assert [block.type for block in blocks] == ["equipment_list"]
-    assert equipment.items and all(item.source_url.startswith("https://") for item in equipment.items)
-    assert all(item.claim_type in {"show", "date_range"} for item in equipment.items)
-    assert {item.source_id for item in equipment.items} <= {source.source_id for source in sources}
-
-
-def _store_with_selection_evidence() -> CanonicalStore:
-    """The reviewed selection rows the PostgreSQL runtime serves, read from their source file."""
-
-    from pathlib import Path
-
-    document = json.loads(
-        (Path(__file__).parents[1] / "data" / "editorial" / "selection-evidence-review.json").read_text(encoding="utf-8")
-    )
-    entries = [
-        {**entry, "review_packet": {"source_constraints": document["source_constraints"]}}
-        for entry in document["entries"]
-    ]
-
-    class StoreWithSelectionEvidence(CanonicalStore):
-        def selection_signal_rows(self):
-            return entries
-
-    return StoreWithSelectionEvidence()
-
-
-def test_resolve_body_resolves_arrangement_search_and_show_selection_from_payloads():
-    from deadbot.tools import build_tools
-
-    plain_store = CanonicalStore()
-    arrangement_payload = json.loads(
-        next(tool for tool in build_tools(plain_store) if tool.name == "find_arrangements").invoke({"key_signature": "B"})
-    )
-    assert arrangement_payload["arrangements"], "expected a documented arrangement in B for this test"
-
-    # get_picks with no arguments reads show selections, which the CSV store does not
-    # serve; a reference to a selection it did not return must be dropped.
-    empty_selection_payload = json.loads(
-        next(tool for tool in build_tools(plain_store) if tool.name == "get_picks").invoke({})
-    )
-    assert empty_selection_payload["show_selections"] == []
-    dropped, _ = finish.resolve_items(
-        [finish.ShowSelectionRef(type="show_selection", selection_id="critic-show-selection-1")],
-        finish.grounded_context([empty_selection_payload]),
-        [empty_selection_payload],
-        plain_store,
-    )
-    assert dropped == []
-
-    # With the reviewed selection rows present, the same reference resolves.
-    store = _store_with_selection_evidence()
-    selection_payload = json.loads(
-        next(tool for tool in build_tools(store) if tool.name == "get_picks").invoke({})
-    )
-    selection_id = selection_payload["show_selections"][0]["selection_id"]
-    payloads = [arrangement_payload, selection_payload]
-    grounded = finish.grounded_context(payloads)
-    items = [
-        finish.ArrangementSearchRef(type="arrangement_search", key_signature="B", title="Documented in B"),
-        finish.ShowSelectionRef(type="show_selection", selection_id=selection_id),
-    ]
-    blocks, sources = finish.resolve_items(items, grounded, payloads, store)
-    search, selection = blocks
-    assert [block.type for block in blocks] == ["arrangement_search", "show_selection"]
-    assert search.title == "Documented in B"
-    assert search.key_signature == "B"
-    assert search.items and all(item.key_signature == "B" and item.url for item in search.items)
-    assert selection.source_id == f"selection:{selection_id}"
-    assert selection.items and all(item.show_id and item.show_date and item.venue_name for item in selection.items)
-    assert f"selection:{selection_id}" in {source.source_id for source in sources}
-
-
 def test_finish_plan_accepts_semantic_units():
     plan = finish.FinishPlan.model_validate(
         {
@@ -577,18 +335,12 @@ def test_finish_plan_accepts_semantic_units():
                         {"type": "editorial", "presentation": "narrative", "paragraphs": ["Across the appearances he grew more integrated."]},
                         {"type": "show_unit", "show_id": "gd-1990-03-29", "emphasis": "primary", "note": "The debut.", "highlighted_performance_ids": ["p1"]},
                         {"type": "show_unit", "show_id": "gd-1990-12-31", "supporting_sources": [{"url": "https://example.org/x", "note": "A quote."}]},
-                        {
-                            "type": "performance_unit",
-                            "performance_id": "p1",
-                            "follow_ups": [{"label": "Another like this", "question": "Another like this?"}],
-                        },
-                        {"type": "era_unit", "title": "1973–74: spacious", "span": "1973–74", "representative_performance_ids": ["p2", "p3"]},
                     ],
                 }
             ],
         }
     )
-    assert [item.type for item in plan.groups[0].items] == ["editorial", "show_unit", "show_unit", "performance_unit", "era_unit"]
+    assert [item.type for item in plan.groups[0].items] == ["editorial", "show_unit", "show_unit"]
     assert plan.groups[0].items[1].emphasis == "primary"
     assert plan.groups[0].items[2].supporting_sources[0].url == "https://example.org/x"
 
@@ -645,15 +397,18 @@ def test_a_group_keeps_every_item_the_model_planned():
     assert plan.groups[0].items[-1].show_id == "gd-1990-03-23"
 
 
-def test_a_group_left_with_no_usable_items_is_dropped_not_fatal():
+def test_a_group_left_with_no_usable_items_keeps_its_words_and_is_not_fatal():
     plan = finish.FinishPlan.model_validate({
         "lead": "x",
         "groups": [
-            {"title": "Broken", "presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"title": "Broken", "lead": "Still worth saying.", "presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"presentation": "collection", "items": [{"type": "not_a_block"}]},
+            {"title": "  ", "lead": "", "items": []},
             {"title": "Fine", "presentation": "collection", "items": [_show_item("gd-1972-08-27")]},
         ],
     })
-    assert [group.title for group in plan.groups] == ["Fine"]
+    # The heading and text are the model's work and stay; a group with no words and no items has nothing to keep.
+    assert [(group.title, group.lead, len(group.items)) for group in plan.groups] == [("Broken", "Still worth saying.", 0), ("Fine", None, 1)]
 
 
 def test_a_plan_missing_its_lead_still_fails_validation():
@@ -788,14 +543,6 @@ def test_franklins_tower_shortlist_hydrates_direct_song_links_from_archive_metad
         payload = store.show_context(store.resolve_show(show_date))
         performance = next(item for item in payload["performances"] if item["song_id"] == "song-franklin-s-tower")
         assert performance.get("listen", {}).get("archive_track_url"), show_date
-
-
-def test_performance_unit_offers_a_verified_youtube_video_alongside_audio():
-    store = CanonicalStore()
-    context = store.performance_context("gd-1990-03-29-eyes-of-the-world-2-1")
-    assert context and context["listen"]["video_url"] == "https://www.youtube.com/watch?v=LEu6gCv8UPc"
-    actions = composition._performance_listen_actions(context)
-    assert any(action.provider == "youtube" and action.label == "Watch Eyes Of The World" for action in actions)
 
 
 def test_resolve_body_hydrates_a_show_unit_from_the_composer_s_interpretation():
@@ -985,33 +732,6 @@ def test_show_unit_with_no_archive_links_has_no_recording_identifier():
     assert unit.sets and all(song.audio_url is None for section in unit.sets for song in section.songs)
 
 
-def test_resolve_body_hydrates_a_performance_unit_with_set_context_and_play_action():
-    store = CanonicalStore()
-    show_payload = store.show_context(store.resolve_show("1972-08-27"))
-    performance_id = show_payload["performances"][2]["performance_id"]
-    context = store.performance_context(performance_id)
-    assert context["listen"]["archive_track_url"]
-    grounded = finish.grounded_context([show_payload])
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[
-            finish.GroupPlan(
-                presentation="collection",
-                items=[finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id, note="A relaxed version.")],
-            )
-        ],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [show_payload], store)
-    unit = blocks[0]
-    assert unit.type == "performance_unit"
-    assert unit.song_title and unit.show_date == "1972-08-27" and unit.venue_name == "Old Renaissance Faire Grounds"
-    assert unit.previous and unit.next, "a mid-set rendition has neighbours on both sides"
-    assert unit.listen[0].label == f"Listen to {unit.song_title}"
-    assert unit.listen[0].url == context["listen"]["archive_track_url"]
-    assert any(action.label == "Hear the full show" for action in unit.listen)
-    assert not any("all recordings" in action.label.casefold() for action in unit.listen)
-
-
 def test_follow_up_contract_reserves_ask_for_exploration():
     description = finish.ShowUnitRef.model_fields["follow_ups"].description or ""
     assert "listening links already cover hearing it" in description
@@ -1063,59 +783,18 @@ def test_show_unit_follow_ups_carry_label_and_question_and_drop_a_blank_label():
     ]
 
 
-def test_resolve_body_hydrates_an_era_unit_from_representative_performances():
-    store = CanonicalStore()
-    song = store.resolve_song("Sugaree")
-    payload = store.song_context(song)
-    grounded = finish.grounded_context([payload])
-    with_listen = [performance for performance in payload["performances"] if "listen" in performance][:2]
-    plan = finish.FinishPlan(
-        lead="x",
-        groups=[
-            finish.GroupPlan(
-                presentation="collection",
-                items=[
-                    finish.EraUnitRef(
-                        type="era_unit",
-                        title="Early Sugarees",
-                        span="1971–72",
-                        note="Loose and bluesy.",
-                        representative_performance_ids=[*(performance["performance_id"] for performance in with_listen), "not-retrieved"],
-                    ),
-                    finish.EraUnitRef(type="era_unit", title="Nothing grounded", representative_performance_ids=["not-retrieved"]),
-                ],
-            )
-        ],
-    )
-    blocks, _ = finish.resolve_items(plan.groups[0].items, grounded, [payload], store)
-    # An era with nothing grounded keeps the model's words for it.
-    assert [block.type for block in blocks] == ["era_unit", "editorial"]
-    assert blocks[1].title == "Nothing grounded"
-    era = blocks[0]
-    assert era.title == "Early Sugarees" and era.span == "1971–72"
-    assert [item.performance_id for item in era.performances] == [performance["performance_id"] for performance in with_listen]
-    assert all(item.listen and item.listen.label == "Listen to Sugaree" for item in era.performances)
-    assert all(item.show_date and item.show_label for item in era.performances)
-
-
 def test_server_built_items_carry_no_generated_follow_ups():
     """Only the composer writes follow-ups; server projections never invent one."""
 
     for model in (
         experience.SetlistSong,
         experience.PerformerItem,
-        experience.GuestAppearanceItem,
-        experience.EquipmentItem,
         experience.PerformanceListItem,
-        experience.PerformanceSpineNeighbor,
-        experience.ShowSelectionItem,
-        experience.ArrangementSearchItem,
-        experience.EraPerformanceItem,
         experience.CreditItem,
     ):
         assert "follow_ups" not in model.model_fields, model.__name__
     # The composer's own follow-ups survive on units and editorial items.
-    for model in (experience.ShowUnitBlock, experience.PerformanceUnitBlock, experience.EraUnitBlock, experience.EditorialItem):
+    for model in (experience.ShowUnitBlock, experience.AlbumUnitBlock, experience.EditorialItem):
         assert "follow_ups" in model.model_fields, model.__name__
 
 
@@ -1368,79 +1047,6 @@ def test_an_older_plans_history_facet_asks_for_the_timeline_and_omits_unselected
     assert song.visible_facets == ["by_year"]
     assert song.year_summaries and sum(row.count for row in song.year_summaries) == song.known_performance_count
     assert song.credits == [] and song.albums == [] and song.representative_performances == []
-
-
-def test_performance_unit_still_carries_set_neighbors():
-    store = CanonicalStore()
-    payloads = _veneta_payloads(store)
-    grounded = finish.grounded_context(payloads)
-    performance_id = next(p["performance_id"] for p in payloads[0]["performances"] if p.get("performance_id"))
-    blocks, _ = finish.resolve_items([finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id)], grounded, payloads, store)
-    unit = blocks[0]
-    assert unit.type == "performance_unit"
-    assert unit.previous is not None or unit.next is not None
-
-
-def test_a_performance_unit_with_chosen_facets_survives_the_streamed_and_final_paths():
-    # The item shape from the "overlooked Sugaree" log: a comparison card that
-    # selects its facets the way show, album and song cards do.
-    import json
-
-    from langchain_core.messages import AIMessageChunk
-
-    from deadbot.plan_stream import PlanStreamer
-
-    store = CanonicalStore()
-    payloads = _veneta_payloads(store)
-    grounded = finish.grounded_context(payloads)
-    performance_id = payloads[0]["performances"][2]["performance_id"]
-    item = {
-        "type": "performance_unit",
-        "performance_id": performance_id,
-        "title": "The Veneta Sugaree",
-        "emphasis": "supporting",
-        "judgments": ["Unhurried", "Short solo"],
-        "note": "A point of contrast.",
-        "visible_facets": ["listen"],
-    }
-    plan_args = {
-        "lead": "x",
-        "groups": [{"title": "A useful point of contrast", "presentation": "comparison", "criteria": ["Pace", "Solo"], "items": [item]}],
-    }
-
-    def resolve(items):
-        blocks, _ = finish.resolve_items(items, grounded, payloads, store)
-        return blocks
-
-    streamer = PlanStreamer(resolve)
-    text = json.dumps(plan_args)
-    chunk = AIMessageChunk(
-        content="", tool_call_chunks=[{"name": "finish_response", "args": text, "id": "f1", "index": 0, "type": "tool_call_chunk"}]
-    )
-    streamed = [event.payload["block"] for event in streamer.feed(chunk) if event.type == "block"]
-
-    plan = finish.FinishPlan.model_validate(plan_args)
-    assert len(plan.groups) == 1 and len(plan.groups[0].items) == 1
-    final, _ = finish.resolve_items(plan.groups[0].items, grounded, payloads, store)
-
-    assert len(streamed) == 1 and len(final) == 1
-    unit = final[0]
-    assert unit.type == "performance_unit" and unit.performance_id == performance_id
-    assert unit.visible_facets == ["listen"]
-    assert unit.listen, "the selected facet is hydrated"
-    assert unit.previous is None and unit.next is None and unit.sources == [], "unselected facets stay out"
-    assert streamed[0] == unit.model_dump(mode="json")
-
-
-def test_a_performance_unit_without_facets_keeps_its_whole_card():
-    store = CanonicalStore()
-    show_payload = store.show_context(store.resolve_show("1972-08-27"))
-    performance_id = show_payload["performances"][2]["performance_id"]
-    blocks, _ = finish.resolve_items(
-        [finish.PerformanceUnitRef(type="performance_unit", performance_id=performance_id)], finish.grounded_context([show_payload]), [show_payload], store
-    )
-    assert blocks[0].visible_facets == ["setlist", "listen", "sources"]
-    assert blocks[0].previous and blocks[0].next and blocks[0].listen
 
 
 # --- _data_chart -------------------------------------------------------------
@@ -1958,3 +1564,36 @@ def test_a_people_timeline_draws_membership_spans_and_counts_shows_inside_them()
     # Hornsby's guest sit-ins before and after his membership are not counted as member shows.
     assert bruce.spans[0].start_date == "1990-09-15" and bruce.show_count < 120
     assert block.first_year == 1979 and block.last_year >= 1992
+
+
+def test_a_stored_answer_from_an_older_page_vocabulary_is_never_served():
+    """A cached or warm answer written before version 4 may hold a retired block; reading it back discards it."""
+
+    from deadbot.response_cache import ResponseCache
+
+    current = experience.ExperienceResponse(thread_id="old", lead="Plenty of people.").model_dump(mode="json")
+    assert current["schema_version"] == "4"
+    roster = {"type": "person_roster", "title": "The guests", "items": [{"person_id": "person-ned-lagin", "name": "Ned Lagin", "show_count": 33}]}
+    stored = {
+        "older version": {**current, "schema_version": "3"},
+        "retired block": {**current, "blocks": [roster], "groups": [{"presentation": "collection", "block_indexes": [0]}]},
+        "current": current,
+    }
+
+    class Store:
+        def data_version(self):
+            return "v1"
+
+        def ensure_response_cache(self):
+            pass
+
+        def cached_response(self, key, version, max_age):
+            return stored.get(key)
+
+        def store_response(self, key, version, question, payload):
+            stored[key] = payload
+
+    cache = ResponseCache(Store())
+    assert cache.lookup("Older version?", thread_id="t") is None
+    assert cache.lookup("Retired block?", thread_id="t") is None
+    assert cache.lookup("Current?", thread_id="t").thread_id == "t"

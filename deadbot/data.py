@@ -1,6 +1,6 @@
 """Read-only access to the reviewable canonical CSV graph.
 
-CSV is the portable source-of-truth representation. The PostgreSQL adapter
+CSV is the portable source-of-truth representation. The SQLite store
 implements this same interface for operational use without changing agent
 tools or the model-provider layer.
 """
@@ -72,7 +72,7 @@ class CanonicalStore:
     def filtered_rows(self, table: str, **criteria: str) -> list[dict[str, str]]:
         """Return rows matching exact field values.
 
-        PostgreSQL implements this as a bounded query; the CSV store preserves
+        SQLite implements this as a bounded query; the CSV store preserves
         the same contract with a small in-memory scan.
         """
 
@@ -145,7 +145,7 @@ class CanonicalStore:
     def rows_in(self, table: str, column: str, values) -> list[dict[str, str]]:
         """Rows whose ``column`` is one of ``values``.
 
-        PostgreSQL implements this as one ``IN`` query; the CSV store scans in
+        SQLite implements this as one ``IN`` query; the CSV store scans in
         memory. Block builders use it instead of one ``one()`` call per row.
         """
 
@@ -174,7 +174,7 @@ class CanonicalStore:
     ) -> list[dict[str, str]]:
         """Rows matching any of several phrases, exact matches first.
 
-        One pass over the table (one query in PostgreSQL) replaces a
+        One pass over the table (one query in SQLite) replaces a
         ``matching_rows`` call per phrase: an entity search over a whole
         question used to issue almost two hundred sequential queries.
         """
@@ -382,7 +382,7 @@ class CanonicalStore:
         that performance with a resolvable streaming URL. When a performance has more than one
         candidate row, the selection is sorted deterministically (by the
         link's own identifying columns, never by source row order) so the
-        CSV and PostgreSQL stores agree regardless of how their underlying
+        CSV and SQLite stores agree regardless of how their underlying
         rows happen to be ordered. A performance with neither link is
         omitted entirely rather than carrying empty listening keys.
 
@@ -786,7 +786,7 @@ class CanonicalStore:
     def aggregate(self, request: aggregation.AggregationRequest) -> aggregation.AggregationResult:
         """Compute a constrained aggregation entirely from loaded canonical rows.
 
-        Mirrors PostgresCanonicalStore.aggregate's grouping/measure semantics so
+        Mirrors SqliteCanonicalStore.aggregate's grouping/measure semantics so
         both stores return identical shaped rows for the same request; only the
         fetch strategy (Python loop vs SQL GROUP BY) differs.
         """
@@ -868,7 +868,7 @@ class CanonicalStore:
         def label_with_fallback(name: str | None, record_id: str | None) -> str:
             # Name/title -> id -> "Unknown" when the id itself is blank. A
             # blank cell reads as "" from the CSV, same as a SQL NULL coming
-            # back through Postgres's _query, so both stores treat "" as
+            # back through the SQLite store's _query, so both stores treat "" as
             # blank identically here.
             return (name or "").strip() or (record_id or "").strip() or "Unknown"
 
@@ -891,7 +891,7 @@ class CanonicalStore:
             person = people_by_id.get(person_id) or {}
             return (person_id, label_with_fallback(person.get("name"), person_id))
 
-        # Matches the Postgres side's `WHERE s."show_date" IS NOT NULL` for
+        # Matches the SQLite side's `WHERE s."show_date" IS NOT NULL` for
         # group_by="year": a fact with no derivable year has no year bucket
         # to join, so it enters neither a group nor the total. Other
         # group_bys (venue/city/song/guest) don't depend on the date, so they

@@ -5,7 +5,7 @@
 The path between them is intentional:
 
 ```text
-source record → raw JSONL → normalization → canonical CSV → PostgreSQL
+source record → raw JSONL → normalization → canonical CSV → SQLite file
 ```
 
 No audio belongs here. Recordings are represented by source metadata, lineage, identifiers, and resolvable URLs.

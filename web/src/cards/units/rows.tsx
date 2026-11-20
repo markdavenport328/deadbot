@@ -7,7 +7,7 @@ import { CardPlayButton, toTrack, type InPagePlay } from "../listening";
 import { ListenControl, archiveTrack, trackFor, type TrackMeta } from "../listen-control";
 import { formatShowDate, formatShowDateLong, formatReleaseType, countLabel } from "../../core/format";
 import { renderInline } from "../inline";
-import { type ShowMeta, thumbnailForIdentifier, toPlayerTrack, venueFirstShowLabel } from "../parts";
+import { type ShowMeta, toPlayerTrack, venueFirstShowLabel } from "../parts";
 import { type UnitBlock, albumSpotify, RowSpotifyContext, albumQueue, isUnit, splitShowLabel, songName, unitKey } from "./shared";
 
 // A mention's name, and what hearing it means: the unit's own tracks when the
@@ -15,18 +15,9 @@ import { type UnitBlock, albumSpotify, RowSpotifyContext, albumQueue, isUnit, sp
 function unitIdentity(block: UnitBlock): { title: string; url?: string | null; track?: PlayerTrack | null; queue?: PlayerTrack[] } {
   switch (block.type) {
     case "show_unit": {
-      const meta: ShowMeta = { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) };
+      const meta: ShowMeta = { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url };
       const queue = block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, meta)).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name ? `${block.venue_name} (${formatShowDate(block.show_date)})` : formatShowDate(block.show_date), url: block.listen[0]?.url, queue };
-    }
-    case "performance_unit": {
-      const meta: TrackMeta = { showDate: block.show_date, venueName: block.venue_name };
-      const url = block.listen[0]?.url;
-      const queue = (block.show_tracks ?? []).map((track) => toTrack(track, meta));
-      const track = url && archiveTrack(url) && !block.listen[0]?.is_official
-        ? queue.find((item) => item.audioUrl === url) ?? toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: url }, meta)
-        : null;
-      return { title: `${block.song_title}, ${venueFirstShowLabel(block.show_date, block.venue_name, block.show_label)}`, url, track, queue };
     }
     case "album_unit":
       return { title: block.release_date ? `${block.title} (${block.release_date.slice(0, 4)})` : block.title, url: block.listen[0]?.url };
@@ -105,7 +96,7 @@ function collapsedFacts(block: UnitBlock): {
       // A row whose data came with a setlist plays that tape when it has none of its own.
       const queue = own.length > 0
         ? own
-        : block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url, thumbnailUrl: thumbnailForIdentifier(block.recording_identifier) })).filter((track): track is PlayerTrack => track !== null));
+        : block.sets.flatMap((set) => set.songs.map((song) => toPlayerTrack(song, { showDate: block.show_date, venueName: block.venue_name, recordingDetailsUrl: block.recording_details_url })).filter((track): track is PlayerTrack => track !== null));
       return { title: block.venue_name || formatShowDateLong(block.show_date), meta: [block.venue_name ? formatShowDateLong(block.show_date) : null, block.location], play: playOf(queue) };
     }
     case "album_unit": {
@@ -123,16 +114,6 @@ function collapsedFacts(block: UnitBlock): {
         play: playOf(queue),
         link: queue.length === 0 ? block.listen[0] ?? null : null,
         embedId: albumSpotify(block)?.embedId ?? null
-      };
-    }
-    case "performance_unit": {
-      const track = block.audio_url
-        ? toTrack({ performance_id: block.performance_id, title: block.song_title, audio_url: block.audio_url, duration_seconds: block.duration_seconds }, { showDate: block.show_date, venueName: block.venue_name })
-        : null;
-      return {
-        title: block.song_title,
-        meta: [block.venue_name, formatShowDateLong(block.show_date), block.duration_seconds ? formatClockTime(block.duration_seconds) : null],
-        play: track ? { start: track, queue: [track] } : null
       };
     }
     case "song_overview": {

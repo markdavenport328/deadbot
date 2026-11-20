@@ -10,6 +10,7 @@ import {
 } from "react";
 import { archiveFallbackUrls } from "./archive-fallback";
 import { loadSavedTracks, offlineSource } from "./offline";
+import { TILE_SIZE, trackCover, trackTile } from "../cards/show-tile";
 
 // The one shared player for the whole app, behind a context, so playback
 // survives a page re-render or a follow-up question instead of resetting with
@@ -176,18 +177,22 @@ function restoredState(): PlayerState {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-// "May 8, 1977" for the lock screen, which has room for the long form.
-// The tape's own image when it has one, then Deadbot's square: a lock
-// screen or a car's screen picks the size it wants, and never shows a blank.
+// The show's picture, then Deadbot's square: a lock screen or a car's
+// screen picks the size it wants, and never shows a blank.
 export const FALLBACK_ARTWORK = [
   { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
   { src: "/icons/icon-1024.png", sizes: "1024x1024", type: "image/png" }
 ];
 
-function lockScreenArtwork(thumbnailUrl: string | null | undefined): MediaImage[] {
-  return thumbnailUrl ? [{ src: thumbnailUrl }, ...FALLBACK_ARTWORK] : FALLBACK_ARTWORK;
+// A release's real cover when the track came with one, then the show's tile
+// (a square JPEG at a fixed address, which iOS and Android both draw).
+function lockScreenArtwork(track: PlayerTrack): MediaImage[] {
+  const cover = trackCover(track);
+  const tile = { src: trackTile(track), sizes: `${TILE_SIZE}x${TILE_SIZE}`, type: "image/jpeg" };
+  return cover ? [{ src: cover }, tile, ...FALLBACK_ARTWORK] : [tile, ...FALLBACK_ARTWORK];
 }
 
+// "May 8, 1977" for the lock screen, which has room for the long form.
 function lockScreenDate(iso: string | null | undefined): string | null {
   const match = iso ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso) : null;
   const month = match ? MONTHS[Number(match[2]) - 1] : undefined;
@@ -674,7 +679,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       title: currentTrack.title,
       artist: "Grateful Dead",
       album: [lockScreenDate(currentTrack.showDate), currentTrack.venueName].filter(Boolean).join(" · "),
-      artwork: lockScreenArtwork(currentTrack.thumbnailUrl)
+      artwork: lockScreenArtwork(currentTrack)
     });
   }, [currentTrack]);
 

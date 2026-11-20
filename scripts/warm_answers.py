@@ -93,7 +93,7 @@ def build_bundle(path: Path, questions: list[str]) -> int:
         from deadbot.graph import build_agent
         from deadbot.storage import create_canonical_store
 
-        settings = dataclasses.replace(settings, response_cache=True, rate_limit_per_minute=0)
+        settings = dataclasses.replace(settings.without_limits(), response_cache=True)
         store = create_canonical_store(settings)
         app = create_app(settings, store=store, agent=build_agent(settings, store=store))
         client = TestClient(app)

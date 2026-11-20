@@ -97,7 +97,7 @@ def test_a_connection_returned_after_close_is_closed_not_pooled(store):
     assert store.open_connection_count == 0
     assert old_pool.qsize() == 0
     with pytest.raises(Exception):
-        borrowed.raw.execute("SELECT 1")
+        borrowed.execute("SELECT 1")
     assert store.resolve_song("Dark Star")
 
 

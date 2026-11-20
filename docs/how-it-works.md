@@ -22,14 +22,12 @@ Around these core entities sit several supporting layers:
 | **Official releases** | Albums with track-level mappings back to specific performances, personnel, Spotify links | *Dick's Picks Vol. 36* |
 | **Resources** | External links to articles, interviews, oral histories, reviews, tabs, videos | A Dead.net oral history of "Dark Star" |
 | **Selections** | Curated picks from critics, fans, and official sources, with source attribution | A "best Estimated Prophet" list from a published book |
-| **Claims** | Sourced factual statements tied to one or more entities | "Jerry used Tiger for the first time on 8/4/79" |
-| **Observations** | Derived stats computed from the data, versioned against the import that produced them | Song performance counts, first/last dates, set-neighbor frequency |
 
-The whole schema is about **30 tables** with strict foreign keys, check constraints, and referential-integrity triggers. It's at schema version 9, with migrations applied as plain SQL files in sequence. There are no embeddings or vector columns — all text matching is done with SQL `LIKE` queries.
+The whole schema is about **30 tables** with strict foreign keys, check constraints, and referential-integrity triggers, defined in one file (`schema/sqlite.sql`). There are no migrations: the database is rebuilt from scratch on every deploy, so a schema change is an edit to that file. There are no embeddings or vector columns — all text matching is done with SQL `LIKE` queries.
 
 ### How data gets in
 
-The database is populated from **23 reviewed CSV files** (~48 MB total) that live in the repo under `data/canonical/`. These CSVs are the version-controlled source of truth. The pipeline looks like this:
+The database is populated from **24 reviewed CSV files** (~48 MB total) that live in the repo under `data/canonical/`. These CSVs are the version-controlled source of truth. The pipeline looks like this:
 
 ```
 External sources → collection scripts → raw JSON in data/raw/
@@ -45,25 +43,21 @@ External sources → collection scripts → raw JSON in data/raw/
 
 **Normalization** scripts transform that raw data into the canonical CSV format — resolving entity identities, deduplicating, and fitting everything to the strict column-and-type contracts defined in the import code.
 
-**Import** is a CLI command (`deadbot db-import`) that runs in a single database transaction. Before writing anything, it validates every CSV against its table contract (column names, types, nullable rules). It then creates a SHA-256 content manifest of the exact files used, so we know precisely which data produced which database state. If validation fails, nothing is written.
+**The build** (`deadbot db-build`, or `python3 -m deadbot.sqlite_build`) turns the CSVs into the SQLite file. Before writing anything, it validates every CSV against its table contract (column names, types, nullable rules). It then loads them into a new file beside the old one, checks every foreign key, and only then swaps the new file into place. If anything fails, the previous file is left as it was. The build records a SHA-256 fingerprint of the exact inputs, so a local run knows when the checked-out CSVs have changed and rebuilds.
 
-There are two import modes:
-- **Merge** (the default) — `INSERT ... ON CONFLICT DO NOTHING`. New rows are added; existing rows are left alone.
-- **Rebuild** (`--rebuild`) — clears canonical tables in reverse dependency order, then reloads everything. Does not drop the schema itself.
+There is one mode: every build starts from an empty database and loads everything. A row removed from a CSV is gone from the next build.
 
-After the CSV data loads, a separate step atomically replaces selection evidence from a reviewed editorial JSON file, generating the `resources`, `selection_lists`, `selection_entries`, and `selection_evidence` rows that power the curated-picks tools.
-
-Every import records a ledger row in `canonical_imports` for auditability.
+After the CSV data loads, the build adds selection evidence from a reviewed editorial JSON file, generating the `resources`, `selection_lists`, `selection_entries`, and `selection_evidence` rows that power the curated-picks tools.
 
 ### At runtime
 
-The database is **read-only at runtime**. The only write the application ever makes is caching its own answers for repeat questions (in `deadbot_response_cache`). All catalog data enters through the import pipeline.
+The database is **read-only at runtime**. The only write the application ever makes is caching its own answers for repeat questions, in a separate small file. All catalog data enters through the build.
 
-The app runs on Vercel as a serverless function. The deploy's build step builds the SQLite file from the CSVs (`python3 -m deadbot.sqlite_build`), and the function opens it read-only. The response cache lives in its own small SQLite file in the function's temporary directory. (The older PostgreSQL store and `deadbot db-import` remain for the legacy importer and CI until they are retired.)
+The app runs on Vercel as a serverless function. The deploy's build step builds the SQLite file from the CSVs (`python3 -m deadbot.sqlite_build`), and the function opens it read-only. The response cache lives in its own small SQLite file in the function's temporary directory. SQLite is the only store; CI builds the same file and runs the tests and the evaluation against it.
 
 There's a **per-request query cache** at the data layer: since the data is read-only, the same SQL query within one request returns the same rows without hitting the database again. This matters because the composition step often re-fetches entities the model already looked up during research.
 
-The entire data layer is **hand-written parameterized SQL** through Python's standard DB-API interface. No ORM, no SQLAlchemy. Table and column identifiers are validated against a strict pattern and double-quoted. User input never enters identifiers.
+The entire data layer is **hand-written parameterized SQL** through Python's standard `sqlite3` module (`deadbot/sqlite_store.py`). No ORM, no SQLAlchemy. Table and column identifiers are validated against a strict pattern and double-quoted. User input never enters identifiers.
 
 ## How retrieval works
 
@@ -99,7 +93,7 @@ Validated ExperienceResponse → browser
 
 ### Cache layer
 
-Before the model runs at all, the system checks whether this exact question (normalized to lowercase, punctuation-stripped) has been answered before with the current data version and code commit. If so, the cached response is returned instantly. Only first-turn questions are cached — follow-ups in a conversation aren't. Failed or gap answers are never stored.
+Before the model runs at all, the system checks whether this exact question (normalized to lowercase, punctuation-stripped) has been answered before with the current data version and code commit. If so, the cached response is returned instantly. Only first-turn questions are cached — follow-ups in a conversation aren't. Failed or gap answers are never stored. A stored answer is read back through the current response schema, so one written under an older page vocabulary is discarded and answered live. The deploy's build step also answers the opening questions once and ships those answers (`scripts/warm_answers.py`); they seed the cache under the same data version and commit.
 
 ### The agent loop
 
@@ -110,53 +104,51 @@ On a cache miss, the question enters a LangGraph state graph with two nodes that
 
 The routing logic is simple: if the model made tool calls, go to the tools node; if a successful `finish_response` result is in the messages, end the loop; otherwise, return to the agent node for another round. The recursion limit is 8 tool rounds (20 LangGraph steps).
 
-### The 29 research tools
+### The 22 research tools
 
-The model has access to 29 read-only research tools, all defined in `deadbot/tools.py`, plus `finish_response`, which delivers the answer. They fall into three groups:
+The model has 22 read-only research tools, all defined in `deadbot/tools.py`, plus `finish_response`, which delivers the answer.
 
-**Catalog tools** query the SQLite catalog:
+**Finding and reading records**
 
 | Tool | What it does |
 | --- | --- |
 | `search_entities` | Fuzzy search across songs, shows, people, venues, equipment, and releases |
-| `get_show` | Full show context: venue, setlist, performers, recordings, equipment, links |
-| `get_song` | Song overview: writers, performance summary, arrangements, releases, resources |
-| `get_performance` | One rendition's context: show, venue, set neighbors, recordings, links |
-| `get_album` | Official release: tracklist mapped to performances, personnel, listening links |
-| `list_song_performances` | Paginated chronological list of a song's performances |
-| `get_song_performance_profile` | Derived counts, first/last/neighbor stats for a song |
-| `get_song_notable_versions` | Renditions with official releases and critic/curator/fan signals |
-| `get_selections_for` | Reviewed selection signals for one song or show |
-| `get_show_selections` | Reviewed show selections for discovery questions |
-| `get_selection_signals` | Complete reviewed critic/fan/curator selection inventory |
-| `search_guest_musicians` | Find guest musicians and the shows they played |
-| `get_equipment_history` | First/last show assignments for a named instrument |
-| `get_media_links` | Listening/viewing links for a show or performance |
+| `search_guest_musicians` | Guest musicians and the shows they played |
+| `get_show` | A show: venue, setlist, lineup, recordings, equipment, links |
+| `get_song` | A song: writers, performance summary, arrangements, releases, resources |
+| `get_song_life` | A song's life on stage year by year: how often and how long it was played |
+| `list_song_performances` | A song's performances in order, a page at a time |
+| `get_song_notable_versions` | Renditions with official releases and critic, curator and fan picks |
+| `get_performance` | One rendition: its show, set position, recordings and links |
+| `get_album` | An official release: tracklist mapped to performances, personnel, listening links |
+| `get_picks` | The nights and versions critics, tapers and fans picked, for a song, a show, or a span of years or a venue |
 | `find_arrangements` | Song arrangements by key signature |
-| `get_recording_reviews` | Archive.org listener reviews and star ratings |
-| `get_segue_pairing` | How a two-song pairing (China Cat > Rider) changed across the nights it was played |
+| `get_equipment_history` | The first and last shows a named instrument was played at |
+| `look_up` | Listed queries or read-only SQL over curated views, for lists by year, venue or tour (registered when the store runs catalog queries) |
+
+**Counting and comparing**
+
+| Tool | What it does |
+| --- | --- |
 | `aggregate_data` | Verified counts and rankings across shows, performances or guests; the source of every chart |
-| `look_up` | Listed queries or read-only SQL over curated views, for lists by year, venue or tour |
+| `get_segue_pairing` | How a two-song pairing (China Cat > Rider) changed across the nights it was played |
+| `get_grid` | Two lists against each other (songs by year, shows by song), every cell playable |
 
-**External research tools** fetch from the web:
-
-| Tool | What it does |
-| --- | --- |
-| `search_stored_resources` | Search the cataloged resource inventory by keyword |
-| `get_deadnet_song_context` | Dead.net metadata page for a canonical song |
-| `get_deadcast_episode` | Title and link of an official Deadcast episode |
-| `get_lore_source_trails` | Reviewed lore links for a song or show |
-| `get_research_source_directory` | List of research sites with what each is good for |
-| `search_site` | Search one external research site (Lost Live Dead, archive.org, etc.) |
-| `read_page` | Read any web page's text |
-
-**Context tools** provide supplementary information:
+**Stories and outside sources**
 
 | Tool | What it does |
 | --- | --- |
-| `get_historical_weather` | Historical weather for a show's venue and date |
-| `get_astronomy` | Sun and moon data for a show's venue and date |
-| `get_astrology` | Western zodiac sign for a show's date |
+| `search_stories` | Interviews, articles, podcasts and videos the library holds on a topic, song or show |
+| `search_site` | Search one outside research site (Lost Live Dead, archive.org and others) |
+| `read_page` | Read a web page's text |
+| `get_recording_reviews` | Archive.org listener reviews and star ratings for a tape |
+| `get_historical_weather` | The weather at a show's venue on its date |
+
+**The conversation's own research**
+
+| Tool | What it does |
+| --- | --- |
+| `read_notebook` | Results from earlier turns of this conversation, brought back whole or sliced, so a follow-up does not repeat the research |
 
 ### How search works at the SQL level
 
@@ -187,109 +179,93 @@ These are the building blocks the model works with. Each tool call returns a ric
 
 ## What the experience looks like
 
-The browser presents two surfaces that complement each other instead of repeating each other:
+The browser shows one page for each question: the answer at the top, then sections of things to hear and see. The model decides what the page says and holds; the application fills in every fact and renders it.
 
-- **The chat pane** holds the direct conversational answer — a few sentences that address the question.
-- **The composed page** holds the broader payoff: entity cards, listening paths, editorial context, and follow-up routes, organized by the model's editorial judgment about what matters and how it relates.
+### The model's page
 
-The page isn't a chat transcript with cards bolted on. The model produces a structured plan that decides what to emphasize, how to group it, and what presentation fits. The application renders that plan as a composed layout.
+When the model has gathered enough material, it calls `finish_response`, a terminal tool whose arguments *are* the page. Those arguments are a `PagePlan` (`deadbot/page_plan.py`):
 
-### The model's plan
+- **`headline`** — an optional short line above the answer.
+- **`answer`** — the answer to the question, in markdown: paragraphs, lists or a table.
+- **`sections`** — the rest of the page in reading order. Each section has an optional `heading`, optional `text` (the model's own words, in markdown) and `items`.
 
-When the model has gathered enough material, it calls `finish_response` — a terminal tool whose arguments *are* the answer. Those arguments are a `FinishPlan` containing:
+The model writes IDs and its own words; it never writes a date, a setlist or a link's target. Every ID must come from a tool result in this conversation (or its research notebook).
 
-- **`headline`** — an optional short line above the lead.
-- **`lead`** — the page's opening and the answer: its first sentence answers the question on its own.
-- **`groups`** — groups, each containing items (semantic unit references and editorial blocks).
+### The eleven items
 
-The model writes this plan from what it retrieved. Every reference (a show ID, a song ID, a performance ID) must trace to a tool result from the same conversation. A reference that doesn't resolve keeps the model's own words for it as a narrative block, without a hydrated record — the page only shows records the model actually looked up.
+A section's items are the page's components. Each one names records by ID and the server supplies their facts and players.
 
-### Semantic units
+| Item | What it shows |
+| --- | --- |
+| `performances` | Performances to play in order: one song across nights, or several songs from one night. A note per performance. |
+| `pairing` | Chosen nights of two songs played back to back, from a `get_segue_pairing` result, drawn to one clock. |
+| `show` | One show: its setlist, lineup and player. With `play`, it becomes the page's opening player, starting at a set or a song. |
+| `shows` | Many shows as rows that open and play, by ID or every show in a `look_up` result. |
+| `release` | One official release: play button, tracklist and personnel. |
+| `releases` | Many official releases as rows that open and play. |
+| `song_years` | A song's life year by year: times played or typical length, each year opening to its performances. |
+| `chart` | An `aggregate_data` result as bars or as a ranked list with the model's notes on rows. |
+| `grid` | A `get_grid` result as a table, every cell playable. |
+| `people` | Band members and guests as bars across the years they played, with show counts. |
+| `links` | Interviews, articles, podcasts and videos the tools returned. |
 
-The building blocks of a page are **semantic units** — typed, data-rich components that the model references by ID and the server hydrates from the database. Five primary unit types carry the weight:
+`show`, `release` and `song_years` start open by default and can start as one closed row.
 
-**Show unit** — a full show card. The model provides a `show_id` and chooses which facets to display (setlist, guests, lineup, recordings, listen actions). The server hydrates it with the venue, date, full setlist with set labels and positions, performer names and instruments, recording identifiers, and streaming links. The setlist can be expanded, collapsed, or hidden. The model can highlight specific performances and prefer a specific recording.
+### From the page to the response
 
-**Song overview** — a composition across its entire life. The server provides the performance count, a history strip (first performance, last performance, one rendition a year), a by-year bar chart of how often it was played, representative versions the model selected, writing credits, and official releases the song appears on. The model chooses which facets to show and which performances best represent the song.
+The server reads the page into an internal plan (`deadbot/finish.py`: a lead and groups of body items) that hydration, streaming and stored pages share. Each section becomes a group; each item becomes one or more body items (`page_plan.body_items`), which resolve to the blocks the browser renders:
 
-**Performance unit** — one rendition of one song at one show. The server provides the song, venue, date, set label, position in set, the previous and next songs in the same set (so you see the flow), and listening links. This is where a specific version lives — not the song in general, but this version on this night.
+| Item | Block in the response |
+| --- | --- |
+| `performances` | `song_versions` |
+| `pairing` | `version_strip` |
+| `show` | `show_unit`, or `listening_hero` when it names where to start playing |
+| `shows` | one collapsed `show_unit` per show |
+| `release`, `releases` | `album_unit` |
+| `song_years` | `song_overview` |
+| `chart` | `data_chart` or `ranked_list` |
+| `grid` | `grid` |
+| `people` | `people_timeline` |
+| `links` | `media_link` for a URL, `resource_list` for stored resources |
 
-**Album unit** — an official release. The tracklist maps each track back to its specific live performance (show, date, venue), with personnel, duration, and streaming links. The model can highlight specific songs.
+One more block carries the model's own words: `editorial`, a block of prose. The server writes it in three cases, so the model's work always stays on the page:
 
-**Era unit** — a named stage in a song's development (e.g., "1972–1974: the exploratory years"), with representative performances that illustrate it. The model defines the era's title, span, and interpretive note; the server fills in the performance details.
+- A section with a heading or text and no cards (none planned, or none resolved) shows its text as prose under its heading.
+- An item that does not fit any component keeps its title and text as prose.
+- A reference that does not resolve to a record from this turn keeps the model's note as prose, without the record.
 
-### Emphasis
-
-Each unit carries an **emphasis** level that controls its rendering scale:
-
-- **Primary** — full width, facet tabs start open. Used for the main subject of the answer.
-- **Supporting** — compact card. Used for context or comparison items.
-- **Mention** — collapses to a single line with a listening link. Used when an entity deserves a reference but not a full card.
-
-The model chooses emphasis based on how central each entity is to the answer. A question about Cornell '77 might render that show as primary, with supporting cards for the songs the model wants to highlight and mentions for others referenced in passing.
-
-### Groups and editorial structure
-
-Units don't just stack in a list. The model organizes them into **groups**, each with a presentation mode:
-
-- **Collection** — a grid of peers. Five notable Dark Stars, shown side by side.
-- **Sequence** — a development or route on a numbered spine. How a song evolved across decades.
-- **Comparison** — items judged on shared criteria, rendered in aligned columns. The model names the criteria (e.g., "energy," "improvisation," "recording quality") and writes a judgment for each unit on each axis.
-- **Argument** — a claim as the group heading, with evidence beneath.
-
-Groups can carry titles, leads, and as many items as the answer needs. This gives the model a real editorial vocabulary — it's choosing structure, not just listing results.
-
-### Collapsed cards and lists of records
-
-Every show, performance, album and song unit starts **expanded** (the full card) or **collapsed**: one compact row the server fills in — a show's venue, date and city; a record's cover, title, year, type and shows; a performance's song, venue, date and length; a song's count and span — with its one play control and a cue that opens the full card in place. The model chooses, from how many there are and what the visitor asked. For a long set, one unit can carry a `from_result` (a `look_up` `result_id` or an `aggregation_id`) instead of an ID, and the server makes one card per row in the result's order. A `ranked_list` shows the top rows of one `aggregate_data` result with its counts and the model's notes.
-
-### Editorial blocks
-
-Alongside the data-hydrated units, the model can write its own material as **editorial blocks** in three forms:
-
-- **Narrative** — prose paragraphs for interpretation, argument, or synthesis.
-- **Fact grid** — compact label-value pairs for cross-comparison, including attributed viewpoints from critics or fans.
-- **Timeline** — chronological entries with markers, titles, and detail text.
-
-These are where the model's synthesis and voice live: prose, viewpoints and comparisons. Records belong in the reference-based items, which carry their facts from the library; an editorial item about a show, performance or record names it by ID, and the server links it or makes its title play.
-
-### Other block types
-
-The block catalog also includes focused components that appear when the question calls for them:
-
-- **Equipment list** — which guitars Jerry played at a show, with manufacturer, model, and evidence.
-- **Guest appearance list** — a guest musician's canonical show appearances with dates, venues, and instruments.
-- **Person roster** — a complete section of people under a heading (the '77 touring lineup, or every drummer who sat in).
-- **Arrangement** — chord progressions from a specific source, with key signature, capo, and tuning.
-- **Show selection** — source-attributed lists from critics, fans, and official publications.
-- **Media link** — an embeddable YouTube or Spotify player.
-- **Resource list** — external reading and listening links with publication details.
-- **Coverage note** — an acknowledgment of gaps in the catalog, so the model can say what it doesn't know.
+A turn that ends without a page returns a `gap_state` block and an honest message. The response carries `schema_version` (`"4"`); the browser uses it to set aside pages it saved under an older vocabulary.
 
 ### Follow-ups
 
-Every semantic unit and editorial item can carry **follow-up topics** — short labels that render as chips beneath the content. Pressing one sends a new question into the conversation. The reader moves naturally from a show card to a deeper question about one of its songs, or from a song overview into a specific era. These are how the experience creates pathways through the catalog rather than dead-ending at an answer.
+A follow-up is a new question in the same conversation. The browser sends it with the conversation so far and the signed research notebook the previous response returned, so the model starts from what it already found (`read_notebook`). Three places on a page start one:
+
+- **The question box**, for anything the visitor types.
+- **An opened row** on a chart or ranked list. The row opens in place to that record's facts and one recording, from `GET /api/rows/{id}` with no model call, and offers one question the server writes from the record ("The story of Playing In The Band on stage").
+- **A grid cell or a year on a song's timeline.** The question carries what the visitor was pointing at (`focus`: the block, the IDs, a few facts), which the model reads as a note and may place on the page without looking it up again.
+
+The model's page schema has no follow-up field: the model does not write suggested questions.
 
 ### Streaming
 
-The page renders progressively as the model writes. A character-by-character JSON scanner (`PlanStreamer`) parses the `finish_response` arguments as they stream token by token, emitting events:
+The page renders as the model writes it. A character-by-character scanner (`PlanStreamer`, `deadbot/plan_stream.py`) reads the `finish_response` arguments as they arrive and emits events:
 
-1. **`page_head`** — title and lead, as soon as they're known.
-2. **`group_open`** — a group's metadata (title, presentation mode, criteria) as its items array begins.
-3. **`block`** — each item, resolved and hydrated, as it closes in the JSON stream.
-4. **`group_close`** — when a group object closes.
+1. **`page_head`** — headline and answer, as the sections begin.
+2. **`group_open`** — a section's heading and text as its items begin.
+3. **`block`** — each item, resolved and hydrated, as it closes in the text.
+4. **`group_close`** — when a section closes. A section that closes with no blocks sends its words as a prose block first.
 
-The chat answer streams separately into the conversation pane at the same time (extracted by `AnswerAccumulator`). The browser lays out the page progressively as blocks arrive. When the full plan is complete, the server validates the entire response and the draft is replaced with the final grounded version.
+The answer also streams on its own as it grows (`lead` events, from `LeadAccumulator`), and `status` events say what the model is doing. When the plan is complete the server builds the whole response and the browser replaces the draft with it.
 
-If the model's plan fails validation, it can retry — the streamer emits a `page_reset` event that clears the draft, and the model writes a new plan.
+If the model's call is rejected and it writes another, the streamer emits `page_reset` and the draft starts over. If the model restates its sections inside one call, `groups_reset` starts the sections over.
 
 ### Grounding and validation
 
-The composition layer (`deadbot/finish.py`) builds a `GroundedContext` from every tool result in the conversation — a frozen set of every entity ID and every URL that appeared in tool output. During resolution:
+`deadbot/finish.py` builds a `GroundedContext` from every tool result in the turn: every ID and every URL that appeared in tool output, plus the research notebook's and the visitor's click. During resolution:
 
-- Every entity reference (show ID, song ID, performance ID) is checked against this set. A reference that does not resolve renders the model's own text for that item, without the hydrated record.
-- A markdown link in prose or a supporting source is kept only when its URL came from a tool result; otherwise it is unwrapped to its words. An editorial item's link to an outside article only has to be a web URL; a link to a show, performance or record comes from the item naming it by ID.
-- Items are read leniently: extra keys are ignored, a bad list entry or optional field is removed and the rest kept, a missing `type` is inferred when the shape says editorial, and an unknown presentation reads as a collection. Nothing caps how many groups or items the model plans; only transport ceilings far above normal use (1,000 entries per list, 200 blocks per page) truncate, with a log line.
-- The streamer and the final response read and resolve every item through the same functions (`validate_body_item`, `resolve_items`), so a block that streamed is in the delivered page.
+- Every referenced ID is checked against this set and then read from the store. The card's facts come from the store, never from the model.
+- A markdown link in the model's words is kept only when its URL came from a tool result; otherwise it is unwrapped to its words.
+- The plan is read leniently: extra keys are ignored, a bad list entry or optional field is removed and the rest kept, an older key (`lead` for `answer`, `title` for a section's `heading`) reads as the key it meant, and an item written straight into `sections` stands as a section of its own. Nothing caps how many sections or items the model plans; only transport ceilings far above normal use (1,000 entries per list, 200 blocks per page) truncate, with a log line.
+- The streamer and the final response read every key and resolve every item through the same functions (`page_plan.finish_args` and `body_items`, `validate_body_item`, `resolve_items`, `group_words`, `words_alone`), so the draft the visitor watched and the delivered page hold the same sections. `tests/test_stream_final_parity.py` runs one plan through both.
 
 The result is a validated `ExperienceResponse` that the React client renders as deterministic application code. The model chose what to show and how to frame it. The system guarantees that everything it chose is real.

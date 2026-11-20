@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { expect, test } from "vitest";
+import { Block } from "./Block";
 import { RichText, renderText } from "./text";
 
 function html(text: string): string {
@@ -41,4 +42,20 @@ test("html in the text stays text", () => {
   render(<RichText text={"<img src=x onerror=alert(1)>\n\n- <b>hi</b>"} />);
   expect(document.querySelector("img")).toBeNull();
   expect(screen.getByText("<b>hi</b>")).toBeInTheDocument();
+});
+
+test("a prose block reads the model's markdown: paragraphs and a list", () => {
+  // A section with a heading and text but no cards arrives as one narrative block.
+  const { container } = render(
+    <Block
+      block={{ type: "editorial", presentation: "narrative", eyebrow: null, title: null, paragraphs: ["What to hear:\n\n- The 1990 run\n- The 1991 run"], items: [] }}
+      sources={[]}
+      criteria={[]}
+      soleUnit={false}
+      onFollowUp={() => {}}
+    />
+  );
+  expect(container.querySelector(".narrative-block")).not.toBeNull();
+  expect(screen.getAllByRole("listitem").map((item) => item.textContent)).toEqual(["The 1990 run", "The 1991 run"]);
+  expect(screen.getByText("What to hear:").tagName).toBe("P");
 });

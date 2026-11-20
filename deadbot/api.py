@@ -7,7 +7,6 @@ import logging
 import os
 import time
 import uuid
-from collections import deque
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
@@ -19,15 +18,15 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import AIMessage, HumanMessage
 
-from deadbot import composition, finish, grids, notebook, row_details
+from deadbot import composition, finish, grids, limits, notebook, row_details
 from deadbot.lead_stream import LeadAccumulator
 from deadbot.config import Settings
 from deadbot.data import CanonicalStore, repository_root
 from deadbot.experience import AskFocus, ExperienceRequest, ExperienceResponse, GridBlock, GridRequest, RowDetail, SongYearDetail, fit
 from deadbot.finish import FINISH_TOOL_NAME, FOCUS_MESSAGE_NAME, build_experience_response
-from deadbot.graph import build_agent, run_config
+from deadbot.graph import TurnBudgetExceeded, build_agent, run_config
 from deadbot.plan_stream import PlanStreamer
-from deadbot.postgres import query_cache_scope
+from deadbot.sqlite_store import query_cache_scope
 from deadbot.song_life import year_detail
 from deadbot.progress import describe_tool_call, status_lines
 from deadbot.response_cache import ResponseCache
@@ -115,6 +114,11 @@ def focus_note(focus: AskFocus, known_ids: set[str]) -> str:
 
 
 UNAVAILABLE = "Deadbot is temporarily unavailable. Check that the configured model service is running."
+TOOK_TOO_LONG = "That one took longer than Deadbot has for a single answer. Please ask again, or ask about something narrower."
+
+# The platform's own headers for the visitor's address, read only when the
+# deployment says a proxy that overwrites them is in front (see _client_ip).
+FORWARDED_ADDRESS_HEADERS = ("x-vercel-forwarded-for", "x-forwarded-for")
 
 
 def _names_finish_call(message_chunk: Any) -> bool:
@@ -158,13 +162,11 @@ def create_app(
     app.state.settings = settings
     app.state.store = store
     app.state.agent = agent
-    # Sliding-window rate-limit state: client IP -> deque of request timestamps
-    # within the trailing 60s window. This is per process instance only — on
-    # Vercel, separate function instances each keep their own counters, so this
-    # is not a real cross-instance limit. A shared store (e.g. Redis) would be
-    # needed for that; deferred as a later operational decision.
-    app.state.rate_limit_hits = {}
-    app.state.grid_rate_limit_hits = {}
+    # Usage windows live in this process's memory: on Vercel each function
+    # instance keeps its own, and there is no shared store. The signed
+    # allowance cookie carries a visitor's count between instances
+    # (deadbot/limits.py says what that does and does not cover).
+    app.state.limits = limits.Limits(settings)
     app.state.response_cache = ResponseCache(
         store,
         enabled=settings.response_cache,
@@ -172,38 +174,82 @@ def create_app(
     )
 
     def _client_ip(http_request: Request) -> str:
-        forwarded_for = http_request.headers.get("x-forwarded-for")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-        return http_request.client.host if http_request.client else "unknown"
+        """The visitor's address, from a header only where the platform vouches for it.
 
-    def _enforce_rate_limit(http_request: Request, *, grid: bool = False) -> None:
-        limit = app.state.settings.grid_rate_limit_per_minute if grid else app.state.settings.rate_limit_per_minute
-        if limit <= 0:
-            return
-        now = time.monotonic()
-        window_start = now - 60
-        client_ip = _client_ip(http_request)
-        buckets = app.state.grid_rate_limit_hits if grid else app.state.rate_limit_hits
-        hits = buckets.setdefault(client_ip, deque())
-        while hits and hits[0] <= window_start:
-            hits.popleft()
-        if len(hits) >= limit:
-            raise HTTPException(
-                status_code=429,
-                detail="Too many requests. Please wait a minute and try again.",
-            )
-        hits.append(now)
-
-    def _trimmed_conversation(conversation: list, window: int) -> list:
-        """Return only the most recent `window` turns, dropping the oldest ones.
-
-        Returns a new list; never mutates the request's own conversation list.
+        Vercel overwrites the forwarded headers with the public address of the
+        client, so a value sent by the client never reaches the function. Off
+        Vercel nothing overwrites them, any client can write them, and reading
+        them would let a script change its address on every request; there the
+        address of the connection is used.
         """
 
-        if window <= 0 or len(conversation) <= window:
-            return conversation
-        return conversation[-window:]
+        if app.state.settings.trust_forwarded_ip:
+            for header in FORWARDED_ADDRESS_HEADERS:
+                forwarded = http_request.headers.get(header)
+                if forwarded and forwarded.strip():
+                    return forwarded.split(",")[0].strip()
+        return http_request.client.host if http_request.client else "unknown"
+
+    def _too_many(reached: limits.LimitReached, headers: dict[str, str] | None = None) -> HTTPException:
+        # The web client shows an error body's "detail" to the visitor as it is.
+        return HTTPException(
+            status_code=429,
+            detail=reached.message,
+            headers={**(headers or {}), "Retry-After": str(reached.retry_after)},
+        )
+
+    def _count_lookup(http_request: Request) -> None:
+        """One cheap library read against this address's per-minute lookup budget."""
+
+        try:
+            app.state.limits.lookup(_client_ip(http_request))
+        except limits.LimitReached as reached:
+            raise _too_many(reached) from None
+
+    def _admit(request: ExperienceRequest, http_request: Request, thread_id: str) -> tuple[ExperienceResponse | None, dict[str, str]]:
+        """A stored answer, or leave to ask the model and the cookie that records it.
+
+        A stored answer costs no model call, so it spends the lookup budget and
+        leaves the visitor's question allowance alone. Anything else is counted
+        before the model is called; over a limit it is refused with a 429.
+        """
+
+        with query_cache_scope():
+            cached = _cached(request, thread_id)
+        if cached is not None:
+            _count_lookup(http_request)
+            return cached, {}
+        try:
+            token = app.state.limits.admit(_client_ip(http_request), http_request.cookies.get(limits.COOKIE_NAME))
+        except limits.LimitReached as reached:
+            raise _too_many(reached) from None
+        if token is None:
+            return None, {}
+        secure = http_request.url.scheme == "https" or http_request.headers.get("x-forwarded-proto") == "https"
+        return None, {"Set-Cookie": limits.cookie_header(token, secure=secure)}
+
+    def _bounded_conversation(conversation: list) -> list:
+        """The most recent turns that fit the turn window and the character budget.
+
+        The browser sends the transcript and nothing vouches for it, so its
+        size is bounded here: the oldest turns are dropped and the drop is
+        logged; the turns that remain are sent whole. Returns a new list.
+        """
+
+        window = app.state.settings.conversation_window
+        kept = list(conversation[-window:]) if window > 0 else list(conversation)
+        budget = app.state.settings.conversation_max_chars
+        if budget > 0:
+            total = sum(len(turn.text) for turn in kept)
+            dropped = 0
+            while kept and (total > budget or (dropped and kept[0].role == "assistant")):
+                # Past the budget, and then on to the next question, so the
+                # transcript never opens on an answer whose question is gone.
+                total -= len(kept.pop(0).text)
+                dropped += 1
+            if dropped:
+                logger.warning("Dropped the %d oldest conversation turns to fit %d characters", dropped, budget)
+        return kept
 
     @app.get("/api/version")
     def version() -> dict[str, str]:
@@ -222,10 +268,12 @@ def create_app(
             "show_equipment_links": str(store.row_count("show_equipment")),
         }
 
-    def _prepare(request: ExperienceRequest) -> _Invocation:
-        thread_id = request.thread_id or f"web-{uuid.uuid4()}"
+    def _thread_id(request: ExperienceRequest) -> str:
+        return request.thread_id or f"web-{uuid.uuid4()}"
+
+    def _prepare(request: ExperienceRequest, thread_id: str) -> _Invocation:
         book = notebook.decode(request.notebook, app.state.settings.notebook_secret)
-        conversation = _trimmed_conversation(request.conversation, app.state.settings.conversation_window)
+        conversation = _bounded_conversation(request.conversation)
         # Each earlier turn's notebook lines sit right after that turn's
         # answer, so a new turn only appends and the provider's prompt cache
         # keeps everything before the new question.
@@ -242,11 +290,14 @@ def create_app(
             # A note of its own after the question: the visitor's transcript
             # holds only what they typed, and the model reads what they clicked.
             messages.append(HumanMessage(content=focus_note(request.focus, grounded_focus), name=FOCUS_MESSAGE_NAME))
-        # Vercel may route successive requests to different function instances.
-        # When the browser supplies its visible transcript, use an isolated
-        # invocation thread so the transcript is authoritative and is not
-        # duplicated with a warm instance's MemorySaver checkpoint.
-        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}" if request.conversation or book.entries else thread_id
+        # Vercel may route successive requests to different function instances,
+        # so the browser's transcript is the conversation. Every request runs
+        # on a throwaway thread of its own: the transcript is authoritative
+        # and is never doubled with a warm instance's MemorySaver checkpoint.
+        # A kept checkpoint would also let a client that repeats a thread_id
+        # without a transcript grow one turn's input by every earlier turn's
+        # tool results, which no size limit on the request could bound.
+        invocation_thread_id = f"{thread_id}:request:{uuid.uuid4()}"
         return _Invocation(
             thread_id=thread_id,
             invocation_thread_id=invocation_thread_id,
@@ -255,12 +306,21 @@ def create_app(
             notebook=book,
         )
 
-    def _run_config(invocation: _Invocation) -> dict:
+    def _deadline(started: float) -> float | None:
+        """When this turn must stop, so it ends with an honest error before the platform cuts it off."""
+
+        budget = app.state.settings.turn_budget_seconds
+        return started + budget if budget > 0 else None
+
+    def _run_config(invocation: _Invocation, started: float) -> dict:
         return run_config(
             invocation.invocation_thread_id,
             app.state.settings,
             notebook=invocation.notebook,
-            prompt_cache_key=invocation.thread_id,
+            # The conversation, not this request's throwaway thread, picks the
+            # provider cache key, so a conversation's calls stay on one key.
+            conversation_id=invocation.thread_id,
+            deadline=_deadline(started),
         )
 
     def _turn_grounding(invocation: _Invocation) -> finish.GroundedContext:
@@ -273,12 +333,10 @@ def create_app(
         # The per-request thread is throwaway: it exists only so this
         # invocation replays the browser's transcript in isolation. Without
         # this, MemorySaver would keep its checkpoint forever and leak memory
-        # in a long-running `deadbot serve` process. Never delete the stable
-        # thread_id path used for warm, server-side follow-ups.
-        if invocation.invocation_thread_id != invocation.thread_id:
-            checkpointer = getattr(app.state.agent, "checkpointer", None)
-            if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
-                checkpointer.delete_thread(invocation.invocation_thread_id)
+        # in a warm function instance or a long-running `deadbot serve`.
+        checkpointer = getattr(app.state.agent, "checkpointer", None)
+        if checkpointer is not None and hasattr(checkpointer, "delete_thread"):
+            checkpointer.delete_thread(invocation.invocation_thread_id)
 
     def _with_notebook(invocation: _Invocation, messages: list[Any], response: ExperienceResponse) -> ExperienceResponse:
         """The response plus the signed notebook the browser sends back with the next question."""
@@ -305,7 +363,7 @@ def create_app(
         )
         return _with_notebook(invocation, messages, response)
 
-    def _cached(request: ExperienceRequest, invocation: _Invocation) -> ExperienceResponse | None:
+    def _cached(request: ExperienceRequest, thread_id: str) -> ExperienceResponse | None:
         """A stored answer for a fresh (no-conversation) repeat of a question."""
 
         # A focused ask depends on what was clicked, which the cache key (the
@@ -313,24 +371,26 @@ def create_app(
         # session: its answer may lean on earlier research.
         if request.conversation or request.focus is not None or request.notebook:
             return None
-        return app.state.response_cache.lookup(request.question, thread_id=invocation.thread_id)
+        return app.state.response_cache.lookup(request.question, thread_id=thread_id)
 
     def _remember(request: ExperienceRequest, response: ExperienceResponse) -> None:
         if not request.conversation and request.focus is None and not request.notebook:
             app.state.response_cache.remember(request.question, response)
 
     @app.post("/api/experience", response_model=ExperienceResponse)
-    def experience(request: ExperienceRequest, http_request: Request) -> ExperienceResponse:
-        _enforce_rate_limit(http_request)
-        invocation = _prepare(request)
+    def experience(request: ExperienceRequest, http_request: Request, http_response: Response) -> ExperienceResponse:
+        started = time.monotonic()
+        thread_id = _thread_id(request)
+        cached, headers = _admit(request, http_request, thread_id)
+        if cached is not None:
+            return cached
+        http_response.headers.update(headers)
+        invocation = _prepare(request, thread_id)
         try:
             with query_cache_scope():
-                cached = _cached(request, invocation)
-                if cached is not None:
-                    return cached
                 result = app.state.agent.invoke(
                     {"messages": invocation.messages},
-                    _run_config(invocation),
+                    _run_config(invocation, started),
                 )
                 # Assembling the response is inside the try so an unexpected raise
                 # while resolving the plan reaches the visitor as the same friendly
@@ -338,13 +398,28 @@ def create_app(
                 response = _respond(request, invocation, result.get("messages", []))
                 _remember(request, response)
                 return response
+        except TurnBudgetExceeded as error:
+            logger.warning("Deadbot experience request ran out of time: %s", error)
+            raise HTTPException(status_code=504, detail=TOOK_TOO_LONG, headers=headers) from error
         except Exception as error:  # The browser receives no model/provider internals.
             logger.exception("Deadbot experience request failed")
-            raise HTTPException(status_code=503, detail=UNAVAILABLE) from error
+            raise HTTPException(status_code=503, detail=UNAVAILABLE, headers=headers) from error
         finally:
             _release(invocation)
 
-    def _stream_events(request: ExperienceRequest, invocation: _Invocation) -> Iterator[str]:
+    def _line(event: dict[str, Any]) -> str:
+        # A lone surrogate that slipped through the model's JSON (see
+        # extract_lead) cannot be UTF-8 encoded; Starlette encodes
+        # this text outside any try/except of ours, so it is made safe
+        # here rather than letting that raise and kill the stream.
+        serialized = json.dumps(event, ensure_ascii=False)
+        return serialized.encode("utf-8", "replace").decode("utf-8") + "\n"
+
+    def _stream_cached(cached: ExperienceResponse) -> Iterator[str]:
+        yield _line({"type": "status", "text": "Found a recent answer"})
+        yield _line({"type": "response", "response": cached.model_dump(mode="json")})
+
+    def _stream_events(request: ExperienceRequest, invocation: _Invocation, started: float) -> Iterator[str]:
         """Newline-delimited JSON: status lines while the agent works, then the response.
 
         LangGraph's ``stream`` with ``stream_mode=["values", "messages"]``
@@ -362,34 +437,19 @@ def create_app(
         only the response.
         """
 
-        def line(event: dict[str, Any]) -> str:
-            # A lone surrogate that slipped through the model's JSON (see
-            # extract_lead) cannot be UTF-8 encoded; Starlette encodes
-            # this text outside any try/except of ours, so it is made safe
-            # here rather than letting that raise and kill the stream.
-            serialized = json.dumps(event, ensure_ascii=False)
-            return serialized.encode("utf-8", "replace").decode("utf-8") + "\n"
-
-        started = time.monotonic()
+        line = _line
         first_lead_at: float | None = None
         error: str | None = None
-        served_from_cache = False
         messages: list[Any] = []
+        config: dict = {}
         try:
-            config = _run_config(invocation)
+            config = _run_config(invocation, started)
             payload = {"messages": invocation.messages}
             stream = getattr(app.state.agent, "stream", None)
             # One query cache for the whole request. Each step of this
             # generator may resume in a fresh context copy, so the same dict
             # is re-entered around every graph step and the final resolution.
             cache: dict = {}
-            with query_cache_scope(cache):
-                cached = _cached(request, invocation)
-            if cached is not None:
-                served_from_cache = True
-                yield line({"type": "status", "text": "Found a recent answer"})
-                yield line({"type": "response", "response": cached.model_dump(mode="json")})
-                return
             if callable(stream):
                 seen = 0
                 lead_accumulator = LeadAccumulator()
@@ -468,29 +528,38 @@ def create_app(
                 response = _respond(request, invocation, messages)
                 _remember(request, response)
             yield line({"type": "response", "response": response.model_dump(mode="json")})
+        except TurnBudgetExceeded as exceeded:
+            # Said plainly while the function can still say it; the platform
+            # would otherwise drop the connection a few seconds later.
+            logger.warning("Deadbot streamed experience request ran out of time: %s", exceeded)
+            error = "turn budget exceeded"
+            yield line({"type": "error", "detail": TOOK_TOO_LONG})
         except Exception:  # The browser receives no model/provider internals.
             logger.exception("Deadbot streamed experience request failed")
             error = "stream failed"
             yield line({"type": "error", "detail": UNAVAILABLE})
         finally:
-            if not served_from_cache:
-                try:
-                    metrics_logger.info(json.dumps(turn_metrics(
-                        request.question, messages, started=started,
-                        first_answer_at=first_lead_at, finished_at=time.monotonic(), error=error,
-                    )))
-                except Exception:
-                    logger.exception("Turn metrics failed")
+            try:
+                metrics_logger.info(json.dumps(turn_metrics(
+                    request.question, messages, started=started,
+                    first_answer_at=first_lead_at, finished_at=time.monotonic(), error=error,
+                    prompt_cache_key=(config.get("configurable") or {}).get("prompt_cache_key"),
+                    earlier_turns=sum(1 for turn in request.conversation if turn.role == "user"),
+                )))
+            except Exception:
+                logger.exception("Turn metrics failed")
             _release(invocation)
 
     @app.post("/api/experience/stream")
     def experience_stream(request: ExperienceRequest, http_request: Request) -> StreamingResponse:
-        _enforce_rate_limit(http_request)
-        invocation = _prepare(request)
+        started = time.monotonic()
+        thread_id = _thread_id(request)
+        cached, headers = _admit(request, http_request, thread_id)
+        events = _stream_cached(cached) if cached is not None else _stream_events(request, _prepare(request, thread_id), started)
         return StreamingResponse(
-            _stream_events(request, invocation),
+            events,
             media_type="application/x-ndjson",
-            headers={"Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no"},
+            headers={"Cache-Control": "no-cache, no-store", "X-Accel-Buffering": "no", **headers},
         )
 
     @app.post("/api/grid", response_model=GridBlock)
@@ -501,7 +570,7 @@ def create_app(
         with it; a note whose cell is gone drops away.
         """
 
-        _enforce_rate_limit(http_request, grid=True)
+        _count_lookup(http_request)
         spec = grids.GridSpec.from_json(request.spec.model_dump())
         if spec is None:
             raise HTTPException(status_code=422, detail="That pair of lists is not one the library can draw.")
@@ -528,7 +597,7 @@ def create_app(
         deploy, so the browser and any cache may keep the answer for an hour.
         """
 
-        _enforce_rate_limit(http_request, grid=True)
+        _count_lookup(http_request)
         detail = year_detail(app.state.store, song_id, year)
         if detail is None:
             raise HTTPException(status_code=404, detail="The library has no such song.")
@@ -544,7 +613,7 @@ def create_app(
         year, may be cached for an hour.
         """
 
-        _enforce_rate_limit(http_request, grid=True)
+        _count_lookup(http_request)
         if len(row_id) > 200 or (scope and len(scope) > 200):
             raise HTTPException(status_code=404, detail="The library has no such record.")
         detail = row_details.row_detail(app.state.store, row_id, scope)

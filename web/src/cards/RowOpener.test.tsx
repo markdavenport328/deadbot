@@ -4,7 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { DataChart, type DataChartBlock } from "./DataChart";
 import { forgetRowDetails, rowFocus, rowUrl, type RowDetail } from "./RowOpener";
 
-// A ranked row, chart bar or roster name that names a record opens in place to
+// A ranked row or chart bar that names a record opens in place to
 // the server's facts for it, one play and one ask that carries the row as focus.
 
 const TRACK = "https://archive.org/download/gd1972-05-11.sbd.miller.100000.flac16/gd72-05-11d2t01.mp3";
@@ -57,17 +57,21 @@ beforeAll(() => {
 
 function page() {
   return {
-    schema_version: "3", thread_id: "web-test", headline: "Who sat in", lead: "Plenty of people.", mode: "answer",
+    schema_version: "4", thread_id: "web-test", headline: "Who sat in", lead: "Plenty of people.", mode: "answer",
     conversation: [{ role: "user", text: "Who sat in with the Dead?" }, { role: "assistant", text: "Plenty of people." }],
     sources: [],
     blocks: [
       {
-        type: "person_roster",
+        type: "ranked_list",
+        aggregation_id: "agg-guests",
         title: "The guests",
-        lead: null,
-        items: [
-          { person_id: "person-ned-lagin", name: "Ned Lagin", roles: ["keyboards"], show_count: 33, first_year: "1970", last_year: "1975", note: null },
-          { person_id: "person-branford-marsalis", name: "Branford Marsalis", roles: ["saxophone"], show_count: 5, first_year: "1990", last_year: "1994", note: null }
+        note: null,
+        dimension_label: "Guest",
+        metric_label: "Shows",
+        more_count: 0,
+        rows: [
+          { rank: 1, id: "person-ned-lagin", label: "Ned Lagin", value: 33, note: null, opens: true },
+          { rank: 2, id: "person-branford-marsalis", label: "Branford Marsalis", value: 5, note: null, opens: true }
         ]
       },
       {
@@ -130,7 +134,7 @@ async function openPage() {
   await screen.findByRole("heading", { level: 1, name: "Who sat in" });
 }
 
-describe("a roster name", () => {
+describe("a ranked row that names a person", () => {
   it("opens to the person's facts, one play and one ask, and closes again", async () => {
     await openPage();
     const name = screen.getByRole("button", { name: "Ned Lagin" });
@@ -154,7 +158,7 @@ describe("a roster name", () => {
     fireEvent.click(screen.getByRole("button", { name: "Playing In The Band" }));
     await screen.findByText("750 times");
     expect(document.querySelectorAll(".row-panel")).toHaveLength(2);
-    // One per block: opening a second roster name closes the first.
+    // One per block: opening a second row in the same list closes the first.
     fireEvent.click(screen.getByRole("button", { name: "Branford Marsalis" }));
     expect(screen.getByRole("button", { name: "Ned Lagin" })).toHaveAttribute("aria-expanded", "false");
   });
@@ -180,8 +184,8 @@ describe("a roster name", () => {
     await screen.findByRole("heading", { level: 1, name: "Ned Lagin" });
     expect(sent[1].question).toBe("Tell me about Ned Lagin with the Dead");
     expect(sent[1].focus).toEqual({
-      block_type: "person_roster",
-      block_id: "The guests",
+      block_type: "ranked_list",
+      block_id: "agg-guests",
       label: "Ned Lagin",
       ids: ["person-ned-lagin", "gd-1974-08-05"],
       facts: ["Shows: 33.", "Years: 1970–1975."]

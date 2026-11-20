@@ -314,7 +314,8 @@ def body_items(item: Any) -> list[dict[str, Any]]:
             return [{"type": "ranked_list", "aggregation_id": item.get("aggregation_id"), "count": item.get("rows"), "title": title, "note": note, "notes": notes}]
         return [{"type": "data_chart", "aggregation_id": item.get("aggregation_id"), "title": title, "note": note}]
     if kind == "grid":
-        return [{"type": "grid", "grid_id": item.get("grid_id"), "row_ids": item.get("row_ids"), "title": title, "note": note}]
+        # The one name the page and the pipeline share: its other keys stay as written.
+        return [{**item, "title": title, "note": note}]
     if kind == "people":
         return [{"type": "people_timeline", "person_ids": _strings(item.get("person_ids")), "title": title, "note": note}]
     if kind == "links":
@@ -329,18 +330,83 @@ def is_page_plan(data: Any) -> bool:
     return isinstance(data, dict) and ("answer" in data or "sections" in data)
 
 
-def finish_args(data: dict[str, Any]) -> dict[str, Any]:
-    """The page as the pipeline's plan: answer as lead, each section a group."""
-
-    groups = []
-    for section in data.get("sections") or []:
-        if not isinstance(section, dict):
-            continue
-        items = [body for item in section.get("items") or [] for body in body_items(item)]
-        groups.append({"title": _text(section.get("heading")), "lead": _text(section.get("text")), "presentation": "collection", "items": items})
-    return {"headline": data.get("headline"), "lead": data.get("answer") or "", "groups": groups}
-
-
 # The streamer reads the raw text key by key; these are the page's keys in the plan's terms.
 TOP_KEYS = {"answer": "lead", "sections": "groups"}
 SECTION_KEYS = {"heading": "title", "text": "lead"}
+
+
+def _first_heading(groups: list[Any]) -> str | None:
+    first = groups[0] if groups else None
+    heading = (first.get("title") or first.get("heading")) if isinstance(first, dict) else None
+    return heading.strip() if isinstance(heading, str) and heading.strip() else None
+
+
+def is_groups_revision(earlier: list[Any], later: list[Any]) -> bool:
+    """A later sections list that opens with the earlier list's first heading restates the page."""
+
+    heading = _first_heading(earlier)
+    return heading is not None and heading == _first_heading(later)
+
+
+def join_sections(earlier: list[Any], later: list[Any]) -> list[Any]:
+    """Sections the model wrote as two lists, as one: a restated page replaces the first, anything else continues it."""
+
+    if is_groups_revision(earlier, later):
+        return later
+    return [*earlier, *(entry for entry in later if entry not in earlier)]
+
+
+def _bodies(item: Any) -> list[Any]:
+    # An item already read (a model instance) stays as it is.
+    return body_items(item) if isinstance(item, dict) else [item]
+
+
+def _group(section: Any) -> Any:
+    """One section as the plan's group, each key read as the streamer reads it."""
+
+    if not isinstance(section, dict):
+        return section
+    if "items" not in section and isinstance(section.get("type"), str):
+        # An item written straight into the sections stands as a section of its own.
+        return {"presentation": "collection", "items": body_items(section)}
+    group: dict[str, Any] = {}
+    for key, value in section.items():
+        name = SECTION_KEYS.get(key, key)
+        if name in ("title", "lead"):
+            if isinstance(value, str):
+                group[name] = value
+        elif name != "items":
+            group[name] = value
+    items = section.get("items")
+    group["items"] = [body for item in items for body in _bodies(item)] if isinstance(items, list) else []
+    return group
+
+
+def finish_args(data: dict[str, Any]) -> dict[str, Any]:
+    """The finish call as the pipeline's plan: the answer as lead, each section a group.
+
+    Every plan is read here, key by key in the order written, the way the
+    streamer reads the same text: the page's keys and the older plan's keys
+    name the same things, a later value replaces an earlier one, a second
+    sections list joins the first, and items written beside the sections stay
+    where they were written. So the draft the visitor watched and the
+    delivered page hold the same sections.
+    """
+
+    out: dict[str, Any] = {}
+    for key, value in data.items():
+        name = TOP_KEYS.get(key, key)
+        if name == "lead":
+            if isinstance(value, str):
+                out["lead"] = value
+        elif name == "groups" and isinstance(value, list) and isinstance(out.get("groups"), list):
+            out["groups"] = join_sections(out["groups"], value)
+        else:
+            out[name] = value
+    if isinstance(out.get("groups"), list):
+        out["groups"] = [_group(section) for section in out["groups"]]
+    if isinstance(out.get("items"), list):
+        out["items"] = [body for item in out["items"] for body in _bodies(item)]
+    if is_page_plan(data):
+        out.setdefault("lead", "")
+    return out

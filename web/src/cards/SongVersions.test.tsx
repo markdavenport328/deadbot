@@ -144,3 +144,21 @@ test("rows of several songs lead with the song title and name it in the controls
   expect(screen.getByText("Bird Song")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Play Eyes of the World, Copps Coliseum, Mar 29, 1990" })).toBeInTheDocument();
 });
+
+test("Queue all's total is the sum of the lengths its rows show, whatever the tape's own length", () => {
+  const live: Block = { ...block, rows: [
+    row("1972-08-27", "Old Renaissance Faire Grounds", 1341, { tape_seconds: 1376 }),
+    row("1973-12-06", "Cleveland Convention Center", 1887, { tape_seconds: null })
+  ] };
+  render(<PlayerProvider><SongVersions block={live} /></PlayerProvider>);
+  // 22:21 + 31:27
+  expect(screen.getByRole("button", { name: "Queue all" })).toHaveTextContent("+ Queue all 2 · 53:48");
+});
+
+test("Queue all shows no total when a row it queues has no length", () => {
+  const partial: Block = { ...block, rows: [row("1972-08-27", "Old Renaissance Faire Grounds", 1341), row("1973-12-06", "Cleveland Convention Center", null, { tape_seconds: 1887 })] };
+  render(<PlayerProvider><SongVersions block={partial} /></PlayerProvider>);
+  const button = screen.getByRole("button", { name: "Queue all" });
+  expect(button).toHaveTextContent("+ Queue all 2");
+  expect(button).not.toHaveTextContent("·");
+});

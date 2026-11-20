@@ -36,15 +36,16 @@ def test_rows_hydrate_in_the_model_order(store):
     cleveland = block.rows[0]
     assert cleveland.venue_name == "Cleveland Convention Center" and cleveland.show_date == "1973-12-06"
     assert cleveland.city == "Cleveland, OH"
-    assert cleveland.tape_seconds == 2612 and cleveland.length_seconds == 2612
+    assert cleveland.tape_seconds == 2611 and cleveland.length_seconds == 2611
     assert cleveland.track.audio_url.endswith("gd73-12-06d3t01.mp3") and cleveland.track.title == "Dark Star"
     assert cleveland.release is None
 
 
-def test_the_release_length_is_preferred_over_the_tape(store):
+def test_the_length_is_the_tape_that_plays_even_when_a_release_runs_longer(store):
+    # Dave's Picks 43 runs this Dark Star 30:32; the tape track the row plays is 30:06.
     (block,) = _resolve(store, [FIRST, DAVES_PICKS])
     row = block.rows[1]
-    assert row.length_seconds == 1832 and row.tape_seconds == 1806
+    assert row.length_seconds == 1806 and row.tape_seconds == 1806
     assert row.release.release_id.startswith("release-daves-picks-volume-43")
     assert row.release.url and row.track is not None
 

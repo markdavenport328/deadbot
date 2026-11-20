@@ -163,6 +163,47 @@ def document() -> dict[str, object]:
             "source_context": record["source_context"],
         })
 
+    # Critic lists that name a specific performance (song + date). Each song a
+    # pick names becomes its own entry, resolved only when the date holds one
+    # show and that show one performance of the song.
+    for name in (
+        "guitar-world-50-best-live-performances-2018.jsonl",
+        "pitchfork-essential-live-songs-2017.jsonl",
+    ):
+        for record in jsonl(RAW / "critic-signals" / name):
+            date = str(record["performance_date"])
+            date_show_candidates = shows_by_date.get(date, [])
+            show_ids = {show["show_id"] for show in date_show_candidates}
+            for song_id in record["song_ids"]:
+                performance_candidates = [
+                    performance for performance in performances
+                    if performance["song_id"] == song_id and performance["show_id"] in show_ids
+                ]
+                if len(date_show_candidates) != 1:
+                    state = "held_ambiguous_show_date"
+                elif len(performance_candidates) == 1:
+                    state = "resolved_unique_performance"
+                elif not performance_candidates:
+                    state = "held_missing_canonical_performance"
+                else:
+                    state = "held_multiple_canonical_performances"
+                entry = {
+                    "source": record["source"],
+                    "signal_type": "critic_editorial_performance_selection",
+                    "source_record_id": f"{record['source_record_id']}:{song_id}",
+                    "source_url": record["source_url"],
+                    "selection_label": f"{record['selector']}: {record['list_title']}",
+                    "source_label": record["pick_role"],
+                    "song_id": song_id,
+                    "show_date": date,
+                    "candidate_show_ids": [show["show_id"] for show in date_show_candidates],
+                    "candidate_performance_ids": [performance["performance_id"] for performance in performance_candidates],
+                    "resolution_state": state,
+                }
+                if isinstance(record.get("list_position"), int):
+                    entry["recommendation_rank"] = record["list_position"]
+                entries.append(entry)
+
     state_counts = Counter(entry["resolution_state"] for entry in entries)
     source_counts = Counter(entry["source"] for entry in entries)
     return {
@@ -177,6 +218,8 @@ def document() -> dict[str, object]:
         "source_constraints": {
             "headyversion": "indexed excerpts only; direct origin access was blocked and terms were not verified",
             "rolling_stone_australia": "copyright-restricted metadata-only critic list",
+            "guitar_world": "copyright-restricted metadata-only critic list: song, date, venue and the pick's role",
+            "pitchfork": "copyright-restricted metadata-only critic guide, read through a Pocket mirror: song, date, venue and the pick's role",
             "deadnet_store": "official metadata candidate; store host needs registry/adapter review before promotion",
             "charlie_miller_threads": "user-provided screenshot; project owner identifies the account as Charlie Miller",
             "charlie_miller_reddit": "self-identified account replies; retain as individual-curator selections, not a consensus signal",

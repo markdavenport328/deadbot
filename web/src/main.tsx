@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { AppFallback, ErrorBoundary } from "./core/error-boundary";
 import "./styles.css";
 
 // The service worker (public/sw.js) plays songs saved for offline and lets
@@ -14,6 +15,8 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary name="the app" fallback={<AppFallback />}>
+      <App />
+    </ErrorBoundary>
   </StrictMode>
 );

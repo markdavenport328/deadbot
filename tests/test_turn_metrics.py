@@ -104,3 +104,31 @@ def test_metrics_count_notebook_reads_and_the_notebook_index_size():
     metrics = turn_metrics("Compare the Lyceum nights.", messages, started=0.0, first_answer_at=None, finished_at=1.0, error=None)
     assert metrics["notebook_reads"] == 1
     assert metrics["notebook_index_chars"] == len(index.content)
+
+
+def test_metrics_report_the_first_calls_cached_share_and_the_cache_key():
+    messages = [
+        HumanMessage(content="How many times did they play Madison Square Garden?"),
+        AIMessage(content="", tool_calls=[{"name": "look_up", "args": {}, "id": "a", "type": "tool_call"}],
+                  usage_metadata={"input_tokens": 13270, "output_tokens": 40, "total_tokens": 13310,
+                                  "input_token_details": {"cache_read": 13252, "cache_creation": 18}}),
+        ToolMessage(content="{}", tool_call_id="a", name="look_up"),
+        AIMessage(content="", usage_metadata={"input_tokens": 15000, "output_tokens": 900, "total_tokens": 15900,
+                                              "input_token_details": {"cache_read": 13267}}),
+    ]
+    metrics = turn_metrics("q", messages, started=0.0, first_answer_at=None, finished_at=1.0, error=None,
+                           prompt_cache_key="deadbot", earlier_turns=0)
+    assert metrics["calls"][0]["cached_input_share"] == 0.999
+    assert metrics["first_call_cached_input_share"] == 0.999
+    assert metrics["total_cache_write_tokens"] == 18
+    assert metrics["prompt_cache_key"] == "deadbot" and metrics["earlier_turns"] == 0
+
+
+def test_a_first_call_that_read_nothing_from_the_cache_reports_zero_not_nothing():
+    messages = [
+        HumanMessage(content="q"),
+        AIMessage(content="", usage_metadata={"input_tokens": 13270, "output_tokens": 40, "total_tokens": 13310,
+                                              "input_token_details": {"cache_read": 0}}),
+    ]
+    metrics = turn_metrics("q", messages, started=0.0, first_answer_at=None, finished_at=1.0, error=None)
+    assert metrics["first_call_cached_input_share"] == 0.0

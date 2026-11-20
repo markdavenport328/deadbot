@@ -3,8 +3,8 @@
 A pairing is song A at position p followed by song B at position p + 1 in the
 same set of the same show. When A's ``segue_into_next`` is true the two run
 together without a stop (China Cat Sunflower > I Know You Rider); otherwise B
-simply came next. The stores find the adjacent pairs (SQL for SQLite and
-PostgreSQL, an in-memory scan for the CSV store); everything here is shared
+simply came next. The stores find the adjacent pairs (SQL for SQLite, an
+in-memory scan for the CSV store); everything here is shared
 shaping over those rows, so every store returns the same versions, lengths and
 listening paths.
 """
@@ -486,9 +486,11 @@ def song_versions_block(
 
     Each performance must have appeared in this turn's tool output. Rows keep
     the model's order; venue, date, tape track and release come from the store.
-    The length shown is the release's when there is one, else the tape's.
+    The length shown is the tape track's (what the play button plays) when
+    there is one, else the release's, by `song_life.stated_length`.
     """
 
+    from deadbot import song_life
     from deadbot.experience import PlayableTrack, SongVersionsBlock, SongVersionsRelease, SongVersionsRow, SongVersionsSong
 
     wanted: list[str] = []
@@ -507,14 +509,19 @@ def song_versions_block(
     shows = {row["show_id"]: row for row in store.rows_in("shows", "show_id", {performances[p]["show_id"] for p in wanted})}
     venues = {row["venue_id"]: row for row in store.rows_in("venues", "venue_id", {s.get("venue_id", "") for s in shows.values()})}
     tape = _archive_tracks(store, wanted)
+    lengths = song_life.performance_length_facts(store, wanted)
 
-    longest: dict[str, dict[str, str]] = {}
+    # The release named beside a version is the one that runs it longest (the
+    # full performance), or its earliest release when none is timed.
+    on_releases = song_life.release_lengths(store, wanted)
+    release_tracks: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in store.rows_in("official_release_tracks", "performance_id", wanted):
-        text = str(row.get("duration_seconds") or "").strip()
-        seconds = int(text) if text.isdigit() else 0
-        current = longest.get(row["performance_id"])
-        if current is None or seconds > int(str(current.get("duration_seconds") or "").strip() or 0):
-            longest[row["performance_id"]] = row
+        release_tracks[row["performance_id"]].append(row)
+    longest: dict[str, dict[str, str]] = {}
+    for performance_id, rows in release_tracks.items():
+        rows.sort(key=lambda row: (row.get("release_id", ""), _number(row.get("track_number"))))
+        fullest = song_life.fullest_release(on_releases.get(performance_id, []))
+        longest[performance_id] = next((row for row in rows if fullest and row["release_id"] == fullest.release_id), rows[0])
     releases = {row["release_id"]: row for row in store.rows_in("official_releases", "release_id", {r["release_id"] for r in longest.values()})}
 
     song_ids = [performances[p]["song_id"] for p in wanted]
@@ -531,8 +538,7 @@ def song_versions_block(
         track = tape.get(performance_id)
         release_track = longest.get(performance_id)
         release_row = releases.get(release_track["release_id"]) if release_track else None
-        release_text = str((release_track or {}).get("duration_seconds") or "").strip()
-        release_seconds = int(release_text) if release_text.isdigit() and int(release_text) > 0 else None
+        length = lengths.get(performance_id)
         release = None
         if release_track and release_row:
             release = SongVersionsRelease(
@@ -547,7 +553,7 @@ def song_versions_block(
                 show_date=show.get("show_date", ""),
                 venue_name=venue.get("name") or performance["show_id"],
                 city=", ".join(v for v in (venue.get("city", ""), venue.get("state_region", "")) if v) or None,
-                length_seconds=release_seconds or (track.duration_seconds if track else None),
+                length_seconds=length.seconds if length else None,
                 tape_seconds=track.duration_seconds if track else None,
                 release=release,
                 song_id=performance["song_id"],

@@ -1,6 +1,6 @@
 # Deadbot domain model
 
-Deadbot's data is graph-shaped relational data: rows are stored in PostgreSQL tables, while foreign keys express the useful connections among songs, people, shows, venues, performances, and recording sources. This keeps the model straightforward to inspect and query without introducing a separate graph database.
+Deadbot's data is graph-shaped relational data: rows are stored in SQLite tables, while foreign keys express the useful connections among songs, people, shows, venues, performances, and recording sources. This keeps the model straightforward to inspect and query without introducing a separate graph database.
 
 ## Core distinction
 

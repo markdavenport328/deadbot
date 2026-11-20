@@ -26,34 +26,20 @@ from deadbot.experience import (
     AlbumCreditItem,
     AlbumTrackItem,
     AlbumUnitBlock,
-    ArrangementBlock,
-    ArrangementSearchBlock,
-    ArrangementSearchItem,
     CreditItem,
     DataChartBlock,
     DataChartColumn,
     Emphasis,
-    EquipmentItem,
-    EquipmentListBlock,
-    EraPerformanceItem,
-    EraUnitBlock,
     FollowUpTopic,
-    GuestAppearanceItem,
-    GuestAppearanceSong,
-    GuestAppearanceListBlock,
     ListenAction,
     MediaLinkBlock,
     PerformanceListItem,
-    PerformanceSpineNeighbor,
-    PerformanceUnitBlock,
     PerformerItem,
     PlayableTrack,
     RecordingItem,
     ResourceItem,
     SetlistSection,
     SetlistSong,
-    ShowSelectionBlock,
-    ShowSelectionItem,
     ShowUnitBlock,
     SongOverviewBlock,
     SongRepresentativePerformance,
@@ -385,51 +371,6 @@ def _performance_items(performances: list[dict[str, Any]], store: CanonicalStore
     return items
 
 
-def _set_neighbors(
-    payload: dict[str, Any], store: CanonicalStore
-) -> tuple[PerformanceSpineNeighbor | None, PerformanceSpineNeighbor | None]:
-    """Return only the directly adjacent, canonical set neighbors for a rendition."""
-
-    performance = payload.get("performance")
-    song = payload.get("song")
-    show = payload.get("show")
-    if not isinstance(performance, dict) or not isinstance(song, dict) or not isinstance(show, dict):
-        return None, None
-    performance_id = performance.get("performance_id")
-    song_id = song.get("song_id")
-    show_id = show.get("show_id")
-    if not performance_id or not song_id or not show_id:
-        return None, None
-
-    set_label = performance.get("set_label") or None
-    same_set = [
-        item
-        for item in store.filtered_rows("performances", show_id=show_id)
-        if (item.get("set_label") or None) == set_label
-    ]
-    def position(item: dict[str, str]) -> int:
-        try:
-            return int(item.get("position_in_set") or 0)
-        except (TypeError, ValueError):
-            return 0
-
-    same_set.sort(key=position)
-    current_index = next((index for index, item in enumerate(same_set) if item.get("performance_id") == performance_id), None)
-    if current_index is None:
-        return None, None
-
-    def neighbor(item: dict[str, str] | None) -> PerformanceSpineNeighbor | None:
-        if not item or not item.get("performance_id"):
-            return None
-        neighbor_song = store.one("songs", item.get("song_id", "")) or {}
-        return PerformanceSpineNeighbor(performance_id=item["performance_id"], title=neighbor_song.get("title") or "Unknown song")
-
-    return (
-        neighbor(same_set[current_index - 1] if current_index > 0 else None),
-        neighbor(same_set[current_index + 1] if current_index + 1 < len(same_set) else None),
-    )
-
-
 def _audio(listen: Any) -> dict[str, Any]:
     """The in-page player's track and length from a performance's listening path."""
 
@@ -483,8 +424,8 @@ def _listen_url(performance: dict[str, Any]) -> str | None:
 def _truthy(value: Any) -> bool:
     """Parse the canonical store's string-boolean convention (``"true"``/``"false"``).
 
-    Both the CSV and PostgreSQL stores normalize booleans to these two
-    strings (see ``deadbot.postgres._string_value``), so this is the one
+    Both the CSV and SQLite stores hold booleans as these two
+    strings (see ``deadbot.sqlite_build._sqlite_value``), so this is the one
     place that convention needs decoding.
     """
 
@@ -741,150 +682,6 @@ def _show_unit(
     return block, result_sources
 
 
-def _performance_listen_actions(context: dict[str, Any]) -> list[ListenAction]:
-    """Link to this performance, then to the whole show."""
-
-    song = context.get("song") if isinstance(context.get("song"), dict) else {}
-    title = song.get("title") or "this performance"
-    actions: list[ListenAction] = []
-    seen: set[str] = set()
-
-    def add(action: ListenAction) -> None:
-        if action.url and action.url not in seen:
-            seen.add(action.url)
-            actions.append(action)
-
-    listen = context.get("listen") if isinstance(context.get("listen"), dict) else {}
-    archive_track = listen.get("archive_track_url")
-    if isinstance(archive_track, str) and archive_track:
-        add(ListenAction(label=f"Listen to {title}", url=archive_track, provider="archive"))
-    release_track = listen.get("release_track_url")
-    if isinstance(release_track, str) and release_track:
-        add(ListenAction(label=f"Hear {title} on the official release", url=release_track, provider=_provider_for(release_track), is_official=True))
-    video = listen.get("video_url")
-    if isinstance(video, str) and video:
-        add(ListenAction(label=f"Watch {title}", url=video, provider="youtube"))
-    # The full show: the same tape as this rendition on the Internet Archive
-    # when the library has it, so the whole show can play in-page from the
-    # card; otherwise the show's stream.
-    tape = listen.get("archive_identifier")
-    if isinstance(tape, str) and tape and isinstance(archive_track, str) and archive_track:
-        add(ListenAction(label="Hear the full show", url=f"https://archive.org/details/{tape}", provider="archive"))
-    else:
-        show_links = context.get("show_links") if isinstance(context.get("show_links"), list) else []
-        for link in show_links:
-            if isinstance(link, dict) and link.get("link_type") == "streaming-show-page" and link.get("url"):
-                add(ListenAction(label="Hear the full show", url=link["url"], provider=_provider_for(link["url"], link.get("platform"))))
-                break
-    return actions
-
-
-def _performance_unit(
-    context: dict[str, Any],
-    store: CanonicalStore,
-    *,
-    emphasis: Emphasis = "supporting",
-    judgments: list[str] | None = None,
-    note: str | None = None,
-    visible_facets: list[str] | None = None,
-    sources: list[UnitSource] | None = None,
-    follow_ups: list[FollowUpTopic] | None = None,
-) -> PerformanceUnitBlock | None:
-    performance = context.get("performance")
-    song = context.get("song")
-    show = context.get("show")
-    if not isinstance(performance, dict) or not isinstance(song, dict) or not isinstance(show, dict):
-        return None
-    if not performance.get("performance_id") or not song.get("song_id") or not show.get("show_id") or not song.get("title"):
-        return None
-    facets = frozenset(("setlist", "listen", "sources") if visible_facets is None else visible_facets)
-    previous, next_ = _set_neighbors(context, store) if "setlist" in facets else (None, None)
-    listen_paths = context.get("listen") if isinstance(context.get("listen"), dict) else {}
-    tape = listen_paths.get("archive_identifier")
-    show_tracks: list[Any] = []
-    if "listen" in facets and isinstance(tape, str) and tape:
-        from deadbot.listening import playable_show_tracks
-
-        show_tracks, _ = playable_show_tracks(show["show_id"], store, tape)
-    venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
-    show_label = " — ".join(part for part in [show.get("show_date"), venue.get("name") if venue else None] if part) or show["show_id"]
-    return PerformanceUnitBlock(
-        type="performance_unit",
-        performance_id=performance["performance_id"],
-        song_id=song["song_id"],
-        song_title=song["title"],
-        show_id=show["show_id"],
-        show_date=show.get("show_date") or None,
-        show_label=show_label,
-        venue_name=venue.get("name") if venue else None,
-        location=_venue_location(venue),
-        set_label=performance.get("set_label") or None,
-        position_in_set=performance.get("position_in_set") or None,
-        emphasis=emphasis,
-        **_audio(context.get("listen")),
-        judgments=list(judgments or []),
-        note=(note or "").strip() or None,
-        visible_facets=sorted(facets, key=["setlist", "listen", "sources"].index),
-        previous=previous,
-        next=next_,
-        listen=_performance_listen_actions(context) if "listen" in facets else [],
-        show_tracks=show_tracks,
-        sources=list(sources or []) if "sources" in facets else [],
-        follow_ups=_clean_follow_ups(follow_ups),
-    )
-
-
-def _era_performance_item(context: dict[str, Any], store: CanonicalStore) -> EraPerformanceItem | None:
-    performance = context.get("performance")
-    song = context.get("song")
-    show = context.get("show")
-    if not isinstance(performance, dict) or not isinstance(song, dict) or not isinstance(show, dict):
-        return None
-    if not performance.get("performance_id") or not song.get("title") or not show.get("show_id"):
-        return None
-    venue = store.one("venues", show.get("venue_id", "")) if show.get("venue_id") else None
-    show_date = show.get("show_date") or None
-    show_label = " — ".join(part for part in [show_date, venue.get("name") if venue else None] if part) or show["show_id"]
-    actions = _performance_listen_actions(context)
-    play = next((action for action in actions if action.label.startswith(("Listen to ", "Hear "))), None)
-    return EraPerformanceItem(
-        performance_id=performance["performance_id"],
-        song_id=song.get("song_id", ""),
-        song_title=song["title"],
-        show_id=show["show_id"],
-        show_date=show_date,
-        show_label=show_label,
-        set_label=performance.get("set_label") or None,
-        venue_name=venue.get("name") if venue else None,
-        listen=play,
-        **_audio(context.get("listen")),
-    )
-
-
-def _era_unit(
-    contexts: list[dict[str, Any]],
-    store: CanonicalStore,
-    *,
-    title: str,
-    span: str | None = None,
-    note: str | None = None,
-    sources: list[UnitSource] | None = None,
-    follow_ups: list[FollowUpTopic] | None = None,
-) -> EraUnitBlock | None:
-    items = [item for item in (_era_performance_item(context, store) for context in contexts) if item]
-    if not items or not title.strip():
-        return None
-    return EraUnitBlock(
-        type="era_unit",
-        title=title.strip(),
-        span=(span or "").strip() or None,
-        note=(note or "").strip() or None,
-        performances=items,
-        sources=list(sources or []),
-        follow_ups=_clean_follow_ups(follow_ups),
-    )
-
-
 def _album_track_audio(tracks: list[dict[str, Any]], store: CanonicalStore) -> dict[str, dict[str, Any]]:
     """A live record's tracks mapped to their performances' shows, and to archive tracks where there are any."""
 
@@ -1081,73 +878,6 @@ def _unit_sources(
     return items, sources
 
 
-def _show_selection_blocks(
-    payload: dict[str, Any], store: CanonicalStore | None = None
-) -> tuple[list[ShowSelectionBlock], list[SourceReference]]:
-    """Project source-attributed show selections into safe browser blocks.
-
-    With a store, each show carries one tape's playable tracks so its row can
-    play in-page.
-    """
-
-    selections = payload.get("show_selections")
-    if not isinstance(selections, list):
-        return [], []
-    blocks: list[ShowSelectionBlock] = []
-    sources: list[SourceReference] = []
-    for selection in selections:
-        if not isinstance(selection, dict):
-            continue
-        selection_id = selection.get("selection_id")
-        title = selection.get("title")
-        source_url = selection.get("source_url")
-        raw_items = selection.get("items")
-        if not isinstance(selection_id, str) or not isinstance(title, str) or not isinstance(source_url, str) or not isinstance(raw_items, list):
-            continue
-        parsed = urlparse(source_url)
-        if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password:
-            continue
-        items = []
-        for item in raw_items:
-            if not isinstance(item, dict):
-                continue
-            show_id, show_date, venue_name = item.get("show_id"), item.get("show_date"), item.get("venue_name")
-            if not all(isinstance(value, str) and value for value in (show_id, show_date, venue_name)):
-                continue
-            tracks: list[Any] = []
-            identifier: str | None = None
-            if store is not None:
-                from deadbot.listening import playable_show_tracks
-
-                tracks, identifier = playable_show_tracks(show_id, store)
-            items.append(
-                ShowSelectionItem(
-                    show_id=show_id,
-                    show_date=show_date,
-                    venue_name=venue_name,
-                    location=item.get("location") if isinstance(item.get("location"), str) and item.get("location") else None,
-                    tracks=tracks,
-                    recording_identifier=identifier,
-                )
-            )
-        if not items:
-            continue
-        source_id = f"selection:{selection_id}"
-        blocks.append(
-            ShowSelectionBlock(
-                type="show_selection",
-                title=title,
-                selection_type=selection.get("selection_type") if isinstance(selection.get("selection_type"), str) else "source-attributed selection",
-                selector_name=selection.get("selector_name") if isinstance(selection.get("selector_name"), str) else "Editorial source",
-                coverage_note=selection.get("coverage_note") if isinstance(selection.get("coverage_note"), str) else "This is a source-attributed selection, not a ranking.",
-                source_id=source_id,
-                items=fit(items, "selection shows"),
-            )
-        )
-        sources.append(SourceReference(source_id=source_id, kind="contextual_resource", label=title, url=source_url))
-    return blocks, sources
-
-
 def _show_lineup(payload: dict[str, Any], store: CanonicalStore) -> list[PerformerItem]:
     show = payload.get("show")
     assignments = payload.get("performers")
@@ -1173,63 +903,6 @@ def _show_lineup(payload: dict[str, Any], store: CanonicalStore) -> list[Perform
             item.instruments.append(instrument)
 
     return fit(list(grouped.values()), "lineup rows")
-
-
-def _show_equipment(payload: dict[str, Any]) -> EquipmentListBlock | None:
-    show = payload.get("show")
-    equipment = payload.get("equipment")
-    if not isinstance(show, dict) or not isinstance(equipment, list):
-        return None
-
-    items: list[EquipmentItem] = []
-    seen: set[tuple[str, str, str]] = set()
-    for assignment in equipment:
-        if not isinstance(assignment, dict):
-            continue
-        equipment_id = assignment.get("equipment_id")
-        name = assignment.get("name")
-        source_id = assignment.get("source_id")
-        source_url = assignment.get("source_url")
-        usage_context = assignment.get("usage_context") or "stage guitar"
-        claim_type = assignment.get("claim_type")
-        if (
-            not equipment_id
-            or not name
-            or not source_id
-            or not isinstance(source_url, str)
-            or not source_url
-            or claim_type not in {"show", "date_range"}
-        ):
-            continue
-        key = (equipment_id, usage_context, claim_type)
-        if key in seen:
-            continue
-        seen.add(key)
-        items.append(
-            EquipmentItem(
-                equipment_id=equipment_id,
-                name=name,
-                manufacturer=assignment.get("manufacturer") or "",
-                model=assignment.get("model") or "",
-                usage_context=usage_context,
-                claim_type=claim_type,
-                evidence=(
-                    "Specific-show evidence from the cited instrument history."
-                    if claim_type == "show"
-                    else "Dated-range evidence from the cited instrument history."
-                ),
-                source_id=source_id,
-                source_url=source_url,
-            )
-        )
-    if not items:
-        return None
-    return EquipmentListBlock(
-        type="equipment_list",
-        show_id=show["show_id"],
-        title="Jerry's guitars",
-        items=items,
-    )
 
 
 def _show_recordings(payload: dict[str, Any], store: CanonicalStore) -> list[RecordingItem]:
@@ -1440,172 +1113,3 @@ def _song_overview(
     )
 
 
-def _arrangement_block(arrangement_id: str, store: CanonicalStore) -> ArrangementBlock | None:
-    # ``store.one`` indexes tables by ``<singular>_id``; this table's key is
-    # ``arrangement_id``, so look it up by filtering on that column instead.
-    arrangement = next(iter(store.filtered_rows("song_arrangements", arrangement_id=arrangement_id)), None)
-    if not arrangement:
-        return None
-    resource = store.one("resources", arrangement.get("resource_id", ""))
-    source = _resource_source(resource) if resource else None
-    if not resource or not source:
-        return None
-    sections = [
-        section.get("progression", "")
-        for section in store.filtered_rows("arrangement_chord_sections", arrangement_id=arrangement_id)
-        if section.get("progression")
-    ]
-    return ArrangementBlock(
-        type="arrangement",
-        title=f"Source-specific arrangement: {resource.get('title', 'Chord resource')}",
-        resource_id=resource["resource_id"],
-        source_id=source.source_id,
-        key_signature=arrangement.get("key_signature") or None,
-        arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
-        capo=arrangement.get("capo") or None,
-        tuning=arrangement.get("tuning") or None,
-        notes=arrangement.get("notes") or None,
-        progressions=sections,
-    )
-
-
-def _arrangement_search_block(payload: dict[str, Any], store: CanonicalStore) -> tuple[ArrangementSearchBlock | None, list[SourceReference]]:
-    """Turn a key-search tool result into an explicitly source-limited list."""
-
-    search = payload.get("arrangement_search")
-    arrangements = payload.get("arrangements")
-    if not isinstance(search, dict) or not isinstance(arrangements, list):
-        return None, []
-    key_signature = search.get("key_signature")
-    if not isinstance(key_signature, str) or not key_signature:
-        return None, []
-    items: list[ArrangementSearchItem] = []
-    sources: list[SourceReference] = []
-    for arrangement in arrangements:
-        if not isinstance(arrangement, dict):
-            continue
-        arrangement_id = arrangement.get("arrangement_id")
-        song = store.one("songs", arrangement.get("song_id", "")) or {}
-        resource = store.one("resources", arrangement.get("resource_id", "")) or {}
-        source = _resource_source(resource)
-        if not arrangement_id or not song.get("song_id") or not song.get("title") or not resource.get("resource_id") or not source:
-            continue
-        items.append(
-            ArrangementSearchItem(
-                arrangement_id=arrangement_id,
-                song_id=song["song_id"],
-                title=song["title"],
-                resource_id=resource["resource_id"],
-                resource_title=resource.get("title") or "Chord resource",
-                source_name=source.label,
-                url=source.url or "",
-                key_signature=arrangement.get("key_signature") or key_signature,
-                arrangement_scope=arrangement.get("arrangement_scope") or "source-specific arrangement",
-            )
-        )
-        sources.append(source)
-    if not items:
-        return None, []
-    return (
-        ArrangementSearchBlock(
-            type="arrangement_search",
-            title=f"Arrangements in {key_signature}",
-            key_signature=key_signature,
-            coverage_note=(
-                search.get("coverage_note")
-                if isinstance(search.get("coverage_note"), str)
-                else "Each arrangement is one source's chart in this key."
-            ),
-            items=items,
-        ),
-        sources,
-    )
-
-
-def _guest_appearance_blocks(payload: dict[str, Any], store: CanonicalStore | None = None) -> list[GuestAppearanceListBlock]:
-    """Project resolved guest-credit relationships into browser-safe blocks.
-
-    With a store, each credited song carries its archive track so it can play in-page.
-    """
-
-    raw_guests = payload.get("guests")
-    if not isinstance(raw_guests, list):
-        return []
-    blocks: list[GuestAppearanceListBlock] = []
-    # Keep the candidate packet within the response's global block budget even
-    # if the model asks for the full guest directory. A named-person query
-    # normally produces one block; broad directory exploration stays bounded.
-    for guest in raw_guests:
-        if not isinstance(guest, dict):
-            continue
-        person_id = guest.get("person_id")
-        person_name = guest.get("name")
-        raw_appearances = guest.get("appearances")
-        if not isinstance(person_id, str) or not isinstance(person_name, str) or not isinstance(raw_appearances, list):
-            continue
-        items: list[GuestAppearanceItem] = []
-        for appearance in raw_appearances:
-            if not isinstance(appearance, dict):
-                continue
-            show_id = appearance.get("show_id")
-            show_date = appearance.get("show_date")
-            venue_name = appearance.get("venue_name")
-            location = appearance.get("location")
-            raw_instruments = appearance.get("instruments")
-            if not isinstance(raw_instruments, list):
-                legacy_instrument = appearance.get("instrument")
-                raw_instruments = [legacy_instrument] if isinstance(legacy_instrument, str) else []
-            instruments = [item for item in raw_instruments if isinstance(item, str) and item]
-            if not isinstance(show_id, str) or not isinstance(show_date, str) or not instruments:
-                continue
-            scope = appearance.get("participation_scope")
-            songs: list[GuestAppearanceSong] = []
-            raw_songs = appearance.get("songs")
-            for song in raw_songs if isinstance(raw_songs, list) else []:
-                if not isinstance(song, dict):
-                    continue
-                performance_id = song.get("performance_id")
-                song_title = song.get("song_title")
-                if not isinstance(performance_id, str) or not isinstance(song_title, str) or not song_title:
-                    continue
-                note = song.get("note")
-                songs.append(
-                    GuestAppearanceSong(
-                        performance_id=performance_id,
-                        song_title=song_title,
-                        note=note if isinstance(note, str) and note else None,
-                    )
-                )
-            items.append(
-                GuestAppearanceItem(
-                    show_id=show_id,
-                    show_date=show_date,
-                    venue_name=venue_name if isinstance(venue_name, str) and venue_name else None,
-                    location=location if isinstance(location, str) and location else None,
-                    instruments=instruments,
-                    participation_scope=scope if isinstance(scope, str) and scope else None,
-                    songs=songs,
-                )
-            )
-        if not items:
-            continue
-        reported_count = guest.get("guest_show_count")
-        count = reported_count if isinstance(reported_count, int) and reported_count == len(items) else len(items)
-        blocks.append(
-            GuestAppearanceListBlock(
-                type="guest_appearance_list",
-                person_id=person_id,
-                person_name=person_name,
-                known_show_count=count,
-                items=fit(items, "guest appearances"),
-            )
-        )
-    if store is not None:
-        songs_to_play = [song for block in blocks for item in block.items for song in item.songs]
-        audio = _archive_tracks([song.performance_id for song in songs_to_play], store)
-        for song in songs_to_play:
-            track = audio.get(song.performance_id)
-            if track:
-                song.audio_url = track["audio_url"]
-                song.duration_seconds = track["duration_seconds"]
-    return blocks

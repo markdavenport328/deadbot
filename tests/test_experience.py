@@ -245,7 +245,7 @@ def test_streaming_endpoint_reports_each_tool_call_then_the_response():
     assert [event["text"] for event in events[:2]] == ["Reading the show on 1972-08-27", "Assembling the page"]
     response = ExperienceResponse.model_validate(events[-1]["response"])
     assert response.lead == "Veneta opened with Promised Land." and response.blocks[0].type == "show_unit"
-    assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
+    assert agent.calls[0][1]["configurable"]["thread_id"].startswith("browser-1:request:")
 
 
 def test_streaming_endpoint_streams_the_lead_as_it_is_generated():
@@ -482,10 +482,10 @@ def test_api_returns_the_validated_experience_contract():
     assert client.get("/api/version").json() == {"git_commit": health.json()["git_commit"]}
     assert result.status_code == 200
     body = result.json()
-    assert body["schema_version"] == "3"
+    assert body["schema_version"] == "4"
     assert body["thread_id"] == "browser-1"
     assert body["blocks"][0]["type"] == "show_unit"
-    assert agent.calls[0][1]["configurable"]["thread_id"] == "browser-1"
+    assert agent.calls[0][1]["configurable"]["thread_id"].startswith("browser-1:request:")
 
 
 def test_api_closes_a_closeable_store_on_shutdown():
@@ -502,21 +502,20 @@ def test_api_closes_a_closeable_store_on_shutdown():
     assert store.closed is True
 
 
-def test_api_uses_one_thread_for_follow_ups_and_returns_the_transcript():
+def test_a_repeated_thread_id_without_a_transcript_never_shares_a_server_side_thread():
+    # A kept checkpoint would feed every earlier turn's tool results back into
+    # the next question on that thread; the browser's transcript is the memory.
     agent = ConversationFakeAgent()
     client = TestClient(create_app(settings=Settings(), store=CanonicalStore(), agent=agent))
     first = client.post("/api/experience", json={"question": "Tell me about Veneta", "thread_id": "browser-1"})
     second = client.post("/api/experience", json={"question": "What came next?", "thread_id": "browser-1"})
     assert first.status_code == 200
     assert second.status_code == 200
-    assert second.json()["lead"] == "Reply to: What came next?"
-    assert second.json()["conversation"] == [
-        {"role": "user", "text": "Tell me about Veneta"},
-        {"role": "assistant", "text": "Reply to: Tell me about Veneta"},
-        {"role": "user", "text": "What came next?"},
-        {"role": "assistant", "text": "Reply to: What came next?"},
-    ]
-    assert {call[1]["configurable"]["thread_id"] for call in agent.calls} == {"browser-1"}
+    assert second.json()["thread_id"] == "browser-1"
+    threads = [call[1]["configurable"]["thread_id"] for call in agent.calls]
+    assert all(thread.startswith("browser-1:request:") for thread in threads)
+    assert len(set(threads)) == 2
+    assert [message.content for message in agent.calls[1][0]["messages"]] == ["What came next?"]
 
 
 def test_api_replays_browser_conversation_for_stateless_follow_up():
@@ -629,7 +628,7 @@ def test_the_per_request_checkpoint_is_deleted_after_a_conversation_replay():
     assert checkpointer.deleted_threads == [invocation_thread_id]
 
 
-def test_the_stable_thread_checkpoint_is_never_deleted_across_follow_ups():
+def test_a_fresh_question_checkpoint_is_deleted_too():
     checkpointer = FakeCheckpointer()
     agent = ConversationFakeAgent()
     agent.checkpointer = checkpointer
@@ -640,7 +639,7 @@ def test_the_stable_thread_checkpoint_is_never_deleted_across_follow_ups():
 
     assert first.status_code == 200
     assert second.status_code == 200
-    assert checkpointer.deleted_threads == []
+    assert checkpointer.deleted_threads == [call[1]["configurable"]["thread_id"] for call in agent.calls]
 
 
 def test_api_serves_a_compiled_client_when_one_is_available(tmp_path):

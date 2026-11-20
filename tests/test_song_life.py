@@ -46,13 +46,40 @@ def test_set_neighbors_carry_segues(terrapin):
     assert msg.city == "New York, NY"
 
 
-def test_length_prefers_release_then_tape_and_ignores_partial_tracks(terrapin):
+def test_length_is_the_tape_track_that_plays_and_ignores_fragments(terrapin):
     boston = by_date(terrapin, "1993-09-29")
     assert (boston.seconds, boston.length_source) == (1514, "tape")
+    # Dave's Picks 29 runs the debut 12:25; the tape track the page plays is 11:07.
     debut = by_date(terrapin, "1977-02-26")
-    assert debut.length_source == "release"
-    # A 14-second tape track is a fragment, not the performance's length.
+    assert (debut.seconds, debut.length_source, debut.tape_seconds) == (667, "tape", 667)
+    # A 13-second tape track is a fragment, not the performance's length.
     assert by_date(terrapin, "1977-02-27").seconds is None
+
+
+def test_the_one_length_rule():
+    from deadbot.sequences import Track
+
+    lp = song_life.ReleaseLength("release-lp", "Europe '72", 786)
+    box = song_life.ReleaseLength("release-box", "Europe '72: The Complete Recordings", 1137)
+    tape = Track(url="https://archive.org/download/tape/t01.mp3", duration_seconds=541)
+    # A playable tape track is the length, whatever any release runs.
+    assert song_life.stated_length(tape, [lp, box], "p") == song_life.Length(541, "tape")
+    # No tape track: the fullest release, named, so it is never read as another record's.
+    fullest = song_life.stated_length(None, [lp, box], "p")
+    assert fullest == song_life.Length(1137, "release", "Europe '72: The Complete Recordings")
+    assert fullest.fields() == {"length_seconds": 1137, "length_from_release": "Europe '72: The Complete Recordings"}
+    assert song_life.Length(541, "tape").fields() == {"length_seconds": 541}
+    # A tape track with no length, or a fragment, leaves the length unknown
+    # instead of putting a release's length beside the tape's play button.
+    untimed = Track(url=tape.url, duration_seconds=None)
+    fragment = Track(url=tape.url, duration_seconds=13)
+    assert song_life.stated_length(untimed, [box], "p") is None
+    assert song_life.stated_length(fragment, [box], "p") is None
+    assert song_life.stated_length(None, [], "p") is None
+    excerpt = song_life.ReleaseLength("release-30", "30 Days of Dead", 447)
+    full = song_life.ReleaseLength("release-dp", "Dave's Picks", 1263)
+    assert song_life.fullest_release([excerpt, full]) == full
+    assert song_life.fullest_release([song_life.ReleaseLength("r", "R", 30)]).seconds == 30
 
 
 def test_releases_and_guests(terrapin):
@@ -66,8 +93,8 @@ def test_year_summaries_span_every_year_with_counts_and_lengths(terrapin):
     y1979 = next(row for row in rows if row["year"] == 1979)
     assert y1979["count"] == 23
     assert y1979["top_next"] == {"title": "Playing In The Band", "count": 20}
-    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 937}
-    assert y1979["median_seconds"] == 758
+    assert y1979["longest"] == {"performance_id": "gd-1979-11-06-terrapin-station-2-1", "seconds": 926}
+    assert y1979["median_seconds"] == 767
     # The library states each year's facts; choosing what to feature is the model's.
     assert "pick" not in y1979
 
@@ -125,7 +152,9 @@ def test_standouts_are_grouped_by_kind_in_date_order_without_ranking(sqlite_stor
     # A long kind keeps a sample spanning the song's life and says how many it left out.
     releases = [item["date"] for item in kinds["releases"]]
     assert releases[0][:4] == "1977" and releases[-1][:4] == "1991" and left_out["releases"] > 0
-    assert "opened a set 17 times, 1977–1991" in patterns
+    # Encores are their own pattern, not also "a later set" or "opened a set".
+    assert "encore 6 times, 1977–1991" in patterns
+    assert "opened a set 12 times, 1977–1985" in patterns
 
 
 def test_a_long_kind_is_sampled_evenly():
@@ -160,15 +189,16 @@ def test_tool_payload_stays_compact(sqlite_store, song_id):
     assert payload["years"][0]["count"] > 0
 
 
-def test_disagreeing_releases_take_the_full_performance(sqlite_store):
-    # A 30 Days of Dead excerpt (447s) must not beat the full Dave's Picks (1263s).
+def test_a_released_performance_with_a_tape_states_the_tape_length(sqlite_store):
     pitb = by_date(song_life.life_performances(sqlite_store, "song-playing-in-the-band"), "1974-02-22")
-    assert (pitb.seconds, pitb.length_source) == (1263, "release")
-    # Europe '72's LP edit (786s) must not beat the complete recordings (1137s), whatever the 334s tape fragment says.
+    assert (pitb.seconds, pitb.length_source) == (1244, "tape")
+    # The tape track of the Lyceum Truckin' runs 9:01; Europe '72 cuts it to
+    # 13:06 with the jam and the complete recordings run 18:57. Each release
+    # keeps its own length under its own title.
     truckin = by_date(song_life.life_performances(sqlite_store, "song-truckin"), "1972-05-26")
-    assert (truckin.seconds, truckin.length_source, truckin.tape_seconds) == (1138, "release", 334)
-    assert song_life._release_length([447, 1263]) == 1263
-    assert song_life._release_length([30]) == 30
+    assert (truckin.seconds, truckin.length_source, truckin.tape_seconds) == (541, "tape", 541)
+    on_releases = {r.title: r.seconds for r in song_life.release_lengths(sqlite_store, [truckin.performance_id])[truckin.performance_id]}
+    assert on_releases["Europe ’72"] == 786 and on_releases["Europe ’72: The Complete Recordings"] == 1137
 
 
 def test_every_tool_states_the_same_length_as_the_timeline(sqlite_store):
@@ -178,17 +208,21 @@ def test_every_tool_states_the_same_length_as_the_timeline(sqlite_store):
 
     tools = {tool.name: tool for tool in build_tools(sqlite_store)}
     lengths = song_life.performance_lengths(sqlite_store, ["gd-1974-03-23-cassidy-1-12", "gd-1972-05-26-truckin-2-1"])
-    assert lengths == {"gd-1974-03-23-cassidy-1-12": 249, "gd-1972-05-26-truckin-2-1": 1138}
+    assert lengths == {"gd-1974-03-23-cassidy-1-12": 232, "gd-1972-05-26-truckin-2-1": 541}
     versions = json.loads(tools["get_song_notable_versions"].invoke({"song_id_or_title": "Cassidy", "limit": 30}))
     debut = next(item for item in versions["versions"] if item["performance_id"] == "gd-1974-03-23-cassidy-1-12")
-    assert debut["length"] == "4:09"
+    assert debut["length"] == "3:52"
     assert "archive_track_duration_seconds" not in json.dumps(versions)
     listed = json.loads(tools["list_song_performances"].invoke({"song_id_or_title": "Cassidy", "offset": 0, "limit": 5}))
-    assert listed["performances"][0]["length"] == "4:09"
+    assert listed["performances"][0]["length"] == "3:52"
     assert "archive_track_duration_seconds" not in json.dumps(listed)
     show = json.loads(tools["get_show"].invoke({"show_id_or_date": "1972-05-26"}))
     row = next(row for row in show["performances"] if row["performance_id"] == "gd-1972-05-26-truckin-2-1")
-    assert row["length"] == "18:58" and row["audio"] is True
+    assert row["length"] == "9:01" and row["audio"] is True and "length_from_release" not in row
+    one = json.loads(tools["get_performance"].invoke({"performance_id": "gd-1972-05-26-truckin-2-1"}))
+    assert one["length"] == "9:01"
+    albums = {release["title"]: release.get("length") for release in one["official_releases"]}
+    assert albums["Europe ’72"] == "13:06" and albums["Europe ’72: The Complete Recordings"] == "18:57"
 
 
 def test_version_picks_and_show_picks_are_told_apart(sqlite_store):

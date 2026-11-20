@@ -1,7 +1,6 @@
 import { type SourceReference } from "../types";
 import { HeadingContext } from "./components";
 import { type FollowUp } from "../core/ask-request";
-import { ListeningHero } from "./listening";
 import { type RenderGroup } from "../core/page-draft";
 import { archiveTrack } from "./listen-control";
 import { formatShowDateLong } from "../core/format";
@@ -11,6 +10,7 @@ import { isUnit, unitKey } from "./units/shared";
 import { MentionRow, chunkMentions, CollapsedRow } from "./units/rows";
 import { blockHeading, sameHeading } from "./headings";
 import { Block } from "./Block";
+import { CardFallback, ErrorBoundary } from "../core/error-boundary";
 
 function dedupeSources(sources: SourceReference[]): SourceReference[] {
   const seen = new Set<string>();
@@ -76,64 +76,27 @@ function tapeLabels(tapes: Tape[]): Map<string, string> {
   );
 }
 
-export function ComposedPage({
-  title,
+// The page's groups in the model's order, each with its heading and its
+// blocks. Each card is drawn inside its own boundary: one that cannot be
+// drawn (a page saved by an older build, say) leaves its own words in its
+// place and the rest of the page as it was.
+export function PageGroups({
   groups,
   sources,
   composing,
   onFollowUp
 }: {
-  // The model's headline, when it wrote one. The lead lives in the conversation column.
-  title: string | null;
   groups: RenderGroup[];
   sources: SourceReference[];
   composing: boolean;
   onFollowUp: FollowUp;
-}) {
-  // A listening hero the model placed first leads the page, above the title.
-  const firstBlock = groups[0]?.blocks[0];
-  const hero = firstBlock?.type === "listening_hero" ? firstBlock : null;
-  const bodyGroups = hero ? [{ ...groups[0], blocks: groups[0].blocks.slice(1) }, ...groups.slice(1)] : groups;
-  return (
-    <>
-      {hero && <ListeningHero block={hero} />}
-      {title ? (
-        <div className="content-heading">
-          <h1 id="answer-title" tabIndex={-1}>{title}</h1>
-        </div>
-      ) : (
-        <span id="answer-title" tabIndex={-1} />
-      )}
-      <PageGroups groups={bodyGroups} sources={sources} composing={composing} onFollowUp={onFollowUp} afterHero={Boolean(hero)} />
-      {composing && <p className="composing-note">Composing the page…</p>}
-      {!composing && <SourcesFooter groups={groups} sources={sources} />}
-    </>
-  );
-}
-
-// The page's groups in the model's order, each with its heading and its
-// blocks. Shared by both shells; the workspace calls it once per tab.
-export function PageGroups({
-  groups,
-  sources,
-  composing,
-  onFollowUp,
-  afterHero = false
-}: {
-  groups: RenderGroup[];
-  sources: SourceReference[];
-  composing: boolean;
-  onFollowUp: FollowUp;
-  // The first group's hero was lifted above the title, so an emptied first group is skipped.
-  afterHero?: boolean;
 }) {
   // A primary unit's facets start open only when it is the page's sole unit;
-  // typography blocks (era_unit, editorial, and the rest) do not count.
+  // typography blocks (editorial and the rest) do not count.
   const unitCount = groups.reduce((count, group) => count + group.blocks.filter(isUnit).length, 0);
   return (
     <>
       {groups.map((group, groupIndex) => {
-        if (afterHero && groupIndex === 0 && group.blocks.length === 0) return null;
         const groupTitle = group.blocks.length === 1 && sameHeading(group.title, blockHeading(group.blocks[0])) ? null : group.title;
         return (
         <section className={`experience-group group-${group.presentation}${groupTitle ? " has-heading" : ""}`} key={groupIndex}>
@@ -155,32 +118,39 @@ export function PageGroups({
               {chunkMentions(group.blocks).map((entry) =>
                 entry.kind === "mentions" ? (
                   <ul className="mention-list" key={entry.key}>
-                    {entry.blocks.map((block) => <MentionRow key={`${block.type}-${unitKey(block)}`} block={block} />)}
+                    {entry.blocks.map((block) => (
+                      <ErrorBoundary key={`${block.type}-${unitKey(block)}`} name={`a ${block.type} mention`} resetKey={block} fallback={<li><CardFallback block={block} /></li>}>
+                        <MentionRow block={block} />
+                      </ErrorBoundary>
+                    ))}
                   </ul>
                 ) : entry.kind === "collapsed" ? (
                   <ul className="collapsed-list" key={entry.key}>
                     {entry.blocks.map((block, index) => (
-                      <CollapsedRow key={`${block.type}-${unitKey(block)}-${index}`} block={block} onFollowUp={onFollowUp}>
-                        <Block
-                          block={block}
-                          sources={sources}
-                          criteria={group.presentation === "comparison" ? group.criteria : []}
-                          soleUnit={false}
-                          onFollowUp={onFollowUp}
-                          inRow
-                        />
-                      </CollapsedRow>
+                      <ErrorBoundary key={`${block.type}-${unitKey(block)}-${index}`} name={`a ${block.type} row`} resetKey={block} fallback={<li><CardFallback block={block} /></li>}>
+                        <CollapsedRow block={block} onFollowUp={onFollowUp}>
+                          <Block
+                            block={block}
+                            sources={sources}
+                            criteria={group.presentation === "comparison" ? group.criteria : []}
+                            soleUnit={false}
+                            onFollowUp={onFollowUp}
+                            inRow
+                          />
+                        </CollapsedRow>
+                      </ErrorBoundary>
                     ))}
                   </ul>
                 ) : (
-                  <Block
-                    key={entry.key}
-                    block={entry.block}
-                    sources={sources}
-                    criteria={group.presentation === "comparison" ? group.criteria : []}
-                    soleUnit={composing ? false : unitCount === 1}
-                    onFollowUp={onFollowUp}
-                  />
+                  <ErrorBoundary key={entry.key} name={`a ${entry.block.type} card`} resetKey={entry.block} fallback={<CardFallback block={entry.block} />}>
+                    <Block
+                      block={entry.block}
+                      sources={sources}
+                      criteria={group.presentation === "comparison" ? group.criteria : []}
+                      soleUnit={composing ? false : unitCount === 1}
+                      onFollowUp={onFollowUp}
+                    />
+                  </ErrorBoundary>
                 )
               )}
             </div>

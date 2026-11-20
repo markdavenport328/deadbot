@@ -2,7 +2,7 @@
 
 This module intentionally only reads a local JSON seed.  It does not grant
 network access and is not consulted by a runtime adapter; callers can use it
-to validate a registry before promoting rows to schema-v3 ``source_registry``.
+to validate a registry before its rows are relied on.
 """
 
 from __future__ import annotations

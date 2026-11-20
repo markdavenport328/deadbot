@@ -10,16 +10,13 @@ normalize/
     entity matching
     stable ID creation
     cleanup and reconciliation
-
-import/
-    validation
-    canonical CSV → PostgreSQL
 ```
 
-Collectors preserve raw source records; normalizers make matching and
-corrections reviewable; and importers should validate all canonical CSV
-headers, data types, IDs, foreign keys, and cross-show recording mappings
-before loading PostgreSQL.
+Collectors preserve raw source records, and normalizers make matching and
+corrections reviewable in the canonical CSVs. Nothing here loads a database:
+the CSVs become the SQLite catalog in one place, `deadbot/sqlite_build.py`,
+which validates every header, data type, ID, foreign key and cross-show
+recording mapping before the file is replaced.
 
 ## Year-baseline collector
 

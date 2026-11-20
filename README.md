@@ -30,7 +30,7 @@ The same composition can be played at many shows, and a single show can have man
 - **Recording** — one captured source of a show (audience tape, soundboard, matrix blend).
 - **Official release** — an album, with track-level mappings back to specific performances.
 
-Around these sit recordings, external resources, curated selection signals, sourced claims, and derived observations — about 30 tables with strict foreign keys and referential-integrity triggers, in a SQLite file (`schema/sqlite.sql`). The file is built by `deadbot/sqlite_build.py` from 23 reviewed CSV files that are the version-controlled source of truth, validated in full before it replaces the previous build, and served read-only by `deadbot/sqlite_store.py`.
+Around these sit recordings, external resources and curated selection signals — about 30 tables with strict foreign keys and referential-integrity triggers, in a SQLite file (`schema/sqlite.sql`). The file is built by `deadbot/sqlite_build.py` from 24 reviewed CSV files that are the version-controlled source of truth, validated in full before it replaces the previous build, and served read-only by `deadbot/sqlite_store.py`.
 
 ### Retrieval
 
@@ -66,8 +66,8 @@ The system has four layers:
 | --- | --- |
 | `data/canonical/` | Normalized entities and relationships, tracked in Git |
 | `data/raw/` | Source-preserving collected records |
-| `schema/` | SQLite definition (`sqlite.sql`), plus the PostgreSQL definition and migrations used by the legacy importer until it is retired |
-| `scripts/` | Collection, normalization, and import tooling |
+| `schema/` | The catalog's SQLite definition (`sqlite.sql`) and the domain model |
+| `scripts/` | Collection and normalization tooling |
 | `deadbot/` | LangGraph agent, tools, composition, FastAPI endpoints |
 | `web/` | React + TypeScript client |
 | `tests/` | Harness and data-tool tests |
@@ -96,6 +96,8 @@ later run rebuilds it when the checked-out CSVs change. To build it by hand:
     .venv/bin/python -m deadbot.cli db-build
 
 Vercel builds the same file in its build step and bundles it with the function.
+SQLite is the only store: there is no database server, connection string or
+store setting to configure.
 
 ### Run the web experience
 

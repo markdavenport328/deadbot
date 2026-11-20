@@ -11,7 +11,7 @@
     "shows": 2358,
     "songs": 419,
     "performances": 39649,
-    "people": 341,
+    "people": 360,
     "people_with_show_assignments": 148,
     "show_performer_assignments": 26265
   },
@@ -29,7 +29,7 @@
     "shows_with_performer_assignments": 2268,
     "shows_without_performer_assignments": 90,
     "people_with_show_assignments": 148,
-    "people_without_show_assignments": 193
+    "people_without_show_assignments": 212
   },
   "gaps": {
     "shows_without_performances": [

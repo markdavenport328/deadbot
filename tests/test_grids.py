@@ -91,15 +91,18 @@ def test_show_by_song_cells(csv_store):
     rotterdam = data.cell("gd-1972-05-11", DARK_STAR)
     assert rotterdam.state == "value"
     assert rotterdam.passes == 2
-    assert rotterdam.value >= 40  # 44 minutes across two passes on the official release
-    assert rotterdam.length_source == "release"
+    # Both passes have a tape track, so the cell states what those tracks
+    # play (13:19 and 1:50: this tape cuts the jam into seven tracks), not the
+    # 44 minutes the official release runs the two passes.
+    assert rotterdam.value == 15
+    assert rotterdam.length_source == "tape"
     bickershaw = data.row("gd-1972-05-07")
     assert data.cell("gd-1972-05-07", DARK_STAR).state == "value"
     assert data.cell("gd-1972-05-07", OTHER_ONE).state == "value"
     assert bickershaw.setlist  # the whole night ships for the row's setlist drawer
     assert data.cell("gd-1972-04-08", OTHER_ONE).state == "none"
-    dry = data.cell("gd-1972-05-23", DARK_STAR)  # two passes, no release track and no timed tape track
-    assert (dry.state, dry.passes, dry.value, dry.length_source) == ("no_length", 2, None, None)
+    lyceum = data.cell("gd-1972-05-23", DARK_STAR)  # two passes around Drums, each with its own tape track (10:56 and 16:06)
+    assert (lyceum.state, lyceum.passes, lyceum.value, lyceum.length_source) == ("value", 2, 27, "tape")
 
 
 def test_a_cell_with_only_a_tape_length_says_tape(csv_store):
@@ -138,7 +141,8 @@ def _store(performances, links=(), releases=()):
         songs=[{"song_id": "s1", "title": "One"}, {"song_id": "s2", "title": "Two"}],
         performances=performances,
         performance_links=list(links),
-        official_release_tracks=list(releases),
+        official_release_tracks=[{"release_id": "r1", **row} for row in releases],
+        official_releases=[{"release_id": "r1", "title": "Record"}],
     )
 
 
@@ -157,10 +161,18 @@ def test_length_source_is_mixed_when_passes_come_from_release_and_tape():
 
 
 def test_length_source_is_release_or_tape_when_every_timed_pass_agrees():
-    release_only = _store([_perf("p1")], links=[_tape("p1", 999)], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    release_only = _store([_perf("p1")], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
     assert _one_cell(release_only).length_source == "release"
     tape_only = _store([_perf("p1"), _perf("p2", position="2")], links=[_tape("p1", 300), _tape("p2", 300)])
     assert _one_cell(tape_only).length_source == "tape"
+
+
+def test_a_pass_with_a_tape_track_is_as_long_as_the_tape_that_plays():
+    # The cell's play button plays the tape, so the cell states the tape's
+    # length, not the 5:00 an official release runs the same performance.
+    store = _store([_perf("p1")], links=[_tape("p1", 999)], releases=[{"performance_id": "p1", "duration_seconds": "300"}])
+    cell = _one_cell(store)
+    assert (cell.value, cell.length_source) == (17, "tape")
 
 
 def test_untimed_pass_does_not_make_a_cell_mixed():

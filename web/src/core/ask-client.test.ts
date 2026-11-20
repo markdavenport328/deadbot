@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { askPlain, askStreaming, dispatchStreamEvent, isAbort, replayStreamEvents } from "./ask-client";
+import { ASK_ERROR, MAX_QUESTION_LENGTH, askPlain, askStreaming, dispatchStreamEvent, isAbort, refusalMessage, replayStreamEvents } from "./ask-client";
 
 const response = { schema_version: "3", thread_id: "t", headline: "T", lead: "A", conversation: [], blocks: [], groups: [], sources: [] };
 
@@ -82,4 +82,24 @@ it("hands a page_tab event to the page handler", () => {
   const seen: string[] = [];
   dispatchStreamEvent({ type: "page_tab", tab: "listen" }, { onStatus() {}, onLead() {}, onPage: (event) => seen.push(event.type), onResponse() {} });
   expect(seen).toEqual(["page_tab"]);
+});
+
+const refused = (status: number, body: unknown) => new Response(typeof body === "string" ? body : JSON.stringify(body), { status });
+
+test("a question the server finds too long is answered with a sentence, not [object Object]", async () => {
+  const detail = [{ type: "string_too_long", loc: ["body", "question"], msg: "String should have at most 2000 characters", input: "x", ctx: { max_length: 2000 } }];
+  vi.stubGlobal("fetch", vi.fn(async () => refused(422, { detail })));
+  const noop = { onStatus() {}, onLead() {}, onPage() {} };
+  await expect(askStreaming("{}", noop)).rejects.toThrow(/too long.*2,000 characters/);
+  await expect(askPlain("{}")).rejects.toThrow(/too long.*2,000 characters/);
+  expect(MAX_QUESTION_LENGTH).toBe(2000);
+});
+
+test("other refusals read as sentences too", async () => {
+  expect(await refusalMessage(refused(422, { detail: [{ type: "missing", loc: ["body", "question"], msg: "Field required" }] }))).toMatch(/could not read that question/);
+  expect(await refusalMessage(refused(429, { detail: "You have asked a lot in the last hour. Try again after 3:15." }))).toBe("You have asked a lot in the last hour. Try again after 3:15.");
+  expect(await refusalMessage(refused(429, "slow down"))).toMatch(/Give it a minute/);
+  expect(await refusalMessage(refused(429, { detail: [{ msg: "x" }] }))).toMatch(/Give it a minute/);
+  expect(await refusalMessage(refused(500, { detail: { code: 7 } }))).toBe(ASK_ERROR);
+  expect(await refusalMessage(refused(500, { detail: "The library is being rebuilt." }))).toBe("The library is being rebuilt.");
 });

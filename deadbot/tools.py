@@ -42,6 +42,8 @@ from deadbot.people_names import (
     split_person_qualifier,
 )
 from deadbot.selection_signals import (
+    performance_show_date,
+    release_families,
     SelectionSignalError,
     load_selection_signals,
     load_show_selections,
@@ -546,13 +548,14 @@ def _flag(value: Any) -> bool:
     return str(value).strip().lower() == "true"
 
 
-def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, int] | None = None) -> dict[str, Any]:
+def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     """One setlist entry for the model: its IDs, place, real booleans, its length and whether it can be heard.
 
     The page's show_unit fills in every listening link from the library, so
     the model needs only that a track exists and how long the performance
-    runs (release length, else the tape's), not the archive.org track URL and
-    tape identifier for each song.
+    runs, not the archive.org track URL and tape identifier for each song.
+    ``lengths`` is `song_life.length_fields`: the tape track's length when
+    the song can be heard, else a release's with length_from_release naming it.
     """
 
     compact: dict[str, Any] = {
@@ -571,9 +574,7 @@ def _compact_setlist_row(row: dict[str, Any], lengths: dict[str, int] | None = N
     listen = row.get("listen") or {}
     if listen.get("archive_track_url"):
         compact["audio"] = True
-    seconds = (lengths or {}).get(row.get("performance_id") or "")
-    if seconds is not None:
-        compact["length_seconds"] = seconds
+    compact.update((lengths or {}).get(row.get("performance_id") or "", {}))
     for key in ("release_track_url", "video_url"):
         if listen.get(key):
             compact[key] = listen[key]
@@ -694,12 +695,15 @@ _PICKERS = {
     "charlie-miller-reddit": "Charlie Miller, taper",
     "charlie-miller-user-provided-threads": "Charlie Miller, taper",
     "deadnet-official-release-pass": "the Grateful Dead's official releases",
+    "guitar-world-50-best": "Blair Jackson, Guitar World",
     "headyversion": "Headyversion fan votes",
+    "pitchfork-essential-live-songs": "Pitchfork's guide to essential live songs",
     "rolling-stone-australia": "David Fricke, Rolling Stone",
 }
 _PICK_KINDS = {
     "fan_ranked_version": "fan vote",
     "critic_editorial_show_selection": "critic's pick",
+    "critic_editorial_performance_selection": "critic's pick",
     "individual_curator_song_selection": "curator's pick",
     "individual_curator_show_recommendation": "curator's pick",
     "official_release_candidate": "official release",
@@ -1441,7 +1445,7 @@ def build_tools(
         from deadbot import song_life
 
         performances = sorted(context["performances"], key=order_key)
-        lengths = song_life.performance_lengths(store, [row["performance_id"] for row in performances[start : start + page_size]])
+        lengths = song_life.length_fields(store, [row["performance_id"] for row in performances[start : start + page_size]])
         page = []
         for performance in performances[start : start + page_size]:
             show = shows_by_id.get(performance.get("show_id", ""), {})
@@ -1455,8 +1459,7 @@ def build_tools(
                 "encore": performance.get("encore", ""),
                 "segue_into_next": performance.get("segue_into_next", ""),
             }
-            if performance["performance_id"] in lengths:
-                item["length_seconds"] = lengths[performance["performance_id"]]
+            item.update(lengths.get(performance["performance_id"], {}))
             if performance.get("listen"):
                 item["listen"] = song_life.model_listen(performance["listen"])
             page.append(item)
@@ -1756,6 +1759,14 @@ def build_tools(
             for row in store.rows_in("official_releases", "release_id", {row["release_id"] for row in release_tracks})
         }
         entries = _selection_entries(store)
+        # Which shows each release draws from, to count a release family once and
+        # to say whether a release is one show or a compilation.
+        show_dates_by_release: dict[str, set[str]] = {}
+        for row in store.rows_in("official_release_tracks", "release_id", set(releases)):
+            night = performance_show_date(row.get("performance_id") or "")
+            if night:
+                show_dates_by_release.setdefault(row["release_id"], set()).add(night)
+        family_of = release_families({rid: row.get("title", "") for rid, row in releases.items()}, show_dates_by_release)
 
         versions: dict[str, dict[str, Any]] = {}
 
@@ -1788,12 +1799,15 @@ def build_tools(
             item = version(by_id[track["performance_id"]])
             if any(existing["release_id"] == release["release_id"] for existing in item["official_releases"]):
                 continue
+            night_count = len(show_dates_by_release.get(release["release_id"], ()))
             item["official_releases"].append(
                 {
                     "release_id": release["release_id"],
                     "title": release.get("title", ""),
                     "release_date": release.get("release_date") or None,
                     "spotify_album_url": release.get("spotify_album_url") or None,
+                    "covers":"one show" if night_count == 1 else f"{night_count} shows" if night_count else "",
+                    "_family": family_of[release["release_id"]],
                 }
             )
 
@@ -1804,13 +1818,24 @@ def build_tools(
         for entry in entries or []:
             if not isinstance(entry, dict):
                 continue
+            entry_song = entry.get("song_id")
+            if isinstance(entry_song, str) and entry_song and entry_song != song["song_id"]:
+                # A pick of another song's performance says nothing about this song,
+                # even when both were played that night.
+                continue
+            resolution = str(entry.get("resolution_state") or "")
+            source = str(entry.get("source") or "")
             signal = {
                 "source": entry.get("source"),
+                "picked_by": _PICKERS.get(source) or entry.get("source_handle") or source,
+                "kind": _PICK_KINDS.get(str(entry.get("signal_type") or ""), "pick"),
                 "signal_type": entry.get("signal_type"),
-                "held": _held_phrase(entry["resolution_state"]) if str(entry.get("resolution_state") or "").startswith("held_") else None,
+                "held": _held_phrase(resolution) if resolution.startswith("held_") else None,
                 "label": entry.get("selection_label") or entry.get("source_label") or entry.get("title"),
                 "source_url": entry.get("source_url"),
             }
+            if entry.get("source_label") and entry.get("selection_label"):
+                signal["pick_role"] = entry["source_label"]
             for field in ("recommendation_rank", "fan_vote_count", "source_context"):
                 if entry.get(field) not in (None, ""):
                     signal[field] = entry[field]
@@ -1818,24 +1843,71 @@ def build_tools(
             named = [
                 pid for pid in (entry.get("candidate_performance_ids") or []) if isinstance(pid, str) and pid in by_id
             ]
+            if entry_song == song["song_id"]:
+                # The source named this song on a night. When one performance
+                # resolves, it is that performance; otherwise it is this song that night.
+                if len(named) == 1 and resolution == "resolved_unique_performance":
+                    version(by_id[named[0]])["selections"].append({**signal, "names": "this performance"})
+                    if entry.get("signal_type") == "fan_ranked_version":
+                        fan_vote_performance_ids.add(named[0])
+                    continue
+                targets = named or [
+                    row["performance_id"]
+                    for show_id in entry.get("candidate_show_ids") or []
+                    for row in (performances_by_show.get(show_id, []) if isinstance(show_id, str) else [])
+                ]
+                for pid in targets:
+                    version(by_id[pid])["selections"].append({**signal, "names": "this song that night, performance not pinned down"})
+                continue
             for pid in named:
                 version(by_id[pid])["selections"].append({**signal, "names": "this performance"})
-                if entry.get("signal_type") == "fan_ranked_version":
-                    fan_vote_performance_ids.add(pid)
             if named:
                 continue
             for show_id in entry.get("candidate_show_ids") or []:
                 for row in performances_by_show.get(show_id, []) if isinstance(show_id, str) else []:
                     version(row)["selections"].append({**signal, "names": "the whole show"})
 
-        def rank(item: dict[str, Any]) -> tuple[int, str]:
-            sources = len(item["official_releases"]) + len({s.get("source") for s in item["selections"]})
-            return (-sources, item["show_date"] or "9999")
+        def voices(item: dict[str, Any], names: str) -> int:
+            return len({s.get("source") for s in item["selections"] if s["names"] == names})
+
+        for item in versions.values():
+            # Name each family by its earliest release on this version.
+            by_date = sorted(item["official_releases"], key=lambda release: (release["release_date"] or "9999", release["title"]))
+            family_names: dict[str, str] = {}
+            for release in by_date:
+                family_names.setdefault(release["_family"], release["title"])
+            for release in item["official_releases"]:
+                release["release_family"] = family_names[release.pop("_family")]
+            families = set(family_names)
+            item["release_families"] = len(families)
+            item["selections"].sort(key=lambda s: (s["names"] != "this performance", s["names"] == "the whole show", -(s.get("fan_vote_count") or 0)))
+            # source_count: distinct release families plus distinct sources that name this very performance.
+            item["source_count"] = len(families) + voices(item, "this performance")
+            item["evidence"] = {
+                "release_families": len(families),
+                "picks_naming_this_performance": voices(item, "this performance"),
+                "picks_naming_this_song_that_night": voices(item, "this song that night, performance not pinned down"),
+                "picks_naming_the_whole_show": voices(item, "the whole show"),
+            }
+
+        def top_votes(item: dict[str, Any]) -> int:
+            return max((s.get("fan_vote_count") or 0 for s in item["selections"] if s["names"] == "this performance"), default=0)
+
+        def rank(item: dict[str, Any]) -> tuple[Any, ...]:
+            evidence = item["evidence"]
+            return (
+                -item["source_count"],
+                -evidence["picks_naming_this_performance"],
+                -top_votes(item),
+                -evidence["picks_naming_this_song_that_night"],
+                -evidence["picks_naming_the_whole_show"],
+                item["show_date"] or "9999",
+                item["performance_id"],
+            )
 
         ordered = sorted(versions.values(), key=rank)
         lengths = song_life.performance_lengths(store, [item["performance_id"] for item in ordered])
         for item in ordered:
-            item["source_count"] = len(item["official_releases"]) + len({s.get("source") for s in item["selections"]})
             if item["performance_id"] in lengths:
                 item["length_seconds"] = lengths[item["performance_id"]]
         return {
@@ -1846,6 +1918,7 @@ def build_tools(
                 "versions_with_any_source": len(ordered),
                 "official_release_versions": sum(1 for item in ordered if item["official_releases"]),
                 "selection_signal_versions": sum(1 for item in ordered if item["selections"]),
+                "versions_picked_by_name": sum(1 for item in ordered if item["evidence"]["picks_naming_this_performance"]),
                 "fan_vote_versions": len(fan_vote_performance_ids),
                 "selection_evidence_available": entries is not None,
             },
@@ -1859,8 +1932,14 @@ def build_tools(
         questions about a song. Each version carries the official releases that
         include it (Dick's Picks, Dave's Picks, box sets), the reviewed critic,
         curator and fan signals that name it or its show, its length and its
-        direct listening links. source_count counts distinct sources, never quality:
-        present them as separate voices. Versions no source singled out are
+        direct listening links. A release's family (the album, its box set, its
+        per-show volumes) is one decision and counts once. Each pick says what it
+        names: "this performance" (a vote or critic's pick for this very rendition),
+        "this song that night" (the source named the song and night but the show
+        has more than one rendition) or "the whole show" (a pick of the night, not
+        of this song). Versions come ordered by release families plus picks naming
+        this performance, then fan votes; source_count counts those distinct voices,
+        never quality: present them as separate voices. Versions no source singled out are
         absent here and remain reachable through list_song_performances.
         Each version with a tape carries listeners: what archive.org listeners
         wrote about this song on that tape, one sentence per review.
@@ -1902,6 +1981,9 @@ def build_tools(
             subject: dict[str, Any] = {"entity_type": "song", "song_id": song["song_id"], "title": song.get("title", "")}
 
             def match(signal: dict[str, Any]) -> str | None:
+                if signal.get("song_id") and signal["song_id"] != song["song_id"]:
+                    # A pick of another song's performance is not a pick of this song's show.
+                    return None
                 if any(p.get("song_id") == song["song_id"] for p in signal.get("candidate_performances", [])):
                     return "a performance of this song"
                 if any(show.get("show_id") in song_shows for show in signal.get("candidate_shows", [])):
@@ -2153,7 +2235,7 @@ def build_tools(
         from deadbot import song_life
 
         tape = next((row["archive_identifier"] for row in payload.get("recordings") or [] if row.get("archive_identifier")), None)
-        lengths = song_life.performance_lengths(store, [row.get("performance_id", "") for row in payload.get("performances", [])])
+        lengths = song_life.length_fields(store, [row.get("performance_id", "") for row in payload.get("performances", [])])
         payload["performances"] = [_compact_setlist_row(row, lengths) for row in payload.get("performances", [])]
         payload["recordings"] = _compact_recordings(payload.get("recordings", []))
         payload["performers"] = _compact_performers(payload.get("performers", []))
@@ -2394,7 +2476,10 @@ def build_tools(
 
         listeners holds what archive.org listeners wrote about this song on
         the tape that plays, one sentence per review. Performance-specific
-        commentary concerns this rendition only.
+        commentary concerns this rendition only. length is the tape track
+        that plays; when no tape plays it, length_from_release names the
+        release the length is from. Each official release carries its own
+        length for this performance, which an album edit makes shorter.
         """
         context = store.performance_context(performance_id)
         if not context:
@@ -2406,16 +2491,22 @@ def build_tools(
             context["song"] = _without_notes(context["song"])
         for key in ("links", "show_links", "recordings"):
             if isinstance(context.get(key), list):
-                # A track's own length is the player's business; the
-                # performance has one length, given once below.
+                # The performance has one length, given once below: the
+                # tape track's when there is one.
                 context[key] = [
                     {k: v for k, v in row.items() if k not in ("duration_seconds", "start_seconds")} if isinstance(row, dict) else row
                     for row in _links_for_fans(context[key])
                 ]
         from deadbot import song_life
 
-        if seconds := song_life.performance_lengths(store, [performance_id]).get(performance_id):
-            context["length_seconds"] = seconds
+        context.update(song_life.length_fields(store, [performance_id]).get(performance_id, {}))
+        # Each release's own length for this performance sits on that release,
+        # so an album edit is never read as the tape or as another release.
+        on_releases = {length.release_id: length.seconds for length in song_life.release_lengths(store, [performance_id]).get(performance_id, [])}
+        context["official_releases"] = [
+            {**release, "length_seconds": on_releases[release["release_id"]]} if release.get("release_id") in on_releases else release
+            for release in context.get("official_releases") or []
+        ]
         return _json(context)
 
     @tool

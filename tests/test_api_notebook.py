@@ -167,7 +167,7 @@ def test_a_notebook_without_a_transcript_still_gets_its_own_invocation_thread_an
     _client(agent).post("/api/experience", json={"question": "Q", "thread_id": "browser-1", "notebook": token})
     config = agent.calls[0][1]
     assert config["configurable"]["thread_id"].startswith("browser-1:request:")
-    assert config["configurable"]["prompt_cache_key"] == "browser-1"
+    assert config["configurable"]["prompt_cache_key"] == "deadbot"
     assert isinstance(config["configurable"]["notebook"], notebook.Notebook)
 
 
@@ -176,7 +176,7 @@ def test_the_streamed_run_gets_the_same_config():
     agent = StreamingFakeAgent(turn("Q", "A", []))
     _client(agent).post("/api/experience/stream", json={"question": "Q", "thread_id": "browser-1", "notebook": token})
     config = agent.calls[0][1]
-    assert config["configurable"]["prompt_cache_key"] == "browser-1"
+    assert config["configurable"]["prompt_cache_key"] == "deadbot"
     assert isinstance(config["configurable"]["notebook"], notebook.Notebook)
 
 

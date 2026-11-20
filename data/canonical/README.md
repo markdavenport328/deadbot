@@ -1,6 +1,6 @@
 # Canonical data
 
-These CSV files hold normalized Deadbot entities and relationships. They are initially Git-tracked, reviewable source material from which PostgreSQL can be reconstructed.
+These CSV files hold normalized Deadbot entities and relationships. They are initially Git-tracked, reviewable source material from which the SQLite catalog is built.
 
 Stable IDs are important: use lowercase kebab-case identifiers and do not replace an established ID merely because a display name changes. During normalization, external spelling variants and source identifiers should be matched to a canonical entity rather than copied as new entities.
 

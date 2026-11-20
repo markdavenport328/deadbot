@@ -56,11 +56,13 @@ def test_selections_for_a_song_return_only_signals_about_it():
     assert payload["subject"]["song_id"] == "song-dark-star"
     for signal in payload["picks"]:
         assert signal["matches"] in {"a performance of this song", "a show where this song was played"}
-    # No reviewed source names a Franklin's Tower performance, but critics did
-    # select whole shows where it was played; those arrive labeled as such.
+    # Critics name Franklin's Tower performances; Rolling Stone's selected shows
+    # where it was played arrive labeled as shows.
     indirect = json.loads(tools["get_picks"].invoke({"song_or_show": "Franklin's Tower"}))
     assert 0 < len(indirect["picks"]) < len(everything)
-    assert {signal["matches"] for signal in indirect["picks"]} == {"a show where this song was played"}
+    assert {signal["matches"] for signal in indirect["picks"]} == {"a performance of this song", "a show where this song was played"}
+    # A pick of another song's performance is not a pick of this song's show.
+    assert all(signal.get("song_id") in (None, "song-franklin-s-tower") for signal in indirect["picks"])
     assert "coverage_note" not in indirect
 
 

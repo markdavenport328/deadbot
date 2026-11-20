@@ -6,18 +6,18 @@ Deadbot is organized as a sequence of separable layers:
 2. **Raw collection layer** — source-preserving records, normally JSONL/NDJSON.
 3. **Normalization layer** — matching, deduplication, validation, stable-ID assignment, and reconciliation.
 4. **Canonical domain layer** — reviewable CSV entities and relationships that represent Deadbot's current normalized understanding.
-5. **PostgreSQL operational layer** — a rebuildable relational database imported from canonical data.
+5. **SQLite operational layer** — a read-only database file rebuilt from canonical data on every deploy.
 6. **Retrieval/tool layer** — future interfaces for structured queries, semantic retrieval, and external calls.
 7. **Agent runtime** — future orchestration and reasoning that combines retrieval and tools.
 8. **Experience/UI layer** — a FastAPI application and React + TypeScript client that render validated, provenance-aware exploration responses.
 
-The repository includes the initial read-only agent runtime at layer 7 and a
-deterministic CSV-to-PostgreSQL bridge at layer 5. Every database import records
-a content-addressed canonical snapshot manifest and append-only import ledger,
-so future observations can name the exact reviewed input. CSV remains the
-reviewable source of truth; configuration selects either the CSV store or a
-PostgreSQL store implementing the same read contract. The runtime still does
-not collect external documents or modify canonical data.
+The repository includes the read-only agent runtime at layer 7 and a
+deterministic CSV-to-SQLite build at layer 5 (`deadbot/sqlite_build.py`). Every
+build validates all of its input first and records a fingerprint of the exact
+reviewed files it was built from. CSV remains the reviewable source of truth;
+the SQLite file is the only store the application serves, and an in-memory
+reading of the same CSVs (`deadbot/data.py`) shapes its responses and backs
+the tests. The runtime does not modify canonical data.
 
 The data sequence is intentional:
 
@@ -25,7 +25,7 @@ The data sequence is intentional:
 source evidence
   → reviewed raw records
   → normalized canonical entities and relationships
-  → PostgreSQL operational projection
+  → SQLite operational projection
   → versioned structured observations
   → request-time model explanation and layout
 ```
@@ -38,8 +38,9 @@ visitor-facing prose is composed from the current retrieval packet rather than
 left behind as a stale database fact.
 
 `data-and-retrieval-roadmap.md` turns this sequence into concrete collection
-stages, PostgreSQL cutover gates, bounded graph traversal plans, context budgets,
-and a 1972-to-full-timeline rollout.
+stages, bounded graph traversal plans, context budgets, and a
+1972-to-full-timeline rollout. It was written when PostgreSQL was the planned
+operational store; ADR-015 in `decisions.md` records the move to SQLite.
 
 ## Retrieval evolution
 

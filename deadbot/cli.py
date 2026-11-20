@@ -21,8 +21,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the local Deadbot LangGraph agent.")
     parser.add_argument(
         "command",
-        choices=["chat", "evaluate", "serve", "db-build", "db-import"],
-        help="Run chat, an evaluation, the web experience, a SQLite build, or a PostgreSQL import.",
+        choices=["chat", "evaluate", "serve", "db-build"],
+        help="Run chat, an evaluation, the web experience, or a build of the SQLite catalog.",
     )
     parser.add_argument("--thread-id", default=None, help="Optional in-memory session identifier.")
     parser.add_argument("--suite", type=Path, default=DEFAULT_SUITE_PATH, help="Evaluation-suite JSON file.")
@@ -32,21 +32,6 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1", help="Host interface for the web experience.")
     parser.add_argument("--port", type=int, default=8000, help="Port for the web experience.")
     parser.add_argument("--reload", action="store_true", help="Reload the web experience when Python files change.")
-    parser.add_argument(
-        "--database-url",
-        default=None,
-        help="PostgreSQL URL for db-import; defaults to DEADBOT_DATABASE_URL or DATABASE_URL.",
-    )
-    parser.add_argument(
-        "--check",
-        action="store_true",
-        help="For db-import, read-only preflight: schema version, pending migrations, ledger, and row counts.",
-    )
-    parser.add_argument(
-        "--rebuild",
-        action="store_true",
-        help="For db-import, delete and reload only known canonical tables.",
-    )
     args = parser.parse_args()
 
     settings = Settings.from_env()
@@ -55,51 +40,6 @@ def main() -> None:
         from deadbot.sqlite_build import DEFAULT_SQLITE_PATH, main as build_main
 
         build_main(["--output", str(args.output or settings.sqlite_path or DEFAULT_SQLITE_PATH)])
-        return
-
-    if args.command == "db-import":
-        from deadbot.postgres_import import import_from_dsn
-
-        database_url = args.database_url or settings.database_url
-        if not database_url:
-            parser.error(
-                "db-import requires --database-url, DEADBOT_DATABASE_URL, or DATABASE_URL"
-            )
-        if args.check:
-            from deadbot.postgres_import import check_from_dsn
-
-            print(json.dumps(check_from_dsn(database_url), indent=2))
-            return
-        report = import_from_dsn(database_url, rebuild=args.rebuild)
-        total_rows = sum(report.row_counts.values())
-        table_results = {
-            name: {
-                "source_rows": result.source_rows,
-                "inserted_rows": result.inserted_rows,
-                "skipped_rows": result.skipped_rows,
-            }
-            for name, result in report.tables.items()
-        }
-        print(
-            json.dumps(
-                {
-                    "schema_created": report.schema_created,
-                    "rebuilt": report.rebuilt,
-                    "migrations": list(report.migrations),
-                    "canonical_snapshot": report.snapshot.snapshot_id,
-                    "canonical_tables": len(report.tables),
-                    "source_rows": total_rows,
-                    "row_counts": report.row_counts,
-                    "tables": table_results,
-                    "mode_note": (
-                        "Canonical tables were deleted and reloaded."
-                        if args.rebuild
-                        else "Existing conflicting rows were kept; use --rebuild to apply canonical corrections."
-                    ),
-                },
-                indent=2,
-            )
-        )
         return
 
     if args.command == "serve":

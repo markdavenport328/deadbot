@@ -72,12 +72,10 @@ The system has four complementary parts:
 3. **Tool-using agent** — a bounded agent loop that combines structured retrieval, approved source reading, and later live tools.
 4. **Listening and exploration experience** — a FastAPI-backed interface that presents answers, entity cards, contextual links, and approved external-media paths clearly.
 
-PostgreSQL is the optional operational store for the canonical graph, imported
-from the reviewed CSV source of truth behind the same read interface. The
-importer and driver-independent parity tests are implemented; live deployment
-verification and bounded full-timeline query work remain. PostgreSQL can support
-structured queries plus later full-text/vector retrieval without prematurely
-adopting a separate graph database.
+A read-only SQLite file is the operational store for the canonical graph,
+rebuilt from the reviewed CSV source of truth on every deploy. It supports the
+structured queries the tools need without a database server, and without
+prematurely adopting a separate graph database.
 
 ## Near-term definition of success
 

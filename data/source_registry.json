@@ -118,7 +118,8 @@
           ],
           "paths": [
             "/ws/2/artist/",
-            "/ws/2/work"
+            "/ws/2/work",
+            "/ws/2/recording"
           ]
         },
         "browse": {
@@ -135,7 +136,9 @@
             "GET"
           ],
           "paths": [
-            "/ws/2/artist/"
+            "/ws/2/artist/",
+            "/ws/2/recording/",
+            "/ws/2/work/"
           ]
         }
       },

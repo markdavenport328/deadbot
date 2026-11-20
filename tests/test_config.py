@@ -8,11 +8,9 @@ from deadbot.models import OllamaProvider, OpenAIProvider, create_model_provider
 from deadbot.storage import create_canonical_store
 
 
-def test_sqlite_is_the_default_runtime_store(monkeypatch, tmp_path):
-    monkeypatch.delenv("DEADBOT_DATA_STORE", raising=False)
+def test_the_sqlite_path_defaults_to_the_build_folder(monkeypatch, tmp_path):
     monkeypatch.delenv("DEADBOT_SQLITE_PATH", raising=False)
     settings = Settings.from_env(env_path=tmp_path / "absent.env")
-    assert settings.data_store == "sqlite"
     assert settings.sqlite_path is None
 
 
@@ -28,7 +26,7 @@ def test_sqlite_store_is_created_from_a_built_file(built_sqlite, monkeypatch):
         raise AssertionError("ensure_current ran on Vercel")
 
     monkeypatch.setattr("deadbot.sqlite_build.ensure_current", must_not_rebuild)
-    store = create_canonical_store(Settings(data_store="sqlite", sqlite_path=built_sqlite))
+    store = create_canonical_store(Settings(sqlite_path=built_sqlite))
     try:
         assert store.resolve_song("Dark Star")
     finally:
@@ -44,95 +42,56 @@ def test_local_sqlite_store_is_refreshed_before_it_opens(built_sqlite, monkeypat
         return path
 
     monkeypatch.setattr("deadbot.sqlite_build.ensure_current", record)
-    store = create_canonical_store(Settings(data_store="sqlite", sqlite_path=built_sqlite))
+    store = create_canonical_store(Settings(sqlite_path=built_sqlite))
     try:
         assert calls == [built_sqlite]
     finally:
         store.close()
 
 
-def test_unknown_store_is_rejected():
-    with pytest.raises(ValueError, match="sqlite"):
-        create_canonical_store(Settings(data_store="csv"))
-
-
-def test_postgres_store_requires_a_database_url():
-    try:
-        create_canonical_store(Settings(data_store="postgres"))
-    except ValueError as error:
-        assert "requires DEADBOT_DATABASE_URL" in str(error)
-    else:
-        raise AssertionError("PostgreSQL selection without a database URL should fail")
-
-
-def test_canonical_store_settings_are_read_from_the_environment(monkeypatch):
-    monkeypatch.setenv("DEADBOT_DATA_STORE", "POSTGRES")
+@pytest.mark.parametrize("stale", ["postgres", "POSTGRES", "csv", ""])
+def test_a_leftover_store_variable_is_ignored(built_sqlite, monkeypatch, tmp_path, stale):
+    # An older deployment chose its store with DEADBOT_DATA_STORE and a
+    # database URL. SQLite is the only store now, so neither is read and a
+    # value left behind in an environment cannot break a deploy.
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setenv("DEADBOT_DATA_STORE", stale)
     monkeypatch.setenv("DEADBOT_DATABASE_URL", "postgresql://example/deadbot")
-    settings = Settings.from_env()
-    assert settings.data_store == "postgres"
-    assert settings.database_url == "postgresql://example/deadbot"
+    monkeypatch.setenv("DATABASE_URL", "postgresql://example/standard")
+    monkeypatch.setenv("DEADBOT_SQLITE_PATH", str(built_sqlite))
+    settings = Settings.from_env(env_path=tmp_path / "absent.env")
+    assert not hasattr(settings, "data_store")
+    assert not hasattr(settings, "database_url")
+    store = create_canonical_store(settings)
+    try:
+        assert type(store).__name__ == "SqliteCanonicalStore"
+        store.verify_ready()
+    finally:
+        store.close()
 
 
 def test_local_env_file_supplies_settings_when_process_environment_is_unset(tmp_path, monkeypatch):
     env_file = tmp_path / ".env"
     env_file.write_text(
-        "# local settings\nDEADBOT_DATA_STORE=postgres\n"
-        "DEADBOT_DATABASE_URL='postgresql://local/deadbot'\n",
+        "# local settings\nDEADBOT_OLLAMA_MODEL=local-model\n"
+        "DEADBOT_SQLITE_PATH='build/local.sqlite'\n",
         encoding="utf-8",
     )
-    monkeypatch.delenv("DEADBOT_DATA_STORE", raising=False)
-    monkeypatch.delenv("DEADBOT_DATABASE_URL", raising=False)
+    monkeypatch.delenv("DEADBOT_OLLAMA_MODEL", raising=False)
+    monkeypatch.delenv("DEADBOT_SQLITE_PATH", raising=False)
 
     settings = Settings.from_env(env_file)
 
-    assert settings.data_store == "postgres"
-    assert settings.database_url == "postgresql://local/deadbot"
+    assert settings.ollama_model == "local-model"
+    assert str(settings.sqlite_path) == "build/local.sqlite"
 
 
 def test_process_environment_overrides_local_env_file(tmp_path, monkeypatch):
     env_file = tmp_path / ".env"
-    env_file.write_text("DEADBOT_DATA_STORE=postgres\n", encoding="utf-8")
-    monkeypatch.setenv("DEADBOT_DATA_STORE", "csv")
+    env_file.write_text("DEADBOT_OLLAMA_MODEL=from-file\n", encoding="utf-8")
+    monkeypatch.setenv("DEADBOT_OLLAMA_MODEL", "from-environment")
 
-    assert Settings.from_env(env_file).data_store == "csv"
-
-
-def test_database_url_falls_back_to_standard_environment_name(monkeypatch):
-    monkeypatch.delenv("DEADBOT_DATABASE_URL", raising=False)
-    monkeypatch.setenv("DATABASE_URL", "postgresql://example/standard")
-
-    settings = Settings.from_env()
-
-    assert settings.database_url == "postgresql://example/standard"
-
-
-def test_deadbot_database_url_takes_precedence(monkeypatch):
-    monkeypatch.setenv("DATABASE_URL", "postgresql://example/standard")
-    monkeypatch.setenv("DEADBOT_DATABASE_URL", "postgresql://example/deadbot")
-
-    settings = Settings.from_env()
-
-    assert settings.database_url == "postgresql://example/deadbot"
-
-
-def test_postgres_store_factory_passes_dsn_without_connecting(monkeypatch):
-    from deadbot.postgres import PostgresStore
-
-    selected_store = object()
-    calls = []
-
-    def from_dsn(cls, dsn):
-        calls.append(dsn)
-        return selected_store
-
-    monkeypatch.setattr(PostgresStore, "from_dsn", classmethod(from_dsn))
-
-    result = create_canonical_store(
-        Settings(data_store="postgres", database_url="postgresql://example/deadbot")
-    )
-
-    assert result is selected_store
-    assert calls == ["postgresql://example/deadbot"]
+    assert Settings.from_env(env_file).ollama_model == "from-environment"
 
 
 def test_ollama_is_the_default_provider():

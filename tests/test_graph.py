@@ -1,5 +1,14 @@
+import datetime
+import json
+import os
+import subprocess
+import sys
+import time
+
+import pytest
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage, ToolMessage
+from langchain_core.outputs import ChatGenerationChunk
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode
 
@@ -193,8 +202,12 @@ class _RecordingFakeChatModel(_BindableFakeChatModel):
         _SEEN_KWARGS.append(dict(kwargs))
         return super()._generate(messages, stop=stop, run_manager=run_manager, **kwargs)
 
+    def _stream(self, messages, stop=None, run_manager=None, **kwargs):
+        _SEEN_KWARGS.append(dict(kwargs))
+        yield ChatGenerationChunk(message=AIMessageChunk(content="hi"))
 
-def _model_kwargs_for_one_call(settings):
+
+def _model_kwargs_for_one_call(settings, **config):
     class FakeProvider:
         def create_chat_model(self):
             return _RecordingFakeChatModel(responses=[AIMessage(content="hi")])
@@ -203,17 +216,113 @@ def _model_kwargs_for_one_call(settings):
     _SEEN_KWARGS.clear()
     compiled.invoke(
         {"messages": [HumanMessage(content="hello")]},
-        graph.run_config("web-1:request:x", settings, prompt_cache_key="web-1"),
+        graph.run_config("web-1:request:x", settings, conversation_id="web-1", **config),
     )
     return _SEEN_KWARGS[-1]
 
 
-def test_openai_calls_carry_the_conversation_as_the_prompt_cache_key():
-    assert _model_kwargs_for_one_call(Settings(model_provider="openai"))["prompt_cache_key"] == "web-1"
+def test_openai_calls_carry_the_shared_prompt_cache_key():
+    assert _model_kwargs_for_one_call(Settings(model_provider="openai"))["prompt_cache_key"] == "deadbot"
 
 
 def test_other_providers_get_no_prompt_cache_key():
     assert "prompt_cache_key" not in _model_kwargs_for_one_call(Settings())
+
+
+def test_every_visitor_gets_the_same_prompt_cache_key():
+    settings = Settings()
+    keys = {graph.prompt_cache_key(f"web-{number}", settings) for number in range(50)}
+    assert keys == {"deadbot"}
+
+
+def test_sharded_keys_keep_a_conversation_on_one_key_and_spread_conversations():
+    settings = Settings(prompt_cache_shards=4)
+    keys = {graph.prompt_cache_key(f"web-{number}", settings) for number in range(200)}
+    assert keys == {"deadbot-0", "deadbot-1", "deadbot-2", "deadbot-3"}
+    # The request's throwaway thread never picks the key; the conversation does.
+    first = graph.run_config("web-7:request:a", settings, conversation_id="web-7")
+    second = graph.run_config("web-7:request:b", settings, conversation_id="web-7")
+    assert first["configurable"]["prompt_cache_key"] == second["configurable"]["prompt_cache_key"]
+
+
+def _openai_request(question, conversation_id, settings=None):
+    """The request body langchain-openai would send for one visitor's first call. Nothing is sent."""
+
+    langchain_openai = pytest.importorskip("langchain_openai")
+    settings = settings or Settings(model_provider="openai", openai_model="gpt-5.6-luna", openai_reasoning_effort="low")
+    model = langchain_openai.ChatOpenAI(
+        model=settings.openai_model, use_responses_api=True, api_key="not-a-real-key",
+        reasoning={"effort": settings.openai_reasoning_effort},
+    )
+    bound = model.bind_tools(graph.agent_tools(CanonicalStore()))
+    config = graph.run_config(f"{conversation_id}:request:x", settings, conversation_id=conversation_id)
+    system = graph.system_message(explicit_breakpoint=settings.prompt_cache_breakpoint)
+    return model._get_request_payload(
+        [system, HumanMessage(content=question)], **bound.kwargs, **graph._cache_options(config)
+    )
+
+
+def test_two_visitors_first_calls_share_a_byte_identical_static_prefix():
+    one = _openai_request("How many times did they play Madison Square Garden?", "web-visitor-one")
+    two = _openai_request("Find me an overlooked Sugaree", "web-visitor-two")
+
+    def static(payload):
+        # Everything ahead of the visitor's own words: settings, tool schemas in order, the system prompt.
+        body = {key: value for key, value in payload.items() if key != "input"}
+        return json.dumps([body, payload["input"][0]], ensure_ascii=False)
+
+    assert static(one) == static(two)
+    assert one["prompt_cache_key"] == two["prompt_cache_key"] == "deadbot"
+    assert one["input"][1:] != two["input"][1:]
+    assert [tool["name"] for tool in one["tools"]][-1] == FINISH_TOOL_NAME
+    # No date, request id or thread id rides in the prefix.
+    for needle in ("web-visitor", "request:", str(datetime.date.today().year)):
+        assert needle not in static(one)
+
+
+def test_the_static_prefix_does_not_depend_on_the_process():
+    # Set and dict ordering change with the hash seed; the prefix must not.
+    pytest.importorskip("langchain_openai")
+    script = (
+        "import hashlib, json;"
+        "from tests.test_graph import _openai_request;"
+        "p = _openai_request('q', 'web-1');"
+        "print(hashlib.sha256(json.dumps([p['tools'], p['input'][0]], ensure_ascii=False).encode()).hexdigest())"
+    )
+    digests = set()
+    for seed in ("1", "2"):
+        env = {**os.environ, "PYTHONHASHSEED": seed, "PYTHONPATH": os.getcwd()}
+        digests.add(subprocess.run([sys.executable, "-c", script], env=env, capture_output=True, text=True, check=True).stdout.strip())
+    assert len(digests) == 1
+
+
+def test_the_explicit_breakpoint_marks_the_end_of_the_system_prompt_only_when_asked():
+    plain = _openai_request("q", "web-1")
+    assert plain["input"][0]["content"] == graph.SYSTEM_PROMPT
+    marked = _openai_request("q", "web-1", Settings(
+        model_provider="openai", openai_model="gpt-5.6-luna", openai_reasoning_effort="low", prompt_cache_breakpoint=True,
+    ))
+    block = marked["input"][0]["content"][-1]
+    assert block["text"] == graph.SYSTEM_PROMPT
+    assert block["prompt_cache_breakpoint"] == {"mode": "explicit"}
+
+
+def test_a_late_model_call_waits_no_longer_than_the_turn_has_left():
+    settings = Settings(model_provider="openai", model_timeout_seconds=25)
+    assert "timeout" not in _model_kwargs_for_one_call(settings)
+    streaming = Settings(model_provider="openai", model_timeout_seconds=25, model_streaming=True)
+    plenty = _model_kwargs_for_one_call(streaming, deadline=time.monotonic() + 500)
+    assert plenty["timeout"] == 25
+    short = _model_kwargs_for_one_call(streaming, deadline=time.monotonic() + 10)
+    assert 0 < short["timeout"] <= 10
+
+
+def test_a_turn_out_of_time_stops_before_paying_for_another_model_call():
+    settings = Settings(model_provider="openai", model_streaming=True)
+    _SEEN_KWARGS.clear()
+    with pytest.raises(graph.TurnBudgetExceeded):
+        _model_kwargs_for_one_call(settings, deadline=time.monotonic() + 1)
+    assert _SEEN_KWARGS == []
 
 
 def test_run_config_carries_the_notebook_only_when_given():

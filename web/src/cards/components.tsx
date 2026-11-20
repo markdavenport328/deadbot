@@ -1,7 +1,7 @@
 import { type ComponentProps, type KeyboardEvent, type ReactNode, createContext, useContext, useId, useRef, useState } from "react";
 
 // Cards inside a titled group must not sit at the same heading level as the
-// group's own <h2>. ComposedPage sets this to "h3" for the duration of a
+// group's own <h2>. PageGroups sets this to "h3" for the duration of a
 // titled group's blocks; every card-level heading renders through here so it
 // follows without each renderer knowing which level applies.
 export const HeadingContext = createContext<"h2" | "h3">("h2");

@@ -1,12 +1,11 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { PlayerProvider } from "./player/player";
 import { MenuSlotProvider } from "./core/menu-slot";
 import { Rosettes } from "./cards/listening";
 import { AboutPage } from "./AboutPage";
 import { SiteMenu } from "./SiteMenu";
 import { usePath } from "./core/site-nav";
-import { readShellMode } from "./shell-mode";
-import { shells } from "./shells";
+import { WorkspaceApp } from "./shells/workspace/WorkspaceApp";
 import { NowPlayingBar } from "./player/NowPlayingBar";
 
 // The About page replaces the app on screen without unmounting it, so the
@@ -16,8 +15,6 @@ export default function AppWithPlayer() {
   const path = usePath();
   const onAbout = path === "/about";
   const homeScroll = useRef(0);
-  const [mode] = useState(() => readShellMode(window.location.search));
-  const Shell = shells[mode];
 
   useLayoutEffect(() => {
     if (onAbout) return undefined;
@@ -35,7 +32,7 @@ export default function AppWithPlayer() {
         <Rosettes />
         <SiteMenu />
         <div className="app-view" hidden={onAbout}>
-          <Shell />
+          <WorkspaceApp />
         </div>
         {onAbout && (
           <>

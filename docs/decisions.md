@@ -2,6 +2,8 @@
 
 ## ADR-001 — PostgreSQL as initial operational database
 
+*Superseded by ADR-015.*
+
 **Decision:** PostgreSQL is the initial operational database.
 
 **Reasoning:** It provides strong relational querying, straightforward hosting, a mature ecosystem, JSONB when source-shaped data is needed, a future pgvector option, and enough graph-like relationship support for the initial domain.
@@ -161,3 +163,25 @@ text; an item that fits no component becomes prose; size ceilings sit far above
 normal use and truncate with a log. Streamed and final pages share one path.
 Before adding a check, ask whether it protects a fact or the transport; if it
 only polices the model, leave it out. See `AGENTS.md`.
+
+## ADR-015 — One read-only SQLite file is the store
+
+**Decision:** The catalog is served from a single SQLite file, built from the
+canonical CSVs by `deadbot/sqlite_build.py` in the deploy's build step and
+opened read-only by `deadbot/sqlite_store.py`. PostgreSQL is retired: its
+store, importer, schema, migrations, CLI command, settings and driver
+dependency are removed, and CI builds and tests the SQLite catalog. No setting
+selects a store, so `DEADBOT_DATA_STORE`, `DEADBOT_DATABASE_URL` and
+`DATABASE_URL` are not read. This supersedes ADR-001 and the PostgreSQL
+wording of ADR-003; the relational-graph-before-graph-database decision
+stands.
+
+**Reasoning:** The data is read-only at runtime and small (a file under 100 MB
+built in seconds), every deploy already carries the CSVs it should serve, and
+a hosted database added a compute limit, a network round trip per query and a
+second copy of the data that could drift from the commit. Keeping a second
+store also meant keeping two schemas in step by hand and running CI against a
+store production did not serve. The variable is ignored rather than rejected
+because the one production incident from this area was a stale
+`DEADBOT_DATA_STORE=postgres` value; with nothing to select, a leftover value
+cannot break a deploy.

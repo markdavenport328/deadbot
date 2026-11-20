@@ -94,14 +94,14 @@ def test_the_streamed_page_and_the_delivered_page_have_the_same_blocks():
     assert streamed == final
 
     types = [block["type"] for block in final]
-    assert types[:6] == ["show_unit", "song_overview", "editorial", "editorial", "editorial", "pull_quote"]
+    assert types[:6] == ["show_unit", "song_overview", "editorial", "editorial", "editorial", "editorial"]
     assert final[0]["judgments"] == ["Relaxed", "Long", "Extra", "Beyond", "the", "old", "cap"]
     assert final[0]["visible_facets"] == ["listen", "setlist"]
     assert len(final[0]["follow_ups"]) == 6
     assert final[2]["paragraphs"] == ["A night the tools never returned."]
     assert final[3]["items"][0]["title"] == "Heat"
     assert [item["title"] for item in final[4]["items"]] == ["Kept"] and len(final[4]["paragraphs"]) == 7
-    assert len(final[5]["text"]) == 600
+    assert final[5]["paragraphs"] == ["x" * 600]  # a retired type's words, kept whole as prose
     collapsed = [block for block in final if block["type"] == "show_unit" and block["disclosure"] == "collapsed"]
     assert len(collapsed) == len(shows) > 20
     assert len(response.groups) == 11

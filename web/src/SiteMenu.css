@@ -143,9 +143,7 @@ html.site-menu-open { overflow: hidden; }
   .site-menu.open .site-menu-link { transform: none; transition: opacity 150ms linear; }
 }
 
-/* One column: the rail scrolls with the page, so the toggle does too, and
-   the rail's own top row leaves it room. */
+/* One column: the page scrolls, so the toggle does too. */
 @media (max-width: 860px) {
   .site-menu-toggle { position: absolute; }
-  .masthead-row { padding-right: var(--space-unit); }
 }

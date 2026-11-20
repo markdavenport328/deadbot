@@ -1,10 +1,11 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from "vitest";
+import { SCHEMA_VERSION } from "../../core/schema-version";
 import type { ExperienceBlock, ExperienceResponse } from "../../types";
 import { visualFixtures } from "../../visual-fixtures";
 
-// The workspace shell behind ?shell=workspace: history, tabs, the held
-// previous page, and the player carrying on through all of it.
+// The workspace: history, the held previous page, and the player carrying
+// on through all of it.
 
 type Turn = { role: "user" | "assistant"; text: string };
 type Reply =
@@ -14,7 +15,7 @@ type Reply =
 
 function page(headline: string | null, notebook: string | null, conversation: Turn[], blocks: ExperienceBlock[] = [], groups: ExperienceResponse["groups"] = []): ExperienceResponse {
   return {
-    schema_version: "3", thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
+    schema_version: SCHEMA_VERSION, thread_id: "web-test", headline, lead: conversation[conversation.length - 1].text,
     mode: "answer", conversation, blocks, groups, sources: [],
     ...(notebook ? { notebook } : {})
   } as ExperienceResponse;
@@ -57,7 +58,7 @@ beforeEach(() => {
   phone = false;
   window.sessionStorage.clear();
   window.localStorage.clear();
-  window.history.replaceState({}, "", "/?shell=workspace");
+  window.history.replaceState({}, "", "/");
   vi.stubGlobal("fetch", vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     const path = String(url);
     if (path.endsWith("/api/experience/stream")) {
@@ -137,7 +138,6 @@ test("going back is free, keeps the later row, and a follow-up from there sends 
   expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
   expect(rows()).toHaveLength(2);
   expect(rows()[1]).toHaveClass("ahead");
-  expect(window.sessionStorage.getItem("deadbot-research-notebook")).toBe("v1.msg.sig");
 
   ask("Which run had guests?");
   await vi.waitFor(() => expect(sent).toHaveLength(3));
@@ -399,7 +399,6 @@ test("history survives a reload and reopens a page without asking again", async 
   fireEvent.click(rows()[0]);
   expect(screen.getByRole("heading", { level: 1, name: "The Garden years" })).toBeInTheDocument();
   expect(sent).toHaveLength(2);
-  expect(window.sessionStorage.getItem("deadbot-research-notebook")).toBe("v1.msg.sig");
 });
 
 test("Clear empties the history, and Undo puts it back", async () => {
@@ -425,6 +424,14 @@ test("the wordmark goes to the start view without reloading, and history stays",
   expect(fireEvent.click(wordmark)).toBe(false);
   expect(screen.getByRole("heading", { level: 1, name: /Exploration and listening/ })).toBeInTheDocument();
   expect(rows()).toHaveLength(1);
+});
+
+test("a browser that remembered the retired classic page opens the workspace", async () => {
+  window.localStorage.setItem("deadbot-shell.v2", "classic");
+  window.history.replaceState({}, "", "/?shell=classic");
+  await openWorkspace();
+  expect(document.querySelector(".workspace-shell")).not.toBeNull();
+  expect(screen.getByRole("heading", { level: 1, name: /Exploration and listening/ })).toBeInTheDocument();
 });
 
 test("on a phone, the player folds while the dock's ask box has focus", async () => {

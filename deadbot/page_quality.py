@@ -146,7 +146,7 @@ def _describe(option: dict[str, Any]) -> str:
     return " ".join(bits)
 
 
-CARD_TYPES = frozenset({"show_unit", "performance_unit", "album_unit", "song_overview"})
+CARD_TYPES = frozenset({"show_unit", "album_unit", "song_overview"})
 
 
 def _has_audio(rows: Any, key: str = "audio_url") -> bool:
@@ -160,8 +160,6 @@ def playable(block: dict[str, Any]) -> bool:
     if kind == "show_unit":
         songs = [song for set_ in block.get("sets") or [] for song in set_.get("songs") or []]
         return _has_audio(block.get("tracks")) or _has_audio(songs)
-    if kind == "performance_unit":
-        return bool(block.get("audio_url")) or bool(block.get("show_tracks"))
     if kind == "album_unit":
         # Spotify plays in the card's embed; anything else official leaves the site.
         return bool(block.get("embed_id")) or _has_audio(block.get("tracks"))
@@ -210,9 +208,6 @@ def _card_names(blocks: list[dict[str, Any]]) -> tuple[list[set[str]], set[str]]
         for key in ("release_title", "song_title", "venue_name"):
             if isinstance(block.get(key), str):
                 names.append(_tokens(block[key]))
-        for row in (block.get("items") if block.get("type") == "person_roster" else None) or []:
-            if isinstance(row, dict) and row.get("name"):
-                names.append(_tokens(row["name"]))
         for row in block.get("rows") or [] if block.get("type") in {"data_chart", "ranked_list"} else []:
             if isinstance(row, dict) and isinstance(row.get("label"), str):
                 names.append(_tokens(row["label"]))

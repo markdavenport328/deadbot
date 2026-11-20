@@ -71,14 +71,14 @@ from attributed interview or memoir claims about conditions at a show.
 
 ## Request-time caching
 
-Two caches keep the remote database from dominating a turn. A per-request
-query cache (`deadbot.postgres.query_cache_scope`) serves repeated canonical
+Two caches keep repeated reads from dominating a turn. A per-request
+query cache (`deadbot.sqlite_store.query_cache_scope`) serves repeated canonical
 reads from memory for the life of one request, so plan resolution reuses what
 research already fetched. A response cache (`deadbot.response_cache`) stores
-the composed answer to a fresh question in `deadbot_response_cache`, keyed by
+the composed answer to a fresh question in its own small SQLite file, keyed by
 the normalized question, the store's data version and the deployed commit; a
 repeat of an opening question is served in well under a second until an
-import or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
+new build or deploy changes either. `DEADBOT_RESPONSE_CACHE=false` disables it;
 On a serverless host that cache lives in each instance's temp folder, so asking
 a running site its questions warms only the instance that answers. Instead the
 build runs `python -m scripts.warm_answers --bundle build/warm-answers.json`
@@ -87,6 +87,39 @@ in the deploy, and the app seeds its cache from that file on startup (answers
 made for another data version or commit are ignored). The step skips where no
 model key is configured, such as a preview build, and never fails the build.
 `scripts/warm_answers.py <base-url>` still warms one running server by hand.
+
+## Provider prompt cache
+
+The system prompt and the tool schemas (about 13k tokens) are byte-identical
+for every visitor: no date, thread or request value is in them, and
+`tests/test_graph.py` builds the request for two visitors and compares the
+bytes. Every model call therefore carries the same OpenAI `prompt_cache_key`
+(`deadbot.graph.prompt_cache_key`), so a visitor's first call can read the
+prefix another visitor's call cached. OpenAI keeps cache reuse apart by key
+and routes by key and prefix, with about 15 requests a minute per key before
+overflow; `DEADBOT_PROMPT_CACHE_SHARDS` spreads conversations over more keys
+when traffic passes that. Keep anything that changes per request out of the
+system prompt and the tool descriptions. The turn metrics line records
+`first_call_cached_input_share`, `earlier_turns` and `prompt_cache_key`, so
+the effect is read from the logs: a fresh question (`earlier_turns` 0) asked
+while others are active should show a share near 1.0.
+
+## Usage limits and the turn budget
+
+`deadbot/limits.py` counts the questions that reach the model: per visitor
+(a signed cookie carries the count between function instances), per client
+address and per instance, each over a minute and a day as `.env.example`
+lists. Stored answers are not counted. A refused request is HTTP 429 with a
+plain `detail` sentence the web client shows as it is. There is no shared
+store, so the address and instance counts are per function instance.
+
+Every API request runs on a throwaway checkpoint thread; the browser's
+transcript is the conversation's memory, and its size is bounded
+(`DEADBOT_CONVERSATION_MAX_CHARS`). A hosted turn has a time budget
+(`DEADBOT_TURN_BUDGET_SECONDS`, 55 by default) inside the function's 60
+seconds: a turn that runs out ends with a plain message and its metrics line
+instead of a dropped connection. Build and measurement scripts that ask many
+questions in one process call `Settings.without_limits()`.
 
 ## Provider contract
 
