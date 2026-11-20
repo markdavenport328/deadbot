@@ -14,8 +14,9 @@ import re
 from collections import Counter
 from typing import Any
 
-from deadbot.data import CanonicalStore, _archive_identifier
+from deadbot.data import CanonicalStore
 from deadbot.experience import EditorialLink, ListeningHeroBlock, PlayableTrack
+from deadbot.tape import tape_tracks
 
 _MUSICBRAINZ_RELEASE = re.compile(r"musicbrainz\.org/release/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", re.IGNORECASE)
 
@@ -61,54 +62,39 @@ def cover_art_url(release: dict[str, Any] | None) -> str | None:
     return f"https://coverartarchive.org/release/{mbid}/front-500" if mbid else None
 
 
-def playable_show_tracks(show_id: str, store: CanonicalStore, identifier: str | None = None) -> tuple[list[PlayableTrack], str | None]:
-    """One tape's playable tracks for a show, in show order, and that tape's identifier.
+def playable_show_tracks(show_id: str, store: CanonicalStore) -> tuple[list[PlayableTrack], str | None]:
+    """Every playable song of a show, in show order, and the tape that carries the most of them.
 
-    With ``identifier`` the tracks come from that Internet Archive item;
-    without it, from the item that covers the most of the show. Each
-    performance keeps one track, chosen by link ID the way the store's
-    listening paths choose, so the same URL plays everywhere on the page.
+    Each song plays its own tape track (``tape.tape_tracks``), whichever tape
+    that is, so a set queues every linked song even when a second tape fills
+    the first one's gaps, and the same files play everywhere on the page. The
+    identifier names the tape for the show's picture and details link.
     """
 
     performances = [row for row in store.filtered_rows("performances", show_id=show_id) if row.get("performance_id")]
     if not performances:
         return [], None
-    performance_ids = [row["performance_id"] for row in performances]
-    by_tape: dict[str, dict[str, tuple[str, str, str]]] = {}
-    for link in store.rows_in("performance_links", "performance_id", performance_ids):
-        if link.get("platform") != "archive" or link.get("link_type") != "recording-track":
-            continue
-        url = link.get("url") or ""
-        tape = _archive_identifier(url)
-        if not tape:
-            continue
-        candidate = (link.get("performance_link_id") or "", url, link.get("duration_seconds") or "")
-        chosen = by_tape.setdefault(tape, {})
-        performance_id = link.get("performance_id") or ""
-        if performance_id not in chosen or candidate < chosen[performance_id]:
-            chosen[performance_id] = candidate
-    if not by_tape:
+    tapes = tape_tracks(store.rows_in("performance_links", "performance_id", [row["performance_id"] for row in performances]))
+    if not tapes:
         return [], None
-    if identifier not in by_tape:
-        # The tape that covers the most of the show; ties go to the lower identifier.
-        identifier = min(by_tape, key=lambda tape: (-len(by_tape[tape]), tape))
-    chosen = by_tape[identifier]
+    covered = Counter(tape.identifier for tape in tapes.values() if tape.identifier)
+    identifier = min(covered, key=lambda tape: (-covered[tape], tape)) if covered else None
     songs = {row["song_id"]: row for row in store.rows_in("songs", "song_id", {row.get("song_id", "") for row in performances})}
     ordered = sorted(performances, key=lambda row: (_number(row.get("set_number")), _number(row.get("position_in_set")), row["performance_id"]))
     tracks: list[PlayableTrack] = []
     for row in ordered:
-        link = chosen.get(row["performance_id"])
+        tape = tapes.get(row["performance_id"])
         title = (songs.get(row.get("song_id", "")) or {}).get("title")
-        if not link or not title:
+        if not tape or not title:
             continue
-        duration = str(link[2]).strip()
         tracks.append(
             PlayableTrack(
                 performance_id=row["performance_id"],
                 title=title,
-                audio_url=link[1],
-                duration_seconds=int(duration) if duration.isdigit() else None,
+                audio_url=tape.url,
+                duration_seconds=tape.duration_seconds,
                 set_label=row.get("set_label") or None,
+                audio_parts=tape.audio_parts(),
             )
         )
     return tracks[:TRACK_LIMIT], identifier

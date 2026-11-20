@@ -12,7 +12,7 @@ export type Night = { key: string; date: string | null; venue: string | null; ci
 export function albumTrack(track: AlbumTrack): PlayerTrack | null {
   if (!track.audio_url) return null;
   return toTrack(
-    { performance_id: track.performance_id ?? `track-${track.track_number}`, title: track.title, audio_url: track.audio_url, duration_seconds: track.audio_duration_seconds },
+    { performance_id: track.performance_id ?? `track-${track.track_number}`, title: track.title, audio_url: track.audio_url, duration_seconds: track.audio_duration_seconds, audio_parts: track.audio_parts },
     { showDate: track.show_date, venueName: track.venue_name }
   );
 }

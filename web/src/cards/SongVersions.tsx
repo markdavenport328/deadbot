@@ -4,7 +4,7 @@
 // there is one. A row with no tape draws what it knows and links its record.
 import { CardHeading } from "./components";
 import { AddToQueue, PlayGlyph, toTrack, usePlayControl, type InPagePlay } from "./listen-control";
-import { usePlayer, type PlayerTrack } from "../player/player";
+import { trackKey, usePlayer, type PlayerTrack } from "../player/player";
 import type { ExperienceBlock } from "../types";
 import "./SongVersions.css";
 
@@ -113,7 +113,7 @@ export function SongVersions({ block }: { block: SongVersionsBlock }) {
   // figure and the rows agree; when any of those is unknown there is no total.
   const queuedRows = block.rows.filter((row) => row.track);
   const seconds = queuedRows.every((row) => row.length_seconds != null) ? queuedRows.reduce((sum, row) => sum + (row.length_seconds ?? 0), 0) : null;
-  const queued = tracks.length > 0 && tracks.every((track) => player.queue.some((item) => item.id === track.id || item.audioUrl === track.audioUrl));
+  const queued = tracks.length > 0 && tracks.every((track) => player.queue.some((item) => item.id === track.id || trackKey(item) === trackKey(track)));
   const longest = Math.max(0, ...block.rows.map((row) => row.length_seconds ?? 0));
   const mixed = new Set(block.rows.map((row) => row.song_id).filter(Boolean)).size > 1;
   const heading = block.title || (mixed ? mixedHeading(block.rows) : block.song.title);

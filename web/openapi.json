@@ -46,6 +46,20 @@
             ],
             "title": "Audio Duration Seconds"
           },
+          "audio_parts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AudioPart"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Parts"
+          },
           "audio_url": {
             "anyOf": [
               {
@@ -445,6 +459,39 @@
           "block_id"
         ],
         "title": "AskFocus",
+        "type": "object"
+      },
+      "AudioPart": {
+        "additionalProperties": false,
+        "description": "One stretch of one tape file: a song that is not exactly one whole file.\n\nThe player plays each part in order as one track: from ``start_seconds``\nto ``end_seconds`` (the file's end when null), then the next part.",
+        "properties": {
+          "audio_url": {
+            "title": "Audio Url",
+            "type": "string"
+          },
+          "end_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Seconds"
+          },
+          "start_seconds": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Start Seconds",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "audio_url"
+        ],
+        "title": "AudioPart",
         "type": "object"
       },
       "ConversationTurn": {
@@ -2346,6 +2393,20 @@
         "additionalProperties": false,
         "description": "One Internet Archive track the in-page player can play, in show order.",
         "properties": {
+          "audio_parts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AudioPart"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Parts"
+          },
           "audio_url": {
             "title": "Audio Url",
             "type": "string"
@@ -2844,6 +2905,20 @@
       "SetlistSong": {
         "additionalProperties": false,
         "properties": {
+          "audio_parts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AudioPart"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Parts"
+          },
           "audio_url": {
             "anyOf": [
               {
@@ -3497,6 +3572,20 @@
         "additionalProperties": false,
         "description": "A model-chosen rendition that gives a song unit an immediate listening path.\n\nOn a song timeline it is one of the model's stops, with its label and why.\nA stop the server could not resolve keeps only the model's words.",
         "properties": {
+          "audio_parts": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AudioPart"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Parts"
+          },
           "audio_url": {
             "anyOf": [
               {

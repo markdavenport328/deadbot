@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { type AlbumUnitBlock, type ExperienceBlock, type ShowUnitBlock } from "../types";
-import { type PlayerTrack } from "../player/player";
+import { segmentsFrom, type PlayerTrack } from "../player/player";
 import { CardSpotifyButton, SpotifyEmbed, type SpotifyPanel } from "./spotify-embed";
 import { CardPlayButton, ListenLinks, type InPagePlay } from "./listening";
 import { NightList, albumTrack, groupByNight } from "./AlbumNights";
@@ -34,6 +34,7 @@ export function toPlayerTrack(song: SetlistSongType, meta: ShowMeta): PlayerTrac
     title: song.title,
     audioUrl: song.audio_url,
     durationSeconds: song.duration_seconds ?? null,
+    segments: segmentsFrom(song.audio_parts),
     showDate: meta.showDate ?? null,
     venueName: meta.venueName ?? null,
     recordingDetailsUrl: meta.recordingDetailsUrl ?? null,

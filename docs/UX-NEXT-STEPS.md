@@ -557,8 +557,8 @@ The shared player (`web/src/player.tsx`) gained three things:
   is on, the "⋯" names it in cream. Speed is remembered on the device
   (`deadbot.player.rate`); the loop is not.
 
-Open: true gapless playback (Web Audio) for segues; `start_seconds` reaching the
-browser so a card can start partway into a tape file; keyboard shortcuts.
+Open: true gapless playback (Web Audio) for segues; keyboard shortcuts.
+(`start_seconds` now reaches the browser: see "Whole-song playback" below.)
 
 ## Player: phones, cars and offline — November 19, 2026
 
@@ -631,3 +631,28 @@ question opened on Read two times in three, which is worth watching.
 - Plan: [docs/superpowers/plans/2026-11-05-persistent-exploration.md](superpowers/plans/2026-11-05-persistent-exploration.md)
 - Sketch: [docs/plans/persistent-exploration/workspace-sketch.html](plans/persistent-exploration/workspace-sketch.html)
 - Live runs: [docs/plans/persistent-exploration/live-runs-2026-11.md](plans/persistent-exploration/live-runs-2026-11.md)
+
+## Whole-song playback — November 20, 2026
+
+A song that is not exactly one tape file now plays from its start to its end.
+`deadbot/tape.py` is the one place a performance's tape track is chosen: its
+links on one tape, ordered by ID, are its parts; a link with `start_seconds`
+plays a window of its file (`duration_seconds` is the song's length in it). Every
+card carries `audio_parts` (file, start, end) when the song is not one whole
+file, and the stated length is the parts' sum. The player keeps a song's own
+clock across files: it seeks into the first file, stops at a window's end
+(checked every frame on screen), goes on to the next file, and maps the
+scrubber, saved position and lock screen onto the right file. Two songs in one
+file stay two queue items (`trackKey`).
+
+A show's "play the set" now queues every linked song in order, whichever tape
+carries it (it used to play one tape and skip the rest).
+
+Data: `scripts/normalize_internet_archive_split_tracks.py` linked 5 more songs
+(1970-02-13 Dark Star and Lovelight, each two files; 1986-12-17 Not Fade Away;
+The Other One on 1969-02-27 and 1969-02-28), replaced 12 fragment links with the
+whole song on another tape (5/11/72 second Dark Star 1:50 → 29:24), and gave
+one Drums its outro file. Open: the ~90 songs named later in a medley file and
+~85 reprises inside a first-pass file need to know where they start inside the
+file; nothing preserved says so, so they stay unlinked until a source does.
+

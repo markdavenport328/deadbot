@@ -22,6 +22,7 @@ from pydantic import ValidationError
 
 from deadbot import song_life
 from deadbot.data import CanonicalStore
+from deadbot.tape import tape_tracks
 from deadbot.experience import (
     AlbumCreditItem,
     AlbumTrackItem,
@@ -375,12 +376,14 @@ def _audio(listen: Any) -> dict[str, Any]:
     """The in-page player's track and length from a performance's listening path."""
 
     if not isinstance(listen, dict):
-        return {"audio_url": None, "duration_seconds": None}
+        return {"audio_url": None, "duration_seconds": None, "audio_parts": None}
     url = listen.get("archive_track_url")
     duration = listen.get("archive_track_duration_seconds")
+    parts = listen.get("archive_track_parts")
     return {
         "audio_url": url if isinstance(url, str) and url else None,
         "duration_seconds": duration if isinstance(duration, int) and duration >= 0 else None,
+        "audio_parts": parts if isinstance(parts, list) and parts and isinstance(url, str) and url else None,
     }
 
 
@@ -394,17 +397,9 @@ def _archive_tracks(performance_ids: list[str], store: CanonicalStore) -> dict[s
     ids = [performance_id for performance_id in dict.fromkeys(performance_ids) if performance_id]
     if not ids:
         return {}
-    chosen: dict[str, tuple[str, str, str]] = {}
-    for link in store.rows_in("performance_links", "performance_id", ids):
-        if link.get("platform") != "archive" or link.get("link_type") != "recording-track" or not link.get("url"):
-            continue
-        performance_id = link.get("performance_id") or ""
-        candidate = (link.get("performance_link_id") or "", link["url"], str(link.get("duration_seconds") or "").strip())
-        if performance_id not in chosen or candidate < chosen[performance_id]:
-            chosen[performance_id] = candidate
     return {
-        performance_id: {"audio_url": url, "duration_seconds": int(duration) if duration.isdigit() else None}
-        for performance_id, (_link_id, url, duration) in chosen.items()
+        performance_id: {"audio_url": tape.url, "duration_seconds": tape.duration_seconds, "audio_parts": tape.audio_parts()}
+        for performance_id, tape in tape_tracks(store.rows_in("performance_links", "performance_id", ids)).items()
     }
 
 
@@ -481,8 +476,7 @@ def _setlist_sections(
             continue
         label = performance.get("set_label") or "Set"
         listen = performance.get("listen") if isinstance(performance.get("listen"), dict) else {}
-        audio_url = listen.get("archive_track_url")
-        duration_seconds = listen.get("archive_track_duration_seconds")
+        audio = _audio(listen)
         grouped.setdefault(label, []).append(
             SetlistSong(
                 performance_id=performance["performance_id"],
@@ -491,8 +485,9 @@ def _setlist_sections(
                 position_in_set=performance.get("position_in_set") or None,
                 highlighted=performance["performance_id"] in highlighted,
                 listen_url=_listen_url(performance),
-                audio_url=audio_url if isinstance(audio_url, str) and audio_url else None,
-                duration_seconds=duration_seconds if isinstance(duration_seconds, int) else None,
+                audio_url=audio["audio_url"],
+                duration_seconds=audio["duration_seconds"],
+                audio_parts=audio["audio_parts"],
                 segue_into_next=_truthy(performance.get("segue_into_next")),
             )
         )
@@ -700,7 +695,7 @@ def _album_track_audio(tracks: list[dict[str, Any]], store: CanonicalStore) -> d
         venue = venues.get(show.get("venue_id", ""), {})
         entry = audio.get(performance_id)
         result[performance_id] = {
-            **({"audio_url": entry["audio_url"], "audio_duration_seconds": entry["duration_seconds"]} if entry else {}),
+            **({"audio_url": entry["audio_url"], "audio_duration_seconds": entry["duration_seconds"], "audio_parts": entry["audio_parts"]} if entry else {}),
             "show_id": show.get("show_id") or None,
             "show_date": show.get("show_date") or None,
             "venue_name": venue.get("name") or None,
@@ -1064,6 +1059,7 @@ def _song_overview(
                         listen_url=item.listen_url,
                         audio_url=item.audio_url,
                         duration_seconds=item.duration_seconds,
+                        audio_parts=item.audio_parts,
                         label=label,
                         why=why,
                         seconds=seconds.get(item.performance_id),

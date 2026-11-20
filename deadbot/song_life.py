@@ -106,6 +106,8 @@ class LifePerformance:
     releases: tuple[str, ...]
     signals: tuple[Signal, ...]
     guests: tuple[Guest, ...]
+    # The tape parts when the song is not one whole file (``tape.TapeTrack.audio_parts``).
+    audio_parts: list[dict[str, Any]] | None = None
 
     @property
     def year(self) -> int:
@@ -120,6 +122,7 @@ class LifePerformance:
             "audio_url": self.audio_url,
             "duration_seconds": self.tape_seconds,
             "set_label": self.set_label or None,
+            "audio_parts": self.audio_parts,
         }
 
     def to_json(self, title: str) -> dict[str, Any]:
@@ -393,6 +396,7 @@ def life_performances(store: CanonicalStore, song_id: str) -> list[LifePerforman
                 releases=release_titles.get(performance_id, ()),
                 signals=tuple(signals),
                 guests=guests.get(performance_id, ()),
+                audio_parts=track.audio_parts() if track else None,
             )
         )
     if undated:

@@ -34,7 +34,76 @@ export type PlayerTrack = {
   venueName?: string | null;
   recordingDetailsUrl?: string | null;
   thumbnailUrl?: string | null;
+  // A song that is not one whole file: a stretch of a file it shares with
+  // another song, or several files played back to back. Absent, the track is
+  // audioUrl from its top to its end.
+  segments?: TrackSegment[] | null;
 };
+
+// One stretch of one file, in the file's own seconds; a null end plays to
+// the file's end.
+export type TrackSegment = { url: string; start: number; end: number | null };
+
+// The API's audio_parts, as the player's segments.
+export type AudioPartData = { audio_url: string; start_seconds?: number | null; end_seconds?: number | null };
+
+export function segmentsFrom(parts: AudioPartData[] | null | undefined): TrackSegment[] | null {
+  const segments = (parts ?? [])
+    .filter((part) => part && typeof part.audio_url === "string" && part.audio_url)
+    .map((part) => ({ url: part.audio_url, start: Math.max(part.start_seconds ?? 0, 0), end: part.end_seconds ?? null }));
+  return segments.length > 0 ? segments : null;
+}
+
+export function trackSegments(track: PlayerTrack): TrackSegment[] {
+  return track.segments && track.segments.length > 0 ? track.segments : [{ url: track.audioUrl, start: 0, end: null }];
+}
+
+// Every file a track plays, for saving it to the device.
+export function trackFiles(track: PlayerTrack): string[] {
+  return [...new Set(trackSegments(track).map((segment) => segment.url))];
+}
+
+// What makes two tracks the same audio: the file and where the song starts in
+// it (two songs can share one file).
+export function trackKey(track: PlayerTrack): string {
+  const first = trackSegments(track)[0];
+  return first.start > 0 ? `${first.url}#${first.start}` : first.url;
+}
+
+function segmented(track: PlayerTrack): boolean {
+  const segments = trackSegments(track);
+  return segments.length > 1 || segments[0].start > 0 || segments[0].end != null;
+}
+
+// A segment's length, when known: its window, else the file as measured.
+function segmentLength(segment: TrackSegment, measured?: number): number | null {
+  if (segment.end != null) return Math.max(segment.end - segment.start, 0);
+  return measured != null && Number.isFinite(measured) ? Math.max(measured - segment.start, 0) : null;
+}
+
+// Where a moment of the song falls: the segment and the time in its file.
+export function locate(track: PlayerTrack, seconds: number, measured: (number | undefined)[] = []): { segment: number; fileTime: number } {
+  const segments = trackSegments(track);
+  let offset = 0;
+  for (let i = 0; i < segments.length; i += 1) {
+    const length = segmentLength(segments[i], measured[i]);
+    if (i === segments.length - 1 || length == null || seconds < offset + length) {
+      return { segment: i, fileTime: segments[i].start + Math.max(seconds - offset, 0) };
+    }
+    offset += length;
+  }
+  return { segment: 0, fileTime: segments[0].start };
+}
+
+// The song's clock at a segment and a time in its file.
+export function songTime(track: PlayerTrack, segment: number, fileTime: number, measured: (number | undefined)[] = []): number {
+  const segments = trackSegments(track);
+  let offset = 0;
+  for (let i = 0; i < segment && i < segments.length; i += 1) offset += segmentLength(segments[i], measured[i]) ?? 0;
+  const current = segments[segment] ?? segments[0];
+  const into = Math.max(fileTime - current.start, 0);
+  return offset + (current.end != null ? Math.min(into, current.end - current.start) : into);
+}
 
 export type PlayerLoop = { start: number | null; end: number | null };
 
@@ -172,7 +241,16 @@ function restoredState(): PlayerState {
   const saved = readSavedPlayer();
   if (!saved) return initialState;
   const track = saved.queue[saved.index];
-  return { queue: saved.queue, index: saved.index, status: "paused", position: saved.position, duration: track.durationSeconds ?? 0 };
+  return { queue: saved.queue, index: saved.index, status: "paused", position: saved.position, duration: stateDuration(track) };
+}
+
+// What the bar shows as the track's length: the song's stated length, or for
+// a segmented song with none, the sum of the windows it knows.
+function stateDuration(track: PlayerTrack): number {
+  if (track.durationSeconds) return track.durationSeconds;
+  if (!segmented(track)) return 0;
+  const lengths = trackSegments(track).map((segment) => segmentLength(segment));
+  return lengths.every((length) => length != null) ? lengths.reduce<number>((sum, length) => sum + (length ?? 0), 0) : 0;
 }
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -214,22 +292,38 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PlayerState>(restoredState);
   const stateRef = useRef(state);
   stateRef.current = state;
-  // A restored position, applied once the restored track's metadata loads.
-  const pendingSeekRef = useRef<number | null>(state.position > 0 ? state.position : null);
+  // Which segment of the current track the active element holds, and each
+  // segment's file length as measured (for a segment that plays to its file's end).
+  const segmentRef = useRef(0);
+  const measuredRef = useRef<(number | undefined)[]>([]);
+  // A time in the active file to go to once its metadata loads: a restored
+  // position, or the start of a song that begins partway into its file.
+  const pendingSeekRef = useRef<number | null>(null);
   const [loop, setLoop] = useState<PlayerLoop>(NO_LOOP);
   const loopRef = useRef(loop);
   loopRef.current = loop;
   // Where the loop check last saw playback, to tell crossing the end from a seek.
   const loopLastRef = useRef(0);
 
+  function currentTrackNow(): PlayerTrack | undefined {
+    const current = stateRef.current;
+    return current.queue[current.index];
+  }
+
+  // The song's clock for the active element.
+  function songPosition(element: HTMLAudioElement): number {
+    const track = currentTrackNow();
+    return track ? songTime(track, segmentRef.current, element.currentTime, measuredRef.current) : element.currentTime;
+  }
+
   // Jump back to the loop's start when playback crosses its end. A move of
   // more than a moment is a seek, the visitor's own choice, and is left alone.
   function checkLoop(element: HTMLAudioElement) {
     const { start, end } = loopRef.current;
-    const now = element.currentTime;
+    const now = songPosition(element);
     const last = loopLastRef.current;
     if (start != null && end != null && last < end && now >= end && now - last < LOOP_SEEK_SECONDS) {
-      element.currentTime = start;
+      seekSong(start);
       loopLastRef.current = start;
     } else {
       loopLastRef.current = now;
@@ -276,14 +370,16 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return spareRef.current;
   }
 
-  // The active element, holding the current track's file: a restored track
+  // The active element, holding the current segment's file: a restored track
   // waits for its source until the page knows what is saved on the device,
   // and a play in that moment loads it here.
   function withSource(): HTMLAudioElement {
     const element = audio();
-    const current = stateRef.current;
-    const track = current.queue[current.index];
-    if (track && !element.getAttribute("src")) element.src = offlineSource(track.audioUrl);
+    const track = currentTrackNow();
+    if (track && !element.getAttribute("src")) {
+      const segment = trackSegments(track)[segmentRef.current] ?? trackSegments(track)[0];
+      element.src = offlineSource(segment.url);
+    }
     return element;
   }
 
@@ -293,28 +389,38 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return Boolean(element && element.getAttribute("src") === offlineSource(url) && !element.error);
   }
 
-  // Start loading the queue's next track into the spare element.
+  // Start loading the next file into the spare element: the current song's
+  // next segment, else the queue's next track.
   function preloadNext() {
     const current = stateRef.current;
-    const next = current.queue[current.index + 1];
-    // A hidden page plays the next track from the same element; loading it
+    const track = current.queue[current.index];
+    const nextSegment = track ? trackSegments(track)[segmentRef.current + 1] : undefined;
+    const nextTrack = current.queue[current.index + 1];
+    const url = nextSegment?.url ?? (nextTrack ? trackSegments(nextTrack)[0].url : null);
+    // A hidden page plays the next file from the same element; loading it
     // into the spare would only spend the visitor's data.
-    const source = next ? offlineSource(next.audioUrl) : null;
-    if (!next || !source || pageHidden() || spare().getAttribute("src") === source) return;
+    const source = url ? offlineSource(url) : null;
+    if (!source || pageHidden() || audio().getAttribute("src") === source || spare().getAttribute("src") === source) return;
     spare().src = source;
     spare().load();
   }
 
-  const loadTrack = useCallback((track: PlayerTrack, queue: PlayerTrack[], index: number) => {
-    pendingSeekRef.current = null;
-    setLoop(NO_LOOP);
+  // Put one segment of a track in the active element at a time in its file.
+  // With the page hidden (the phone locked, the car playing), the file loads
+  // into the element already playing: a phone lets the playing element go on
+  // to a new file, but may refuse to start a different one without a tap,
+  // which would stop the show between songs.
+  function loadSegment(track: PlayerTrack, index: number, fileTime: number, play: boolean) {
+    const segment = trackSegments(track)[index];
+    segmentRef.current = index;
     let element = audio();
-    // With the page hidden (the phone locked, the car playing), the next
-    // track loads into the element already playing: a phone lets the playing
-    // element go on to a new file, but may refuse to start a different one
-    // without a tap, which would stop the show between songs.
-    if (!pageHidden() && spareHolds(track.audioUrl)) {
-      // The spare loaded this track ahead of time: it becomes the player, and
+    const source = offlineSource(segment.url);
+    let fresh = true;
+    if (element.getAttribute("src") === source && !element.error) {
+      // The same file (a second window of it): only the place moves.
+      fresh = false;
+    } else if (!pageHidden() && spareHolds(segment.url)) {
+      // The spare loaded this file ahead of time: it becomes the player, and
       // the old player becomes the spare.
       const ready = spare();
       element.pause();
@@ -326,14 +432,83 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       audioRef.current = ready;
       element = ready;
     } else {
-      element.src = offlineSource(track.audioUrl);
+      element.src = source;
     }
-    fallbackRef.current = { trackId: track.id };
     applyRate(element);
-    element.currentTime = 0;
-    setState({ queue, index, status: "loading", position: 0, duration: track.durationSeconds ?? 0 });
-    element.play().catch(onPlayRejected);
+    if (!fresh || element.readyState >= 1) {
+      pendingSeekRef.current = null;
+      element.currentTime = fileTime;
+    } else {
+      element.currentTime = 0;
+      pendingSeekRef.current = fileTime > 0 ? fileTime : null;
+    }
+    loopLastRef.current = songTime(track, index, fileTime, measuredRef.current);
+    if (play) element.play().catch(onPlayRejected);
+  }
+
+  const loadTrack = useCallback((track: PlayerTrack, queue: PlayerTrack[], index: number) => {
+    setLoop(NO_LOOP);
+    measuredRef.current = [];
+    fallbackRef.current = { trackId: track.id };
+    setState({ queue, index, status: "loading", position: 0, duration: stateDuration(track) });
+    stateRef.current = { queue, index, status: "loading", position: 0, duration: stateDuration(track) };
+    loadSegment(track, 0, trackSegments(track)[0].start, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // The current song is over: a loop whose end is the song's end goes round
+  // again, else the queue moves on, else the player stops at the end.
+  function finishTrack(element: HTMLAudioElement) {
+    const { start, end } = loopRef.current;
+    if (start != null && end != null) {
+      seekSong(start);
+      element.play().catch(onPlayRejected);
+      return;
+    }
+    const current = stateRef.current;
+    const nextIndex = current.index + 1;
+    const track = current.queue[nextIndex];
+    if (track) loadTrack(track, current.queue, nextIndex);
+    else {
+      element.pause();
+      setState((previous) => ({ ...previous, status: "paused", position: previous.duration || previous.position }));
+    }
+  }
+
+  // The active segment is done: on to the song's next segment, or the song is over.
+  function finishSegment(element: HTMLAudioElement) {
+    const track = currentTrackNow();
+    const next = segmentRef.current + 1;
+    if (track && next < trackSegments(track).length) {
+      loadSegment(track, next, trackSegments(track)[next].start, true);
+      return;
+    }
+    finishTrack(element);
+  }
+
+  // A segment with an end inside its file stops there (the next song starts after it).
+  function pastSegmentEnd(element: HTMLAudioElement): boolean {
+    const track = currentTrackNow();
+    const segment = track ? trackSegments(track)[segmentRef.current] : undefined;
+    return Boolean(segment && segment.end != null && pendingSeekRef.current == null && element.currentTime >= segment.end);
+  }
+
+  // Move to a moment of the current song, loading another of its files when it falls there.
+  function seekSong(seconds: number) {
+    const track = currentTrackNow();
+    const element = audio();
+    if (!track) return;
+    const { segment, fileTime } = locate(track, seconds, measuredRef.current);
+    if (segment === segmentRef.current && element.getAttribute("src")) {
+      element.currentTime = fileTime;
+      // A restored file still loading would otherwise move to its saved place after this seek.
+      pendingSeekRef.current = null;
+    } else {
+      const status = stateRef.current.status;
+      loadSegment(track, segment, fileTime, status === "playing" || status === "loading");
+    }
+    loopLastRef.current = seconds;
+  }
 
   useEffect(() => {
     // Both elements carry the listeners; only the active one's events count.
@@ -343,21 +518,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       if (current && event.target === current) handler(current);
     };
     const onTimeUpdate = active((element) => {
+      if (pastSegmentEnd(element)) return finishSegment(element);
       // The frame watcher below stops in a background tab or on a locked
       // phone; time updates keep the loop going there.
       checkLoop(element);
-      setState((previous) => ({ ...previous, position: element.currentTime }));
-      const current = stateRef.current;
-      const duration = Number.isFinite(element.duration) ? element.duration : current.duration;
-      if (duration > 0 && duration - element.currentTime <= PRELOAD_LEAD_SECONDS) preloadNext();
+      setState((previous) => ({ ...previous, position: songPosition(element) }));
+      const track = currentTrackNow();
+      const segment = track ? trackSegments(track)[segmentRef.current] : undefined;
+      const fileEnd = segment?.end ?? (Number.isFinite(element.duration) ? element.duration : null);
+      if (fileEnd != null && fileEnd - element.currentTime <= PRELOAD_LEAD_SECONDS) preloadNext();
     });
     const onLoadedMetadata = active((element) => {
+      if (Number.isFinite(element.duration)) measuredRef.current[segmentRef.current] = element.duration;
       const seekTo = pendingSeekRef.current;
       if (seekTo != null) {
         pendingSeekRef.current = null;
         if (!Number.isFinite(element.duration) || seekTo < element.duration) element.currentTime = seekTo;
       }
-      if (Number.isFinite(element.duration)) setState((previous) => ({ ...previous, duration: element.duration }));
+      const track = currentTrackNow();
+      // A whole-file song is as long as its file; a segmented one keeps its stated length.
+      if (track && !segmented(track) && Number.isFinite(element.duration)) setState((previous) => ({ ...previous, duration: element.duration }));
     });
     const onPlaying = active(() => setState((previous) => ({ ...previous, status: "playing" })));
     const onPause = active(() => setState((previous) => (previous.status === "error" ? previous : { ...previous, status: "paused" })));
@@ -367,36 +547,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const url = fallback.urls?.shift();
       if (!url) return markError();
       const element = audio();
+      const track = currentTrackNow();
+      const start = track ? trackSegments(track)[segmentRef.current]?.start ?? 0 : 0;
       element.src = url;
+      pendingSeekRef.current = start > 0 ? start : null;
       element.play().catch(onPlayRejected);
     };
     const onErrorEvent = active(() => {
       const fallback = fallbackRef.current;
-      const track = stateRef.current.queue[stateRef.current.index];
+      const track = currentTrackNow();
       if (!fallback || !track || fallback.trackId !== track.id) return markError();
       if (fallback.urls) return tryNextSource(fallback);
       fallback.urls = [];
-      void archiveFallbackUrls(track.audioUrl).then((urls) => {
+      const segment = trackSegments(track)[segmentRef.current] ?? trackSegments(track)[0];
+      void archiveFallbackUrls(segment.url).then((urls) => {
         // A newer load replaced this one while the lookup ran.
         if (fallbackRef.current !== fallback) return;
         fallback.urls = urls;
         tryNextSource(fallback);
       });
     });
-    const onEnded = active((element) => {
-      // A loop whose end is the track's end goes round again.
-      const { start, end } = loopRef.current;
-      if (start != null && end != null) {
-        element.currentTime = start;
-        element.play().catch(onPlayRejected);
-        return;
-      }
-      const current = stateRef.current;
-      const nextIndex = current.index + 1;
-      const track = current.queue[nextIndex];
-      if (track) loadTrack(track, current.queue, nextIndex);
-      else setState((previous) => ({ ...previous, status: "paused", position: previous.duration }));
-    });
+    const onEnded = active((element) => finishSegment(element));
     const listeners: [string, (event: Event) => void][] = [
       ["timeupdate", onTimeUpdate],
       ["loadedmetadata", onLoadedMetadata],
@@ -408,14 +579,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     ];
     for (const element of elements) for (const [name, listener] of listeners) element.addEventListener(name, listener);
 
-    // A restored queue loads its track paused, ready to resume.
-    const restored = stateRef.current.queue[stateRef.current.index];
+    // A restored queue loads its track paused, ready to resume, at the saved
+    // moment of the song (in whichever of its files that falls).
+    const restored = currentTrackNow();
     if (restored && !audio().getAttribute("src")) {
       fallbackRef.current = { trackId: restored.id };
+      const { segment, fileTime } = locate(restored, stateRef.current.position);
+      segmentRef.current = segment;
+      pendingSeekRef.current = fileTime > 0 ? fileTime : null;
       // First learn which songs are on the device, so a saved track loads
       // from there and a phone without a signal never asks the network for it.
       void loadSavedTracks().then(() => {
-        if (stateRef.current.queue[stateRef.current.index]?.id === restored.id) withSource();
+        if (currentTrackNow()?.id === restored.id) withSource();
       });
     }
 
@@ -470,37 +645,44 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setLoopStart = useCallback(() => {
-    const now = audio().currentTime;
+    const now = songPosition(audio());
     // A start after the end begins a new loop from here.
     setLoop((previous) => ({ start: now, end: previous.end != null && previous.end > now ? previous.end : null }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setLoopEnd = useCallback(() => {
-    const now = audio().currentTime;
+    const now = songPosition(audio());
     // Playback is at the end already: the next check goes straight back to
     // the start, so the visitor hears the loop right away.
     loopLastRef.current = now - 0.001;
     // An end before the start (or with no start) loops from the top.
     setLoop((previous) => ({ start: previous.start != null && previous.start < now ? previous.start : 0, end: now }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const clearLoop = useCallback(() => setLoop(NO_LOOP), []);
 
-  // While a loop plays on screen, check every frame (timeupdate comes only
-  // about four times a second), so the jump back lands right at the end.
+  // While a loop plays on screen, or a song that stops partway into its file,
+  // check every frame (timeupdate comes only about four times a second), so
+  // the jump back lands right at the loop's end and the next song is not heard.
   const loopActive = loop.start != null && loop.end != null;
   const playing = state.status === "playing";
+  const current = state.queue[state.index];
+  const windowed = Boolean(current && trackSegments(current).some((segment) => segment.end != null));
   useEffect(() => {
-    if (!loopActive || !playing) return;
+    if ((!loopActive && !windowed) || !playing) return;
     let frame = 0;
     const watch = () => {
-      checkLoop(audio());
+      const element = audio();
+      if (pastSegmentEnd(element)) finishSegment(element);
+      else checkLoop(element);
       frame = requestAnimationFrame(watch);
     };
     frame = requestAnimationFrame(watch);
     return () => cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loopActive, playing]);
+  }, [loopActive, windowed, playing]);
 
   const retry = useCallback(() => {
     const current = stateRef.current;
@@ -523,13 +705,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const seek = useCallback((seconds: number) => {
-    const element = audio();
-    element.currentTime = seconds;
-    loopLastRef.current = seconds;
+    seekSong(seconds);
     setState((previous) => ({ ...previous, position: seconds }));
     // Keep the lock screen's scrubber where the visitor moved it.
     const session = mediaSession();
-    const duration = Number.isFinite(element.duration) ? element.duration : stateRef.current.duration;
+    const duration = stateRef.current.duration;
     if (session && typeof session.setPositionState === "function" && duration > 0) {
       try {
         session.setPositionState({ duration, playbackRate: rateRef.current, position: Math.min(Math.max(seconds, 0), duration) });
@@ -537,6 +717,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         // A position the browser rejects; the lock screen keeps its last one.
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const goTo = useCallback(
@@ -552,10 +733,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const enqueue = useCallback((tracks: PlayerTrack[]) => {
     const current = stateRef.current;
     // Two cards can name one tape file under different ids; the file is the track.
-    const seen = new Set(current.queue.flatMap((track) => [track.id, track.audioUrl]));
+    const seen = new Set(current.queue.flatMap((track) => [track.id, trackKey(track)]));
     const added = tracks.filter((track) => {
-      if (seen.has(track.id) || seen.has(track.audioUrl)) return false;
-      seen.add(track.id).add(track.audioUrl);
+      if (seen.has(track.id) || seen.has(trackKey(track))) return false;
+      seen.add(track.id).add(trackKey(track));
       return true;
     });
     if (added.length === 0) return;
@@ -563,8 +744,12 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       const element = audio();
       pendingSeekRef.current = null;
       fallbackRef.current = { trackId: added[0].id };
-      element.src = offlineSource(added[0].audioUrl);
-      setState({ queue: added, index: 0, status: "paused", position: 0, duration: added[0].durationSeconds ?? 0 });
+      const first = trackSegments(added[0])[0];
+      segmentRef.current = 0;
+      measuredRef.current = [];
+      element.src = offlineSource(first.url);
+      pendingSeekRef.current = first.start > 0 ? first.start : null;
+      setState({ queue: added, index: 0, status: "paused", position: 0, duration: stateDuration(added[0]) });
       return;
     }
     setState((previous) => ({ ...previous, queue: [...previous.queue, ...added] }));
@@ -637,7 +822,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       ["pause", () => audio().pause()],
       ["previoustrack", () => {
         // Like a CD player: the first press goes back to the top of the track.
-        if (audio().currentTime > RESTART_THRESHOLD_SECONDS || stateRef.current.index <= 0) seek(0);
+        if (songPosition(audio()) > RESTART_THRESHOLD_SECONDS || stateRef.current.index <= 0) seek(0);
         else previous();
       }],
       ["nexttrack", () => next()],
@@ -692,7 +877,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     // track changes; the browser advances it between updates.
     if (!currentTrack || !(sessionDuration > 0) || typeof session.setPositionState !== "function") return;
     try {
-      session.setPositionState({ duration: sessionDuration, playbackRate: rate, position: Math.min(audio().currentTime || state.position, sessionDuration) });
+      session.setPositionState({ duration: sessionDuration, playbackRate: rate, position: Math.min(songPosition(audio()) || state.position, sessionDuration) });
     } catch {
       // A position the browser rejects; the lock screen keeps its last one.
     }

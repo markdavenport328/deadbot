@@ -7,7 +7,7 @@
 // the gold mark. The choice is made from the URL's host and path and the
 // block's data, never from the label's wording.
 import { type ReactNode } from "react";
-import { usePlayer, type PlayerTrack } from "../player/player";
+import { trackKey, usePlayer, type AudioPartData, type PlayerTrack, segmentsFrom } from "../player/player";
 
 function hostOf(url: string): string {
   try {
@@ -44,7 +44,7 @@ export function destination(url: string): string {
 // release's); a show without one is pictured by its tile (see show-tile.ts).
 export type TrackMeta = { showDate?: string | null; venueName?: string | null; recordingDetailsUrl?: string | null; thumbnailUrl?: string | null };
 
-type PlayableTrackData = { performance_id: string; title: string; audio_url: string; duration_seconds?: number | null };
+type PlayableTrackData = { performance_id: string; title: string; audio_url: string; duration_seconds?: number | null; audio_parts?: AudioPartData[] | null };
 
 // A block's playable track as the shared player's track: the song title,
 // with the show named by its venue and date for the now-playing bar.
@@ -55,6 +55,7 @@ export function toTrack(track: PlayableTrackData, meta: TrackMeta): PlayerTrack 
     title: track.title,
     audioUrl: track.audio_url,
     durationSeconds: track.duration_seconds ?? null,
+    segments: segmentsFrom(track.audio_parts),
     showDate: meta.showDate ?? null,
     venueName: meta.venueName ?? null,
     recordingDetailsUrl: meta.recordingDetailsUrl ?? (identifier ? `https://archive.org/details/${identifier}` : null),
@@ -65,12 +66,12 @@ export function toTrack(track: PlayableTrackData, meta: TrackMeta): PlayerTrack 
 // A row's track when the block carries one: its own audio URL, or failing
 // that a listen URL that is itself an archive track.
 export function trackFor(
-  item: { performance_id: string; audio_url?: string | null; duration_seconds?: number | null; listen_url?: string | null },
+  item: { performance_id: string; audio_url?: string | null; duration_seconds?: number | null; listen_url?: string | null; audio_parts?: AudioPartData[] | null },
   title: string,
   meta: TrackMeta
 ): PlayerTrack | null {
   const audio = item.audio_url || (item.listen_url && archiveTrack(item.listen_url) ? item.listen_url : null);
-  return audio ? toTrack({ performance_id: item.performance_id, title, audio_url: audio, duration_seconds: item.duration_seconds }, meta) : null;
+  return audio ? toTrack({ performance_id: item.performance_id, title, audio_url: audio, duration_seconds: item.duration_seconds, audio_parts: item.audio_url ? item.audio_parts : null }, meta) : null;
 }
 
 // What a control plays in-page: a start track and the queue it plays through.
@@ -151,7 +152,7 @@ export function AddToQueue({ tracks, name, variant = "quiet" }: { tracks: Player
   if (tracks.length === 0) return null;
   // A track is the same track by id or by tape file (two cards can name one
   // file under different ids).
-  const same = (a: PlayerTrack, b: PlayerTrack) => a.id === b.id || a.audioUrl === b.audioUrl;
+  const same = (a: PlayerTrack, b: PlayerTrack) => a.id === b.id || trackKey(a) === trackKey(b);
   const queued = tracks.every((track) => player.queue.some((item) => same(item, track)));
   const current = player.currentTrack;
   const playingHere = Boolean(current && tracks.some((track) => same(track, current)));

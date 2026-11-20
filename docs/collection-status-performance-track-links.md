@@ -347,3 +347,48 @@ changed, then the collector with `--gaps`, the gap pass, and
 `normalize_internet_archive_tracks.py` today moves 25 rows (1976-07-12
 switches tapes) because the setlists changed after its last run; that rerun
 was not applied here.
+
+## Split pass (2026-11-20)
+
+The player can now play a song as several files back to back, or as a window
+of one file (`deadbot/tape.py`; links ordered by ID are a song's parts, and
+`start_seconds` with `duration_seconds` is a window). `scripts/normalize_internet_archive_split_tracks.py`
+runs after the gap pass, offline, and links only what plays the whole song:
+
+1. **Cut across files.** Between the tracks of a song's setlist neighbours on a
+   tape, the only music is a run of consecutive tracks that each name the song
+   (tuning or audience tracks may sit around it; an encore-marked track does
+   not join). Each file is a mapping row ("part N of M of the song on this
+   tape") and a link (`…-archive-track-part-02`). A linked song whose next
+   tracks up to the next song are more of it gains them as parts.
+2. **Fragments.** A linked song under 60% of its fullest release and more than
+   five minutes short moves to another tape of the show that aligns to the
+   setlist and has the song as one file within 10% (or two minutes) of the
+   release. The release only chooses; the stated length is the played file's.
+   The replaced row is kept in the review and restored before a rerun.
+3. **The Other One under the suite's title.** "That's It For The Other One"
+   directly after Cryptical Envelopment's and Drums' own tracks, and before
+   the Cryptical reprise, is The Other One alone.
+
+| Song | Performances | Linked before | Linked after |
+| --- | ---: | ---: | ---: |
+| Dark Star | 276 | 233 | 234 |
+| Not Fade Away | 663 | 630 | 631 |
+| The Other One | 664 | 599 | 601 |
+| Turn On Your Lovelight | 430 | 325 | 326 |
+
+Performances with a tape link: 37,380 → 37,385. Twelve links changed from a
+fragment to the whole song: 1969-03-01 Dark Star (5:07 → 23:01), 1972-05-11
+Dark Star 2-9 (1:50 → 29:24), 1973-12-02 Truckin' (6:26 → 13:43), 1974-07-31
+Truckin' (9:51 → 17:52), 1978-04-15 Drums (4:21 → 11:42), 1978-04-24 Scarlet
+Begonias (5:55 → 12:07), 1979-12-03 Truckin' (4:09 → 9:19), 1979-12-07 Eyes
+Of The World (6:11 → 12:26), 1983-10-12 Franklin's Tower (7:22 → 14:23),
+1990-03-22 Drums (4:27 → 10:18), 1991-09-26 Dark Star (2:54 → 15:28) and
+Drums (6:36 → 12:23). 1995-03-26 Drums gained its 22-second outro file. 25
+fragments have no tape with the whole song and stay as they are.
+
+Not linked, because the song starts partway into a file and nothing preserved
+says where: about 90 songs named later in a medley file and 85 later passes
+inside a first-pass file. `tests/test_tape_lengths.py` still finds no link with
+a start offset.
+

@@ -72,6 +72,18 @@ class EntityCardBlock(ExperienceModel):
     follow_up: str | None = None
 
 
+class AudioPart(ExperienceModel):
+    """One stretch of one tape file: a song that is not exactly one whole file.
+
+    The player plays each part in order as one track: from ``start_seconds``
+    to ``end_seconds`` (the file's end when null), then the next part.
+    """
+
+    audio_url: str
+    start_seconds: int = Field(default=0, ge=0)
+    end_seconds: int | None = Field(default=None, ge=0)
+
+
 class SetlistSong(ExperienceModel):
     performance_id: str
     song_id: str
@@ -88,6 +100,9 @@ class SetlistSong(ExperienceModel):
     # can play directly.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
+    # Set when the song is not one whole file: a window of a shared file, or
+    # several files played back to back. audio_url is then the first part's file.
+    audio_parts: list[AudioPart] | None = None
     segue_into_next: bool = False
 
 
@@ -159,6 +174,9 @@ class PlayableTrack(ExperienceModel):
     audio_url: str
     duration_seconds: int | None = Field(default=None, ge=0)
     set_label: str | None = None
+    # Set when the song is not one whole file: a window of a shared file, or
+    # several files played back to back. audio_url is then the first part's file.
+    audio_parts: list[AudioPart] | None = None
 
 
 class RecordingItem(ExperienceModel):
@@ -192,6 +210,9 @@ class PerformanceListItem(ExperienceModel):
     # when the library has one, and its length.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
+    # Set when the song is not one whole file: a window of a shared file, or
+    # several files played back to back. audio_url is then the first part's file.
+    audio_parts: list[AudioPart] | None = None
 
 
 class ShowUnitBlock(ExperienceModel):
@@ -246,6 +267,9 @@ class AlbumTrackItem(ExperienceModel):
     # track: what the in-page player plays, its length, and the show it is from.
     audio_url: str | None = None
     audio_duration_seconds: int | None = Field(default=None, ge=0)
+    # Set when the song is not one whole file: a window of a shared file, or
+    # several files played back to back. audio_url is then the first part's file.
+    audio_parts: list[AudioPart] | None = None
     show_id: str | None = None
     show_date: str | None = None
     venue_name: str | None = None
@@ -384,6 +408,9 @@ class SongRepresentativePerformance(ExperienceModel):
     # when the library has one, and its length.
     audio_url: str | None = None
     duration_seconds: int | None = Field(default=None, ge=0)
+    # Set when the song is not one whole file: a window of a shared file, or
+    # several files played back to back. audio_url is then the first part's file.
+    audio_parts: list[AudioPart] | None = None
 
 
 class SongYearLongest(ExperienceModel):
