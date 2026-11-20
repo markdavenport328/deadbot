@@ -173,6 +173,10 @@ def _selector_name(entry: Mapping[str, Any]) -> str | None:
         return "Charlie Miller"
     if source == "rolling-stone-australia":
         return "David Fricke / Rolling Stone"
+    if source == "guitar-world-50-best":
+        return "Blair Jackson / Guitar World"
+    if source == "pitchfork-essential-live-songs":
+        return "Pitchfork"
     return None
 
 
