@@ -4,8 +4,11 @@ Logged once per streamed turn so latency and context growth are measured
 rather than guessed. Only the question text leaves the request.
 
 Per model call: input and output tokens, and when the provider reports them,
-the input tokens it served from its prompt cache (billed at a discount) and
-the output tokens spent on hidden reasoning. Per turn: the totals, how many
+the input tokens it served from its prompt cache (billed at a discount) with
+their share of the call's input, the tokens it wrote to that cache, and the
+output tokens spent on hidden reasoning. Per turn: the totals, the cached
+share of the first call (on a fresh question, with ``earlier_turns`` 0, that
+is the prefix shared between visitors), the provider cache key, how many
 calls asked for research tools (rounds), and the time to the first answer
 text the visitor saw. Per turn it also counts read_notebook calls and how
 large the notebook lines in the input were.
@@ -39,13 +42,21 @@ def _detail(details: Any, suffix: str) -> int | None:
     return sum(numbers) if numbers else None
 
 
+def _share(part: int | None, whole: int | None) -> float | None:
+    return round(part / whole, 3) if part is not None and whole else None
+
+
 def _call(message: AIMessage) -> dict[str, Any]:
     usage = message.usage_metadata or {}
     call: dict[str, Any] = {"input_tokens": usage.get("input_tokens"), "output_tokens": usage.get("output_tokens")}
     cached = _detail(usage.get("input_token_details"), "cache_read")
+    written = _detail(usage.get("input_token_details"), "cache_creation")
     reasoning = _detail(usage.get("output_token_details"), "reasoning")
     if cached is not None:
         call["cached_input_tokens"] = cached
+        call["cached_input_share"] = _share(cached, call["input_tokens"])
+    if written is not None:
+        call["cache_write_tokens"] = written
     if reasoning is not None:
         call["reasoning_tokens"] = reasoning
     names = [call_.get("name") for call_ in (message.tool_calls or [])]
@@ -68,6 +79,8 @@ def turn_metrics(
     first_answer_at: float | None,
     finished_at: float,
     error: str | None,
+    prompt_cache_key: str | None = None,
+    earlier_turns: int | None = None,
 ) -> dict[str, Any]:
     turn = _this_turn(messages)
     calls = []
@@ -97,7 +110,14 @@ def turn_metrics(
         "peak_input_tokens": max(inputs) if inputs else None,
         "total_input_tokens": total_input,
         "total_cached_input_tokens": total_cached,
-        "cached_input_share": round(total_cached / total_input, 3) if total_cached is not None and total_input else None,
+        "cached_input_share": _share(total_cached, total_input),
+        # The first call of a fresh question holds only the system prompt, the
+        # tool schemas and the question. Its cached share is what another
+        # visitor's earlier call left in the provider's cache.
+        "first_call_cached_input_share": calls[0].get("cached_input_share") if calls else None,
+        "total_cache_write_tokens": _total(calls, "cache_write_tokens"),
+        "prompt_cache_key": prompt_cache_key,
+        "earlier_turns": earlier_turns,
         "total_output_tokens": _total(calls, "output_tokens"),
         "total_reasoning_tokens": _total(calls, "reasoning_tokens"),
         "tools": tools,

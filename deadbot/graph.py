@@ -7,7 +7,9 @@ One model researches with read-only tools and finishes the turn by calling
 
 from __future__ import annotations
 
+import hashlib
 import logging
+import time
 from typing import Any
 
 from langchain_core.messages import AIMessage, AIMessageChunk, SystemMessage
@@ -275,11 +277,67 @@ def route_after_tools(state: MessagesState) -> str:
     return "agent"
 
 
-def _cache_options(config: RunnableConfig | None) -> dict[str, str]:
-    """Route a conversation's calls to the same provider cache (OpenAI's prompt_cache_key)."""
+PROMPT_CACHE_KEY = "deadbot"
+
+# A model call started with less than this left of the turn's budget cannot
+# deliver anything; the turn ends with an honest error instead of a paid call.
+MIN_CALL_SECONDS = 3.0
+
+
+class TurnBudgetExceeded(RuntimeError):
+    """The turn ran out of the time the hosting function allows it."""
+
+
+def prompt_cache_key(conversation_id: str, settings: Settings) -> str:
+    """The provider cache key (OpenAI's prompt_cache_key) for a conversation's model calls.
+
+    OpenAI keeps cached prompt prefixes apart by key and uses the key, with a
+    hash of the prompt's first tokens, to route a request to the machine that
+    holds its cache. The system prompt and tool schemas are byte-identical for
+    every visitor, so every visitor shares one key: a first question reads the
+    prefix an earlier visitor's call wrote. A key per conversation, the
+    earlier scheme, made each first call pay for the whole prefix. Follow-ups
+    lose nothing, because a conversation's longer prefix is cached under the
+    same key and still starts with the same tokens.
+
+    One key holds about 15 requests a minute before the provider sends the
+    overflow to machines without the cache. Above that traffic, raise
+    DEADBOT_PROMPT_CACHE_SHARDS: each conversation then always maps to the same
+    one of N keys, the stable mapping OpenAI's caching guide recommends.
+    """
+
+    shards = settings.prompt_cache_shards
+    if shards <= 1:
+        return PROMPT_CACHE_KEY
+    shard = int(hashlib.sha256(conversation_id.encode("utf-8", "surrogatepass")).hexdigest(), 16) % shards
+    return f"{PROMPT_CACHE_KEY}-{shard}"
+
+
+def system_message(*, explicit_breakpoint: bool = False) -> SystemMessage:
+    """The system prompt, the same bytes on every call.
+
+    With ``explicit_breakpoint`` its end is marked as a cache breakpoint, which
+    OpenAI's guide recommends (GPT-5.6 and later) when static instructions are
+    followed by a different question each time.
+    """
+
+    if not explicit_breakpoint:
+        return SystemMessage(content=SYSTEM_PROMPT)
+    return SystemMessage(content=[{"type": "text", "text": SYSTEM_PROMPT, "prompt_cache_breakpoint": {"mode": "explicit"}}])
+
+
+def _cache_options(config: RunnableConfig | None) -> dict[str, Any]:
+    """Send the conversation's provider cache key with each call."""
 
     key = ((config or {}).get("configurable") or {}).get("prompt_cache_key")
     return {"prompt_cache_key": str(key)[:64]} if key else {}
+
+
+def _seconds_left(config: RunnableConfig | None) -> float | None:
+    """What is left of the turn's time budget, or None when it has none."""
+
+    deadline = ((config or {}).get("configurable") or {}).get("deadline")
+    return None if deadline is None else float(deadline) - time.monotonic()
 
 
 def build_agent(
@@ -300,11 +358,19 @@ def build_agent(
     if not settings.model_streaming:
         model = model.bind(stream=False)
 
-    routes_cache = settings.model_provider == "openai"
+    hosted = settings.model_provider == "openai"
+    system = system_message(explicit_breakpoint=hosted and settings.prompt_cache_breakpoint)
 
     def call_model(state: MessagesState, config: RunnableConfig):
-        prompt = [SystemMessage(content=SYSTEM_PROMPT), *state["messages"]]
-        options = _cache_options(config) if routes_cache else {}
+        prompt = [system, *state["messages"]]
+        options = _cache_options(config) if hosted else {}
+        left = _seconds_left(config)
+        if left is not None:
+            if left < MIN_CALL_SECONDS:
+                raise TurnBudgetExceeded(f"{left:.1f}s of the turn's budget left before a model call")
+            if hosted and settings.model_streaming and settings.model_timeout_seconds > 0:
+                # A late call may not wait in silence longer than the turn has left.
+                options["timeout"] = min(float(settings.model_timeout_seconds), left)
         if not settings.model_streaming:
             return {"messages": [model.invoke(prompt, **options)]}
         # Streamed, the finish_response arguments arrive as raw JSON text. The
@@ -313,8 +379,16 @@ def build_agent(
         # while the visitor already watched it stream. Read the raw text so
         # repeated lists join, the way the streamed draft shows them.
         full: AIMessageChunk | None = None
-        for chunk in model.stream(prompt, **options):
-            full = chunk if full is None else full + chunk
+        stream = model.stream(prompt, **options)
+        try:
+            for chunk in stream:
+                full = chunk if full is None else full + chunk
+                if left is not None and (_seconds_left(config) or 0.0) <= 0:
+                    raise TurnBudgetExceeded("the turn's budget ran out while the model was writing")
+        finally:
+            close = getattr(stream, "close", None)
+            if callable(close):
+                close()
         if full is None:
             return {"messages": [model.invoke(prompt, **options)]}
         return {"messages": [repair_finish_arguments(full)]}
@@ -328,15 +402,31 @@ def build_agent(
     return graph.compile(checkpointer=MemorySaver())
 
 
-def run_config(thread_id: str, settings: Settings, *, notebook: Any = None, prompt_cache_key: str | None = None) -> dict:
-    """The session's checkpoint thread, its research notebook and cache key, and a bound on agent iterations."""
+def run_config(
+    thread_id: str,
+    settings: Settings,
+    *,
+    notebook: Any = None,
+    conversation_id: str | None = None,
+    deadline: float | None = None,
+) -> dict:
+    """The session's checkpoint thread, its research notebook, cache key and deadline, and a bound on agent iterations.
 
-    configurable: dict[str, Any] = {"thread_id": thread_id}
+    ``conversation_id`` is the conversation the cache key is chosen for when
+    the checkpoint thread is the throwaway of one request. ``deadline`` is a
+    ``time.monotonic()`` reading after which the turn stops with
+    ``TurnBudgetExceeded``.
+    """
+
+    configurable: dict[str, Any] = {
+        "thread_id": thread_id,
+        "prompt_cache_key": prompt_cache_key(conversation_id or thread_id, settings),
+    }
     if notebook is not None:
         # read_notebook finds it here, so its schema stays the same on every call.
         configurable["notebook"] = notebook
-    if prompt_cache_key:
-        configurable["prompt_cache_key"] = prompt_cache_key
+    if deadline is not None:
+        configurable["deadline"] = deadline
     # Each research round costs two graph steps (agent, tools). The extra pair
     # beyond the rounds themselves reserves room to finish: one for the
     # ``finish_response`` call, and one more so a call whose arguments failed
