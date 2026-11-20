@@ -1,6 +1,4 @@
-/* Workspace shell (?shell=workspace): layout, history and the held previous
-   page. Everything is scoped under .workspace-shell so the old shell
-   is untouched. */
+/* The workspace: layout, history and the held previous page. */
 
 
 /* History: New chat at the top, Recent threads newest first (the question

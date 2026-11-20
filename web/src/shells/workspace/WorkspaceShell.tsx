@@ -3,7 +3,6 @@ import type { AskFocus, ExperienceResponse } from "../../types";
 import type { PageEvent } from "../../core/stream-events";
 import { ASK_ERROR, askPlain, askStreaming, createThreadId, isAbort, replayStreamEvents, type StreamHandlers } from "../../core/ask-client";
 import { askRequestBody, type FollowUp } from "../../core/ask-request";
-import { storeNotebook } from "../../core/research-notebook";
 import { loadRequestedStreamEvents, loadRequestedVisualFixture, requestedStreamFixture, requestedVisualFixture } from "../../visual-fixture-loader";
 import { useReloadOnDeploy } from "../../core/server-version";
 import {
@@ -156,7 +155,6 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
 
   function complete(requestId: string, response: ExperienceResponse) {
     dispatch({ type: "complete", requestId, response });
-    storeNotebook(response.notebook ?? null);
     setAnnouncement(`Ready: ${response.headline ?? response.lead}`);
     if (interactedRef.current !== requestId) focusPaneRef.current = requestId;
   }
@@ -197,7 +195,6 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     const abort = new AbortController();
     controller.current = abort;
     requestRef.current = requestId;
-    storeNotebook(context.notebook);
     dispatch({ type: "submit", requestId, question: trimmed, source, focus, fresh, threadId });
     const body = askRequestBody({ question: trimmed, threadId, conversation: context.conversation, focus: focus ?? undefined, notebook: context.notebook });
     void run(requestId, body, abort.signal);
@@ -207,17 +204,12 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
   function navigate(index: number) {
     saveScroll();
     dropRequest();
-    const next = explorationReducer(stateRef.current, { type: "navigate", index });
     dispatch({ type: "navigate", index });
-    storeNotebook(requestContext(next, false).notebook);
   }
 
-  // Stopping or dismissing puts back the notebook of the page left on screen.
   function settle(action: { type: "cancel" } | { type: "dismiss" }) {
     if (action.type === "cancel") dropRequest();
-    const next = explorationReducer(stateRef.current, action);
     dispatch(action);
-    storeNotebook(requestContext(next, false).notebook);
   }
 
   function stop() {
@@ -245,7 +237,6 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     if (isAsking(stateRef.current)) return;
     saveScroll();
     dispatch({ type: "newChat" });
-    storeNotebook(null);
   }
 
   function interact() {
@@ -288,11 +279,6 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     return () => root.classList.remove("workspace-desktop");
   }, [isPhone]);
 
-  // The page shown on arrival from saved history gets its research notebook back.
-  useEffect(() => {
-    storeNotebook(requestContext(stateRef.current, false).notebook);
-  }, []);
-
   // Every change to the history is saved in this browser.
   useEffect(() => {
     if (!fixtureMode) saveHistory(state);
@@ -327,16 +313,13 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
     saveScroll();
     setCleared({ entries: stateRef.current.entries, cursor: stateRef.current.cursor });
     dispatch({ type: "clear" });
-    storeNotebook(null);
     setAnnouncement("History cleared. Undo is available for ten seconds.");
   }
 
   function undoClear() {
     if (!cleared) return;
-    const next = explorationReducer(stateRef.current, { type: "restore", ...cleared });
     dispatch({ type: "restore", ...cleared });
     setCleared(null);
-    storeNotebook(requestContext(next, false).notebook);
     setAnnouncement("History restored");
   }
 
@@ -573,7 +556,7 @@ export function WorkspaceShell({ player, queueRail = null, phonePlayer, isPhone,
                 </div>
               </div>
             )}
-            {showStart && <div className="start-screen"><StartLibrary onAsk={startAsk} disabled={false} /></div>}
+            {showStart && <div className="start-screen"><StartLibrary onAsk={startAsk} /></div>}
             {panes}
           </div>
           {!isPhone && composer(false)}

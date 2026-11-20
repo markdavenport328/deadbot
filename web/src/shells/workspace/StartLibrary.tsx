@@ -1,4 +1,3 @@
-import { type ReactNode } from "react";
 import { libraryStats as stats } from "../../core/library-stats";
 
 const startingPoints = [
@@ -44,14 +43,11 @@ const startingPoints = [
   }
 ];
 
-// The home screen's lead and the library with its starting points. Both
-// shells show it; whatever sits between the lead and the library (the old
-// shell's ask box) comes in as children.
-export function StartLibrary({ onAsk, disabled, children }: { onAsk(prompt: string): void; disabled: boolean; children?: ReactNode }) {
+// The home screen's lead and the library with its starting points.
+export function StartLibrary({ onAsk }: { onAsk(prompt: string): void }) {
   return (
     <>
       <h1 className="start-lead">Exploration and listening across the entire Dead catalog.</h1>
-      {children}
       <div className="library">
         {stats.map(({ count, noun }) => {
           const group = startingPoints.find((candidate) => candidate.category.toLowerCase() === noun);
@@ -63,7 +59,7 @@ export function StartLibrary({ onAsk, disabled, children }: { onAsk(prompt: stri
                 <ul className="qs">
                   {group.questions.map((prompt) => (
                     <li key={prompt}>
-                      <button type="button" onClick={() => onAsk(prompt)} disabled={disabled}>
+                      <button type="button" onClick={() => onAsk(prompt)}>
                         {prompt}
                       </button>
                     </li>

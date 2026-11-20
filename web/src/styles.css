@@ -80,16 +80,13 @@
   --featured-end: var(--ask);
   --serif: Fraunces, Georgia, "Times New Roman", serif;
   --r: 2px;
-  /* Ask transition timings (Emil Kowalski's rules: transform and opacity
-     only, never ease-in). */
+  /* Motion: transform and opacity only, never ease-in. */
   --t-fade: 180ms;
   --t-rail: 450ms;
   --t-shift: 400ms;
-  --t-enter: 220ms;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --rail-w: 310px;
 }
 
 * { box-sizing: border-box; }
@@ -114,98 +111,19 @@ a { color: var(--read); text-underline-offset: 0.18em; }
 
 .app-shell { width: min(1440px, calc(100% - 2rem)); min-height: 100vh; margin: 0 auto; }
 .wordmark { color: #f5efdd; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-size: 1.35rem; font-weight: 600; text-decoration: none; }
-.workspace { display: grid; grid-template-columns: minmax(310px, 0.82fr) minmax(0, 1.85fr); align-items: start; min-height: 100vh; column-gap: var(--space-unit); }
-/* The home start screen has no rail: the column collapses to nothing and the
-   main column takes the page. .conversation-pane keeps rendering underneath
-   (so the ask transition has something to slide in) but is clipped to zero
-   width and taken out of the tab order while it is there. */
-.workspace.start { grid-template-columns: 0px minmax(0, 1fr); column-gap: 0; }
-.workspace.start .conversation-pane { min-width: 0; overflow: hidden; pointer-events: none; visibility: hidden; }
-/* The off-canvas rail must never cause a horizontal scrollbar while it is
-   sliding in. */
-.workspace.opening, .workspace.arriving { overflow-x: clip; }
-
-.conversation-pane { position: sticky; top: 0; display: flex; flex-direction: column; align-self: start; height: 100vh; min-height: 0; padding: 0 0 var(--space-content); font-size: 0.9rem; }
 .masthead { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-line); flex-shrink: 0; padding: var(--space-content) var(--space-tight) var(--space-content); color: #b8c4b8; font-size: 0.9rem; }
 .masthead p { margin: 0; line-height: 1.35; }
-.masthead-row { display: flex; align-items: baseline; justify-content: space-between; width: 100%; gap: var(--space-part); }
-.new-chat-button { flex-shrink: 0; align-self: flex-end; transform: translateY(-0.2rem); border: 1px solid #465b4b; border-radius: var(--r); background: transparent; color: #9fb29f; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.02em; padding: var(--space-line) var(--space-part); }
-.new-chat-button:focus-visible { border-color: var(--cream); color: var(--cream); }
 h1, h2, .card h3 { margin: 0; font-family: var(--serif); font-variation-settings: "SOFT" 40; font-weight: 600; line-height: 1.08; }
 h1 { font-variation-settings: "SOFT" 40, "opsz" 72; font-size: clamp(2rem, 3.6vw, 3.5rem); }
 h2, .card h3 { font-variation-settings: "SOFT" 40, "opsz" 48; font-size: 1.45rem; }
 
-/* Ask transition: leaving the start screen swaps the rail and content panes
-   from off-canvas back to rest. "opening" snaps them off-canvas with no
-   transition the instant the real layout replaces the start screen;
-   "arriving", added one frame later, turns the transitions on so the browser
-   animates from there. */
-.workspace.opening .conversation-pane { transform: translateX(-100%); }
-.workspace.opening .conversation-pane > * { opacity: 0; }
-.workspace.opening .content-pane { transform: translateX(calc(-1 * var(--rail-w))); }
-.workspace.arriving .conversation-pane {
-  transform: translateX(0);
-  transition: transform var(--t-rail) var(--ease-drawer);
-}
-.workspace.arriving .conversation-pane > * {
-  opacity: 1;
-  transition: opacity 300ms var(--ease-out) 120ms;
-}
-.workspace.arriving .content-pane {
-  transform: translateX(0);
-  transition: transform var(--t-shift) var(--ease-in-out) 120ms;
-}
-/* Answer entrance: the first content the content pane shows, appearing after
-   the rail is most of the way open. */
-.workspace.arriving .content-working,
-.workspace.arriving .content-heading {
-  animation: appear var(--t-enter) var(--ease-out) both;
-  animation-delay: 540ms;
-}
-.workspace.arriving .content-working .progress-lines {
-  animation: appear var(--t-enter) var(--ease-out) both;
-  animation-delay: 620ms;
-}
-@keyframes appear {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
-/* The thread takes the height its content needs, not the whole rail, so the
-   composer rides directly under the conversation: near the masthead when
-   there is nothing to show, moving down as turns accumulate, and resting
-   against the bottom once the thread is tall enough to fill the rail and
-   start scrolling. flex: 1 pinned it to the bottom even on an empty screen. */
-.thread { display: flex; flex: 0 1 auto; flex-direction: column; min-height: 0; overflow-y: auto; padding: 0 var(--space-tight); }
-.thread-messages { display: flex; flex-direction: column; gap: var(--space-tight); padding: var(--space-part) 0; }
-.message { max-width: 95%; border-radius: var(--r); padding: var(--space-part) var(--space-part); font-size: 0.92rem; line-height: 1.5; white-space: pre-line; }
-.message.user { align-self: flex-end; background: rgba(51, 79, 59, 0.55); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); color: #f2f3eb; }
-.message.assistant { align-self: flex-start; max-width: 100%; border-radius: 0; background: transparent; color: #d3dccf; padding: 0; }
-.message.assistant div { overflow-wrap: anywhere; }
-.message.pending { color: #adbbac; font-style: italic; }
-.message.pending .streaming-answer { color: #d3dccf; font-style: normal; }
 .progress-lines { margin: 0; padding: 0; list-style: none; font-style: normal; }
 .progress-lines li { color: #7f9582; font-size: 0.86rem; line-height: 1.5; }
 .progress-lines li.current { color: #d3dccf; }
 .progress-lines li.current::before { content: "▸ "; color: var(--muted); }
-.post-answer-status { margin: var(--space-tight) 0 0; color: #7f9582; font-size: 0.86rem; font-style: normal; }
-.post-answer-status::before { content: "▸ "; color: var(--muted); }
-.message.pending .cursor {
-  display: inline-block;
-  width: 0.55em;
-  height: 1em;
-  margin-left: 0.1em;
-  vertical-align: text-bottom;
-  background: currentColor;
-  animation: cursor-blink 1s step-end infinite;
-}
 
-@keyframes cursor-blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
-}
-
-/* The ask box's ground fades in over the conversation scrolling beneath it;
-   like the panels, it keeps a hint of the dye, and blurs what passes under. */
+/* The ask box's ground fades in over the page scrolling beneath it; like the
+   panels, it keeps a hint of the dye, and blurs what passes under. */
 .composer { position: sticky; bottom: 0; isolation: isolate; flex-shrink: 0; background: linear-gradient(to bottom, rgba(12, 21, 16, 0), var(--scrim)) top / 100% 1.25rem no-repeat; padding: var(--space-content) 0 var(--space-part); }
 .composer::before { content: ""; position: absolute; inset: 1.25rem 0 0; z-index: -1; background: var(--scrim); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .question-field { position: relative; }
@@ -397,15 +315,10 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .experience-group.has-heading :is(.typography-block, .era-unit) :is(h2, h3) { font-size: 1.3rem; }
 .group-heading p { max-width: var(--measure); margin: var(--space-part) 0 0; color: #c3cec3; font-size: 1.04rem; line-height: 1.6; }
 
-/* Home start screen: the whole content area before a question is asked. The
-   composer sits centred between a lead line and the library numbers; the
-   rail is visually absent (see .workspace.start below), so this is the
-   page's only content until someone asks something. */
+/* The start screen: a lead line above the library numbers, the pane's only
+   content until someone asks something. */
 .start-screen { max-width: 64rem; margin: 0 auto; padding: clamp(var(--space-unit), 12vh, calc(var(--space-section) + var(--space-unit))) 0 var(--space-section); }
 .start-lead { margin: 0 auto; max-width: 34ch; text-align: center; font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 72; font-weight: 500; font-size: clamp(1.6rem, 2.6vw, 2.2rem); line-height: 1.2; color: var(--cream); text-wrap: balance; }
-.start-composer { max-width: 42rem; margin: var(--space-content) auto 0; }
-.start-composer textarea { font-size: 1.125rem; padding: var(--space-part) var(--space-part) var(--space-unit); }
-.start-screen > .error { max-width: 42rem; margin: var(--space-part) auto 0; }
 /* The five library numbers double as the old "Starting points" heading: the
    figure is the heading, the noun beneath it is the label, and the model's
    worth of sample questions live under each. */
@@ -417,9 +330,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
    need. They are links; they behave like the song links elsewhere. */
 .qs button { border: 0; border-radius: 0; background: none; color: var(--text); font-size: 0.95rem; padding: var(--space-line) 0; text-align: left; line-height: 1.45; text-decoration: underline; text-decoration-color: rgba(63, 149, 220, 0.5); text-underline-offset: 0.18em; }
 .qs button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
-/* Leaving the start screen: the questions and lead fade in place, no
-   movement, while the composer stays exactly where it is. */
-.start-screen.leaving .library, .start-screen.leaving .start-lead { opacity: 0; transition: opacity var(--t-fade) var(--ease-out); }
 
 /* One visually hidden live region for the whole shell, announced once per
    answer instead of on every render. */
@@ -450,9 +360,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
    the conversation shares this border and hover color. */
 .ask-chip { display: inline-flex; align-items: baseline; max-width: 100%; border: 1px solid rgba(88, 148, 214, 0.55); border-radius: var(--r); background: transparent; color: var(--cream); font-size: 0.86rem; font-weight: 500; line-height: 1.4; padding: var(--space-tight) var(--space-part); text-align: left; transition: border-color 120ms ease, background 120ms ease; }
 .ask-chip:focus-visible { border-color: var(--ask); background: rgba(63, 149, 220, 0.12); }
-/* Listening navigates to a recording; asking starts a conversation turn. */
-.view-answer-link { display: none; }
-#answer-title { scroll-margin-top: var(--space-content); }
 /* One label style: every small-caps label on the page, card or otherwise. */
 .k, .region-label, .sources-footer-label, .fact-grid-block dt, .arrangement-facts dt {
   color: var(--quiet);
@@ -684,9 +591,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 .sources-footer a:focus-visible { color: var(--cream); }
 .source-kind-chip { border: 1px solid #3e5544; border-radius: var(--r); color: #7f9582; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: var(--space-line) var(--space-tight); white-space: nowrap; }
 
-.composing-note { margin: var(--space-unit) 0 0; color: #7f9582; font-size: 0.86rem; }
-.composing-note::before { content: "▸ "; color: var(--muted); }
-
 /* Open blocks: the card anatomy without the panel. Eyebrow row, headline,
    meta line, then lists that separate by spacing rather than rules. */
 :is(.typography-block, .era-unit) :is(h2, h3) { margin-top: var(--space-part); font-family: var(--serif); font-variation-settings: "SOFT" 40, "opsz" 48; font-weight: 600; font-size: 1.7rem; line-height: 1.1; letter-spacing: -0.012em; color: var(--cream); text-wrap: balance; }
@@ -731,19 +635,8 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 @media (max-width: 860px) {
   :root { --space-unit: 2rem; --space-section: 3rem; }
   .app-shell { width: min(100% - 1.25rem, 1440px); }
-  .workspace { display: block; min-height: 0; }
-  .conversation-pane { position: static; height: auto; min-height: 0; padding: 0 0 var(--space-content); }
-  /* Block layout: the hidden rail would still take its height above the start screen. */
-  .workspace.start .conversation-pane { display: none; }
-  .thread { max-height: 25rem; }
   .content-pane { padding: var(--space-content) 0 var(--space-section); }
-  .view-answer-link { display: inline-block; align-self: flex-start; margin: var(--space-tight) 0 0; padding: var(--space-tight) 0; font-size: 0.92rem; }
   .start-screen { padding: var(--space-content) 0 var(--space-unit); }
-  /* The rail no longer overlays the content on a block layout, so the ask
-     transition drops its slide here: keep only the 180ms start-screen fade
-     and the answer entrance. */
-  .workspace.opening .conversation-pane, .workspace.opening .content-pane,
-  .workspace.arriving .conversation-pane, .workspace.arriving .content-pane { transform: none; }
 }
 
 @media (max-width: 520px) {
@@ -762,17 +655,7 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 }
 
 @media (pointer: coarse) {
-  .listen-link, .ask-chip, .tab, .view-answer-link { min-height: 44px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .message.pending .cursor { animation: none; }
-  .workspace.opening .conversation-pane, .workspace.opening .content-pane { transform: none; }
-  .workspace.arriving .conversation-pane, .workspace.arriving .content-pane { transition: opacity 300ms var(--ease-out); }
-  @keyframes appear {
-    from { opacity: 0; transform: none; }
-    to { opacity: 1; transform: none; }
-  }
+  .listen-link, .ask-chip, .tab { min-height: 44px; }
 }
 
 /* Emphasis: how much of the page one object earns. */
@@ -845,7 +728,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 
 /* Hover states, gated behind pointer capability so they never fire on touch. */
 @media (hover: hover) {
-  .new-chat-button:hover:not(:disabled) { border-color: var(--cream); color: var(--cream); }
   .question-field button[type="submit"]:hover:not(:disabled) { background: var(--ask-deep-hover); }
   .qs button:hover { color: var(--cream); text-decoration-color: var(--ask); }
   .collapsed-title.ask-title:hover { text-decoration-color: var(--ask); }
@@ -996,15 +878,12 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
 /* Text that sits directly on the ground keeps its contrast where a rosette
    passes behind it: a soft halo of the ground colour around the letters,
    invisible on bare ground and without a box edge over the dye. */
-:is(.hero-body, .hero-link, .content-heading h1, .answer-lead, .pull-quote, .group-heading, .typography-block, .era-unit, .mention-list, .sources-footer, .masthead-row, .masthead > p, .message.assistant, .view-answer-link) {
+:is(.hero-body, .hero-link, .content-heading h1, .answer-lead, .pull-quote, .group-heading, .typography-block, .era-unit, .mention-list, .sources-footer, .masthead > p) {
   text-shadow: 0 0 2px var(--ground), 0 0 8px var(--ground), 0 0 18px var(--ground), 0 0 32px rgba(20, 34, 27, 0.85);
 }
 /* A scrim's feathered edge may reach past the viewport on a phone; it never
    makes the page scroll sideways. */
 .app-shell { overflow-x: clip; }
-/* The one control on the ground at the rail's top edge is glass, so a
-   rosette glows through it without crossing its label. */
-.new-chat-button { background-color: var(--glass); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 /* A card is glass: its tint over a blur of whatever rosette is behind it,
    so the dye glows through without crossing the card's quiet labels. */
 .card { -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); background-color: var(--scrim); background-image: linear-gradient(rgba(4, 10, 6, 0.38), rgba(4, 10, 6, 0.38)); }
@@ -1127,8 +1006,6 @@ button:disabled, input:disabled, textarea:disabled { cursor: wait; opacity: 0.68
   .mobile-dock .question-field button[type="submit"] { position: static; right: auto; bottom: auto; display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: var(--ask-deep); color: var(--cream); transition: background 120ms ease, opacity 120ms ease; }
   .mobile-dock .question-field button[type="submit"] svg { width: 18px; height: 18px; }
   .mobile-dock .question-field button[type="submit"]:focus-visible { background: var(--ask-deep-hover); }
-  /* The thread's own link down to the answer sits under the last message. */
-  .thread > .view-answer-link { margin: 0 0 var(--space-tight); }
 }
 @media (max-width: 860px) and (prefers-reduced-motion: no-preference) {
   .mobile-dock { transition: transform 120ms var(--ease-out); }
