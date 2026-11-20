@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 from urllib.parse import urlparse
 
@@ -140,7 +141,7 @@ def _signal_payload(entry: Any, index: int, lookup: dict[str, dict[str, dict[str
     for field in (
         "selection_label", "source_label", "source_handle", "source_context",
         "source_provenance", "identity_state", "collection_state", "recommendation_rank",
-        "fan_vote_count", "release_candidate_id", "release_status", "title", "era_label",
+        "fan_vote_count", "release_candidate_id", "release_status", "title", "era_label", "song_id",
     ):
         value = entry.get(field)
         if isinstance(value, (str, int)) and value != "":
@@ -240,3 +241,78 @@ def load_show_selections(store: CanonicalStore) -> list[dict[str, Any]]:
             }
         )
     return [selection for selection in selections.values() if selection["items"]]
+
+
+# ---------------------------------------------------------------------------
+# Release families
+# ---------------------------------------------------------------------------
+
+_MONTHS = "january|february|march|april|may|june|july|august|september|october|november|december"
+# Standalone titles that belong to a larger project's family.
+_FAMILY_ALIASES = {
+    "complete road trips": "road trips",
+    "lyceum '72": "europe '72",
+}
+_SHOW_DATE_IN_PERFORMANCE_ID = re.compile(r"^gd-(\d{4}-\d{2}-\d{2})")
+
+
+def release_family_root(title: str) -> str:
+    """The project a release title belongs to: "Europe '72, Vol. 08: Rheinhalle" and
+    "Europe '72: The Complete Recordings" are both "europe '72"."""
+
+    text = title.replace("’", "'").replace("‐", "-").replace("‑", "-").casefold()
+    text = re.sub(r"^\[[^\]]*\]\s*", "", text)
+    text = re.split(r":| - | – |, vol|, volume|, bonus| vol\.|\(", text)[0]
+    text = re.sub(r"\b(the )?complete (recordings|road trips)\b", "", text)
+    text = re.sub(rf"\b({_MONTHS})\b.*$", "", text)
+    text = re.sub(r"\d{1,4}[/-]\d{1,2}[/-]\d{2,4}", "", text)
+    text = re.sub(r"\s+", " ", text).strip(" ,-")
+    text = re.sub(r"\s+\d{4}$", "", text)
+    text = text or title.casefold()
+    return _FAMILY_ALIASES.get(text, text)
+
+
+def performance_show_date(performance_id: str) -> str | None:
+    match = _SHOW_DATE_IN_PERFORMANCE_ID.match(performance_id)
+    return match.group(1) if match else None
+
+
+def release_families(releases: dict[str, str], show_dates_by_release: dict[str, set[str]]) -> dict[str, str]:
+    """Group releases that are one curator decision, so a performance is counted once.
+
+    ``releases`` maps release_id to title; ``show_dates_by_release`` maps release_id
+    to the dates of every show its tracks come from. Releases share a family when
+    their titles name the same project (the album, its box, its per-show volumes and
+    its "complete recordings") or when each is a single-show release of the same
+    night (a box edition and a streaming edition of one show). A compilation of
+    several shows stays its own family unless its title names the same project.
+    Returns release_id -> family key.
+    """
+
+    parent: dict[str, str] = {release_id: release_id for release_id in releases}
+
+    def find(item: str) -> str:
+        while parent[item] != item:
+            parent[item] = parent[parent[item]]
+            item = parent[item]
+        return item
+
+    def union(a: str, b: str) -> None:
+        parent[find(b)] = find(a)
+
+    by_root: dict[str, str] = {}
+    by_night: dict[str, str] = {}
+    for release_id in sorted(releases):
+        root = release_family_root(releases[release_id])
+        if root in by_root:
+            union(by_root[root], release_id)
+        else:
+            by_root[root] = release_id
+        dates = show_dates_by_release.get(release_id) or set()
+        if len(dates) == 1:
+            night = next(iter(dates))
+            if night in by_night:
+                union(by_night[night], release_id)
+            else:
+                by_night[night] = release_id
+    return {release_id: find(release_id) for release_id in releases}
